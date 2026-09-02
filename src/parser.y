@@ -49,6 +49,8 @@ static Cell   local buildTuple	 (List);
 static List   local checkCtxt	 (List);
 static Cell   local checkPred	 (Cell);
 static Pair   local checkDo	 (List);
+static Cell   local desugarGuards (List);
+static Cell   local guardMatch	 (Cell,List,Cell);
 static Cell   local checkTyLhs	 (Cell);
 static Cell   local checkConstr	 (Cell);
 
@@ -525,17 +527,15 @@ decl	  : gendecl			{$$ = $1;}
 	  ;
 funlhs	  : funlhs0			{$$ = $1;}
 	  | funlhs1			{$$ = $1;}
-	  | npk				{$$ = $1;}
 	  ;
 funlhs0	  : pat10_vI varop    pat0	{$$ = gc3(ap2($2,$1,$3));}
+	  | var      '+'      pat0	{$$ = gc3(ap2(varPlus,$1,$3));}
 	  | infixPat varop    pat0	{$$ = gc3(ap2($2,$1,$3));}
 	  | NUMLIT   varop    pat0	{$$ = gc3(ap2($2,$1,$3));}
 	  | var      varop_pl pat0	{$$ = gc3(ap2($2,$1,$3));}
-	  | var      '+'      pat0_INT	{$$ = gc3(ap2(varPlus,$1,$3));}
 	  ;
 funlhs1	  : '(' funlhs0 ')' apat	{$$ = gc4(ap($2,$4));}
 	  | '(' funlhs1 ')' apat	{$$ = gc4(ap($2,$4));}
-	  | '(' npk     ')' apat	{$$ = gc4(ap($2,$4));}
 	  | var     apat		{$$ = gc2(ap($1,$2));}
 	  | funlhs1 apat		{$$ = gc2(ap($1,$2));}
 	  ;
@@ -543,12 +543,12 @@ rhs	  : rhs1 wherePart		{$$ = gc2(letrec($2,$1));}
 	  | error			{syntaxError("declaration");}
 	  ;
 rhs1	  : '=' exp			{$$ = gc2(pair($1,$2));}
-	  | gdrhs			{$$ = gc1(grded(rev($1)));}
+	  | gdrhs			{$$ = gc1(desugarGuards(rev($1)));}
 	  ;
 gdrhs	  : gdrhs gddef			{$$ = gc2(cons($2,$1));}
 	  | gddef			{$$ = gc1(singleton($1));}
 	  ;
-gddef	  : '|' exp0 '=' exp		{$$ = gc4(pair($3,pair($2,$4)));}
+gddef	  : '|' quals '=' exp		{$$ = gc4(pair($3,pair(rev($2),$4)));}
 	  ;
 wherePart : /* empty */			{$$ = gc0(NIL);}
 	  | WHERE decls			{$$ = gc2($2);}
@@ -576,19 +576,13 @@ ldecl	  : decl 			{$$ = $1;}
 
 /*- Patterns: -------------------------------------------------------------*/
 
-pat	  : npk				{$$ = $1;}
-	  | pat_npk			{$$ = $1;}
+pat	  : pat_npk			{$$ = $1;}
 	  ;
 pat_npk	  : pat0 COCO type		{$$ = gc3(ap(ESIGN,pair($1,$3)));}
 	  | pat0			{$$ = $1;}
 	  ;
-npk	  : var '+' NUMLIT		{$$ = gc3(ap2(varPlus,$1,$3));}
-	  ;
 pat0	  : var				{$$ = $1;}
 	  | NUMLIT			{$$ = $1;}
-	  | pat0_vI			{$$ = $1;}
-	  ;
-pat0_INT  : var				{$$ = $1;}
 	  | pat0_vI			{$$ = $1;}
 	  ;
 pat0_vI	  : pat10_vI			{$$ = $1;}
@@ -625,7 +619,6 @@ apat_vI	  : var '@' apat		{$$ = gc3(ap(ASPAT,pair($1,$3)));}
 	  | STRINGLIT			{$$ = $1;}
 	  | '_'				{$$ = gc1(WILDCARD);}
 	  | '(' pat_npk ')'		{$$ = gc3($2);}
-	  | '(' npk ')'			{$$ = gc3($2);}
 	  | '(' pats2 ')'		{$$ = gc3(buildTuple($2));}
 	  | '[' pats1 ']'		{$$ = gc3(ap(FINLIST,rev($2)));}
 	  | '~' apat			{$$ = gc2(ap(LAZYPAT,$2));}
@@ -734,14 +727,14 @@ alts1     : alts1 ';' alt               {$$ = gc3(cons($3,$1));}
 	  ;
 alt	  : pat altRhs wherePart	{$$ = gc3(pair($1,letrec($3,$2)));}
 	  ;
-altRhs	  : guardAlts			{$$ = gc1(grded(rev($1)));}
+altRhs	  : guardAlts			{$$ = gc1(desugarGuards(rev($1)));}
 	  | ARROW exp			{$$ = gc2(pair($1,$2));}
 	  | error			{syntaxError("case expression");}
 	  ;
 guardAlts : guardAlts guardAlt		{$$ = gc2(cons($2,$1));}
 	  | guardAlt			{$$ = gc1(cons($1,NIL));}
 	  ;
-guardAlt  : '|' exp0 ARROW exp		{$$ = gc4(pair($3,pair($2,$4)));}
+guardAlt  : '|' quals ARROW exp		{$$ = gc4(pair($3,pair(rev($2),$4)));}
 	  ;
 
 stmts     : stmts1                      {$$ = $1;}
@@ -1005,6 +998,79 @@ static Cell local checkPrec(Cell p)		/* Check for valid precedence value*/
 	EEND;
     }
     return p;
+}
+
+/* --------------------------------------------------------------------------
+ * Pattern guards (Haskell 2010).  A guard is parsed as a list of qualifiers
+ * (line,(quals,rhs)); a plain boolean guard is left as (line,(cond,rhs)).
+ * A guard with anything else is desugared here, so that no later stage of
+ * the system has to know about pattern guards:
+ *
+ *      | q1, ..., qn = e
+ *
+ * becomes the boolean guard
+ *
+ *      | case m of { Just _ -> True; Nothing -> False }
+ *            = case m of { Just r -> r }
+ *
+ * together with a hidden binding, placed in a let around the guarded rhs,
+ *
+ *      m = Q(q1, ..., qn)   where   Q()           = Just e
+ *                                   Q(p <- x, qs) = case x of { p -> Q(qs); _ -> Nothing }
+ *                                   Q(b, qs)      = if b then Q(qs) else Nothing
+ *                                   Q(let ds, qs) = let ds in Q(qs)
+ *
+ * Evaluating the guard performs the matches and tests in order; the rhs
+ * stays a thunk inside the Just, with every variable the qualifiers bind
+ * in scope.  If all guards fail the guarded rhs fails as before, so the
+ * next equation is tried.
+ * ------------------------------------------------------------------------*/
+
+static Cell local guardMatch(Cell l, List qs, Cell res)	/* build Q above */
+{
+    Cell q;
+    if (isNull(qs))
+	return res;
+    q   = hd(qs);
+    res = guardMatch(l,tl(qs),res);
+    switch (whatIs(q)) {
+	case BOOLQUAL : return ap(COND,triple(snd(q),res,nameNothing));
+	case QWHERE   : return ap(LETREC,pair(snd(q),res));
+	case FROMQUAL : return ap(CASE,pair(snd(snd(q)),
+			       cons(pair(fst(snd(q)),pair(l,res)),
+			       cons(pair(WILDCARD,pair(l,nameNothing)),NIL))));
+	default       : internal("guardMatch");
+    }
+    return NIL;/*NOTREACHED*/
+}
+
+static Cell local desugarGuards(List gs)	/* [(line,(quals,rhs))] -> rhs */
+{
+    List binds = NIL;
+    List g;
+    for (g=gs; nonNull(g); g=tl(g)) {
+	Cell l   = fst(hd(g));
+	List qs  = fst(snd(hd(g)));
+	Cell e   = snd(snd(hd(g)));
+	if (nonNull(qs) && isNull(tl(qs)) && whatIs(hd(qs))==BOOLQUAL) {
+	    fst(snd(hd(g))) = snd(hd(qs));	/* ordinary boolean guard */
+	} else {
+	    Cell m  = inventVar();
+	    Cell r  = inventVar();
+	    Cell mv = mkVar(textOf(m));
+	    Cell rv = mkVar(textOf(r));
+	    binds   = cons(ap(PATBIND,pair(m,pair(l,guardMatch(l,qs,ap(nameJust,e))))),
+			   binds);
+	    fst(snd(hd(g)))
+		    = ap(CASE,pair(mv,
+			 cons(pair(ap(nameJust,WILDCARD),pair(l,nameTrue)),
+			 cons(pair(nameNothing,pair(l,nameFalse)),NIL))));
+	    snd(snd(hd(g)))
+		    = ap(CASE,pair(mkVar(textOf(m)),
+			 cons(pair(ap(nameJust,r),pair(l,rv)),NIL)));
+	}
+    }
+    return letrec(binds,grded(gs));
 }
 
 static Cell local buildTuple(List tup)	/* build tuple (x1,...,xn) from	   */
