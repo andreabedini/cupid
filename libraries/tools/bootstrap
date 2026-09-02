@@ -10,7 +10,7 @@
 #    The result is incomplete, but enough to run Cabal.
 # 2. cpphs and then hsc2hs are built with Cabal running under runhugs.
 # 3. convert_libraries builds every package into hugsdir with Cabal,
-#    cpphs and hsc2hs, and make_oldlib adds the compatibility stubs.
+#    cpphs and hsc2hs.
 #
 # The scripts under libraries/tools expect the classic layout (src/,
 # libraries/, packages/, cpphs/, hsc2hs/ and hugsdir/ under one root) and
@@ -42,7 +42,7 @@ stamp=$2
 echo "Staging library sources in $stage"
 rm -rf "$stage"
 mkdir -p "$stage"
-for dir in packages libraries cpphs hsc2hs fptools
+for dir in packages libraries cpphs hsc2hs
 do
 	cp -R "$srcroot/$dir" "$stage/$dir"
 done
@@ -114,10 +114,8 @@ rootdir='$stage'
 EOF
 chmod 755 libraries/tools/hsc2hs
 
-# Stage 3: every package, then the compatibility stubs
-HOST="$host_os" PREFIX="$prefix" libraries/tools/convert_libraries fptools hugsdir
-rm -rf hugsdir/oldlib
-libraries/tools/make_oldlib fptools hugsdir
+# Stage 3: every package
+HOST="$host_os" PREFIX="$prefix" libraries/tools/convert_libraries hugsdir
 
 echo "Hugs libraries built in $stage/hugsdir"
 : >"$stamp"

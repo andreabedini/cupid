@@ -23,7 +23,7 @@ libraries_stamp = custom_target('hugs-libraries',
     python, host_os, prefix, '@OUTPUT@'],
   depends: [hugs, runhugs, ffihugs],
   depend_files: files(
-    'tools/make_bootlib', 'tools/convert_libraries', 'tools/make_oldlib',
+    'tools/make_bootlib', 'tools/convert_libraries',
     'tools/hscpp.py',
     'include/ghcconfig.h', 'include/MachDeps.h',
     '../src/HsFFI.h',

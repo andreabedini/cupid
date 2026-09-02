@@ -1,21 +1,21 @@
 #!/bin/sh
 
 # This script generates:
-# $2/packages/*:
+# $1/packages/*:
 #	copies of the heirarchical libraries suitable for
 #	use with Hugs.  Note that some of the libraries require extensions
 #	to Haskell 98 and have to be run with the -98 flag.
 #
 # Usage:
 #
-#   ./convert_libraries <fptools directory> <build directory>
+#   ./convert_libraries <build directory>
 #
 # NOTE: This script expects to be run in the top-level hugs98 directory,
 # and contains paths relative to there.
 
 case $# in
-2)	;;
-*)	echo "usage: $0 <fptools directory> <build directory>" >&2
+1)	;;
+*)	echo "usage: $0 <build directory>" >&2
 	exit 1 ;;
 esac
 
@@ -25,7 +25,7 @@ if [ ! -d $lib_src ]; then
 	exit 1
 fi
 
-target="$2"
+target="$1"
 
 # parameters set by configure
 case $0 in

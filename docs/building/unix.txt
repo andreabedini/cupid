@@ -69,7 +69,7 @@ Long version:
         ninja -C build
 
     This compiles hugs, runhugs and ffihugs, then builds the Haskell
-    libraries.  The library build is a three-stage bootstrap driven by
+    libraries.  The library build is a bootstrap driven by
     libraries/tools/bootstrap: the base, haskell98 and Cabal packages
     are preprocessed with libraries/tools/hscpp.py into a boot library,
     cpphs and hsc2hs are built with Cabal running under runhugs, and

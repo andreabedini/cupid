@@ -36,7 +36,7 @@ install_tree() {
 }
 
 echo "Installing Hugs libraries to $dest_hugsdir"
-for dir in packages oldlib programs demos
+for dir in packages programs demos
 do
 	if [ -d "$src/$dir" ]; then
 		install_tree "$src/$dir" "$dest_hugsdir/$dir"
