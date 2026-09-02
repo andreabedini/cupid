@@ -11,8 +11,8 @@ cc = meson.get_compiler('c')
 host = host_machine.system()
 is_windows = host == 'windows'
 
-# Operating system name in the spelling the Haskell libraries test for.
-# Must agree with src/platform.h.
+# Operating system name in the spelling the Haskell libraries test for;
+# it is written into the generated src/platform.h.
 host_os_names = {
   'linux': 'linux',
   'darwin': 'darwin',
@@ -95,7 +95,7 @@ mkdll_cmd = cc_cmd + ' ' + dll_flags
 
 # ---------------------------------------------------------------------------
 # config.h: build options and install paths only; platform facts live in
-# src/platform.h
+# src/sysdeps.h and the generated src/platform.h
 # ---------------------------------------------------------------------------
 
 if not get_option('debug-code')
@@ -154,7 +154,7 @@ if get_option('libraries')
 endif
 subdir('docs')
 
-install_subdir('demos', install_dir: hugsdir, exclude_files: ['Makefile.in'])
+install_subdir('demos', install_dir: hugsdir)
 install_data('Readme', 'License', 'Credits', install_dir: hugsdir)
 
 summary({
