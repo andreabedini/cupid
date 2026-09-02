@@ -2275,36 +2275,50 @@ Void needPrims(Int version, void*  dll)   /* Load dll containing prims for curre
  * the above mechanisms.
  * ------------------------------------------------------------------------*/
 
-#define BUFSIZE 1000
-static char buffer[BUFSIZE];
-static Int used = 0;
+/* The command is assembled in a buffer that grows as needed: with a long
+ * build directory the absolute paths of the include directories and the
+ * extra C files alone run to well over a kilobyte. */
+static char*  buffer  = NULL;
+static size_t bufsize = 0;
+static size_t used    = 0;
+static Void local reserve    (size_t);
 static Void local insert     (String);
 static Void local insertPath (String);
 static Void local insertChar (Char);
 
+static Void local reserve(size_t extra)
+{
+    if (used + extra + 1 > bufsize) {
+        size_t n = bufsize ? bufsize : 1024;
+        while (used + extra + 1 > n)
+            n *= 2;
+        char* p = realloc(buffer, n);
+        if (!p) {
+            ERRMSG(0) "Unable to build compilation command"
+            EEND;
+        }
+        buffer  = p;
+        bufsize = n;
+    }
+}
+
 static Void local insert(String s)
 {
-    Int l = strlen(s);
-    if (used + l + 1 >= BUFSIZE) {
-        ERRMSG(0) "Unable to build compilation command"
-        EEND;
-    }
-    strcpy(buffer+used,s);
+    size_t l = strlen(s);
+    reserve(l);
+    memcpy(buffer+used, s, l+1);
     used += l;
 }
 
 /* Convert backslashes, because they can cause problems with system() */
 static Void local insertPath(String s)
 {
-    Int l = strlen(s);
-    if (used + l + 1 >= BUFSIZE) {
-        ERRMSG(0) "Unable to build compilation command"
-        EEND;
-    }
+    reserve(strlen(s));
     while (*s) {
-	buffer[used++] = *s == SLASH ? '/' : *s;
-	s++;
+        buffer[used++] = *s == SLASH ? '/' : *s;
+        s++;
     }
+    buffer[used] = '\0';
 }
 
 static Void local insertChar(Char c)
@@ -2314,7 +2328,6 @@ static Void local insertChar(Char c)
     s[1] = '\0';
     insert(s);
 }
-#undef BUFSIZE
 
 Void compileAndLink(String fn, String flags)
 {
