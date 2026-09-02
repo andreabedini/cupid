@@ -39,29 +39,26 @@ program name as one argument.  See
 
 ## Language
 
-### `+98`
-
-Accept Haskell 2010 only.  Default: on.  Cannot be changed once the
-interpreter is running.
-
-With `-98`, Hugs also accepts the extensions listed in
-[Extensions enabled by `-98`](extensions.md): multi-parameter classes,
-functional dependencies, more flexible contexts and instances,
-rank-2 and existential types, and type annotations in patterns.
-Some library modules need `-98`; see [The libraries](libraries.md).
+The extensions beyond Haskell 2010 listed in
+[Language extensions](extensions.md) are always enabled.  The `+98`
+and `-98` options of earlier releases, which switched them off and
+on, are accepted and ignored with a message.
 
 ### `-c`*num*
 
 The constraint cutoff in the type checker.  Default: 40.  Range: 1 to
-1024.  With the relaxed instance rules of `-98`, constraint checking
-need not terminate; Hugs gives up when the depth reaches this limit.
+1024.  With flexible contexts and instances, constraint checking need
+not terminate; Hugs gives up when the depth reaches this limit.
 Hitting it usually means the type checker would not have terminated.
 
 ### `+o`
 
 Allow overlapping instances where one instance type is a substitution
-instance of the other.  Default: off.  Only meaningful with `-98`; see
-[Overlapping instances](extensions.md#overlapping-instances).
+instance of the other.  Default: off.  See
+[Overlapping instances](extensions.md#overlapping-instances).  While
+this or `+O` is on, inferred contexts are not reduced through
+instances, so `:type` may show a constraint such as `Show [a]` where
+it would otherwise show `Show a`.
 
 ### `+O`
 
@@ -289,9 +286,10 @@ built with `-Dprofiling=true`.
 
 ## Obsolete options
 
-`-e`, `-f`, `-N`, `-W`, `-G` and `+L` from older releases are accepted
-with a message and ignored.  The `+H`, `+R` and `+m` toggles of the
-2006 release are gone with the extensions they controlled.
+`+98`, `-98`, `-e`, `-f`, `-N`, `-W`, `-G` and `+L` from older
+releases are accepted with a message and ignored.  The `+H`, `+R` and
+`+m` toggles of the 2006 release are gone with the extensions they
+controlled.
 
 ## See also
 

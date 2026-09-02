@@ -4,7 +4,7 @@ Hugs is a small interpreter for Haskell, written in C.  This tree is a
 revival of the September 2006 release of Hugs 98 with one aim: a simpler,
 understandable Haskell implementation.  The language is Haskell 2010 plus
 the type-system extensions the libraries need (multi-parameter classes,
-functional dependencies, existential and rank-n types, all behind `-98`).
+functional dependencies, existential and rank-n types), always enabled.
 Everything else from 2006 that did not serve that aim has been removed:
 the autoconf build, the flag-guarded extensions, the shared GHC/nhc98
 library sources and their three-stage bootstrap.
@@ -66,8 +66,6 @@ or pass a search path to `runhugs` for a script:
 build/src/runhugs -P'build/libraries/hugsdir/packages/*' Main.hs
 ```
 
-Add `-98` to enable the extensions.  Several base modules (Data.Map,
-Data.ByteString and others) need it.
 
 ### Installing
 

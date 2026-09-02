@@ -5,14 +5,18 @@ adds.
 
 ## Summary
 
-In the default `+98` mode Hugs accepts Haskell 2010: the Haskell 98
-language with hierarchical module names, the foreign function
-interface, pattern guards, empty data declarations, `then` and `else`
-at do-block indentation and `LINE` pragmas.  The n+k patterns that
-Haskell 2010 removed are not accepted.
+Hugs accepts Haskell 2010: the Haskell 98 language with hierarchical
+module names, the foreign function interface, pattern guards, empty
+data declarations, `then` and `else` at do-block indentation and
+`LINE` pragmas.  The n+k patterns that Haskell 2010 removed are not
+accepted.
 
-With `-98` it also accepts the extensions in
-[Extensions enabled by `-98`](extensions.md).
+It also accepts, without any option, the extensions in
+[Language extensions](extensions.md).  Two of them are visible in
+programs that use no extension at all: `forall` is a keyword, so it
+cannot be used as a variable name, and a type synonym may appear in an
+instance head.  Everything else in this page holds whether or not the
+extensions are used.
 
 The extensions of the 2006 release that were guarded by compile-time
 flags are gone: TREX extensible records, implicit parameters, the
@@ -189,5 +193,5 @@ A module name may contain dots.  To find `A.B.C`, Hugs looks for
 
 ## See also
 
-- [Extensions enabled by `-98`](extensions.md)
+- [Language extensions](extensions.md)
 - [The libraries](libraries.md)

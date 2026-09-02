@@ -96,16 +96,6 @@ ffihugs '-i"clib.h"' Hyp.hs clib.c -lm
 ffihugs '-i<math.h>' Trig.hs -lm
 ```
 
-### A module that needs `-98`
-
-Options for Hugs go before the module name, and must be given again
-when the module is loaded:
-
-```sh
-ffihugs -98 Hyp.hs clib.c -lm
-hugs -98 Hyp.hs
-```
-
 ### Several FFI modules
 
 If `A.hs` imports `B.hs` and both contain foreign imports, compile `B`

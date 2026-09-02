@@ -36,8 +36,8 @@ hugs, runhugs, ffihugs \- Hugs 98, functional programming system
 .SH DESCRIPTION
 Hugs is an interpreter for Haskell, a standard non-strict functional
 programming language.  Hugs implements Haskell 2010, except for
-mutually recursive modules, and with the \fB\-98\fP option a few
-type-system extensions.
+mutually recursive modules, together with a few type-system extensions
+that are always enabled.
 The name \fBHugs\fP is
 a mnemonic for the \fBHaskell User's Gofer System\fP.
 .PP
@@ -60,14 +60,6 @@ Files ending in "\fB.lhs\fP" are treated as literate scripts.
 Some options are toggled with \fB+\fP or \fB\-\fP to turn them on or
 off, respectively.
 .SS "Language conformance"
-.TP
-.B +98
-Accept only Haskell 2010
-(cannot be changed within \fIHugs\fP; default: on).
-Turning this off enables multi-parameter classes, functional
-dependencies, flexible contexts and instances, rank-2 and existential
-types, and type annotations in patterns, which are described in the
-documentation installed in \fB\*(LB/docs\fP.
 .TP
 .B +o
 Allow overlapping instances (a Hugs extension; default: off)

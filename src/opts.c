@@ -28,8 +28,6 @@ Bool   printing     = FALSE;     /* TRUE => currently printing value*/
 String  hugsEdit   = 0;	         /* String for editor command       */
 String  prompt     = 0;          /* Prompt string                   */
 
-Bool haskell98 = TRUE;		 /* TRUE => Haskell 98 compatibility*/
-
 #if EXPLAIN_INSTANCE_RESOLUTION
 Bool showInstRes = FALSE;
 #endif
@@ -73,40 +71,40 @@ String getLastEdit(Int* pLastLine) {
  * Setting of command line options:
  * ------------------------------------------------------------------------*/
 
-#define Option(c,h98,description,flag) { c, h98, description, flag }
+#define Option(c,description,flag) { c, description, flag }
 
 static Void   local toggleSet         (Char,Bool);
 static Void   local togglesIn         (Bool);
 
 struct options toggle[] = {     /* List of command line toggles    */
-    Option('s', 1, "Print no. reductions/cells after eval", &showStats),
-    Option('t', 1, "Print type after evaluation",           &addType),
-    Option('g', 1, "Print no. cells recovered after gc",    &gcMessages),
-    Option('l', 1, "Literate modules as default",           &literateScripts),
-    Option('.', 1, "Print dots to show progress",           &useDots),
-    Option('q', 1, "Print nothing to show progress",        &quiet),
-    Option('Q', 1, "Qualify names when printing",           &useQualifiedNames),
-    Option('w', 1, "Always show which modules are loaded",  &listScripts),
-    Option('k', 1, "Show kind errors in full",              &kindExpert),
-    Option('o', 0, "Allow overlapping instances",           &allowOverlap),
-    Option('O', 0, "Allow unsafe overlapping instances",    &allowUnsafeOverlap),
-    Option('u', 1, "Use \"show\" to display results",       &useShow),
-    Option('I', 1, "Display results of IO programs",        &displayIO),
-    Option('T', 1, "Apply 'defaulting' when printing types", &printTypeUseDefaults),
+    Option('s', "Print no. reductions/cells after eval", &showStats),
+    Option('t', "Print type after evaluation",           &addType),
+    Option('g', "Print no. cells recovered after gc",    &gcMessages),
+    Option('l', "Literate modules as default",           &literateScripts),
+    Option('.', "Print dots to show progress",           &useDots),
+    Option('q', "Print nothing to show progress",        &quiet),
+    Option('Q', "Qualify names when printing",           &useQualifiedNames),
+    Option('w', "Always show which modules are loaded",  &listScripts),
+    Option('k', "Show kind errors in full",              &kindExpert),
+    Option('o', "Allow overlapping instances",           &allowOverlap),
+    Option('O', "Allow unsafe overlapping instances",    &allowUnsafeOverlap),
+    Option('u', "Use \"show\" to display results",       &useShow),
+    Option('I', "Display results of IO programs",        &displayIO),
+    Option('T', "Apply 'defaulting' when printing types", &printTypeUseDefaults),
 /* Conditional toggles: */
 #if HUGS_FOR_WINDOWS
-    Option('A', 1, "Auto load files",		   	    &autoLoadFiles),
+    Option('A', "Auto load files",		   	    &autoLoadFiles),
 #endif
 #if EXPLAIN_INSTANCE_RESOLUTION
-    Option('x', 1, "Explain instance resolution",           &showInstRes),
+    Option('x', "Explain instance resolution",           &showInstRes),
 #endif
 #if DEBUG_CODE
-    Option('D', 1, "Debug: show generated G code",          &debugCode),
+    Option('D', "Debug: show generated G code",          &debugCode),
 #endif
 #if DEBUG_SHOWSC
-    Option('C', 1, "Debug: show generated SC code",         &debugSC),
+    Option('C', "Debug: show generated SC code",         &debugSC),
 #endif
-    Option(0, 0, 0, 0)
+    Option(0, 0, 0)
 };
 
 Void setOptions(Void)  /* change command line options from Hugs command line */
@@ -143,7 +141,7 @@ static Void local togglesIn(Bool state)      /* Print current list of toggles in
     Int count = 0;
     Int i;
     for (i=0; toggle[i].c; ++i)
-	if (*toggle[i].flag == state && (!haskell98 || toggle[i].h98)) {
+	if (*toggle[i].flag == state) {
 	    if (count==0)
 		Putchar((char)(state ? '+' : '-'));
 	    Putchar(toggle[i].c);
@@ -160,9 +158,7 @@ Void optionInfo(Void) {                 /* Print information about command */
 
     Printf("TOGGLES: groups begin with +/- to turn options on/off resp.\n");
     for (i=0; toggle[i].c; ++i) {
-	if (!haskell98 || toggle[i].h98) {
-	    Printf(fmtc,toggle[i].c,toggle[i].description);
-	}
+	Printf(fmtc,toggle[i].c,toggle[i].description);
     }
 
     Printf("\nOTHER OPTIONS: (leading + or - makes no difference)\n");
@@ -206,8 +202,6 @@ Void optionInfo(Void) {                 /* Print information about command */
 #if PROFILING
     Printf("\nProfile interval: -d%d", profiling ? profInterval : 0);
 #endif
-    Printf("\nCompatibility   : %s", haskell98 ? "Haskell 98 (+98)"
-					       : "Hugs Extensions (-98)");
     Putchar('\n');
 }
 
@@ -300,7 +294,6 @@ String optionsToStr() {          /* convert options to string */
 	PUTC(toggle[i].c);
 	PUTC(' ');
     }
-    PUTS(haskell98 ? "+98 " : "-98 ");
     PUTInt('h',hpSize);  PUTC(' ');
     PUTStr('p',prompt);
     PUTStr('r',repeatStr);
@@ -479,19 +472,15 @@ Bool processOption(String s)    /* process string s for options,   */
 	    case 'L' : Printf("ERROR: +L is no longer supported for ffihugs - put the argument (without +L) *after* the module - ignoring it.\n");
 		       return TRUE;
 
-        default  :
-	           if (strcmp("98",s)==0) {
-		       if (heapBuilt() && (state != haskell98)) {
-			   FPrintf(stderr,"Haskell 98 compatibility cannot be changed while the interpreter is running\n");
-			   FFlush(stderr);
-		       } else {
-			   haskell98 = state;
+	    default  :
+		       if (strcmp("98",s)==0) {
+			   /* the extensions are always enabled now */
+			   Printf("ERROR: ignoring obsolete %c98 option.\n",
+				  state ? '+' : '-');
+			   return TRUE;
 		       }
-		       return TRUE;
-		   } else {
 		       toggleSet(*s,state);
-		   }
-		   break;
+		       break;
 	}
     return TRUE;
 }

@@ -82,6 +82,7 @@ In order:
   Cabal/cpphs/hsc2hs bootstrap removed
 - the packaging, the DocBook user's guide and the release notes were
   replaced with this documentation
+- the `-98` switch was dropped, so the extensions are always on
 
 ## See also
 

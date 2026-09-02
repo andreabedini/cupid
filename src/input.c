@@ -1627,7 +1627,7 @@ loop:	    skip();                     /* Skip qualifying dot             */
         if (it==textForeign)           return FOREIGN;
 	if (it==textAsMod)             return ASMOD;
 	if (it==textWildcard)	       return '_';
-	if (it==textAll && !haskell98) return ALL;
+	if (it==textAll)               return ALL;
 
 	if (it==textRepeat && readingRepeat)
 	    return repeatLast();

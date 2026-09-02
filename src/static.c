@@ -215,10 +215,6 @@ static List   local odiff		(List,List);
 static Void   local duplicateError	(Int,Module,Text,String);
 static Void   local checkTypeIn		(Pair);
 
-static Bool   local h98Pred		(Bool,Cell);
-static Cell   local h98Context		(Bool,List);
-static Void   local h98CheckCtxt	(Int,String,Bool,List,Inst);
-static Void   local h98CheckType	(Int,String,Cell,Type);
 
 /* --------------------------------------------------------------------------
  * The code in this file is arranged in roughly the following order:
@@ -396,7 +392,6 @@ Void tyconDefn(Int line, Cell lhs, Cell rhs, Cell what)	/* process new type defi
 	tycon(nw).arity = argCount;
 	tycon(nw).what  = what;
 	if (what==RESTRICTSYN) {
-	    h98DoesntSupport(line,"restricted type synonyms");
 	    typeInDefns = cons(pair(nw,snd(rhs)),typeInDefns);
 	    rhs         = fst(rhs);
 	}
@@ -511,7 +506,6 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
 	ctxt = fst(snd(cs));
 	cs   = snd(snd(cs));
 	map2Over(depPredExp,line,tyvars,ctxt);
-	h98CheckCtxt(line,"context",TRUE,ctxt,NIL);
     }
 
     if (nonNull(cs) && isNull(tl(cs)))	/* Single constructor datatype?	   */
@@ -993,8 +987,6 @@ Void classDefn(Int line, Cell head, List ms, List fds)       /* process new clas
 	cclass(nw).fds	   = fds;
 	cclass(nw).xfds	   = NIL;
 	classDefns	   = cons(nw,classDefns);
-	if (arity!=1)
-	    h98DoesntSupport(line,"multiple parameter classes");
     }
 }
 
@@ -1113,7 +1105,6 @@ static Void local checkClassDefn(Class c)    /* validate class definition	   */
       }
     }
 
-    h98CheckCtxt(cclass(c).line,"class declaration",FALSE,cclass(c).supers,NIL);
     cclass(c).numSupers = length(cclass(c).supers);
     cclass(c).defaults  = extractBindings(cclass(c).members);	/* defaults*/
     ss			= extractSigdecls(cclass(c).members);
@@ -1241,12 +1232,6 @@ static Cell local depPredExp(Int line, List tyvars, Cell pred)
 	h      = fun(h);
     }
 
-    if (args==0) {
-	h98DoesntSupport(line,"tag classes");
-    } else if (args!=1) {
-	h98DoesntSupport(line,"multiple parameter classes");
-    }
-
     if (isQCon(h)) {			/* standard class constraint	   */
 	Class c = findQualClass(h);
 	if (isNull(c)) {
@@ -1322,8 +1307,6 @@ static Void local checkMems(Class c, List tyvars, Cell m)	/* check member functi
     }
     thd3(m) = t;				/* Save type		   */
     take(cclass(c).arity,tyvars);		/* Delete extra type vars  */
-
-    h98CheckType(line,"member type",hd(vs),t);
 }
 
 static Void local checkMems2(Class c, Cell m) /* check member function details   */
@@ -1654,8 +1637,6 @@ static Type local checkSigType(Int line, String where, Cell e, Type type)
     kindType(line,"type expression",type);
     fixKinds();
     unkindTypes = sunk;
-
-    h98CheckType(line,where,e,type);
     return type;
 }
 
@@ -2323,42 +2304,11 @@ static Void local checkInstDefn(Inst in)	/* Validate instance declaration   */
     List tvps = NIL, tvts = NIL;
     List fds = NIL;
 
-    if (haskell98) {			/* Check for `simple' type	   */
-	List tvs = NIL;
-	Cell t   = arg(inst(in).head);
-	for (; isAp(t); t=fun(t)) {
-	    if (!isVar(arg(t))) {
-		ERRMSG(line)
-		   "Syntax error in instance head (variable expected)"
-		EEND;
-	    }
-	    if (varIsMember(textOf(arg(t)),tvs)) {
-		ERRMSG(line) "Repeated type variable \"%s\" in instance head",
-			     textToStr(textOf(arg(t)))
-		EEND;
-	    }
-	    tvs = cons(arg(t),tvs);
-	}
-	if (isVar(t)) {
-	    ERRMSG(line)
-		"Syntax error in instance head (constructor expected)"
-	    EEND;
-	}
-    }
-
     /* add in the tyvars from the `specifics' so that we don't
        prematurely complain about undefined tyvars */
     tyvars = typeVarsIn(inst(in).specifics,NIL,NIL,tyvars);
     inst(in).head = depPredExp(line,tyvars,inst(in).head);
 
-    if (haskell98)
-    {
-    Type h = getHead(arg(inst(in).head));
-	if (isSynonym(h)) {
-	    ERRMSG(line) "Cannot use type synonym in instance head"
-	    EEND;
-	}
-    }
 
     map2Over(depPredExp,line,tyvars,inst(in).specifics);
 
@@ -2374,7 +2324,6 @@ static Void local checkInstDefn(Inst in)	/* Validate instance declaration   */
 	EEND;
     }
 
-    h98CheckCtxt(line,"instance declaration",FALSE,inst(in).specifics,NIL);
     inst(in).numSpecifics = length(inst(in).specifics);
     inst(in).c            = getHead(inst(in).head);
     if (!isClass(inst(in).c)) {
@@ -2482,7 +2431,7 @@ static Void local insertInst(Inst in)	/* Insert instance into class	   */
 	Int beta  = newKindedVars(inst(hd(ins)).kinds);
 	if (unifyPred(inst(in).head,alpha,inst(hd(ins)).head,beta)) {
 	    Cell pi  = copyPred(inst(in).head,alpha);
-	    if ((allowOverlap || allowUnsafeOverlap) && !haskell98) {
+	    if (allowOverlap || allowUnsafeOverlap) {
 		Bool bef = instCompare(in,hd(ins));
 		Bool aft = instCompare(hd(ins),in);
 		if (bef && !aft) {	/* in comes strictly before hd(ins)*/
@@ -2817,7 +2766,6 @@ static Void local tidyDerInst(Inst in)	/* Tidy up results of derived inst */
     clearMarks();
     copyPred(inst(in).head,o);
     inst(in).specifics    = simpleContext(ps,o);
-    h98CheckCtxt(inst(in).line,"derived instance",FALSE,inst(in).specifics,in);
     inst(in).numSpecifics = length(inst(in).specifics);
 
 #if DEBUG_DERIVING
@@ -4367,7 +4315,6 @@ static Void local checkCfunArgs(Int line, Cell c, Int args)
 static Cell local checkPatType(Int l, String wh, Cell e, Type t)/* Check type appearing in pattern */
 {
     List tvs = typeVarsIn(t,NIL,NIL,NIL);
-    h98DoesntSupport(l,"pattern type annotations");
     for (; nonNull(tvs); tvs=tl(tvs)) {
 	Int beta    = newKindvars(1);
 	hd(btyvars) = cons(pair(hd(tvs),mkInt(beta)), hd(btyvars));
@@ -5722,7 +5669,6 @@ static List local depFields(Int l, Cell e, List fs, Bool isP)	/* check field bin
 	Name s;
 
 	if (isVar(fb)) {		/* expand  var  to  var = var	   */
-	    h98DoesntSupport(l,"missing field bindings");
 	    fb = hd(fs) = pair(fb,fb);
 	}
 
@@ -6043,95 +5989,6 @@ static Void local checkTypeIn(Pair cvs)	/* Check that vars in restricted   */
 		textToStr(textOf(hd(vs))), textToStr(tycon(c).text)
 	    EEND;
 	}
-    }
-}
-
-/* --------------------------------------------------------------------------
- * Haskell 98 compatibility tests:
- * ------------------------------------------------------------------------*/
-
-static Bool local h98Pred(Bool allowArgs, Cell pi)	/* Check syntax of Hask98 predicate*/
-{
-    return isClass(getHead(pi)) && argCount==1 &&
-	   (isOffset(getHead(arg(pi))) || isInt(getHead(arg(pi)))) &&
-           (argCount==0 || allowArgs);
-}
-
-static Cell local h98Context(Bool allowArgs, List ps)
-                   /* Check syntax of Hask98 context  */
-{
-    for (; nonNull(ps); ps=tl(ps)) {
-	if (!h98Pred(allowArgs,hd(ps))) {
-	    return hd(ps);
-	}
-    }
-    return NIL;
-}
-
-static Void local h98CheckCtxt(Int line, String wh, Bool allowArgs, List ps, Inst in)
-                /* Report illegal context/predicate*/
-{
-    if (haskell98) {
-	Cell pi = h98Context(allowArgs,ps);
-	if (nonNull(pi)) {
-	    ERRMSG(line) "Illegal Haskell 98 class constraint in %s",wh ETHEN
-	    if (nonNull(in)) {
-		ERRTEXT  "\n*** Instance   : " ETHEN ERRPRED(inst(in).head);
-	    }
-	    ERRTEXT	 "\n*** Constraint : " ETHEN ERRPRED(pi);
-	    if (nonNull(ps) && nonNull(tl(ps))) {
-		ERRTEXT  "\n*** Context    : " ETHEN ERRCONTEXT(ps);
-	    }
-	    ERRTEXT	 "\n"
-	    EEND;
-	}
-    }
-}
-
-static Void local h98CheckType(Int line, String wh, Cell e, Type t)	/* Check for Haskell 98 type */
-{
-    if (haskell98) {
-	Type ty = t;
-	if (isPolyType(t))
-	    t = monotypeOf(t);
-	if (isQualType(t)) {
-	    Cell pi = h98Context(TRUE,fst(snd(t)));
-	    if (nonNull(pi)) {
-		ERRMSG(line) "Illegal Haskell 98 class constraint in %s",wh
-		ETHEN
-		ERRTEXT  "\n*** Expression : " ETHEN ERREXPR(e);
-		ERRTEXT	 "\n*** Type       : " ETHEN ERRTYPE(ty);
-		ERRTEXT	 "\n"
-		EEND;
-	    }
-	}
-    }
-}
-
-Void h98CheckInferredType(Int line, Cell e, Type t)	/* Check for Haskell 98 type	   */
-{
-    if (haskell98) {
-	if (isPolyType(t))
-	    t = monotypeOf(t);
-	if (isQualType(t)) {
-	    Cell pi = h98Context(TRUE,fst(snd(t)));
-	    if (nonNull(pi)) {
-		ERRMSG(line) "Cannot infer instance"
-		ETHEN
-		ERRTEXT	 "\n*** Instance   : " ETHEN ERRPRED(pi);
-		ERRTEXT  "\n*** Expression : " ETHEN ERREXPR(e);
-		ERRTEXT	 "\n"
-		EEND;
-	    }
-	}
-    }
-}
-
-Void h98DoesntSupport(Int line, String wh)		/* Report feature missing in H98   */
-{
-    if (haskell98) {
-	ERRMSG(line) "Haskell 98 does not support %s", wh
-	EEND;
     }
 }
 

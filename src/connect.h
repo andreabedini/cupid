@@ -17,7 +17,6 @@
  * Standard data:
  * ------------------------------------------------------------------------*/
 
-extern Bool   haskell98;		/* TRUE => Haskell 98 compatibility*/
 extern Module modulePrelude;
 extern Module moduleUserPrelude;
 
@@ -285,8 +284,6 @@ extern  Void   checkExp		(Void);
 extern  Void   checkContext	(Void);
 #endif
 extern  Void   checkDefns	(Void);
-extern  Void   h98CheckInferredType	(Int,Cell,Type);
-extern  Void   h98DoesntSupport	(Int,String);
 extern  Cell   depExpr          (Int,Cell);
 
 extern  Void   foreignImport    (Cell,Cell,Cell,Cell,Cell,Type);

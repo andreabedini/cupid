@@ -402,8 +402,7 @@ dtypes1	  : dtypes1 ',' type		{$$ = gc3(cons($3,$1));}
 	  | type			{$$ = gc1(cons($1,NIL));}
 	  ;
 fds	  : /* empty */			{$$ = gc0(NIL);}
-	  | '|' fds1			{h98DoesntSupport(row,"dependent parameters");
-					 $$ = gc2(rev($2));}
+	  | '|' fds1			{$$ = gc2(rev($2));}
 	  ;
 fds1	  : fds1 ',' fd			{$$ = gc3(cons($3,$1));}
 	  | fd				{$$ = gc1(cons($1,NIL));}
@@ -477,8 +476,7 @@ atype1	  : varid			{$$ = $1;}
 	  | '(' typeTuple ')'		{$$ = gc3(buildTuple($2));}
 	  | '[' type ']'		{$$ = gc3(ap(typeList,$2));}
 	  | '[' ']'			{$$ = gc2(typeList);}
-	  | '_'				{h98DoesntSupport(row,"anonymous type variables");
-					 $$ = gc1(inventVar());}
+	  | '_'				{$$ = gc1(inventVar());}
 	  ;
 btypes2	  : btypes2 ',' btype2		{$$ = gc3(cons($3,$1));}
 	  | btype2  ',' btype2		{$$ = gc3(cons($3,cons($1,NIL)));}

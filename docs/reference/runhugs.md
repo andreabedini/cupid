@@ -36,17 +36,17 @@ Run a program with two arguments:
 runhugs Main.hs a b
 ```
 
-Run a literate script that needs the extensions:
+Run a literate script with a bigger heap:
 
 ```sh
-runhugs -98 +l myscript
+runhugs -h4M +l myscript
 ```
 
 As the interpreter of an executable file, with both options in one
 argument:
 
 ```
-#! /usr/local/bin/runhugs -X+l -98
+#! /usr/local/bin/runhugs -X+l -h4M
 ```
 
 ## Exit status

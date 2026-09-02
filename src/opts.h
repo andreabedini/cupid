@@ -50,7 +50,6 @@ extern String prompt;                  /* Prompt string                   */
 extern String repeatStr;               /* Repeat last expr                */
 extern String hugsPath;                /* String for file search path     */
 extern String hugsSuffixes;            /* Source filename suffixes        */
-extern Bool   haskell98;               /* TRUE => Haskell 98 compatibility*/
 extern Int    hpSize;                  /* Desired heap size               */
 extern String hugsEdit;                /* String for editor command       */
 
@@ -112,7 +111,6 @@ extern Bool   printing;                 /* TRUE => currently printing value*/
  */
 struct options {                        /* command line option toggles     */
     char   c;                           /* table defined in main app.      */
-    int    h98;                         /* set in Haskell'98 mode?         */
     String description;
     Bool   *flag;
 };

@@ -28,10 +28,10 @@ brings into scope.
 **Type checking.**  `type.c` infers types by Hindley-Milner inference
 with type classes, one binding group at a time in dependency order.
 `preds.c` solves class constraints and builds dictionaries;
-`subst.c` is the substitution machinery.  This is where the `-98`
-extensions take effect: multi-parameter classes and functional
-dependencies change what `preds.c` accepts, rank-2 types change what
-`type.c` will unify.
+`subst.c` is the substitution machinery.  This is where the
+extensions beyond Haskell 2010 live: multi-parameter classes and
+functional dependencies change what `preds.c` accepts, rank-2 types
+change what `type.c` will unify.
 
 **Compiling.**  `compiler.c` compiles each binding to the code of an
 abstract machine: pattern matching is compiled to case trees, local

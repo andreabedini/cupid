@@ -1,9 +1,8 @@
 # Hugs documentation
 
 Hugs is a small interpreter for Haskell, written in C.  It reads Haskell
-2010 source, with a few type-system extensions behind the `-98` option,
-and evaluates expressions at an interactive prompt or runs a program's
-`main` from a script.
+2010 source, with a few type-system extensions, and evaluates expressions
+at an interactive prompt or runs a program's `main` from a script.
 
 The documentation follows the [Diátaxis](https://diataxis.fr/) scheme:
 tutorials teach, how-to guides solve a task, reference pages describe,
@@ -47,7 +46,8 @@ program with `runhugs`.
 - [Build options and install layout](reference/build-options.md)
 - [The language Hugs accepts](reference/language.md) — Haskell 2010
   conformance, known deviations and bugs
-- [Extensions enabled by `-98`](reference/extensions.md)
+- [Language extensions](reference/extensions.md) — what Hugs accepts
+  beyond Haskell 2010
 - [The libraries](reference/libraries.md) — packages and modules shipped
 - [The server API](reference/server-api.md) — the C interface used by
   `runhugs` and by embedding programs

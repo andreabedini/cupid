@@ -491,9 +491,11 @@ List simpleContext(List ps, Int o)		/* Simplify context of skeletons   */
  * ------------------------------------------------------------------------*/
 
 static Void local elimTauts() {		/* Remove tautological constraints */
-    if (haskell98) {			/* from preds			   */
-	reducePreds();			/* (or context reduce for Hask98)  */
-    } else {
+    if (!allowOverlap && !allowUnsafeOverlap) {	/* from preds		   */
+	reducePreds();			/* Context reduction to head normal*/
+    } else {				/* form is unsound with overlapping*/
+					/* instances, so only entailed	   */
+					/* predicates are removed then	   */
 	List ps = preds;
 	preds   = NIL;
 	while (nonNull(ps)) {

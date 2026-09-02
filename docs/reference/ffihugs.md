@@ -34,7 +34,7 @@ imports must have been compiled before any module that imports it is.
 
 | Position | Meaning |
 |---|---|
-| Before *file*, beginning with `+` or `-` | Options for the interpreter, as in [Options](options.md); `-98` is the usual one |
+| Before *file*, beginning with `+` or `-` | Options for the interpreter, as in [Options](options.md), such as `-P` |
 | `-i`*include* | Add `#include` *include* to the generated C.  *include* is what follows `#include` in C, so `'-i<math.h>'` or `'-i"defs.h"'`, quoted for the shell |
 | *file* | The first argument that does not begin with `+` or `-` |
 | After *file* | Passed unchanged to the C compiler: extra sources, `-I`, `-l`, `-L` and so on |
@@ -56,7 +56,7 @@ which does not allow implicit declarations.
 
 ```sh
 ffihugs Hyp.hs clib.c -lm
-ffihugs -98 '-i"clib.h"' Hyp.hs clib.c -lm
+ffihugs '-i"clib.h"' Hyp.hs clib.c -lm
 ```
 
 ## See also

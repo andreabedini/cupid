@@ -126,12 +126,6 @@ static Void local initialize(Int argc, String argv[])
     readOptionSettings();
     processOptionVector(argc,argv);
 
-    if (haskell98) {
-	Printf("Haskell 98 mode: Restart with command line option -98 to enable extensions\n\n");
-    } else {
-	Printf("Hugs mode: Restart with command line option +98 for Haskell 98 mode\n\n");
-    }
-
     /* Figure out what Prelude module we're using + hoist it in. */
     loadPrelude();
 

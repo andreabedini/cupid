@@ -54,16 +54,16 @@ after the file name.
 ## Passing more than one option
 
 The `#!` line passes everything after the program name as a single
-argument.  With `#! /usr/local/bin/runhugs +l -98` the first argument
-would be the one string `+l -98`, which is not an option.  Use `-X` to
+argument.  With `#! /usr/local/bin/runhugs +l -h4M` the first argument
+would be the one string `+l -h4M`, which is not an option.  Use `-X` to
 have the string split into options:
 
 ```
-#! /usr/local/bin/runhugs -X+l -98
+#! /usr/local/bin/runhugs -X+l -h4M
 ```
 
 Everything after `-X` is re-read as an option string, so both `+l` and
-`-98` take effect.
+`-h4M` take effect.
 
 ## Troubleshooting
 

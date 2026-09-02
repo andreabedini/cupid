@@ -1630,8 +1630,6 @@ static Void local unrestricted(List bs)	/* Type unrestricted binding group */
 	    map1Proc(qualifyBinding,preds,hd(imps));
 	}
 
-	h98CheckInferredType(line,
-			fst(hd(hd(defnBounds))),snd(hd(hd(defnBounds))));
 	hd(varsBounds) = revOnto(hd(defnBounds),hd(varsBounds));
     }
 
@@ -1699,7 +1697,6 @@ static Void local unrestricted(List bs)	/* Type unrestricted binding group */
 
 	if (!sameSchemes(t,fst(snd(b))))
 	    tooGeneral(line,fst(b),fst(snd(b)),t);
-	h98CheckInferredType(line,fst(b),t);
 
 	if (nonNull(preds))		/* Check context was strong enough */
 	    cantEstablish(line,extbind,fst(b),t,ps);
@@ -2306,7 +2303,6 @@ Type typeCheckExp(Bool useDefs)		/* Type check top level expression */
     ctxt      = copyPreds(preds);
     type      = generalize(ctxt,copyType(type,beta));
     inputExpr = qualifyExpr(0,preds,inputExpr);
-    h98CheckInferredType(0,inputExpr,type);
     typeChecker(RESET);
     emptySubstitution();
     return type;

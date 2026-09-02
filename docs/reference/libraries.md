@@ -1,7 +1,6 @@
 # The libraries
 
-The Haskell modules that ship with Hugs, and which of them need the
-`-98` option.
+The Haskell modules that ship with Hugs.
 
 ## Packages
 
@@ -16,28 +15,14 @@ default search path finds them.
 | `base` | The `base` library of 2006: `Control.*`, `Data.*`, `Foreign.*`, `System.*`, `Text.*` |
 | `haskell98` | The Haskell 98 library modules under their old flat names: `List`, `Char`, `IO`, `Random` and so on |
 
-## Modules that need `-98`
+## Modules beyond Haskell 2010
 
-Any module whose interface uses rank-2 types, and everything that
-imports one, loads only with `-98`.  Trying without gives a syntax
-error at the `forall`:
-
-```
-ERROR ".../hugsbase/Hugs/ST.hs":51 - Syntax error in type expression (unexpected `.')
-```
-
-These modules are built on the `ST` monad and need `-98`:
-
-- `Control.Monad.ST`, `Control.Monad.ST.Lazy`, `Control.Monad.ST.Strict`
-- `Data.STRef`, `Data.STRef.Lazy`, `Data.STRef.Strict`
-- `Data.Array.ST`, `Data.Array.IO`, `Data.Array.MArray`,
-  `Data.Array.Storable`, `Data.Array.Unboxed`, `Data.Array.Diff`,
-  `Data.Array.IArray`, `Data.Array.Base`
-- `Data.HashTable`, `Data.Graph`
-
-`Data.Map`, `Data.IntMap`, `Data.Sequence`, `Data.ByteString`,
-`Data.Typeable`, `Data.Dynamic` and `Control.Exception` load in the
-default mode.
+Much of `base` is not Haskell 2010.  The `ST` monad's `runST` has a
+rank-2 type, and `Control.Monad.ST`, `Data.STRef`, the mutable and
+unboxed array modules, `Data.HashTable` and `Data.Graph` are built on
+it; other modules use multi-parameter classes or existential types.
+All of them load without any option, since the extensions are always
+enabled; see [Language extensions](extensions.md).
 
 ## Modules with foreign imports
 

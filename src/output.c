@@ -327,7 +327,7 @@ static Void local putFlds(Cell exp, List fs)       /* Output exp using labelled 
 		     isVar(e)  ? textOf(e)    : inventText();
 
 	    put(NEVER,f);
-	    if (haskell98 || s!=t) {
+	    if (s!=t) {		/* not a punned field		   */
 		putStr(" = ");
 		put(NEVER,e);
 	    }

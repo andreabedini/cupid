@@ -1,17 +1,18 @@
-# Extensions enabled by `-98`
+# Language extensions
 
-The language features Hugs accepts beyond Haskell 2010 when started
-with the `-98` option.  They are needed by some of the shipped
-libraries (see [The libraries](libraries.md)) and correspond to GHC
-extensions, though GHC's versions are often more general.
+The language features Hugs accepts beyond Haskell 2010.  They are
+always enabled; there is no option to turn them off.  Most are needed by
+the shipped libraries (see [The libraries](libraries.md)) and
+correspond to GHC extensions, though GHC's versions are often more
+general.
 
 ## Type classes
 
 ### Flexible contexts
 
 In Haskell 2010 a context constrains type variables, possibly applied
-to types.  With `-98` any type may be constrained, in signatures and
-in class and instance declarations:
+to types.  In Hugs any type may be constrained, in signatures and in
+class and instance declarations:
 
 ```haskell
 g :: (C [a], D (a -> b)) => [a] -> b
@@ -20,14 +21,17 @@ g :: (C [a], D (a -> b)) => [a] -> b
 ### Flexible instances
 
 In Haskell 2010 an instance head is a `data` or `newtype` constructor
-applied to distinct type variables.  With `-98` any type may be made an
-instance:
+applied to distinct type variables.  In Hugs any type may be made an
+instance, and a type synonym may stand for it:
 
 ```haskell
 instance Monoid (a -> a) where ...
 instance Show (Tree Int) where ...
 instance MyClass a where ...
 instance C String where ...
+
+type Pair a = (a, a)
+instance Swap (Pair a) where ...
 ```
 
 With flexible contexts as well, constraint solving is undecidable in
@@ -94,6 +98,18 @@ class Isomorphic a b where
     to   :: b -> a
 ```
 
+It may also have none.  A zero-parameter class is a named set of
+values with a single instance, a way to give a program a configuration
+point:
+
+```haskell
+class Config where
+    verbose :: Bool
+
+instance Config where
+    verbose = True
+```
+
 ### Functional dependencies
 
 Multi-parameter classes are often ambiguous.  A functional dependency
@@ -142,8 +158,8 @@ Restrictions:
   type.
 
 `runST :: (forall s. ST s a) -> a` in `Control.Monad.ST` has such a
-type, which is why that module needs `-98`.  Because of the last
-restriction, `runST $ do ...` is rejected; write `runST (do ...)`.
+type.  Because of the last restriction, `runST $ do ...` is
+rejected; write `runST (do ...)`.
 
 ### Polymorphic components
 
@@ -184,6 +200,18 @@ runAccum (MkAccum s add get) (x:xs) = runAccum (MkAccum (add x s) add get) xs
 Existential constructors may not have named fields and their types may
 not use `deriving`.
 
+## Anonymous type variables
+
+An underscore in a type stands for a fresh type variable:
+
+```haskell
+count :: [_] -> Int
+count = length
+```
+
+`:type count` reports `[a] -> Int`.  Each `_` is a different variable,
+so `_ -> _` is `a -> b`.
+
 ## Type annotations in patterns
 
 A pattern may carry a type signature:
@@ -217,7 +245,53 @@ Differences from GHC's scoped type variables:
   method definitions in Hugs.
 - Result type signatures on the left of a definition are not accepted.
 
+## Field puns
+
+In a record pattern or construction, a field name on its own stands
+for `field = field`:
+
+```haskell
+data R = R { a :: Int, b :: String }
+
+getA (R {a}) = a
+mk a b = R {a, b}
+```
+
+## Restricted type synonyms
+
+A type synonym may be declared transparent inside the definitions of
+named functions and opaque everywhere else, which makes an abstract
+type without a `newtype` or a module boundary:
+
+```haskell
+type Stack a = [a] in emptyStack, push, pop, topOf, isEmpty
+
+emptyStack :: Stack a
+emptyStack  = []
+
+push :: a -> Stack a -> Stack a
+push  = (:)
+
+pop :: Stack a -> Stack a
+pop (_:xs) = xs
+```
+
+Within `emptyStack`, `push` and the other listed functions a `Stack a`
+is a `[a]`.  Elsewhere it is not: `length emptyStack` is a type error,
+because `Stack a` does not match `[a]`.  The list of functions may
+carry their signatures instead of naming them:
+
+```haskell
+type Table = [(String, Int)] in
+    emptyT :: Table,
+    addT   :: String -> Int -> Table -> Table,
+    findT  :: String -> Table -> Maybe Int
+```
+
+The demo `demos/Stack.hs` uses this.  The same effect is available
+portably with a `newtype` or by not exporting a type's constructors.
+
 ## See also
 
-- [Options](options.md) for `-98`, `+o`, `+O` and `-c`
+- [Options](options.md) for `+o`, `+O` and `-c`
 - [The language Hugs accepts](language.md)

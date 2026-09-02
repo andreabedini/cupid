@@ -83,7 +83,7 @@ def main(argv):
         includes = PACKAGE_INCLUDES.get(package, [])
         for m in re.finditer(r"\{-#\s*INCLUDE\s+(.*?)\s*#-\}", text):
             includes += m.group(1).replace('"', "").split()
-        cmd = [ffihugs, "-98", "-P" + search_path]
+        cmd = [ffihugs, "-P" + search_path]
         cmd += ['-i"%s"' % inc for inc in includes]
         cmd.append(path)
         cmd += ["-I" + os.path.join(pdir, d) for d in PACKAGE_INCLUDE_DIRS.get(package, [])]

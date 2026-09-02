@@ -86,8 +86,6 @@ __   __ __  __  ____   ___      _________________________________________
 ||   ||                         Bugs: http://hackage.haskell.org/trac/hugs
 ||   || Version: September 2006 _________________________________________
 
-Haskell 98 mode: Restart with command line option -98 to enable extensions
-
 Type :? for help
 Hugs>
 ```
@@ -253,6 +251,6 @@ and ran a two-module program both from the shell and from the prompt.
 - [Interpreter commands](../reference/commands.md) lists everything the
   prompt understands.
 - [The libraries](../reference/libraries.md) lists the modules you can
-  import, and which of them need the `-98` option.
+  import.
 - [Build and install Hugs](../how-to/build-and-install.md) explains
   how to install so that the two `export` lines are no longer needed.
