@@ -196,7 +196,7 @@
 
 #ifdef YYBISON
 # if !defined(__GNUC__) || __GNUC__ <= 1
-static void __yy_memcpy Args((char*,char*, unsigned int));
+static void __yy_memcpy (char*,char*, unsigned int);
 # endif
 #endif
 
@@ -204,29 +204,29 @@ static void __yy_memcpy Args((char*,char*, unsigned int));
 static void yymemcpy (char *yyto, const char *yyfrom, size_t yycount);
 #endif
 
-static Cell   local gcShadow	 Args((Int,Cell));
-static Void   local syntaxError	 Args((String));
-static String local unexpected	 Args((Void));
-static Cell   local checkPrec	 Args((Cell));
-static Cell   local buildTuple	 Args((List));
-static List   local checkCtxt	 Args((List));
-static Cell   local checkPred	 Args((Cell));
-static Pair   local checkDo	 Args((List));
-static Cell   local checkTyLhs	 Args((Cell));
-static Cell   local checkConstr	 Args((Cell));
+static Cell   local gcShadow	 (Int,Cell);
+static Void   local syntaxError	 (String);
+static String local unexpected	 (Void);
+static Cell   local checkPrec	 (Cell);
+static Cell   local buildTuple	 (List);
+static List   local checkCtxt	 (List);
+static Cell   local checkPred	 (Cell);
+static Pair   local checkDo	 (List);
+static Cell   local checkTyLhs	 (Cell);
+static Cell   local checkConstr	 (Cell);
 
 #if MUDO
-static Pair   local checkMDo	 Args((List));
+static Pair   local checkMDo	 (List);
 #endif
 
 #if !TREX
-static Void   local noTREX	 Args((String));
+static Void   local noTREX	 (String);
 #endif
 #if !IPARAM
-static Void   local noIP	 Args((String));
+static Void   local noIP	 (String);
 #endif
 #if !MUDO
-static Void   local noMDo	 Args((String));
+static Void   local noMDo	 (String);
 #endif
 
 /* For the purposes of reasonably portable garbage collection, it is
@@ -5832,9 +5832,8 @@ yyreturn:
 #line 1032 "parser.y"
 
 
-static Cell local gcShadow(n,e)		/* keep parsed fragments on stack  */
-Int  n;
-Cell e; {
+static Cell local gcShadow(Int n, Cell e)		/* keep parsed fragments on stack  */
+{
     /* If a look ahead token is held then the required stack transformation
      * is:
      *   pushed: n               1     0          1     0
@@ -5856,8 +5855,8 @@ Cell e; {
     return e;
 }
 
-static Void local syntaxError(s)	/* report on syntax error	   */
-String s; {
+static Void local syntaxError(String s)	/* report on syntax error	   */
+{
     ERRMSG(row) "Syntax error in %s (unexpected %s)", s, unexpected()
     EEND;
 }
@@ -5950,8 +5949,8 @@ static String local unexpected() {     /* find name for unexpected token   */
     }
 }
 
-static Cell local checkPrec(p)		/* Check for valid precedence value*/
-Cell p; {
+static Cell local checkPrec(Cell p)		/* Check for valid precedence value*/
+{
     if (!isInt(p) || intOf(p)<MIN_PREC || intOf(p)>MAX_PREC) {
 	ERRMSG(row) "Precedence value must be an integer in the range [%d..%d]",
 		    MIN_PREC, MAX_PREC
@@ -5960,8 +5959,8 @@ Cell p; {
     return p;
 }
 
-static Cell local buildTuple(tup)	/* build tuple (x1,...,xn) from	   */
-List tup; {				/* list [xn,...,x1]		   */
+static Cell local buildTuple(List tup)	/* build tuple (x1,...,xn) from	   */
+{				/* list [xn,...,x1]		   */
     Int  n = 0;
     Cell t = tup;
     Cell x;
@@ -5978,14 +5977,14 @@ List tup; {				/* list [xn,...,x1]		   */
     return tup;
 }
 
-static List local checkCtxt(con)	/* validate context		   */
-Type con; {
+static List local checkCtxt(Type con)	/* validate context		   */
+{
     mapOver(checkPred, con);
     return con;
 }
 
-static Cell local checkPred(c)		/* check that type expr is a valid */
-Cell c; {				/* constraint			   */
+static Cell local checkPred(Cell c)		/* check that type expr is a valid */
+{				/* constraint			   */
     Cell cn = getHead(c);
 #if TREX
     if (isExt(cn) && argCount==1)
@@ -6000,8 +5999,8 @@ Cell c; {				/* constraint			   */
     return c;
 }
 
-static Pair local checkDo(dqs)		/* convert reversed list of dquals */
-List dqs; {				/* to an (expr,quals) pair         */
+static Pair local checkDo(List dqs)		/* convert reversed list of dquals */
+{				/* to an (expr,quals) pair         */
     if (isNull(dqs) || whatIs(hd(dqs))!=DOQUAL) {
 	ERRMSG(row) "Last generator in do {...} must be an expression"
 	EEND;
@@ -6012,8 +6011,8 @@ List dqs; {				/* to an (expr,quals) pair         */
 }
 
 #if MUDO
-static Pair local checkMDo(dqs)		/* convert reversed list of dquals */
-List dqs; {				/* to an (expr,quals) pair         */
+static Pair local checkMDo(List dqs)		/* convert reversed list of dquals */
+{				/* to an (expr,quals) pair         */
     if (isNull(dqs) || whatIs(hd(dqs))!=DOQUAL) {
 	ERRMSG(row) "Last generator in mdo {...} must be an expression"
 	EEND;
@@ -6024,8 +6023,8 @@ List dqs; {				/* to an (expr,quals) pair         */
 }
 #endif
 
-static Cell local checkTyLhs(c)		/* check that lhs is of the form   */
-Cell c; {				/* T a1 ... a			   */
+static Cell local checkTyLhs(Cell c)		/* check that lhs is of the form   */
+{				/* T a1 ... a			   */
     Cell tlhs = c;
     while (isAp(tlhs) && whatIs(arg(tlhs))==VARIDCELL) {
 	tlhs = fun(tlhs);
@@ -6037,8 +6036,8 @@ Cell c; {				/* T a1 ... a			   */
     return c;
 }
 
-static Cell local checkConstr(c)	/* check that data constructor has */
-Cell c; {				/* an unqualified conid as head    */
+static Cell local checkConstr(Cell c)	/* check that data constructor has */
+{				/* an unqualified conid as head    */
     Cell chd = c;
     while (isAp(chd)) {
 	chd = fun(chd);
@@ -6051,16 +6050,16 @@ Cell c; {				/* an unqualified conid as head    */
 }
 
 #if !TREX
-static Void local noTREX(where)
-String where; {
+static Void local noTREX(String where)
+{
     ERRMSG(row) "Attempt to use TREX records while parsing %s.\n", where ETHEN
     ERRTEXT     "(TREX is disabled in this build of Hugs)"
     EEND;
 }
 #endif
 #if !IPARAM
-static Void local noIP(where)
-String where; {
+static Void local noIP(String where)
+{
     ERRMSG(row) "Attempt to use Implicit Parameters while parsing %s.\n", where ETHEN
     ERRTEXT     "(Implicit Parameters are disabled in this build of Hugs)"
     EEND;
@@ -6077,8 +6076,8 @@ String where; {
    recognize "mdo" all the time, but that's not Haskell compliant. In any 
    case we keep this function here, even if just for documentation purposes.
 ***/
-static Void local noMDo(where)
-String where; {
+static Void local noMDo(String where)
+{
     ERRMSG(row) "Attempt to use MDO while parsing %s.\n", where ETHEN
     ERRTEXT     "(Recursive monadic bindings are disabled in this build of Hugs)"
     EEND;

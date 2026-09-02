@@ -27,10 +27,10 @@
 
 #include <setjmp.h>
 
-static Void   setHugsAPI   Args((Void));
-static Bool   SetModule    Args((String));
+static Void   setHugsAPI   (Void);
+static Bool   SetModule    (String);
 #ifndef NO_DYNAMIC_TYPES
-static Bool   linkDynamic     Args((Void));
+static Bool   linkDynamic     (Void);
 #endif
 
 /* --------------------------------------------------------------------------
@@ -45,31 +45,31 @@ static Bool   linkDynamic     Args((Void));
  *    functions and variables that we need to access.
  * ------------------------------------------------------------------------*/
 
-static Int    GetNumScripts   Args((Void));
-static Void   Reset           Args((Int));
-static Void   SetOutputEnable Args((Bool));
-static Void   ChangeDir       Args((String));
-static Void   LoadProject     Args((String));
-static Void   LoadFile        Args((String));
-static Void   LoadStringF     Args((String));
-static Void   SetOptions      Args((String));
-static String GetOptions      Args((Void));
-static HVal   CompileExpr     Args((String, String));
-static Void   GarbageCollect  Args((void));
-static Void   LookupName      Args((String, String));
-static Void   MkInt           Args((Int));
-static Void   MkAddr          Args((void*));
-static Void   MkString        Args((String));
-static Void   Apply           Args((Void));
-static Int    EvalInt         Args((Void));
-static void*  EvalAddr        Args((void));
-static String EvalString      Args((Void));
-static Int    DoIO            Args((Void));
-static Int    DoIO_Int        Args((int*));
-static Int    DoIO_Addr       Args((void**));
-static HVal   PopHVal         Args((Void));
-static Void   PushHVal        Args((HVal));
-static Void   FreeHVal        Args((HVal));
+static Int    GetNumScripts   (Void);
+static Void   Reset           (Int);
+static Void   SetOutputEnable (Bool);
+static Void   ChangeDir       (String);
+static Void   LoadProject     (String);
+static Void   LoadFile        (String);
+static Void   LoadStringF     (String);
+static Void   SetOptions      (String);
+static String GetOptions      (Void);
+static HVal   CompileExpr     (String, String);
+static Void   GarbageCollect  (void);
+static Void   LookupName      (String, String);
+static Void   MkInt           (Int);
+static Void   MkAddr          (void*);
+static Void   MkString        (String);
+static Void   Apply           (Void);
+static Int    EvalInt         (Void);
+static void*  EvalAddr        (void);
+static String EvalString      (Void);
+static Int    DoIO            (Void);
+static Int    DoIO_Int        (int*);
+static Int    DoIO_Addr       (void**);
+static HVal   PopHVal         (Void);
+static Void   PushHVal        (HVal);
+static Void   FreeHVal        (HVal);
 
 static HugsServerAPI hugs;             /* virtual function table            */
 
@@ -134,8 +134,8 @@ String ClearError()
     return err;
 }
 
-Void setError(s)            /* Format an error message        */
-String s; {
+Void setError(String s)            /* Format an error message        */
+{
     Int    n = 0;
     String err = ClearOutputBuffer();
 
@@ -194,9 +194,8 @@ String s; {
 
 */
 
-DLLEXPORT(HugsServerAPI*) initHugsServer(argc, argv) /*server initialisation*/
-Int    argc;
-String argv[]; {
+DLLEXPORT(HugsServerAPI*) initHugsServer(Int argc, String argv[]) /*server initialisation*/
+{
 
     static Bool is_initialized = FALSE;
 
@@ -251,8 +250,8 @@ HugsServerAPI* getHugsAPI() {
 /* --------------------------------------------------------------------------
  * Shutting down:
  * ------------------------------------------------------------------------*/
-DLLEXPORT(Void) shutdownHugsServer(hserv) /* server shutdown */
-HugsServerAPI* hserv; {
+DLLEXPORT(Void) shutdownHugsServer(HugsServerAPI* hserv) /* server shutdown */
+{
   /* The 'hserv' argument isn't actually used */
   clearStack();
   stopAnyPrinting();
@@ -308,8 +307,8 @@ static Int GetNumScripts()      /* Get number of scripts in system  */
     return 0;
 }
 
-static Void Reset(scripts) /* Restore number of scripts to old level */
-Int scripts; {
+static Void Reset(Int scripts) /* Restore number of scripts to old level */
+{
     protect(
 	ClearOutputBuffer();
 	forgetScriptsFrom(scripts);
@@ -317,14 +316,12 @@ Int scripts; {
 	);
 }
 
-static Void SetOutputEnable(f)    /* enable/disable compiler output  */
-Bool f;
+static Void SetOutputEnable(Bool f)    /* enable/disable compiler output  */
 {
     protect(EnableOutput(f));
 }
 
-static Void ChangeDir(s)          /* change current directory        */
-String s;
+static Void ChangeDir(String s)          /* change current directory        */
 {
     protect(
 	if (chdir(s)) {
@@ -334,14 +331,12 @@ String s;
 	);
 }
 
-static Void LoadProject(fn)       /* load a project into the system  */
-String fn;
+static Void LoadProject(String fn)       /* load a project into the system  */
 {
     protect(setError("loadProject: not implemented"));
 }
 
-static Void LoadFile(fn)          /* load a module (from a file) into the system   */
-String fn;
+static Void LoadFile(String fn)          /* load a module (from a file) into the system   */
 {
     protect(
 	addScriptName(fn,TRUE);
@@ -350,8 +345,7 @@ String fn;
 	);
 }
 
-static Void LoadStringF(mod)      /* load a module (from a string) into the system   */
-String mod;
+static Void LoadStringF(String mod)      /* load a module (from a string) into the system   */
 {
     protect(
 	addScriptName(mod,TRUE);
@@ -360,8 +354,8 @@ String mod;
 	);
 }
 
-static Void SetOptions(opt)
-String opt; {
+static Void SetOptions(String opt)
+{
   readOptions2(opt);
   return;
 }
@@ -370,8 +364,8 @@ static String GetOptions() {
   return strCopy(optionsToStr());
 }
 
-static Bool SetModule(m)
-String m; {
+static Bool SetModule(String m)
+{
     Module mod   = findModule(findText(m));
     if (isNull(mod)) {
 	return FALSE;
@@ -380,9 +374,8 @@ String m; {
     return TRUE;
 }
 
-static HVal CompileExpr(m,e)    /* compile expression e wrt module m */
-String m;
-String e; {
+static HVal CompileExpr(String m, String e)    /* compile expression e wrt module m */
+{
     BEGIN_PROTECT
 	Type type = NIL;
 	Cell d    = NIL;
@@ -433,8 +426,7 @@ static Void GarbageCollect()
  * Building expressions on the stack
  * ------------------------------------------------------------------------*/
 
-static Void LookupName(m,v) /*Push value of qualified name onto stack*/
-String m,v;
+static Void LookupName(String m, String v) /*Push value of qualified name onto stack*/
 {
     BEGIN_PROTECT
 	Name   n;
@@ -464,8 +456,7 @@ String m,v;
     END_PROTECT
 }
 
-static Void MkInt(i)              /* Push an Int onto the stack      */
-Int i;
+static Void MkInt(Int i)              /* Push an Int onto the stack      */
 {
 #ifndef NO_DYNAMIC_TYPES
     Cell d = getTypeableDict(typeInt);
@@ -475,8 +466,7 @@ Int i;
 #endif
 }
 
-static Void MkAddr(a)              /* Push an Addr onto the stack      */
-void* a;
+static Void MkAddr(void* a)              /* Push an Addr onto the stack      */
 {
 #ifndef NO_DYNAMIC_TYPES
     Cell d = getTypeableDict(typeAddr);
@@ -486,8 +476,7 @@ void* a;
 #endif
 }
 
-static Void MkString(s)           /* Push a String onto the stack    */
-String s;
+static Void MkString(String s)           /* Push a String onto the stack    */
 {
     BEGIN_PROTECT
 	pushString(s);
@@ -801,8 +790,7 @@ static HVal PopHVal()           /* Get a value off the stack         */
     return 0;
 }
 
-static Void PushHVal(hval)      /* Put a value back on the stack     */
-HVal hval;
+static Void PushHVal(HVal hval)      /* Put a value back on the stack     */
 {
     protect(
 	if (hval == 0) {
@@ -813,8 +801,7 @@ HVal hval;
 	);
 }
 
-static Void FreeHVal(hval)      /* Free a Haskell value              */
-HVal   hval;
+static Void FreeHVal(HVal hval)      /* Free a Haskell value              */
 {
     protect(freeStablePtr(hval));
 }
@@ -823,8 +810,8 @@ HVal   hval;
  * Testing for class membership:
  * ------------------------------------------------------------------------*/
 
-Cell getTypeableDict(t) /* Find a Typeable dictionary for instance t, */
-Type  t; {              /* or NIL if none found                       */
+Cell getTypeableDict(Type t) /* Find a Typeable dictionary for instance t, */
+{              /* or NIL if none found                       */
     Class c = classTypeable;
     Kinds ks = NIL;
     if (isPolyType(t)) {

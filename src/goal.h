@@ -5,9 +5,9 @@
 #define __GOAL_H__
 
 typedef long   Target;
-extern Void setGoal Args((String,Target));
-extern Void soFar   Args((Target));
-extern Void done    Args((Void));
-extern Void failed  Args((Void));
+extern Void setGoal (String,Target);
+extern Void soFar   (Target);
+extern Void done    (Void);
+extern Void failed  (Void);
 
 #endif /* __GOAL_H__ */

@@ -18,9 +18,8 @@ static Int    currPos;
 static Int    maxPos;
 static Int    charCount;
 
-Void setGoal(what, t)                  /* Set goal for what to be t        */
-String what;
-Target t; {
+Void setGoal(String what, Target t)                  /* Set goal for what to be t        */
+{
     if (quiet
 #if EXPLAIN_INSTANCE_RESOLUTION
 	      || showInstRes
@@ -39,8 +38,8 @@ Target t; {
     FlushStdout();
 }
 
-Void soFar(t)                          /* Indicate progress towards goal   */
-Target t; {                            /* has now reached t                */
+Void soFar(Target t)                          /* Indicate progress towards goal   */
+{                            /* has now reached t                */
     if (quiet
 #if EXPLAIN_INSTANCE_RESOLUTION
 	      || showInstRes

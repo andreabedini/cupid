@@ -58,8 +58,8 @@ Void stopEvaluator() {
     if (repeatStr)    { free(repeatStr); repeatStr=0; }
 }
 
-Void evaluator(m)
-Module m; {        /* evaluate expr and print value    */
+Void evaluator(Module m)
+{        /* evaluate expr and print value    */
     Type  type, bd, t;
     Kinds ks   = NIL;
     Cell  temp = NIL;
@@ -223,8 +223,8 @@ Void loadPrelude() {  /* load in the Prelude module(s). */
  * Send message to each component of system:
  * ------------------------------------------------------------------------*/
 
-Void everybody(what)            /* send command `what' to each component of*/
-Int what; {                     /* system to respond as appropriate ...    */
+Void everybody(Int what)            /* send command `what' to each component of*/
+{                     /* system to respond as appropriate ...    */
     machdep(what);              /* The order of calling each component is  */
     storage(what);              /* important for the INSTALL command       */
     substitution(what);

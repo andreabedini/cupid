@@ -26,9 +26,9 @@
 #include <windows.h>
 #endif
 
-extern int  main      Args((int, char**));
-static void check     Args((void));
-static void loadHugs  Args((int, char**));
+extern int  main      (int, char**);
+static void check     (void);
+static void loadHugs  (int, char**);
 
 static HugsServerAPI* hugs = 0;
 
@@ -41,9 +41,8 @@ static void check() {
     }
 }
 
-static void loadHugs(argc,argv)
-int    argc;
-char* argv[]; {
+static void loadHugs(int argc, char* argv[])
+{
     hugs = initHugsServer(argc,argv);
     if (NULL == hugs) {
 	fprintf(stderr,"runhugs: Unable to initialise Hugs (%s)\n", lastError);
@@ -58,9 +57,8 @@ char* argv[]; {
  * main
  * ------------------------------------------------------------------------*/
 
-int main(argc,argv)
-int    argc;
-char* argv[]; {
+int main(int argc, char* argv[])
+{
     int    exitCode = 0;
     char** hugs_argv;
     int    hugs_argc;
@@ -143,6 +141,6 @@ char* argv[]; {
 
 #if WANT_TIMER
 /* dummy definition: timers are only available in the interpreter */
-void updateTimers Args((void));
+void updateTimers (void);
 void updateTimers() {}
 #endif

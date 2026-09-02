@@ -5,15 +5,15 @@
 #define __STRUTIL_H__
 
 /* string copy operator, allocates new via malloc() */
-extern String strCopy Args((String));
+extern String strCopy (String);
 
 /* substring copy operator, allocates new via malloc() */
-extern String strnCopy Args((String, Int));
+extern String strnCopy (String, Int);
 
 /* Given a string containing a possibly qualified name,
  * split it up into a module and a name portion.
  */
-extern Void splitQualString Args((String, String*, String*));
+extern Void splitQualString (String, String*, String*);
 
 /*
  * Auto-expandable string builder objects:
@@ -28,14 +28,14 @@ typedef struct StringBuilder StringBuilder;
  * is set to INITIAL_BUILDER_SIZE..
  *
  */
-extern StringBuilder* newStringBuilder   Args((unsigned int sz));
+extern StringBuilder* newStringBuilder   (unsigned int sz);
 
 /*
  * Function: freeStringBuilder(builder)
  *
  * Free up a StringBuilder object.
  */
-extern void           freeStringBuilder  Args((StringBuilder* b));
+extern void           freeStringBuilder  (StringBuilder* b);
 
 /*
  * Function: prependString(builder, str)
@@ -46,7 +46,7 @@ extern void           freeStringBuilder  Args((StringBuilder* b));
  *
  * Returns TRUE if successful.
  */
-extern Bool           prependString      Args((StringBuilder* b, char* str));
+extern Bool           prependString      (StringBuilder* b, char* str);
 
 /*
  * Function: appendString(builder, str)
@@ -56,7 +56,7 @@ extern Bool           prependString      Args((StringBuilder* b, char* str));
  *
  * Returns TRUE if successful.
  */
-extern Bool           appendString       Args((StringBuilder* b,  char* str));
+extern Bool           appendString       (StringBuilder* b,  char* str);
 
 /*
  * Function: appendStringFormat(builder, fmt, arg)
@@ -73,7 +73,7 @@ extern Bool           appendString       Args((StringBuilder* b,  char* str));
  *
  * Returns TRUE if successful.
  */
-extern Bool           appendStringFormat Args((StringBuilder* b, char* fmt, char* arg));
+extern Bool           appendStringFormat (StringBuilder* b, char* fmt, char* arg);
 
 /*
  * Function: toString(builder)
@@ -84,6 +84,6 @@ extern Bool           appendStringFormat Args((StringBuilder* b, char* fmt, char
  *
  * 
  */
-extern char*          toString           Args((StringBuilder* b));
+extern char*          toString           (StringBuilder* b);
 
 #endif /* __STRUTIL_H__ */

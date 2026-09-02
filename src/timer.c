@@ -35,8 +35,8 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-void updateTimers Args((void));
-long millisecs  Args((long));
+void updateTimers (void);
+long millisecs  (long);
 long userElapsed, systElapsed;
 
 void updateTimers() {
@@ -55,15 +55,15 @@ void updateTimers() {
     lastSyst    = curr;
 }
 
-long millisecs(t)
-long t; {
+long millisecs(long t)
+{
     return (t+500)/1000;
 }
 #else
 #include <time.h>
 
-void updateTimers Args((void));
-long millisecs    Args((clock_t));
+void updateTimers (void);
+long millisecs    (clock_t);
 clock_t userElapsed=0, systElapsed=0;
 
 void updateTimers() {
@@ -74,8 +74,8 @@ void updateTimers() {
     lastUser    = curr;
 }
 
-long millisecs(t)
-clock_t t; {
+long millisecs(clock_t t)
+{
     return (long)((t * 1000)/CLK_TCK);
 }
 #endif

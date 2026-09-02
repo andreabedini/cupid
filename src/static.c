@@ -26,234 +26,234 @@
  * local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void   local kindError		Args((Int,Constr,Constr,String,Kind,Int));
-static Void   local checkQualImport	Args((Pair));
-static Void   local checkUnqualImport	Args((Triple));
+static Void   local kindError		(Int,Constr,Constr,String,Kind,Int);
+static Void   local checkQualImport	(Pair);
+static Void   local checkUnqualImport	(Triple);
 
-static Void   local checkTyconDefn	Args((Tycon));
-static Void   local depConstrs		Args((Tycon,List,Cell));
-static Int    local userArity		Args((Name));
-static List   local addSels		Args((Int,Name,List,List));
-static List   local selectCtxt		Args((List,List));
-static Void   local checkSynonyms	Args((List));
-static List   local visitSyn		Args((List,Tycon,List));
-static Type   local fullerExpand	Args((Type));
-static Type   local instantiateNewtype	Args((Name,Type));
-static Type   local instantiateSyn	Args((Type,Type));
+static Void   local checkTyconDefn	(Tycon);
+static Void   local depConstrs		(Tycon,List,Cell);
+static Int    local userArity		(Name);
+static List   local addSels		(Int,Name,List,List);
+static List   local selectCtxt		(List,List);
+static Void   local checkSynonyms	(List);
+static List   local visitSyn		(List,Tycon,List);
+static Type   local fullerExpand	(Type);
+static Type   local instantiateNewtype	(Name,Type);
+static Type   local instantiateSyn	(Type,Type);
 
-static Void   local checkClassDefn	Args((Class));
-static Void   local checkClassDefn2	Args((Class));
-static Void local checkClassDefn2_      Args((List));
-static Cell   local depPredExp		Args((Int,List,Cell));
-static Void   local checkMems		Args((Class,List,Cell));
-static Void   local checkMems2		Args((Class,Cell));
-static Void   local addMembers		Args((Class));
-static Name   local newMember		Args((Int,Int,Cell,Type,Class));
-static Name   local newDSel		Args((Class,Int));
-static Text   local generateText	Args((String,Class));
-static Int    local visitClass		Args((Class));
+static Void   local checkClassDefn	(Class);
+static Void   local checkClassDefn2	(Class);
+static Void local checkClassDefn2_      (List);
+static Cell   local depPredExp		(Int,List,Cell);
+static Void   local checkMems		(Class,List,Cell);
+static Void   local checkMems2		(Class,Cell);
+static Void   local addMembers		(Class);
+static Name   local newMember		(Int,Int,Cell,Type,Class);
+static Name   local newDSel		(Class,Int);
+static Text   local generateText	(String,Class);
+static Int    local visitClass		(Class);
 
-static List   local classBindings	Args((String,Class,List));
-static Name   local memberName		Args((Class,Text));
-static List   local numInsert		Args((Int,Cell,List));
+static List   local classBindings	(String,Class,List);
+static Name   local memberName		(Class,Text);
+static List   local numInsert		(Int,Cell,List);
 
-static List   local typeVarsIn		Args((Cell,List,List,List));
-static List   local maybeAppendVar	Args((Cell,List));
+static List   local typeVarsIn		(Cell,List,List,List);
+static List   local maybeAppendVar	(Cell,List);
 
-static Type   local checkSigType	Args((Int,String,Cell,Type));
-static Void   local checkOptQuantVars	Args((Int,List,List));
-static Type   local depTopType		Args((Int,List,Type));
-static Type   local depCompType		Args((Int,List,Type));
-static Type   local depTypeExp		Args((Int,List,Type));
-static Type   local depTypeVar		Args((Int,List,Text));
-static List   local checkQuantVars	Args((Int,List,List,Cell));
-static List   local offsetTyvarsIn	Args((Type,List));
-static List   local otvars		Args((Cell,List));
-static Bool   local osubset		Args((List,List));
-static Void   local kindConstr		Args((Int,Int,Int,Constr));
-static Kind   local kindAtom		Args((Int,Constr));
-static Void   local kindPred		Args((Int,Int,Int,Cell));
-static Void   local kindType		Args((Int,String,Type));
-static Void   local fixKinds		Args((Void));
+static Type   local checkSigType	(Int,String,Cell,Type);
+static Void   local checkOptQuantVars	(Int,List,List);
+static Type   local depTopType		(Int,List,Type);
+static Type   local depCompType		(Int,List,Type);
+static Type   local depTypeExp		(Int,List,Type);
+static Type   local depTypeVar		(Int,List,Text);
+static List   local checkQuantVars	(Int,List,List,Cell);
+static List   local offsetTyvarsIn	(Type,List);
+static List   local otvars		(Cell,List);
+static Bool   local osubset		(List,List);
+static Void   local kindConstr		(Int,Int,Int,Constr);
+static Kind   local kindAtom		(Int,Constr);
+static Void   local kindPred		(Int,Int,Int,Cell);
+static Void   local kindType		(Int,String,Type);
+static Void   local fixKinds		(Void);
 
-static Void   local kindTCGroup		Args((List));
-static Void   local initTCKind		Args((Cell));
-static Void   local kindTC		Args((Cell));
-static Void   local genTC		Args((Cell));
+static Void   local kindTCGroup		(List);
+static Void   local initTCKind		(Cell);
+static Void   local kindTC		(Cell);
+static Void   local genTC		(Cell);
 
-static Void   local checkInstDefn	Args((Inst));
-static Void   local insertInst		Args((Inst));
-static Bool   local instCompare		Args((Inst,Inst));
-static Name   local newInstImp		Args((Inst));
-static Void   local kindInst		Args((Inst,Int));
-static Void   local checkDerive		Args((Tycon,List,List,Cell));
-static Void   local addDerInst		Args((Int,Class,List,List,Type,Int));
-static Void   local deriveContexts	Args((List));
-static Void   local initDerInst		Args((Inst));
-static Void   local calcInstPreds	Args((Inst));
-static List   local calcFunDeps		Args((List));
-static Void   local maybeAddPred	Args((Cell,Int,Int,List));
-static Cell   local copyAdj		Args((Cell,Int,Int));
-static Void   local tidyDerInst		Args((Inst));
-static List   local inheritFundeps      Args((Class,Cell,Int));
-static Void   local extendFundeps       Args((Class));
+static Void   local checkInstDefn	(Inst);
+static Void   local insertInst		(Inst);
+static Bool   local instCompare		(Inst,Inst);
+static Name   local newInstImp		(Inst);
+static Void   local kindInst		(Inst,Int);
+static Void   local checkDerive		(Tycon,List,List,Cell);
+static Void   local addDerInst		(Int,Class,List,List,Type,Int);
+static Void   local deriveContexts	(List);
+static Void   local initDerInst		(Inst);
+static Void   local calcInstPreds	(Inst);
+static List   local calcFunDeps		(List);
+static Void   local maybeAddPred	(Cell,Int,Int,List);
+static Cell   local copyAdj		(Cell,Int,Int);
+static Void   local tidyDerInst		(Inst);
+static List   local inheritFundeps      (Class,Cell,Int);
+static Void   local extendFundeps       (Class);
 
-static List   local otvarsZonk		Args((Cell,List,Int));
-static Void   local addDerivImp		Args((Inst));
-static List   local getDiVars		Args((Int));
-static Cell   local mkBind		Args((String,List));
-static Cell   local mkVarAlts		Args((Int,Cell));
+static List   local otvarsZonk		(Cell,List,Int);
+static Void   local addDerivImp		(Inst);
+static List   local getDiVars		(Int);
+static Cell   local mkBind		(String,List);
+static Cell   local mkVarAlts		(Int,Cell);
 
-static List   local deriveEq		Args((Tycon));
-static Pair   local mkAltEq		Args((Int,List));
-static List   local deriveOrd		Args((Tycon));
-static Pair   local mkAltOrd		Args((Int,List));
-static List   local makeDPats2		Args((Cell,Int));
+static List   local deriveEq		(Tycon);
+static Pair   local mkAltEq		(Int,List);
+static List   local deriveOrd		(Tycon);
+static Pair   local mkAltOrd		(Int,List);
+static List   local makeDPats2		(Cell,Int);
 
-static List   local deriveEnum		Args((Tycon));
-static List   local deriveIx		Args((Tycon));
-static Bool   local isEnumType		Args((Tycon));
-static List   local mkIxBinds		Args((Int,Cell,Int));
-static Cell   local prodRange		Args((Int,List,Cell,Cell,Cell));
-static Cell   local prodIndex		Args((Int,List,Cell,Cell,Cell));
-static Cell   local prodInRange		Args((Int,List,Cell,Cell,Cell));
+static List   local deriveEnum		(Tycon);
+static List   local deriveIx		(Tycon);
+static Bool   local isEnumType		(Tycon);
+static List   local mkIxBinds		(Int,Cell,Int);
+static Cell   local prodRange		(Int,List,Cell,Cell,Cell);
+static Cell   local prodIndex		(Int,List,Cell,Cell,Cell);
+static Cell   local prodInRange		(Int,List,Cell,Cell,Cell);
 
-static List   local deriveShow		Args((Tycon));
-static Cell   local mkAltShow		Args((Int,Cell,Int));
-static Cell   local showsPrecRhs	Args((Cell,Cell,Int));
+static List   local deriveShow		(Tycon);
+static Cell   local mkAltShow		(Int,Cell,Int);
+static Cell   local showsPrecRhs	(Cell,Cell,Int);
 
-static List   local deriveRead		Args((Cell));
-static Cell   local mkReadCon		Args((Name,Cell,Cell));
-static Cell   local mkReadPrefix	Args((Cell));
-static Cell   local mkReadInfix		Args((Cell));
-static Cell   local mkReadTuple		Args((Cell));
-static Cell   local mkReadRecord	Args((Cell,List));
+static List   local deriveRead		(Cell);
+static Cell   local mkReadCon		(Name,Cell,Cell);
+static Cell   local mkReadPrefix	(Cell);
+static Cell   local mkReadInfix		(Cell);
+static Cell   local mkReadTuple		(Cell);
+static Cell   local mkReadRecord	(Cell,List);
 
-static List   local deriveBounded	Args((Tycon));
-static List   local mkBndBinds		Args((Int,Cell,Int));
+static List   local deriveBounded	(Tycon);
+static List   local mkBndBinds		(Int,Cell,Int);
 
-static Void   local checkDefaultDefns	Args((Void));
+static Void   local checkDefaultDefns	(Void);
 
-static List   local checkPrimDefn	Args((Triple));
-static Name   local addNewPrim		Args((Int,Text,String,Cell));
+static List   local checkPrimDefn	(Triple);
+static Name   local addNewPrim		(Int,Text,String,Cell);
 
-static Void   local checkForeignImport  Args((Name));
-static Void   local checkForeignExport  Args((Name));
-static Void   local linkForeign         Args((Name));
+static Void   local checkForeignImport  (Name);
+static Void   local checkForeignExport  (Name);
+static Void   local linkForeign         (Name);
 
-static Cell   local tidyInfix		Args((Int,Cell));
-static Pair   local attachFixity	Args((Int,Cell));
-static Syntax local lookupSyntax	Args((Text));
+static Cell   local tidyInfix		(Int,Cell);
+static Pair   local attachFixity	(Int,Cell);
+static Syntax local lookupSyntax	(Text);
 
-static Cell   local checkPat		Args((Int,Cell));
-static Cell   local checkMaybeCnkPat	Args((Int,Cell));
-static Cell   local checkApPat		Args((Int,Int,Cell));
-static Void   local addToPatVars	Args((Int,Cell));
-static Name   local conDefined		Args((Int,Cell,Bool));
-static Void   local checkIsCfun		Args((Int,Name));
-static Void   local checkCfunArgs	Args((Int,Cell,Int));
-static Cell   local checkPatType	Args((Int,String,Cell,Type));
-static Cell   local applyBtyvs		Args((Cell));
-static Cell   local bindPat		Args((Int,Cell));
-static Void   local bindPats		Args((Int,List));
+static Cell   local checkPat		(Int,Cell);
+static Cell   local checkMaybeCnkPat	(Int,Cell);
+static Cell   local checkApPat		(Int,Int,Cell);
+static Void   local addToPatVars	(Int,Cell);
+static Name   local conDefined		(Int,Cell,Bool);
+static Void   local checkIsCfun		(Int,Name);
+static Void   local checkCfunArgs	(Int,Cell,Int);
+static Cell   local checkPatType	(Int,String,Cell,Type);
+static Cell   local applyBtyvs		(Cell);
+static Cell   local bindPat		(Int,Cell);
+static Void   local bindPats		(Int,List);
 
-static List   local extractSigdecls	Args((List));
-static List   local extractFixdecls	Args((List));
-static List   local extractBindings	Args((List));
-static List   local getPatVars		Args((Int,Cell,List));
-static List   local addPatVar		Args((Int,Cell,List));
-static List   local eqnsToBindings	Args((List,List,List,List));
-static Void   local notDefined		Args((Int,List,Cell));
-static Cell   local findBinding		Args((Text,List));
-static Cell   local getAttr		Args((List,Cell));
-static Void   local addSigdecl		Args((List,Cell));
-static Void   local addFixdecl		Args((List,List,List,List,Triple));
-static Void   local dupFixity		Args((Int,Text));
-static Void   local missFixity		Args((Int,Text));
+static List   local extractSigdecls	(List);
+static List   local extractFixdecls	(List);
+static List   local extractBindings	(List);
+static List   local getPatVars		(Int,Cell,List);
+static List   local addPatVar		(Int,Cell,List);
+static List   local eqnsToBindings	(List,List,List,List);
+static Void   local notDefined		(Int,List,Cell);
+static Cell   local findBinding		(Text,List);
+static Cell   local getAttr		(List,Cell);
+static Void   local addSigdecl		(List,Cell);
+static Void   local addFixdecl		(List,List,List,List,Triple);
+static Void   local dupFixity		(Int,Text);
+static Void   local missFixity		(Int,Text);
 
-static List   local dependencyAnal	Args((List));
-static List   local topDependAnal	Args((List));
-static Void   local addDepField		Args((Cell));
-static Void   local remDepField		Args((List));
-static Void   local remDepField1	Args((Cell));
-static Void   local clearScope		Args((Void));
-static Void   local withinScope		Args((List));
-static Void   local leaveScope		Args((Void));
-static Void   local saveSyntax		Args((Cell,Cell));
-static Void   local dropNameClash	Args((Cell));
+static List   local dependencyAnal	(List);
+static List   local topDependAnal	(List);
+static Void   local addDepField		(Cell);
+static Void   local remDepField		(List);
+static Void   local remDepField1	(Cell);
+static Void   local clearScope		(Void);
+static Void   local withinScope		(List);
+static Void   local leaveScope		(Void);
+static Void   local saveSyntax		(Cell,Cell);
+static Void   local dropNameClash	(Cell);
 #if IPARAM
-static Bool   local checkIBindings      Args((Int,List));
+static Bool   local checkIBindings      (Int,List);
 #endif
 
-static Void   local depBinding		Args((Cell));
-static Void   local depDefaults		Args((Class));
-static Void   local depInsts		Args((Inst));
-static Void   local depClassBindings	Args((List));
-static Void   local depAlt		Args((Cell));
-static Cell   local depLetRec		Args((Bool,Int,Cell));
-static Void   local depRhs		Args((Cell));
-static Void   local depGuard		Args((Cell));
-static Void   local depPair		Args((Int,Cell));
-static Void   local depTriple		Args((Int,Cell));
-static Void   local depComp		Args((Int,Cell,List));
+static Void   local depBinding		(Cell);
+static Void   local depDefaults		(Class);
+static Void   local depInsts		(Inst);
+static Void   local depClassBindings	(List);
+static Void   local depAlt		(Cell);
+static Cell   local depLetRec		(Bool,Int,Cell);
+static Void   local depRhs		(Cell);
+static Void   local depGuard		(Cell);
+static Void   local depPair		(Int,Cell);
+static Void   local depTriple		(Int,Cell);
+static Void   local depComp		(Int,Cell,List);
 #if ZIP_COMP
-static Void   local depZComp		Args((Int,Cell,List));
-static Void   local depZCompBranch	Args((Int,List));
-static List   local intersectBinds	Args((List bs1,List bs2));
-static List   local getBindVars		Args((List bs));
+static Void   local depZComp		(Int,Cell,List);
+static Void   local depZCompBranch	(Int,List);
+static List   local intersectBinds	(List bs1,List bs2);
+static List   local getBindVars		(List bs);
 #endif
-static Void   local depCaseAlt		Args((Int,Cell));
-static Cell   local depVar		Args((Int,Cell,Bool));
-static Cell   local depQVar		Args((Int,Cell,Bool));
-static Void   local depConFlds		Args((Int,Cell,Bool));
-static Void   local depUpdFlds		Args((Int,Cell));
-static List   local depFields		Args((Int,Cell,List,Bool));
-static Void   local checkNameAmbigName  Args((Int,Name,Bool));
-static Void   local checkNameAmbig      Args((Int,Text,Cell));
-static Cell   local checkTyconAmbig     Args((Int,Text,Cell));
+static Void   local depCaseAlt		(Int,Cell);
+static Cell   local depVar		(Int,Cell,Bool);
+static Cell   local depQVar		(Int,Cell,Bool);
+static Void   local depConFlds		(Int,Cell,Bool);
+static Void   local depUpdFlds		(Int,Cell);
+static List   local depFields		(Int,Cell,List,Bool);
+static Void   local checkNameAmbigName  (Int,Name,Bool);
+static Void   local checkNameAmbig      (Int,Text,Cell);
+static Cell   local checkTyconAmbig     (Int,Text,Cell);
 #if IPARAM
-static Void   local depWith		Args((Int,Cell));
-static List   local depDwFlds		Args((Int,Cell,List));
+static Void   local depWith		(Int,Cell);
+static List   local depDwFlds		(Int,Cell,List);
 #endif
 #if TREX
-static Void   local trexUsed            Args((Void));
-static Void   local trexLoad            Args((Void));
-static Cell   local depRecord		Args((Int,Cell));
+static Void   local trexUsed            (Void);
+static Void   local trexLoad            (Void);
+static Cell   local depRecord		(Int,Cell);
 #endif
 
 #if MUDO
-static Void   local mdoLoad             Args((Void));
-static Void   local mdoUsed             Args((Void));
-static List   local mdoGetPatVarsLet	Args((Int,List,List));
-static List   local mdoBVars		Args((Int,List));
-static List   local mdoUsedVars		Args((List,Cell,List,List));
-static Void   local depRecComp		Args((Int,Cell,List));
-static Void   local mdoExpandQualifiers Args((Int,Cell,List,List));
-static Bool   local mdoIsConnected	Args((Cell,List));
-static Int    local mdoSegment		Args((Cell,List));
-static Void   local mdoSCC		Args((List));
-static List   local mdoCleanSegment	Args((Triple));
-static List   local mdoNoLets		Args((Triple));
-static Void   local mdoComputeExports	Args((Triple,Cell));
-static Bool   local mdoUsedInAnySeg	Args((Text,List));
+static Void   local mdoLoad             (Void);
+static Void   local mdoUsed             (Void);
+static List   local mdoGetPatVarsLet	(Int,List,List);
+static List   local mdoBVars		(Int,List);
+static List   local mdoUsedVars		(List,Cell,List,List);
+static Void   local depRecComp		(Int,Cell,List);
+static Void   local mdoExpandQualifiers (Int,Cell,List,List);
+static Bool   local mdoIsConnected	(Cell,List);
+static Int    local mdoSegment		(Cell,List);
+static Void   local mdoSCC		(List);
+static List   local mdoCleanSegment	(Triple);
+static List   local mdoNoLets		(Triple);
+static Void   local mdoComputeExports	(Triple,Cell);
+static Bool   local mdoUsedInAnySeg	(Text,List);
 /*#define DEBUG_MDO_SEGMENTS*/
 #endif
 
-static List   local tcscc		Args((List,List));
-static List   local bscc		Args((List));
+static List   local tcscc		(List,List);
+static List   local bscc		(List);
 
-static Void   local addRSsigdecls	Args((Pair));
-static Void   local allNoPrevDef	Args((Cell));
-static Void   local noPrevDef		Args((Int,Cell));
-static Bool   local odiff		Args((List,List));
+static Void   local addRSsigdecls	(Pair);
+static Void   local allNoPrevDef	(Cell);
+static Void   local noPrevDef		(Int,Cell);
+static Bool   local odiff		(List,List);
 
-static Void   local duplicateError	Args((Int,Module,Text,String));
-static Void   local checkTypeIn		Args((Pair));
+static Void   local duplicateError	(Int,Module,Text,String);
+static Void   local checkTypeIn		(Pair);
 
-static Bool   local h98Pred		Args((Bool,Cell));
-static Cell   local h98Context		Args((Bool,List));
-static Void   local h98CheckCtxt	Args((Int,String,Bool,List,Inst));
-static Void   local h98CheckType	Args((Int,String,Cell,Type));
+static Bool   local h98Pred		(Bool,Cell);
+static Cell   local h98Context		(Bool,List);
+static Void   local h98CheckCtxt	(Int,String,Bool,List,Inst);
+static Void   local h98CheckType	(Int,String,Cell,Type);
 
 /* --------------------------------------------------------------------------
  * The code in this file is arranged in roughly the following order:
@@ -280,13 +280,13 @@ static Void   local h98CheckType	Args((Int,String,Cell,Type));
 Bool kindExpert = FALSE;		/* TRUE => display kind errors in  */
 					/*	   full detail		   */
 
-static Void local kindError(l,c,in,wh,k,o)
-Int    l;				/* line number near constuctor exp */
-Constr c;				/* constructor			   */
-Constr in;				/* context (if any)		   */
-String wh;				/* place in which error occurs	   */
-Kind   k;				/* expected kind (k,o)		   */
-Int    o; {				/* inferred kind (typeIs,typeOff)  */
+static Void local kindError(Int l, Constr c, Constr in, String wh, Kind k, Int o)
+             /* line number near constuctor exp */
+             /* constructor			   */
+              /* context (if any)		   */
+              /* place in which error occurs	   */
+             /* expected kind (k,o)		   */
+{				/* inferred kind (typeIs,typeOff)  */
     clearMarks();
 
     if (!kindExpert) {			/* for those with a fear of kinds  */
@@ -332,8 +332,8 @@ Kind   extKind;				/* Kind of extension, *->row->row  */
 String reloadModule;
 #endif
 
-Void startModule(nm)                             /* switch to a new module */
-Cell nm; {
+Void startModule(Cell nm)                             /* switch to a new module */
+{
     Module m;
     Text t = textOf(nm);
     if (!isCon(nm)) internal("startModule");
@@ -353,13 +353,13 @@ Cell nm; {
     setCurrModule(m);
 }
 
-Void setExportList(exps)              /* Add export list to current module */
-List exps; {
+Void setExportList(List exps)              /* Add export list to current module */
+{
     module(currentModule).exports = exps;
 }
 
-static Void local checkQualImport(i)   /* Process qualified import         */
-Pair i; {
+static Void local checkQualImport(Pair i)   /* Process qualified import         */
+{
     Module m = findModid(snd(i));
     if (isNull(m)) {
 	ERRMSG(0) "Module \"%s\" not previously loaded",
@@ -369,8 +369,8 @@ Pair i; {
     snd(i)=m;
 }
 
-static Void local checkUnqualImport(i) /* Process unqualified import       */
-Pair i; {
+static Void local checkUnqualImport(Pair i) /* Process unqualified import       */
+{
     Module m = findModid(fst(i));
     if (isNull(m)) {
 	ERRMSG(0) "Module \"%s\" not previously loaded",
@@ -400,11 +400,11 @@ Pair i; {
  * - Build separate lists of newly defined constructors for later use.
  * ------------------------------------------------------------------------*/
 
-Void tyconDefn(line,lhs,rhs,what)	/* process new type definition	   */
-Int  line;				/* definition line number	   */
-Cell lhs;				/* left hand side of definition	   */
-Cell rhs;				/* right hand side of definition   */
-Cell what; {				/* SYNONYM/DATATYPE/etc...	   */
+Void tyconDefn(Int line, Cell lhs, Cell rhs, Cell what)	/* process new type definition	   */
+              /* definition line number	   */
+             /* left hand side of definition	   */
+             /* right hand side of definition   */
+{				/* SYNONYM/DATATYPE/etc...	   */
     Text t = textOf(getHead(lhs));
     Tycon tc = findTycon(t);
 
@@ -442,8 +442,8 @@ Cell what; {				/* SYNONYM/DATATYPE/etc...	   */
     }
 }
 
-Void setTypeIns(bs)			/* set local synonyms for given	   */
-List bs; {				/* binding group		   */
+Void setTypeIns(List bs)			/* set local synonyms for given	   */
+{				/* binding group		   */
     List cvs = typeInDefns;
     for (; nonNull(cvs); cvs=tl(cvs)) {
 	Tycon c  = fst(hd(cvs));
@@ -488,8 +488,8 @@ Void clearTypeIns() {			/* clear list of local synonyms	   */
 
 static List tcDeps = NIL;		/* list of dependent tycons/classes*/
 
-static Void local checkTyconDefn(d)	/* validate type constructor defn  */
-Tycon d; {
+static Void local checkTyconDefn(Tycon d)	/* validate type constructor defn  */
+{
     Cell lhs    = fst(tycon(d).defn);
     Cell rhs    = snd(tycon(d).defn);
     Int  line   = tycon(d).line;
@@ -528,10 +528,10 @@ Tycon d; {
     tcDeps	  = NIL;
 }
 
-static Void local depConstrs(t,tyvars,cd)
-Tycon t;				/* Define constructor functions and*/
-List  tyvars;				/* do dependency analysis for data */
-Cell  cd; {				/* definitions (w or w/o deriving) */
+static Void local depConstrs(Tycon t, List tyvars, Cell cd)
+            /* Define constructor functions and*/
+                 /* do dependency analysis for data */
+{				/* definitions (w or w/o deriving) */
     Int  line      = tycon(t).line;
     List ctxt      = NIL;
     Int  conNo     = 1;
@@ -742,8 +742,8 @@ Cell  cd; {				/* definitions (w or w/o deriving) */
     }
 }
 
-static Int local userArity(c)		/* Find arity for cfun, ignoring   */
-Name c; {				/* CDICTS parameters		   */
+static Int local userArity(Name c)		/* Find arity for cfun, ignoring   */
+{				/* CDICTS parameters		   */
     Int  a = name(c).arity;
     Type t = name(c).type;
     Int  w;
@@ -767,11 +767,11 @@ Name c; {				/* CDICTS parameters		   */
 static List cfunSfuns;			/* List of (Cfun,[SelectorVar])	   */
 					/*  - used for deriving Show       */
 
-static List local addSels(line,c,fs,ss)	/* Add fields to selector list	   */
-Int  line;				/* line number of constructor	   */
-Name c;					/* corresponding constr function   */
-List fs;				/* list of fields (varids)	   */
-List ss; {				/* list of existing selectors	   */
+static List local addSels(Int line, Name c, List fs, List ss)	/* Add fields to selector list	   */
+              /* line number of constructor	   */
+            /* corresponding constr function   */
+            /* list of fields (varids)	   */
+{				/* list of existing selectors	   */
     Int sn    = 1;
     cfunSfuns = cons(pair(c,fs),cfunSfuns);
     for (; nonNull(fs); fs=tl(fs), ++sn) {
@@ -815,9 +815,8 @@ List ss; {				/* list of existing selectors	   */
     return ss;
 }
 
-static List local selectCtxt(ctxt,vs)	/* calculate subset of context	   */
-List ctxt;
-List vs; {
+static List local selectCtxt(List ctxt, List vs)	/* calculate subset of context	   */
+{
     if (isNull(vs)) {
 	return NIL;
     } else {
@@ -834,8 +833,8 @@ List vs; {
     }
 }
 
-static Void local checkSynonyms(ts)	/* Check for mutually recursive	   */
-List ts; {				/* synonyms			   */
+static Void local checkSynonyms(List ts)	/* Check for mutually recursive	   */
+{				/* synonyms			   */
     List syns = NIL;
     for (; nonNull(ts); ts=tl(ts)) {	/* build list of all synonyms	   */
 	Tycon t = hd(ts);
@@ -850,10 +849,9 @@ List ts; {				/* synonyms			   */
     }
 }
 
-static List local visitSyn(path,t,syns)	/* visit synonym definition to look*/
-List  path;				/* for cycles			   */
-Tycon t;
-List  syns; {
+static List local visitSyn(List path, Tycon t, List syns)	/* visit synonym definition to look*/
+               /* for cycles			   */
+{
     if (cellIsMember(t,path)) {		/* every elt in path depends on t  */
 	ERRMSG(tycon(t).line)
 	    "Type synonyms \"%s\" and \"%s\" are mutually recursive",
@@ -879,8 +877,8 @@ List  syns; {
  * Expanding out all type synonyms and newtypes in a type expression:
  * ------------------------------------------------------------------------*/
 
-static Type local fullerExpand(t)	/* find full expansion of type exp */
-Type t; {				/* assuming that all relevant type */
+static Type local fullerExpand(Type t)	/* find full expansion of type exp */
+{				/* assuming that all relevant type */
     Cell h = t;				/* synonym defns of lower rank have*/
     Int  n = 0;				/* already been fully expanded but */
     List args;                          /* not assuming same for newtypes  */
@@ -919,8 +917,8 @@ Type t; {				/* assuming that all relevant type */
     return t;
 }
 
-Bool hasIOResultType(ty) /* return TRUE if FFI/primitive type sig is an IO action. */
-Type ty; {
+Bool hasIOResultType(Type ty) /* return TRUE if FFI/primitive type sig is an IO action. */
+{
   Type t = ty;
   if (isPolyType(t)) {
         t = monotypeOf(t);
@@ -932,9 +930,9 @@ Type ty; {
   return (getHead(t) == typeIO && argCount == 1);
 }
 
-static Type local instantiateNewtype(c,env) /* instantiate type using      */
-Name c;					/* env to determine appropriate    */
-Type env; {				/* values for OFFSET type vars	   */
+static Type local instantiateNewtype(Name c, Type env) /* instantiate type using      */
+            /* env to determine appropriate    */
+{				/* values for OFFSET type vars	   */
     Type t = NIL;
     assert(isName(c));
     t = name(c).type;
@@ -951,8 +949,8 @@ Type env; {				/* values for OFFSET type vars	   */
  * Expanding out all type synonyms in a type expression:
  * ------------------------------------------------------------------------*/
 
-Type fullExpand(t)			/* find full expansion of type exp */
-Type t; {				/* assuming that all relevant      */
+Type fullExpand(Type t)			/* find full expansion of type exp */
+{				/* assuming that all relevant      */
     Cell h = t;				/* synonym defns of lower rank have*/
     Int  n = 0;				/* already been fully expanded	   */
     List args;
@@ -974,9 +972,9 @@ Type t; {				/* assuming that all relevant      */
     return t;
 }
 
-static Type local instantiateSyn(t,env)	/* instantiate type according using*/
-Type t;					/* env to determine appropriate    */
-Type env; {				/* values for OFFSET type vars	   */
+static Type local instantiateSyn(Type t, Type env)	/* instantiate type according using*/
+            /* env to determine appropriate    */
+{				/* values for OFFSET type vars	   */
     switch (whatIs(t)) {
 	case AP      : return ap(instantiateSyn(fun(t),env),
 				 instantiateSyn(arg(t),env));
@@ -1006,11 +1004,11 @@ Type env; {				/* values for OFFSET type vars	   */
  *   stages of static analysis.
  * ------------------------------------------------------------------------*/
 
-Void classDefn(line,head,ms,fds)       /* process new class definition	   */
-Int  line;			       /* definition line number	   */
-Cell head;			       /* class header :: ([Supers],Class) */
-List ms;			       /* class definition body		   */
-List fds; {			       /* functional dependencies	   */
+Void classDefn(Int line, Cell head, List ms, List fds)       /* process new class definition	   */
+                    /* definition line number	   */
+                    /* class header :: ([Supers],Class) */
+                  /* class definition body		   */
+{			       /* functional dependencies	   */
     Text ct    = textOf(getHead(snd(head)));
     Int  arity = argCount;
 
@@ -1062,8 +1060,8 @@ List fds; {			       /* functional dependencies	   */
  * - check that extended class hierarchy does not contain any cycles
  * ------------------------------------------------------------------------*/
 
-static Void local checkClassDefn(c)    /* validate class definition	   */
-Class c; {
+static Void local checkClassDefn(Class c)    /* validate class definition	   */
+{
     List tyvars = NIL;
     Cell temp   = cclass(c).head;
     List fs     = NIL;
@@ -1167,13 +1165,13 @@ Class c; {
     tcDeps              = NIL;
 }
 
-static Void local checkClassDefn2_(cs)
-List cs; {
+static Void local checkClassDefn2_(List cs)
+{
     mapProc(checkClassDefn2,cs);
 }
 
-static Void local checkClassDefn2(c)    /* validate class definition, pt 2 */
-Class c; {				/* can only finish this job after  */
+static Void local checkClassDefn2(Class c)    /* validate class definition, pt 2 */
+{				/* can only finish this job after  */
 					/* we've inherited fds             */
 					/* and are in dependency order     */
     if (!isTycon(c)) {
@@ -1219,10 +1217,8 @@ Class c; {				/* can only finish this job after  */
  * Self-improvement (of a C with a C, or a D with a D) is treated as a
  * special case of an inherited dependency.
  * ------------------------------------------------------------------------*/
-static List local inheritFundeps(c,pi,o)
-Class c;
-Cell pi;
-Int o; {
+static List local inheritFundeps(Class c, Cell pi, Int o)
+{
     Int alpha = newKindedVars(cclass(c).kinds);
     List scs = cclass(c).supers;
     List xfds = NIL;
@@ -1263,8 +1259,8 @@ Int o; {
     return xfds;
 }
 
-static Void local extendFundeps(c)
-Class c; {
+static Void local extendFundeps(Class c)
+{
     Int alpha;
     emptySubstitution();
     alpha = newKindedVars(cclass(c).kinds);
@@ -1274,10 +1270,8 @@ Class c; {
     map1Proc(checkMems2,c,fst(cclass(c).members));
 }
 
-static Cell local depPredExp(line,tyvars,pred)
-Int  line;
-List tyvars;
-Cell pred; {
+static Cell local depPredExp(Int line, List tyvars, Cell pred)
+{
     Int  args = 0;
     Cell prev = NIL;
     Cell h    = pred;
@@ -1344,10 +1338,8 @@ Cell pred; {
     return pred;
 }
 
-static Void local checkMems(c,tyvars,m)	/* check member function details   */
-Class c;
-List  tyvars;
-Cell  m; {
+static Void local checkMems(Class c, List tyvars, Cell m)	/* check member function details   */
+{
     Int  line = intOf(fst3(m));
     List vs   = snd3(m);
     Type t    = thd3(m);
@@ -1385,9 +1377,8 @@ Cell  m; {
     h98CheckType(line,"member type",hd(vs),t);
 }
 
-static Void local checkMems2(c,m) /* check member function details   */
-Class c;
-Cell  m; {
+static Void local checkMems2(Class c, Cell m) /* check member function details   */
+{
     Int  line = intOf(fst3(m));
     List vs   = snd3(m);
     Type t    = thd3(m);
@@ -1397,8 +1388,8 @@ Cell  m; {
     }
 }
 
-static Void local addMembers(c)		/* Add definitions of member funs  */
-Class c; {				/* and other parts of class struct.*/
+static Void local addMembers(Class c)		/* Add definitions of member funs  */
+{				/* and other parts of class struct.*/
     List ms  = fst(cclass(c).members);
     List fs  = snd(cclass(c).members);
     List ns  = NIL;			/* List of names		   */
@@ -1456,12 +1447,9 @@ Class c; {				/* and other parts of class struct.*/
     cclass(c).defaults = classBindings("class",c,cclass(c).defaults);
 }
 
-static Name local newMember(l,no,v,t,parent)
-Int   l;				/* Make definition for member fn   */
-Int   no;
-Cell  v;
-Type  t;
-Class parent; {
+static Name local newMember(Int l, Int no, Cell v, Type t, Class parent)
+            /* Make definition for member fn   */
+{
     Name m = findName(textOf(v));
 
     if (isNull(m)) {
@@ -1487,9 +1475,8 @@ Class parent; {
     return m;
 }
 
-static Name local newDSel(c,no)		/* Make definition for dict selectr*/
-Class c;
-Int   no; {
+static Name local newDSel(Class c, Int no)		/* Make definition for dict selectr*/
+{
     Name s;
     char buf[16];
 
@@ -1503,9 +1490,9 @@ Int   no; {
 
 #define MAX_GEN  128
 
-static Text local generateText(sk,c)	/* We need to generate names for   */
-String sk;				/* certain objects corresponding   */
-Class  c; {				/* to each class.		   */
+static Text local generateText(String sk, Class c)	/* We need to generate names for   */
+              /* certain objects corresponding   */
+{				/* to each class.		   */
     String cname = textToStr(cclass(c).text);
     char buffer[MAX_GEN+1];
 
@@ -1517,8 +1504,8 @@ Class  c; {				/* to each class.		   */
     return findText(buffer);
 }
 
-static Int local visitClass(c)		/* visit class defn to check that  */
-Class c; {				/* class hierarchy is acyclic	   */
+static Int local visitClass(Class c)		/* visit class defn to check that  */
+{				/* class hierarchy is acyclic	   */
 #if TREX
     if (isExt(c)) {			/* special case for lacks preds	   */
 	return 0;
@@ -1551,10 +1538,10 @@ Class c; {				/* class hierarchy is acyclic	   */
  * Process class and instance declaration binding groups:
  * ------------------------------------------------------------------------*/
 
-static List local classBindings(where,c,bs)
-String where;				/* Check validity of bindings bs   */
-Class  c;				/* for class c (or an inst of c)   */
-List   bs; {				/* sort into approp. member order  */
+static List local classBindings(String where, Class c, List bs)
+                 /* Check validity of bindings bs   */
+             /* for class c (or an inst of c)   */
+{				/* sort into approp. member order  */
     List nbs = NIL;
     Text nm;
 
@@ -1583,9 +1570,9 @@ List   bs; {				/* sort into approp. member order  */
     return nbs;
 }
 
-static Name local memberName(c,t)	/* return name of member function  */
-Class c;				/* with name t in class c	   */
-Text  t; {				/* return NIL if not a member	   */
+static Name local memberName(Class c, Text t)	/* return name of member function  */
+            /* with name t in class c	   */
+{				/* return NIL if not a member	   */
     List ms = cclass(c).members;
     for (; nonNull(ms); ms=tl(ms)) {
 	if (t==name(hd(ms)).text) {
@@ -1595,10 +1582,9 @@ Text  t; {				/* return NIL if not a member	   */
     return NIL;
 }
 
-static List local numInsert(n,x,xs)    /* insert x at nth position in xs,  */
-Int  n;                                /* filling gaps with NIL            */
-Cell x;
-List xs; {
+static List local numInsert(Int n, Cell x, List xs)    /* insert x at nth position in xs,  */
+                                       /* filling gaps with NIL            */
+{
     List start = isNull(xs) ? cons(NIL,NIL) : xs;
 
     for (xs=start; 0<n--; xs=tl(xs)) {
@@ -1617,11 +1603,11 @@ List xs; {
  * occur in the type expression when read from left to right.
  * ------------------------------------------------------------------------*/
 
-static List local typeVarsIn(ty,us,ws,vs)/*Calculate list of type variables*/
-Cell ty;				/* used in type expression, reading*/
-List us;				/* from left to right ignoring any */
-List ws;				/* listed in us.		   */
-List vs; {				/* ws = explicitly quantified vars */
+static List local typeVarsIn(Cell ty, List us, List ws, List vs)/*Calculate list of type variables*/
+            /* used in type expression, reading*/
+            /* from left to right ignoring any */
+            /* listed in us.		   */
+{				/* ws = explicitly quantified vars */
     switch (whatIs(ty)) {
 	case AP        : return typeVarsIn(snd(ty),us,ws,
 					   typeVarsIn(fst(ty),us,ws,vs));
@@ -1653,9 +1639,9 @@ List vs; {				/* ws = explicitly quantified vars */
     return vs;
 }
 
-static List local maybeAppendVar(v,vs) /* append variable to list if not   */
-Cell v; 			       /* already included		   */
-List vs; {
+static List local maybeAppendVar(Cell v, List vs) /* append variable to list if not   */
+                  /* already included		   */
+{
     Text t = textOf(v);
     List p = NIL;
     List c = vs;
@@ -1684,11 +1670,10 @@ List vs; {
  *   - ensure that the type is well-kinded.
  * ------------------------------------------------------------------------*/
 
-static Type local checkSigType(line,where,e,type)
-Int    line;				/* Check validity of type expr in  */
-String where;				/* explicit type signature	   */
-Cell   e;
-Type   type; {
+static Type local checkSigType(Int line, String where, Cell e, Type type)
+                /* Check validity of type expr in  */
+                 /* explicit type signature	   */
+{
     List tvs  = NIL;
     List sunk = NIL;
     List xtvs = NIL;
@@ -1734,10 +1719,9 @@ Type   type; {
     return type;
 }
 
-static Void local checkOptQuantVars(line,xtvs,tvs)
-Int  line;
-List xtvs;				/* Explicitly quantified vars	   */
-List tvs; {				/* Implicitly quantified vars	   */
+static Void local checkOptQuantVars(Int line, List xtvs, List tvs)
+              /* Explicitly quantified vars	   */
+{				/* Implicitly quantified vars	   */
     if (nonNull(xtvs)) {
 	List vs = tvs;
 	for (; nonNull(vs); vs=tl(vs)) {
@@ -1762,10 +1746,8 @@ List tvs; {				/* Implicitly quantified vars	   */
     }
 }
 
-static Type local depTopType(l,tvs,t)	/* Check top-level of type sig     */
-Int  l;
-List tvs;
-Type t; {
+static Type local depTopType(Int l, List tvs, Type t)	/* Check top-level of type sig     */
+{
     Type prev = NIL;
     Type t1   = t;
     Int  nr2  = 0;
@@ -1791,10 +1773,8 @@ Type t; {
     return t;
 }
 
-static Type local depCompType(l,tvs,t)	/* Check component type for constr */
-Int  l;
-List tvs;
-Type t; {
+static Type local depCompType(Int l, List tvs, Type t)	/* Check component type for constr */
+{
     Int  ntvs = length(tvs);
     List nfr  = NIL;
     if (isPolyType(t)) {
@@ -1824,10 +1804,8 @@ Type t; {
     return mkPolyType(nfr,t);
 }
 
-static Type local depTypeExp(line,tyvars,type)
-Int  line;
-List tyvars;
-Type type; {
+static Type local depTypeExp(Int line, List tyvars, Type type)
+{
     switch (whatIs(type)) {
 	case AP		: fst(type) = depTypeExp(line,tyvars,fst(type));
 			  snd(type) = depTypeExp(line,tyvars,snd(type));
@@ -1869,10 +1847,8 @@ Type type; {
     return type;
 }
 
-static Type local depTypeVar(line,tyvars,tv)
-Int  line;
-List tyvars;
-Text tv; {
+static Type local depTypeVar(Int line, List tyvars, Text tv)
+{
     Int offset = 0;
     Int found  = (-1);
 
@@ -1893,11 +1869,10 @@ Text tv; {
     return mkOffset(found);
 }
 
-static List local checkQuantVars(line,vs,tvs,body)
-Int  line;
-List vs;				/* variables to quantify over	   */
-List tvs;				/* variables already in scope	   */
-Cell body; {				/* type/constr for scope of vars   */
+static List local checkQuantVars(Int line, List vs, List tvs, Cell body)
+            /* variables to quantify over	   */
+             /* variables already in scope	   */
+{				/* type/constr for scope of vars   */
     if (nonNull(vs)) {
 	List bvs = typeVarsIn(body,NIL,NIL,NIL);
 	List us  = vs;
@@ -1931,9 +1906,9 @@ Cell body; {				/* type/constr for scope of vars   */
  * A type  Preds => type  is ambiguous if not (TV(P) `subset` TV(type))
  * ------------------------------------------------------------------------*/
 
-static List local offsetTyvarsIn(t,vs)	/* add list of offset tyvars in t  */
-Type t;					/* to list vs			   */
-List vs; {
+static List local offsetTyvarsIn(Type t, List vs)	/* add list of offset tyvars in t  */
+            /* to list vs			   */
+{
     switch (whatIs(t)) {
 	case AP	      : return offsetTyvarsIn(fun(t),
 				offsetTyvarsIn(arg(t),vs));
@@ -1955,9 +1930,8 @@ List vs; {
     }
 }
 
-List zonkTyvarsIn(t,vs)
-Type t;
-List vs; {
+List zonkTyvarsIn(Type t, List vs)
+{
     switch (whatIs(t)) {
 	case AP	      : return zonkTyvarsIn(fun(t),
 			         zonkTyvarsIn(arg(t),vs));
@@ -1975,9 +1949,9 @@ List vs; {
     }
 }
 
-static List local otvars(pi,os)		/* os is a list of offsets that	   */
-Cell pi;				/* refer to the arguments of pi;   */
-List os; {				/* find list of offsets in those   */
+static List local otvars(Cell pi, List os)		/* os is a list of offsets that	   */
+            /* refer to the arguments of pi;   */
+{				/* find list of offsets in those   */
     List us = NIL;			/* positions			   */
     for (; nonNull(os); os=tl(os)) {
 	us = offsetTyvarsIn(nthArg(offsetOf(hd(os)),pi),us);
@@ -1985,10 +1959,8 @@ List os; {				/* find list of offsets in those   */
     return us;
 }
 
-static List local otvarsZonk(pi,os,o)	/* same as above, but zonks	   */
-Cell pi;
-List os;
-Int  o; {
+static List local otvarsZonk(Cell pi, List os, Int o)	/* same as above, but zonks	   */
+{
     List us = NIL;
     for (; nonNull(os); os=tl(os)) {
         Type t = zonkType(nthArg(offsetOf(hd(os)),pi),o);
@@ -1997,25 +1969,24 @@ Int  o; {
     return us;
 }
 
-static Bool local odiff(us,vs)
-List us, vs; {
+static Bool local odiff(List us, List vs)
+{
     while (nonNull(us) && cellIsMember(hd(us),vs)) {
 	us = tl(us);
     }
     return us;
 }
 
-static Bool local osubset(us,vs)	/* Determine whether us is subset  */
-List us, vs; {				/* of vs			   */
+static Bool local osubset(List us, List vs)	/* Determine whether us is subset  */
+{				/* of vs			   */
     while (nonNull(us) && cellIsMember(hd(us),vs)) {
 	us = tl(us);
     }
     return isNull(us);
 }
 
-List oclose(fds,vs)	/* Compute closure of vs wrt to fds*/
-List fds;
-List vs; {
+List oclose(List fds, List vs)	/* Compute closure of vs wrt to fds*/
+{
     Bool changed = TRUE;
     while (changed) {
 	List fds1 = NIL;
@@ -2042,8 +2013,8 @@ List vs; {
     return vs;
 }
 
-Bool isAmbiguous(type)			/* Determine whether type is	   */
-Type type; {				/* ambiguous 			   */
+Bool isAmbiguous(Type type)			/* Determine whether type is	   */
+{				/* ambiguous 			   */
     if (isPolyType(type)) {
 	type = monotypeOf(type);
     }
@@ -2059,8 +2030,8 @@ Type type; {				/* ambiguous 			   */
     return FALSE;
 }
 
-List calcFunDeps(ps)
-List ps; {
+List calcFunDeps(List ps)
+{
     List fds  = NIL;
     for (; nonNull(ps); ps=tl(ps)) {/* Calc functional dependencies	   */
 	Cell pi = hd(ps);
@@ -2084,8 +2055,8 @@ List ps; {
     return fds;
 }
 
-List calcFunDepsPreds(ps)
-List ps; {
+List calcFunDepsPreds(List ps)
+{
     List fds  = NIL;
     for (; nonNull(ps); ps=tl(ps)) {/* Calc functional dependencies	   */
 	Cell pi3 = hd(ps);
@@ -2111,11 +2082,9 @@ List ps; {
     return fds;
 }
 
-Void ambigError(line,where,e,type)	/* produce error message for	   */
-Int    line;				/* ambiguity			   */
-String where;
-Cell   e;
-Type   type; {
+Void ambigError(Int line, String where, Cell e, Type type)	/* produce error message for	   */
+                /* ambiguity			   */
+{
     ERRMSG(line) "Ambiguous type signature in %s", where ETHEN
     ERRTEXT      "\n*** ambiguous type : " ETHEN ERRTYPE(type);
     if (nonNull(e)) {
@@ -2129,11 +2098,9 @@ Type   type; {
  * Kind inference for simple types:
  * ------------------------------------------------------------------------*/
 
-static Void local kindConstr(line,alpha,m,c)
-Int  line;				/* Determine kind of constructor   */
-Int  alpha;
-Int  m;
-Cell c; {
+static Void local kindConstr(Int line, Int alpha, Int m, Cell c)
+              /* Determine kind of constructor   */
+{
     Cell h = getHead(c);
     Int  n = argCount;
 
@@ -2216,9 +2183,8 @@ Cell c; {
     }
 }
 
-static Kind local kindAtom(alpha,c)	/* Find kind of atomic constructor */
-Int  alpha;
-Cell c; {
+static Kind local kindAtom(Int alpha, Cell c)	/* Find kind of atomic constructor */
+{
     switch (whatIs(c)) {
 	case TUPLE     : return simpleKind(tupleOf(c));	/*(,)::* -> * -> * */
 	case OFFSET    : return mkInt(alpha+offsetOf(c));
@@ -2243,11 +2209,8 @@ Cell c; {
     return STAR;/* not reached */
 }
 
-static Void local kindPred(l,alpha,m,pi)/* Check kinds of arguments in pred*/
-Int  l;
-Int  alpha;
-Int  m;
-Cell pi; {
+static Void local kindPred(Int l, Int alpha, Int m, Cell pi)/* Check kinds of arguments in pred*/
+{
 #if TREX
     if (isAp(pi) && isExt(fun(pi))) {
 	static String lackspred = "lacks predicate";
@@ -2275,10 +2238,9 @@ Cell pi; {
     }
 }
 
-static Void local kindType(line,wh,type)/* check that (poss qualified) type*/
-Int    line;				/* is well-kinded		   */
-String wh;
-Type   type; {
+static Void local kindType(Int line, String wh, Type type)/* check that (poss qualified) type*/
+                /* is well-kinded		   */
+{
     checkKind(line,0,0,type,NIL,wh,STAR,0);
 }
 
@@ -2314,8 +2276,8 @@ static Void local fixKinds() {		/* add kind annotations to types   */
  * Kind checking of groups of type constructors and classes:
  * ------------------------------------------------------------------------*/
 
-static Void local kindTCGroup(tcs)	/* find kinds for mutually rec. gp */
-List tcs; {				/* of tycons and classes	   */
+static Void local kindTCGroup(List tcs)	/* find kinds for mutually rec. gp */
+{				/* of tycons and classes	   */
     emptySubstitution();
     unkindTypes = NIL;
     mapProc(initTCKind,tcs);
@@ -2325,8 +2287,8 @@ List tcs; {				/* of tycons and classes	   */
     emptySubstitution();
 }
 
-static Void local initTCKind(c)		/* build initial kind/arity for	c  */
-Cell c; {
+static Void local initTCKind(Cell c)		/* build initial kind/arity for	c  */
+{
     if (isTycon(c)) {			/* Initial kind of tycon is:	   */
 	Int beta = newKindvars(1);	/*    v1 -> ... -> vn -> vn+1	   */
 	varKind(tycon(c).arity);	/* where n is the arity of c.	   */
@@ -2347,8 +2309,8 @@ Cell c; {
     }
 }
 
-static Void local kindTC(c)		/* check each part of a tycon/class*/
-Cell c; {				/* is well-kinded		   */
+static Void local kindTC(Cell c)		/* check each part of a tycon/class*/
+{				/* is well-kinded		   */
     if (isTycon(c)) {
 	static String cfun = "data constructor";
 	static String tsyn = "synonym declaration";
@@ -2387,8 +2349,8 @@ Cell c; {				/* is well-kinded		   */
     }
 }
 
-static Void local genTC(c)		/* generalise kind inferred for	   */
-Cell c; {				/* given tycon/class		   */
+static Void local genTC(Cell c)		/* generalise kind inferred for	   */
+{				/* given tycon/class		   */
     if (isTycon(c)) {
 	tycon(c).kind = copyKindvar(intOf(tycon(c).kind));
 #if DEBUG_KINDS
@@ -2420,10 +2382,10 @@ Cell c; {				/* given tycon/class		   */
  *   stages of static analysis.
  * ------------------------------------------------------------------------*/
 
-Void instDefn(line,head,ms)	       /* process new instance definition  */
-Int  line;			       /* definition line number	   */
-Cell head;			       /* inst header :: (context,Class)   */
-List ms; {			       /* instance members		   */
+Void instDefn(Int line, Cell head, List ms)	       /* process new instance definition  */
+                    /* definition line number	   */
+                    /* inst header :: (context,Class)   */
+{			       /* instance members		   */
     Inst nw             = newInst();
     inst(nw).line       = line;
     inst(nw).specifics  = fst(head);
@@ -2454,8 +2416,8 @@ Bool allowUnsafeOverlap = FALSE;	/* TRUE => in addition, allow      */
 					/* overlapping instances           */
 Name nameListMonad = NIL;		/* builder function for List Monad */
 
-static Void local checkInstDefn(in)	/* Validate instance declaration   */
-Inst in; {
+static Void local checkInstDefn(Inst in)	/* Validate instance declaration   */
+{
     Int  line   = inst(in).line;
     List tyvars = typeVarsIn(inst(in).head,NIL,NIL,NIL);
     List tvps = NIL, tvts = NIL;
@@ -2573,8 +2535,8 @@ Inst in; {
     }
 }
 
-static Void local insertInst(in)	/* Insert instance into class	   */
-Inst in; {
+static Void local insertInst(Inst in)	/* Insert instance into class	   */
+{
     Class c    = inst(in).c;
     List  ins  = cclass(c).instances;
     List  prev = NIL;
@@ -2671,15 +2633,15 @@ Inst in; {
     }
 }
 
-static Bool local instCompare(ia,ib)	/* See if ia is an instance of ib  */
-Inst ia, ib;{
+static Bool local instCompare(Inst ia, Inst ib)	/* See if ia is an instance of ib  */
+{
     Int alpha = newKindedVars(inst(ia).kinds);
     Int beta  = newKindedVars(inst(ib).kinds);
     return matchPred(inst(ia).head,alpha,inst(ib).head,beta);
 }
 
-static Name local newInstImp(in)	/* Make definition for inst builder*/
-Inst in; {
+static Name local newInstImp(Inst in)	/* Make definition for inst builder*/
+{
     Name b         = newName(inventText(),in);
     name(b).line   = inst(in).line;
     name(b).arity  = inst(in).numSpecifics;
@@ -2691,9 +2653,8 @@ Inst in; {
  * Kind checking of instance declaration headers:
  * ------------------------------------------------------------------------*/
 
-static Void local kindInst(in,freedom)	/* check predicates in instance    */
-Inst in;
-Int  freedom; {
+static Void local kindInst(Inst in, Int freedom)	/* check predicates in instance    */
+{
     Int beta;
 
     emptySubstitution();
@@ -2721,11 +2682,11 @@ Int  freedom; {
 
 static List derivedInsts;		/* list of derived instances	   */
 
-static Void local checkDerive(t,p,ts,ct)/* verify derived instance request */
-Tycon t;				/* for tycon t, with explicit	   */
-List  p;				/* context p, component types ts   */
-List  ts;				/* and named class ct		   */
-Cell  ct; {
+static Void local checkDerive(Tycon t, List p, List ts, Cell ct)/* verify derived instance request */
+            /* for tycon t, with explicit	   */
+            /* context p, component types ts   */
+             /* and named class ct		   */
+{
     Int   line = tycon(t).line;
     Class c    = findQualClass(ct);
     if (isNull(c)) {
@@ -2736,12 +2697,8 @@ Cell  ct; {
     addDerInst(line,c,p,dupList(ts),t,tycon(t).arity);
 }
 
-static Void local addDerInst(line,c,p,cts,t,a)	/* Add a derived instance  */
-Int   line;
-Class c;
-List  p, cts;
-Type  t;
-Int   a; {
+static Void local addDerInst(Int line, Class c, List p, List cts, Type t, Int a)	/* Add a derived instance  */
+{
     Inst in;
     Cell head = t;				/* Build instance head	   */
     Int  i    = 0;
@@ -2761,9 +2718,9 @@ Int   a; {
     derivedInsts        = cons(in,derivedInsts);
 }
 
-Void addTupInst(c,n)			/* Request derived instance of c   */
-Class c;				/* for mkTuple(n) constructor	   */
-Int   n; {
+Void addTupInst(Class c, Int n)			/* Request derived instance of c   */
+            /* for mkTuple(n) constructor	   */
+{
     Int  m   = n;
     List cts = NIL;
     while (0<m--) {
@@ -2774,9 +2731,9 @@ Int   n; {
 }
 
 #if TREX
-Inst addRecShowInst(c,e)		/* Generate instance for ShowRecRow*/
-Class c;				/* c *must* be ShowRecRow	   */
-Ext   e; {
+Inst addRecShowInst(Class c, Ext e)		/* Generate instance for ShowRecRow*/
+            /* c *must* be ShowRecRow	   */
+{
     Inst in		  = newInst();
     inst(in).c		  = c;
     inst(in).head	  = ap(c,ap2(e,aVar,bVar));
@@ -2790,9 +2747,9 @@ Ext   e; {
     return in;
 }
 
-Inst addRecEqInst(c,e)			/* Generate instance for EqRecRow  */
-Class c;				/* c *must* be EqRecRow		   */
-Ext   e; {
+Inst addRecEqInst(Class c, Ext e)			/* Generate instance for EqRecRow  */
+            /* c *must* be EqRecRow		   */
+{
     Inst in		  = newInst();
     inst(in).c		  = c;
     inst(in).head	  = ap(c,ap2(e,aVar,bVar));
@@ -2848,8 +2805,8 @@ Ext   e; {
 
 static Bool instsChanged;
 
-static Void local deriveContexts(is)	/* Calc contexts for derived insts */
-List is; {
+static Void local deriveContexts(List is)	/* Calc contexts for derived insts */
+{
     emptySubstitution();
     mapProc(initDerInst,is);		/* Prepare derived instances	   */
 
@@ -2861,8 +2818,8 @@ List is; {
     mapProc(tidyDerInst,is);		/* Tidy up results		   */
 }
 
-static Void local initDerInst(in)	/* Prepare instance for calculation*/
-Inst in; {				/* of derived instance context	   */
+static Void local initDerInst(Inst in)	/* Prepare instance for calculation*/
+{				/* of derived instance context	   */
     Cell spcs = inst(in).specifics;
     Int  beta = newKindedVars(inst(in).kinds);
     if (whatIs(spcs)!=DERIVE) {
@@ -2883,8 +2840,8 @@ Inst in; {				/* of derived instance context	   */
 #endif
 }
 
-static Void local calcInstPreds(in)	/* Calculate next approximation	   */
-Inst in; {				/* of the context for a derived	   */
+static Void local calcInstPreds(Inst in)	/* Calculate next approximation	   */
+{				/* of the context for a derived	   */
     List retain = NIL;			/* instance			   */
     List ps     = snd(snd(inst(in).specifics));
     List spcs   = fst(snd(inst(in).specifics));
@@ -2987,11 +2944,11 @@ Inst in; {				/* of the context for a derived	   */
     snd(snd(inst(in).specifics)) = retain;
 }
 
-static Void local maybeAddPred(pi,o,beta,ps)
-Cell pi;				/* Add predicate pi to the list ps,*/
-Int  o;					/* setting the instsChanged flag if*/
-Int  beta;				/* pi is not already a member and  */
-List ps; {				/* using beta to adjust vars	   */
+static Void local maybeAddPred(Cell pi, Int o, Int beta, List ps)
+            /* Add predicate pi to the list ps,*/
+            /* setting the instsChanged flag if*/
+              /* pi is not already a member and  */
+{				/* using beta to adjust vars	   */
     Cell c = getHead(pi);
     for (; nonNull(ps); ps=tl(ps)) {
 	if (isNull(hd(ps))) {		/* reached the `dummy' end of list?*/
@@ -3005,10 +2962,9 @@ List ps; {				/* using beta to adjust vars	   */
     }
 }
 
-static Cell local copyAdj(c,o,beta)	/* Copy (c,o), replacing vars with */
-Cell c;					/* offsets relative to beta.	   */
-Int  o;
-Int  beta; {
+static Cell local copyAdj(Cell c, Int o, Int beta)	/* Copy (c,o), replacing vars with */
+            /* offsets relative to beta.	   */
+{
     switch (whatIs(c)) {
 	case AP     : {   Cell l = copyAdj(fst(c),o,beta);
 			  Cell r = copyAdj(snd(c),o,beta);
@@ -3030,8 +2986,8 @@ Int  beta; {
     return c;
 }
 
-static Void local tidyDerInst(in)	/* Tidy up results of derived inst */
-Inst in; {				/* calculations			   */
+static Void local tidyDerInst(Inst in)	/* Tidy up results of derived inst */
+{				/* calculations			   */
     Int  o  = inst(in).numSpecifics;
     List ps = tl(rev(fst(snd(inst(in).specifics))));
     clearMarks();
@@ -3053,8 +3009,8 @@ Inst in; {				/* calculations			   */
  * Generate code for derived instances:
  * ------------------------------------------------------------------------*/
 
-static Void local addDerivImp(in)
-Inst in; {
+static Void local addDerivImp(Inst in)
+{
     List  imp = NIL;
     Type  t   = getHead(arg(inst(in).head));
     Class c   = inst(in).c;
@@ -3089,23 +3045,22 @@ Inst in; {
 static List diVars = NIL;		/* Acts as a cache of invented vars*/
 static Int  diNum  = 0;
 
-static List local getDiVars(n)		/* get list of at least n vars for */
-Int n; {				/* derived instance generation	   */
+static List local getDiVars(Int n)		/* get list of at least n vars for */
+{				/* derived instance generation	   */
     for (; diNum<n; diNum++) {
 	diVars = cons(inventVar(),diVars);
     }
     return diVars;
 }
 
-static Cell local mkBind(s,alts)	/* make a binding for a variable   */
-String s;
-List   alts; {
+static Cell local mkBind(String s, List alts)	/* make a binding for a variable   */
+{
     return pair(mkVar(findText(s)),pair(NIL,alts));
 }
 
-static Cell local mkVarAlts(line,r)	/* make alts for binding a var to  */
-Int  line;				/* a simple expression		   */
-Cell r; {
+static Cell local mkVarAlts(Int line, Cell r)	/* make alts for binding a var to  */
+              /* a simple expression		   */
+{
     return singleton(pair(NIL,pair(mkInt(line),r)));
 }
 
@@ -3129,8 +3084,8 @@ Cell r; {
 
 #define ap2(f,x,y) ap(ap(f,x),y)
 
-static List local deriveEq(t)		/* generate binding for derived == */
-Type t; {				/* for some TUPLE or DATATYPE t	   */
+static List local deriveEq(Type t)		/* generate binding for derived == */
+{				/* for some TUPLE or DATATYPE t	   */
     List alts = NIL;
     if (isTycon(t)) {			/* deal with type constrs	   */
 	List cs = tycon(t).defn;
@@ -3152,9 +3107,9 @@ Type t; {				/* for some TUPLE or DATATYPE t	   */
     return singleton(mkBind("==",alts));
 }
 
-static Pair local mkAltEq(line,pats)	/* make alt for an equation for == */
-Int  line;				/* using patterns in pats for lhs  */
-List pats; {				/* arguments			   */
+static Pair local mkAltEq(Int line, List pats)	/* make alt for an equation for == */
+              /* using patterns in pats for lhs  */
+{				/* arguments			   */
     Cell p = hd(pats);
     Cell q = hd(tl(pats));
     Cell e = nameTrue;
@@ -3168,8 +3123,8 @@ List pats; {				/* arguments			   */
     return pair(pats,pair(mkInt(line),e));
 }
 
-static List local deriveOrd(t)		/* make binding for derived compare*/
-Type t; {				/* for some TUPLE or DATATYPE t	   */
+static List local deriveOrd(Type t)		/* make binding for derived compare*/
+{				/* for some TUPLE or DATATYPE t	   */
     List alts = NIL;
     if (isEnumType(t)) {		/* special case for enumerations   */
 	alts = mkVarAlts(tycon(t).line,nameConCmp);
@@ -3195,9 +3150,9 @@ Type t; {				/* for some TUPLE or DATATYPE t	   */
     return singleton(mkBind("compare",alts));
 }
 
-static Pair local mkAltOrd(line,pats)	/* make alt for eqn for compare	   */
-Int  line;				/* using patterns in pats for lhs  */
-List pats; {				/* arguments			   */
+static Pair local mkAltOrd(Int line, List pats)	/* make alt for eqn for compare	   */
+              /* using patterns in pats for lhs  */
+{				/* arguments			   */
     Cell p = hd(pats);
     Cell q = hd(tl(pats));
     Cell e = nameEQ;
@@ -3212,9 +3167,9 @@ List pats; {				/* arguments			   */
     return pair(pats,pair(mkInt(line),e));
 }
 
-static List local makeDPats2(h,n)	/* generate pattern list	   */
-Cell h;					/* by putting two new patterns with*/
-Int  n; {				/* head h and new var components   */
+static List local makeDPats2(Cell h, Int n)	/* generate pattern list	   */
+            /* by putting two new patterns with*/
+{				/* head h and new var components   */
     List us = getDiVars(2*n);
     List vs = NIL;
     Cell p;
@@ -3237,8 +3192,8 @@ Int  n; {				/* head h and new var components   */
  * Deriving Ix and Enum:
  * ------------------------------------------------------------------------*/
 
-static List local deriveEnum(t)	/* Construct definition of enumeration	   */
-Tycon t; {
+static List local deriveEnum(Tycon t)	/* Construct definition of enumeration	   */
+{
     Int l = tycon(t).line;
 
     if (!isEnumType(t)) {
@@ -3253,8 +3208,8 @@ Tycon t; {
 	       cons(mkBind("enumFromThen",mkVarAlts(l,nameEnFrTh)),NIL)))));
 }
 
-static List local deriveIx(t)	/* Construct definition of indexing	   */
-Tycon t; {
+static List local deriveIx(Tycon t)	/* Construct definition of indexing	   */
+{
     if (isEnumType(t)) {	/* Definitions for enumerations		   */
 	return cons(mkBind("range",mkVarAlts(tycon(t).line,nameEnRange)),
 		cons(mkBind("index",mkVarAlts(tycon(t).line,nameEnIndex)),
@@ -3274,8 +3229,8 @@ Tycon t; {
     return NIL;/* NOTREACHED*/
 }
 
-static Bool local isEnumType(t)	/* Determine whether t is an enumeration   */
-Tycon t; {			/* type (i.e. all constructors arity == 0) */
+static Bool local isEnumType(Tycon t)	/* Determine whether t is an enumeration   */
+{			/* type (i.e. all constructors arity == 0) */
     if (isTycon(t) && (tycon(t).what==DATATYPE || tycon(t).what==NEWTYPE)) {
 	List cs = tycon(t).defn;
 	for (; hasCfun(cs); cs=tl(cs)) {
@@ -3289,10 +3244,9 @@ Tycon t; {			/* type (i.e. all constructors arity == 0) */
     return FALSE;
 }
 
-static List local mkIxBinds(line,h,n)	/* build bindings for derived Ix on*/
-Int  line;				/* a product type		   */
-Cell h;
-Int  n; {
+static List local mkIxBinds(Int line, Cell h, Int n)	/* build bindings for derived Ix on*/
+              /* a product type		   */
+{
     List vs   = getDiVars(3*n);
     Cell ls   = h;
     Cell us   = h;
@@ -3316,10 +3270,10 @@ Int  n; {
 		     cons(prodInRange(line,pats,ls,us,is),NIL)));
 }
 
-static Cell local prodRange(line,pats,ls,us,is)
-Int  line;				/* Make definition of range for a  */
-List pats;				/* product type			   */
-Cell ls, us, is; {
+static Cell local prodRange(Int line, List pats, Cell ls, Cell us, Cell is)
+              /* Make definition of range for a  */
+              /* product type			   */
+{
     /* range :: (a,a) -> [a]
      * range (X a b c, X p q r)
      *   = [ X x y z | x <- range (a,p), y <- range (b,q), z <- range (c,r) ]
@@ -3337,10 +3291,10 @@ Cell ls, us, is; {
     return mkBind("range",e);
 }
 
-static Cell local prodIndex(line,pats,ls,us,is)
-Int  line;				/* Make definition of index for a  */
-List pats;				/* product type			   */
-Cell ls, us, is; {
+static Cell local prodIndex(Int line, List pats, Cell ls, Cell us, Cell is)
+              /* Make definition of index for a  */
+              /* product type			   */
+{
     /* index :: (a,a) -> a -> Bool
      * index (X a b c, X p q r) (X x y z)
      *  = index (c,r) z + rangeSize (c,r) * (
@@ -3360,10 +3314,10 @@ Cell ls, us, is; {
     return mkBind("index",e);
 }
 
-static Cell local prodInRange(line,pats,ls,us,is)
-Int  line;				/* Make definition of inRange for a*/
-List pats;				/* product type			   */
-Cell ls, us, is; {
+static Cell local prodInRange(Int line, List pats, Cell ls, Cell us, Cell is)
+              /* Make definition of inRange for a*/
+              /* product type			   */
+{
     /* inRange :: (a,a) -> a -> Bool
      * inRange (X a b c, X p q r) (X x y z)
      *          = inRange (a,p) x && inRange (b,q) y && inRange (c,r) z
@@ -3382,8 +3336,8 @@ Cell ls, us, is; {
  * Deriving Show:
  * ------------------------------------------------------------------------*/
 
-static List local deriveShow(t)	/* Construct definition of text conversion */
-Tycon t; {
+static List local deriveShow(Tycon t)	/* Construct definition of text conversion */
+{
     List alts = NIL;
     if (isTycon(t)) {			/* deal with type constrs	   */
 	List cs = tycon(t).defn;
@@ -3399,10 +3353,8 @@ Tycon t; {
     return singleton(mkBind("showsPrec",alts));
 }
 
-static Cell local mkAltShow(line,h,a)	/* make alt for showsPrec eqn	   */
-Int  line;
-Cell h;
-Int  a; {
+static Cell local mkAltShow(Int line, Cell h, Int a)	/* make alt for showsPrec eqn	   */
+{
     List vs   = getDiVars(a+1);
     Cell d    = hd(vs);
     Cell pat  = h;
@@ -3427,9 +3379,9 @@ Int  a; {
 #define showsCP  consChar(')')
 #define showsCB  consChar('}')
 
-static Cell local showsPrecRhs(d,pat,a)	/* build a rhs for showsPrec for a */
-Cell d, pat;				/* given pattern, pat		   */
-Int  a; {
+static Cell local showsPrecRhs(Cell d, Cell pat, Int a)	/* build a rhs for showsPrec for a */
+                /* given pattern, pat		   */
+{
     Cell h   = getHead(pat);
     List cfs = cfunSfuns;
 
@@ -3566,8 +3518,8 @@ Int  a; {
  *                    ...
  *                    (readParen (d>pn) (\r -> [ (Cn ...,s) | ... ]) r) ... ))
  */
-static List local deriveRead(t)	/* construct definition of text reader	   */
-Cell t; {
+static List local deriveRead(Cell t)	/* construct definition of text reader	   */
+{
     Cell alt  = NIL;
     Cell exp  = NIL;
     Cell d    = inventVar();
@@ -3603,10 +3555,8 @@ Cell t; {
  * for a (non-tuple) constructor "con" of precedence "p".
  */
 
-static Cell local mkReadCon(con, d, r) /* generate reader for a constructor */
-Name con;
-Cell d;
-Cell r; {
+static Cell local mkReadCon(Name con, Cell d, Cell r) /* generate reader for a constructor */
+{
     Cell exp = NIL;
     Int  p   = 0;
     Syntax s = syntaxOf(con);
@@ -3643,8 +3593,8 @@ Cell r; {
  *                                        (tn,sn) <- readsPrec (APP_PREC+1) sn-1 ]
  *
  */
-static Cell local mkReadPrefix(con)    /* readsPrec for prefix constructor */
-Cell con; {
+static Cell local mkReadPrefix(Cell con)    /* readsPrec for prefix constructor */
+{
     Int  arity  = userArity(con);
     Cell cn     = mkStr(name(con).text);
     Cell r      = inventVar();
@@ -3679,8 +3629,7 @@ Cell con; {
  *
  * where lp and rp are either p or p+1 depending on associativity
  */
-static Cell local mkReadInfix( con )
-Cell con;
+static Cell local mkReadInfix(Cell con)
 {
     Syntax s  = syntaxOf(con);
     Int    p  = precOf(s);
@@ -3712,8 +3661,8 @@ Cell con;
  *  					(tn, s(2n))   <- readsPrec 0 s(2n-1),
  *  					(")",s(2n+1)) <- lex s(2n) ]
  */
-static Cell local mkReadTuple( tup ) /* readsPrec for n-tuple */
-Cell tup; {
+static Cell local mkReadTuple(Cell tup) /* readsPrec for n-tuple */
+{
     Int  arity  = tupleOf(tup);
     Cell lp     = mkStr(findText("("));
     Cell rp     = mkStr(findText(")"));
@@ -3764,9 +3713,8 @@ Cell tup; {
  *   			    ("=",s2) <- lex s1,
  *   			    r        <- reads s2 ]
  */
-static Cell local mkReadRecord(con, fs) /* readsPrec for record constructor */
-Cell con;
-List fs; {
+static Cell local mkReadRecord(Cell con, List fs) /* readsPrec for record constructor */
+{
     Cell cn     = mkStr(name(con).text);
     Cell lb     = mkStr(findText("{"));
     Cell rb     = mkStr(findText("}"));
@@ -3812,8 +3760,8 @@ List fs; {
  * Deriving Bounded:
  * ------------------------------------------------------------------------*/
 
-static List local deriveBounded(t)/* construct definition of bounds	   */
-Tycon t; {
+static List local deriveBounded(Tycon t)/* construct definition of bounds	   */
+{
     if (isEnumType(t)) {
 	Cell last  = tycon(t).defn;
 	Cell first = hd(last);
@@ -3837,10 +3785,9 @@ Tycon t; {
     return NIL;
 }
 
-static List local mkBndBinds(line,h,n)	/* build bindings for derived	   */
-Int  line;				/* Bounded on a product type	   */
-Cell h;
-Int  n; {
+static List local mkBndBinds(Int line, Cell h, Int n)	/* build bindings for derived	   */
+              /* Bounded on a product type	   */
+{
     Cell minB = h;
     Cell maxB = h;
     while (n-- > 0) {
@@ -3858,9 +3805,8 @@ Int  n; {
  * default will be used where necessary.
  * ------------------------------------------------------------------------*/
 
-Void defaultDefn(line,defs)		/* Handle default types definition */
-Int  line;
-List defs; {
+Void defaultDefn(Int line, List defs)		/* Handle default types definition */
+{
     if (defaultLine!=0) {
 	ERRMSG(line) "Multiple default declarations are not permitted in" ETHEN
 	ERRTEXT      " a single script file.\n"
@@ -3904,15 +3850,13 @@ static Void local checkDefaultDefns() {	/* check that default types are	   */
  * name with a string (which identifies a built-in primitive) and a type.
  * ------------------------------------------------------------------------*/
 
-Void primDefn(line,prims,type)		/* Handle primitive definitions	   */
-Cell line;
-List prims;
-Cell type; {
+Void primDefn(Cell line, List prims, Cell type)		/* Handle primitive definitions	   */
+{
     primDefns = cons(triple(line,prims,type),primDefns);
 }
 
-static List local checkPrimDefn(pd)	/* Check primitive definition	   */
-Triple pd; {
+static List local checkPrimDefn(Triple pd)	/* Check primitive definition	   */
+{
     Int  line  = intOf(fst3(pd));
     List prims = snd3(pd);
     Type type  = thd3(pd);
@@ -3928,11 +3872,10 @@ Triple pd; {
     return snd3(pd);
 }
 
-static Name local addNewPrim(l,vn,s,t)	/* make binding of variable vn to  */
-Int    l;				/* primitive function referred	   */
-Text   vn;				/* to by s, with given type t	   */
-String s;
-Cell   t;{
+static Name local addNewPrim(Int l, Text vn, String s, Cell t)	/* make binding of variable vn to  */
+             /* primitive function referred	   */
+              /* to by s, with given type t	   */
+{
     Name n = findName(vn);
 
     if (isNull(n)) {
@@ -3963,12 +3906,11 @@ Bool generateFFI = FALSE;
 
 Bool generate_ffi = FALSE;	/* generate FFI for the current module? */
 
-static Int checkCallConv  Args((Int,Text));
+static Int checkCallConv  (Int,Text);
 
 /* Checking if the calling convention is supported */
-static Int checkCallConv(line,t)
-Int line;
-Text t; {
+static Int checkCallConv(Int line, Text t)
+{
   if (t == textCCall ) return FFI_CCONV_CCALL;
 #if STDCALL_SUPPORTED
   /* also support the stdcall calling convention */
@@ -3986,14 +3928,9 @@ Text t; {
  * are unique within each module.  This is done using the foreignCount
  * variable.
  */
-Void foreignImport(l,callconv,safety,ext,intName,type)
+Void foreignImport(Cell l, Cell callconv, Cell safety, Cell ext, Cell intName, Cell type)
                                               /* Handle foreign imports    */
-Cell l;
-Cell callconv;
-Cell safety;
-Cell ext;
-Cell intName;
-Cell type; {
+{
     Text t   = textOf(intName);
     Name n   = findName(t);
     Int sfty;
@@ -4031,14 +3968,9 @@ Cell type; {
     foreignImports       = cons(n,foreignImports);
 }
 
-Void foreignExport(l,v,callconv,ext,intName,type)
+Void foreignExport(Cell l, Cell v, Cell callconv, Cell ext, Cell intName, Cell type)
                                               /* Handle foreign exports    */
-Cell l;
-Cell v;
-Cell callconv;
-Cell ext;
-Cell intName;
-Cell type; {
+{
     /*
      * Export attaches to an existing name in the symbol table.
      * We generate a new name whose definition is
@@ -4081,40 +4013,38 @@ Cell type; {
     foreignExports   = cons(n,foreignExports);
 }
 
-static String skipSpaces  Args((String));
-static String matchToken  Args((String,String));
-static String skipToSpace Args((String));
-static String skipToChar  Args((String,int));
-static String matchFname  Args((String));
+static String skipSpaces  (String);
+static String matchToken  (String,String);
+static String skipToSpace (String);
+static String skipToChar  (String,int);
+static String matchFname  (String);
 
-static String skipSpaces(s)
-String s; {
+static String skipSpaces(String s)
+{
     while (isspace(*s)) {
         ++s;
     }
     return s;
 }
 
-static String skipToSpace(s)
-String s; {
+static String skipToSpace(String s)
+{
     while (*s != '\0' && !isspace(*s)) {
         ++s;
     }
     return s;
 }
 
-static String skipToChar(s,c)
-String s;
-int    c; {
+static String skipToChar(String s, int c)
+{
     while (*s != '\0' && *s != c) {
         ++s;
     }
     return s;
 }
 
-static String matchToken(t,s)
-String t;
-String s; {
+static String matchToken(String t, String s)
+{
     while (*t != '\0' && *t == *s) {
         ++t;
         ++s;
@@ -4126,8 +4056,8 @@ String s; {
     }
 }
 
-static String matchFname(s)
-String s; {
+static String matchFname(String s)
+{
     String t = skipToSpace(s);
     if (t-s >= 3 && t[-2] == '.' && t[-1] == 'h') {
         return t;
@@ -4136,8 +4066,8 @@ String s; {
     }
 }
 
-static Void local checkForeignImport(p)   /* Check foreign import          */
-Name p; {
+static Void local checkForeignImport(Name p)   /* Check foreign import          */
+{
     Int  line      = name(p).line;
     String ext     = textToStr(name(p).extFun);
     String e       = 0;
@@ -4387,8 +4317,8 @@ Name p; {
 #endif
 }
 
-static Void local checkForeignExport(p)       /* Check foreign export      */
-Name p; {
+static Void local checkForeignExport(Name p)       /* Check foreign export      */
+{
     Int  line  = name(p).line;
     Text ext   = name(p).extFun;
     Type t;
@@ -4424,8 +4354,8 @@ Name p; {
     }
 }
 
-static Void local linkForeign(p)        /* Link an ffi-generated primitive */
-Name p; {
+static Void local linkForeign(Name p)        /* Link an ffi-generated primitive */
+{
     addPrim(name(p).line,p,textToStr(name(p).text),name(p).mod,name(p).type);
 }
 
@@ -4450,9 +4380,8 @@ Name p; {
 
 static List patVars;		       /* List of vars bound in pattern    */
 
-static Cell local checkPat(line,p)     /* Check valid pattern syntax	   */
-Int  line;
-Cell p; {
+static Cell local checkPat(Int line, Cell p)     /* Check valid pattern syntax	   */
+{
     switch (whatIs(p)) {
 	case VARIDCELL :
 	case VAROPCELL : addToPatVars(line,p);
@@ -4504,9 +4433,9 @@ Cell p; {
     return p;
 }
 
-static Cell local checkMaybeCnkPat(l,p)/* Check applicative pattern with   */
-Int  l;				       /* the possibility of n+k pattern   */
-Cell p; {
+static Cell local checkMaybeCnkPat(Int l, Cell p)/* Check applicative pattern with   */
+                  /* the possibility of n+k pattern   */
+{
 #if NPLUSK
     Cell h = getHead(p);
 
@@ -4533,10 +4462,10 @@ Cell p; {
     return checkApPat(l,0,p);
 }
 
-static Cell local checkApPat(line,args,p)
-Int  line;			       /* check validity of application    */
-Int  args;			       /* of constructor to arguments	   */
-Cell p; {
+static Cell local checkApPat(Int line, Int args, Cell p)
+                    /* check validity of application    */
+                    /* of constructor to arguments	   */
+{
     switch (whatIs(p)) {
 	case AP        : fun(p) = checkApPat(line,args+1,fun(p));
 			 arg(p) = checkPat(line,arg(p));
@@ -4579,9 +4508,9 @@ Cell p; {
     return p;
 }
 
-static Void local addToPatVars(line,v)	/* Add variable v to list of vars  */
-Int  line;				/* in current pattern, checking	   */
-Cell v; {				/* for repeated variables.	   */
+static Void local addToPatVars(Int line, Cell v)	/* Add variable v to list of vars  */
+              /* in current pattern, checking	   */
+{				/* for repeated variables.	   */
     Text t = textOf(v);
     List p = NIL;
     List n = patVars;
@@ -4601,10 +4530,10 @@ Cell v; {				/* for repeated variables.	   */
     }
 }
 
-static Name local conDefined(line,nm,check)
-Int  line;		 /* check that nm is the name of a  */
-Cell nm;                 /* previously defined constructor  */
-Bool check; {		 /* function (and only one.)        */
+static Name local conDefined(Int line, Cell nm, Bool check)
+             /* check that nm is the name of a  */
+                         /* previously defined constructor  */
+{		 /* function (and only one.)        */
     Name n = findQualName(nm);
     if (isNull(n)) {
 	ERRMSG(line) "Undefined data constructor \"%s\"", identToStr(nm)
@@ -4621,9 +4550,8 @@ Bool check; {		 /* function (and only one.)        */
     return n;
 }
 
-static Void local checkIsCfun(line,c)  /* Check that c is a constructor fn */
-Int  line;
-Name c; {
+static Void local checkIsCfun(Int line, Name c)  /* Check that c is a constructor fn */
+{
     if (!isCfun(c)) {
 	ERRMSG(line) "\"%s\" is not a data constructor",
 		     textToStr(name(c).text)
@@ -4631,10 +4559,10 @@ Name c; {
     }
 }
 
-static Void local checkCfunArgs(line,c,args)
-Int  line;			       /* Check constructor applied with   */
-Cell c; 			       /* correct number of arguments	   */
-Int  args; {
+static Void local checkCfunArgs(Int line, Cell c, Int args)
+                    /* Check constructor applied with   */
+                  /* correct number of arguments	   */
+{
     Int a = userArity(c);
     if (a!=args) {
 	ERRMSG(line)
@@ -4644,11 +4572,8 @@ Int  args; {
     }
 }
 
-static Cell local checkPatType(l,wh,e,t)/* Check type appearing in pattern */
-Int    l;
-String wh;
-Cell   e;
-Type   t; {
+static Cell local checkPatType(Int l, String wh, Cell e, Type t)/* Check type appearing in pattern */
+{
     List tvs = typeVarsIn(t,NIL,NIL,NIL);
     h98DoesntSupport(l,"pattern type annotations");
     for (; nonNull(tvs); tvs=tl(tvs)) {
@@ -4663,8 +4588,8 @@ Type   t; {
     return t;
 }
 
-static Cell local applyBtyvs(pat)	/* Record bound type vars in pat   */
-Cell pat; {
+static Cell local applyBtyvs(Cell pat)	/* Record bound type vars in pat   */
+{
     List bts = hd(btyvars);
     leaveBtyvs();
     if (nonNull(bts)) {
@@ -4697,18 +4622,16 @@ static List mdepends;		       /* list of dependents for mdo	*/
 #define saveBvars()	 hd(bounds)    /* list of bvars in current scope   */
 #define restoreBvars(bs) hd(bounds)=bs /* restore list of bound variables  */
 
-static Cell local bindPat(line,p)      /* add new bound vars for pattern   */
-Int  line;
-Cell p; {
+static Cell local bindPat(Int line, Cell p)      /* add new bound vars for pattern   */
+{
     patVars    = NIL;
     p	       = checkPat(line,p);
     hd(bounds) = dupOnto(patVars,hd(bounds));
     return p;
 }
 
-static Void local bindPats(line,ps)    /* add new bound vars for patterns  */
-Int  line;
-List ps; {
+static Void local bindPats(Int line, List ps)    /* add new bound vars for patterns  */
+{
     patVars    = NIL;
     map1Over(checkPat,line,ps);
     hd(bounds) = revOnto(patVars,hd(bounds));
@@ -4760,8 +4683,8 @@ List ps; {
 #define bindingAttr(b) fst(snd(b))     /* type(s)/fixity(ies) for binding  */
 #define fbindAlts(b)   snd(snd(b))     /* alternatives for function binding*/
 
-static List local extractSigdecls(es)  /* Extract the SIGDECLS from list   */
-List es; {			       /* of equations			   */
+static List local extractSigdecls(List es)  /* Extract the SIGDECLS from list   */
+{			       /* of equations			   */
     List sigdecls = NIL;	       /* :: [(Line,[Var],Type)]	   */
 
     for(; nonNull(es); es=tl(es)) {
@@ -4782,8 +4705,8 @@ List es; {			       /* of equations			   */
     return sigdecls;
 }
 
-static List local extractFixdecls(es)	/* Extract the FIXDECLS from list  */
-List es; {				/* of equations			   */
+static List local extractFixdecls(List es)	/* Extract the FIXDECLS from list  */
+{				/* of equations			   */
     List fixdecls = NIL;		/* :: [(Line,SyntaxInt,[Op])]	   */
 
     for(; nonNull(es); es=tl(es)) {
@@ -4794,8 +4717,8 @@ List es; {				/* of equations			   */
     return fixdecls;
 }
 
-static List local extractBindings(ds)	/* extract untyped bindings from   */
-List ds; {				/* given list of equations	   */
+static List local extractBindings(List ds)	/* extract untyped bindings from   */
+{				/* given list of equations	   */
     Cell lastVar   = NIL;		/* = var def'd in last eqn (if any)*/
     Int  lastArity = 0;			/* = number of args in last defn   */
     List bs	   = NIL;		/* :: [Binding]			   */
@@ -4864,10 +4787,9 @@ List ds; {				/* given list of equations	   */
     return bs;
 }
 
-static List local getPatVars(line,p,vs)	/* Find list of variables bound in */
-Int  line;				/* pattern p			   */
-Cell p;
-List vs; {
+static List local getPatVars(Int line, Cell p, List vs)	/* Find list of variables bound in */
+              /* pattern p			   */
+{
     switch (whatIs(p)) {
 	case AP		: do {
 			      vs = getPatVars(line,arg(p),vs);
@@ -4921,10 +4843,9 @@ List vs; {
     return vs;
 }
 
-static List local addPatVar(line,v,vs)	/* Add var to list of previously   */
-Int  line;				/* encountered variables	   */
-Cell v;
-List vs; {
+static List local addPatVar(Int line, Cell v, List vs)	/* Add var to list of previously   */
+              /* encountered variables	   */
+{
     if (varIsMember(textOf(v),vs)) {
 	ERRMSG(line) "Repeated use of variable \"%s\" in pattern binding",
 		     textToStr(textOf(v))
@@ -4933,30 +4854,28 @@ List vs; {
     return cons(v,vs);
 }
 
-static List local eqnsToBindings(es,ts,cs,ps)
-List es;				/* Convert list of equations to	   */
-List ts;				/* list of typed bindings	   */
-List cs;
-List ps; {
+static List local eqnsToBindings(List es, List ts, List cs, List ps)
+            /* Convert list of equations to	   */
+            /* list of typed bindings	   */
+{
     List bs = extractBindings(es);
     map1Proc(addSigdecl,bs,extractSigdecls(es));
     map4Proc(addFixdecl,bs,ts,cs,ps,extractFixdecls(es));
     return bs;
 }
 
-static Void local notDefined(line,bs,v)/* check if name already defined in */
-Int  line;			       /* list of bindings		   */
-List bs;
-Cell v; {
+static Void local notDefined(Int line, List bs, Cell v)/* check if name already defined in */
+                    /* list of bindings		   */
+{
     if (nonNull(findBinding(textOf(v),bs))) {
 	ERRMSG(line) "\"%s\" multiply defined", textToStr(textOf(v))
 	EEND;
     }
 }
 
-static Cell local findBinding(t,bs)    /* look for binding for variable t  */
-Text t; 			       /* in list of bindings bs	   */
-List bs; {
+static Cell local findBinding(Text t, List bs)    /* look for binding for variable t  */
+                  /* in list of bindings bs	   */
+{
     for (; nonNull(bs); bs=tl(bs)) {
 	if (isVar(fst(hd(bs)))) {		      /* function-binding? */
 	    if (textOf(fst(hd(bs)))==t) {
@@ -4969,9 +4888,9 @@ List bs; {
     return NIL;
 }
 
-static Cell local getAttr(bs,v)		/* Locate type/fixity attribute    */
-List bs;				/* for variable v in bindings bs   */
-Cell v; {
+static Cell local getAttr(List bs, Cell v)		/* Locate type/fixity attribute    */
+            /* for variable v in bindings bs   */
+{
     Text t = textOf(v);
     Cell b = findBinding(t,bs);
 
@@ -5004,9 +4923,9 @@ Cell v; {
     }
 }
 
-static Void local addSigdecl(bs,sigdecl)/* add type information to bindings*/
-List bs;			       /* :: [Binding]			   */
-Cell sigdecl; { 		       /* :: (Line,[Var],Type)		   */
+static Void local addSigdecl(List bs, Cell sigdecl)/* add type information to bindings*/
+                  /* :: [Binding]			   */
+{ 		       /* :: (Line,[Var],Type)		   */
     Int  l    = intOf(fst3(sigdecl));
     List vs   = snd3(sigdecl);
     Type type = checkSigType(l,"type declaration",hd(vs),thd3(sigdecl));
@@ -5027,12 +4946,8 @@ Cell sigdecl; { 		       /* :: (Line,[Var],Type)		   */
     }
 }
 
-static Void local addFixdecl(bs,ts,cs,ps,fixdecl)
-List   bs;
-List   ts;
-List   cs;
-List   ps;
-Triple fixdecl; {
+static Void local addFixdecl(List bs, List ts, List cs, List ps, Triple fixdecl)
+{
     Int  line = intOf(fst3(fixdecl));
     List ops  = snd3(fixdecl);
     Cell sy   = thd3(fixdecl);
@@ -5074,17 +4989,15 @@ Triple fixdecl; {
     }
 }
 
-static Void local dupFixity(line,t)	/* Report repeated fixity decl	   */
-Int  line;
-Text t; {
+static Void local dupFixity(Int line, Text t)	/* Report repeated fixity decl	   */
+{
     ERRMSG(line)
 	"Multiple fixity declarations for operator \"%s\"", textToStr(t)
     EEND;
 }
 
-static Void local missFixity(line,t)	/* Report missing op for fixity	   */
-Int  line;
-Text t; {
+static Void local missFixity(Int line, Text t)	/* Report missing op for fixity	   */
+{
     ERRMSG(line)
 	"Cannot find binding for operator \"%s\" in fixity declaration",
 	textToStr(t)
@@ -5172,9 +5085,8 @@ Text t; {
  * value APPLIC is used to indicate that the syntax value is unknown.
  * ------------------------------------------------------------------------*/
 
-static Cell local tidyInfix(line,e)	/* Convert infixExp to Exp	   */
-Int  line;
-Cell e; {				/* :: OpExp			   */
+static Cell local tidyInfix(Int line, Cell e)	/* Convert infixExp to Exp	   */
+{				/* :: OpExp			   */
     Cell   s   = NIL;			/* :: [(Op,Exp)]		   */
     Syntax sye = APPLIC;		/* Syntax of op in e (init unknown)*/
     Syntax sys = APPLIC;		/* Syntax of op in s (init unknown)*/
@@ -5315,9 +5227,9 @@ Cell e; {				/* :: OpExp			   */
 	}
 }
 
-static Pair local attachFixity(line,op)	/* Attach fixity to operator in an */
-Int  line;				/* infix expression		   */
-Cell op; {
+static Pair local attachFixity(Int line, Cell op)	/* Attach fixity to operator in an */
+              /* infix expression		   */
+{
     Syntax sy   = DEF_OPSYNTAX;
     Cell   trop = op;
 
@@ -5359,8 +5271,8 @@ Cell op; {
 					  /* translated operator	 */
 }
 
-static Syntax local lookupSyntax(t)	/* Try to find fixity for var in  */
-Text t; {				/* enclosing bindings		  */
+static Syntax local lookupSyntax(Text t)	/* Try to find fixity for var in  */
+{				/* enclosing bindings		  */
     List bounds1   = bounds;
     List bindings1 = bindings;
 
@@ -5417,8 +5329,8 @@ Text t; {				/* enclosing bindings		  */
 
 #define depVal(d) (fst(snd(snd(d))))	/* Access to dependency information*/
 
-static List local dependencyAnal(bs)	/* Separate lists of bindings into */
-List bs; {				/* mutually recursive groups in	   */
+static List local dependencyAnal(List bs)	/* Separate lists of bindings into */
+{				/* mutually recursive groups in	   */
 					/* order of dependency		   */
 
     mapProc(addDepField,bs);		/* add extra field for dependents  */
@@ -5428,8 +5340,8 @@ List bs; {				/* mutually recursive groups in	   */
     return bs;
 }
 
-static List local topDependAnal(bs)	/* Like dependencyAnal(), but at   */
-List bs; {				/* top level, reporting on progress*/
+static List local topDependAnal(List bs)	/* Like dependencyAnal(), but at   */
+{				/* top level, reporting on progress*/
     List xs;
     Int  i = 0;
 
@@ -5446,18 +5358,18 @@ List bs; {				/* top level, reporting on progress*/
     return bs;
 }
 
-static Void local addDepField(b)       /* add extra field to binding to    */
-Cell b; {			       /* hold list of dependents	   */
+static Void local addDepField(Cell b)       /* add extra field to binding to    */
+{			       /* hold list of dependents	   */
     snd(snd(b)) = pair(NIL,snd(snd(b)));
 }
 
-static Void local remDepField(bs)      /* remove dependency field from	   */
-List bs; {			       /* list of bindings		   */
+static Void local remDepField(List bs)      /* remove dependency field from	   */
+{			       /* list of bindings		   */
     mapProc(remDepField1,bs);
 }
 
-static Void local remDepField1(b)      /* remove dependency field from	   */
-Cell b; {			       /* single binding		   */
+static Void local remDepField1(Cell b)      /* remove dependency field from	   */
+{			       /* single binding		   */
     snd(snd(b)) = snd(snd(snd(b)));
 }
 
@@ -5470,8 +5382,8 @@ static Void local clearScope() {       /* initialise dependency scoping    */
 #endif
 }
 
-static Void local withinScope(bs)	/* Enter scope of bindings bs	   */
-List bs; {
+static Void local withinScope(List bs)	/* Enter scope of bindings bs	   */
+{
     bounds   = cons(NIL,bounds);
     bindings = cons(bs,bindings);
     depends  = cons(NIL,depends);
@@ -5512,8 +5424,7 @@ static Void local leaveScope() {	/* Leave scope of last withinScope */
     depends  = tl(depends);
 }
 
-static Void local dropNameClash(v)
-Cell v;
+static Void local dropNameClash(Cell v)
 {
     Name n = findName(textOf(v));
     if ( !isNull(n) && nonNull(name(n).clashes) ) {
@@ -5521,9 +5432,9 @@ Cell v;
     }
 }
 
-static Void local saveSyntax(v,sy)	/* Save syntax of top-level var	   */
-Cell v;					/* in corresponding Name	   */
-Cell sy; {
+static Void local saveSyntax(Cell v, Cell sy)	/* Save syntax of top-level var	   */
+            /* in corresponding Name	   */
+{
     Name n = findName(textOf(v));
     if (isNull(n) || name(n).syntax!=NO_SYNTAX) {
 	internal("saveSyntax");
@@ -5534,9 +5445,8 @@ Cell sy; {
 }
 
 #if IPARAM
-static Bool local checkIBindings(line,bs)
-Int line;
-List bs; {
+static Bool local checkIBindings(Int line, List bs)
+{
     List xs = bs;
     Bool hasIParam = FALSE;
     Bool oldFlg = FALSE;
@@ -5581,8 +5491,8 @@ List bs; {
  * - No free (i.e. unbound) variables are used in the declaration list.
  * ------------------------------------------------------------------------*/
 
-static Void local depBinding(b)        /* find dependents of binding	   */
-Cell b; {
+static Void local depBinding(Cell b)        /* find dependents of binding	   */
+{
     Cell defpart = snd(snd(snd(b)));   /* definition part of binding	   */
 
     hd(depends) = NIL;
@@ -5612,18 +5522,18 @@ Cell b; {
     depVal(b) = hd(depends);
 }
 
-static Void local depDefaults(c)       /* dependency analysis on defaults  */
-Class c; {                             /* from class definition            */
+static Void local depDefaults(Class c)       /* dependency analysis on defaults  */
+{                             /* from class definition            */
     depClassBindings(cclass(c).defaults);
 }
 
-static Void local depInsts(in)         /* dependency analysis on instance  */
-Inst in; {                             /* bindings                         */
+static Void local depInsts(Inst in)         /* dependency analysis on instance  */
+{                             /* bindings                         */
     depClassBindings(inst(in).implements);
 }
 
-static Void local depClassBindings(bs) /* dependency analysis on list of   */
-List bs; {                             /* bindings, possibly containing    */
+static Void local depClassBindings(List bs) /* dependency analysis on list of   */
+{                             /* bindings, possibly containing    */
     for (; nonNull(bs); bs=tl(bs)) {   /* NIL bindings ...                 */
 	if (nonNull(hd(bs))) {         /* No need to add extra field for   */
 	   mapProc(depAlt,snd(hd(bs)));/* dependency information...	   */
@@ -5631,10 +5541,8 @@ List bs; {                             /* bindings, possibly containing    */
     }
 }
 
-static Cell local depLetRec(isRhs,line,e) /* dependency analysis on a letrec    */
-Bool isRhs;
-Int  line;
-Cell e; {                                 /* expr, containing a set of bindings */
+static Cell local depLetRec(Bool isRhs, Int line, Cell e) /* dependency analysis on a letrec    */
+{                                 /* expr, containing a set of bindings */
 #if IPARAM
     Bool isIP = checkIBindings(line,fst(snd(e)));
                                           /* check that i-param binders aren't */
@@ -5663,8 +5571,8 @@ Cell e; {                                 /* expr, containing a set of bindings 
 #endif
 }
 
-static Void local depAlt(a)		/* Find dependents of alternative  */
-Cell a; {
+static Void local depAlt(Cell a)		/* Find dependents of alternative  */
+{
     List obvs = saveBvars();		/* Save list of bound variables	   */
     enterBtyvs();
     bindPats(rhsLine(snd(a)),fst(a));	/* add new bound vars for patterns */
@@ -5673,8 +5581,8 @@ Cell a; {
     restoreBvars(obvs);			/* restore original list of bvars  */
 }
 
-static Void local depRhs(r)		/* Find dependents of rhs	   */
-Cell r; {
+static Void local depRhs(Cell r)		/* Find dependents of rhs	   */
+{
     switch (whatIs(r)) {
 	case GUARDED : mapProc(depGuard,snd(r));
 		       break;
@@ -5694,14 +5602,13 @@ Cell r; {
     }
 }
 
-static Void local depGuard(g)	       /* find dependents of single guarded*/
-Cell g; {			       /* expression			   */
+static Void local depGuard(Cell g)	       /* find dependents of single guarded*/
+{			       /* expression			   */
     depPair(intOf(fst(g)),snd(g));
 }
 
-Cell depExpr(line,e)      /* find dependents of expression    */
-Int  line;
-Cell e; {
+Cell depExpr(Int line, Cell e)      /* find dependents of expression    */
+{
     switch (whatIs(e)) {
 
 	case VARIDCELL	:
@@ -5823,25 +5730,21 @@ Cell e; {
    return e;
 }
 
-static Void local depPair(line,e)	/* find dependents of pair of exprs*/
-Int  line;
-Cell e; {
+static Void local depPair(Int line, Cell e)	/* find dependents of pair of exprs*/
+{
     fst(e) = depExpr(line,fst(e));
     snd(e) = depExpr(line,snd(e));
 }
 
-static Void local depTriple(line,e)	/* find dependents of triple exprs */
-Int  line;
-Cell e; {
+static Void local depTriple(Int line, Cell e)	/* find dependents of triple exprs */
+{
     fst3(e) = depExpr(line,fst3(e));
     snd3(e) = depExpr(line,snd3(e));
     thd3(e) = depExpr(line,thd3(e));
 }
 
-static Void local depComp(l,e,qs)	/* find dependents of comprehension*/
-Int  l;
-Cell e;
-List qs; {
+static Void local depComp(Int l, Cell e, List qs)	/* find dependents of comprehension*/
+{
     if (isNull(qs)) {
 	fst(e) = depExpr(l,fst(e));
     } else {
@@ -5948,11 +5851,8 @@ static Void local mdoLoad() {
    the second is the defined vars
    the third is the used vars THAT are defined in that binding group
 */
-static Void local mdoExpandQualifiers(l,e,qs,defs)
-Int  l;
-Cell e;
-List qs;
-List defs; {
+static Void local mdoExpandQualifiers(Int l, Cell e, List qs, List defs)
+{
     if (isNull(qs)) {
 	List currDeps = mdepends;
 	fst(e)	      = depExpr(l,fst(e));
@@ -6005,11 +5905,10 @@ List defs; {
     }
 }
 
-static List local mdoUsedVars(xs,c,ys,ls)/* copy elements of xs until the */
-List xs;                          	 /* sublist pointed to by c,      */
-Cell c;
-List ys; 				 /* if they are in ys		  */
-List ls; {				 /* but not in ls		  */
+static List local mdoUsedVars(List xs, Cell c, List ys, List ls)/* copy elements of xs until the */
+                                    /* sublist pointed to by c,      */
+              /* if they are in ys		  */
+{				 /* but not in ls		  */
     List zs = NIL;
     List rs = NIL;
     List final = NIL;
@@ -6029,10 +5928,8 @@ List ls; {				 /* but not in ls		  */
     return final;
 }
 
-static List local mdoGetPatVarsLet(l, eqns, fvs)
-Int l;
-List eqns;
-List fvs; {
+static List local mdoGetPatVarsLet(Int l, List eqns, List fvs)
+{
     Cell tmp;
     Cell e;
 
@@ -6056,9 +5953,9 @@ List fvs; {
     return fvs;
 }
 
-static List local mdoBVars(l, qs)        /* return list of bound vars */
-Int l;                                   /* in an mdo                 */
-List qs; {
+static List local mdoBVars(Int l, List qs)        /* return list of bound vars */
+                                         /* in an mdo                 */
+{
     List mdoBounds = NIL;
     for(; nonNull(qs); qs = tl(qs)) {
 	Cell q = hd(qs);
@@ -6091,8 +5988,8 @@ List qs; {
 #define qualDefs(q)	snd3(q)
 #define qualUses(q)	thd3(q)
 
-static List local mdoCleanSegment(seg)	/* clean the segment by		   */
-Triple seg; {				/* storing rec and used vars first */
+static List local mdoCleanSegment(Triple seg)	/* clean the segment by		   */
+{				/* storing rec and used vars first */
     List tmp;
     List accumRecs = NIL;
 
@@ -6137,8 +6034,8 @@ Triple seg; {				/* storing rec and used vars first */
  * seems to be the right thing to do to avoid complications in type
  * checking.
  */
-static List   local mdoNoLets(seg)		/* get rid of let's */
-Triple seg; {
+static List   local mdoNoLets(Triple seg)		/* get rid of let's */
+{
     List qs;
 
     for(qs = segQuals(seg); nonNull(qs); qs = tl(qs)) {
@@ -6172,9 +6069,9 @@ Triple seg; {
    return seg;
 }
 
-static Bool   local mdoUsedInAnySeg(v,segs)	/* does v appear in any  */
-Text v;						/* used list of any seg? */
-List segs; {
+static Bool   local mdoUsedInAnySeg(Text v, List segs)	/* does v appear in any  */
+             /* used list of any seg? */
+{
     for(; nonNull(segs); segs = tl(segs)) {
 	if(varIsMember(v,segUses(hd(segs)))) {
 	    return TRUE;
@@ -6184,9 +6081,9 @@ List segs; {
     return FALSE;
 }
 
-static Void   local mdoComputeExports(segs,e)	/* compute export lists */
-List segs;					/* for each segment	*/
-Cell e; {
+static Void   local mdoComputeExports(List segs, Cell e)	/* compute export lists */
+               /* for each segment	*/
+{
     List eUses = snd(fst(e));
 
     for(; nonNull(segs); segs = tl(segs)) {
@@ -6200,10 +6097,9 @@ Cell e; {
     }
 }
 
-static Void local depRecComp(l,e,qs)	/* find dependents of a recursive */
-Int  l;					/* comprehension */
-Cell e;
-List qs; {
+static Void local depRecComp(Int l, Cell e, List qs)	/* find dependents of a recursive */
+            /* comprehension */
+{
     List mdoBounds;
     List obvs;
 
@@ -6329,9 +6225,9 @@ List qs; {
 #undef	qualDefs
 #undef	qualUses
 
-static Bool local mdoIsConnected(q, usedVars)	/* Does q1 define a variable */
-Cell q;						/* that is in usedVars?	     */
-List usedVars; {
+static Bool local mdoIsConnected(Cell q, List usedVars)	/* Does q1 define a variable */
+             /* that is in usedVars?	     */
+{
     Cell defs;
 
     for(defs = snd3(q); nonNull(defs); defs = tl(defs)) {
@@ -6343,9 +6239,9 @@ List usedVars; {
     return FALSE;
 }
 
-static Int local mdoSegment(q, eqs)	/* return the index of the last qual */
-Cell q;					/* in eqs that q is connected to     */
-List eqs; {
+static Int local mdoSegment(Cell q, List eqs)	/* return the index of the last qual */
+            /* in eqs that q is connected to     */
+{
     Int i, j;
     List usesAccum = dupList(thd3(q));
     Cell qUses	   = usesAccum;
@@ -6361,8 +6257,8 @@ List eqs; {
     return j;
 }
 
-static Void local mdoSCC(eqs)		/* SCC for mdo */
-List eqs; {
+static Void local mdoSCC(List eqs)		/* SCC for mdo */
+{
     /*  The input eqs is the extended qualifier list. I.e. each qualifier
 	is a triple where the first element is the qualifier itself, second
 	element is the defined variables and third is the used ones.
@@ -6400,8 +6296,8 @@ static List gatheredTyvars;
 #define enterGathering() List svGVs = gatheredVars, svGBs = gatheredBinds, svGTs = gatheredTyvars; gatheredVars = gatheredBinds = gatheredTyvars = NIL
 #define leaveGathering() gatheredVars = svGVs; gatheredBinds = svGBs; gatheredTyvars = svGTs
 
-Text zipName(n)
-Int n; {
+Text zipName(Int n)
+{
     static char zip[14];
     /* n >= 2, enforced by the parser */
     if (n == 2)
@@ -6411,10 +6307,8 @@ Int n; {
     return findText(zip);
 }
 
-static Void local depZComp(l,e,qss)
-Int l;
-Cell e;
-List qss; {
+static Void local depZComp(Int l, Cell e, List qss)
+{
     Int n = length(qss);
     enterGathering();
     if (n > 3 &&
@@ -6445,9 +6339,8 @@ List qss; {
     leaveGathering();
 }
 
-static Void local depZCompBranch(l,qs)	/* find dependents of comprehension*/
-Int  l;
-List qs; {
+static Void local depZCompBranch(Int l, List qs)	/* find dependents of comprehension*/
+{
     if (isNull(qs)) {
     } else {
 	Cell q   = hd(qs);
@@ -6488,12 +6381,12 @@ List qs; {
     }
 }
 
-static List local intersectBinds(bs1,bs2)
-List bs1, bs2; {
+static List local intersectBinds(List bs1, List bs2)
+{
     return (intersect(getBindVars(bs1),getBindVars(bs2)));
 }
-static List local getBindVars(bs)
-List bs; {
+static List local getBindVars(List bs)
+{
     List zs = NIL;
     for (; nonNull(bs); bs=tl(bs))
 	dupOnto(fst(hd(bs)),zs);
@@ -6501,9 +6394,8 @@ List bs; {
 }
 #endif
 
-static Void local depCaseAlt(line,a)	/* Find dependents of case altern. */
-Int  line;
-Cell a; {
+static Void local depCaseAlt(Int line, Cell a)	/* Find dependents of case altern. */
+{
     List obvs = saveBvars();		/* Save list of bound variables	   */
     enterBtyvs();
     fst(a)    = bindPat(line,fst(a));	/* Add new bound vars for pats	   */
@@ -6512,10 +6404,8 @@ Cell a; {
     restoreBvars(obvs);			/* Restore original list of bvars  */
 }
 
-static Void local checkNameAmbigName(line,n,isV)
-Int line;
-Cell n;
-Bool isV; {
+static Void local checkNameAmbigName(Int line, Cell n, Bool isV)
+{
     String kind = (isV ? "variable" : "data constructor");
     if (!isNull(n) && nonNull(name(n).clashes)) {
 	Text t = name(n).text;
@@ -6532,10 +6422,8 @@ Bool isV; {
 }
 
 
-static Void local checkNameAmbig(line,t,e)
-Int line;
-Text t;
-Cell e; {
+static Void local checkNameAmbig(Int line, Text t, Cell e)
+{
     Name n;
 
     if (isName(e)) {
@@ -6546,10 +6434,8 @@ Cell e; {
     checkNameAmbigName(line,n,TRUE);
 }
 
-static Cell local checkTyconAmbig(line,t,e)
-Int line;
-Text t;
-Cell e; {
+static Cell local checkTyconAmbig(Int line, Text t, Cell e)
+{
     Tycon tc;
 
     if (isTycon(e)) {
@@ -6573,10 +6459,8 @@ Cell e; {
     return e;
 }
 
-static Cell local depVar(line,e,check)	/* Register occurrence of variable */
-Int line;
-Cell e;
-Bool check; {
+static Cell local depVar(Int line, Cell e, Bool check)	/* Register occurrence of variable */
+{
     List bounds1   = bounds;
     List bindings1 = bindings;
     List depends1  = depends;
@@ -6631,10 +6515,8 @@ Bool check; {
     return e;
 }
 
-static Cell local depQVar(line,e,isV)/* register occurrence of qualified variable */
-Int line;
-Cell e;
-Bool isV; {
+static Cell local depQVar(Int line, Cell e, Bool isV)/* register occurrence of qualified variable */
+{
     List ns = findQualNames(e);
     String kind = (isV ? "variable" : "data constructor");
     Name n;
@@ -6665,10 +6547,8 @@ Bool isV; {
     return depVar(line,e,FALSE);
 }
 
-static Void local depConFlds(line,e,isP)/* check construction using fields */
-Int  line;
-Cell e;
-Bool isP; {
+static Void local depConFlds(Int line, Cell e, Bool isP)/* check construction using fields */
+{
     Name c = conDefined(line,fst(snd(e)),TRUE);
     if (isNull(snd(snd(e))) ||
 	nonNull(cellIsMember(c,depFields(line,e,snd(snd(e)),isP)))) {
@@ -6742,9 +6622,8 @@ Bool isP; {
     }
 }
 
-static Void local depUpdFlds(line,e)	/* check update using fields	   */
-Int  line;
-Cell e; {
+static Void local depUpdFlds(Int line, Cell e)	/* check update using fields	   */
+{
     if (isNull(thd3(snd(e)))) {
 	ERRMSG(line) "Empty field list in update"
 	EEND;
@@ -6753,11 +6632,8 @@ Cell e; {
     snd3(snd(e)) = depFields(line,e,thd3(snd(e)),FALSE);
 }
 
-static List local depFields(l,e,fs,isP)	/* check field binding list	   */
-Int  l;
-Cell e;
-List fs;
-Bool isP; {
+static List local depFields(Int l, Cell e, List fs, Bool isP)	/* check field binding list	   */
+{
     List cs = NIL;
     List ss = NIL;
 
@@ -6829,17 +6705,13 @@ Bool isP; {
 }
 
 #if IPARAM
-static Void local depWith(line,e)	/* check with using fields	   */
-Int  line;
-Cell e; {
+static Void local depWith(Int line, Cell e)	/* check with using fields	   */
+{
     fst(snd(e)) = depExpr(line,fst(snd(e)));
     snd(snd(e)) = depDwFlds(line,e,snd(snd(e)));
 }
 
-static List local depDwFlds(l,e,fs)/* check field binding list	   */
-Int  l;
-Cell e;
-List fs;
+static List local depDwFlds(Int l, Cell e, List fs)/* check field binding list	   */
 {
     Cell c = fs;
     for (; nonNull(c); c=tl(c)) {	/* for each field binding	   */
@@ -6926,9 +6798,9 @@ static Void local trexLoad() {
 
 
 #if TREX
-static Cell local depRecord(line,e)	/* find dependents of record and   */
-Int  line;				/* sort fields into approp. order  */
-Cell e; {				/* to make construction and update */
+static Cell local depRecord(Int line, Cell e)	/* find dependents of record and   */
+              /* sort fields into approp. order  */
+{				/* to make construction and update */
     List exts = NIL;			/* more efficient.		   */
     Cell r    = e;
 
@@ -7150,8 +7022,8 @@ Void checkDefns() {			/* Top level static analysis	   */
     staticAnalysis(RESET);
 }
 
-static Void local addRSsigdecls(pr)	/* add sigdecls from TYPE ... IN ..*/
-Pair pr; {
+static Void local addRSsigdecls(Pair pr)	/* add sigdecls from TYPE ... IN ..*/
+{
     List vs = snd(pr);			/* get list of variables	   */
     for (; nonNull(vs); vs=tl(vs)) {
 	if (fst(hd(vs))==SIGDECL) {	/* find a sigdecl		   */
@@ -7161,8 +7033,8 @@ Pair pr; {
     }
 }
 
-static Void local allNoPrevDef(b)	 /* ensure no previous bindings for*/
-Cell b; {				 /* variables in new binding	   */
+static Void local allNoPrevDef(Cell b)	 /* ensure no previous bindings for*/
+{				 /* variables in new binding	   */
     if (isVar(fst(b))) {
 	noPrevDef(rhsLine(snd(hd(snd(snd(b))))),fst(b));
     } else {
@@ -7171,9 +7043,9 @@ Cell b; {				 /* variables in new binding	   */
     }
 }
 
-static Void local noPrevDef(line,v)	 /* ensure no previous binding for */
-Int  line;				 /* new variable		   */
-Cell v; {
+static Void local noPrevDef(Int line, Cell v)	 /* ensure no previous binding for */
+               /* new variable		   */
+{
     Name n = findName(textOf(v));
 
     if (isNull(n)) {
@@ -7192,11 +7064,8 @@ Cell v; {
     name(n).line = line;
 }
 
-static Void local duplicateError(line,mod,t,kind)/* report duplicate defn */
-Int    line;
-Module mod;
-Text   t;
-String kind; {
+static Void local duplicateError(Int line, Module mod, Text t, String kind)/* report duplicate defn */
+{
     if (mod == currentModule) {
 	ERRMSG(line) "Multiple declarations for %s \"%s\"", kind,
 		     textToStr(t)
@@ -7208,8 +7077,8 @@ String kind; {
     }
 }
 
-static Void local checkTypeIn(cvs)	/* Check that vars in restricted   */
-Pair cvs; {				/* synonym are defined             */
+static Void local checkTypeIn(Pair cvs)	/* Check that vars in restricted   */
+{				/* synonym are defined             */
     Tycon c  = fst(cvs);
     List  vs = snd(cvs);
 
@@ -7227,17 +7096,16 @@ Pair cvs; {				/* synonym are defined             */
  * Haskell 98 compatibility tests:
  * ------------------------------------------------------------------------*/
 
-static Bool local h98Pred(allowArgs,pi)	/* Check syntax of Hask98 predicate*/
-Bool allowArgs;
-Cell pi; {
+static Bool local h98Pred(Bool allowArgs, Cell pi)	/* Check syntax of Hask98 predicate*/
+{
     return isClass(getHead(pi)) && argCount==1 &&
 	   (isOffset(getHead(arg(pi))) || isInt(getHead(arg(pi)))) &&
            (argCount==0 || allowArgs);
 }
 
-static Cell local h98Context(allowArgs,ps)
-Bool allowArgs;				/* Check syntax of Hask98 context  */
-List ps; {
+static Cell local h98Context(Bool allowArgs, List ps)
+                   /* Check syntax of Hask98 context  */
+{
     for (; nonNull(ps); ps=tl(ps)) {
 	if (!h98Pred(allowArgs,hd(ps))) {
 	    return hd(ps);
@@ -7246,12 +7114,9 @@ List ps; {
     return NIL;
 }
 
-static Void local h98CheckCtxt(line,wh,allowArgs,ps,in)
-Int    line;				/* Report illegal context/predicate*/
-String wh;
-Bool   allowArgs;
-List   ps;
-Inst   in; {
+static Void local h98CheckCtxt(Int line, String wh, Bool allowArgs, List ps, Inst in)
+                /* Report illegal context/predicate*/
+{
 #if !HASKELL_98_ONLY
     if (haskell98) {
 #endif
@@ -7273,11 +7138,8 @@ Inst   in; {
 #endif
 }
 
-static Void local h98CheckType(line,wh,e,t)	/* Check for Haskell 98 type */
-Int    line;
-String wh;
-Cell   e;
-Type   t; {
+static Void local h98CheckType(Int line, String wh, Cell e, Type t)	/* Check for Haskell 98 type */
+{
 #if !HASKELL_98_ONLY
     if (haskell98) {
 #endif
@@ -7300,10 +7162,8 @@ Type   t; {
 #endif
 }
 
-Void h98CheckInferredType(line,e,t)	/* Check for Haskell 98 type	   */
-Int    line;
-Cell   e;
-Type   t; {
+Void h98CheckInferredType(Int line, Cell e, Type t)	/* Check for Haskell 98 type	   */
+{
 #if !HASKELL_98_ONLY
     if (haskell98) {
 #endif
@@ -7325,9 +7185,8 @@ Type   t; {
 #endif
 }
 
-Void h98DoesntSupport(line,wh)		/* Report feature missing in H98   */
-Int    line;
-String wh; {
+Void h98DoesntSupport(Int line, String wh)		/* Report feature missing in H98   */
+{
 #if !HASKELL_98_ONLY
     if (haskell98) {
 #endif
@@ -7342,8 +7201,8 @@ String wh; {
  * Static Analysis control:
  * ------------------------------------------------------------------------*/
 
-Void staticAnalysis(what)
-Int what; {
+Void staticAnalysis(Int what)
+{
     switch (what) {
 	case RESET   :
 #if MUDO

@@ -87,15 +87,15 @@ static const struct CharProperties null_properties = { GENCAT_Cn, 0, 0, 0 };
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local initConsCharTable	Args((Void));
-static Void local markConsCharTable	Args((Void));
+static Void local initConsCharTable	(Void);
+static Void local markConsCharTable	(Void);
 #if UNICODE_CHARS
-static Void local freeConsCharTable	Args((Void));
-static const struct CharProperties * local get_properties Args((Char));
+static Void local freeConsCharTable	(Void);
+static const struct CharProperties * local get_properties (Char);
 #endif
 #if CHAR_ENCODING_UTF8
-static Int  local utfseqlen		Args((Int));
-static Int  local utfcodelen		Args((Char));
+static Int  local utfseqlen		(Int);
+static Int  local utfcodelen		(Char);
 #endif
 
 /* --------------------------------------------------------------------------
@@ -671,8 +671,8 @@ static void local initConsCharTable() {
  * Get a character cons: follow the three-level lookup table.
  * If a level does not exist, allocate it.
  * ------------------------------------------------------------------------*/
-Cell consChar(c)                /* return application (:) c */
-Char c; {
+Cell consChar(Char c)                /* return application (:) c */
+{
     Int i, j, k;
     Cell **consCharTable_i;
     Cell *consCharTable_i_j;
@@ -742,8 +742,8 @@ static void local freeConsCharTable() {
 
 static Cell consCharArray[NUM_LAT1_CHARS];
 
-Cell consChar(c)                        /* return application (:) c        */
-Char c; {
+Cell consChar(Char c)                        /* return application (:) c        */
+{
     assert(c >= 0);
     return consCharArray[c];
 }
@@ -764,8 +764,8 @@ static void local markConsCharTable() {
 
 #endif /* !UNICODE_CHARS */
 
-Void charOps(what)
-Int what; {
+Void charOps(Int what)
+{
     switch (what) {
 	case INSTALL : initCharTab();
 		       initConsCharTable();

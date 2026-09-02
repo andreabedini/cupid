@@ -301,13 +301,13 @@ int macsystem(char *filenames);
 #if HAVE_STRING_H
 # include <string.h>
 #else
-extern int      strcmp     Args((const char*, const char*));
-extern int      strncmp    Args((const char*, const char*, int));
-extern char     *strchr    Args((const char*, int));
-extern char     *strrchr   Args((const char*, int));
-extern size_t   strlen     Args((const char *));
-extern char	*strcpy	   Args((char *, const char*));
-extern char     *strcat	   Args((char *, const char*));
+extern int      strcmp     (const char*, const char*);
+extern int      strncmp    (const char*, const char*, int);
+extern char     *strchr    (const char*, int);
+extern char     *strrchr   (const char*, int);
+extern size_t   strlen     (const char *);
+extern char	*strcpy	   (char *, const char*);
+extern char     *strcat	   (char *, const char*);
 #endif
 #if HAVE_STRCMP
 #if HUGS_FOR_WINDOWS
@@ -316,7 +316,7 @@ extern char     *strcat	   Args((char *, const char*));
 #define strCompare strcmp
 #endif
 #else /* probably only used for DOS - ADR */
-extern  int     stricmp	   Args((const char *, const char*));
+extern  int     stricmp	   (const char *, const char*);
 #define strCompare stricmp
 #endif
 
@@ -341,17 +341,17 @@ extern  int     stricmp	   Args((const char *, const char*));
 # if HAVE__SNPRINTF
 #  define snprintf _snprintf
 # elif __MWERKS__ && macintosh
-extern int snprintf  Args((char*, unsigned long, const char*, va_list));
+extern int snprintf  (char*, unsigned long, const char*, va_list);
 # else
-extern int snprintf   Args((char*, size_t, const char*, ...));
+extern int snprintf   (char*, size_t, const char*, ...);
 # endif
 #endif
 
 #if !HAVE_VSNPRINTF
 # if __MWERKS__ && macintosh
-extern int vsnprintf  Args((char*, unsigned long, const char*, va_list));
+extern int vsnprintf  (char*, unsigned long, const char*, va_list);
 # else
-extern int vsnprintf  Args((char*, size_t, const char*, va_list));
+extern int vsnprintf  (char*, size_t, const char*, va_list);
 # endif
 #endif
 
@@ -374,12 +374,12 @@ extern int vsnprintf  Args((char*, size_t, const char*, va_list));
  *-------------------------------------------------------------------------*/
 
 #if !DOS && VOID_INT_SIGNALS
-# define sigProto(nm)	void nm Args((int))
+# define sigProto(nm)	void nm (int)
 # define sigRaise(nm)	nm(1)
-# define sigHandler(nm)	void nm(sig_arg) int sig_arg;
+# define sigHandler(nm)	void nm(int sig_arg)
 # define sigResume	return
 #else
-# define sigProto(nm)	int nm Args((Void))
+# define sigProto(nm)	int nm (Void)
 # define sigRaise(nm)	nm()
 # define sigHandler(nm)	int nm(Void)
 # define sigResume	return 1
@@ -594,7 +594,7 @@ extern int vsnprintf  Args((char*, size_t, const char*, va_list));
  *-------------------------------------------------------------------------*/
 
 #if !HAVE_UNISTD_H && !_MSC_VER
-extern int 	chdir 	   Args((const char*));
+extern int 	chdir 	   (const char*);
 #endif
 
 #if HAVE_DIRECT_H
@@ -602,9 +602,9 @@ extern int 	chdir 	   Args((const char*));
 #endif
 
 #ifndef HAVE_STDLIB_H
-extern int      system	   Args((const char *));
-extern double   atof	   Args((const char *));
-extern void     exit       Args((int));
+extern int      system	   (const char *);
+extern double   atof	   (const char *);
+extern void     exit       (int);
 #endif
 
 #ifndef FILENAME_MAX	   /* should already be defined in an ANSI compiler*/

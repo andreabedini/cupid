@@ -353,7 +353,7 @@ EXT_PROTO_PRIM(primSetBkpt);
 PROTO_PRIM(primUnsafePtrEq);
 PROTO_PRIM(primUnsafePtrToInt);
 
-static Cell local followInd Args(( Cell ));
+static Cell local followInd ( Cell );
 
 /* --------------------------------------------------------------------------
  * Table of primitive/built-in values:
@@ -1356,8 +1356,8 @@ primFun(primCmpDouble) {               /* Double compare primitive         */
 # define MAX_STRING FILENAME_MAX
 #endif
 
-String evalName(es)                     /* evaluate es :: [Char] and save  */
-Cell es; {                              /* in char array... return ptr to  */
+String evalName(Cell es)                     /* evaluate es :: [Char] and save  */
+{                              /* in char array... return ptr to  */
     static char buffer[MAX_STRING+1];   /* string or 0, if error occurs    */
     char	*bp = buffer;
     StackPtr    saveSp = sp;
@@ -1380,8 +1380,8 @@ Cell es; {                              /* in char array... return ptr to  */
  * Top-level printing mechanism:
  * ------------------------------------------------------------------------*/
 
-Void outputString(fp)                   /* Evaluate string on top of stack */
-FILE *fp; {                             /* and print it on fp              */
+Void outputString(FILE*fp)                   /* Evaluate string on top of stack */
+{                             /* and print it on fp              */
     StackPtr origSp = sp;
     for (;;) {
 	Cell temp = evalWithNoError(pop());
@@ -1576,8 +1576,8 @@ primFun(primRecEq) {
  * Auxilliary functions
  * ------------------------------------------------------------------------*/
 
-static Cell local followInd(c)    /* follow chain of indirections and CAFs */
-Cell c; {
+static Cell local followInd(Cell c)    /* follow chain of indirections and CAFs */
+{
     do {
 	switch (whatIs(c)) {
 	case INDIRECT : c = snd(c);
@@ -1645,60 +1645,60 @@ primFun(primUnsafePtrToInt) {
  * table hugsAPI4).
  *-------------------------------------------------------------------------*/
 
-static void           getUnit        Args((void));
-static HsInt          getInt         Args((void));
-static HsWord         getWord        Args((void));
-static HsAddr         getAddr        Args((void));
-static char           getChar4       Args((void));
-static HsChar         getChar        Args((void));
-static HugsForeign    getForeign     Args((void));
-static HsBool         getBool        Args((void));
-static HsInt8         getInt8        Args((void));
-static HsInt16        getInt16       Args((void));
-static HsInt32        getInt32       Args((void));
-static HsInt64        getInt64       Args((void));
-static HsWord8        getWord8       Args((void));
-static HsWord16       getWord16      Args((void));
-static HsWord32       getWord32      Args((void));
-static HsWord64       getWord64      Args((void));
-static HsPtr          getPtr         Args((void));
-static HsFunPtr       getFunPtr      Args((void));
-static HsForeignPtr   getForeignPtr  Args((void));	      
-static HsStablePtr    getStablePtr4  Args((void));
-static HsFloat        getFloat       Args((void));
-static HsDouble       getDouble      Args((void));
+static void           getUnit        (void);
+static HsInt          getInt         (void);
+static HsWord         getWord        (void);
+static HsAddr         getAddr        (void);
+static char           getChar4       (void);
+static HsChar         getChar        (void);
+static HugsForeign    getForeign     (void);
+static HsBool         getBool        (void);
+static HsInt8         getInt8        (void);
+static HsInt16        getInt16       (void);
+static HsInt32        getInt32       (void);
+static HsInt64        getInt64       (void);
+static HsWord8        getWord8       (void);
+static HsWord16       getWord16      (void);
+static HsWord32       getWord32      (void);
+static HsWord64       getWord64      (void);
+static HsPtr          getPtr         (void);
+static HsFunPtr       getFunPtr      (void);
+static HsForeignPtr   getForeignPtr  (void);	      
+static HsStablePtr    getStablePtr4  (void);
+static HsFloat        getFloat       (void);
+static HsDouble       getDouble      (void);
 
-static HugsStablePtr  getStablePtr   Args((void));
+static HugsStablePtr  getStablePtr   (void);
 
-static void           putInt         Args((HsInt));
-static void           putWord        Args((HsWord));
-static void           putAddr        Args((HsAddr));
-static void           putChar4       Args((char));
-static void           putChar        Args((HsChar));
-static void           putForeign     Args((HugsForeign, void (*)(void *)));
-static void           putStablePtr4  Args((HsStablePtr));
-static void           putBool        Args((HsBool));
-static void           putInt8        Args((HsInt8));
-static void           putInt16       Args((HsInt16));
-static void           putInt32       Args((HsInt32));
-static void           putInt64       Args((HsInt64));
-static void           putWord8       Args((HsWord8));
-static void           putWord16      Args((HsWord16));
-static void           putWord32      Args((HsWord32));
-static void           putWord64      Args((HsWord64));
-static void           putPtr         Args((HsPtr));
-static void           putFunPtr      Args((HsFunPtr));
-static void           putForeignPtr  Args((HsForeignPtr));
-static void           putFloat       Args((HsFloat));
-static void           putDouble      Args((HsDouble));
+static void           putInt         (HsInt);
+static void           putWord        (HsWord);
+static void           putAddr        (HsAddr);
+static void           putChar4       (char);
+static void           putChar        (HsChar);
+static void           putForeign     (HugsForeign, void (*)(void *));
+static void           putStablePtr4  (HsStablePtr);
+static void           putBool        (HsBool);
+static void           putInt8        (HsInt8);
+static void           putInt16       (HsInt16);
+static void           putInt32       (HsInt32);
+static void           putInt64       (HsInt64);
+static void           putWord8       (HsWord8);
+static void           putWord16      (HsWord16);
+static void           putWord32      (HsWord32);
+static void           putWord64      (HsWord64);
+static void           putPtr         (HsPtr);
+static void           putFunPtr      (HsFunPtr);
+static void           putForeignPtr  (HsForeignPtr);
+static void           putFloat       (HsFloat);
+static void           putDouble      (HsDouble);
 
-static void           freeStablePtr4 Args((HsStablePtr));
+static void           freeStablePtr4 (HsStablePtr);
 
 	      
-static void           returnIO       Args((HugsStackPtr, int));
-static void           returnId       Args((HugsStackPtr, int));
-static int            runIO          Args((int));
-static void           apMany         Args((int));
+static void           returnIO       (HugsStackPtr, int);
+static void           returnId       (HugsStackPtr, int);
+static int            runIO          (int);
+static void           apMany         (int);
 
 static void           getUnit()      { eval(pop()); }
 static HsInt          getInt()       { eval(pop()); checkInt();   return whnfInt; }
@@ -1734,10 +1734,9 @@ static HugsStablePtr  getStablePtr() {
     return c;
 }
 
-static HugsStablePtr  lookupName Args((String, String));
-static HugsStablePtr  lookupName(q,n)
-String q;
-String n; { 
+static HugsStablePtr  lookupName (String, String);
+static HugsStablePtr  lookupName(String q, String n)
+{
     Name nm = findQualFun(findText(q), findText(n));
     Cell c;
     
@@ -1802,9 +1801,8 @@ static void putForeignPtr(HsForeignPtr x) {
     EEND;
 }
 
-static void returnIO(root,n) /* return in IO monad */
-HugsStackPtr root;
-int          n; {
+static void returnIO(HugsStackPtr root, int n) /* return in IO monad */
+{
     /* There should be n return values on the top of the stack */
     if (n == 0) {
 	push(nameUnit);
@@ -1821,9 +1819,8 @@ int          n; {
     IOReturn(top());
 }
 
-static void returnId(root,n) /* return in identity monad */
-HugsStackPtr root;
-int          n; {
+static void returnId(HugsStackPtr root, int n) /* return in identity monad */
+{
     /* There should be n return values on the top of the stack */
     if (n == 0) {
 	push(nameUnit);
@@ -1860,8 +1857,8 @@ int          n; {
     }
 }
 
-static int runIO(n)
-int n; {
+static int runIO(int n)
+{
     /* stack = argn : ... : arg1 : fun : rest */
     StackPtr old_sp   = sp - n - 1;
     Cell     temp     = NIL;
@@ -1891,8 +1888,8 @@ int n; {
     return 1;
 }    
 
-static void apMany(n)
-int n; {
+static void apMany(int n)
+{
     /* stack = argn : ... : arg1 : fun : rest */
     Int i;
     /* build application node */
@@ -1903,10 +1900,10 @@ int n; {
     /* stack = ap(...(ap(fun,arg1),...),argn) : rest */
 }
 
-static int runId Args((int));
+static int runId (int);
 
-static int runId(n)
-int n; {
+static int runId(int n)
+{
     apMany(n);
     top() = ap(nameReturnIO,top());
     return runIO(0);
@@ -1961,10 +1958,10 @@ struct thunk_data {
 #endif
 };
 
-static void* mkThunk      Args((void (*)(void), HugsStablePtr));
-static void freeThunkAux  Args((struct thunk_data*));
-static void freeAllThunks Args((void));
-static void initAdjustor  Args((void));
+static void* mkThunk      (void (*)(void), HugsStablePtr);
+static void freeThunkAux  (struct thunk_data*);
+static void freeAllThunks (void);
+static void initAdjustor  (void);
 
 static struct thunk_data* foreignThunks = 0;
 
@@ -2394,14 +2391,14 @@ void hs_free_fun_ptr(HsFunPtr fp)
  * ------------------------------------------------------------------------*/
 
 /* Dummy entry */
-static Void builtinControl Args((Int));
-static Void builtinControl(what)
-Int what; {
+static Void builtinControl (Int);
+static Void builtinControl(Int what)
+{
 }
 static struct primInfo builtinPrims = { builtinControl, builtinPrimTable, 0 };
 
-Void builtIn(what)
-Int what; {
+Void builtIn(Int what)
+{
     switch (what) {
 	case INSTALL : 
 		       initAdjustor();

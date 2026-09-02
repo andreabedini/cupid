@@ -13,18 +13,18 @@
 #ifndef __BUILTIN_H__
 #define __BUILTIN_H__
 
-extern String evalName  Args((Cell));
-extern Cell   mkIOError Args((Cell *,Name,String,String,Cell *));
+extern String evalName  (Cell);
+extern Cell   mkIOError (Cell *,Name,String,String,Cell *);
 
 /* --------------------------------------------------------------------------
  * Macros used to define primitives:
  * ------------------------------------------------------------------------*/
 
-#define PROTO_PRIM(name)      static Void name Args((StackPtr))
-#define EXT_PROTO_PRIM(name)  extern Void name Args((StackPtr))
-#define primFun(name)         static Void name(root) StackPtr root;
+#define PROTO_PRIM(name)      static Void name (StackPtr)
+#define EXT_PROTO_PRIM(name)  extern Void name (StackPtr)
+#define primFun(name)         static Void name(StackPtr root)
 #define extPrimFun(name)      Void name(StackPtr root)
-#define primCAF(name)         static Void name(root) StackPtr root HUGS_unused;
+#define primCAF(name)         static Void name(StackPtr root HUGS_unused)
 #define primArg(n)            stack(root+n)
 
 /* IMPORTANT: the second element of an update must be written first.

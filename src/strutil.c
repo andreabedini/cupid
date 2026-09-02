@@ -12,8 +12,8 @@
  * String manipulation routines:
  * ------------------------------------------------------------------------*/
 
-String strCopy(s)         /* make malloced copy of a string   */
-String s; {
+String strCopy(String s)         /* make malloced copy of a string   */
+{
     if (s) {
 	char *t;
 	if ((t=(char *)malloc(strlen(s)+1))==0) {
@@ -26,9 +26,8 @@ String s; {
     return NULL;
 }
 
-String strnCopy(s,n)      /* make malloced copy of a substring */
-String s;
-Int n; {
+String strnCopy(String s, Int n)      /* make malloced copy of a substring */
+{
     if (s) {
 	char *t;
 	if ((Int)strlen(s) < n)
@@ -47,10 +46,8 @@ Int n; {
 /* Given a string containing a possibly qualified name,
  * split it up into a module and a name portion.
  */
-Void splitQualString(nm, pMod, pName) 
-String nm;
-String* pMod;
-String* pName; {
+Void splitQualString(String nm, String* pMod, String* pName) 
+{
     String dot;
 
     /* Find the last occurrence of '.' preceded by an identifier */
@@ -83,7 +80,7 @@ struct StringBuilder {
 
 #define INITIAL_BUILDER_SIZE 200
 
-static Bool expandStringBuilder Args((StringBuilder* b, unsigned int newSz));
+static Bool expandStringBuilder (StringBuilder* b, unsigned int newSz);
 
 /*
  * Function: newStringBuilder(sz)

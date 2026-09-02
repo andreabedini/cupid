@@ -46,7 +46,7 @@ Bool printTypeUseDefaults = FALSE;
 /* --------------------------------------------------------------------------
  * Decls for MacOS preference file support:
  * ------------------------------------------------------------------------*/
-static Void    readPrefsFile          Args((FILE *));
+static Void    readPrefsFile          (FILE *);
 typedef char GVarname[2000];
 static GVarname hugsFlags = "";
 int  iniArgc;
@@ -59,9 +59,8 @@ char iniArgv[10][33];
 static String  lastEdit   = 0;   /* Name of script to edit (if any) */
 static Int     lastLine   = 0;   /* Editor line number (if possible)*/
 
-Void setLastEdit(fname,line) /* keep name of last file to edit */
-String fname;
-Int    line; {
+Void setLastEdit(String fname, Int line) /* keep name of last file to edit */
+{
     if (lastEdit) {
       free(lastEdit);
     }
@@ -85,8 +84,8 @@ String getLastEdit(Int* pLastLine) {
 #define Option(c,h98,description,flag) { c, h98, description, flag }
 #endif
 
-static Void   local toggleSet         Args((Char,Bool));
-static Void   local togglesIn         Args((Bool));
+static Void   local toggleSet         (Char,Bool);
+static Void   local togglesIn         (Bool);
 
 struct options toggle[] = {     /* List of command line toggles    */
     Option('s', 1, "Print no. reductions/cells after eval", &showStats),
@@ -146,9 +145,8 @@ Void setOptions(Void)  /* change command line options from Hugs command line */
   }
 }
 
-static Void local toggleSet(c,state)    /* Set command line toggle         */
-Char c;
-Bool state; {
+static Void local toggleSet(Char c, Bool state)    /* Set command line toggle         */
+{
     Int i;
     for (i=0; toggle[i].c; ++i)
 	if (toggle[i].c == c) {
@@ -158,8 +156,8 @@ Bool state; {
     Printf("Warning: unknown toggle `%c'; ignoring.\n", c);
 }
 
-static Void local togglesIn(state)      /* Print current list of toggles in*/
-Bool state; {                           /* given state                     */
+static Void local togglesIn(Bool state)      /* Print current list of toggles in*/
+{                           /* given state                     */
     Int count = 0;
     Int i;
     for (i=0; toggle[i].c; ++i)
@@ -276,13 +274,10 @@ Void optionInfo(Void) {                 /* Print information about command */
 #define PUTStr(c,s)                     \
     next=PUTStr_aux(next,&charsLeft,c,s)
 
-static String local PUTStr_aux Args((String,Int*,Char, String));
+static String local PUTStr_aux (String,Int*,Char, String);
 
-static String local PUTStr_aux(next,chLeft,c,s)
-String next;
-Int*   chLeft;
-Char   c;
-String s; {
+static String local PUTStr_aux(String next, Int*   chLeft, Char c, String s)
+{
     Int charsLeft = *chLeft;
     Int len;
     if (s && (len = strlen(s)) > 0 ) {
@@ -368,9 +363,8 @@ String optionsToStr() {          /* convert options to string */
  * Reading and processing option strings:
  * ------------------------------------------------------------------------*/
 
-Void readOptions(options,freeUp)  /* read options from string */
-String options;
-Bool   freeUp; {
+Void readOptions(String options, Bool freeUp)  /* read options from string */
+{
     if (!readOptions2(options)) {
         ERRMSG(0) "Option string must begin with `+' or `-'"
 	EEND;
@@ -380,8 +374,8 @@ Bool   freeUp; {
     }
 }
 
-Bool readOptions2(options)         /* read options from string */
-String options; {
+Bool readOptions2(String options)         /* read options from string */
+{
     String s;
     if (options) {
 	stringInput(options);
@@ -393,8 +387,8 @@ String options; {
     return TRUE;
 }
 
-Bool processOption(s)    /* process string s for options,   */
-String s; {              /* return FALSE if none found.     */
+Bool processOption(String s)    /* process string s for options,   */
+{              /* return FALSE if none found.     */
     Bool state;
 
     if (s[0]=='-')
@@ -538,13 +532,13 @@ String s; {              /* return FALSE if none found.     */
     return TRUE;
 }
 
-Bool isOption(s)
-String s; {                     /* return TRUE if 's' looks like an option */
+Bool isOption(String s)
+{                     /* return TRUE if 's' looks like an option */
   return ( s && (s[0] == '-' || s[0] == '+') );
 }
 
-Void setHeapSize(s) 
-String s; {
+Void setHeapSize(String s) 
+{
     if (s) {
 	hpSize = argToInt(s);
 	if (hpSize < MINIMUMHEAP)
@@ -569,8 +563,8 @@ String s; {
     }
 }
 
-Int argToInt(s)            /* read integer from argument str  */
-String s; {
+Int argToInt(String s)            /* read integer from argument str  */
+{
     Int    n = 0;
     String t = s;
 
@@ -630,9 +624,8 @@ String s; {
 /* --------------------------------------------------------------------------
  * Process the options entries in an argv-vector:
  * ------------------------------------------------------------------------*/
-Void processOptionVector(argc,argv)
-Int    argc;
-String argv[]; {
+Void processOptionVector(Int argc, String argv[])
+{
     Int i;
 
     for (i=1; i<argc; ++i) {            /* process command line arguments  */

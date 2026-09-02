@@ -51,7 +51,7 @@ static struct primitive arrayPrimTable[] = {
   {0,			0, 0}
 };
 
-static Void outOfBounds Args((void));
+static Void outOfBounds (void);
 static void outOfBounds() {
     throwException(ap(nameArrayException, ap(nameIndexOutOfBounds, nameNil)));
 }
@@ -60,9 +60,9 @@ static void outOfBounds() {
  * Array control:
  * ------------------------------------------------------------------------*/
 
-static Void arrayControl Args((Int));
-static Void arrayControl(what)
-Int what; {
+static Void arrayControl (Int);
+static Void arrayControl(Int what)
+{
     switch (what) {
 	case INSTALL : 
 		       setCurrModule(modulePrelude);

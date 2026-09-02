@@ -32,30 +32,30 @@
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void   local interpreter       Args((Int,String []));
-static Void   local initInterpreter   Args((Void));
-static Void   local menu              Args((Void));
-static Void   local guidance          Args((Void));
-static Void   local forHelp           Args((Void));
-static Void   local changeDir         Args((Void));
-static Void   local load              Args((Void));
-static Void   local editor            Args((Void));
-static Void   local find              Args((Void));
-static Void   local setModule         Args((Void));
-static Void   local showtype          Args((Void));
-static String local objToStr          Args((Module, Cell));
-static Void   local info              Args((Void));
-static Void   local printSyntax       Args((Name));
-static Void   local showInst          Args((Inst));
-static Void   local describe          Args((Text));
-static Void   local listNames         Args((Void));
-static Void   local expandPath        Args((String,String,unsigned int));
-static Void   local browse	      Args((Void));
-static Void   local initialize        Args((Int, String []));
-static Void   local clearEvalModule   Args((Void));
+static Void   local interpreter       (Int,String []);
+static Void   local initInterpreter   (Void);
+static Void   local menu              (Void);
+static Void   local guidance          (Void);
+static Void   local forHelp           (Void);
+static Void   local changeDir         (Void);
+static Void   local load              (Void);
+static Void   local editor            (Void);
+static Void   local find              (Void);
+static Void   local setModule         (Void);
+static Void   local showtype          (Void);
+static String local objToStr          (Module, Cell);
+static Void   local info              (Void);
+static Void   local printSyntax       (Name);
+static Void   local showInst          (Inst);
+static Void   local describe          (Text);
+static Void   local listNames         (Void);
+static Void   local expandPath        (String,String,unsigned int);
+static Void   local browse	      (Void);
+static Void   local initialize        (Int, String []);
+static Void   local clearEvalModule   (Void);
 
 #if HUGS_FOR_WINDOWS
-static Void   local autoReloadFiles   Args((Void));
+static Void   local autoReloadFiles   (Void);
 #endif
 
 /* --------------------------------------------------------------------------
@@ -74,9 +74,8 @@ static String  defaultArgv[] = { "Hugs" };  /* program name */
 /* --------------------------------------------------------------------------
  * UI interpreter initalization:
  * ------------------------------------------------------------------------*/
-static Void local initialize(argc,argv)
-Int    argc;
-String argv[]; {
+static Void local initialize(Int argc, String argv[])
+{
     startEvaluator();
 
     setLastEdit((String)0,0);
@@ -159,7 +158,7 @@ String argv[]; {
 /* --------------------------------------------------------------------------
  * Printing the banner
  * ------------------------------------------------------------------------*/
-static Void printBanner Args((Void));
+static Void printBanner (Void);
 
 static Void printBanner()
 {
@@ -202,11 +201,10 @@ static Void printBanner()
  * Hugs entry point:
  * ------------------------------------------------------------------------*/
 
-int main Args((Int, String []));       /* now every func has a prototype  */
+int main (Int, String []);       /* now every func has a prototype  */
 
-int main(argc,argv)
-int  argc;
-char *argv[]; {
+int main(int argc, char*argv[])
+{
 
     CStackBase = &argc;                 /* Save stack base for use in gc   */
 
@@ -309,10 +307,7 @@ static Void local forHelp() {
 /*
  * Poor man's path expansion: expand out ~/ 
  */
-static Void local expandPath(origPath,expandedPath,maxLen)
-String origPath;
-String expandedPath;
-unsigned int maxLen;
+static Void local expandPath(String origPath, String expandedPath, unsigned int maxLen)
 {
 
   if (!origPath) {
@@ -567,9 +562,8 @@ static Void local runmain() {
  * about an object.
  * ------------------------------------------------------------------------*/
 
-static String local objToStr(m,c)
-Module m;
-Cell   c; {
+static String local objToStr(Module m, Cell c)
+{
 #if 1 || DISPLAY_QUANTIFIERS
     static char newVar[60];
     switch (whatIs(c)) {
@@ -656,8 +650,8 @@ static Void local info() {              /* describe objects                */
     setCurrModule(evMod);
 }
 
-static Void local describe(t)           /* describe an object              */
-Text t; {
+static Void local describe(Text t)           /* describe an object              */
+{
     Tycon  tc  = findTycon(t);
     Class  cl  = findClass(t);
     Name   nm  = findName(t);
@@ -817,8 +811,8 @@ Text t; {
     }
 }
 
-static Void local printSyntax(nm)
-Name nm; {
+static Void local printSyntax(Name nm)
+{
     Syntax sy = syntaxOf(nm);
     Text   t  = name(nm).text;
     String s  = textToStr(t);
@@ -839,8 +833,8 @@ Name nm; {
     }
 }
 
-static Void local showInst(in)          /* Display instance decl header    */
-Inst in; {
+static Void local showInst(Inst in)          /* Display instance decl header    */
+{
     Printf("instance ");
     if (nonNull(inst(in).specifics)) {
 	printContext(stdout,inst(in).specifics);
@@ -897,8 +891,8 @@ static Void local listNames() {         /* list names matching optional pat*/
 /* Size of (expanded) prompt buffer, should be more than enough.... */
 #define MAX_PROMPT_SIZE 1000
 
-Void promptForInput(moduleName)
-String moduleName; {
+Void promptForInput(String moduleName)
+{
     char promptBuffer[MAX_PROMPT_SIZE];
     char* fromPtr;
     char* toPtr;
@@ -953,9 +947,8 @@ static Void local autoReloadFiles() {
  * main read-eval-print loop, with error trapping:
  * ------------------------------------------------------------------------*/
 
-static Void local interpreter(argc,argv)/* main interpreter loop           */
-Int    argc;
-String argv[]; {
+static Void local interpreter(Int argc, String argv[])/* main interpreter loop           */
+{
     Int errorNumber = setjmp(catch_error);
 
     breakOn(TRUE);                      /* enable break trapping           */

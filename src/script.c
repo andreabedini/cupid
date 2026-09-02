@@ -49,8 +49,8 @@ static Bool   needsImports;             /* set to TRUE if imports required */
 /* --------------------------------------------------------------------------
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
-static Bool local addScript     Args((String,Long));
-static Void local freeScript    Args((Int));
+static Bool local addScript     (String,Long);
+static Void local freeScript    (Int);
 
 /* --------------------------------------------------------------------------
  * Initialising / freeing script stacks:
@@ -69,8 +69,8 @@ Void stopScripts() {
     freeScript(i);
 }
 
-static Void local freeScript(i)
-Int i; {
+static Void local freeScript(Int i)
+{
   if (scriptTable[i].fileName)
     free(scriptTable[i].fileName);
   if (scriptTable[i].realName)
@@ -88,8 +88,8 @@ Void setScriptStableMark() {
   scriptsStable = namesUpto;
 }
 
-String getScriptName(s)  /* access the script name at index 's' */
-Script s; {
+String getScriptName(Script s)  /* access the script name at index 's' */
+{
   if ( s >=0 && s <= numScripts ) {
     return scriptTable[s].fileName;
   } else {
@@ -99,8 +99,8 @@ Script s; {
   return NULL;
 }
 
-String getScriptRealName(s)  /* access the path of script at index 's' */
-Script s; {
+String getScriptRealName(Script s)  /* access the path of script at index 's' */
+{
   if ( s >=0 && s <= numScripts ) {
     return scriptTable[s].realName;
   } else {
@@ -120,25 +120,23 @@ Int numLoadedScripts() { /* return number of currently loaded scripts */
 
 #if HUGS_FOR_WINDOWS
 /* UI pokes around the script stack, give it access... */
-Void setNumLoadedScripts(s)
-Script s; {
+Void setNumLoadedScripts(Script s)
+{
   numScripts=s;
 }
 
-Void setScriptHwMark(s)
-Script s; {
+Void setScriptHwMark(Script s)
+{
   namesUpto = s;
 }
 
-Void setScriptName(s,scr)
-Script s;
-String scr; {
+Void setScriptName(Script s, String scr)
+{
   scriptTable[s].fileName = scr;
 }
 
-Void setScriptRealName(s,scr)
-Script s;
-String scr; {
+Void setScriptRealName(Script s, String scr)
+{
   scriptTable[s].realName = scr;
 }
 #endif
@@ -147,9 +145,9 @@ String scr; {
  * Loading script files:
  * ------------------------------------------------------------------------*/
 
-Void addScriptName(s,sch)  /* Add script to list of scripts   */
-String s;                  /* to be read in ...               */
-Bool   sch; {              /* TRUE => requires pathname search*/
+Void addScriptName(String s, Bool sch)  /* Add script to list of scripts   */
+                           /* to be read in ...               */
+{              /* TRUE => requires pathname search*/
     if (namesUpto>=NUM_SCRIPTS) {
 	ERRMSG(0) "Too many module files (maximum of %d allowed)",
 		  NUM_SCRIPTS
@@ -178,9 +176,9 @@ Bool   sch; {              /* TRUE => requires pathname search*/
     namesUpto++;
 }
 
-static Bool local addScript(fname,len)  /* read single script file */
-String fname;                           /* name of script file     */
-Long   len; {                           /* length of script file   */
+static Bool local addScript(String fname, Long len)  /* read single script file */
+                                        /* name of script file     */
+{                           /* length of script file   */
 #if HUGS_FOR_WINDOWS         /* Set clock cursor while loading   */
     allowBreak();
     SetCursor(LoadCursor(NULL, IDC_WAIT));
@@ -207,8 +205,8 @@ Long   len; {                           /* length of script file   */
     return TRUE;
 }
 
-Bool chase(imps)                 /* Process list of import requests */
-List imps; {
+Bool chase(List imps)                 /* Process list of import requests */
+{
     Int    origPos = numScripts; /* keep track of original position */
     String origDir = scriptTable[origPos].directory;
     for (; nonNull(imps); imps=tl(imps)) {
@@ -266,9 +264,8 @@ List imps; {
 /* --------------------------------------------------------------------------
  * Adding scripts found in an argument vector:
  * ------------------------------------------------------------------------*/
-Void addScriptsFromArgs(argc,argv)
-Int argc;
-String argv[]; {
+Void addScriptsFromArgs(Int argc, String argv[])
+{
     Int i;
 
 #if USE_PREFERENCES_FILE
@@ -297,8 +294,8 @@ String argv[]; {
 /* --------------------------------------------------------------------------
  * Dropping script files:
  * ------------------------------------------------------------------------*/
-Void forgetScriptsFrom(scno) /* remove scripts from system     */
-Script scno; {
+Void forgetScriptsFrom(Script scno) /* remove scripts from system     */
+{
     Script i;
     for (i=scno; i<namesUpto; ++i)
 	freeScript(i);
@@ -315,8 +312,8 @@ Void forgetAllScripts() {
   forgetScriptsFrom( scriptsStable ); 
 }
 
-Void forgetAScript(scno) /* remove a script from system */
-Script scno; {
+Void forgetAScript(Script scno) /* remove a script from system */
+{
     Script i;
     
     if (scno > namesUpto)
@@ -330,8 +327,8 @@ Script scno; {
     namesUpto--;
 }
 
-Void readScripts(n)        /* Reread current list of scripts, */
-Int n; {                   /* loading everything after and    */
+Void readScripts(Int n)        /* Reread current list of scripts, */
+{                   /* loading everything after and    */
     Time timeStamp;        /* including the first script which*/
     Long fileSize;         /* has been either changed or added*/
 
@@ -389,8 +386,8 @@ Void whatScripts() {       /* list scripts in current session */
 #endif
 }
 
-Void script(what)
-Int what; {
+Void script(Int what)
+{
 
   /* not much to it..will be more when/if the local tables
    * become resizable.

@@ -22,30 +22,30 @@
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local foreignType    Args((Int,Type));
+static Void local foreignType    (Int,Type);
 #ifdef DOTNET
-static Cell local foreignTypeTag Args((Int,Type));
+static Cell local foreignTypeTag (Int,Type);
 #endif
-static Void local foreignGet     Args((Int,Type,String,Int));
-static Void local foreignPut     Args((Int,Type,String,Int));
-static Void local ffiInclude     Args((Text));
-static Void local ffiDeclare     Args((Int,Type,String,Int));
-static Void local ffiDeclareList Args((Int,List,String));
-static Void local foreignType    Args((Int,Type));
-static Void local ffiGetList     Args((Int,List,String));
-static Void local ffiPutList     Args((Int,List,String));
-static Void local ffiCallFun     Args((Int,Text,List,List));
-static Void local ffiDeclareFun  Args((Int,Text,Bool,Bool,List,Type));
-static Void local ffiFunTypeCast Args((Int,List,Type));
-static Void local ffiPrimProto   Args((Text,Int));
-static Void local ffiPrimHeader  Args((Text,Int));
-static Void local ffiReturn      Args((Type,String,Int));
+static Void local foreignGet     (Int,Type,String,Int);
+static Void local foreignPut     (Int,Type,String,Int);
+static Void local ffiInclude     (Text);
+static Void local ffiDeclare     (Int,Type,String,Int);
+static Void local ffiDeclareList (Int,List,String);
+static Void local foreignType    (Int,Type);
+static Void local ffiGetList     (Int,List,String);
+static Void local ffiPutList     (Int,List,String);
+static Void local ffiCallFun     (Int,Text,List,List);
+static Void local ffiDeclareFun  (Int,Text,Bool,Bool,List,Type);
+static Void local ffiFunTypeCast (Int,List,Type);
+static Void local ffiPrimProto   (Text,Int);
+static Void local ffiPrimHeader  (Text,Int);
+static Void local ffiReturn      (Type,String,Int);
 
 static FILE* out = NIL;                /* file we're generating code into */
 static List  includes = NIL;           /* files already #included         */
 
-Void ffi(what)
-Int what; {
+Void ffi(Int what)
+{
     switch (what) {
         case RESET   : if (out) {
                            fclose(out);
@@ -58,8 +58,8 @@ Int what; {
 
 static String ffiFlags = 0; /* extra flags for compilation command line */
 
-Void ffiSetFlags(s) 
-String s; {
+Void ffiSetFlags(String s) 
+{
     if (s == 0) return;
     if (ffiFlags) {
         Int l = strlen(ffiFlags);
@@ -94,9 +94,8 @@ Void ffiAddCppInclude(String s) {
     sprintf(cppDirectives+l, "#include %s\n", s);
 }
 
-Bool foreignNeedStubs(imps,exps)
-List imps;
-List exps; {
+Bool foreignNeedStubs(List imps, List exps)
+{
 #ifndef DOTNET
  return (nonNull(imps) || nonNull(exps)); 
 #else 
@@ -115,8 +114,8 @@ List exps; {
 #endif
 }
 
-Void foreignHeader(fn) 
-String fn; {
+Void foreignHeader(String fn) 
+{
     String fnm = mkFFIFilename(fn);
     FILE* f = fopen(fnm,"w");
     if (f == NULL) {
@@ -133,11 +132,8 @@ String fn; {
     fprintf(out,"static HugsAPI5 *hugs = 0;\n");
 }
 
-Void foreignFooter(fn,mn,is,es)
-String fn;
-Text mn;
-List is;
-List es; {
+Void foreignFooter(String fn, Text mn, List is, List es)
+{
     List xs   = NIL;
     fprintf(out,"\n");
 
@@ -167,8 +163,8 @@ List es; {
     /* The control function: rebuilds stable ptr table on RESET */
     fprintf(out,
             "static void hugs_primControl(int);\n"
-            "static void hugs_primControl(what)\n"
-            "int what; {\n");
+            "static void hugs_primControl(int what)\n"
+            "{\n");
 
     if (nonNull(es)) {
       fprintf(out,
@@ -243,9 +239,8 @@ List es; {
 }
 
 #ifdef DOTNET
-static Cell foreignTypeTag(l,t)
-Int    l;
-Type   t; {
+static Cell foreignTypeTag(Int l, Type t)
+{
          if (t == typeUnit)   return mkInt(FFI_TYPE_UNIT);
     else if (t == typeChar)   return mkInt(FFI_TYPE_CHAR);
     else if (t == typeInt)    return mkInt(FFI_TYPE_INT);
@@ -281,9 +276,8 @@ Type   t; {
 #endif
 
 
-static Void local foreignType(l,t)
-Int    l;
-Type   t; {
+static Void local foreignType(Int l, Type t)
+{
     if      (t == typeChar)   fprintf(out,"HsChar");
     else if (t == typeInt)    fprintf(out,"HsInt");
     else if (t == typeInt8)   fprintf(out,"HsInt8");
@@ -313,11 +307,8 @@ Type   t; {
    }
 }
 
-static Void local foreignGet(l,t,nm,num)
-Int    l;
-Type   t; 
-String nm; 
-Int    num; {
+static Void local foreignGet(Int l, Type t, String nm, Int num)
+{
     if (t == typeUnit)        fprintf(out,"hugs->getUnit();\n");
     else if (t == typeChar)   fprintf(out,"%s%d = hugs->getChar();\n",       nm, num);
     else if (t == typeInt)    fprintf(out,"%s%d = hugs->getInt();\n",        nm, num);
@@ -348,11 +339,8 @@ Int    num; {
    }
 }
 
-static Void local foreignPut(l,t,nm,num)
-Int    l;
-Type   t; 
-String nm; 
-Int    num; {
+static Void local foreignPut(Int l, Type t, String nm, Int num)
+{
     if      (t == typeUnit)   fprintf(out,"\n");
     else if (t == typeChar)   fprintf(out,"hugs->putChar(%s%d);\n",       nm, num);
     else if (t == typeInt)    fprintf(out,"hugs->putInt(%s%d);\n",        nm, num);
@@ -383,19 +371,16 @@ Int    num; {
    }
 }
 
-static Void local ffiInclude(fn)                     /* Add #include  */
-Text fn; {
+static Void local ffiInclude(Text fn)                     /* Add #include  */
+{
     if (fn != -1 && !varIsMember(fn,includes)) {
         fprintf(out, "#include \"%s\"\n", textToStr(fn));
         includes = cons(mkVar(fn),includes);
     }
 }
 
-static Void local ffiDeclare(line,ty,prefix,i)       /* Declare variable  */
-Int    line;
-Type   ty;
-String prefix; 
-Int    i; {
+static Void local ffiDeclare(Int line, Type ty, String prefix, Int i)       /* Declare variable  */
+{
     if (ty != typeUnit) {
         fprintf(out,"    ");
         foreignType(line,ty);
@@ -403,10 +388,8 @@ Int    i; {
     }
 }
 
-static Void local ffiReturn(ty,prefix,i)             /* Return variable  */
-Type   ty;
-String prefix; 
-Int    i; {
+static Void local ffiReturn(Type ty, String prefix, Int i)             /* Return variable  */
+{
     if (ty != typeUnit) {
         fprintf(out,"    return %s%d;\n",prefix,i);
     } else {
@@ -414,20 +397,16 @@ Int    i; {
     }
 }
 
-static Void local ffiDeclareList(line,tys,prefix)   /* Declare variables */
-Int    line;
-List   tys; 
-String prefix; {
+static Void local ffiDeclareList(Int line, List tys, String prefix)   /* Declare variables */
+{
     Int  i;
     for(i=1; nonNull(tys); tys=tl(tys),++i) {
         ffiDeclare(line,hd(tys),prefix,i);
     }
 }
 
-static Void local ffiGetList(line,tys,prefix)   /* Get values from Haskell */
-Int    line;
-List   tys; 
-String prefix; {
+static Void local ffiGetList(Int line, List tys, String prefix)   /* Get values from Haskell */
+{
     Int  i;
     for(i=1; nonNull(tys); tys=tl(tys),++i) {
         fprintf(out,"    ");
@@ -435,10 +414,8 @@ String prefix; {
     }
 }
 
-static Void local ffiPutList(line,tys,prefix)    /* Put values to Haskell */
-Int    line;
-List   tys; 
-String prefix; {
+static Void local ffiPutList(Int line, List tys, String prefix)    /* Put values to Haskell */
+{
     Int  i;
     for(i=1; nonNull(tys); tys=tl(tys),++i) {
         fprintf(out,"    ");
@@ -446,13 +423,9 @@ String prefix; {
     }
 }
 
-static Void local ffiDeclareFun(line,n,indirect,extraArg,argTys,resultTy)
-Int  line;
-Text n;
-Bool indirect;
-Bool extraArg; /* Add a StablePtr argument? */
-List argTys;
-List resultTy; {
+static Void local ffiDeclareFun(Int line, Text n, Bool indirect, Bool extraArg, List argTys, List resultTy)
+               /* Add a StablePtr argument? */
+{
     Int  i;
     if (resultTy == typeUnit) {
         fprintf(out,"void");
@@ -491,10 +464,8 @@ List resultTy; {
     fprintf(out,")");
 }
 
-static Void local ffiFunTypeCast(line,argTys,resultTy)
-Int line;
-List argTys;
-List resultTy; {
+static Void local ffiFunTypeCast(Int line, List argTys, List resultTy)
+{
     Int  i;
     fprintf(out,"(");
     if (resultTy == typeUnit) {
@@ -512,11 +483,8 @@ List resultTy; {
     fprintf(out,"))");
 }
 
-static Void local ffiCallFun(line,e,argTys,resultTy)
-Int  line;
-Text e;
-List argTys;
-Type resultTy; {
+static Void local ffiCallFun(Int line, Text e, List argTys, Type resultTy)
+{
     Int  i;
     fprintf(out,"    ");
     if (resultTy != typeUnit) {
@@ -538,9 +506,8 @@ Type resultTy; {
  * that name is a valid C identifier whereas the Haskell name may
  * not be.
  */
-static Void local ffiPrimProto(name,id)
-Text name; 
-Int  id; {
+static Void local ffiPrimProto(Text name, Int id)
+{
     fprintf(out,"\nstatic void hugsprim_%s_%d(HugsStackPtr);\n",textToStr(name),id);
 }
 
@@ -549,9 +516,8 @@ Int  id; {
  * that name is a valid C identifier whereas the Haskell name may
  * not be.
  */
-static Void local ffiPrimHeader(name,id)
-Text name; 
-Int  id; {
+static Void local ffiPrimHeader(Text name, Int id)
+{
     fprintf(out,"static void hugsprim_%s_%d(HugsStackPtr hugs_root)\n", textToStr(name),id);
 }
 
@@ -579,17 +545,10 @@ Int  id; {
  *     }
  * 
  */
-Void implementForeignImport(line,n,id,fn,cid,isStatic,libName,argTys,isIO,resultTy)
-Int  line;
-Name n;
-Int  id;
-Text fn;   /* Include file */
-Text cid;  /* Function name */
-Bool isStatic;
-Text libName;
-List argTys;
-Bool isIO;
-Type resultTy; {
+Void implementForeignImport(Int line, Name n, Int id, Text fn, Text cid, Bool isStatic, Text libName, List argTys, Bool isIO, Type resultTy)
+           /* Include file */
+           /* Function name */
+{
 
 #ifdef DOTNET
     if ( name(n).foreignFlags & FFI_CCONV_DOTNET ) {
@@ -664,13 +623,8 @@ Type resultTy; {
 #endif
 }
 
-Void implementForeignImportDynamic(line,id,e,argTys,isIO,resultTy)
-Int  line;
-Int  id;
-Text e;
-List argTys;
-Bool isIO;
-Type resultTy; {
+Void implementForeignImportDynamic(Int line, Int id, Text e, List argTys, Bool isIO, Type resultTy)
+{
     ffiPrimProto(e,id);
     ffiPrimHeader(e,id);
     fprintf(out,"{\n");
@@ -729,13 +683,8 @@ Type resultTy; {
  *         hugs->returnIO(hugs_root,1);
  *     }
  */
-Void implementForeignImportWrapper(line,id,e,argTys,isIO,resultTy)
-Int  line;
-Int  id;
-Text e;
-List argTys;
-Bool isIO;
-Type resultTy; {
+Void implementForeignImportWrapper(Int line, Int id, Text e, List argTys, Bool isIO, Type resultTy)
+{
     /* Prototype for function we're generating */
     fprintf(out,"\nstatic ");
     ffiDeclareFun(line,e,FALSE,TRUE,argTys,resultTy);
@@ -807,13 +756,8 @@ Type resultTy; {
  *     }
  *
  */
-Void implementForeignExport(line,id,e,argTys,isIO,resultTy)
-Int  line;
-Int  id;
-Text e;
-List argTys;
-Bool isIO;
-Type resultTy; {
+Void implementForeignExport(Int line, Int id, Text e, List argTys, Bool isIO, Type resultTy)
+{
 
     /* Prototype for function we're generating */
     fprintf(out,"\nextern ");
@@ -870,13 +814,11 @@ Type resultTy; {
  *         hugs_returnId(1);
  *     }
  */
-Void implementForeignImportLabel(line, id, fn, cid, n, ty)
-Int  line;
-Int  id;
-Text fn;   /* Include file */
-Text cid;  /* Function name */
-Text n;    /* Haskell name */
-Type ty; {
+Void implementForeignImportLabel(Int line, Int id, Text fn, Text cid, Text n, Type ty)
+           /* Include file */
+           /* Function name */
+           /* Haskell name */
+{
     ffiInclude(fn);
 
     /* Prevent the cid from matching a C macro */

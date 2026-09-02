@@ -18,10 +18,10 @@
 static Cell daSccs = NIL;
 static Int  daCount;
 
-static Int local sccMin	Args((Int,Int));
+static Int local sccMin	(Int,Int);
 
-static Int local sccMin(x,y)		/* calculate minimum of x,y	   */
-Int x, y; {				/* (unless y is zero)		   */
+static Int local sccMin(Int x, Int y)		/* calculate minimum of x,y	   */
+{				/* (unless y is zero)		   */
     return (x<=y || y==0) ? x : y;
 }
 #endif
@@ -42,9 +42,9 @@ Int x, y; {				/* (unless y is zero)		   */
  * This would probably have been a good application for C++ templates ...
  * ------------------------------------------------------------------------*/
 
-static Int local LOWLINK Args((Cell));	/* local function		   */
-static Int local LOWLINK(v)		/* calculate `lowlink' of v	   */
-Cell v; {
+static Int local LOWLINK (Cell);	/* local function		   */
+static Int local LOWLINK(Cell v)		/* calculate `lowlink' of v	   */
+{
     Int  low = daCount;
     Int  dfn = daCount; 		/* depth first search no. of v	   */
     List ws  = DEPENDS(v);		/* adjacency list for v		   */
@@ -71,8 +71,8 @@ Cell v; {
 }
 
 #ifdef SCC
-static List local SCC(bs)		/* sort list with added dependency */
-List bs; {				/* info into SCCs		   */
+static List local SCC(List bs)		/* sort list with added dependency */
+{				/* info into SCCs		   */
     clearStack();
     daSccs = NIL;			/* clear current list of SCCs	   */
 
@@ -85,8 +85,8 @@ List bs; {				/* info into SCCs		   */
 #endif
 
 #ifdef SCC2				/* Two argument version		   */
-static List local SCC2(bs,cs)		/* sort lists with added dependency*/
-List bs, cs; {				/* info into SCCs		   */
+static List local SCC2(List bs, List cs)		/* sort lists with added dependency*/
+{				/* info into SCCs		   */
     clearStack();
     daSccs = NIL;			/* clear current list of SCCs	   */
 

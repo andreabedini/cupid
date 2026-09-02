@@ -19,14 +19,14 @@
  * internalPrims control
  * ------------------------------------------------------------------------*/
 
-static Void linkInternals Args((Void));
+static Void linkInternals (Void);
 
 static Name nameLeft;			/* standard data constructors      */
 static Name nameRight;			
 
-static Void local internalControl Args((Int));
-static Void local internalControl(what)
-Int what; {
+static Void local internalControl (Int);
+static Void local internalControl(Int what)
+{
     switch (what) {
 	case INSTALL : 
 #define predef(nm,str) nm=newName(findText(str),NIL); name(nm).defn=PREDEFINED

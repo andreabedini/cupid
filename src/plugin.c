@@ -35,8 +35,8 @@ static struct pluginInfo pluginList[] = { /* hardwired list of all plugins */
   {0,0}
 };
 
-Bool havePlugin(mod)                /* can we statically link this plugin? */
-String mod; {                       /* (called when each module is loaded) */
+Bool havePlugin(String mod)                /* can we statically link this plugin? */
+{                       /* (called when each module is loaded) */
     Int i;
     for(i=0; pluginList[i].nm; ++i) {
 	if (0 == strcmp(mod, pluginList[i].nm)) {
@@ -51,8 +51,8 @@ String mod; {                       /* (called when each module is loaded) */
  * Plugins control:
  * ------------------------------------------------------------------------*/
 
-Void plugins(what)
-Int what; {
+Void plugins(Int what)
+{
 }
 
 /*-------------------------------------------------------------------------*/

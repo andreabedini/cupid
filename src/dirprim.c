@@ -9,10 +9,10 @@
  * Directory control:
  * ------------------------------------------------------------------------*/
 
-static Void dirControl Args((Int));
+static Void dirControl (Int);
 
-static Void dirControl(what)
-Int what; {
+static Void dirControl(Int what)
+{
 }
 
 /* --------------------------------------------------------------------------
@@ -53,7 +53,7 @@ static struct primitive dirPrimTable[] = {
 
 static struct primInfo dirPrims = { dirControl, dirPrimTable, 0 };
 
-static	Bool	local	isDirectory	Args((String));
+static	Bool	local	isDirectory	(String);
 
 #define ToBool(v) ( (v) ? nameTrue : nameFalse)
 
@@ -309,8 +309,8 @@ primFun(primDirExist) { /* FilePath -> IO Bool - check to see if directory exist
   IOBoolResult(isDirectory(s));
 }
 
-static Bool local isDirectory(s)
-String s; {
+static Bool local isDirectory(String s)
+{
   int rc;
   struct stat st;
 #ifdef _WIN32

@@ -60,8 +60,8 @@ Void stopAnyPrinting() {  /* terminate printing of expression,*/
     }
 }
 
-Void errHead(l)                        /* print start of error message     */
-Int l; {
+Void errHead(Int l)                        /* print start of error message     */
+{
     failed();                          /* failed to reach target ...       */
     stopAnyPrinting();
     FPrintf(errorStream,"ERROR");
@@ -102,8 +102,8 @@ Void errAbort() {                       /* altern. form of error handling  */
     errFail();
 }
 
-Void internal(msg)                      /* handle internal error           */
-String msg; {
+Void internal(String msg)                      /* handle internal error           */
+{
 #if HUGS_FOR_WINDOWS
     char buf[300];
     sprintf(buf,"INTERNAL ERROR: %s",msg);
@@ -128,8 +128,8 @@ String msg; {
     longjmp(catch_error,1);
 }
 
-Void fatal(msg)                         /* handle fatal error              */
-String msg; {
+Void fatal(String msg)                         /* handle fatal error              */
+{
 #if HUGS_FOR_WINDOWS
     char buf[300];
     sprintf(buf,"FATAL ERROR: %s",msg);
@@ -193,14 +193,12 @@ typedef struct _HugsStream {
     Int  next;                        /* next space in buffer              */
 } HugsStream;
 
-static Void   local vBufferedPrintf  Args((HugsStream*, const char*, va_list));
-static Void   local bufferedPutchar  Args((HugsStream*, int));
-static String local bufferClear      Args((HugsStream *stream));
+static Void   local vBufferedPrintf  (HugsStream*, const char*, va_list);
+static Void   local bufferedPutchar  (HugsStream*, int);
+static String local bufferClear      (HugsStream *stream);
 
-static Void local vBufferedPrintf(stream, fmt, ap)
-HugsStream* stream;
-const char* fmt;
-va_list     ap; {
+static Void local vBufferedPrintf(HugsStream* stream, const char* fmt, va_list ap)
+{
     Int spaceLeft = BufferSize - stream->next;
     char* p = &stream->buffer[stream->next];
     Int charsAdded = vsnprintf(p, spaceLeft, fmt, ap);
@@ -212,17 +210,16 @@ va_list     ap; {
 #endif
 }
 
-static Void local bufferedPutchar(stream, c)
-HugsStream *stream;
-int         c; {
+static Void local bufferedPutchar(HugsStream*stream, int c)
+{
     if (BufferSize - stream->next >= 2) {
 	stream->buffer[stream->next++] = c;
 	stream->buffer[stream->next] = '\0';
     }
 }
 
-static String local bufferClear(stream)
-HugsStream *stream; {
+static String local bufferClear(HugsStream*stream)
+{
     if (stream->next == 0) {
 	return "";
     } else {
@@ -238,8 +235,8 @@ static HugsStream outputStream;
  * We rely on standard C semantics to initialise outputStream.next to 0.
  */
 
-Void hugsEnableOutput(f)
-Bool f; {
+Void hugsEnableOutput(Bool f)
+{
     disableOutput = !f;
 }
 
@@ -247,7 +244,6 @@ String hugsClearOutputBuffer() {
     return bufferClear(&outputStream);
 }
 
-#if HAVE_STDARG_H
 Void hugsPrintf(const char *fmt, ...) {
     va_list ap;                    /* pointer into argument list           */
     va_start(ap, fmt);             /* make ap point to first arg after fmt */
@@ -258,23 +254,9 @@ Void hugsPrintf(const char *fmt, ...) {
     }
     va_end(ap);                    /* clean up                             */
 }
-#else
-Void hugsPrintf(fmt, va_alist)
-const char *fmt;
-va_dcl {
-    va_list ap;                    /* pointer into argument list           */
-    va_start(ap);                  /* make ap point to first arg after fmt */
-    if (!disableOutput) {
-	vprintf(fmt, ap);
-    } else {
-	vBufferedPrintf(&outputStream, fmt, ap);
-    }
-    va_end(ap);                    /* clean up                             */
-}
-#endif
 
-Void hugsPutchar(c)
-int c; {
+Void hugsPutchar(int c)
+{
     if (!disableOutput) {
 	putchar(c);
     } else {
@@ -288,14 +270,13 @@ Void hugsFlushStdout() {
     }
 }
 
-Void hugsFFlush(fp)
-FILE* fp; {
+Void hugsFFlush(FILE* fp)
+{
     if (!disableOutput) {
 	fflush(fp);
     }
 }
 
-#if HAVE_STDARG_H
 Void hugsFPrintf(FILE *fp, const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
@@ -306,25 +287,9 @@ Void hugsFPrintf(FILE *fp, const char* fmt, ...) {
     }
     va_end(ap);
 }
-#else
-Void hugsFPrintf(FILE *fp, const char* fmt, va_list)
-FILE* fp;
-const char* fmt;
-va_dcl {
-    va_list ap;
-    va_start(ap);
-    if (!disableOutput) {
-	vfprintf(fp, fmt, ap);
-    } else {
-	vBufferedPrintf(&outputStream, fmt, ap);
-    }
-    va_end(ap);
-}
-#endif
 
-Void hugsPutc(c, fp)
-int   c;
-FILE* fp; {
+Void hugsPutc(int c, FILE* fp)
+{
     if (!disableOutput) {
 	fputc(c,fp);
     } else {

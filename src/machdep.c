@@ -136,22 +136,20 @@ int allow_break_count = 0;
 #define HScriptRoot ("SOFTWARE\\Haskell\\HaskellScript\\")
 #endif
 
-extern String readRegString        Args((HKEY, String, String, String));
+extern String readRegString        (HKEY, String, String, String);
 
-static Bool   local createKey      Args((HKEY, String, PHKEY, REGSAM));
-static Bool   local queryValue     Args((HKEY, String, String, LPDWORD, LPBYTE, DWORD));
-static Bool   local queryString    Args((HKEY,String,String,String*));
-static Bool   local setValue       Args((HKEY, String, String, DWORD, LPBYTE, DWORD));
+static Bool   local createKey      (HKEY, String, PHKEY, REGSAM);
+static Bool   local queryValue     (HKEY, String, String, LPDWORD, LPBYTE, DWORD);
+static Bool   local queryString    (HKEY,String,String,String*);
+static Bool   local setValue       (HKEY, String, String, DWORD, LPBYTE, DWORD);
 #endif
 
 /* --------------------------------------------------------------------------
  * Find information about a file:
  * ------------------------------------------------------------------------*/
 
-Void getFileInfo(f,tm,sz)  /* find time stamp and size of file*/
-String f;
-Time   *tm;
-Long   *sz; {
+Void getFileInfo(String f, Time*tm, Long*sz)  /* find time stamp and size of file*/
+{
 #if HAVE_SYS_STAT_H || HAVE_STAT_H || HAVE_UNIX_H
     struct stat scbuf;
     if (!stat(f,&scbuf)) {
@@ -212,9 +210,8 @@ int access(char *fileName, int dummy) {
 }
 #endif
 
-Bool readable(f,isReg)        /* is f readable (and also, a regular file?) */
-String f;
-Bool   isReg; {
+Bool readable(String f, Bool isReg)        /* is f readable (and also, a regular file?) */
+{
 #if DJGPP2 || HAVE_GETFINFO /* stat returns bogus mode bits on djgpp2 */
     return (0 == access(f,4));
 #elif HAVE_SYS_STAT_H || HAVE_STAT_H
@@ -240,35 +237,35 @@ Bool   isReg; {
  * Search for script files on the HUGS path:
  * ------------------------------------------------------------------------*/
 
-static String local homeDir	  Args((void));
+static String local homeDir	  (void);
 
 #if __MWERKS__ && macintosh
-static String local currentDir	  Args((void));
+static String local currentDir	  (void);
 #endif
 
 #if HSCRIPT
-static String local hscriptDir    Args((Void));
-static void   local hscriptSuffixes Args((Void));
+static String local hscriptDir    (Void);
+static void   local hscriptSuffixes (Void);
 #endif
 
 #if 0
 /* UNUSED */
-static int    local pathCmp       Args((String, String));
+static int    local pathCmp       (String, String);
 #endif
-static String local normPath      Args((String));
-static Void   local searchChr     Args((Int));
-static Void   local searchStr     Args((String));
-static Bool   local tryEndings    Args((Void));
-static Bool   local find1	  Args((String));
-static Bool   local find2	  Args((String));
-static String local expandVariable Args((String));
-static String local skipVariable  Args((String));
-static String local nextPath      Args((String));
-static Bool   local samePath      Args((String,String));
+static String local normPath      (String);
+static Void   local searchChr     (Int);
+static Void   local searchStr     (String);
+static Bool   local tryEndings    (Void);
+static Bool   local find1	  (String);
+static Bool   local find2	  (String);
+static String local expandVariable (String);
+static String local skipVariable  (String);
+static String local nextPath      (String);
+static Bool   local samePath      (String,String);
 #if DOS_FILENAMES
-static Bool   local isPathSep     Args((String));
+static Bool   local isPathSep     (String);
 #endif
-static Bool   local scanSubDirs   Args((String));
+static Bool   local scanSubDirs   (String);
 
 #if __MWERKS__ && macintosh
 typedef char FileName[FILENAME_MAX + 1];
@@ -300,16 +297,16 @@ FileName macHugsDir; /* Directory where Hugs was found. */
 static HMODULE hugsModule = (HMODULE)0;
 static String  hugsRoot   = 0;
 
-extern Void setHugsModule Args((HMODULE));
-extern Bool setHugsRoot   Args((String));
+extern Void setHugsModule (HMODULE);
+extern Bool setHugsRoot   (String);
 
-Void setHugsModule(hmod)
-HMODULE hmod; {
+Void setHugsModule(HMODULE hmod)
+{
     hugsModule = hmod;
 }
 
-Bool setHugsRoot(s)
-String s; {
+Bool setHugsRoot(String s)
+{
     String newRoot = malloc(strlen(s) + 1);
     
     if (!newRoot) return FALSE;
@@ -415,8 +412,8 @@ static void hscriptSuffixes() {
 }
 #endif
 
-String local RealPath(s)         /* Find absolute pathname of file  */
-String s; {
+String local RealPath(String s)         /* Find absolute pathname of file  */
+{
 #if HAVE__FULLPATH  /* eg DOS */
     static char path[FILENAME_MAX+1];
     _fullpath(path,s,FILENAME_MAX+1);
@@ -443,9 +440,8 @@ String s; {
 
 #if 0
 /* UNUSED */
-static int local pathCmp(p1,p2)       /* Compare paths after normalisation */
-String p1;
-String p2; {
+static int local pathCmp(String p1, String p2)       /* Compare paths after normalisation */
+{
 #if HAVE__FULLPATH  /* eg DOS */
     static char path1[FILENAME_MAX+1];
     static char path2[FILENAME_MAX+1];
@@ -470,8 +466,8 @@ String p2; {
 }
 #endif
 
-static String local normPath(s) /* Try, as much as possible, to normalize  */
-String s; {                     /* a pathname in some appropriate manner.  */
+static String local normPath(String s) /* Try, as much as possible, to normalize  */
+{                     /* a pathname in some appropriate manner.  */
 #if PATH_CANONICALIZATION
     String path = RealPath(s);
 #if CASE_INSENSITIVE_FILENAMES
@@ -488,16 +484,16 @@ static Int    searchPos;
 
 #define searchReset(n)          searchBuf[searchPos=(n)]='\0'
 
-static Void local searchChr(c)  /* Add single character to search buffer   */
-Int c; {
+static Void local searchChr(Int c)  /* Add single character to search buffer   */
+{
     if (searchPos<FILENAME_MAX) {
 	searchBuf[searchPos++] = (char)c;
 	searchBuf[searchPos]   = '\0';
     }
 }
 
-static Void local searchStr(s)  /* Add string to search buffer             */
-String s; {
+static Void local searchStr(String s)  /* Add string to search buffer             */
+{
     while (*s && searchPos<FILENAME_MAX)
 	searchBuf[searchPos++] = *s++;
     searchBuf[searchPos] = '\0';
@@ -528,8 +524,8 @@ static Bool local tryEndings()  /* Try each of the listed endings          */
 }
 
 #if DOS_FILENAMES
-static Bool local isPathSep(sep)      /* does 'sep' mark the end of a valid path? */
-String sep; {
+static Bool local isPathSep(String sep)      /* does 'sep' mark the end of a valid path? */
+{
     /* ';' is always a separator */
     /* ':' is a separator iff it is not followed by a backslash */
     /* (should test for <x>:\ but that seems too difficult) */
@@ -550,8 +546,7 @@ String sep; {
 
 #if HAVE_DIRENT_H
 
-static Bool scanSubDirs(s)
-String s;
+static Bool scanSubDirs(String s)
 {
     DIR *dir;
     struct dirent *entry;
@@ -582,8 +577,7 @@ String s;
 
 #elif HAVE_WINDOWS_H
 
-static Bool scanSubDirs(s)
-String s;
+static Bool scanSubDirs(String s)
 {
     struct _finddata_t findInfo;
     long handle;
@@ -627,8 +621,7 @@ String s;
 extern StringPtr c2pstr(char *aStr);
 extern char *p2cstr(StringPtr aStr);
 
-static Bool scanSubDirs(s)
-String s;
+static Bool scanSubDirs(String s)
 {   FileName name  = "\0";
     ConstStr255Param pname = "\p";
     String subdir = "\0";
@@ -679,8 +672,7 @@ String s;
 }
 #else
 
-static Bool scanSubDirs(name)
-String name;
+static Bool scanSubDirs(String name)
 {   return FALSE;
 }
 
@@ -690,7 +682,7 @@ String name;
 
 struct shellVariable {
     String var_name;
-    String (*var_value) Args((Void));
+    String (*var_value) (Void);
 };
 
 static struct shellVariable shell_var[] = {
@@ -709,8 +701,8 @@ static struct shellVariable shell_var[] = {
     findPathname nm = [ nm ++ e | e <- "" : hugsSuffixes ]
 */
 
-String findPathname(filename)   /* Look for a file, trying various extensions */
-String filename; {              /* Return ***input name*** if no file was found */
+String findPathname(String filename)   /* Look for a file, trying various extensions */
+{              /* Return ***input name*** if no file was found */
     searchReset(0);
     searchStr(filename);
 #if DEBUG_SEARCH
@@ -734,9 +726,9 @@ String filename; {              /* Return ***input name*** if no file was found 
         dot2slash c   = if c=='.' then slash else c
 */
 
-String findMInDir(dir,nm)       /* Look for a module in the suggested dir */
-String dir;                     /* Return NULL if no file was found       */
-String nm; {
+String findMInDir(String dir, String nm)       /* Look for a module in the suggested dir */
+                                /* Return NULL if no file was found       */
+{
     searchReset(0);
     searchStr(dir);
     searchChr(SLASH);
@@ -747,8 +739,8 @@ String nm; {
     }
 }
 
-String findMPathname(name)	    /* Look for a module                      */
-String name; {                      /* Return NULL if no file was found       */
+String findMPathname(String name)	    /* Look for a module                      */
+{                      /* Return NULL if no file was found       */
     if (find1(name)) {
         return normPath(searchBuf);
     } else {
@@ -756,8 +748,8 @@ String name; {                      /* Return NULL if no file was found       */
     }
 }
 
-static Bool find1(name)		/* Search each directory of the path */
-String name; {
+static Bool find1(String name)		/* Search each directory of the path */
+{
     String pathpt = hugsPath;
     String value;
 
@@ -790,8 +782,8 @@ String name; {
 }
 
 /* Expansion of initial MPW-style "shell-variables" of the form {varname} */
-static String local expandVariable(pathpt)
-String pathpt; {
+static String local expandVariable(String pathpt)
+{
     if (*pathpt=='{') {
 	int i, len;
 
@@ -807,13 +799,13 @@ String pathpt; {
 }
 
 /* Assuming expandVariable(pathpt) succeeded, skip past the variable */
-static String local skipVariable(pathpt)
-String pathpt; {
+static String local skipVariable(String pathpt)
+{
     return strchr(pathpt+1,'}')+1;
 }
 
-static Bool local find2(s)	/* Turn module name into a filename */
-String s; {
+static Bool local find2(String s)	/* Turn module name into a filename */
+{
     String sp;
 
     /* replace all dots in the module name with slashes */
@@ -823,8 +815,8 @@ String s; {
     return tryEndings();
 }
 
-String dirname(filename)	/* Return the directory part of the filename */
-String filename; {		/* or "." if no directory.                   */
+String dirname(String filename)	/* Return the directory part of the filename */
+{		/* or "." if no directory.                   */
     
 #if DOS_FILENAMES
     /* Allow both / and \\ as delimiters */
@@ -856,9 +848,8 @@ String filename; {		/* or "." if no directory.                   */
  * eg substPath("a:b:c::d:e","x:y:z") = "a:b:c:x:y:z:d:e"
  * ------------------------------------------------------------------------*/
 
-String local substPath(new,sub) /* substitute sub path into new path*/
-String new;
-String sub; {
+String local substPath(String new, String sub) /* substitute sub path into new path*/
+{
     Bool   substituted = FALSE;            /*   only allow one replacement */
     Int    maxlen      = strlen(sub) + strlen(new);    /* safe upper bound */
     String r = (String) malloc(maxlen+1);  /* result string                */
@@ -885,8 +876,8 @@ String sub; {
 }
 
 /* Remove duplicates from the path */
-String uniqPath(path)
-String path; {
+String uniqPath(String path)
+{
     char *pp;
     for (pp = path; *pp; ) {
 	char *prev;
@@ -908,8 +899,8 @@ String path; {
 }
 
 /* Advance to the start of the next entry in the path list */
-static String local nextPath(pp)
-String pp; {
+static String local nextPath(String pp)
+{
     while (*pp && !isPATHSEP(pp))
 	pp++;
     if (*pp)
@@ -917,8 +908,8 @@ String pp; {
     return pp;
 }
 
-static Bool local samePath(pp1, pp2)
-String pp1, pp2; {
+static Bool local samePath(String pp1, String pp2)
+{
     char *ppsave1, *ppsave2;
     char *value;
 
@@ -953,9 +944,9 @@ String pp1, pp2; {
  * Read value from environment variable or registry:
  * ------------------------------------------------------------------------*/
 
-String fromEnv(var,def)         /* return value of:                        */
-String var;                     /*     environment variable named by var   */
-String def; {                   /* or: default value given by def          */
+String fromEnv(String var, String def)         /* return value of:                        */
+                                /*     environment variable named by var   */
+{                   /* or: default value given by def          */
     String s = getenv(var);     
     return (s ? s : def);
 }
@@ -992,8 +983,8 @@ Void gcScanning() {                     /* Notify garbage collector scans  */
     }
 }
 
-Void gcRecovered(recovered)		/* Notify garbage collection done  */
-Int recovered; {
+Void gcRecovered(Int recovered)		/* Notify garbage collection done  */
+{
     if (gcMessages) {
 	Printf("%d}}",recovered);
 	FlushStdout();
@@ -1476,10 +1467,10 @@ Bool    broken         = FALSE;		/* pending break to be handled     */
 static  Bool breakReqd = FALSE;		/* currently trapping breaks       */
 static  Bool trapBreak = FALSE;		/* ever asked to trap breaks       */
 static  sigProto(ignoreBreak);
-static  Void local installHandlers Args((Void));
+static  Void local installHandlers (Void);
 
-Bool breakOn(reqd)                      /* set break trapping on if reqd,  */
-Bool reqd; {                            /* or off otherwise, returning old */
+Bool breakOn(Bool reqd)                      /* set break trapping on if reqd,  */
+{                            /* or off otherwise, returning old */
     Bool old  = breakReqd;
 
     breakReqd = reqd;
@@ -1568,10 +1559,8 @@ static Void local installHandlers() { /* Install handlers for all fatal    */
  * ------------------------------------------------------------------------*/
 
 Int
-shellEsc(cmd, sync, useShell)         /* run a shell command (or shell)  */
-String cmd;
-Bool   sync;
-Bool   useShell; {
+shellEsc(String cmd, Bool sync, Bool useShell) /* run a shell command (or shell)  */
+{
 #ifndef HAVE_WINDOWS_H
 
   /* currently ignore the 'useShell' and 'sync' flags */
@@ -1678,8 +1667,8 @@ static union {
 
 Cell bfTemp = NIL;
 
-Cell mkFloat(fl)
-FloatPro fl; {
+Cell mkFloat(FloatPro fl)
+{
     Cell p1,p2;
     fudgeCoerce.flVal = fl;
     bfTemp = mkInt(fudgeCoerce.clVal.flPart1);
@@ -1689,8 +1678,8 @@ FloatPro fl; {
     return pair(FLOATCELL,pair(p1,p2));
 }
 
-FloatPro floatOf(c)
-Cell c; {
+FloatPro floatOf(Cell c)
+{
     fudgeCoerce.clVal.flPart1 = intOf(fst(snd(c)));
     fudgeCoerce.clVal.flPart2 = intOf(snd(snd(c)));
     return fudgeCoerce.flVal;
@@ -1702,21 +1691,21 @@ static union {
     Cell  clVal;
 } fudgeCoerce;
 
-Cell mkFloat(fl)
-FloatPro fl; {
+Cell mkFloat(FloatPro fl)
+{
     fudgeCoerce.flVal = (Float)fl;
     return pair(FLOATCELL,fudgeCoerce.clVal);
 }
 
-FloatPro floatOf(c)
-Cell c; {
+FloatPro floatOf(Cell c)
+{
     fudgeCoerce.clVal = snd(c);
     return fudgeCoerce.flVal;
 }
 #endif /* !BREAK_FLOATS */
 
-String floatToString(fl)                     /* Make sure that floating    */
-FloatPro fl; {                               /* point values print out in  */
+String floatToString(FloatPro fl)                     /* Make sure that floating    */
+{                               /* point values print out in  */
     static char buffer1[32];                 /* a form in which they could */
     static char buffer2[32];                 /* also be entered as floats  */
     Int i=0, j=0;
@@ -1743,20 +1732,20 @@ static union {
     }      cdVal;
 } fudgeDCoerce;
 
-Cell part1Double(dbl)
-DoublePro dbl; {
+Cell part1Double(DoublePro dbl)
+{
     fudgeDCoerce.dblVal = dbl;
     return fudgeDCoerce.cdVal.dblPart1;
 }
 
-Cell part2Double(dbl)
-DoublePro dbl; {
+Cell part2Double(DoublePro dbl)
+{
     fudgeDCoerce.dblVal = dbl;
     return fudgeDCoerce.cdVal.dblPart2;
 }
 
-DoublePro doubleFromParts(c1,c2)
-Cell c1, c2; {
+DoublePro doubleFromParts(Cell c1, Cell c2)
+{
     fudgeDCoerce.cdVal.dblPart1 = c1;
     fudgeDCoerce.cdVal.dblPart2 = c2;
     return fudgeDCoerce.dblVal;
@@ -1764,8 +1753,8 @@ Cell c1, c2; {
 
 Cell bdTemp = NIL;
 
-Cell mkDouble(dbl)
-DoublePro dbl; {
+Cell mkDouble(DoublePro dbl)
+{
     Cell p1,p2;
     fudgeDCoerce.dblVal = dbl;
     bdTemp = mkInt(fudgeDCoerce.cdVal.dblPart1);
@@ -1775,15 +1764,15 @@ DoublePro dbl; {
     return pair(DOUBLECELL,pair(p1,p2));
 }
 
-DoublePro doubleOf(c)
-Cell c; {
+DoublePro doubleOf(Cell c)
+{
     fudgeDCoerce.cdVal.dblPart1 = intOf(fst(snd(c)));
     fudgeDCoerce.cdVal.dblPart2 = intOf(snd(snd(c)));
     return fudgeDCoerce.dblVal;
 }
 
-String doubleToString(dbl)                   /* Make sure that floating    */
-DoublePro dbl; {                             /* point values print out in  */
+String doubleToString(DoublePro dbl)                   /* Make sure that floating    */
+{                             /* point values print out in  */
     static char buffer1[32];                 /* a form in which they could */
     static char buffer2[32];                 /* also be entered as doubles */
     Int i=0, j=0;
@@ -1803,61 +1792,61 @@ DoublePro dbl; {                             /* point values print out in  */
     return buffer2;
 }
 
-DoublePro stringToDouble(s)
-String s; {
+DoublePro stringToDouble(String s)
+{
     return atof(s);
 }
 #else /* !FLOATS_SUPPORTED */
-Cell mkFloat(fl)
-FloatPro fl; {
+Cell mkFloat(FloatPro fl)
+{
     internal("mkFloat");
     return 0;/*NOTREACHED*/
 }
 
-FloatPro floatOf(c)
-Cell c; {
+FloatPro floatOf(Cell c)
+{
     internal("floatOf");
     return 0;/*NOTREACHED*/
 }
 
-String floatToString(fl)
-FloatPro fl; {
+String floatToString(FloatPro fl)
+{
     internal("floatToString");
     return "";/*NOTREACHED*/
 }
 
-Cell part1Double(dbl)
-DoublePro dbl; {
+Cell part1Double(DoublePro dbl)
+{
     internal("part1Double");
     return 0;/*NOTREACHED*/
 }
 
-Cell part2Double(dbl)
-DoublePro dbl; {
+Cell part2Double(DoublePro dbl)
+{
     internal("part2Double");
     return 0;/*NOTREACHED*/
 }
 
-DoublePro doubleFromParts(c1,c2)
-Cell c1, c2; {
+DoublePro doubleFromParts(Cell c1, Cell c2)
+{
     internal("doubleFromParts");
     return 0;/*NOTREACHED*/
 }
 
-Cell mkDouble(fl)
-DoublePro fl; {
+Cell mkDouble(DoublePro fl)
+{
     internal("mkDouble");
     return 0;/*NOTREACHED*/
 }
 
-DoublePro doubleOf(c)
-Cell c; {
+DoublePro doubleOf(Cell c)
+{
     internal("doubleOf");
     return 0;/*NOTREACHED*/
 }
 
-String doubleToString(fl)
-DoublePro fl; {
+String doubleToString(DoublePro fl)
+{
     internal("doubleToString");
     return "";/*NOTREACHED*/
 }
@@ -1868,18 +1857,18 @@ DoublePro fl; {
  *-------------------------------------------------------------------------*/
 
 #if PROVIDE_INT64
-Int part1Int64(i)
-HsInt64 i; {
+Int part1Int64(HsInt64 i)
+{
     return (Int)(i >> 32);
 }
 
-Int part2Int64(i)
-HsInt64 i; {
+Int part2Int64(HsInt64 i)
+{
     return (Int)(i);
 }
 
-HsInt64 int64FromParts(c1,c2)
-Int c1, c2; {
+HsInt64 int64FromParts(Int c1, Int c2)
+{
     return ((HsInt64)c1 << 32) | (HsInt64)((HsWord32)c2);
 }
 #endif /* PROVIDE_INT64 */
@@ -1919,17 +1908,17 @@ int snprintf(char* buffer, size_t count, const char* fmt, ...) {
  * Dynamic loading:
  * ------------------------------------------------------------------------*/
 
-static void* local getModDLL Args((String));
-static void* local getDLL Args((String));
-static void* local getDLLSymbol Args((void*,String));
+static void* local getModDLL (String);
+static void* local getDLL (String);
+static void* local getDLLSymbol (void*,String);
 
 #if HAVE_DLFCN_H /* eg LINUX, SOLARIS, ULTRIX */
 
 #include <stdio.h>
 #include <dlfcn.h>
 
-static void* local getDLL(dll)  /* load dll */
-String dll; {
+static void* local getDLL(String dll)  /* load dll */
+{
     void *instance = dlopen(dll,
 			    0
 #if defined(RTLD_LAZY) /* eg SunOS4 doesn't have RTLD_NOW */
@@ -1952,9 +1941,8 @@ String dll; {
     return instance;
 }
 
-static void* local getDLLSymbol(instance,symbol)  /* lookup dll symbol */
-void*  instance;
-String symbol; {
+static void* local getDLLSymbol(void*  instance, String symbol)  /* lookup dll symbol */
+{
     void *sym;
 
     if ((sym = dlsym(instance,symbol)) == 0) {
@@ -1965,8 +1953,8 @@ String symbol; {
     return sym;
 }
 
-void freeDLL (dll) /* free up DLL */
-void* dll; {
+void freeDLL(void* dll) /* free up DLL */
+{
   if (dll) {
     /* No error checking done. */
     dlclose(dll);
@@ -1978,8 +1966,8 @@ void* dll; {
 
 #include <dl.h>
 
-static void* local getDLL(dll)  /* load dll */
-String dll; {
+static void* local getDLL(String dll)  /* load dll */
+{
     shl_t instance = shl_load(dll,BIND_IMMEDIATE,0L);
 
     if (NULL == instance) {
@@ -1990,15 +1978,14 @@ String dll; {
        loss of information here... is this OK? */
     return instance;
 }
-static void* local getDLLSymbol(dll,symbol)  /* lookup dll symbol */
-void* dll;
-String symbol; {
+static void* local getDLLSymbol(void* dll, String symbol)  /* lookup dll symbol */
+{
     void* r;
     return (0 == shl_findsym(&(shl_t)dll,symbol,TYPE_PROCEDURE,&r)) ? r : 0;
 }
 
-Void freeDLL(dll)
-void* dll; {
+Void freeDLL(void* dll)
+{
   if (dll) {
     shl_unload((shl_t)dll);
   }
@@ -2007,8 +1994,8 @@ void* dll; {
 
 #elif HAVE_WINDOWS_H && !defined(__MSDOS__)
 
-static void* local getDLL(dll)  /* load dll */
-String dll; {
+static void* local getDLL(String dll)  /* load dll */
+{
     HINSTANCE instance = LoadLibrary(dll);
     if (NULL == instance) {
 	/* GetLastError allegedly provides more detail - in practice,
@@ -2021,14 +2008,13 @@ String dll; {
     return instance;
 }
 
-static void* local getDLLSymbol(instance,symbol)  /* lookup dll symbol */
-void* instance;
-String symbol; {
+static void* local getDLLSymbol(void* instance, String symbol)  /* lookup dll symbol */
+{
     return (void*)GetProcAddress((HINSTANCE)instance,symbol);
 }
 
-Void freeDLL(dll)
-void* dll; {
+Void freeDLL(void* dll)
+{
   if (dll) {
     /* fprintf(stderr, "Freeing DLL 0x%p\n",dll); fflush(stderr); */
     FreeLibrary(dll);
@@ -2102,8 +2088,8 @@ void* dlsym( void* handle, char* symbol ) {
 
 /*****************************************************************************/
 
-static void* local getDLL(dll)  /* load dll */
-String dll; {
+static void* local getDLL(String dll)  /* load dll */
+{
   void *instance = dlopen(dll,1);
   if (NULL == instance) {
     ERRMSG(0) "Error while importing DLL \"%s\":\n%s\n", dll, dlerror()
@@ -2112,9 +2098,8 @@ String dll; {
   return instance;
 }
 
-static void* local getDLLSymbol(instance,symbol)  /* lookup dll symbol */
-void* instance;
-String symbol; {
+static void* local getDLLSymbol(void* instance, String symbol)  /* lookup dll symbol */
+{
   void *sym;
   
   if (sym = dlsym(instance,symbol))
@@ -2124,8 +2109,8 @@ String symbol; {
     EEND;
 }
 
-Void freeDLL(dll)
-void* dll; {
+Void freeDLL(void* dll)
+{
   if (dll) {
     dlclose(dll);
   }
@@ -2134,8 +2119,8 @@ void* dll; {
 
 #else /* Dynamic loading not available */
 
-static void* local getDLL(dll)  /* load dll */
-String dll; {
+static void* local getDLL(String dll)  /* load dll */
+{
 #if 1 /* very little to choose between these options */
     return 0;
 #else
@@ -2143,9 +2128,8 @@ String dll; {
     EEND;
 #endif
 }
-static void* local getDLLSymbol(dll,symbol)  /* load dll and lookup symbol */
-void* dll;
-String symbol; {
+static void* local getDLLSymbol(void* dll, String symbol)  /* load dll and lookup symbol */
+{
 #if 1 /* very little to choose between these options */
     return 0;
 #else
@@ -2154,14 +2138,14 @@ String symbol; {
 #endif
 }
 
-Void freeDLL(dll)
-void* dll; {
+Void freeDLL(void* dll)
+{
 }
 
 #endif /* Dynamic loading not available */
 
-static void* local getModDLL(file)		/* load DLL for module     */
-String file; {
+static void* local getModDLL(String file)		/* load DLL for module     */
+{
 #if HAVE_REALPATH && !HAVE__FULLPATH
     char dllPath[MAXPATHLEN+1];
 #else
@@ -2183,8 +2167,8 @@ String file; {
     return getDLL(dllPath);
 }
 
-String mkFFIFilename2(file)    
-String file; {
+String mkFFIFilename2(String file)    
+{
 #if HAVE_REALPATH && !HAVE__FULLPATH
     static char path[MAXPATHLEN+1];
 #else
@@ -2198,8 +2182,8 @@ String file; {
     return path;
 }
 
-String mkFFIFilename(file)                      /* get DLL path for module */
-String file; {
+String mkFFIFilename(String file)                      /* get DLL path for module */
+{
 #if HAVE_REALPATH && !HAVE__FULLPATH
     static char path[MAXPATHLEN+1];
 #else
@@ -2221,9 +2205,8 @@ String file; {
 #  define API_VERSION_FUN  "HugsAPIVersion"
 #endif
 
-Void needPrims(version,dll)   /* Load dll containing prims for current module */
-Int  version;
-void*  dll; {
+Void needPrims(Int version, void*  dll)   /* Load dll containing prims for current module */
+{
     if (havePlugin(textToStr(module(currentModule).text))) {
 	return;
     }
@@ -2295,12 +2278,12 @@ void*  dll; {
 #define BUFSIZE 1000
 static char buffer[BUFSIZE];
 static Int used = 0;
-static Void local insert     Args((String));
-static Void local insertPath Args((String));
-static Void local insertChar Args((Char));
+static Void local insert     (String);
+static Void local insertPath (String);
+static Void local insertChar (Char);
 
-static Void local insert(s)
-String s; {
+static Void local insert(String s)
+{
     Int l = strlen(s);
     if (used + l + 1 >= BUFSIZE) {
         ERRMSG(0) "Unable to build compilation command"
@@ -2311,8 +2294,8 @@ String s; {
 }
 
 /* Convert backslashes, because they can cause problems with system() */
-static Void local insertPath(s)
-String s; {
+static Void local insertPath(String s)
+{
     Int l = strlen(s);
     if (used + l + 1 >= BUFSIZE) {
         ERRMSG(0) "Unable to build compilation command"
@@ -2324,8 +2307,8 @@ String s; {
     }
 }
 
-static Void local insertChar(c)
-Char c; {
+static Void local insertChar(Char c)
+{
     char s[2];
     s[0] = c;
     s[1] = '\0';
@@ -2333,9 +2316,8 @@ Char c; {
 }
 #undef BUFSIZE
 
-Void compileAndLink(fn,flags)
-String fn; 
-String flags; {
+Void compileAndLink(String fn, String flags)
+{
     char* i = fn;
  
     used    = 0;
@@ -2399,11 +2381,8 @@ String flags; {
 
 #if USE_REGISTRY
 
-static Bool local createKey(hKey, regPath, phRootKey, samDesired)
-HKEY    hKey;
-String  regPath;
-PHKEY   phRootKey; 
-REGSAM  samDesired; {
+static Bool local createKey(HKEY hKey, String regPath, PHKEY phRootKey, REGSAM samDesired)
+{
     DWORD  dwDisp;
     return RegCreateKeyEx(hKey, regPath,
 			  0, "", REG_OPTION_NON_VOLATILE,
@@ -2411,13 +2390,8 @@ REGSAM  samDesired; {
 	   == ERROR_SUCCESS;
 }
 
-static Bool local queryValue(hKey, regPath, var, type, buf, bufSize)
-HKEY    hKey;
-String  regPath;
-String  var;
-LPDWORD type;
-LPBYTE  buf;
-DWORD   bufSize; {
+static Bool local queryValue(HKEY hKey, String regPath, String var, LPDWORD type, LPBYTE buf, DWORD bufSize)
+{
     HKEY hRootKey;
 
     if (!createKey(hKey, regPath, &hRootKey, KEY_READ)) {
@@ -2435,11 +2409,8 @@ DWORD   bufSize; {
  * is then returned to the callee (along with the resp. to free the
  * buffer.)
  */
-static Bool local queryString(hKey, regPath, var, pString)
-HKEY    hKey;
-String  regPath;
-String  var;
-String* pString; {
+static Bool local queryString(HKEY hKey, String regPath, String var, String* pString)
+{
     HKEY  hRootKey;
     LONG  rc;
     DWORD bufSize;
@@ -2465,13 +2436,8 @@ String* pString; {
     }
 }
 
-static Bool local setValue(hKey, regPath, var, type, buf, bufSize)
-HKEY   hKey;
-String regPath;
-String var;
-DWORD  type;
-LPBYTE buf;
-DWORD  bufSize; {
+static Bool local setValue(HKEY hKey, String regPath, String var, DWORD type, LPBYTE buf, DWORD bufSize)
+{
     HKEY hRootKey;
 
     if (!createKey(hKey, regPath, &hRootKey, KEY_WRITE)) {
@@ -2502,9 +2468,8 @@ String readRegString(HKEY key, String regPath, String var, String def) /* read S
     }
 }
 
-Bool writeRegString(var,val)      /* write String to registry */
-String var;                        
-String val; {
+Bool writeRegString(String var, String val)      /* write String to registry */
+{
     String realVal = ( (NULL == val) ? "" : val);
 
     return setValue(HKEY_CURRENT_USER, hugsRegRoot, var,
@@ -2512,16 +2477,14 @@ String val; {
 }
 
 #if HUGS_FOR_WINDOWS
-Bool writeRegInt(var,val)         /* write String to registry */
-String var;                        
-Int    val; {
+Bool writeRegInt(String var, Int val)         /* write String to registry */
+{
     return setValue(HKEY_CURRENT_USER, hugsRegRoot, var, 
 		    REG_DWORD, (LPBYTE)&val, sizeof(val));
 }
 
-Int readRegInt(var, def)          /* read Int from registry */
-String var;
-Int    def; {
+Int readRegInt(String var, Int def)          /* read Int from registry */
+{
     DWORD buf;
     DWORD type;
 
@@ -2602,7 +2565,7 @@ String readRegChildStrings(HKEY key, String regPath, String var, String def)
 /* --------------------------------------------------------------------------
  * Platform initialisation 
  * ------------------------------------------------------------------------*/
-extern Bool initSystem  Args((Void));
+extern Bool initSystem  (Void);
 Bool local
 initSystem()
 {
@@ -2628,8 +2591,8 @@ initSystem()
  * Machine dependent control:
  * ------------------------------------------------------------------------*/
 
-Void machdep(what)                      /* Handle machine specific         */
-Int what; {                             /* initialisation etc..            */
+Void machdep(Int what)                      /* Handle machine specific         */
+{                             /* initialisation etc..            */
     switch (what) {
 	case MARK    :
 #if FLOATS_SUPPORTED
