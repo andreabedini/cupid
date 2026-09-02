@@ -150,6 +150,7 @@ endforeach
 subdir('src')
 if get_option('libraries')
   subdir('libraries')
+  subdir('tests')
 endif
 subdir('docs')
 

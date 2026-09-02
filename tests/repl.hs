@@ -1,0 +1,2 @@
+answer :: Int
+answer = 42
