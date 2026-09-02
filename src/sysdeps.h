@@ -6,8 +6,7 @@
  * value here is either constant across the supported targets or follows
  * directly from the operating system, which the compiler tells us.  The
  * operating system and architecture names that the Haskell libraries test
- * for are in platform.h, which the build system generates, because that
- * header is also read by cpphs.
+ * for are in platform.h, which the build system generates.
  *
  * Preprocessor directives only: prelude.h checks the size constants
  * against the compiler.

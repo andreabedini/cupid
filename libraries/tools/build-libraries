@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""Assemble the Hugs libraries in the build directory.
+
+usage: build-libraries SRCROOT OUT FFIHUGS MKSYSCONFIG PLATFORM_DIR STAMP
+
+The library sources under libraries/ are plain Haskell that Hugs owns,
+so building them means copying them into OUT/packages,
+generating the two platform-dependent files with mksysconfig, and running
+ffihugs over the modules that contain foreign imports to build their C
+stubs.  OUT is what gets installed as hugsdir.
+"""
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+PACKAGES = ["hugsbase", "base", "haskell98"]
+
+# Modules with foreign imports, in dependency order: ffihugs loads a
+# module's imports, so a module's stub must exist before the modules that
+# import it are compiled.  Any others found are compiled afterwards.
+FFI_ORDER = [
+    "hugsbase/Hugs/Storable.hs",
+    "base/Foreign/C/Error.hs",
+    "base/Foreign/Marshal/Alloc.hs",
+    "base/Foreign/Marshal/Utils.hs",
+    "base/Foreign/Ptr.hs",
+    "base/System/Posix/Internals.hs",
+    "base/System/Posix/Signals.hs",
+    "base/System/Process/Internals.hs",
+    "base/Data/ByteString/Base.hs",
+]
+
+# Header every base module's stub includes, as its .cabal file used to say
+PACKAGE_INCLUDES = {"base": ["HsBase.h"]}
+PACKAGE_INCLUDE_DIRS = {"base": ["include"], "hugsbase": ["Hugs"]}
+
+
+def main(argv):
+    if len(argv) != 6:
+        raise SystemExit(__doc__)
+    srcroot, out, ffihugs, mksysconfig, platform_dir, stamp = argv
+    lib = os.path.join(srcroot, "libraries")
+    pkgdir = os.path.join(out, "packages")
+
+    shutil.rmtree(out, ignore_errors=True)
+    os.makedirs(os.path.join(out, "include"))
+    for p in PACKAGES:
+        shutil.copytree(os.path.join(lib, p), os.path.join(pkgdir, p))
+    shutil.copy2(os.path.join(srcroot, "src", "HsFFI.h"), os.path.join(out, "include"))
+
+    # Platform-dependent parts, from the compiler
+    with open(os.path.join(pkgdir, "base", "include", "HsBaseConfig.h"), "w") as f:
+        subprocess.run([mksysconfig, "--header"], stdout=f, check=True)
+    with open(os.path.join(pkgdir, "hugsbase", "Hugs", "SysConfig.hs"), "w") as f:
+        subprocess.run([mksysconfig, "--haskell"], stdout=f, check=True)
+
+    # FFI stubs
+    ffi_modules = []
+    for p in PACKAGES:
+        for root, _, files in os.walk(os.path.join(pkgdir, p)):
+            for name in sorted(files):
+                if name.endswith((".hs", ".lhs")):
+                    path = os.path.join(root, name)
+                    with open(path, encoding="latin-1") as f:
+                        if re.search(r"^\s*foreign\s+import\b", f.read(), re.M):
+                            ffi_modules.append(os.path.relpath(path, pkgdir))
+    ordered = [m for m in FFI_ORDER if m in ffi_modules]
+    ordered += sorted(m for m in ffi_modules if m not in FFI_ORDER)
+
+    env = dict(os.environ, HUGSDIR=out)
+    search_path = os.pathsep.join(os.path.join(pkgdir, p) for p in PACKAGES)
+    for rel in ordered:
+        package = rel.split("/")[0]
+        pdir = os.path.join(pkgdir, package)
+        path = os.path.join(pkgdir, rel)
+        with open(path, encoding="latin-1") as f:
+            text = f.read()
+        cfiles = []
+        for m in re.finditer(r"\{-#\s*CFILES\s+(.*?)\s*#-\}", text):
+            cfiles += [os.path.join(pdir, c) for c in m.group(1).split()]
+        includes = PACKAGE_INCLUDES.get(package, [])
+        for m in re.finditer(r"\{-#\s*INCLUDE\s+(.*?)\s*#-\}", text):
+            includes += m.group(1).replace('"', "").split()
+        cmd = [ffihugs, "-98", "-P" + search_path]
+        cmd += ['-i"%s"' % inc for inc in includes]
+        cmd.append(path)
+        cmd += ["-I" + os.path.join(pdir, d) for d in PACKAGE_INCLUDE_DIRS.get(package, [])]
+        cmd += ["-I" + os.path.join(out, "include"),
+                "-I" + os.path.join(lib, "include"),
+                "-I" + platform_dir]
+        cmd += cfiles
+        print("ffihugs", rel, flush=True)
+        subprocess.run(cmd, env=env, check=True)
+
+    with open(stamp, "w"):
+        pass
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

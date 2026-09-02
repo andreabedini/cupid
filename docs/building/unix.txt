@@ -9,7 +9,7 @@ Requirements:
 
     a C compiler (gcc or clang; the sources are standard C23)
     meson 1.1 or later, and ninja
-    python3 (meson needs it anyway; the library bootstrap uses it too)
+    python3 (meson needs it anyway; the library build script uses it too)
     optionally readline or libedit, for command-line editing
     optionally bison, only if you change src/parser.y
     optionally hp2ps, to view heap profiles
@@ -60,37 +60,37 @@ Long version:
     There is no configure-style probing of the system.  The facts about
     the supported targets are written down in src/sysdeps.h, the
     operating system and architecture names in the generated
-    src/platform.h, and the mapping of C types to Haskell types for the
-    base package is computed at build time by packages/base/mkHsBaseConfig.c.
+    src/platform.h, and the mapping of C types to Haskell types and the
+    errno and signal constants for the base library are computed at
+    build time by libraries/tools/mksysconfig.c.
 
  2) Build
 
         ninja -C build
 
     This compiles hugs, runhugs and ffihugs, then builds the Haskell
-    libraries.  The library build is a bootstrap driven by
-    libraries/tools/bootstrap: the base, haskell98 and Cabal packages
-    are preprocessed with libraries/tools/hscpp.py into a boot library,
-    cpphs and hsc2hs are built with Cabal running under runhugs, and
-    then every package is built into build/libraries/stage/hugsdir.
-    The source tree is not written to.
+    libraries into build/libraries/hugsdir.  The libraries under
+    libraries/ are plain Haskell that Hugs owns; building them means
+    copying them, generating the platform-dependent module
+    Hugs.SysConfig and header HsBaseConfig.h with
+    libraries/tools/mksysconfig, and running ffihugs over the modules
+    with foreign imports (see libraries/tools/build-libraries).  The
+    source tree is not written to.
 
     You can run Hugs in place:
 
-        HUGSDIR=build/libraries/stage/hugsdir build/src/hugs
+        HUGSDIR=build/libraries/hugsdir build/src/hugs
         -- Try 1+2, [1..], etc.  Use ":quit" to exit
 
     or a script:
 
-        build/src/runhugs -P'build/libraries/stage/hugsdir/packages/*' Main.hs
+        build/src/runhugs -P'build/libraries/hugsdir/packages/*' Main.hs
 
  3) Install
 
         ninja -C build install
 
-    DESTDIR is honoured for staged installs.  As well as the binaries,
-    libraries, manual page and demos, this installs the cpphs-hugs and
-    hsc2hs-hugs wrapper scripts in the bin directory.
+    DESTDIR is honoured for staged installs.
 
     Try a few simple tests:
 
@@ -122,11 +122,8 @@ Preprocessing Haskell sources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Hugs can run source files through a preprocessor before compiling them.
-Use the "-F" option to say which, for example
-
-    :set -F"cpphs-hugs --noline --strip"
-
-Note that the import chasing mechanism does not notice #includes, so
-you must :load (not :reload) after changing an included file, and that
-Hugs ignores {-# LINE #-} pragmas, so error messages refer to the
-preprocessed line numbers.
+Use the "-F" option to name one, for example ":set -F'cpp -P'".  The
+import chasing mechanism does not notice #includes, so you must :load
+(not :reload) after changing an included file, and Hugs ignores
+{-# LINE #-} pragmas, so error messages refer to the preprocessed line
+numbers.

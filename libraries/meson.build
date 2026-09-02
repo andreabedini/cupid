@@ -1,34 +1,24 @@
-# The Haskell libraries.  Building them is a three-stage bootstrap that
-# runs Hugs itself (see tools/bootstrap), so it is one custom target that
-# depends on the interpreter binaries.
+# The Haskell libraries.  The sources under libraries/ are plain Haskell
+# that Hugs owns; building them means copying them into
+# the build directory, generating the platform-dependent files, and running
+# ffihugs over the modules with foreign imports.  See tools/build-libraries.
 
-# HsBaseConfig.h for the base package: the one platform question that
-# really varies between targets, answered by asking the compiler
-mkhsbaseconfig = executable('mkHsBaseConfig', '../packages/base/mkHsBaseConfig.c',
-  install: false)
-hsbaseconfig_h = custom_target('HsBaseConfig.h',
-  output: 'HsBaseConfig.h',
-  command: [mkhsbaseconfig],
-  capture: true)
+# The platform-dependent parts of the base library, answered by asking the
+# C compiler: HsBaseConfig.h for the C side, Hugs/SysConfig.hs for Haskell
+mksysconfig = executable('mksysconfig', 'tools/mksysconfig.c', install: false)
 
-bootstrap = find_program('tools/bootstrap')
-python = find_program('python3')
-stage_dir = meson.current_build_dir() / 'stage'
+build_libraries = find_program('tools/build-libraries')
+hugsdir_build = meson.current_build_dir() / 'hugsdir'
 
 libraries_stamp = custom_target('hugs-libraries',
   output: 'libraries.stamp',
-  command: [bootstrap,
-    meson.project_source_root(), stage_dir,
-    hugs, runhugs, ffihugs, hsbaseconfig_h, platform_h,
-    python, host_os, prefix, '@OUTPUT@'],
-  depends: [hugs, runhugs, ffihugs],
-  depend_files: files(
-    'tools/make_bootlib', 'tools/convert_libraries',
-    'tools/hscpp.py',
-    'include/ghcconfig.h', 'include/MachDeps.h',
-    '../src/HsFFI.h',
-  ),
+  command: [build_libraries,
+    meson.project_source_root(), hugsdir_build,
+    ffihugs, mksysconfig, meson.current_build_dir() / '..' / 'src',
+    '@OUTPUT@'],
+  depends: [ffihugs, mksysconfig],
+  depend_files: files('tools/build-libraries', '../src/HsFFI.h'),
   build_by_default: true,
   console: true)
 
-meson.add_install_script('tools/install-libraries', stage_dir, hugsdir, bindir)
+meson.add_install_script('tools/install-libraries', hugsdir_build, hugsdir)

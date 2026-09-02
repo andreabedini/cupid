@@ -1,7 +1,6 @@
-/* Type sizes and alignments for the supported targets.
- * Included by MachDeps.h, which the Haskell
- * libraries run through the C preprocessor, so preprocessor directives
- * only.  Every supported target is LP64 except Windows, which is LLP64.
+/* Type sizes and alignments for the supported targets, for the C bits of the base
+ * library.  Every
+ * supported target is LP64 except Windows, which is LLP64.
  */
 #ifndef __GHCCONFIG_H__
 #define __GHCCONFIG_H__

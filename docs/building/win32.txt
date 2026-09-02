@@ -4,9 +4,9 @@ Building Hugs on Windows
 The meson build is written to support Windows (MinGW-w64 or MSVC) but
 has not yet been verified there.  The platform-specific choices are in
 src/sysdeps.h, meson.build (shared-library flags, install paths) and
-packages/base/mkHsBaseConfig.c; the library bootstrap script
-libraries/tools/bootstrap needs a POSIX shell such as the one in MSYS2
-or Git for Windows.
+libraries/tools/mksysconfig.c.  The owned library sources under
+libraries/base are the POSIX expansion of the 2006 sources; their
+Windows code paths would have to be brought back by hand.
 
 The intended procedure is the same as on Unix (see unix.txt):
 
