@@ -8,7 +8,7 @@
 # macro-parentheses wraps the bytecode dispatch `goto` in parentheses, and
 # use-internal-linkage cannot see cross-file uses through headers.
 #
-# Run from src/ with:  make tidy
+# Run with:  ninja -C build clang-tidy
 Checks: >
   -*,
   performance-no-int-to-ptr,

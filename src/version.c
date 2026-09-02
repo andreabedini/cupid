@@ -8,7 +8,6 @@
  * ------------------------------------------------------------------------*/
 
 /* Is this a major release or not? */
-#define MAJOR_RELEASE 1
 
 /* Define this as a string (of _max_ 14 characters) uniquely identifying the 
  * current version. Upper limit of 14 chars is there to make the banner
@@ -28,22 +27,11 @@
 
 #include "prelude.h"
 
-#if defined(_MSC_VER)
-/* When compiling via MSVC (by using {msc,winhugs}/Makefile),
- * echodate.h contains the generated define for YYYYMMDD
- */
-#include "echodate.h"
+/* HUGS_VERSION comes from config.h, where the build system sets it */
+#ifndef HUGS_VERSION
+#define HUGS_VERSION "<snapshot>"
 #endif
-
-#ifndef MONTH_YEAR
-#define VERSION_STRING "<snapshot>"
-#else
-#if MAJOR_RELEASE
-#define VERSION_STRING "September 2006"
-#else
-#define VERSION_STRING "20060920"
-#endif
-#endif
+#define VERSION_STRING HUGS_VERSION
 
 String versionString = VERSION_STRING;
 

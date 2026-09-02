@@ -16,11 +16,12 @@ typedef signed   long long hugs_int64_t;
 # endif
 
 /* 
- * The ifdef Args is a crude way of testing whether this file is
- * #included into Hugs.  Use it to eliminate non-portable stuff.
+ * The test on __PRELUDE_H__ (the include guard of prelude.h) is a crude
+ * way of testing whether this file is #included into Hugs.  Use it to
+ * eliminate non-portable stuff.
  */
 
-#ifdef Args /* #included into Hugs */
+#ifdef __PRELUDE_H__ /* #included into Hugs */
 
 typedef Int            HsInt;        
 typedef Int8           HsInt8;         
@@ -83,7 +84,7 @@ typedef void*          HsStablePtr;
 #define HS_WORD32_MAX           __UINT32_MAX
 #define HS_WORD64_MAX           __UINT64_MAX
 
-#ifndef Args
+#ifndef __PRELUDE_H__
 
 #include <float.h>
 
@@ -119,7 +120,7 @@ typedef int            HugsStablePtr;
 
 typedef void (*HugsPrim) (HugsStackPtr); /* primitive function	   */
 
-#ifndef Args  
+#ifndef __PRELUDE_H__
 struct hugs_primitive {		         /* table of primitives		   */
     char*  ref;				 /* primitive reference string	   */
     int	   arity;			 /* primitive function arity	   */

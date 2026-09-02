@@ -14,8 +14,22 @@
 #ifndef __PRELUDE_H__
 #define __PRELUDE_H__
 
+/* Hugs is compiled as standard C23.  Strict mode hides the POSIX and BSD
+ * interfaces we use (fdopen, fileno, realpath, tm_gmtoff, ...) unless a
+ * feature macro asks for them, and it must be defined before the first
+ * system header. */
+#if !defined(_WIN32)
+# ifndef _DEFAULT_SOURCE
+#  define _DEFAULT_SOURCE 1
+# endif
+# ifndef _DARWIN_C_SOURCE
+#  define _DARWIN_C_SOURCE 1
+# endif
+#endif
+
+#include "platform.h"
+#include "sysdeps.h"
 #include "config.h"
-#include "options.h"
 #include <stdio.h>
 
 #if HAVE_STDLIB_H
@@ -27,6 +41,12 @@
 #if HAVE_UNISTD_H
 # include <unistd.h>
 #endif
+
+/* platform.h states the sizes as constants; make sure the compiler agrees */
+_Static_assert(sizeof(int) == SIZEOF_INT, "platform.h: SIZEOF_INT");
+_Static_assert(sizeof(float) == SIZEOF_FLOAT, "platform.h: SIZEOF_FLOAT");
+_Static_assert(sizeof(double) == SIZEOF_DOUBLE, "platform.h: SIZEOF_DOUBLE");
+_Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 
 /*---------------------------------------------------------------------------
  * Most of the configuration code from earlier versions of Hugs has been moved
@@ -207,18 +227,11 @@ int macsystem(char *filenames);
 
 /*---------------------------------------------------------------------------
  * Macros used in declarations:
- *  function prototypes
  *  local/far declarations
  *  HUGS_noreturn/HUGS_unused (prevent spurious warnings)
  *  result type of main
  *  dynamic linking declarations
  *-------------------------------------------------------------------------*/
-
-#if PROTOTYPES		  /* To enable use of prototypes whenever possible */
-#define Args(x) x
-#else
-#define Args(x) ()
-#endif
 
 /* local = prefix for locally defined functions */
 /* far   = prefix for far pointers              */

@@ -1,0 +1,123 @@
+#!/bin/sh
+# Build the Hugs Haskell libraries in a staging directory.
+#
+# usage: bootstrap SRCROOT STAGE HUGS RUNHUGS FFIHUGS HSBASECONFIG_H PLATFORM_H PYTHON HOST_OS PREFIX STAMP
+#
+# The libraries are built by a three-stage bootstrap:
+#
+# 1. make_bootlib preprocesses hugsbase, base, haskell98 and Cabal into
+#    bootlib with hscpp.py and compiles a few FFI modules with ffihugs.
+#    The result is incomplete, but enough to run Cabal.
+# 2. cpphs and then hsc2hs are built with Cabal running under runhugs.
+# 3. convert_libraries builds every package into hugsdir with Cabal,
+#    cpphs and hsc2hs, and make_oldlib adds the compatibility stubs.
+#
+# The scripts under libraries/tools expect the classic layout (src/,
+# libraries/, packages/, cpphs/, hsc2hs/ and hugsdir/ under one root) and
+# write into it, so the directories they need are copied into STAGE and
+# everything runs there.  The result is STAGE/hugsdir, which
+# install-libraries copies to the installed hugsdir.
+
+set -e
+
+case $# in
+11)	;;
+*)	echo "usage: $0 SRCROOT STAGE HUGS RUNHUGS FFIHUGS HSBASECONFIG_H PLATFORM_H PYTHON HOST_OS PREFIX STAMP" >&2
+	exit 2 ;;
+esac
+
+srcroot=$1
+stage=$2
+hugs=$3
+runhugs=$4
+ffihugs=$5
+hsbaseconfig=$6
+platform_h=$7
+python=$8
+host_os=$9
+shift 9
+prefix=$1
+stamp=$2
+
+echo "Staging library sources in $stage"
+rm -rf "$stage"
+mkdir -p "$stage"
+for dir in packages libraries cpphs hsc2hs fptools
+do
+	cp -R "$srcroot/$dir" "$stage/$dir"
+done
+
+# The scripts run the interpreter as src/runhugs etc. relative to the root
+mkdir "$stage/src"
+ln -s "$hugs" "$stage/src/hugs"
+ln -s "$runhugs" "$stage/src/runhugs"
+ln -s "$ffihugs" "$stage/src/ffihugs"
+
+# Headers: HsFFI.h for ffihugs, and the fptools-style headers the base
+# package includes as ../../ghc/includes
+mkdir -p "$stage/hugsdir/include" "$stage/ghc/includes"
+cp "$srcroot/src/HsFFI.h" "$stage/hugsdir/include"
+cp "$platform_h" "$srcroot/libraries/include/MachDeps.h" \
+   "$srcroot/libraries/include/ghcconfig.h" "$stage/ghc/includes"
+cp "$hsbaseconfig" "$stage/packages/base/include/HsBaseConfig.h"
+
+# Parameters that configure used to write into libraries/tools/config.
+# The preprocessor for stage 1 is hscpp.py, so that this does not depend
+# on the C compiler's preprocessor accepting Haskell source.
+cat >"$stage/libraries/tools/config" <<EOF
+: \${cpp='$python $srcroot/libraries/tools/hscpp.py'}
+: \${SORT=sort}
+: \${FIND=find}
+EOF
+
+cd "$stage"
+
+# Stage 1: the boot libraries
+CPPFLAGS="-D__HUGS__ -D${host_os}_HOST_OS -D${host_os}_TARGET_OS" \
+	libraries/tools/make_bootlib
+
+# Stage 2: cpphs and hsc2hs, built with Cabal under runhugs.  The paths
+# are relative because Hugs on MSYS cannot cope with absolute ones.
+setup="../src/runhugs -98 ../packages/Cabal/examples/hapax.hs"
+
+echo "Building cpphs"
+(cd cpphs
+ HUGSFLAGS=-P../libraries/bootlib HUGSDIR=../hugsdir \
+	$setup configure --verbose --hugs --prefix="$prefix" \
+		--scratchdir=../hugsdir/packages/cpphs --with-compiler=../src/ffihugs
+ HUGSFLAGS=-P../libraries/bootlib HUGSDIR=../hugsdir \
+	$setup build --verbose)
+rm -rf hugsdir/packages/cpphs/autogen
+mkdir -p hugsdir/programs
+mv hugsdir/packages/cpphs/programs/cpphs hugsdir/programs
+rmdir hugsdir/packages/cpphs/programs
+cat >libraries/tools/cpphs <<EOF
+#! /bin/sh
+rootdir='$stage'
+\$rootdir/src/runhugs -P\$rootdir/libraries/bootlib \$rootdir/hugsdir/programs/cpphs/Main.hs "\$@"
+EOF
+chmod 755 libraries/tools/cpphs
+
+echo "Building hsc2hs"
+(cd hsc2hs
+ HUGSFLAGS=-P../libraries/bootlib HUGSDIR=../hugsdir \
+	$setup configure --verbose --hugs --prefix="$prefix" \
+		--scratchdir=../hugsdir --with-compiler=../src/ffihugs \
+		--with-cpphs=../libraries/tools/cpphs
+ HUGSFLAGS=-P../libraries/bootlib HUGSDIR=../hugsdir \
+	$setup build --verbose)
+rm -rf hugsdir/autogen
+cat >libraries/tools/hsc2hs <<EOF
+#! /bin/sh
+rootdir='$stage'
+\$rootdir/src/runhugs -98 -P\$rootdir/libraries/bootlib \$rootdir/hugsdir/programs/hsc2hs/Main.hs -I\$rootdir/hugsdir/include -t\$rootdir/hsc2hs/template-hsc.h "\$@"
+EOF
+chmod 755 libraries/tools/hsc2hs
+
+# Stage 3: every package, then the compatibility stubs
+HOST="$host_os" PREFIX="$prefix" libraries/tools/convert_libraries fptools hugsdir
+rm -rf hugsdir/oldlib
+libraries/tools/make_oldlib fptools hugsdir
+
+echo "Hugs libraries built in $stage/hugsdir"
+: >"$stamp"

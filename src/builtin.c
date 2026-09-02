@@ -15,8 +15,8 @@
  * reports an error if you use "name(n)" as a macro with arguments and
  * "name" as a normal identifier (with no arguments).  ADR
  */
-#include <math.h>
 #include "prelude.h"
+#include <math.h>
 #include "storage.h"
 #include "connect.h"
 #include "errors.h"

@@ -11,11 +11,11 @@
  * $Date: 2006/04/26 12:26:44 $
  * ------------------------------------------------------------------------*/
 
-#include <stdio.h>
-#include <stdlib.h>
 #define HUGS_SERVER 1
 
 #include "prelude.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include "storage.h"
 #include "connect.h"
 #include "machdep.h"

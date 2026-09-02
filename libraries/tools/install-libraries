@@ -1,0 +1,66 @@
+#!/bin/sh
+# meson install script: copy the staged Hugs libraries into hugsdir and
+# install the cpphs-hugs and hsc2hs-hugs wrapper scripts.
+#
+# usage: install-libraries STAGE HUGSDIR BINDIR
+#
+# meson sets DESTDIR when staging an install; HUGSDIR and BINDIR are the
+# final absolute paths.
+
+set -e
+
+stage=$1
+hugsdir=$2
+bindir=$3
+dest_hugsdir="${DESTDIR}$hugsdir"
+dest_bindir="${DESTDIR}$bindir"
+
+src="$stage/hugsdir"
+if [ ! -d "$src/packages" ]; then
+	echo "$0: $src does not contain built libraries; run the build first" >&2
+	exit 1
+fi
+
+install_tree() {
+	# install_tree FROM TO: copy regular files, skipping C sources
+	(cd "$1" && find . -type f -print) | while read file
+	do
+		case $file in
+		*.c)	continue ;;
+		esac
+		dir=`dirname "$file"`
+		mkdir -p "$2/$dir"
+		cp "$1/$file" "$2/$file"
+		chmod 644 "$2/$file"
+	done
+}
+
+echo "Installing Hugs libraries to $dest_hugsdir"
+for dir in packages oldlib programs demos
+do
+	if [ -d "$src/$dir" ]; then
+		install_tree "$src/$dir" "$dest_hugsdir/$dir"
+	fi
+done
+
+mkdir -p "$dest_bindir"
+
+cat >"$dest_bindir/cpphs-hugs" <<EOF
+#! /bin/sh
+runhugs $hugsdir/programs/cpphs/Main.hs "\$@"
+EOF
+chmod 755 "$dest_bindir/cpphs-hugs"
+
+# hsc2hs looks for its template file in the datadir Cabal recorded
+hsc2hs_data=`sed -n 's/^datadir *= "\(.*\)"/\1/p' "$src/programs/hsc2hs/Paths_hsc2hs.hs"`
+if [ -n "$hsc2hs_data" ]; then
+	mkdir -p "${DESTDIR}$hsc2hs_data"
+	cp "$stage/hsc2hs/template-hsc.h" "${DESTDIR}$hsc2hs_data/template-hsc.h"
+	chmod 644 "${DESTDIR}$hsc2hs_data/template-hsc.h"
+fi
+
+cat >"$dest_bindir/hsc2hs-hugs" <<EOF
+#! /bin/sh
+runhugs -98 $hugsdir/programs/hsc2hs/Main.hs -I$hugsdir/include "\$@"
+EOF
+chmod 755 "$dest_bindir/hsc2hs-hugs"
