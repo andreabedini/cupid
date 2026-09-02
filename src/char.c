@@ -558,6 +558,8 @@ int fgetc_mb(FILE *f) {
     }
     if (utfcodelen(c)!=size)		/* non-shortest form encoding */
 	return BAD_CHAR;
+    if (c>MAXCHARVAL || (c>=0xD800 && c<=0xDFFF)) /* out of range or surrogate */
+	return BAD_CHAR;
     return c;
 }
 
@@ -593,6 +595,8 @@ Char extc_mb(String *sp) {
 	}
 	*sp += size;
 	if (utfcodelen(c)!=size)	/* non-shortest form encoding */
+	    return BAD_CHAR;
+	if (c>MAXCHARVAL || (c>=0xD800 && c<=0xDFFF)) /* out of range or surrogate */
 	    return BAD_CHAR;
     }
     return c;

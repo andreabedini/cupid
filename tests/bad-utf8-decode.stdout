@@ -1,0 +1,2 @@
+
+Program error: <handle>: IO.getContents: protocol error (input contains non-character data - use binary I/O for binary data)
