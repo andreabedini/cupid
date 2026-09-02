@@ -154,7 +154,7 @@ endif
 subdir('docs')
 
 install_subdir('demos', install_dir: hugsdir)
-install_data('Readme', 'License', 'Credits', install_dir: hugsdir)
+install_data('README.md', 'License', 'Credits', install_dir: hugsdir)
 
 summary({
   'hugsdir': hugsdir,

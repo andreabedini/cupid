@@ -31,7 +31,7 @@ Section
 
 	SetOutPath "$INSTDIR"
 
-	File "Readme"
+	File "README.md"
 	File "License"
 	File "Credits"
 

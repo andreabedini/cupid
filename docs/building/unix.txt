@@ -14,6 +14,12 @@ Requirements:
     optionally bison, only if you change src/parser.y
     optionally hp2ps, to view heap profiles
 
+The compiler comes from $CC.  ffihugs runs the same command to compile
+FFI stubs, so a wrapper such as "sccache cc" that does not work as a
+plain command breaks the library step; set CC=gcc or CC=clang instead.
+meson remembers the compiler, so change it in an existing build
+directory with "meson setup --wipe build", not --reconfigure.
+
 Short version:
 
     meson setup build
