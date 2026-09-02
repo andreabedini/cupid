@@ -533,7 +533,7 @@ extern int vsnprintf  (char*, size_t, const char*, va_list);
 # include <alloc.h>
 # define farCalloc(n,s)	farcalloc((unsigned long)n,(unsigned long)s)
 #elif HAVE_VALLOC
-# define farCalloc(n,s)	(Void *)valloc(((unsigned)n)*((unsigned)s))
+# define farCalloc(n,s)	(Void *)valloc(((size_t)(n))*((size_t)(s)))
 #else
 # define farCalloc(n,s)	(Void *)calloc(((unsigned)n),((unsigned)s))
 #endif

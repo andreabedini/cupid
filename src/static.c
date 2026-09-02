@@ -245,7 +245,7 @@ static List   local bscc		(List);
 static Void   local addRSsigdecls	(Pair);
 static Void   local allNoPrevDef	(Cell);
 static Void   local noPrevDef		(Int,Cell);
-static Bool   local odiff		(List,List);
+static List   local odiff		(List,List);
 
 static Void   local duplicateError	(Int,Module,Text,String);
 static Void   local checkTypeIn		(Pair);
@@ -1969,7 +1969,7 @@ static List local otvarsZonk(Cell pi, List os, Int o)	/* same as above, but zonk
     return us;
 }
 
-static Bool local odiff(List us, List vs)
+static List local odiff(List us, List vs)
 {
     while (nonNull(us) && cellIsMember(hd(us),vs)) {
 	us = tl(us);

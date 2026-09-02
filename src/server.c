@@ -533,7 +533,7 @@ static void evalError(Cell e)
 
     message[len] = charOf(whnfHead);
     len++;
-    if (len >= MAXLEN)      break;
+    if (len >= MAXLEN-1)    break;      /* leave room for the '\0' below   */
   }
 
   message[len] = '\0';
