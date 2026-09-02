@@ -1,0 +1,193 @@
+# The language Hugs accepts
+
+What Hugs implements of Haskell 2010, where it deviates, and what it
+adds.
+
+## Summary
+
+In the default `+98` mode Hugs accepts Haskell 2010: the Haskell 98
+language with hierarchical module names, the foreign function
+interface, pattern guards, empty data declarations, `then` and `else`
+at do-block indentation and `LINE` pragmas.  The n+k patterns that
+Haskell 2010 removed are not accepted.
+
+With `-98` it also accepts the extensions in
+[Extensions enabled by `-98`](extensions.md).
+
+The extensions of the 2006 release that were guarded by compile-time
+flags are gone: TREX extensible records, implicit parameters, the
+`observe` debugger, recursive do (`mdo`), parallel list comprehensions,
+multi-instance resolution, here documents and restricted type synonyms.
+
+## Known deviations from the Report
+
+Listed by the section of the Haskell 2010 Report they concern.
+
+### Lexical structure
+
+**Identifiers are limited to Latin-1.**  Strings and comments may
+contain any Unicode character, but an identifier may only use
+characters from ISO 8859-1.
+
+**Limited lookahead.**  The lexer is confused by `Just.if`, `0xy`,
+`0oy`, `9e+y` and `9.0e+y`, because it does not look far enough ahead.
+
+### Expressions
+
+**Fixities are resolved after parsing.**  Hugs does not use operator
+fixities during parsing, so it rejects legal but odd expressions such
+as
+
+```haskell
+let x = True in x == x == True
+```
+
+**Left sections are restricted.**  The expression in a left section
+must be a function application, `case` or `do`.  `(a+b+)` and
+`(a*b+)` are rejected.
+
+### Declarations and bindings
+
+**Polymorphic recursion is slightly more permissive.**  In a group of
+mutually recursive bindings where one function has a signature, Hugs
+treats the others as depending only on that signature, and so can
+infer polymorphic types where the Report requires an explicit
+signature:
+
+```haskell
+data BalancedTree a = Zero a | Succ (BalancedTree (a,a))
+
+zig :: BalancedTree a -> a
+zig (Zero a) = a
+zig (Succ t) = fst (zag t)
+
+zag (Zero a) = a
+zag (Succ t) = snd (zig t)
+```
+
+Haskell 2010 rejects this without a signature for `zag`; Hugs accepts
+it.
+
+**Class methods may constrain the class variable.**  Contrary to
+section 4.3.1 of the Report, Hugs allows
+
+```haskell
+class Foo a where
+    op :: Num a => a -> a -> a
+```
+
+**The monomorphism restriction is applied per binding group.**  Hugs
+rejects this example from section 4.5.5 of the Report:
+
+```haskell
+module M where
+import Data.List
+len1 = genericLength "Hello"
+len2 = (2*len1) :: Rational
+```
+
+`len1` is defaulted to `Integer` as soon as its own group is inferred,
+so the use at `Rational` in `len2` fails.  The Report defers defaulting
+to the end of the module.
+
+### Modules
+
+**A missing module header means `module Main where`,** exporting
+everything, rather than `module Main (main) where`, since small test
+files usually have no header.
+
+**A missing export list is treated as `(module M)`** for the current
+module `M`.  This differs from exporting every defined name only when
+an imported module is aliased as `M`.
+
+**Type synonyms may be written `T(..)`** in export lists and `T(..)` or
+`T()` in import lists.
+
+**Mutually recursive modules are not supported.**
+
+**`(:)` is exported by the Prelude as if it were an identifier,** so
+Hugs wrongly rejects
+
+```haskell
+module Foo where
+import Prelude ()
+cs = 'a':cs
+```
+
+### Predefined types and classes
+
+**Rational literals may lose precision.**  A literal such as
+`1.234e-5` is held as a double before conversion, so at type `Rational`
+it may not be exact.
+
+**Floating point values print differently.**  `show` on floating point
+numbers uses an internal routine rather than `Numeric.showFloat`, and
+the output can differ slightly.
+
+**Tuple instances stop at size 7.**  `Eq`, `Ord`, `Bounded`, `Read` and
+`Show` are defined for tuples of up to seven components; the Report
+requires every tuple size.
+
+**No file locking.**  Hugs does not enforce the single-writer,
+multiple-reader rule on files.  A program that reads and writes the
+same file at once may see inconsistent data instead of failing.
+
+## Other known bugs
+
+**Infinite computations can crash.**  An unbounded computation usually
+ends with `Garbage collection fails to reclaim sufficient space` or
+`Control stack overflow`, or runs for ever.  Depending on the sizes of
+the heap, the Hugs stack and the C stack, it can instead overflow the C
+stack, which on Unix is a segmentation fault.
+
+**Top-level bindings leak.**  This runs in constant space at the
+prompt:
+
+```haskell
+mapM_ putStrLn (repeat "y")
+```
+
+but the same expression as the definition of `main` does not, because
+`main` is a constant applicative form and is updated with its
+ever-growing expansion.  Making the binding a function, so that it is
+not updated, avoids the leak:
+
+```haskell
+main = return () >>= \_ -> mapM_ putStrLn (repeat "y")
+```
+
+## Defaulting at the prompt
+
+An expression typed at the prompt is defaulted more liberally than a
+top-level binding: an ambiguous type variable is defaulted when all
+its constraints are standard classes and at least one is numeric or is
+`Show`, `Eq` or `Ord`.  See [Interpreter commands](commands.md#expr).
+
+## Foreign function interface
+
+The FFI of Haskell 2010 is implemented with these limits:
+
+- Calling conventions: `ccall` and `stdcall`.  Any other is an error.
+- `foreign import` in its `static` form, and `foreign import
+  "dynamic"` (calling through a `FunPtr`), work on all targets.
+- `foreign import "wrapper"`, which turns a Haskell function into a C
+  function pointer, is implemented only for 32-bit x86, PowerPC and
+  SPARC.  On the targets this tree builds for it fails at run time.
+  See [Foreign import wrappers](../explanation/foreign-import-wrappers.md).
+- `foreign export` declarations are accepted and `ffihugs` generates C
+  for them, but nothing in the tree exercises them and they should be
+  considered untested.
+
+A module containing foreign declarations must be compiled with
+[ffihugs](ffihugs.md) before it can be loaded.
+
+## Hierarchical modules
+
+A module name may contain dots.  To find `A.B.C`, Hugs looks for
+`A/B/C.hs` or `A/B/C.lhs` in each directory of the search path.  See
+[Modules, files and the search path](../explanation/modules-and-the-search-path.md).
+
+## See also
+
+- [Extensions enabled by `-98`](extensions.md)
+- [The libraries](libraries.md)

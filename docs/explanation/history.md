@@ -1,0 +1,89 @@
+# History
+
+Where Hugs came from, what happened to it, and what this tree is.
+
+## Gofer and Hugs
+
+In September 1991 Mark Jones released Gofer, a compact and portable
+implementation of a Haskell-like language that also served as a test
+bed for type-system ideas, several of which later entered Haskell:
+constructor classes, and the treatment of type classes that became
+multi-parameter classes and functional dependencies.  Gofer was small
+enough to run on the machines of the day and was widely used for
+teaching.
+
+On 14 February 1995 Jones released Hugs, the Haskell User's Gofer
+System, a derivative of Gofer with much closer conformance to Haskell.
+Hugs versions were named after the version of Haskell they
+implemented: Hugs 1.3, Hugs 1.4, and from January 1999 Hugs 98.  Hugs
+98 was the first released implementation of the Haskell 98 standard
+and the first Hugs released as open source.  Jones gave up
+maintainership in January 2000; development continued at Yale, at OGI
+and among a group of volunteers, chiefly Ross Paterson, Sigbjorn
+Finne and Alastair Reid.
+
+## Hugs 98, 1999 to 2006
+
+The releases were named by month:
+
+- **January 1999** — Hugs 98 beta.  Merged the module system and
+  dynamic linking of Hugs 1.4 with the type-system extensions of Hugs
+  1.3c: multi-parameter classes, TREX records, rank-2 polymorphism,
+  existentials.
+- **May 1999** — Largely Haskell 98 conformant.  Import chasing, a
+  Windows GUI, a first foreign interface.
+- **November 1999** — BSD licence.  `:browse` and `:version`,
+  functional dependencies, better overlapping instances.  Bug-fix
+  releases in February and July 2000.
+- **February 2001** — A foreign function interface modelled on GHC's,
+  the `observe` debugger, parallel list comprehensions, recursive
+  `mdo`, classic Mac OS support.
+- **December 2001** — Hierarchical module names, the missing standard
+  libraries, most of `hslibs`, macOS X.
+- **November 2002** — The FFI brought close to the specification, a
+  large part of GHC's hierarchical libraries, a complete module
+  system.
+- **November 2003** — Internal restructuring.  `Double` becomes double
+  precision, the libraries shared with GHC and nhc98 are adopted
+  wholesale, imprecise exceptions, .NET support on Windows.  The
+  beginnings of a user's guide.
+- **March 2005** — Unicode `Char` and locale-based I/O, the `-X`
+  option, the new `ffihugs` syntax, Cabal support, and a Cabal-based
+  library build.
+- **May 2006** — WinHugs rewritten by Neil Mitchell, the `:main`
+  command, the empty `Hugs` module as the default scope.
+- **September 2006** — A bug-fix release with libraries matching GHC
+  6.6.
+
+September 2006 was the last release.  By then GHC had an interactive
+mode of its own, the shared libraries had moved on, and the three-stage
+bootstrap that turned the shared sources into something Hugs could
+load had become the main cost of keeping up.  Hugs remained in
+distributions for some years, then stopped building on current
+compilers.
+
+## This tree
+
+This tree starts from the September 2006 release with one aim: a
+simpler, understandable Haskell implementation.  It is not an attempt
+to keep up with GHC.  The language is Haskell 2010 plus the
+type-system extensions the libraries need; everything from 2006 that
+did not serve the aim has been removed rather than kept behind flags.
+In order:
+
+- the sources were made standard C23 and the K&R definitions converted
+- autoconf was replaced by meson, with the platform facts written down
+  rather than probed
+- the dead platforms (DOS, classic Mac OS, Symbian, Win16, the old
+  Unixes) were deleted
+- the flag-guarded extensions and n+k patterns were deleted; pattern
+  guards were added
+- the base library was taken over as plain Haskell and the
+  Cabal/cpphs/hsc2hs bootstrap removed
+- the packaging, the DocBook user's guide and the release notes were
+  replaced with this documentation
+
+## See also
+
+- [How Hugs runs a program](how-hugs-runs-a-program.md)
+- [The language Hugs accepts](../reference/language.md)

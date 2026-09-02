@@ -1,0 +1,125 @@
+# The libraries
+
+The Haskell modules that ship with Hugs, and which of them need the
+`-98` option.
+
+## Packages
+
+The libraries are plain Haskell that Hugs owns.  They live in three
+directories under `libraries/` in the source tree and are installed as
+subdirectories of `packages/` in the library directory, where the
+default search path finds them.
+
+| Package | Contents |
+|---|---|
+| `hugsbase` | The `Prelude`, `Hugs.Prelude` (where most of it is defined) and the `Hugs.*` modules that bind the interpreter's primitives |
+| `base` | The `base` library of 2006: `Control.*`, `Data.*`, `Foreign.*`, `System.*`, `Text.*` |
+| `haskell98` | The Haskell 98 library modules under their old flat names: `List`, `Char`, `IO`, `Random` and so on |
+
+## Modules that need `-98`
+
+Any module whose interface uses rank-2 types, and everything that
+imports one, loads only with `-98`.  Trying without gives a syntax
+error at the `forall`:
+
+```
+ERROR ".../hugsbase/Hugs/ST.hs":51 - Syntax error in type expression (unexpected `.')
+```
+
+These modules are built on the `ST` monad and need `-98`:
+
+- `Control.Monad.ST`, `Control.Monad.ST.Lazy`, `Control.Monad.ST.Strict`
+- `Data.STRef`, `Data.STRef.Lazy`, `Data.STRef.Strict`
+- `Data.Array.ST`, `Data.Array.IO`, `Data.Array.MArray`,
+  `Data.Array.Storable`, `Data.Array.Unboxed`, `Data.Array.Diff`,
+  `Data.Array.IArray`, `Data.Array.Base`
+- `Data.HashTable`, `Data.Graph`
+
+`Data.Map`, `Data.IntMap`, `Data.Sequence`, `Data.ByteString`,
+`Data.Typeable`, `Data.Dynamic` and `Control.Exception` load in the
+default mode.
+
+## Modules with foreign imports
+
+Nine modules call C through the FFI.  Their stubs are compiled by
+`ffihugs` when the libraries are built, and the objects are installed
+next to them:
+
+- `Hugs.Storable`
+- `Foreign.C.Error`, `Foreign.Marshal.Alloc`, `Foreign.Marshal.Utils`,
+  `Foreign.Ptr`
+- `System.Posix.Internals`, `System.Posix.Signals`,
+  `System.Process.Internals`
+- `Data.ByteString.Base`
+
+## The generated module
+
+`Hugs.SysConfig` is not in the source tree.  It is generated at build
+time by `libraries/tools/mksysconfig.c` and holds the mapping from C
+types to Haskell types (`HsType_int`, `HsType_mode_t`, ...), the
+`errno` and signal constants (`const_E2BIG`, `const_SIGINT`, ...), and
+`hostOS` and `hostArch`.  The C-side equivalent is `HsBaseConfig.h`.
+
+## Module list
+
+### hugsbase
+
+`Hugs`, `Prelude`, and under `Hugs.`: `Array`, `Base`, `Bits`,
+`ByteArray`, `Char`, `ConcBase`, `CVHAssert`, `Directory`, `Dynamic`,
+`Exception`, `ForeignPtr`, `GenericPrint`, `Int`, `Internals`, `IO`,
+`IOArray`, `IOExts`, `IORef`, `LazyST`, `Memo`, `Numeric`, `Prelude`,
+`Ptr`, `ST`, `Stable`, `StablePtr`, `Storable`, `SysConfig`
+(generated), `System`, `Time`, `Weak`, `Word`.
+
+### base
+
+`Control.Applicative`, `Control.Arrow`, `Control.Concurrent` (and
+`.Chan`, `.MVar`, `.QSem`, `.QSemN`, `.SampleVar`),
+`Control.Exception`, `Control.Monad` (and `.Fix`, `.Instances`, `.ST`,
+`.ST.Lazy`, `.ST.Strict`), `Control.Parallel`,
+`Data.Array` (and `.Base`, `.Diff`, `.IArray`, `.IO`, `.IO.Internals`,
+`.MArray`, `.ST`, `.Storable`, `.Unboxed`), `Data.Bits`, `Data.Bool`,
+`Data.ByteString` (and `.Base`, `.Char8`, `.Fusion`, `.Lazy`,
+`.Lazy.Char8`), `Data.Char`, `Data.Complex`, `Data.Dynamic`,
+`Data.Either`, `Data.Eq`, `Data.Fixed`, `Data.Foldable`,
+`Data.FunctorM`, `Data.Graph`, `Data.HashTable`, `Data.Int`,
+`Data.IntMap`, `Data.IntSet`, `Data.IORef`, `Data.Ix`, `Data.List`,
+`Data.Map`, `Data.Maybe`, `Data.Monoid`, `Data.Ord`,
+`Data.PackedString`, `Data.Queue`, `Data.Ratio`, `Data.Sequence`,
+`Data.Set`, `Data.STRef` (and `.Lazy`, `.Strict`), `Data.Traversable`,
+`Data.Tree`, `Data.Tuple`, `Data.Typeable`, `Data.Unique`,
+`Data.Version`, `Data.Word`, `Debug.Trace`,
+`Foreign`, `Foreign.C` (and `.Error`, `.String`, `.Types`),
+`Foreign.ForeignPtr`, `Foreign.Marshal` (and `.Alloc`, `.Array`,
+`.Error`, `.Pool`, `.Utils`), `Foreign.Ptr`, `Foreign.StablePtr`,
+`Foreign.Storable`, `Numeric`, `System.Cmd`,
+`System.Console.GetOpt`, `System.CPUTime`, `System.Directory` (and
+`.Internals`), `System.Environment`, `System.Exit`, `System.Info`,
+`System.IO` (and `.Error`, `.Unsafe`), `System.Locale`, `System.Mem`
+(and `.StableName`, `.Weak`), `System.Posix.Internals`,
+`System.Posix.Signals`, `System.Posix.Types`,
+`System.Process.Internals`, `System.Random`, `System.Time`,
+`Text.ParserCombinators.ReadP`, `Text.ParserCombinators.ReadPrec`,
+`Text.PrettyPrint` (and `.HughesPJ`), `Text.Printf`, `Text.Read` (and
+`.Lex`), `Text.Show` (and `.Functions`).
+
+### haskell98
+
+`Array`, `Bits`, `CError`, `CForeign`, `Char`, `Complex`, `CPUTime`,
+`CString`, `CTypes`, `Directory`, `ForeignPtr`, `Int`, `IO`, `Ix`,
+`List`, `Locale`, `MarshalAlloc`, `MarshalArray`, `MarshalError`,
+`MarshalUtils`, `Maybe`, `Monad`, `Numeric`, `Ptr`, `Random`, `Ratio`,
+`StablePtr`, `Storable`, `System`, `Time`, `Word`.
+
+## Demos
+
+`demos/` in the source tree, installed under the library directory,
+holds example programs from the original distribution: a banner
+printer (`Say`), a Prolog interpreter (`prolog/`), N queens, a
+calendar, Eliza and others.  `Demos.hs` imports most of them so that
+one `:load` brings them all in.
+
+## See also
+
+- [Add a library to the search path](../how-to/add-a-library.md)
+- [Build options and install layout](build-options.md)

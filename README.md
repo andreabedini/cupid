@@ -11,7 +11,7 @@ library sources and their three-stage bootstrap.
 
 The code is standard C23 and builds with meson on 64-bit Linux, macOS and
 the BSDs.  Windows is supported by design but not yet verified; see
-[docs/building/win32.txt](docs/building/win32.txt).
+[Build Hugs on Windows](docs/how-to/build-on-windows.md).
 
 ## Building
 
@@ -97,7 +97,8 @@ Options are set with `-Dname=value` at setup time or later with
 | `small-banner` | `false` | One-line startup banner |
 
 The full list, and more detail on every step, is in
-[docs/building/unix.txt](docs/building/unix.txt).
+[Build and install Hugs](docs/how-to/build-and-install.md) and
+[Build options and install layout](docs/reference/build-options.md).
 
 ## Layout
 
@@ -108,19 +109,19 @@ The full list, and more detail on every step, is in
   Prelude and Hugs-specific modules), `base` and `haskell98`, all plain
   Haskell; `tools/` holds the build script and the generator for the
   platform-dependent module `Hugs.SysConfig`
-- `docs/` — build notes, the FFI notes, the manual page and the user's
-  guide sources
+- `docs/` — the documentation: a tutorial, how-to guides, reference
+  and explanation pages, and the manual page
 - `demos/` — example programs, installed alongside the libraries
 
 ## Documentation
 
-- [docs/building/unix.txt](docs/building/unix.txt) — building,
-  installing and running in detail
-- [docs/ffi-notes.txt](docs/ffi-notes.txt) — the foreign function
-  interface and `ffihugs`
-- `docs/users_guide/` — the 2006 user's guide.  Its descriptions of
-  TREX, implicit parameters, `mdo` and the other deleted extensions are
-  out of date.
+- [docs/README.md](docs/README.md) — the index of the documentation
+- [Getting started with Hugs](docs/tutorials/getting-started.md) — a
+  first session, from build to running a program
+- [Interpreter commands](docs/reference/commands.md) and
+  [Options](docs/reference/options.md)
+- [Call C functions from Haskell](docs/how-to/call-c-functions.md) —
+  the foreign function interface and `ffihugs`
 
 ## License
 
