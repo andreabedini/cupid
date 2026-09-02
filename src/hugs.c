@@ -126,13 +126,11 @@ static Void local initialize(Int argc, String argv[])
     readOptionSettings();
     processOptionVector(argc,argv);
 
-#if !HASKELL_98_ONLY
     if (haskell98) {
 	Printf("Haskell 98 mode: Restart with command line option -98 to enable extensions\n\n");
     } else {
 	Printf("Hugs mode: Restart with command line option +98 for Haskell 98 mode\n\n");
     }
-#endif
 
     /* Figure out what Prelude module we're using + hoist it in. */
     loadPrelude();
@@ -564,7 +562,6 @@ static Void local runmain() {
 
 static String local objToStr(Module m, Cell c)
 {
-#if 1 || DISPLAY_QUANTIFIERS
     static char newVar[60];
     switch (whatIs(c)) {
 	case NAME  : if (m == name(c).mod) {
@@ -597,22 +594,6 @@ static String local objToStr(Module m, Cell c)
 	default    : internal("objToStr");
     }
     return newVar;
-#else
-    static char newVar[33];
-    switch (whatIs(c)) {
-	case NAME  : sprintf(newVar,"%s", textToStr(name(c).text));
-		     break;
-
-	case TYCON : sprintf(newVar,"%s", textToStr(tycon(c).text));
-		     break;
-
-	case CLASS : sprintf(newVar,"%s", textToStr(cclass(c).text));
-		     break;
-
-	default    : internal("objToStr");
-    }
-    return newVar;
-#endif
 }
 
 static Void local info() {              /* describe objects                */

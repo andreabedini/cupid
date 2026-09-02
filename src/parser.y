@@ -52,19 +52,7 @@ static Pair   local checkDo	 (List);
 static Cell   local checkTyLhs	 (Cell);
 static Cell   local checkConstr	 (Cell);
 
-#if MUDO
-static Pair   local checkMDo	 (List);
-#endif
 
-#if !TREX
-static Void   local noTREX	 (String);
-#endif
-#if !IPARAM
-static Void   local noIP	 (String);
-#endif
-#if !MUDO
-static Void   local noMDo	 (String);
-#endif
 
 /* For the purposes of reasonably portable garbage collection, it is
  * necessary to simulate the YACC stack on the Hugs stack to keep
@@ -97,15 +85,9 @@ static Void   local noMDo	 (String);
 %token THEN       ELSE       WHERE      LET        IN
 %token INFIXN     INFIXL     INFIXR     PRIMITIVE  TNEWTYPE
 %token DEFAULT    DERIVING   DO         TCLASS     TINSTANCE
-/*#if MUDO*/
-%token MDO
-/*#endif*/
 %token REPEAT	  ALL        NUMLIT     CHARLIT	   STRINGLIT
 %token VAROP      VARID	     CONOP      CONID
 %token QVAROP     QVARID     QCONOP     QCONID
-/*#if TREX*/
-%token RECSELID	  IPVARID
-/*#endif*/
 %token COCO       '='        UPTO       '@'        '\\'
 %token '|'        '-'        FROM       ARROW      '~'
 %token '!'        IMPLIES    '('        ','        ')'
@@ -450,7 +432,6 @@ polyType  : ALL varids '.' sigType	{$$ = gc4(ap(POLYTYPE,
 	  | bpolyType			{$$ = $1;}
 	  ;
 bpolyType : '(' polyType ')'		{$$ = gc3($2);}
-	  | '(' lcontext IMPLIES type ')' {$$ = gc5(qualify($2,$4));}
 	  ;
 varids	  : varids varid		{$$ = gc2(cons($2,$1));}
 	  | varid			{$$ = gc1(singleton($1));}
@@ -462,34 +443,7 @@ context	  : '(' ')'			{$$ = gc2(NIL);}
 	  | btype2			{$$ = gc1(singleton(checkPred($1)));}
 	  | '(' btype2 ')'		{$$ = gc3(singleton(checkPred($2)));}
 	  | '(' btypes2 ')'		{$$ = gc3(checkCtxt(rev($2)));}
- 	  | lacks			{$$ = gc1(singleton($1));}
- 	  | '(' lacks1 ')'		{$$ = gc3(checkCtxt(rev($2)));}
  	  ;
-lcontext  : lacks			{$$ = gc1(singleton($1));}
- 	  | '(' lacks1 ')'		{$$ = gc3(checkCtxt(rev($2)));}
-	  ;
-lacks	  : varid '\\' varid		{
-#if TREX
-					 $$ = gc3(ap(mkExt(textOf($3)),$1));
-#else
-					 noTREX("a type context");
-#endif
-					}
-          | IPVARID COCO type		{
-#if IPARAM
-					 $$ = gc3(pair(mkIParam($1),$3));
-#else
-					 noIP("a type context");
-#endif
-					}
-	  ;
-lacks1    : btypes2 ',' lacks		{$$ = gc3(cons($3,$1));}
-	  | lacks1  ',' btype2		{$$ = gc3(cons($3,$1));}
-	  | lacks1  ',' lacks		{$$ = gc3(cons($3,$1));}
-	  | btype2  ',' lacks		{$$ = gc3(cons($3,cons($1,NIL)));}
-	  | lacks			{$$ = gc1(singleton($1));}
-	  ;
-
 type	  : type1			{$$ = $1;}
 	  | btype2			{$$ = $1;}
 	  ;
@@ -519,20 +473,6 @@ atype1	  : varid			{$$ = $1;}
 	  | '(' tupCommas ')'		{$$ = gc3($2);}
 	  | '(' btypes2 ')'		{$$ = gc3(buildTuple($2));}
 	  | '(' typeTuple ')'		{$$ = gc3(buildTuple($2));}
-	  | '(' tfields ')'		{
-#if TREX
-					 $$ = gc3(revOnto($2,typeNoRow));
-#else
-					 noTREX("a type");
-#endif
-					}
-	  | '(' tfields '|' type ')'	{
-#if TREX
-					 $$ = gc5(revOnto($2,$4));
-#else
-					 noTREX("a type");
-#endif
-					}
 	  | '[' type ']'		{$$ = gc3(ap(typeList,$2));}
 	  | '[' ']'			{$$ = gc2(typeList);}
 	  | '_'				{h98DoesntSupport(row,"anonymous type variables");
@@ -546,14 +486,6 @@ typeTuple : type1     ',' type		{$$ = gc3(cons($3,cons($1,NIL)));}
 	  | btypes2   ',' type1		{$$ = gc3(cons($3,$1));}
 	  | typeTuple ',' type		{$$ = gc3(cons($3,$1));}
 	  ;
-/*#if TREX*/
-tfields	  : tfields ',' tfield		{$$ = gc3(cons($3,$1));}
-	  | tfield			{$$ = gc1(singleton($1));}
-	  ;
-tfield	  : varid COCO type		{h98DoesntSupport(row,"extensible records");
-					 $$ = gc3(ap(mkExt(textOf($1)),$3));}
-	  ;
-/*#endif*/
 
 /*- Value declarations: ---------------------------------------------------*/
 
@@ -639,15 +571,7 @@ ldecls0	  : /* empty */			{$$ = gc0(NIL);}
 
 ldecls1	  : ldecls0 ldecl		{$$ = gc2(cons($2,$1));}
 	  ;
-ldecl	  : IPVARID '=' exp		{
-#if IPARAM
-				         $$ = gc3(pair($1,$3));
-#else
-					 noIP("a binding");
-#endif
-					}
-	  | IPVARID error		{syntaxError("a binding");}
-          | decl 			{$$ = $1;} 
+ldecl	  : decl 			{$$ = $1;} 
 	  ;
 
 /*- Patterns: -------------------------------------------------------------*/
@@ -705,16 +629,6 @@ apat_vI	  : var '@' apat		{$$ = gc3(ap(ASPAT,pair($1,$3)));}
 	  | '(' pats2 ')'		{$$ = gc3(buildTuple($2));}
 	  | '[' pats1 ']'		{$$ = gc3(ap(FINLIST,rev($2)));}
 	  | '~' apat			{$$ = gc2(ap(LAZYPAT,$2));}
-/*#if TREX*/
-	  | '(' patfields ')'		{
-#if TREX
-					 $$ = gc3(revOnto($2,nameNoRec));
-#else
-					 $$ = gc3(NIL);
-#endif
-					}
-	  | '(' patfields '|' pat ')'	{$$ = gc5(revOnto($2,$4));}
-/*#endif TREX*/
 	  ;
 pats2	  : pats2 ',' pat		{$$ = gc3(cons($3,$1));}
 	  | pat ',' pat			{$$ = gc3(cons($3,singleton($1)));}
@@ -731,19 +645,6 @@ patbinds1 : patbinds1 ',' patbind	{$$ = gc3(cons($3,$1));}
 patbind	  : qvar '=' pat		{$$ = gc3(pair($1,$3));}
 	  | var				{$$ = $1;}
 	  ;
-/*#if TREX*/
-patfields : patfields ',' patfield	{$$ = gc3(cons($3,$1));}
-	  | patfield			{$$ = gc1(singleton($1));}
-	  ;
-patfield  : varid '=' pat		{
-#if TREX
-					 $$ = gc3(ap(mkExt(textOf($1)),$3));
-#else
-					 noTREX("a pattern");
-#endif
-					}
-	  ;
-/*#endif TREX*/
 
 /*- Expressions: ----------------------------------------------------------*/
 
@@ -778,13 +679,6 @@ infixExpb : infixExpa qop '-' exp10b	{$$ = gc4(ap(NEG,ap(ap($2,$1),$4)));}
 	  ;
 exp10a	  : CASEXP exp OF '{' alts end	{$$ = gc6(ap(CASE,pair($2,rev($5))));}
 	  | DO '{' stmts end		{$$ = gc4(ap(DOCOMP,checkDo($3)));}
-          | MDO '{' stmts end		{
-#if MUDO
-					 $$ = gc4(ap(MDOCOMP, checkMDo($3)));
-#else
-					 noMDo("an expression");
-#endif
-					}
 	  | appExp			{$$ = $1;}
 	  ;
 exp10b	  : '\\' pats ARROW exp		{$$ = gc4(ap(LAMBDA,      
@@ -812,7 +706,6 @@ appExp    : appExp aexp			{$$ = gc2(ap($1,$2));}
 aexp	  : qvar			{$$ = $1;}
 	  | qvar '@' aexp		{$$ = gc3(ap(ASPAT,pair($1,$3)));}
 	  | '~' aexp			{$$ = gc2(ap(LAZYPAT,$2));}
-	  | IPVARID			{$$ = $1;}
 	  | '_'				{$$ = gc1(WILDCARD);}
 	  | gcon			{$$ = $1;}
 	  | qcon '{' fbinds '}'		{$$ = gc4(ap(CONFLDS,pair($1,$3)));}
@@ -824,17 +717,6 @@ aexp	  : qvar			{$$ = $1;}
 	  | REPEAT			{$$ = $1;}
 	  | '(' exp ')'			{$$ = gc3($2);}
 	  | '(' exps2 ')'		{$$ = gc3(buildTuple($2));}
-/*#if TREX*/
-	  | '(' vfields ')'		{
-#if TREX
-					 $$ = gc3(revOnto($2,nameNoRec));
-#else
-					 $$ = gc3(NIL);
-#endif
-					}
-	  | '(' vfields '|' exp ')'	{$$ = gc5(revOnto($2,$4));}
-	  | RECSELID			{$$ = $1;}
-/*#endif*/
 	  | '[' list ']'		{$$ = gc3($2);}
 	  | '(' exp10a qop ')'		{$$ = gc4(ap($3,$2));}
 	  | '(' qvarop_mi exp0 ')'	{$$ = gc4(ap(ap(nameFlip,$2),$3));}
@@ -843,19 +725,6 @@ aexp	  : qvar			{$$ = $1;}
 exps2	  : exps2 ',' exp		{$$ = gc3(cons($3,$1));}
 	  | exp ',' exp			{$$ = gc3(cons($3,cons($1,NIL)));}
 	  ;
-/*#if TREX*/
-vfields	  : vfields ',' vfield		{$$ = gc3(cons($3,$1));}
-	  | vfield			{$$ = gc1(singleton($1));}
-	  ;
-vfield	  : varid '=' exp		{
-#if TREX
-					 $$ = gc3(ap(mkExt(textOf($1)),$3));
-#else
-					 noTREX("an expression");
-#endif
-					}
-	  ;
-/*#endif*/
 alts      : alts1                       {$$ = $1;}
           | ';' alts                    {$$ = gc2($2);}
           ;
@@ -903,20 +772,10 @@ fbind	  : var				{$$ = $1;}
 list	  : exp				{$$ = gc1(ap(FINLIST,cons($1,NIL)));}
 	  | exps2			{$$ = gc1(ap(FINLIST,rev($1)));}
 	  | exp zipquals		{
-#if ZIP_COMP
-					 if (length($2)==1) {
-					     $$ = gc2(ap(COMP,pair($1,hd($2))));
-					 } else {
-					     if (haskell98)
-						 syntaxError("list comprehension");
-					     $$ = gc2(ap(ZCOMP,pair($1,rev($2))));
-					 }
-#else
 					 if (length($2)!=1) {
 					     syntaxError("list comprehension");
 					 }
 					 $$ = gc2(ap(COMP,pair($1,hd($2))));
-#endif
 					}
 	  | exp         UPTO exp	{$$ = gc3(ap(ap(nameFromTo,$1),$3));}
 	  | exp ',' exp UPTO		{$$ = gc4(ap(ap(nameFromThen,$1),$3));}
@@ -1115,16 +974,6 @@ static String local unexpected() {     /* find name for unexpected token   */
 	case '\\'      : return "backslash (lambda)";
 	case '~'       : return "tilde";
 	case '`'       : return "backquote";
-#if TREX
-	case RECSELID  : sprintf(buffer,"selector \"#%s\"",
-				 textToStr(extText(snd(yylval))));
-			 return buffer;
-#endif
-#if IPARAM
-	case IPVARID   : sprintf(buffer,"implicit parameter \"?%s\"",
-				 textToStr(textOf(yylval)));
-			 return buffer;
-#endif
 	case VAROP     :
 	case VARID     :
 	case CONOP     :
@@ -1185,14 +1034,6 @@ static List local checkCtxt(Type con)	/* validate context		   */
 static Cell local checkPred(Cell c)		/* check that type expr is a valid */
 {				/* constraint			   */
     Cell cn = getHead(c);
-#if TREX
-    if (isExt(cn) && argCount==1)
-	return c;
-#endif
-#if IPARAM
-    if (isIP(cn))
-	return c;
-#endif
     if (!isQCon(cn) /*|| argCount==0*/)
 	syntaxError("class expression");
     return c;
@@ -1209,18 +1050,6 @@ static Pair local checkDo(List dqs)		/* convert reversed list of dquals */
     return dqs;
 }
 
-#if MUDO
-static Pair local checkMDo(List dqs)		/* convert reversed list of dquals */
-{				/* to an (expr,quals) pair         */
-    if (isNull(dqs) || whatIs(hd(dqs))!=DOQUAL) {
-	ERRMSG(row) "Last generator in mdo {...} must be an expression"
-	EEND;
-    }
-    fst(dqs) = snd(fst(dqs));		/* put expression in fst of pair   */
-    snd(dqs) = rev(snd(dqs));		/* & reversed list of quals in snd */
-    return dqs;
-}
-#endif
 
 static Cell local checkTyLhs(Cell c)		/* check that lhs is of the form   */
 {				/* T a1 ... a			   */
@@ -1248,39 +1077,6 @@ static Cell local checkConstr(Cell c)	/* check that data constructor has */
     return c;
 }
 
-#if !TREX
-static Void local noTREX(String where)
-{
-    ERRMSG(row) "Attempt to use TREX records while parsing %s.\n", where ETHEN
-    ERRTEXT     "(TREX is disabled in this build of Hugs)"
-    EEND;
-}
-#endif
-#if !IPARAM
-static Void local noIP(String where)
-{
-    ERRMSG(row) "Attempt to use Implicit Parameters while parsing %s.\n", where ETHEN
-    ERRTEXT     "(Implicit Parameters are disabled in this build of Hugs)"
-    EEND;
-}
-#endif
 
-#if !MUDO
-/***
-   Due to the way we implement this stuff, this function will actually
-   never be called. When MUDO is not defined, the lexer thinks that mdo
-   is just another identifier, and hence the MDO token is never returned
-   to the parser: consequently the mdo production is never reduced, making 
-   this code unreachable. The alternative is to let the lexer to 
-   recognize "mdo" all the time, but that's not Haskell compliant. In any 
-   case we keep this function here, even if just for documentation purposes.
-***/
-static Void local noMDo(String where)
-{
-    ERRMSG(row) "Attempt to use MDO while parsing %s.\n", where ETHEN
-    ERRTEXT     "(Recursive monadic bindings are disabled in this build of Hugs)"
-    EEND;
-}
-#endif
 
 /*-------------------------------------------------------------------------*/

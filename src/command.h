@@ -48,15 +48,6 @@ extern Command readCommand (struct cmd *, Char, Char);
 #endif
 #define MAIN    22
 
-#if OBSERVATIONS
-/*-------------------------------------------------------------------------*
- * Commands available after breakpoint                                     *
- *-------------------------------------------------------------------------*/
-#define BRK_DISPLAY     0
-#define BRK_CONTINUE    1
-#define BRK_SET         2
-#define BRK_RESET       3
-#endif
 
 /*-------------------------------------------------------------------------*/
 

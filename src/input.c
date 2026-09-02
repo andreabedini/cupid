@@ -114,13 +114,7 @@ static Text textCase,    textOfK,      textData,   textType,   textIf;
 static Text textThen,    textElse,     textWhere,  textLet,    textIn;
 static Text textInfix,   textInfixl,   textInfixr, textPrim,   textNewtype;
 static Text textDefault, textDeriving, textDo,     textClass,  textInstance;
-#if IPARAM
-static Text textWith,  textDlet;
-#endif
 
-#if MUDO
-static Text textMDo;
-#endif
 
 static Text textCoco,    textEq,       textUpto,   textAs,     textLambda;
 static Text textBar,     textMinus,    textFrom,   textArrow,  textLazy;
@@ -164,17 +158,6 @@ static Cell varAsMod;                   /* as                              */
 
 static List imps;                       /* List of imports to be chased    */
 
-#if HERE_DOC
-Bool hereDocs = FALSE;
-enum { START = 0,
-       KEEP_GOING,
-       BEGIN_VAR,
-       ISSUE_QUOTE,
-       HERE_VAR,
-       END_VAR,
-       CLOSE_PAREN };
-static Int hereState = START;
-#endif
 
 #if MULTI_LINEFEED
 #define FOPEN_MODE                "rb"
@@ -249,9 +232,6 @@ Void consoleInput(String prompt)              /* prepare to input characters fro
     c1          = ' ';
     column      = (-1);
     row         = 0;
-#if HERE_DOC
-    hereState   = START;
-#endif
 
 #if HAVE_ISATTY && USE_READLINE
     if (!isatty(fileno(stdin))) { /* not reading from a tty: */
@@ -844,50 +824,6 @@ static Cell local readString() {       /* read string literal              */
     return mkStr(findText(tokenStr));
 }
 
-#if HERE_DOC
-static Void local readHereString() {       /* read fragment of here doc    */
-    startToken();
-    while ((c0!='\'' || c1!='\'') && c0!=EOF) {
-	if (c0 == '$') {
-	    skip();
-	    switch (c0) {
-	    case '$' :
-		break;
-	    case '(' :
-		skip();
-		hereState = BEGIN_VAR;
-		goto urgh;
-	    default :
-		ERRMSG(row) "Singleton $ in here document"
-		EEND;
-	    }
-	}
-	saveStrChr(c0);
-	skip();
-    }
-    if (c0==EOF) {
-	ERRMSG(row) "Improperly terminated here document"
-	EEND;
-    }
-    /* eat the closing ticks */
-    skip(); skip();
-    hereState = CLOSE_PAREN;
-
-  urgh:
-    endToken();
-    push(yylval = mkStr(findText(tokenStr)));
-}
-
-static Void local hereJoin() {
-    Text plusplus = findText("++");
-    push(yylval = ap(VAROPCELL,plusplus));
-}
-
-static Void local hereQuote() {
-    Text quote = findText("quote");
-    push(yylval = ap(VARIDCELL,quote));
-}
-#endif
 
 static Void local saveStrChr(Char c)        /* save character in string         */
 {
@@ -1236,12 +1172,7 @@ Command readCommand(struct cmd*cmds, Char start, Char sys)    /* read command at
     }
 
     startToken();                      /* All cmds start with start        */
-#if OBSERVATIONS
-    if (c0==start || (start==0 && c0!=EOF))
-                                       /* except cmds without start char   */
-#else
     if (c0==start)                     /* except default (usually EVAL)    */
-#endif
 	do {                           /* which is empty                   */
 	    saveTokenChar(c0);
 	    skip();
@@ -1564,41 +1495,6 @@ static Int local yylex() {             /* Read next input token ...        */
 	return '}';
     }
 
-#if HERE_DOC
-    if (hereState) {
-	switch (hereState) {
-        case KEEP_GOING :
-	    readHereString();
-	    return STRINGLIT;
-	case BEGIN_VAR :
-	    hereJoin();
-	    hereState = ISSUE_QUOTE;
-	    return VAROP;
-	case ISSUE_QUOTE :
-	    hereQuote();
-	    hereState = HERE_VAR;
-	    return VARID;
-	case HERE_VAR :
-	    hereState = END_VAR;
-	    /* will parse and return id, and come back in the right state */
-	    break;
-        case END_VAR :
-	    skipWhitespace();
-	    if (c0!=')') {
-		ERRMSG(row) "Improperly escaped variable in here document"
-		EEND;
-	    }
-	    skip();
-	    hereJoin();
-	    hereState = KEEP_GOING;
-	    return VAROP;
-	case CLOSE_PAREN :
-	    push(yylval = mkInt(row));
-	    hereState = START;
-	    return ')';
-	}
-    }
-#endif
 
     /* ----------------------------------------------------------------------
      * Skip white space, and insert tokens to support layout rules as reqd.
@@ -1624,13 +1520,6 @@ static Int local yylex() {             /* Read next input token ...        */
 	}
     }
 
-#if HERE_DOC && !HASKELL_98_ONLY
-    if (c0=='`' && c1=='`' && hereDocs) {
-	skip(); skip();
-	hereState = KEEP_GOING;
-	return '(';
-    }
-#endif
 
     /* ----------------------------------------------------------------------
      * Now try to identify token type:
@@ -1674,24 +1563,6 @@ static Int local yylex() {             /* Read next input token ...        */
 		    return STRINGLIT;
     }
 
-#if IPARAM && !HASKELL_98_ONLY
-    if (c0=='?' && isIn(c1,SMALL) && !haskell98) {
-	Text it;			/* Look for implicit param name    */
-	skip();
-	it    = readIdent();
-	top() = yylval = ap(IPVAR,it);
-	return identType=IPVARID;
-    }
-#endif
-#if TREX && !HASKELL_98_ONLY
-    if (c0=='#' && isIn(c1,SMALL) && !haskell98) {
-	Text it;			/* Look for record selector name   */
-	skip();
-	it    = readIdent();
-	top() = yylval = ap(RECSEL,mkExt(it));
-	return identType=RECSELID;
-    }
-#endif
     if (isIn(c0,LARGE)) {               /* Look for qualified name         */
 	Text it = readIdent();          /* No keyword begins with LARGE ...*/
 	if (c0=='.' && isIn(c1,(SMALL|LARGE|SYMBOL))) {
@@ -1756,13 +1627,8 @@ loop:	    skip();                     /* Skip qualifying dot             */
         if (it==textForeign)           return FOREIGN;
 	if (it==textAsMod)             return ASMOD;
 	if (it==textWildcard)	       return '_';
-#if !HASKELL_98_ONLY
 	if (it==textAll && !haskell98) return ALL;
 
-#if MUDO
-	if (it==textMDo && !haskell98) lookAhead(MDO);
-#endif
-#endif
 	if (it==textRepeat && readingRepeat)
 	    return repeatLast();
 
@@ -1916,15 +1782,8 @@ Void input(Int what)
 		       textDefault    = findText("default");
 		       textDeriving   = findText("deriving");
 		       textDo         = findText("do");
-#if MUDO
-		       textMDo        = findText("mdo");
-#endif
 		       textClass      = findText("class");
 		       textInstance   = findText("instance");
-#if IPARAM
-		       textWith       = findText("with");
-		       textDlet       = findText("dlet");
-#endif
 		       textCoco       = findText("::");
 		       textEq         = findText("=");
 		       textUpto       = findText("..");

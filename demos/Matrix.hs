@@ -21,7 +21,7 @@ cols mat     = length (head mat)
 
 idMat       :: Int -> Matrix Int
 idMat 0      = []
-idMat (n+1)  = [1:replicate n 0] ++ map (0:) (idMat n)
+idMat n      = [1:replicate (n-1) 0] ++ map (0:) (idMat (n-1))
 
 -- Matrix multiplication:
 

@@ -116,18 +116,11 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  * and demos and therefore cannot be modified using the configure script.
  * Most users should leave them alone!
  *
- *   OBSERVATIONS   to include support for `observe' and friends
- *   TREX	    to include support for Typed Rows and EXtensions.
- *   IPARAM	    to include support for Implicit Parameters.
- *   MUDO	    to include support for Recursive-do notation
- *   ZIP_COMP       to include support for Zip Comprehensions
- *   MULTI_INST	    to include support for Multi-Instance Resolution.
  *   HASKELL_ARRAYS to include support for Haskell array primitives.
  *   IO_MONAD	    to include the IO monad primitives and support.
  *   IO_HANDLES     to include the IO file operations.
  *   IO_REFS	    Ref type for IO_MONAD, and simple operations.
  *   FLUSHEVERY	    to force a fflush after every char in putStr/hPutStr.
- *   NPLUSK	    to include support for (n+k) patterns.
  *   BIGNUMS	    to include support for Integer bignums.
  *   FIXED_SUBST    to force a fixed size for the current substitution.
  *   DYN_TABLES	    to allocate tables dynamically, currently just a memory
@@ -158,27 +151,11 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  *   FAST_WHATIS1   to use whatIs1(), a faster version of whatIs(), for speed
  *-------------------------------------------------------------------------*/
 
-#if !HASKELL_98_ONLY
-#define TREX		1
-#define IPARAM		1
-#define MUDO		1
-#define OBSERVATIONS    1
-#define ZIP_COMP	1
-#define HERE_DOC	1
-#else
-#define TREX            0
-#define IPARAM          0
-#define MUDO		0
-#define OBSERVATIONS    0
-#define ZIP_COMP	0
-#define HERE_DOC	0
-#endif
 #define HASKELL_ARRAYS	 1
 #define IO_MONAD	 1
 #define IO_HANDLES       1
 #define IO_REFS		 1 /* Experimental IO Ref type			   */
 #define FLUSHEVERY	 1
-#define NPLUSK		 1 /* Warning: There are those that would prefer 0 */
 #define BIGNUMS		 1 /* Experimental bignum implementation           */
 #define FIXED_SUBST	 0 /* Warning: This may not be appropriate for PCs */
 #define DYN_TABLES	 SMALL_HUGS /* For dynamically allocated tables	   */
@@ -194,7 +171,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 #define TIME_MODULE      1
 #define DIRECTORY_MODULE 1
 #define MULTI_LINEFEED   1 /* Platform-independent linefeed handling        */
-#define MULTI_INST       0
 #define WANT_FIXED_SIZE_TABLES 0 /* use fixed-size tables for internal structs */
                                  /* (as opposed to dynamically growable ones)  */
 
@@ -733,9 +709,6 @@ typedef void*    Pointer;
 #define NUM_TUPLES         100
 #define NUM_OFFSETS        1024
 #define NUM_LAT1_CHARS     256
-#if TREX
-#define NUM_EXT		   100
-#endif
 
 #if PROFILING
 #define DEF_PROFINTDIV	   10		/* hpsize/this cells between samples*/
@@ -751,10 +724,6 @@ typedef void*    Pointer;
 #define Pick(s,r,l)	   l
 #endif
 
-#if OBSERVATIONS
-#define NUM_OBS_TAGS       Pick(100,    200,        1000)
-#define NUM_BRKPTS         Pick(100,    200,        200)
-#endif
 
 #define NUM_SCRIPTS        Pick(64,     200,        800)
 #define NUM_FIXUPS         Pick(400,    400,        1000)

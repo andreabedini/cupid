@@ -44,7 +44,7 @@ if use_readline
   deps += readline_dep
 endif
 
-hugs = executable('hugs', files('hugs.c', 'edit.c', 'observe.c'),
+hugs = executable('hugs', files('hugs.c', 'edit.c'),
   objects: core_objs, include_directories: src_inc, dependencies: deps,
   install: true)
 

@@ -57,21 +57,13 @@ static Type local liftRank1Body		(Type,Int);
 static Bool local matchTypeAbove	(Type,Int,Type,Int,Int);
 static Bool local varToVarBind		(Tyvar *,Tyvar *);
 static Bool local varToTypeBind		(Tyvar *,Type,Int);
-#if TREX
-static Bool local inserter		(Type,Int,Type,Int);
-static Int  local remover		(Text,Type,Int);
-static Int  local tailVar		(Type,Int);
-#endif
-#if TREX || IO_MONAD
+#if IO_MONAD
 static Void local expandSynFully	(Type *, Int *);
 #endif
 
 static Bool local improveAgainst	(Int,List,Cell,Int);
 static Bool local instImprove		(Int,Class,Cell,Int);
 static Bool local pairImprove		(Int,Class,Cell,Int,Cell,Int,Int);
-#if IPARAM
-static Bool local ipImprove		(Int,Cell,Int,Cell,Int);
-#endif
 
 static Bool local kvarToVarBind		(Tyvar *,Tyvar *);
 static Bool local kvarToTypeBind	(Tyvar *,Type,Int);
@@ -464,9 +456,6 @@ Void markType(Type t, Int o)	        	/* mark fixed vars in type (t,o)   */
     switch (whatIs(t)) {
 	case POLYTYPE  :
 	case QUAL      :
-#if TREX
-	case EXT       :
-#endif
 	case TYCON     :
 	case TUPLE     : return;
 
@@ -871,9 +860,6 @@ Kind getKind(Cell c, Int o)			/* Find kind of constr during type */
 	case VARIDCELL :
 	case VAROPCELL : return tyvar(findBtyvsInt(textOf(c)))->kind;
 	case TYCON     : return tycon(c).kind;
-#if TREX
-	case EXT    : return extKind;
-#endif
     }
 #if DEBUG_KINDS
     Printf("getKind c = %d, whatIs=%d\n",c,whatIs(c));
@@ -1061,14 +1047,6 @@ un: if (tyv1)
 	    if (isOffset(h1) || isInt(h1)) h1=NIL;  /* represent var by NIL*/
 	    if (isOffset(h2) || isInt(h2)) h2=NIL;
 
-#if TREX
-	    if (isExt(h1) && a1==2)
-		return inserter(t1,o1,t2,o2) &&
-			unify(arg(t1),o1,aVar,remover(extText(h1),t2,o2));
-	    if (isExt(h2) && a2==2)
-		return inserter(t2,o2,t1,o1) &&
-			unify(arg(t2),o2,aVar,remover(extText(h2),t1,o1));
-#endif
 	    if (nonNull(h1) && h1==h2) {/* Assuming well-formed types, both*/
 		if (a1!=a2) {		/* t1, t2 must have same no of args*/
 		    unifyFails = "incompatible constructors";
@@ -1133,89 +1111,8 @@ un: if (tyv1)
     return FALSE;
 }
 
-#if TREX
-static Bool local inserter(Type r1, Int o1, Type r, Int o)	/* Insert first field in (r1,o1),  */
-            /* which is known to begin with    */
-            /* an EXT, into row (r,o)          */
-{
-    Text labt = extText(fun(fun(r1)));	/* Find the text of the label	   */
-#if DEBUG_TYPES
-    Printf("inserting ");
-    printType(stdout,debugType(r1,o1));
-    Printf(" into ");
-    printType(stdout,debugType(r,o));
-    Putchar('\n');
-#endif
-    for (;;) {
-	Tyvar *tyv;
-	expandSynFully(&r,&o);
-	deRef(tyv,r,o);
-	if (tyv) {
-	    Int beta;			/* Test for common tail		   */
-	    if (tailVar(arg(r1),o1)==tyvNum(tyv)) {
-		unifyFails = "distinct rows have common tail";
-		return FALSE;
-	    }
-	    beta = newTyvars(1);	/* Extend row with new field	   */
-	    tyvar(beta)->kind = ROW;
-	    return varToTypeBind(tyv,ap(fun(r1),mkInt(beta)),o1);
-	}
-	else if (isAp(r) && isAp(fun(r)) && isExt(fun(fun(r)))) {
-	    if (labt==extText(fun(fun(r))))/* Compare existing fields	   */
-		return unify(arg(fun(r1)),o1,extField(r),o);
-	    r = extRow(r);		/* Or skip to next field	   */
-	}
-	else {				/* Nothing else will match	   */
-	    unifyFails = "field mismatch";
-	    return FALSE;
-	}
-    }
-}
 
-static Int local remover(Text l, Type r, Int o)		/* Make a new row by copying (r,o) */
-            /* but removing the l field (which */
-            /* MUST exist)			   */
-{
-    Tyvar *tyv;
-    Int    beta       = newTyvars(1);
-    tyvar(beta)->kind = ROW;
-#if DEBUG_TYPES
-    Printf("removing %s from",textToStr(l));
-    printType(stdout,debugType(r,o));
-    Putchar('\n');
-#endif
-    expandSynFully(&r,&o);
-    deRef(tyv,r,o);
-    if (tyv || !isAp(r) || !isAp(fun(r)) || !isExt(fun(fun(r))))
-	internal("remover");
-    if (l==extText(fun(fun(r))))
-	r = extRow(r);
-    else
-	r = ap(fun(r),mkInt(remover(l,extRow(r),o)));
-    bindTv(beta,r,o);
-    return beta;
-}
-
-static Int local tailVar(Type r, Int o)		/* Find var at tail end of a row   */
-{
-    for (;;) {
-	Tyvar *tyv;
-	expandSynFully(&r,&o);
-	deRef(tyv,r,o);
-	if (tyv) {
-	    return tyvNum(tyv);
-	}
-	else if (isAp(r) && isAp(fun(r)) && isExt(fun(fun(r)))) {
-	    r = extRow(r);
-	}
-	else {
-	    return (-1);
-	}
-    }
-}
-#endif
-
-#if TREX || IO_MONAD
+#if IO_MONAD
 static Void local expandSynFully(Type*at, Int*ao)	/* repeatedly expand synonyms	   */
               /* original expression (*at,*ao)   */
 {				/* expansion returned in (*at,*ao) */
@@ -1336,18 +1233,9 @@ Bool unifyPred(Cell pi1, Int o1, Cell pi, Int o)		/* Unify two predicates		   */
      the pi1 == pi will always return FALSE, giving the desired
      result. */
 
-#if IPARAM
-    if (isIP(pi1) && isIP(pi))
-	return textOf(pi1)==textOf(pi);
-    else
-#endif
 	return pi1==pi;
 }
 
-#if TREX
-Name nameShowRecRowCls = NIL;  /* Used to test for show on records*/
-Name nameEqRecRowCls   = NIL;  /* Used to test for eq on records*/
-#endif
 
 Inst findInstFor(Cell pi, Int o)			/* Find matching instance for pred */
              /* (pi,o), or otherwise NIL.  If a */
@@ -1384,65 +1272,10 @@ Inst findInstFor(Cell pi, Int o)			/* Find matching instance for pred */
     }
     unrestrictBind();
 
-#if TREX
-    {   Bool wantShow   = (c==nameShowRecRowCls);
-	Bool wantEither = wantShow || (c==nameEqRecRowCls);
-
-	if (wantEither) {			/* Generate instances of   */
-	    Type  t = arg(pi);			/* ShowRecRow and EqRecRow */
-	    Tyvar *tyv;				/* on the fly		   */
-	    Cell  e;
-	    deRef(tyv,t,o);
-	    e = getHead(t);
-	    if (isExt(e)) {
-		Inst in = NIL;
-		for (ins=cclass(c).instances; nonNull(ins); ins=tl(ins))
-		    if (getHead(arg(inst(hd(ins)).head))==e) {
-			in = hd(ins);
-			break;
-		    }
-		if (isNull(in))
-		    in = (wantShow ? addRecShowInst(c,e) : addRecEqInst(c,e));
-		typeOff = newKindedVars(extKind);
-		bindTv(typeOff,arg(fun(t)),o);
-		bindTv(typeOff+1,arg(t),o);
-		return in;
-	    }
-	}
-    }
-#endif
 
     return NIL;
 }
 
-#if MULTI_INST
-List findInstsFor(Cell pi, Int o)			/* Find matching instance for pred */
-             /* (pi,o), or otherwise NIL.  If a */
-{				/* match is found, then tyvars from*/
-    Class c = getHead(pi);		/* typeOff have been initialized to*/
-    List  ins;				/* allow direct use of specifics.  */
-    List  res = NIL;
-
-    if (!isClass(c))
-	return NIL;
-
-    for (ins=cclass(c).instances; nonNull(ins); ins=tl(ins)) {
-	Inst in   = hd(ins);
-	Int  beta = newKindedVars(inst(in).kinds);
-	if (matchPred(pi,o,inst(in).head,beta)) {
-	    res = cons (pair (beta, in), res);
-	    continue;
-	}
-	else
-	    numTyvars = beta;
-    }
-    if (res == NIL) {
-	unrestrictBind();
-    }
-
-    return rev(res);
-}
-#endif
 
 /* --------------------------------------------------------------------------
  * Improvement:
@@ -1498,10 +1331,6 @@ Bool improveAgainst(Int line, List ps, Cell pi, Int o)
 	    if (h != h1)
 		improved |= pairImprove(line,h1,pi1,o1,pi,o,numTyvars);
 	}
-#if IPARAM
-	else if (isIP(h1) && textOf(h1) == textOf(h))
-	    improved |= ipImprove(line,pi,o,pi1,o1);
-#endif
     }
     return improved;
 }
@@ -1521,27 +1350,6 @@ Bool instImprove(Int line, Class c, Cell pi, Int o)
     return improved;
 }
 
-#if IPARAM
-Bool ipImprove(Int line, Cell pi, Int o, Cell pi1, Int o1)
-{
-    Type t  = arg(pi);
-    Type t1 = arg(pi1);
-    if (!sameType(t,o,t1,o1)) {
-	if (!unify(t,o,t1,o1)) {
-	    ERRMSG(line) "Mismatching uses of implicit parameter\n"
-	    ETHEN
-	    ERRTEXT "\n***  "
-	    ETHEN ERRPRED(copyPred(pi1,o1));
-	    ERRTEXT "\n***  "
-	    ETHEN ERRPRED(copyPred(pi,o));
-	    ERRTEXT "\n"
-	    EEND;
-	}
-	return TRUE;
-    }
-    return FALSE;
-}
-#endif
 
 Bool pairImprove(Int line, Class c, Cell pi1, Int o1, Cell pi2, Int o2, Int above)	/* Look for improvement of   */
                 /* (pi1,o1) against (pi2,o2) */
@@ -1790,10 +1598,6 @@ Bool kunify(Kind k1, Int o1, Kind k2, Int o2)		/* Unify kind expr (k1,o1) with	 
 #endif
 	    if (k1==STAR && k2==STAR)		    /* k1, k2 not vars	   */
 		return TRUE;
-#if TREX
-	    else if (k1==ROW && k2==ROW)
-		return TRUE;
-#endif
 	    else if (isAp(k1) && isAp(k2))
 		return kunify(fst(k1),o1,fst(k2),o2) &&
 		       kunify(snd(k1),o1,snd(k2),o2);

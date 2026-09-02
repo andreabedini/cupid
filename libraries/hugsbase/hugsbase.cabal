@@ -28,17 +28,14 @@ exposed-modules:
 	Hugs.LazyST,
 	Hugs.Memo,
 	Hugs.Numeric,
-	Hugs.Observe,
 	Hugs.Prelude,
 	Hugs.Ptr,
-	Hugs.Quote,
 	Hugs.ST,
 	Hugs.Stable,
 	Hugs.StablePtr,
 	Hugs.Storable,
 	Hugs.System,
 	Hugs.Time,
-	Hugs.Trex,
 	Hugs.Weak,
 	Hugs.Word
 c-sources: Hugs/Storable_aux.c

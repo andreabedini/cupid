@@ -122,15 +122,6 @@ Name nameCompAux;                       /* auxiliary function for compares */
 Name namePmInt,   namePmFlt;            /* primitives for pattern matching */
 Name nameReturnIO;
 Name namePmInteger;
-#if NPLUSK
-Name namePmNpk,   namePmSub;            /* primitives for (n+k) patterns   */
-#endif
-#if TREX
-Name nameRecExt,  nameRecBrk;           /* Extend and break a record       */
-Name nameRecSel,  nameRecShw;           /* Select and show a record        */
-Name nameRecEq;				/* Compare records		   */
-Name nameAddEv;				/* Add up evidence		   */
-#endif
 
 Name nameRationalToFloat;
 Name nameRationalToDouble;
@@ -336,19 +327,7 @@ PROTO_PRIM(primToLower);
 PROTO_PRIM(primToTitle);
 PROTO_PRIM(primUniGenCat);
 
-#if TREX
-PROTO_PRIM(primRecExt);
-PROTO_PRIM(primRecBrk);
-PROTO_PRIM(primRecSel);
-PROTO_PRIM(primRecShw);
-PROTO_PRIM(primRecEq);
-#endif
 
-#if OBSERVATIONS
-EXT_PROTO_PRIM(primObserve);
-EXT_PROTO_PRIM(primBkpt);
-EXT_PROTO_PRIM(primSetBkpt);
-#endif
 
 PROTO_PRIM(primUnsafePtrEq);
 PROTO_PRIM(primUnsafePtrToInt);
@@ -553,19 +532,7 @@ static struct primitive builtinPrimTable[] = {
   {"toTitle",		1, primToTitle},
   {"primUniGenCat",	1, primUniGenCat},
 
-#if TREX
-  {"recExt",            3, primRecExt},
-  {"recBrk",            2, primRecBrk},
-  {"recSel",            2, primRecSel},
-  {"recShw",            5, primRecShw},
-  {"recEq",		6, primRecEq},
-#endif		        
 
-#if OBSERVATIONS
-  {"observe",           2, primObserve},
-  {"bkpt",              2, primBkpt},
-  {"setBkpt",           2+IOArity, primSetBkpt},
-#endif
 
   {"unsafePtrEq",       2, primUnsafePtrEq},    /* breaks the semantics  */
   {"unsafePtrToInt",    1, primUnsafePtrToInt}, /* breaks the semantics  */
@@ -1469,108 +1436,6 @@ Char2Int(primUniGenCat,uni_gencat(x))
  * Extensible records: (Gaster and Jones, 1996)
  * ------------------------------------------------------------------------*/
 
-#if TREX
-primFun(primRecExt) {                   /* :: Int -> a -> Rec ? -> Rec ?   */
-    Int  n;
-    Cell b = NIL;
-    Cell r;
-    eval(primArg(3));
-    n = whnfInt;
-    eval(primArg(1));
-    for (r=arg(whnfHead); n>0; n--) {
-	b = cons(fun(r),b);
-	r = arg(r);
-    }
-    b = cons(primArg(2),b);
-    updapRoot(RECORD,revOnto(b,r));
-}
-
-primFun(primRecBrk) {                   /* :: Int -> Rec ? -> (?, Rec ?)   */
-    Int  n;
-    Cell b;
-    Cell r;
-    eval(primArg(2));
-    n = whnfInt;
-    eval(primArg(1));
-    b = cons(RECORD,NIL);
-    for (r=arg(whnfHead); n>0; n--) {
-	b = cons(fun(r),b);
-	r = arg(r);
-    }
-    pushed(1) = revOnto(b,arg(r));
-    pushed(0) = ap(mkTuple(2),fun(r));
-    updapRoot(pushed(0),pushed(1));
-}
-
-primFun(primRecSel) {                   /* :: Int -> Rec ? -> ?            */
-    Int  n;
-    Cell r;
-    eval(primArg(2));
-    n = whnfInt;
-    eval(primArg(1));
-    for (r=arg(whnfHead); n>0; n--)
-	r = arg(r);
-    updateRoot(fun(r));
-}
-
-/* recShw :: primArg(5) Label l       ->
- *           primArg(4) ShowD a       ->
- *           primArg(3) Lacks_l r     ->
- *           primArg(2) ShowRecRowD r ->
- *           primArg(1) Rec (l::a|r)  -> [(String,ShowS)]
- * recShw l d e f r
- *    = case recBrk e r of
- *        (v,s) -> insertField l (showsPrec d 0 v) (showRecRow f s)
- */
-
-primFun(primRecShw) {
-    push(nameRecBrk);
-    toparg(primArg(3));
-    toparg(primArg(1));
-    eval(pop());
-    primArg(2) = ap(nameShowRecRow,primArg(2));
-    primArg(4) = ap(nameShowsPrec,primArg(4));
-    primArg(4) = ap(primArg(4),mkInt(0));
-    primArg(5) = ap(nameInsFld,primArg(5));
-    pushed(1)  = ap(primArg(2),pushed(1));
-    pushed(0)  = ap(primArg(4),pushed(0));
-    pushed(0)  = ap(primArg(5),pushed(0));
-    updapRoot(pushed(0),pushed(1));
-}
-
-/* recEq :: primArg(6) Label l       ->
- *	    primArg(5) EqD a         ->
- *	    primArg(4) Lacks_x r     ->
- *	    primArg(3) EqRecRowD r   ->
- *	    primArg(2) Rec (l::a|r)  ->
- *	    primArg(1) Rec (l::a|r)  -> [(String,Bool)]
- * reqEq l eqa e eqr r1 r2
- *    = case recBrk e r1 of
- *	  (v,s1) -> case recBrk e r2 of
- *		      (w,s2) -> insertField l ((==) eqa v w)
- *						      (eqRecRow eqr s1 s2)
- */
-
-primFun(primRecEq) {
-    push(nameRecBrk);
-    toparg(primArg(4));
-    toparg(primArg(2));
-    eval(pop());
-    push(nameRecBrk);
-    toparg(primArg(4));
-    toparg(primArg(1));
-    eval(pop());
-    primArg(3) = ap(nameEqRecRow,primArg(3));
-    primArg(3) = ap(primArg(3),pushed(3));
-    primArg(3) = ap(primArg(3),pushed(1));
-    primArg(5) = ap(nameEq,primArg(5));
-    primArg(5) = ap(primArg(5),pushed(2));
-    primArg(5) = ap(primArg(5),pushed(0));
-    primArg(6) = ap(nameInsFld,primArg(6));
-    primArg(6) = ap(primArg(6),primArg(5));
-    updapRoot(primArg(6),primArg(3));
-}
-#endif
 
 /* --------------------------------------------------------------------------
  * Auxilliary functions
@@ -1582,10 +1447,6 @@ static Cell local followInd(Cell c)    /* follow chain of indirections and CAFs 
 	switch (whatIs(c)) {
 	case INDIRECT : c = snd(c);
 		break;
-#if OBSERVATIONS
-        case OBSERVE  : c = markedExpr(c);
-                break;
-#endif
 	case NAME     : if (isCfun(c)
 		|| name(c).arity != 0 
 		|| isNull(name(c).defn)) {
@@ -2444,15 +2305,6 @@ Void builtIn(Int what)
 		       pFun(nameBlackHole, "_Gc Black Hole",    "gcBhole");
 		       pFun(nameInd,	   "_indirect", "dictIndirect");
 		       name(nameInd).number = DFUNNAME;
-#if    TREX
-		       pFun(nameRecExt,	   "_recExt",	"recExt");
-		       pFun(nameRecBrk,	   "_recBrk",	"recBrk");
-		       pFun(nameRecSel,	   "_recSel",	"recSel");
-		       pFun(nameRecShw,	   "_recShw",	"recShw");
-		       pFun(nameRecEq,	   "_recEq",	"recEq");
-		       pFun(nameAddEv,	   "_addEv",	"primPlusInt");
-		       name(nameAddEv).number = DFUNNAME;
-#endif
 #undef pFun
 #define predef(nm,str) nm=newName(findText(str),NIL); name(nm).defn=PREDEFINED
 		       predef(nameNegate,       "negate");
@@ -2480,10 +2332,6 @@ Void builtIn(Int what)
 		       predef(namePmInteger,    "primPmInteger");
 		       predef(namePmFlt,        "primPmFlt");
 		       predef(nameReturnIO,     "primretIO");
-#if NPLUSK
-		       predef(namePmNpk,        "primPmNpk");
-		       predef(namePmSub,        "primPmSub");
-#endif
 		       predef(nameRationalToDouble, "rationalToDouble");
 		       predef(nameRationalToFloat,  "rationalToFloat");
 #if SHORT_CIRCUIT_COERCIONS

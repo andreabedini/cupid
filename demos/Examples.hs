@@ -25,13 +25,13 @@ facFix = fixedPt f                          -- using a fixed point combinator
 facCase :: Integral a => a -> a
 facCase  = \n -> case n of
                    0     ->  1
-                   (m+1) -> (m+1) * facCase m
+                   m     ->  m * facCase (m-1)
 
 -- Fibonacci numbers:
 
 fib 0     = 0                               -- using pattern matching:
 fib 1     = 1                               -- base cases...
-fib (n+2) = fib n + fib (n+1)               -- recursive case
+fib n     = fib (n-2) + fib (n-1)           -- recursive case
 
 fastFib n = fibs !! n                       -- using an infinite stream
             where fibs = 0 : 1 : zipWith (+) fibs (tail fibs)

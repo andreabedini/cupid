@@ -305,10 +305,6 @@ primFun(primClassifyCell) {          /* classifyCell                       */
 
 	    case INSTANCE : result = ap(nameHugsPrim, mkStr(findText("{instance}")));
 			    break;
-#if OBSERVATIONS
-            case OBSERVE  : result = ap(nameHugsPrim, mkStr(findText("{observe marker}")));
-                            break;
-#endif
 	    default       : internal("Error in graph2");
 			    break;
 	}

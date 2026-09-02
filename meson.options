@@ -18,8 +18,6 @@ option('tag-checks', type: 'boolean', value: false,
        description: 'Runtime tag checking as an internal consistency check (very slow)')
 option('internal-prims', type: 'boolean', value: false,
        description: 'Experimental primitives to access Hugs internals')
-option('only98', type: 'boolean', value: false,
-       description: 'Understand Haskell 98 only, without Hugs extensions')
 option('stack-dumps', type: 'boolean', value: false,
        description: 'Print the objects under evaluation on stack overflow')
 option('path-canonicalization', type: 'boolean', value: false,

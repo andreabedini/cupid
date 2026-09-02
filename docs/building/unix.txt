@@ -51,7 +51,6 @@ Long version:
                                  benchmarking Hugs itself)
         debug-code, tag-checks, stack-dumps, internal-prims
                                  for debugging Hugs
-        only98                   Haskell 98 only, no Hugs extensions
         path-canonicalization    convert file names to absolute form
         small-banner             one-line startup banner
         explain-instance-resolution

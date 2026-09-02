@@ -18,7 +18,7 @@
 #include "output.h"
 #include "subst.h"
 #include "goal.h"
-#include "opts.h"	/* needed for EXPLAIN_INSTANCE_RESOLUTION|MULTI_INST */
+#include "opts.h"	/* needed for EXPLAIN_INSTANCE_RESOLUTION */
 
 Bool catchAmbigs       = FALSE;		/* TRUE => functions with ambig.   */
 					/* 	   types produce error	   */
@@ -92,10 +92,6 @@ Name nameReturn,  nameBind, nameThen;   /* for translating do/monad comps  */
 Name nameMFail;
 Name nameGt;				/* for readsPrec		   */
 
-#if MUDO
-Class classMonadRec;			/* Recursive monads		   */
-Name nameMFix;
-#endif
 
 #if    IO_MONAD
 Type   typeIO;			        /* For the IO monad, IO 	   */
@@ -126,11 +122,6 @@ Name   nameDivideByZero;
 Name   nameIndexOutOfBounds;
 Name   nameUndefinedElement;
 
-#if TREX
-Type  typeNoRow;			/* Empty row			   */
-Type  typeRec;				/* Record formation		   */
-Name  nameNoRec;			/* Empty record			   */
-#endif
 
 #if DOTNET
 Name   nameNetException;
@@ -176,24 +167,9 @@ static Int    local funcType          (Int);
 static Void   local typeCase          (Int,Int,Cell);
 static Void   local typeComp	      (Int,Type,Cell,List);
 static Cell   local typeMonadComp     (Int,Cell);
-#if ZIP_COMP
-static Cell   local typeZComp	      (Int,Type,Cell,List);
-static Void   local typeCompy	      (Int,Type,List);
-static Cell   local typeMonadZComp    (Int,Cell);
-static List   local getPats           (List);
-static Cell   local tupleUp           (List);
-#endif
 static Void   local typeDo	      (Int,Cell);
-#if MUDO
-static Void   local typeRecComp	      (Int,Type,Cell,List);
-static Void   local typeMDo	      (Int,Cell);
-static Void   local typeRecursiveDo   (Int,Cell);
-#endif
 static Void   local typeConFlds	      (Int,Cell);
 static Void   local typeUpdFlds	      (Int,Cell);
-#if IPARAM
-static Cell   local typeWith	      (Int,Cell);
-#endif
 static Cell   local typeFreshPat      (Int,Cell);
 
 static Void   local typeBindings      (List);
@@ -244,9 +220,6 @@ static Cell  predFractional;		/* Fractional (mkOffset(0))	   */
 static Cell  predIntegral;		/* Integral (mkOffset(0))	   */
 static Kind  starToStar;		/* Type -> Type			   */
 static Cell  predMonad;			/* Monad (mkOffset(0))		   */
-#if MUDO
-static Cell  predMonadRec;		/* MonadRec/MonadFix (mkOffset(0)) */
-#endif
 
 /* --------------------------------------------------------------------------
  * Assumptions:
@@ -636,13 +609,8 @@ static Void local reportTypeError(Int l, Cell e, Cell in, String wh, Type inft, 
 				       typeError(l,e,in,where,t,o);
 #define check(l,e,in,where,t,o)    e=typeExpr(l,e); shouldBe(l,e,in,where,t,o)
 #define inferType(t,o)		   typeIs=t; typeOff=o
-#if IPARAM
-#define spTypeExpr(l,e)			svPreds = preds; preds = NIL; e = typeExpr(l,e); preds = revOnto(preds,svPreds);
-#define spCheck(l,e,in,where,t,o)	svPreds = preds; preds = NIL; check(l,e,in,where,t,o); preds = revOnto(preds,svPreds);
-#else
 #define spTypeExpr(l,e)			e = typeExpr(l,e);
 #define spCheck(l,e,in,where,t,o)	check(l,e,in,where,t,o);
-#endif
 
 static Void local cantEstablish(Int line, String wh, Cell e, Type t, List ps)
                 /* Complain when declared preds	   */
@@ -707,9 +675,6 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
     static String aspat   = "as (@) pattern";
     static String typeSig = "type annotation";
     static String lambda  = "lambda expression";
-#if IPARAM
-    List svPreds;
-#endif
 
     switch (whatIs(e)) {
 
@@ -719,9 +684,6 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
 	case NAME	:
 	case VAROPCELL	:
 	case VARIDCELL	:
-#if IPARAM
-	case IPVAR	:
-#endif
 	  		  return typeAp(l,e);
 
 	case TUPLE	: typeTuple(e);
@@ -765,26 +727,12 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
 					      fst(snd(e)),snd(snd(e)),
 					      0,0,FALSE);
 
-#if TREX
-	case EXT	: {   Int beta = newTyvars(2);
-			      Cell pi  = ap(e,aVar);
-			      Type t   = fn(aVar,
-					 fn(ap(typeRec,bVar),
-					    ap(typeRec,ap(ap(e,aVar),bVar))));
-			      tyvar(beta+1)->kind = ROW;
-			      inferType(t,beta);
-			      return ap(e,assumeEvid(pi,beta+1));
-			  }
-#endif
 
 	/* The following cases can only occur in expr mode		   */
 
 	case UPDFLDS	: typeUpdFlds(l,e);
 			  break;
 
-#if IPARAM
-	case WITHEXP	: return typeWith(l,e);
-#endif
 
 	case COND	: {   Int beta = newTyvars(1);
 			      check(l,fst3(snd(e)),e,cond,typeBool,0);
@@ -814,15 +762,8 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
 	case DOCOMP	: typeDo(l,e);
 			  break;
 
-#if MUDO
-	case MDOCOMP	: typeMDo(l,e);
-			  break;
-#endif  
 	case COMP	: return typeMonadComp(l,e);
 
-#if ZIP_COMP
-	case ZCOMP	: return typeMonadZComp(l,e);
-#endif
 
 	case CASE	: {    Int beta = newTyvars(2);    /* discr result */
 			       check(l,fst(snd(e)),NIL,discr,aVar,beta);
@@ -839,17 +780,6 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
 			  }
 			  break;
 
-#if TREX
-	case RECSEL	: {   Int beta = newTyvars(2);
-			      Cell pi  = ap(snd(e),aVar);
-			      Type t   = fn(ap(typeRec,
-					       ap(ap(snd(e),aVar),
-							    bVar)),aVar);
-			      tyvar(beta+1)->kind = ROW;
-			      inferType(t,beta);
-			      return ap(e,assumeEvid(pi,beta+1));
-			  }
-#endif
 
 	/* The remaining cases can only occur in pattern mode: */
 
@@ -867,12 +797,6 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
 	case LAZYPAT	: snd(e) = typeExpr(l,snd(e));
 			  break;
 
-#if NPLUSK
-	case ADDPAT	: {   Int alpha = newTyvars(1);
-			      inferType(typeVarToVar,alpha);
-			      return ap(e,assumeEvid(predIntegral,alpha));
-			  }
-#endif
 
 	default 	: internal("typeExpr");
    }
@@ -893,9 +817,6 @@ static Cell local typeAp(Int l, Cell e)		/* Type check application, which   */
     Cell p = NIL;
     Cell a = e;
     Int  i;
-#if IPARAM
-    List svPreds;
-#endif
 
     switch (whatIs(h)) {
 	case NAME      : typeIs = name(h).type;
@@ -921,16 +842,6 @@ static Cell local typeAp(Int l, Cell e)		/* Type check application, which   */
 			     }
 			 }
 			 break;
-#if IPARAM
-	case IPVAR    :	{   Text t    = textOf(h);
-			    Int alpha = newTyvars(1);
-			    Cell ip   = pair(ap(IPCELL,t),aVar);
-			    Cell ev   = assumeEvid(ip,alpha);
-			    typeIs    = mkInt(alpha);
-			    h	      = ap(h,ev);
-			}
-			break;
-#endif
 
 	default        : h = typeExpr(l,h);
 			 break;
@@ -1247,9 +1158,6 @@ static Void local typeComp(Int l, Type m, Cell e, List qs)	/* type check compreh
 {
     static String boolQual = "boolean qualifier";
     static String genQual  = "generator";
-#if IPARAM
-    List svPreds;
-#endif
 
     STACK_CHECK
     if (isNull(qs)) {			/* no qualifiers left		   */
@@ -1292,186 +1200,6 @@ static Void local typeComp(Int l, Type m, Cell e, List qs)	/* type check compreh
     }
 }
 
-#if ZIP_COMP
-
-/* --------------------------------------------------------------------------
- * Parallel comprehensions
- *
- * This is an extension to the standard list comprehension notation,
- * allowing parallel lists of qualifiers that generate independently
- * of each other.  Parallel qualifier lists are separated with additional
- * `|' symbols:
- *     [ e | p1 <- e11, p2 <- e12, ...
- *         | q1 <- e21, q2 <- e22, ...
- *         ... ]
- *
- * The meaning of a parallel comprehension can be defined in terms of zip
- * and a regular comprehension:
- *     [ e | ((p1,p2), (q1,q2)) <- zip [(p1,p2) | p1 <- e11, p2 <- e12]
- *                                     [(q1,q2) | q1 <- e21, q2 <- e22]]
- * The use of let-bindings in the qualifier lists complicates this slightly.
- * Let-bound variables will scope over the rest of their qualifier list
- * as well as `e', but not over any part of a parallel qualifier list.
- * We can express this in the translation by including in the derived
- * patterns all the let-bound variables:
- *     [ e | p1 <- e11, let v1 = e12, p2 <- e13
- *         | q1 <- e21, let v2 = e22, q2 <- e23]
- *     =>
- *     [ e | ((p1,v1,p2), (q1,v2,q2)) <-
- *               zip [(p1,v1,p2) | p1 <- e11, let v1 = e12, p2 <- e13]
- *                   [(q1,v2,q2) | q1 <- e21, let v2 = e22, q2 <- e23]]
- * Where it is understood that the `v' patterns in the tuples are given
- * rank-2 types, so we don't lose the polymorphism.  We also have to be
- * careful to preserve any shadowing.
- *
- * ZZ We aren't dealing with WHEREs correctly...
- * ZZ We aren't dealing with skolem vars correctly...
- * ------------------------------------------------------------------------*/
-
-static List gatheredAss;
-static List gatheredDefns;
-static List gatheredTyvars;
-static List gatheredPTyvars;
-
-#define enterGathering() List svGA = gatheredAss, svGD = gatheredDefns, svGT = gatheredTyvars, svGP = gatheredPTyvars; gatheredAss = gatheredDefns = gatheredTyvars = gatheredPTyvars = NIL
-#define leaveGathering() gatheredAss = svGA; gatheredDefns = svGD; gatheredTyvars = svGT; gatheredPTyvars = svGP
-
-static List local getPats(List bs)
-{
-    List ps = NIL;
-    for (; nonNull(bs); bs=tl(bs)) {
-	ps = cons(fst(hd(bs)), ps);
-    }
-    return ps;
-}
-
-static Cell local tupleUp(List xs)
-{
-    Int n = length(xs);
-    if (n == 0)
-	return nameUnit;
-    else if (n == 1)
-	return hd(xs);
-    else {
-	Cell x = mkTuple(n);
-	for (; nonNull(xs); xs=tl(xs))
-	    x = ap(x, hd(xs));
-	return x;
-    }
-}
-
-static Cell local typeZComp(Int l, Type m, Cell e, List qss)	/* type check comprehension	   */
-            /* monad (mkOffset(0))		   */
-{
-    List pss, ass;
-    List zpat, zexp;
-    Int  len;
-    Text zName;
-#if IPARAM
-    List svPreds;
-#endif
-    enterGathering();
-    enterBindings();
-    for (pss = qss;nonNull(pss);pss=tl(pss)) {
-	gatheredAss = cons(NIL,gatheredAss);
-	gatheredDefns = cons(NIL,gatheredDefns);
-	typeCompy(l,m,hd(pss));
-	/* reset for next list of qualifiers */
-	hd(varsBounds) = NIL;
-    }
-    /* add gathered vars */
-    hd(varsBounds) = revOnto(concat(gatheredAss),hd(varsBounds));
-    enterBindings();
-    hd(defnBounds) = revOnto(concat(gatheredDefns),hd(defnBounds));
-    enterPendingBtyvs();
-    hd(btyvars) = gatheredTyvars;
-    hd(pendingBtyvs) = gatheredPTyvars;
-    spTypeExpr(l,fst(e));
-    leavePendingBtyvs();
-    leaveBindings();
-    leaveBindings();
-
-    /* now, we construct a regular comprehension out of the parallel one */
-    len   = length(qss);
-    zName = zipName(len);
-    zpat  = mkTuple(len);
-    zexp  = findQualFun(findText("Data.List"),zName);
-    if (isNull(zexp))
-	zexp = findQualFun(findText("List"),zName);
-    if (isNull(zexp)) {
-	/* if they don't have List loaded, we can still handle the most
-	   common cases, because `zip' and `zip3' are defined in the Prelude */
-	zexp = findQualFun(textPrelude,zName);
-    }
-    if (isNull(zexp)) {
-	ERRMSG(l) "\"%s\" not in scope (introduced by parallel comprehension)", textToStr(zName) ETHEN
-	ERRTEXT   "\n*** Possible cause: \"List\" module not imported"
-	EEND;
-    
-    }
-    for (pss=qss, ass=rev(gatheredAss);nonNull(pss);pss=tl(pss), ass=tl(ass)) {
-	List ps = tupleUp(getPats(hd(ass)));
-	zpat = ap(zpat, ps);
-	zexp = ap(zexp, ap(MONADCOMP,pair(nameListMonad,pair(ps, hd(pss)))));
-    }
-    leaveGathering();
-    return pair(fst(e),singleton(ap(FROMQUAL,pair(zpat,zexp))));
-}
-
-static Void local typeCompy(Int l, Type m, List qs)	/* type check comprehension	   */
-            /* monad (mkOffset(0))		   */
-{
-    static String boolQual = "boolean qualifier";
-    static String genQual  = "generator";
-#if IPARAM
-    List svPreds;
-#endif
-
-    STACK_CHECK
-    if (!isNull(qs)) {			/* no qualifiers left		   */
-	Cell q   = hd(qs);
-	List qs1 = tl(qs);
-	switch (whatIs(q)) {
-	    case BOOLQUAL : spCheck(l,snd(q),NIL,boolQual,typeBool,0);
-			    typeCompy(l,m,qs1);
-			    break;
-
-	    case QWHERE   : enterBindings();
-			    enterSkolVars();
-			    mapProc(typeBindings,snd(q));
-			    hd(gatheredAss) = dupOnto(hd(varsBounds),hd(gatheredAss));
-			    /* ZZ what is gatheredDefns used for ??? */
-			    hd(gatheredDefns) = dupOnto(hd(defnBounds),hd(gatheredDefns));
-			    typeCompy(l,m,qs1);
-			    leaveBindings();
-			    leaveSkolVars(l,typeIs,typeOff,0);
-			    break;
-
-	    case FROMQUAL : {   Int beta = newTyvars(1);
-				enterPendingBtyvs();
-				spCheck(l,snd(snd(q)),NIL,genQual,m,beta);
-				enterSkolVars();
-				fst(snd(q))
-				    = typeFreshPat(l,patBtyvs(fst(snd(q))));
-				shouldBe(l,fst(snd(q)),NIL,genQual,aVar,beta);
-				hd(gatheredAss) = dupOnto(hd(varsBounds),hd(gatheredAss));
-				gatheredTyvars = dupOnto(hd(btyvars),gatheredTyvars);
-				gatheredPTyvars = dupOnto(hd(pendingBtyvs),gatheredPTyvars);
-				typeCompy(l,m,qs1);
-			        leavePendingBtyvsQuietly();
-				leaveSkolVars(l,typeIs,typeOff,0);
-			    }
-			    break;
-
-	    case DOQUAL   : spCheck(l,snd(q),NIL,genQual,m,newTyvars(1));
-			    typeCompy(l,m,qs1);
-			    break;
-
-	    default:	    internal("typeComp");
-	}
-    }
-}
-#endif
 
 static Cell local typeMonadComp(Int l, Cell e)	/* type check monad comprehension  */
 {
@@ -1491,26 +1219,6 @@ static Cell local typeMonadComp(Int l, Cell e)	/* type check monad comprehension
     return ap(MONADCOMP,pair(m,snd(e)));
 }
 
-#if ZIP_COMP
-static Cell local typeMonadZComp(Int l, Cell e)	/* type check monad comprehension  */
-{
-    Int  alpha	      = newTyvars(1);
-    Int  beta	      = newTyvars(1);
-    Cell mon	      = ap(mkInt(beta),aVar);
-    Cell m	      = assumeEvid(predMonad,beta);
-    Cell new;
-    tyvar(beta)->kind = starToStar;
-#if !MONAD_COMPS
-    bindTv(beta,typeList,0);
-    m = nameListMonad;
-#endif
-
-    new = typeZComp(l,mon,snd(e),snd(snd(e)));
-    bindTv(alpha,typeIs,typeOff);
-    inferType(mon,alpha);
-    return ap(MONADCOMP,pair(m,new));
-}
-#endif
 
 static Void local typeDo(Int l, Cell e)		/* type check do-notation	   */
 {
@@ -1526,136 +1234,6 @@ static Void local typeDo(Int l, Cell e)		/* type check do-notation	   */
     snd(e) = pair(m,snd(e));
 }
 
-#if MUDO
-
-#define segRecs(seg)	fst3(fst(seg))
-#define segExps(seg)	snd3(fst(seg))
-#define segDefs(seg)	thd3(fst(seg))
-#define segQuals(seg)	snd(seg)
-
-static Void local typeRecComp(Int l, Type m, Cell e, List qs)		/* type check rec-comp	     */
-             /* monad (mkOffset(0))	     */
-{
-    static String boolQual = "boolean qualifier";
-    static String genQual  = "generator";
-    static String letQual  = "mdo-transformed let generator";
-    String mesg		   = genQual;
-
-#if IPARAM
-    List svPreds;
-#endif
-
-
-    STACK_CHECK
-    if (isNull(qs)) {			/* no qualifiers left		   */
-	spTypeExpr(l,fst(e));
-    } else {
-	Cell q   = hd(qs);
-	List qs1 = tl(qs);
-	switch (whatIs(q)) {
-	    case BOOLQUAL : spCheck(l,snd(q),NIL,boolQual,typeBool,0);
-			    typeRecComp(l,m,e,qs1);
-			    break;
-
-	    case QWHERE	  : mesg = letQual;
-			    fst(q) = FROMQUAL;
-			    
-			    /* intentional fall-thru */
-	    case FROMQUAL : {   Int beta = newTyvars(1);
-				saveVarsAss();
-				enterPendingBtyvs();
-				spCheck(l,snd(snd(q)),NIL,mesg,m,beta);
-				enterSkolVars();
-
-				tcMode = OLD_PATTERN;
-				fst(snd(q))
-				    = typeExpr(l,patBtyvs(fst(snd(q))));
-				tcMode = EXPRESSION;
-
-				shouldBe(l,fst(snd(q)),NIL,mesg,aVar,beta);
-				typeRecComp(l,m,e,qs1);
-				restoreVarsAss();
-				leavePendingBtyvs();
-				leaveSkolVars(l,typeIs,typeOff,0);
-			    }
-			    break;
-
-	    case DOQUAL   : spCheck(l,snd(q),NIL,genQual,m,newTyvars(1));
-			    typeRecComp(l,m,e,qs1);
-			    break;
-	}
-    }
-}
-
-static Void local typeMDo(Int l, Cell e)		/* type check recursive-do	   */
-{
-    String fixLib     = "Control.Monad.Fix";
-    String fixClass   = "MonadFix";
-
-    if( !classMonadRec ) {
-	ERRMSG(0) "%s class not defined", fixClass ETHEN
-        ERRTEXT   "\n*** Possible cause: \"%s\" module not imported", fixLib
-	EEND;
-    }
-
-    predMonadRec = ap(classMonadRec,aVar);
-
-    /* Now we're safe: do the actual type-checking now: */
-    typeRecursiveDo(l,e);
-}
-
-static Void local typeRecursiveDo(Int l, Cell e)	/* type check recursive-do exp.   */
-{
-    /* The structure at this point:
-	e = (TAG, (1, [((2, 3, 4), 5)]))
-	where
-	    1 = expression
-	    2 = rec vars of the segment
-	    3 = exported vars of the segment
-	    4 = defined vars of the segment
-	    5 = qualifiers
-    */
-    static String finGen = "final generator";
-    Int alpha		 = newTyvars(1);
-    Int beta		 = newTyvars(1);
-    Cell mon		 = ap(mkInt(beta),aVar);
-    Cell monDict         = assumeEvid(predMonad,beta); 
-    Cell m		 = assumeEvid(predMonadRec,beta);
-    List tmp;
-    List whole		 = NIL;
-
-    tyvar(beta)->kind	 = starToStar;
-    
-    enterBindings();
-
-    /* introduce defined variables into the typing environment: */
-    for(tmp = snd(snd(e)); nonNull(tmp); tmp = tl(tmp)) {
-	List rtmp = segDefs(hd(tmp));
-	for(; nonNull(rtmp); rtmp = tl(rtmp)) {
-	    newVarsBind(hd(rtmp)); 
-	}
-    }
-
-    /* collect all qualifiers from all segments: */
-    for(tmp = snd(snd(e)); nonNull(tmp); tmp = tl(tmp)) {
-	List tmp2;
-	for(tmp2 = segQuals(hd(tmp)); nonNull(tmp2); tmp2 = tl(tmp2)) {
-	    whole=cons(hd(tmp2),whole);
-	}
-    }
-	
-    typeRecComp(l,mon,snd(e),rev(whole));
-    shouldBe(l,fst(snd(e)),NIL,finGen,mon,alpha);
-    leaveBindings();
-
-    snd(e) = pair(pair(m,monDict),snd(e));
-}
-
-#undef segRecs
-#undef segExps
-#undef segDefs
-#undef segQuals
-#endif
 
 static Void local typeConFlds(Int l, Cell e)	/* Type check a construction	   */
 {
@@ -1666,9 +1244,6 @@ static Void local typeConFlds(Int l, Cell e)	/* Type check a construction	   */
     Int  to;
     Int  tf;
     Int  i;
-#if IPARAM
-    List svPreds;
-#endif
 
     instantiate(name(c).type);
     for (; nonNull(predsAre); predsAre=tl(predsAre))
@@ -1706,9 +1281,6 @@ static Void local typeUpdFlds(Int line, Cell e)	/* Type check an update		   */
     Int  alpha = newTyvars(2+n);
     Int  i;
     List fs1;
-#if IPARAM
-    List svPreds;
-#endif
 
     /* Calculate type and translation for each expr in the field list	   */
     for (fs1=fs, i=alpha+2; nonNull(fs1); fs1=tl(fs1), i++) {
@@ -1799,56 +1371,6 @@ static Void local typeUpdFlds(Int line, Cell e)	/* Type check an update		   */
     /* (typeIs,typeOff) still carry the result type when we exit the loop  */
 }
 
-#if IPARAM
-static Cell local typeWith(Int line, Cell e)	/* Type check a with		   */
-{
-    List fs    = snd(snd(e));		/* List of field specifications	   */
-    Int  n     = length(fs);
-    Int  alpha = newTyvars(2+n);
-    Int  i;
-    List fs1;
-    Cell tIs;
-    Cell tOff;
-    List dpreds = NIL, dp;
-    Cell bs = NIL;
-
-    /* Type check expression to be updated				   */
-    fst(snd(e)) = typeExpr(line,fst(snd(e)));
-    bindTv(alpha,typeIs,typeOff);
-    tIs = typeIs;
-    tOff = typeOff;
-    /* elim duplicates */
-    improve(line,NIL,preds);
-    preds = scSimplify(preds);
-    /* extract preds that we're going to bind */
-    for (fs1=fs; nonNull(fs1); fs1=tl(fs1)) {
-        Text t = textOf(fst(hd(fs1)));
-	Cell p = findIPEvid(t);
-	dpreds = cons(p, dpreds);
-	if (nonNull(p)) {
-	    removeIPEvid(t);
-	} else {
-	    /* maybe give a warning message here... */
-	}
-    }
-    dpreds = rev(dpreds);
-
-    /* Calculate type and translation for each expr in the field list	   */
-    for (fs1=fs, dp=dpreds, i=alpha+2; nonNull(fs1); fs1=tl(fs1), dp=tl(dp), i++) {
-	static String with = "with";
-        Cell ev = hd(dp);
-	snd(hd(fs1)) = typeExpr(line,snd(hd(fs1)));
-	bindTv(i,typeIs,typeOff);
-	if (nonNull(ev)) {
-	    shouldBe(line,fst(hd(fs1)),e,with,snd(fst3(ev)),intOf(snd3(ev)));
-	    bs = cons(cons(pair(thd3(ev), cons(triple(NIL, mkInt(line), snd(hd(fs1))), NIL)), NIL), bs);
-	}
-    }
-    typeIs = tIs;
-    typeOff = tOff;
-    return (ap(LETREC,pair(bs,fst(snd(e)))));
-}
-#endif
 
 static Cell local typeFreshPat(Int l, Cell p)    /* find type of pattern, assigning  */
                   /* fresh type variables to each var */
@@ -2606,9 +2128,6 @@ static Void local guardedType(Int beta, Cell gded)/* check type of guard (li,(gd
     static String guarded = "guarded expression";
     static String guard   = "guard";
     Int line = intOf(fst(gded));
-#if IPARAM
-    List svPreds;
-#endif
 
     gded     = snd(gded);
     spCheck(line,fst(gded),NIL,guard,typeBool,0);
@@ -2737,9 +2256,6 @@ et: if (whatIs(t1)!=whatIs(t2))
 	return FALSE;
 
     switch (whatIs(t1)) {
-#if TREX
-	case EXT     :
-#endif
 	case TYCON   :
 	case OFFSET  :
 	case TUPLE   : return t1==t2;
@@ -3047,9 +2563,6 @@ Void typeChecker(Int what)
 		       mark(predIntegral);
 		       mark(starToStar);
 		       mark(predMonad);
-#if MUDO
-		       mark(predMonadRec);
-#endif
 
 #if IO_MONAD
 		       mark(typeProgIO);
@@ -3098,20 +2611,10 @@ Void typeChecker(Int what)
 				    = cons(nameNil,cons(nameCons,NIL));
 
 		       typeVarToVar = fn(aVar,aVar);
-#if TREX
-		       typeNoRow    = addPrimTycon(findText("EmptyRow"),
-						   ROW,0,DATATYPE,NIL);
-		       typeRec	    = addPrimTycon(findText("Rec"),
-						   pair(ROW,STAR),1,
-						   DATATYPE,NIL);
-		       nameNoRec    = addPrimCfun(findText("EmptyRec"),0,0,
-							ap(typeRec,typeNoRow));
-#else
 		       /* bogus definitions to avoid changing the prelude */
 		       addPrimCfun(findText("Rec"),      0,0,typeUnit);
 		       addPrimCfun(findText("EmptyRow"), 0,0,typeUnit);
 		       addPrimCfun(findText("EmptyRec"), 0,0,typeUnit);
-#endif
 
 		       break;
     }

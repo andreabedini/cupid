@@ -66,20 +66,11 @@ extern Bool autoLoadFiles;	       /* TRUE => reload files before eval*/
 #if EXPLAIN_INSTANCE_RESOLUTION
 extern Bool  showInstRes;              /* TRUE => show instance resolution */
 #endif
-#if MULTI_INST
-extern Bool  multiInstRes;             /* TRUE => use multi inst resolution */
-#endif
 #if DEBUG_CODE
 extern Bool  debugCode;		        /* TRUE => print G-code to screen  */
 #endif
 #if DEBUG_SHOWSC
 extern Bool  debugSC;			/* TRUE => print SC to screen  */
-#endif
-#if OBSERVATIONS
-extern Bool   rootOpt;                  /* TRUE => enable root optimisation*/
-#endif
-#if HERE_DOC
-extern Bool  hereDocs;                  /* TRUE => enable `here documents' */
 #endif
 
 #if HUGS_FOR_WINDOWS
@@ -121,9 +112,7 @@ extern Bool   printing;                 /* TRUE => currently printing value*/
  */
 struct options {                        /* command line option toggles     */
     char   c;                           /* table defined in main app.      */
-#if !HASKELL_98_ONLY
     int    h98;                         /* set in Haskell'98 mode?         */
-#endif
     String description;
     Bool   *flag;
 };

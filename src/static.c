@@ -181,9 +181,6 @@ static Void   local withinScope		(List);
 static Void   local leaveScope		(Void);
 static Void   local saveSyntax		(Cell,Cell);
 static Void   local dropNameClash	(Cell);
-#if IPARAM
-static Bool   local checkIBindings      (Int,List);
-#endif
 
 static Void   local depBinding		(Cell);
 static Void   local depDefaults		(Class);
@@ -196,12 +193,6 @@ static Void   local depGuard		(Cell);
 static Void   local depPair		(Int,Cell);
 static Void   local depTriple		(Int,Cell);
 static Void   local depComp		(Int,Cell,List);
-#if ZIP_COMP
-static Void   local depZComp		(Int,Cell,List);
-static Void   local depZCompBranch	(Int,List);
-static List   local intersectBinds	(List bs1,List bs2);
-static List   local getBindVars		(List bs);
-#endif
 static Void   local depCaseAlt		(Int,Cell);
 static Cell   local depVar		(Int,Cell,Bool);
 static Cell   local depQVar		(Int,Cell,Bool);
@@ -211,33 +202,7 @@ static List   local depFields		(Int,Cell,List,Bool);
 static Void   local checkNameAmbigName  (Int,Name,Bool);
 static Void   local checkNameAmbig      (Int,Text,Cell);
 static Cell   local checkTyconAmbig     (Int,Text,Cell);
-#if IPARAM
-static Void   local depWith		(Int,Cell);
-static List   local depDwFlds		(Int,Cell,List);
-#endif
-#if TREX
-static Void   local trexUsed            (Void);
-static Void   local trexLoad            (Void);
-static Cell   local depRecord		(Int,Cell);
-#endif
 
-#if MUDO
-static Void   local mdoLoad             (Void);
-static Void   local mdoUsed             (Void);
-static List   local mdoGetPatVarsLet	(Int,List,List);
-static List   local mdoBVars		(Int,List);
-static List   local mdoUsedVars		(List,Cell,List,List);
-static Void   local depRecComp		(Int,Cell,List);
-static Void   local mdoExpandQualifiers (Int,Cell,List,List);
-static Bool   local mdoIsConnected	(Cell,List);
-static Int    local mdoSegment		(Cell,List);
-static Void   local mdoSCC		(List);
-static List   local mdoCleanSegment	(Triple);
-static List   local mdoNoLets		(Triple);
-static Void   local mdoComputeExports	(Triple,Cell);
-static Bool   local mdoUsedInAnySeg	(Text,List);
-/*#define DEBUG_MDO_SEGMENTS*/
-#endif
 
 static List   local tcscc		(List,List);
 static List   local bscc		(List);
@@ -320,9 +285,6 @@ static Void local kindError(Int l, Constr c, Constr in, String wh, Kind k, Int o
 #define inferKind(k,o)			typeIs=k; typeOff=o
 
 static List unkindTypes;		/* types in need of kind annotation*/
-#if TREX
-Kind   extKind;				/* Kind of extension, *->row->row  */
-#endif
 
 /* --------------------------------------------------------------------------
  * Static analysis of modules:
@@ -1143,7 +1105,6 @@ static Void local checkClassDefn(Class c)    /* validate class definition	   */
     tcDeps	        = NIL;		/* find dependents		   */
     map2Over(depPredExp,cclass(c).line,tyvars,cclass(c).supers);
 
-#ifdef IPARAM
     for ( ss = cclass(c).supers; nonNull(ss); ss=tl(ss) ) {
       if ( isIP(getHead(hd(ss))) ) {
 	    ERRMSG(cclass(c).line)
@@ -1151,7 +1112,6 @@ static Void local checkClassDefn(Class c)    /* validate class definition	   */
 	    EEND;
       }
     }
-#endif
 
     h98CheckCtxt(cclass(c).line,"class declaration",FALSE,cclass(c).supers,NIL);
     cclass(c).numSupers = length(cclass(c).supers);
@@ -1320,18 +1280,7 @@ static Cell local depPredExp(Int line, List tyvars, Cell pred)
 	    tcDeps = cons(c,tcDeps);
 	}
     }
-#if TREX
-    else if (isExt(h)) {		/* Lacks predicate		   */
-	if (args!=1) {			/* parser shouldn't let this happen*/
-	    ERRMSG(line) "Wrong number of arguments for lacks predicate"
-	    EEND;
-	}
-    }
-#endif
     else
-#if IPARAM
-         if (!isIP(h))
-#endif
     {
 	internal("depPredExp");
     }
@@ -1506,11 +1455,6 @@ static Text local generateText(String sk, Class c)	/* We need to generate names 
 
 static Int local visitClass(Class c)		/* visit class defn to check that  */
 {				/* class hierarchy is acyclic	   */
-#if TREX
-    if (isExt(c)) {			/* special case for lacks preds	   */
-	return 0;
-    }
-#endif
     if (cclass(c).level < 0) {		/* already visiting this class?	   */
 	ERRMSG(cclass(c).line) "Superclass relation for \"%s\" is cyclic",
 			       textToStr(cclass(c).text)
@@ -1520,14 +1464,10 @@ static Int local visitClass(Class c)		/* visit class defn to check that  */
 	Int  lev = 0;
 	cclass(c).level = (-1);
 	for (; nonNull(scs); scs=tl(scs)) {
-#ifdef IPARAM
 	    if ( !isIP(getHead(hd(scs))) ) {
-#endif
 		Int l = visitClass(getHead(hd(scs)));
 		if (l>lev) lev=l;
-#ifdef IPARAM
 	    }
-#endif
 	}
 	cclass(c).level = 1+lev;	/* level = 1 + max level of supers */
     }
@@ -1835,10 +1775,6 @@ static Type local depTypeExp(Int line, List tyvars, Type type)
 			      return tc;
 			  }
 
-#if TREX
-	case EXT	: trexUsed();
-	                  h98DoesntSupport(line,"extensible records");
-#endif
 	case TYCON	:
 	case TUPLE	: break;
 
@@ -2046,11 +1982,6 @@ List calcFunDeps(List ps)
 		}
 	    }
 	}
-#if IPARAM
-	else if (isIP(c)) {
-	    fds = cons(pair(NIL,offsetTyvarsIn(arg(pi),NIL)),fds);
-	}
-#endif
     }
     return fds;
 }
@@ -2073,11 +2004,6 @@ List calcFunDepsPreds(List ps)
 		}
 	    }
 	}
-#if IPARAM
-	else if (isIP(c)) {
-	    fds = cons(pair(NIL,zonkTyvarsIn(arg(pi),NIL)),fds);
-	}
-#endif
     }
     return fds;
 }
@@ -2140,15 +2066,6 @@ static Void local kindConstr(Int line, Int alpha, Int m, Cell c)
 	case RANK2    : kindConstr(line,alpha,m,snd(snd(c)));
 			return;
 
-#if TREX
-	case EXT      : if (n!=2) {
-			    ERRMSG(line)
-				"Illegal use of row in " ETHEN ERRTYPE(c);
-			    ERRTEXT "\n"
-			    EEND;
-			}
-			break;
-#endif
 
 	case TYCON    : if (isSynonym(h) && n<tycon(h).arity) {
 			    ERRMSG(line)
@@ -2196,9 +2113,6 @@ static Kind local kindAtom(Int alpha, Cell c)	/* Find kind of atomic constructor
 				 return snd(vt);
 			     }
 			 }
-#if TREX
-	case EXT       : return extKind;
-#endif
     }
 #if DEBUG_KINDS
     Printf("kindAtom(%d,whatIs(%d)) on ",alpha,whatIs(c));
@@ -2211,20 +2125,6 @@ static Kind local kindAtom(Int alpha, Cell c)	/* Find kind of atomic constructor
 
 static Void local kindPred(Int l, Int alpha, Int m, Cell pi)/* Check kinds of arguments in pred*/
 {
-#if TREX
-    if (isAp(pi) && isExt(fun(pi))) {
-	static String lackspred = "lacks predicate";
-	checkKind(l,alpha,m,arg(pi),NIL,lackspred,ROW,0);
-	return;
-    }
-#endif
-#if IPARAM
-    if (isAp(pi) && isIP(fun(pi))) {
-	static String ippred = "iparam predicate";
-	checkKind(l,alpha,m,arg(pi),NIL,ippred,STAR,0);
-	return;
-    }
-#endif
     {   static String predicate = "class constraint";
 	Class c  = getHead(pi);
 	List  as = getArgs(pi);
@@ -2423,9 +2323,7 @@ static Void local checkInstDefn(Inst in)	/* Validate instance declaration   */
     List tvps = NIL, tvts = NIL;
     List fds = NIL;
 
-#if !HASKELL_98_ONLY
     if (haskell98) {			/* Check for `simple' type	   */
-#endif
 	List tvs = NIL;
 	Cell t   = arg(inst(in).head);
 	for (; isAp(t); t=fun(t)) {
@@ -2440,9 +2338,7 @@ static Void local checkInstDefn(Inst in)	/* Validate instance declaration   */
 		EEND;
 	    }
 	    tvs = cons(arg(t),tvs);
-#if !HASKELL_98_ONLY
 	}
-#endif
 	if (isVar(t)) {
 	    ERRMSG(line)
 		"Syntax error in instance head (constructor expected)"
@@ -2455,9 +2351,7 @@ static Void local checkInstDefn(Inst in)	/* Validate instance declaration   */
     tyvars = typeVarsIn(inst(in).specifics,NIL,NIL,tyvars);
     inst(in).head = depPredExp(line,tyvars,inst(in).head);
 
-#if !HASKELL_98_ONLY
     if (haskell98)
-#endif
     {
     Type h = getHead(arg(inst(in).head));
 	if (isSynonym(h)) {
@@ -2588,7 +2482,6 @@ static Void local insertInst(Inst in)	/* Insert instance into class	   */
 	Int beta  = newKindedVars(inst(hd(ins)).kinds);
 	if (unifyPred(inst(in).head,alpha,inst(hd(ins)).head,beta)) {
 	    Cell pi  = copyPred(inst(in).head,alpha);
-#if !HASKELL_98_ONLY
 	    if ((allowOverlap || allowUnsafeOverlap) && !haskell98) {
 		Bool bef = instCompare(in,hd(ins));
 		Bool aft = instCompare(hd(ins),in);
@@ -2601,12 +2494,6 @@ static Void local insertInst(Inst in)	/* Insert instance into class	   */
 		    continue;
 		}
 	    }
-#endif
-#if MULTI_INST
-	    if (multiInstRes && nonNull(inst(in).specifics)) {
-		break;
-	    } else {
-#endif
 		ERRMSG(inst(in).line) "Overlapping instances for class \"%s\"",
 				      textToStr(cclass(c).text)
 		ETHEN
@@ -2617,9 +2504,6 @@ static Void local insertInst(Inst in)	/* Insert instance into class	   */
 						   ERRPRED(pi);
 		ERRTEXT "\n"
 		EEND;
-#if MULTI_INST
-	    }
-#endif
 	}
 	prev = ins;			/* No overlap detected, so move on */
 	ins  = tl(ins);			/* to next instance		   */
@@ -2730,39 +2614,6 @@ Void addTupInst(Class c, Int n)			/* Request derived instance of c   */
     addDerInst(0,c,NIL,cts,mkTuple(n),n);
 }
 
-#if TREX
-Inst addRecShowInst(Class c, Ext e)		/* Generate instance for ShowRecRow*/
-            /* c *must* be ShowRecRow	   */
-{
-    Inst in		  = newInst();
-    inst(in).c		  = c;
-    inst(in).head	  = ap(c,ap2(e,aVar,bVar));
-    inst(in).kinds	  = extKind;
-    inst(in).specifics	  = cons(ap(classShow,aVar),
-				 cons(ap(e,bVar),
-				      cons(ap(c,bVar),NIL)));
-    inst(in).numSpecifics = 3;
-    inst(in).builder	  = implementRecShw(extText(e),in);
-    cclass(c).instances	  = appendOnto(cclass(c).instances,singleton(in));
-    return in;
-}
-
-Inst addRecEqInst(Class c, Ext e)			/* Generate instance for EqRecRow  */
-            /* c *must* be EqRecRow		   */
-{
-    Inst in		  = newInst();
-    inst(in).c		  = c;
-    inst(in).head	  = ap(c,ap2(e,aVar,bVar));
-    inst(in).kinds	  = extKind;
-    inst(in).specifics	  = cons(ap(classEq,aVar),
-				 cons(ap(e,bVar),
-				      cons(ap(c,bVar),NIL)));
-    inst(in).numSpecifics = 3;
-    inst(in).builder	  = implementRecEq(extText(e),in);
-    cclass(c).instances	  = appendOnto(cclass(c).instances,singleton(in));
-    return in;
-}
-#endif
 
 /* --------------------------------------------------------------------------
  * Calculation of contexts for derived instances:
@@ -2879,33 +2730,6 @@ static Void local calcInstPreds(Inst in)	/* Calculate next approximation	   */
 	    }
 	    retain = cons(pair(fst(p),qs),retain);
 	}
-#if TREX
-	else if (isExt(fun(fst(p)))) {		/* Lacks predicate	   */
-	    Text   l = extText(fun(fst(p)));
-	    Type   t = arg(fst(p));
-	    Int    o = intOf(snd(p));
-	    Type   h;
-	    Tyvar *tyv;
-
-	    deRef(tyv,t,o);
-	    h = getDerefHead(t,o);
-	    while (isExt(h) && argCount==2 && l!=extText(h)) {
-		t = arg(t);
-		deRef(tyv,t,o);
-		h = getDerefHead(t,o);
-	    }
-	    if (argCount==0 && isOffset(h)) {
-		maybeAddPred(ap(fun(fun(p)),h),o,beta,spcs);
-	    } else if (argCount!=0 || h!=typeNoRow) {
-		Cell bpi = inst(in).head;
-		Cell pi  = copyPred(fun(p),intOf(snd(p)));
-		ERRMSG(inst(in).line) "Cannot derive " ETHEN ERRPRED(bpi);
-		ERRTEXT " because predicate " ETHEN ERRPRED(pi);
-		ERRTEXT " does not hold\n"
-		EEND;
-	    }
-	}
-#endif
 	else {					/* Class predicate	   */
 	    Cell pi  = fst(p);
 	    Int  o   = intOf(snd(p));
@@ -4436,29 +4260,6 @@ static Cell local checkPat(Int line, Cell p)     /* Check valid pattern syntax	 
 static Cell local checkMaybeCnkPat(Int l, Cell p)/* Check applicative pattern with   */
                   /* the possibility of n+k pattern   */
 {
-#if NPLUSK
-    Cell h = getHead(p);
-
-    if (argCount==2 && isVar(h) && textOf(h)==textPlus) {	/* n+k	   */
-	Cell v = arg(fun(p));
-	if (!isVar(v)) {
-	    ERRMSG(l) "First argument in (n+k) pattern must be a variable"
-	    EEND;
-	}
-	if (!isInt(arg(p))) {
-	    ERRMSG(l) "Second argument in (n+k) pattern must be an integer"
-	    EEND;
-	}
-	if (intOf(arg(p))<=0) {
-	    ERRMSG(l) "Integer k in (n+k) pattern must be > 0"
-	    EEND;
-	}
-	fst(fun(p))	 = ADDPAT;
-	intValOf(fun(p)) = intOf(arg(p));
-	arg(p)		 = checkPat(l,v);
-	return p;
-    }
-#endif
     return checkApPat(l,0,p);
 }
 
@@ -4477,15 +4278,6 @@ static Cell local checkApPat(Int line, Int args, Cell p)
 			 }
 			 break;
 
-#if TREX
-	case EXT       : h98DoesntSupport(line,"extensible records");
-	                 trexUsed();
-			 if (args!=2) {
-			     ERRMSG(line) "Illegal record pattern"
-			     EEND;
-			 }
-			 break;
-#endif
 
 	case QUALIDENT : if (!isQCon(p)) {
 			    ERRMSG(line)
@@ -4614,10 +4406,6 @@ static List depends;		       /* list of lists of dependents	   */
 /* bindings :: [[([Var],?)]]  -- var equality used on Vars     */
 /* depends  :: [[Var]]        -- pointer equality used on Vars */
 
-#if MUDO
-static List mdepends;		       /* list of dependents for mdo	*/
-/* mdepends :: [Var]          -- var equality used on Vars */
-#endif
 
 #define saveBvars()	 hd(bounds)    /* list of bvars in current scope   */
 #define restoreBvars(bs) hd(bounds)=bs /* restore list of bound variables  */
@@ -5377,9 +5165,6 @@ static Void local clearScope() {       /* initialise dependency scoping    */
     bounds   = NIL;
     bindings = NIL;
     depends  = NIL;
-#if MUDO
-    mdepends = NIL;
-#endif
 }
 
 static Void local withinScope(List bs)	/* Enter scope of bindings bs	   */
@@ -5444,38 +5229,6 @@ static Void local saveSyntax(Cell v, Cell sy)	/* Save syntax of top-level var	  
     }
 }
 
-#if IPARAM
-static Bool local checkIBindings(Int line, List bs)
-{
-    List xs = bs;
-    Bool hasIParam = FALSE;
-    Bool oldFlg = FALSE;
-
-    if (isNull(xs)) {
-	return FALSE;
-    }
-
-    if (isPair(hd(xs)) && isPair(fst(hd(xs))) && fst(fst(hd(xs))) == IPVAR) {
-	hasIParam = TRUE;
-    }
-    xs = tl(xs);
-
-    while (nonNull(xs)) {
-	oldFlg = hasIParam;
-	hasIParam =
-	    isPair(hd(xs))      &&
-	    isPair(fst(hd(xs))) &&
-	    (fst(fst(hd(xs))) == IPVAR);
-
-	if ( oldFlg != hasIParam ) {
-		ERRMSG(line) "Not legal to mix implicit parameter bindings with other bindings."
-		EEND;
-	}
-	xs = tl(xs);
-    }
-    return hasIParam;
-}
-#endif
 
 /* --------------------------------------------------------------------------
  * As a side effect of the dependency analysis we also make the following
@@ -5543,17 +5296,6 @@ static Void local depClassBindings(List bs) /* dependency analysis on list of   
 
 static Cell local depLetRec(Bool isRhs, Int line, Cell e) /* dependency analysis on a letrec    */
 {                                 /* expr, containing a set of bindings */
-#if IPARAM
-    Bool isIP = checkIBindings(line,fst(snd(e)));
-                                          /* check that i-param binders aren't */
-	                                  /* mixed with 'normal' ones. */
-    if ( isIP ) {
-	snd(snd(e)) = depExpr(line,snd(snd(e)));
-	fst(snd(e)) = depDwFlds(line,e,fst(snd(e)));
-	/* Turn it into a WITHEXP */
-	return pair(WITHEXP,pair(snd(snd(e)),fst(snd(e))));
-    } else {
-#endif
 
     fst(snd(e)) = eqnsToBindings(fst(snd(e)),NIL,NIL,NIL);
     withinScope(fst(snd(e)));
@@ -5566,9 +5308,6 @@ static Cell local depLetRec(Bool isRhs, Int line, Cell e) /* dependency analysis
     }
     leaveScope();
     return e;
-#if IPARAM
-    }
-#endif
 }
 
 static Void local depAlt(Cell a)		/* Find dependents of alternative  */
@@ -5625,35 +5364,13 @@ Cell depExpr(Int line, Cell e)      /* find dependents of expression    */
 
 	case INFIX     : return depExpr(line,tidyInfix(line,snd(e)));
 
-#if TREX
-	case RECSEL	: break;
-
-	case AP		: if (isAp(e) && isAp(fun(e)) && isExt(fun(fun(e)))) {
-	                      trexUsed();
-			      return depRecord(line,e);
-			  } else {
-			      Cell nx = e;
-			      Cell a;
-			      do {
-				  a      = nx;
-				  arg(a) = depExpr(line,arg(a));
-				  nx     = fun(a);
-			      } while (isAp(nx));
-			      fun(a) = depExpr(line,fun(a));
-			  }
-			  break;
-#else
 	case AP 	: depPair(line,e);
 			  break;
-#endif
 
 #if BIGNUMS
 	case ZERONUM	:
 	case POSNUM	:
 	case NEGNUM	:
-#endif
-#if IPARAM
-	case IPVAR	:
 #endif
 	case NAME	:
 	case TUPLE	:
@@ -5674,20 +5391,11 @@ Cell depExpr(Int line, Cell e)      /* find dependents of expression    */
 	case LAMBDA	: depAlt(snd(e));
 			  break;
 
-#if MUDO
-	case MDOCOMP	: mdoUsed();
-	                  depRecComp(line, snd(e), snd(snd(e)));
-			  break;
-#endif
 
 	case DOCOMP	: /* fall-thru */
 	case COMP	: depComp(line,snd(e),snd(snd(e)));
 			  break;
 
-#if ZIP_COMP
-	case ZCOMP	: depZComp(line,snd(e),snd(snd(e)));
-			  break;
-#endif
 
 	case ESIGN	: fst(snd(e)) = depExpr(line,fst(snd(e)));
 			  snd(snd(e)) = checkSigType(line,
@@ -5706,10 +5414,6 @@ Cell depExpr(Int line, Cell e)      /* find dependents of expression    */
 	case UPDFLDS	: depUpdFlds(line,e);
 			  break;
 
-#if IPARAM
-	case WITHEXP	: depWith(line,e);
-			  break;
-#endif
 
 	case ASPAT	: ERRMSG(line) "Illegal `@' in expression"
 			  EEND;
@@ -5720,10 +5424,6 @@ Cell depExpr(Int line, Cell e)      /* find dependents of expression    */
 	case WILDCARD	: ERRMSG(line) "Illegal `_' in expression"
 			  EEND;
 
-#if TREX
-	case EXT	: ERRMSG(line) "Illegal application of record"
-			  EEND;
-#endif
 
 	default 	: internal("depExpr");
    }
@@ -5762,23 +5462,12 @@ static Void local depComp(Int l, Cell e, List qs)	/* find dependents of comprehe
 			    break;
 
 	    case QWHERE   :
-#if IPARAM
-		if ( checkIBindings(l,snd(q)) ) {
-		    /* It is unclear what the meaning of this is (by people in-the-know),
-		     * so outlaw it for now. */
-		   ERRMSG(l) "Currently illegal to bind implicit parameters using comprehension/do-level lets"
-	   	   EEND;
-		} else {
-#endif
 		    snd(q)      = eqnsToBindings(snd(q),NIL,NIL,NIL);
 		    withinScope(snd(q));
 		    snd(q)      = dependencyAnal(snd(q));
 		    hd(depends) = snd(q);
 		    depComp(l,e,qs1);
 		    leaveScope();
-#if IPARAM
-		}
-#endif
 			    break;
 
 	    case DOQUAL	  : /* fall-thru */
@@ -5789,610 +5478,7 @@ static Void local depComp(Int l, Cell e, List qs)	/* find dependents of comprehe
     }
 }
 
-#if MUDO
 
-/*
- * When typechecking mdo expressions, we need to have
- * access to mfix et al., so we keep track of whether
- * a module uses MDOCOMP, and if it does, look up
- * the necessary class + method in mdoLoad().
- *
- * Do this here rather than in the typechecker itself
- * (where the innards of mdoLoad() used to be), as name
- * resolution / checking is really the domain of static
- * analysis. It also simplifies the handling of a module's
- * import lists.
- *
- */
-static Bool mdoLibsNeeded = FALSE;
-
-static Void local mdoUsed() {
-    mdoLibsNeeded = TRUE;
-}
-
-static Void local mdoLoad() {
-    if (mdoLibsNeeded) {
-	String fixLib     = "Control.Monad.Fix";
-	String fixClass   = "MonadFix";
-
-	/* Locate the module containing the MonadRec/MonadFix class */
-	Module m          = findModule(findText(fixLib));
-	Text t            = module(m).text;
-	Text alias        = findModAlias(t);
-	/* The class and method name are qualified by the local alias, not
-	 * the (real) module name.
-	 */
-	Cell monadRecName = mkQCon(alias,findText(fixClass));
-	Cell mfixName     = mkQCon(alias,findText("mfix"));
-
-	/* Reset this flag before signalling errors, so we won't inadvertently
-	 * loop.
-	 */
-	mdoLibsNeeded = FALSE;
-
-	if( !(classMonadRec = findQualClass(monadRecName)) &&
-	    !(classMonadRec = findClass(qtextOf(monadRecName))) ) {
-	    ERRMSG(0) "%s class not in scope", fixClass ETHEN
-		ERRTEXT   "\n*** Possible cause: \"%s\" module not imported", fixLib
-		EEND;
-	}
-
-	if( !(nameMFix = findQualName(mfixName)) &&
-	    !(nameMFix = findName(qtextOf(mfixName))) ) {
-	    ERRMSG(0) "%s class does not define the mfix method", fixClass
-		EEND;
-	}
-    }
-    mdoLibsNeeded = FALSE;
-}
-
-/* mdoExpandQualifiers inflates qs into a list of triples
-   the first element is the original q
-   the second is the defined vars
-   the third is the used vars THAT are defined in that binding group
-*/
-static Void local mdoExpandQualifiers(Int l, Cell e, List qs, List defs)
-{
-    if (isNull(qs)) {
-	List currDeps = mdepends;
-	fst(e)	      = depExpr(l,fst(e));
-	fst(e)	      = pair(fst(e),mdoUsedVars(mdepends,currDeps,defs,NIL));
-    } else {
-	Cell q   = hd(qs);
-	List qs1 = tl(qs);
-	hd(qs)   = triple(q,NIL,NIL);
-	switch (whatIs(q)) {
-	    case FROMQUAL : {   List obvs   = saveBvars();
-				List currDeps = mdepends;
-				enterBtyvs();
-				fst(snd(q)) = bindPat(l,fst(snd(q)));
-				snd(snd(q)) = depExpr(l,snd(snd(q)));
-				snd3(hd(qs)) = getPatVars(l,fst(snd(q)),NIL);
-				thd3(hd(qs)) = mdoUsedVars(mdepends,currDeps,defs,NIL);
-				mdoExpandQualifiers(l,e,qs1,defs);
-				fst(snd(q)) = applyBtyvs(fst(snd(q)));
-				restoreBvars(obvs);
-			    }
-			    break;
-
-	    case QWHERE   :
-#if IPARAM
-			    if ( checkIBindings(l,snd(q)) ) {
-				ERRMSG(l) "Currently illegal to bind implicit parameters in the recursive do-notation"
-				EEND;
-			    } else
-#endif
-			    {	List currDeps = mdepends;
-				snd3(hd(qs)) = mdoGetPatVarsLet(l,snd(q),NIL);
-				snd(q)     = eqnsToBindings(snd(q),NIL,NIL,NIL);
-				withinScope(snd(q));
-				snd(q)      = dependencyAnal(snd(q));
-				hd(depends) = snd(q);
-				thd3(hd(qs)) = mdoUsedVars(mdepends,currDeps,defs,snd3(hd(qs)));
-				mdoExpandQualifiers(l,e,qs1,defs);
-				leaveScope();
-			    }
-			    break;
-
-	    case DOQUAL	  : /* fall-thru */
-	    case BOOLQUAL : {	List currDeps = mdepends;
-				snd(q) = depExpr(l,snd(q));
-				thd3(hd(qs)) = mdoUsedVars(mdepends,currDeps,defs,NIL);
-				mdoExpandQualifiers(l,e,qs1,defs);
-				break;
-			    }
-	}
-    }
-}
-
-static List local mdoUsedVars(List xs, Cell c, List ys, List ls)/* copy elements of xs until the */
-                                    /* sublist pointed to by c,      */
-              /* if they are in ys		  */
-{				 /* but not in ls		  */
-    List zs = NIL;
-    List rs = NIL;
-    List final = NIL;
-    for(; nonNull(xs) && xs != c; xs = tl(xs)) {
-	if(cellIsMember(hd(xs),ys) && !varIsMember(textOf(hd(xs)),ls)) {
-	    zs = cons(hd(xs), zs);
-	}
-    }
-
-    /* eliminate duplicates: */
-    for(rs = zs; nonNull(rs); rs = tl(rs)) {
-	if(!varIsMember(textOf(hd(rs)), tl(rs))) {
-	    final = cons(hd(rs), final);
-	}
-    }
-
-    return final;
-}
-
-static List local mdoGetPatVarsLet(Int l, List eqns, List fvs)
-{
-    Cell tmp;
-    Cell e;
-
-    /* extract pattern variables from eqns.. */
-    for(tmp = eqns; nonNull(tmp); tmp = tl(tmp)) {
-	switch (fst(hd(tmp))) {
-	    case PATBIND :  /* now, fst(snd(hd(tmp))) is the pattern.. */
-			    fvs = getPatVars(l, fst(snd(hd(tmp))), fvs);
-			    break;
-	    case FUNBIND :  /* now, we only need to get the function name! */
-			    e = getHead(fst(snd(hd(tmp))));
-			    if(!varIsMember(textOf(e),fvs)) {
-				fvs = cons(e, fvs);
-			    }
-			    break;
-	    default      :  /* ignore: fixity and type declarations.. */
-			    break;
-	}
-    }
-
-    return fvs;
-}
-
-static List local mdoBVars(Int l, List qs)        /* return list of bound vars */
-                                         /* in an mdo                 */
-{
-    List mdoBounds = NIL;
-    for(; nonNull(qs); qs = tl(qs)) {
-	Cell q = hd(qs);
-	switch(whatIs(q)) {
-	    case FROMQUAL : mdoBounds = getPatVars(l, fst(snd(q)), mdoBounds);
-			    break;
-            case QWHERE	  : { 	List letVs = NIL;
-				letVs = mdoGetPatVarsLet(l, snd(q), NIL);
-				for(; nonNull(letVs); letVs = tl(letVs)) {
-				    mdoBounds = addPatVar(l, hd(letVs),
-								mdoBounds);
-				}
-			    }
-			    break;
-	    case DOQUAL	  :
-            case BOOLQUAL : break;
-	    default	  : internal("mdo: unknown statement");
-			    break;
-	}
-    }
-    return mdoBounds;
-}
-
-#define segRecs(seg)	fst(fst3(seg))
-#define segExps(seg)	snd(fst3(seg))
-#define segDefs(seg)	fst(snd3(seg))
-#define segUses(seg)	snd(snd3(seg))
-#define segQuals(seg)	thd3(seg)
-#define qualBody(q)	fst3(q)
-#define qualDefs(q)	snd3(q)
-#define qualUses(q)	thd3(q)
-
-static List local mdoCleanSegment(Triple seg)	/* clean the segment by		   */
-{				/* storing rec and used vars first */
-    List tmp;
-    List accumRecs = NIL;
-
-    for(tmp = segQuals(seg); nonNull(tmp); tmp = tl(tmp)) {
-	segDefs(seg) = dupOnto(qualDefs(hd(tmp)),segDefs(seg));
-    }
-
-    for(tmp = segQuals(seg); nonNull(tmp); tmp = tl(tmp)) {
-	List vs;
-	segUses(seg) = dupOnto(qualUses(hd(tmp)), segUses(seg));
-	for(vs = qualUses(hd(tmp)); nonNull(vs); vs = tl(vs)) {
-	    /* Here're the rules for being added to segRecs:
-		1. it must be defined in this segment
-		2. it must not already be defined in this segment
-		3. it must not already be added
-		4. if this is a let expression, it must not be defined
-		   in that let expression (because let is already recursive)
-		The following if statement exactly captures these rules:
-	    */
-	    if(     varIsMember(textOf(hd(vs)), segDefs(seg))
-		&& !varIsMember(textOf(hd(vs)), accumRecs)
-		&& !varIsMember(textOf(hd(vs)), segRecs(seg))
-		&& (    whatIs(qualBody(hd(tmp))) != QWHERE
-		    || !varIsMember(textOf(hd(vs)), qualDefs(hd(tmp))))) {
-		segRecs(seg) = cons(hd(vs), segRecs(seg));
-	    }
-	}
-	accumRecs = dupOnto(qualDefs(hd(tmp)), accumRecs);
-    }
-
-    return seg;
-}
-
-/* mdoNoLets gets rid of let bindings within mdo in favor of fromquals.
- * The translation is:
- *
- *    let bs     --->    d <- return (let bs in d)
- *
- * where d is the tuple of vars defined in let's.
- *
- * It might be argued that this translation happens to early, but this
- * seems to be the right thing to do to avoid complications in type
- * checking.
- */
-static List   local mdoNoLets(Triple seg)		/* get rid of let's */
-{
-    List qs;
-
-    for(qs = segQuals(seg); nonNull(qs); qs = tl(qs)) {
-	Cell q	  = qualBody(hd(qs));
-	Cell defs = qualDefs(hd(qs));
-	switch(whatIs(q)) {
-	    case FROMQUAL :
-	    case DOQUAL   :
-	    case BOOLQUAL : break;
-	    case QWHERE	  :
-		{   Cell p1,p2;
-		    Cell rhs;
-		    if(length(defs)==1) {
-			p1 = p2 = hd(defs);
-		    } else {
-			List tmp;
-			p1 = pair(mkTuple(length(defs)),hd(defs));
-			p2 = pair(mkTuple(length(defs)),hd(defs));
-			for(tmp = tl(defs); nonNull(tmp); tmp=tl(tmp)) {
-			    p1 = pair(p1,hd(tmp));
-			    p2 = pair(p2,hd(tmp));
-			}
-		    }
-		    rhs = ap(mkVar(findText("return")),
-			      ap(LETREC,pair(snd(q),p2)));
-		    qualBody(hd(qs)) = ap(QWHERE,pair(p1,rhs));
-		}
-		break;
-	}
-    }
-   return seg;
-}
-
-static Bool   local mdoUsedInAnySeg(Text v, List segs)	/* does v appear in any  */
-             /* used list of any seg? */
-{
-    for(; nonNull(segs); segs = tl(segs)) {
-	if(varIsMember(v,segUses(hd(segs)))) {
-	    return TRUE;
-	}
-    }
-
-    return FALSE;
-}
-
-static Void   local mdoComputeExports(List segs, Cell e)	/* compute export lists */
-               /* for each segment	*/
-{
-    List eUses = snd(fst(e));
-
-    for(; nonNull(segs); segs = tl(segs)) {
-	List vs;
-	for(vs = segDefs(hd(segs)); nonNull(vs); vs = tl(vs)) {
-	    if(varIsMember(textOf(hd(vs)),eUses)
-		|| mdoUsedInAnySeg(textOf(hd(vs)), tl(segs))) {
-		segExps(hd(segs)) = cons(hd(vs), segExps(hd(segs)));
-	    }
-	}
-    }
-}
-
-static Void local depRecComp(Int l, Cell e, List qs)	/* find dependents of a recursive */
-            /* comprehension */
-{
-    List mdoBounds;
-    List obvs;
-
-    withinScope(NIL);
-    mdoBounds = mdoBVars(l, qs);
-    enterBtyvs();
-    obvs = saveBvars();
-    hd(bounds) = mdoBounds;
-    mdoExpandQualifiers(l,e,qs,mdoBounds);
-    restoreBvars(obvs);
-    leaveBtyvs();
-    leaveScope();
-
-    mdoSCC(qs);
-    mapOver(rev,qs);	/* qualifiers are reversed after SCC */
-
-    /* reserve space for rec and used vars: */
-    map2Over(triple,pair(NIL,NIL),pair(NIL,NIL),qs);
-
-    /* clean up each segmet to get recs, uses etc: */
-    mapOver(mdoCleanSegment,qs);
-
-    /* get rid of QWHERE's: 		  */
-    mapOver(mdoNoLets,qs);
-
-    /* determine the exports of segments: */
-    mdoComputeExports(qs,e);
-
-    /****************************************************************
-	Here's the structure we have at this point:
-	    qs is the list of segments
-	    each segment looks like:
-		((1,2), (3,4), [(5,6,7)])
-	    where
-		1: recursive vars of the segment
-		2: exported vars of the segment
-		3: defined vars of the segment
-		4: used vars of the segment
-		5: the qualifier
-		6: the vars that the qualifier defines
-		7: the vars that the qualifier uses
-	e looks like:
-		((1,2),3)
-	    where
-		1: the expression
-		2: used vars of the expression
-		3: The pointer to qs!
-
-      The following code prints it out nicely:
-    ****************************************************************/
-
-#if DEBUG_MDO_SEGMENTS
-
-#define DBL(s,w)	printf(s); printList(w,50); printf("\n")
-    printf("\nAfter SCC, The segments:\n");
-    {   List tmp;
-	Int i = 0;
-	for(tmp = snd(e); nonNull(tmp); i++, tmp = tl(tmp)) {
-	    List tmp2;
-	    printf("Segment %d:\n----------------------\n", i);
-	    for(tmp2 = segQuals(hd(tmp)); nonNull(tmp2); tmp2 = tl(tmp2)) {
-		DBL("Defines     : ", qualDefs(hd(tmp2)));
-		DBL("Uses        : ", qualUses(hd(tmp2)));
-	    }
-	    DBL("Segment recs: ", segRecs(hd(tmp)));
-	    DBL("Segment uses: ", segUses(hd(tmp)));
-	    DBL("Segment defs: ", segDefs(hd(tmp)));
-	    DBL("Segment exps: ", segExps(hd(tmp)));
-	}
-	printf("Final Segment:\n----------------------\n");
-	printf("e      : "); printExp(stdout,fst(fst(e))); printf("\n");
-	DBL("E uses : ", snd(fst(e)));
-    }
-#undef DBL
-
-#endif
-
-    /* 	Now do a real clean up: all we need is rec vars and exp vars
-	for each segment. We also keep def vars.
-	Everything else becomes garbage:  */
-    for(; nonNull(qs); qs = tl(qs)) {
-	/* get rid of qual defines and uses of each qual: */
-	mapOver(fst3,segQuals(hd(qs)));
-
-	/* if recs is NIL, exps is irrelevant: */
-	if(isNull(segRecs(hd(qs)))) {
-	    segExps(hd(qs)) = NIL;
-	}
-
-	/* get rid of seg uses: */
-	hd(qs) = pair(triple(segRecs(hd(qs)),segExps(hd(qs)),segDefs(hd(qs))),
-		      segQuals(hd(qs)));
-    }
-
-    fst(e) = fst(fst(e));	/* clean up e, completes depRecComp */
-
-
-    /**************************************************************
-	At this point the structure we have is:
-	    qs is the list of segments
-	    each segment looks like:
-		((1,2,3), 4)
-	    where
-		1: recursive vars of the segment
-		2: exported vars of the segment
-		3: defined vars of the segment
-		4: the list of qualifiers
-	    e looks like:
-		(1,2)
-	    where
-		1: the expression
-		2: The pointer to qs!
-
-     **************************************************************/
-}
-
-#undef	segRecs
-#undef	segExps
-#undef	segDefs
-#undef	segUses
-#undef	segQuals
-#undef	qualBody
-#undef	qualDefs
-#undef	qualUses
-
-static Bool local mdoIsConnected(Cell q, List usedVars)	/* Does q1 define a variable */
-             /* that is in usedVars?	     */
-{
-    Cell defs;
-
-    for(defs = snd3(q); nonNull(defs); defs = tl(defs)) {
-	if(varIsMember(textOf(hd(defs)), usedVars)) {
-	    return TRUE;
-	}
-    }
-
-    return FALSE;
-}
-
-static Int local mdoSegment(Cell q, List eqs)	/* return the index of the last qual */
-            /* in eqs that q is connected to     */
-{
-    Int i, j;
-    List usesAccum = dupList(thd3(q));
-    Cell qUses	   = usesAccum;
-
-    for(i = 1, j = 0; nonNull(eqs); i++, eqs = tl(eqs)) {
-	usesAccum = dupOnto(thd3(hd(eqs)), usesAccum);
-	if(mdoIsConnected(hd(eqs), qUses)) {
-	    qUses = usesAccum;
-	    j = i;
-	}
-    }
-
-    return j;
-}
-
-static Void local mdoSCC(List eqs)		/* SCC for mdo */
-{
-    /*  The input eqs is the extended qualifier list. I.e. each qualifier
-	is a triple where the first element is the qualifier itself, second
-	element is the defined variables and third is the used ones.
-	After SCC, eqs becomes a list of list of qualifiers, where each
-	inner list is a strongly connected component, i.e. a segment.
-    */
-
-    Int covers;
-    List eqs1;
-
-    if(isNull(eqs)) return;
-
-    hd(eqs) = cons(hd(eqs), NIL);	/* Turn into a list */
-    eqs1 = tl(eqs);
-
-    covers = mdoSegment(hd(hd(eqs)), eqs1);
-    if(covers > 0) {			/* Multiple statements */
-	while(covers--) {
-	    hd(eqs) = cons(hd(eqs1),hd(eqs));
-	    eqs1 = tl(eqs1);
-	}
-    }
-
-    tl(eqs) = eqs1;
-
-    mdoSCC(tl(eqs));			/* recurse for the remainder */
-}
-#endif
-
-#if ZIP_COMP
-static List gatheredVars;
-static List gatheredBinds;
-static List gatheredTyvars;
-
-#define enterGathering() List svGVs = gatheredVars, svGBs = gatheredBinds, svGTs = gatheredTyvars; gatheredVars = gatheredBinds = gatheredTyvars = NIL
-#define leaveGathering() gatheredVars = svGVs; gatheredBinds = svGBs; gatheredTyvars = svGTs
-
-Text zipName(Int n)
-{
-    static char zip[14];
-    /* n >= 2, enforced by the parser */
-    if (n == 2)
-	strcpy(zip, "zip");
-    else
-	sprintf(zip, "zip%d", n);
-    return findText(zip);
-}
-
-static Void local depZComp(Int l, Cell e, List qss)
-{
-    Int n = length(qss);
-    enterGathering();
-    if (n > 3 &&
-	isNull(findQualName(mkQVar(findText("List"),zipName(n)))) &&
-	isNull(findQualName(mkQVar(findText("Data.List"),zipName(n))))) {
-	ERRMSG(l) "undefined variable \"%s\" (introduced by parallel comprehension)", textToStr(zipName(n))
-	EEND;
-    }
-    withinScope(NIL);
-    for (;nonNull(qss);qss=tl(qss)) {
-	depZCompBranch(l,hd(qss));
-	/* reset for next list of qualifiers */
-	restoreBvars(NIL);
-    }
-
-    /* add gathered vars */
-    hd(bounds) = gatheredVars;
-    withinScope(gatheredBinds);
-    enterBtyvs();
-    hd(btyvars) = gatheredTyvars;
-    fst(e) = depExpr(l,fst(e));
-    leaveBtyvs();
-    /* don't want to re-remove the dependency tags */
-    bounds   = tl(bounds);
-    bindings = tl(bindings);
-    depends  = tl(depends);
-    leaveScope();
-    leaveGathering();
-}
-
-static Void local depZCompBranch(Int l, List qs)	/* find dependents of comprehension*/
-{
-    if (isNull(qs)) {
-    } else {
-	Cell q   = hd(qs);
-	List qs1 = tl(qs);
-	switch (whatIs(q)) {
-	    case FROMQUAL : {   snd(snd(q)) = depExpr(l,snd(snd(q)));
-				enterBtyvs();
-				fst(snd(q)) = bindPat(l,fst(snd(q)));
-				if (nonNull(intersect(gatheredVars,patVars))) {
-				    ERRMSG(l) "Repeated pattern variable(s) in parallel comprehension"
-				    EEND;
-				}
-				gatheredVars = revOnto(patVars,gatheredVars);
-				gatheredTyvars = dupOnto(hd(btyvars),gatheredTyvars);
-				depZCompBranch(l,qs1);
-				fst(snd(q)) = applyBtyvs(fst(snd(q)));
-			    }
-			    break;
-
-	    case QWHERE   : snd(q)      = eqnsToBindings(snd(q),NIL,NIL,NIL);
-			    withinScope(snd(q));
-			    snd(q)      = dependencyAnal(snd(q));
-			    hd(depends) = snd(q);
-			    if (nonNull(intersectBinds(gatheredBinds,hd(bindings)))) {
-				ERRMSG(l) "Repeated binding(s) in parallel comprehension"
-				EEND;
-			    }
-			    gatheredBinds = dupOnto(hd(bindings),gatheredBinds);
-			    depZCompBranch(l,qs1);
-			    leaveScope();
-			    break;
-
-	    case DOQUAL	  : /* fall-thru */
-	    case BOOLQUAL : snd(q) = depExpr(l,snd(q));
-			    depZCompBranch(l,qs1);
-			    break;
-	}
-    }
-}
-
-static List local intersectBinds(List bs1, List bs2)
-{
-    return (intersect(getBindVars(bs1),getBindVars(bs2)));
-}
-static List local getBindVars(List bs)
-{
-    List zs = NIL;
-    for (; nonNull(bs); bs=tl(bs))
-	dupOnto(fst(hd(bs)),zs);
-    return zs;
-}
-#endif
 
 static Void local depCaseAlt(Int line, Cell a)	/* Find dependents of case altern. */
 {
@@ -6470,9 +5556,6 @@ static Cell local depVar(Int line, Cell e, Bool check)	/* Register occurrence of
     while (nonNull(bindings1)) {
 	n = varIsMember(t,hd(bounds1));   /* look for t in bound variables */
 	if (nonNull(n)) {
-#if MUDO
-	    mdepends = cons(n,mdepends);
-#endif
 	    return (n);
 	}
 
@@ -6481,9 +5564,6 @@ static Cell local depVar(Int line, Cell e, Bool check)	/* Register occurrence of
 	    if (!cellIsMember(n,hd(depends1))) {
 		hd(depends1) = cons(n,hd(depends1));
 	    }
-#if MUDO
-	    mdepends = cons(isVar(fst(n)) ? fst(n) : e,mdepends);
-#endif
 
 	    if (check) {
 	      checkNameAmbig(line,t, (isVar(fst(n)) ? fst(n) : e));
@@ -6704,135 +5784,9 @@ static List local depFields(Int l, Cell e, List fs, Bool isP)	/* check field bin
     return cs;
 }
 
-#if IPARAM
-static Void local depWith(Int line, Cell e)	/* check with using fields	   */
-{
-    fst(snd(e)) = depExpr(line,fst(snd(e)));
-    snd(snd(e)) = depDwFlds(line,e,snd(snd(e)));
-}
-
-static List local depDwFlds(Int l, Cell e, List fs)/* check field binding list	   */
-{
-    Cell c = fs;
-    for (; nonNull(c); c=tl(c)) {	/* for each field binding	   */
-	snd(hd(c)) = depExpr(l,snd(hd(c)));
-    }
-    return fs;
-}
-#endif
-
-#if TREX
-/* If Trex records are used in the source code, flag it.
-   trexLoad() uses this to determine whether or not to
-   bind to a couple of names in the Hugs.Trex module
-   (which are used when generating 'show' code.)
-*/
-static Bool trexLibNeeded = FALSE;
-
-static Void local trexUsed() {
-    trexLibNeeded = TRUE;
-}
-
-static Void local trexLoad() {
-    if (trexLibNeeded) {
-	String trexLib    = "Hugs.Trex";
-
-	/* Locate the module */
-	Module m          = findModule(findText(trexLib));
-	Text t            = module(m).text;
-	Text alias        = findModAlias(t);
-	/* The class and method name are qualified by the local alias, not
-	 * the (real) module name.
-	 */
-	Cell insFldName   = mkQVar(alias,findText("insertField"));
-	Cell showRecName  = mkQVar(alias,findText("showRecRow"));
-	Cell eqRecRowName = mkQVar(alias,findText("eqRecRow"));
-	Cell ShowRecName  = mkQCon(alias,findText("ShowRecRow"));
-	Cell EqRecName    = mkQCon(alias,findText("EqRecRow"));
-
-	/* Reset this flag before signalling errors, so that we won't
-	 * inadvertently loop.
-	 */
-	trexLibNeeded = FALSE;
-
-	if( !(nameInsFld = findQualName(insFldName)) &&
-	    !(nameInsFld = findName(qtextOf(insFldName))) ) {
-	    ERRMSG(0) "Hugs.Trex.insertField not in scope" ETHEN
-		ERRTEXT   "\n*** Possible cause: \"Hugs.Trex\" module not imported"
-		EEND;
-	}
-
-	if( !(nameShowRecRow = findQualName(showRecName)) &&
-	    !(nameShowRecRow = findName(qtextOf(showRecName))) ) {
-	    ERRMSG(0) "Hugs.Trex.showRecRow not in scope" ETHEN
-		ERRTEXT   "\n*** Possible cause: \"Hugs.Trex\" module not imported"
-		EEND;
-	}
-
-	if( !(nameEqRecRow = findQualName(eqRecRowName)) &&
-	    !(nameEqRecRow = findName(qtextOf(eqRecRowName))) ) {
-	    ERRMSG(0) "Hugs.Trex.eqRecRow not in scope" ETHEN
-		ERRTEXT   "\n*** Possible cause: \"Hugs.Trex\" module not imported"
-		EEND;
-	}
-
-	if( !(nameShowRecRowCls = findQualClass(ShowRecName)) &&
-	    !(nameShowRecRowCls = findClass(qtextOf(ShowRecName))) ) {
-	    ERRMSG(0) "Hugs.Trex.ShowRecRow class not in scope" ETHEN
-		ERRTEXT   "\n*** Possible cause: \"Hugs.Trex\" module not imported"
-		EEND;
-	}
-
-	if( !(nameEqRecRowCls = findQualClass(EqRecName)) &&
-	    !(nameEqRecRowCls = findClass(qtextOf(EqRecName))) ) {
-	    ERRMSG(0) "Hugs.Trex.EqRecRow not in scope" ETHEN
-		ERRTEXT   "\n*** Possible cause: \"Hugs.Trex\" module not imported"
-		EEND;
-	}
 
 
-    }
-    trexLibNeeded = FALSE;
-}
-#endif
 
-
-#if TREX
-static Cell local depRecord(Int line, Cell e)	/* find dependents of record and   */
-              /* sort fields into approp. order  */
-{				/* to make construction and update */
-    List exts = NIL;			/* more efficient.		   */
-    Cell r    = e;
-
-    h98DoesntSupport(line,"extensible records");
-    do {				/* build up list of extensions	   */
-	Text   t    = extText(fun(fun(r)));
-	String s    = textToStr(t);
-	List   prev = NIL;
-	List   nx   = exts;
-	while (nonNull(nx) && strcmp(textToStr(extText(fun(fun(nx)))),s)>0) {
-	    prev = nx;
-	    nx   = extRow(nx);
-	}
-	if (nonNull(nx) && t==extText(fun(fun(nx)))) {
-	    ERRMSG(line) "Repeated label \"%s\" in record ", s
-	    ETHEN ERREXPR(e);
-	    ERRTEXT "\n"
-	    EEND;
-	}
-	if (isNull(prev)) {
-	    exts = cons(fun(r),exts);
-	} else {
-	    tl(prev) = cons(fun(r),nx);
-	}
-
-	extField(r) = depExpr(line,extField(r));
-	r           = extRow(r);
-    } while (isAp(r) && isAp(fun(r)) && isExt(fun(fun(r))));
-    r = depExpr(line,r);
-    return revOnto(exts,r);
-}
-#endif
 
 /* --------------------------------------------------------------------------
  * Several parts of this program require an algorithm for sorting a list
@@ -7117,9 +6071,7 @@ static Cell local h98Context(Bool allowArgs, List ps)
 static Void local h98CheckCtxt(Int line, String wh, Bool allowArgs, List ps, Inst in)
                 /* Report illegal context/predicate*/
 {
-#if !HASKELL_98_ONLY
     if (haskell98) {
-#endif
 	Cell pi = h98Context(allowArgs,ps);
 	if (nonNull(pi)) {
 	    ERRMSG(line) "Illegal Haskell 98 class constraint in %s",wh ETHEN
@@ -7133,16 +6085,12 @@ static Void local h98CheckCtxt(Int line, String wh, Bool allowArgs, List ps, Ins
 	    ERRTEXT	 "\n"
 	    EEND;
 	}
-#if !HASKELL_98_ONLY
     }
-#endif
 }
 
 static Void local h98CheckType(Int line, String wh, Cell e, Type t)	/* Check for Haskell 98 type */
 {
-#if !HASKELL_98_ONLY
     if (haskell98) {
-#endif
 	Type ty = t;
 	if (isPolyType(t))
 	    t = monotypeOf(t);
@@ -7157,16 +6105,12 @@ static Void local h98CheckType(Int line, String wh, Cell e, Type t)	/* Check for
 		EEND;
 	    }
 	}
-#if !HASKELL_98_ONLY
     }
-#endif
 }
 
 Void h98CheckInferredType(Int line, Cell e, Type t)	/* Check for Haskell 98 type	   */
 {
-#if !HASKELL_98_ONLY
     if (haskell98) {
-#endif
 	if (isPolyType(t))
 	    t = monotypeOf(t);
 	if (isQualType(t)) {
@@ -7180,21 +6124,15 @@ Void h98CheckInferredType(Int line, Cell e, Type t)	/* Check for Haskell 98 type
 		EEND;
 	    }
 	}
-#if !HASKELL_98_ONLY
     }
-#endif
 }
 
 Void h98DoesntSupport(Int line, String wh)		/* Report feature missing in H98   */
 {
-#if !HASKELL_98_ONLY
     if (haskell98) {
-#endif
 	ERRMSG(line) "Haskell 98 does not support %s", wh
 	EEND;
-#if !HASKELL_98_ONLY
     }
-#endif
 }
 
 /* --------------------------------------------------------------------------
@@ -7205,21 +6143,12 @@ Void staticAnalysis(Int what)
 {
     switch (what) {
 	case RESET   :
-#if MUDO
-	               mdoLoad();
-#endif
-#if TREX
-	               trexLoad();
-#endif
 	               cfunSfuns    = NIL;
 		       daSccs	    = NIL;
 		       patVars	    = NIL;
 		       bounds	    = NIL;
 		       bindings	    = NIL;
 		       depends      = NIL;
-#if MUDO
-		       mdepends	    = NIL;
-#endif
 		       tcDeps	    = NIL;
 		       derivedInsts = NIL;
 		       diVars	    = NIL;
@@ -7232,23 +6161,14 @@ Void staticAnalysis(Int what)
 		       mark(bounds);
 		       mark(bindings);
 		       mark(depends);
-#if MUDO
-		       mark(mdepends);
-#endif
 		       mark(tcDeps);
 		       mark(derivedInsts);
 		       mark(diVars);
 		       mark(cfunSfuns);
 		       mark(unkindTypes);
-#if TREX
-		       mark(extKind);
-#endif
 		       break;
 
 	case INSTALL : staticAnalysis(RESET);
-#if TREX
-		       extKind = pair(STAR,pair(ROW,ROW));
-#endif
 		       break;
     }
 }

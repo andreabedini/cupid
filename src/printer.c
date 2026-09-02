@@ -346,11 +346,6 @@ static Void local printer(Name pr, Int d)		/* Main part: primPrint/primNPrint */
 			pr = nameNPrint;
 			break;
 
-#if TREX
-	case RECORD   : outStr("{record}");
-			pr = nameNPrint;
-			break;
-#endif
  
 #if IO_HANDLES
 	case HANDCELL : outStr("{handle}");
@@ -358,10 +353,6 @@ static Void local printer(Name pr, Int d)		/* Main part: primPrint/primNPrint */
 			break;
 #endif
 
-#if OBSERVATIONS
-        case OBSERVE  : outStr("printer.c: printer(): OBSERVE");
-                        break;
-#endif
 
 	default       : internal("Error in graph");
 			break;

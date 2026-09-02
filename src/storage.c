@@ -49,12 +49,6 @@ static Void local freeHandle            (Int);
 #if GC_STABLEPTRS
 static Void local resetStablePtrs       (Void);
 #endif
-#if OBSERVATIONS
-static Observe  local newObserve        (Text);
-static Void     local appendObs         (Cell,Cell);
-static Breakpt  local addBreakpt        (String);
-static Breakpt  local findBreakpt       (String);
-#endif
 
 #ifdef DOTNET
 extern Void markDotNetPtrs(Int* masks);
@@ -315,24 +309,6 @@ Void nextInstr(Addr a)                       /* Reset point to next instruction 
  * this turns out to be a problem.
  * ------------------------------------------------------------------------*/
 
-#if TREX
-Text  DEFTABLE(tabExt,NUM_EXT);         /* Storage for Ext names           */
-Ext   extHw;
-
-Ext mkExt(Text t)                            /* Allocate or find an Ext value   */
-{
-    Ext e = EXTMIN;
-    for (; e<extHw; e++)
-	if (t==extText(e))
-	    return e;
-    if (extHw-EXTMIN >= NUM_EXT) {
-	ERRMSG(0) "Ext storage space exhausted"
-	EEND;
-    }
-    extText(extHw) = t;
-    return extHw++;
-}
-#endif
 
 /* --------------------------------------------------------------------------
  * Tycon storage:
@@ -1255,154 +1231,6 @@ Void hugsStackOverflow() {          /* Report stack overflow               */
  * Observation storage
  * ------------------------------------------------------------------------*/
 
-#if OBSERVATIONS
-static Observe observeHw;                            /* next unused Observe  */
-struct strObserve DEFTABLE(tabObserve,NUM_OBS_TAGS); /* Observe storage      */
-static Observe currentObs;			     /* for table iterators  */
-
-Observe newObserve(Text t)
-{
-    if (observeHw-OBSMIN >= NUM_OBS_TAGS) {
-	ERRMSG(0) "Observation storage space exhausted"
-	EEND;
-    }
-    observe(observeHw).tag  = t;
-    observe(observeHw).head = triple(OBSERVEHEAD,NIL,NIL);
-    return observeHw++;
-}
-
-Observe firstObserve(){
-    if (observeHw==OBSMIN) return currentObs=0;
-    else 		   return currentObs=OBSMIN;
-}
-
-Observe nextObserve(){
-    if (currentObs && ++currentObs < observeHw)
-        return currentObs;
-    else
-    	return currentObs=0;
-}
-
-Void    clearObserve(){
-    observeHw = OBSMIN;
-}
-
-Cell addObsInstance(String s, Cell e, Int id)
-              /* the tag                 */
-               /* observed expr           */
-                /* identifying number      */
-{
-    Observe i;
-    Triple obsCell = triple(NIL, mkInt(id), e);
-    Text t         = findText(s); 
-
-    for (i=OBSMIN; i<observeHw && t != observe(i).tag; i++)  
-        ;
-    if (i==observeHw) i=newObserve(t);
-    appendObs(observe(i).head, obsCell);
-    return obsCell;
-}
-
-Void appendObs(Cell header, Cell obsCell)
-{
-    if (firstObs(header) == NIL)
-        firstObs(header) = obsCell;
-    else
-         nextObs(lastObs(header)) = obsCell;
-    lastObs(header) = obsCell;
-    nextObs(obsCell) = header;         		/* last cell point to header*/
-}
-
-Void insertAfterObs(Cell old, Cell new)
-{
-    if (whatIs(nextObs(old)) == OBSERVEHEAD)
-        lastObs(nextObs(old)) = new;		/* reset header's last ptr   */
-    nextObs(new) = nextObs(old);
-    nextObs(old) = new;
-}
-
-/* --------------------------------------------------------------------------
- * Breakpoint storage
- * ------------------------------------------------------------------------*/
-
-static Breakpt breakptHw;                          /* next unused Breakpt  */
-struct strBreakpt DEFTABLE(tabBreakpt,NUM_BRKPTS); /* Breakpt storage      */
-
-Void    clearAllBreak(){
-    breakptHw = BRKMIN;
-}
-
-Breakpt addBreakpt(String s)		/* Add to table if absent; state= disabled */
-{			/* Return breakpt index			   */
-    Breakpt i=BRKMIN;
-    Breakpt j;
-    Text t = findText(s);
-
-    while (i<breakptHw && breakpt(i).tag<=t) i++;
-    /* tag found /\ next highest found /\ end of table			   */
-    if (i == breakptHw){			   /* end of table reached */
-        breakpt(i).tag     = t;
-	breakpt(i).enabled = FALSE;
-	breakpt(i).count   = 0;
-	return breakptHw++;
-    }
-    else if (breakpt(i).tag==t){		   /* match		   */
-        return i;
-    }
-    else {					   /* shift and insert	   */
-        for (j=breakptHw-1; j>=i; j--)
-	    breakpt(j+1) = breakpt(j);
-	breakpt(i).tag = t;
-	breakpt(i).enabled = FALSE;
-	breakptHw++;
-	return i;
-    }
-}
-
-Breakpt findBreakpt(String s)		/* return index of breakpt name		   */
-{			/* return BRKMIN-1 if not found		   */
-    Breakpt lower, upper, i;
-    Text t = findText(s);
-
-    lower = BRKMIN;
-    upper = breakptHw-1;
-    while (lower <= upper) {
-        i = (lower+upper) / 2;
-	if      (t < breakpt(i).tag)	upper = i - 1;
-	else if (t > breakpt(i).tag)	lower = i + 1;
-	else				return i;
-    }
-    return BRKMIN-1;
-}
-
-Bool breakNow(String s)		/* break enabled && no skips 		   */
-{			/* decrements skip counter		   */
-    Breakpt b = findBreakpt(s);
-    if ((b >= BRKMIN) && breakpt(b).enabled)
-        if (breakpt(b).count){ 
-	    breakpt(b).count--;
-	    return FALSE;
-	}
-	else
-	    return TRUE;
-    else
-        return FALSE;
-}
-
-
-Void setBreakpt(String s, Bool v)		/* enable breakpt; may create a table entry*/
-{
-    Breakpt b = findBreakpt(s);
-    if (b < BRKMIN) b = addBreakpt(s);
-    breakpt(b).enabled = v;
-}
-	
-Void setBreakCount(String s, Int n)		/* set skip count value for breakpoint	   */
-{
-    Breakpt b = findBreakpt(s);
-    if (b >= BRKMIN) breakpt(b).count = n;
-}
-#endif
 
 /* --------------------------------------------------------------------------
  * Module storage:
@@ -1579,9 +1407,6 @@ typedef struct strScriptStorage {      /* record of storage state prior to */
     Name  nameHw;
     Class classHw;
     Inst  instHw;
-#if TREX
-    Ext   extHw;
-#endif
     /*
      * handle to the script's primInfoDef containing primops associated
      * with this script (if any.)
@@ -1630,9 +1455,6 @@ Script startNewScript(String f)                /* start new script, keeping reco
     showUse("Class",  classHw-CLASSMIN, dynTabClass->maxIdx);
     showUse("Inst",   instHw-INSTMIN,   dynTabInst->maxIdx);
 #endif
-#if TREX
-    showUse("Ext",    extHw-EXTMIN,     NUM_EXT);
-#endif
 #endif
 
     scripts[scriptHw].file         = findText( f ? f : "<nofile>" );
@@ -1645,9 +1467,6 @@ Script startNewScript(String f)                /* start new script, keeping reco
     scripts[scriptHw].nameHw       = nameHw;
     scripts[scriptHw].classHw      = classHw;
     scripts[scriptHw].instHw       = instHw;
-#if TREX
-    scripts[scriptHw].extHw        = extHw;
-#endif
     scripts[scriptHw].prims        = NULL;
 
     return scriptHw++;
@@ -1730,9 +1549,6 @@ Void dropAScript(Script sno)   /* elide one script from the stack */
 	scripts[i-1].nameHw = scripts[i].nameHw;
 	scripts[i-1].classHw = scripts[i].classHw;
 	scripts[i-1].instHw = scripts[i].instHw;
-#if TREX
-	scripts[i-1].extHw = scripts[i].extHw;
-#endif
 	if (scripts[i-1].prims) {
 	  freePrimInfo(scripts[i-1].prims);
 	  scripts[i-1].prims = 0;
@@ -1756,9 +1572,6 @@ Void dropScriptsFrom(Script sno)               /* Restore storage to state prior
 	nameHw       = scripts[sno].nameHw;
 	classHw      = scripts[sno].classHw;
 	instHw       = scripts[sno].instHw;
-#if TREX
-	extHw        = scripts[sno].extHw;
-#endif
 
 	for (i=0; i<TEXTHSZ; ++i) {
 	    int j = 0;
@@ -1900,12 +1713,7 @@ static Void initFastWhat(Void) {
 
 	for (i = 0; i < TUPMIN; i++)
 		whatCode[i] = i;
-#if TREX
-	fillWhatCode(TUPLE,   TUPMIN,  EXTMIN);
-	fillWhatCode(EXT,     EXTMIN,  OFFMIN);
-#else
 	fillWhatCode(TUPLE,   TUPMIN,  OFFMIN);
-#endif
 	fillWhatCode(OFFSET,  OFFMIN,  MODMIN);
 	fillWhatCode(MODULE,  MODMIN,  TYCMIN);
 	fillWhatCode(TYCON,   TYCMIN,  NAMEMIN);
@@ -2394,10 +2202,6 @@ static Cell local lowLevelLastIn(Cell c)     /* Duplicate expression tree (i.e. 
 	    }
 	else
 	    return pair(lowLevelLastIn(fst(c)),lowLevelLastIn(snd(c)));
-#if TREX
-    else if (isExt(c))
-	return pair(EXTCOPY,saveText(extText(c)));
-#endif
     else
 	return c;
 }
@@ -2418,9 +2222,6 @@ static Cell local lowLevelLastOut(Cell c)    /* As with lowLevelLastIn() above  
 		case CONOPCELL :
 		case STRCELL   : return pair(fst(c),
 					     findText(text+intValOf(c)));
-#if TREX
-		case EXTCOPY   : return mkExt(findText(text+intValOf(c)));
-#endif
 		default        : return pair(fst(c),snd(c));
 	    }
 	else
@@ -2454,12 +2255,7 @@ Cell whatIs(Cell c)                         /* identify type of cell            
     else            if (c>=MODMIN)      if (c>=TYCMIN)  return TYCON;
 					else            return MODULE;
 		    else		if (c>=OFFMIN)  return OFFSET;
-#if TREX
-					else		return (c>=EXTMIN) ?
-								EXT : TUPLE;
-#else
 					else		return TUPLE;
-#endif
 
 /*  if (isPair(c)) {
 	register Cell fstc = fst(c);
@@ -2473,9 +2269,6 @@ Cell whatIs(Cell c)                         /* identify type of cell            
     if (c>=TYCMIN)   return TYCON;
     if (c>=MODMIN)   return MODULE;
     if (c>=OFFMIN)   return OFFSET;
-#if TREX
-    if (c>=EXTMIN)   return EXT;
-#endif
     if (c>=TUPMIN)   return TUPLE;
     return c;*/
 }
@@ -2565,14 +2358,6 @@ Void print(Cell c, Int depth)
 	  case CONOPCELL :
 	      Printf("{id %s}",textToStr(textOf(c)));
 	      break;
-#if IPARAM
-	  case IPCELL :
-	      Printf("{ip %s}",textToStr(textOf(c)));
-	      break;
-	  case IPVAR :
-	      Printf("?%s",textToStr(textOf(c)));
-	      break;
-#endif
 	  case QUALIDENT :
 	      Printf("{qid %s.%s}",textToStr(qmodOf(c)),textToStr(qtextOf(c)));
 	      break;
@@ -2583,26 +2368,6 @@ Void print(Cell c, Int depth)
 	      print(snd(snd(c)),depth-1);
 	      Putchar(')');
 	      break;
-#if OBSERVATIONS
-          case INDIRECT:
-              Printf("->");
-              print(snd(c),depth);
-              break;
-          case OBSERVE:
-              Printf("{==>"); print(snd3(c),depth); Putchar('|');
-              Printf("cell = %d=(", thd3(c));
-              Printf("next= %d,", nextObs(thd3(c)));
-              Printf("seq= %d,", intOf(seqObs(thd3(c))));
-              Printf("expr= %d)}", exprObs(thd3(c)));
-              break;
-          case OBSERVESTK:
-              Printf("{=STK=>{");
-              Printf("cell = %d=(", thd3(c));
-              Printf("next= %d,", nextObs(thd3(c)));
-              Printf("seq= %d,", intOf(seqObs(thd3(c))));
-              Printf("expr= %d)}", exprObs(thd3(c)));
-              break;
-#endif
 	  case BIGLAM:
 	      Printf("BigLam(");
 	      printList(fst(snd(c)),depth-1);
@@ -3571,11 +3336,6 @@ Void storage(Int what)
 #endif
 		       }
 		       end("Names", nameHw-NAMEMIN);
-#if OBSERVATIONS
-                       start();
-                       for (i=OBSMIN; i<observeHw; ++i) mark(firstObs(observe(i).head));
-                       end("Observations", observeHw=OBSMIN);
-#endif
 		       start();
 		       for (i=MODMIN; i<moduleHw; ++i) {
 			   mark(module(i).tycons);
@@ -3725,13 +3485,6 @@ Void storage(Int what)
 		       TABALLOC(tabClass,  struct strClass,  NUM_CLASSES)
 		       TABALLOC(cellStack, Cell,             NUM_STACK)
 		       TABALLOC(tabModule, struct strModule, NUM_MODULE)
-#if TREX
-		       TABALLOC(tabExt,	   Text,	     NUM_EXT)
-#endif
-#if OBSERVATIONS
-                       TABALLOC(tabObserve,struct strObserve, NUM_OBS_TAGS)
-                       TABALLOC(tabBreakpt,struct strBreakpt, NUM_BRKPTS)
-#endif
 		       clearStack();
 
 #if IO_HANDLES
@@ -3761,10 +3514,6 @@ Void storage(Int what)
 
 
 		       addrHw   = 0;
-#if OBSERVATIONS
-                       observeHw = OBSMIN;
-                       breakptHw = BRKMIN;
-#endif
 
 		       moduleHw = MODMIN;
 
@@ -3789,9 +3538,6 @@ Void storage(Int what)
 		       resetStablePtrs();
 #endif
 
-#if TREX
-		       extHw	= EXTMIN;
-#endif
 		       nameHw	= NAMEMIN;
 		       for (i=0; i<NAMEHSZ; ++i)
 			   nameHash[i] = NIL;
@@ -3836,13 +3582,6 @@ Void storage(Int what)
 		       TABFREE(tabClass);
 		       TABFREE(cellStack);
 		       TABFREE(tabModule);
-#if TREX
-		       TABFREE(tabExt);
-#endif
-#if OBSERVATIONS
-                       TABFREE(tabObserve);
-                       TABFREE(tabBreakpt);
-#endif
 		       if (marks) free(marks);
 		       
 		       /* Note: primInfoDef memory is freed in controlFuns() above */

@@ -19,9 +19,6 @@
 #include "opts.h"	/* needed for DEBUG_CODE */
 #include <setjmp.h>
 
-#if OBSERVATIONS
-Bool   rootOpt       = TRUE;		/* TRUE => enable root optimisation*/
-#endif
 #if DEBUG_CODE
 Bool   debugCode     = FALSE;		/* TRUE => print G-code to screen  */
 #endif
@@ -182,23 +179,14 @@ static Int   local buildLoc     (List,Int);
 #if BIGNUMS
 static Void  local buildBignum  (Bignum);
 #endif
-#if TREX
-static Void  local buildName	(Cell);
-#endif
 
 static Void  local make         (Cell,Int,Label,Label);
 static Void  local makeCond     (Cell,Cell,Cell,Int,Label,Label);
 static Void  local makeNumcase  (Triple,Int,Label,Label);
-#if TREX
-static Void  local makeExtcase  (Triple,Int,Label,Label);
-#endif
 static Void  local testGuard    (Pair,Int,Label,Label,Label);
 static Void  local testCase     (Pair,Int,Label,Label,Label);
 
 static Void  local analyseAp    (Cell);
-#if TREX
-static Int   local fastBuildRec	(Cell,Int);
-#endif
 static Void  local buildAp      (Cell,Int,Label,Bool);
 
 static Void  local evalString   (Cell);
@@ -679,17 +667,9 @@ static Void local build(Cell e, Int co)           /* Generate code which will bu
 	case AP        : buildAp(e,co,SHOULDNTFAIL,FALSE);
 			 break;
 
-#if TREX
-	case NAME      : buildName(e);
-			 break;
-
-	case TUPLE     : asCELL(e);
-			 break;
-#else
 	case TUPLE     :
 	case NAME      : asCELL(e);
 			 break;
-#endif
 
 #if BIGNUMS
 	case ZERONUM   :
@@ -769,18 +749,6 @@ static Void local buildBignum(Bignum b)        /* Generate code to build bignum 
 }
 #endif
 
-#if TREX
-static Void local buildName(Cell e)		/* Build name, taking account of   */
-{				/* special cases, as necessary.	   */
-    if (e==nameNoRec) {
-	asCELL(nameNil);
-	asCELL(RECORD);
-	asMKAP(1);
-    }
-    else
-	asCELL(e);
-}
-#endif
 
 /* --------------------------------------------------------------------------
  * Compile expression to code which will build expression evaluating guards
@@ -839,10 +807,6 @@ static Void local make(Cell e, Int co, Label f, Label d)       /* Construct code
 				  thd3(snd(e)),co,f,d);
 			 break;
 
-#if TREX
-	case EXTCASE   : makeExtcase(snd(e),co,f,d);
-			 break;
-#endif
 
 	case NUMCASE   : makeNumcase(snd(e),co,f,d);
 			 break;
@@ -871,20 +835,10 @@ static Void local make(Cell e, Int co, Label f, Label d)       /* Construct code
 			 asGOTO(d);
 			 break;
 
-#if TREX
-	case NAME      : buildName(e);
-			 asGOTO(d);
-			 break;
-
-	case TUPLE     : asCELL(e);
-			 asGOTO(d);
-			 break;
-#else
 	case TUPLE     :
 	case NAME      : asCELL(e);
 			 asGOTO(d);
 			 break;
-#endif
 
 #if BIGNUMS
 	case ZERONUM   :
@@ -968,31 +922,9 @@ static Void local makeNumcase(Triple nc, Int co, Label f, Label d)/* Build code 
 		      asTEST(nameTrue,f);
 		      make(thd3(nc),co,f,d);
 		      break;
-#if NPLUSK
-	case ADDPAT : asINTEGER(snd(h));
-		      make(arg(discr),co,SHOULDNTFAIL,RUNON);
-		      asCELL(namePmNpk);
-		      asMKAP(3);
-		      asEVAL();
-		      asTEST(nameJust,f);
-		      offsPosn[co+1] = ++srsp;
-		      make(thd3(nc),co+1,f,d);
-		      --srsp;
-		      break;
-#endif
     }
 }
 
-#if TREX
-static Void local makeExtcase(Triple ec, Int co, Label f, Label d)/* Build code for extcase	   */
-{
-    make(ap(ap(nameRecBrk,arg(snd3(ec))),fst3(ec)),co,SHOULDNTFAIL,RUNON);
-    asEVAL();
-    offsPosn[co+1] = ++srsp;
-    offsPosn[co+2] = ++srsp;
-    make(thd3(ec),co+2,f,d);
-}
-#endif
 
 static Void local testGuard(Pair g, Int co, Label f, Label cf, Label d)/* Produce code for guard          */
 {
@@ -1052,50 +984,12 @@ static Void local analyseAp(Cell e)         /* Determine if any portion of an   
 	rootPortion = 0;
 }
 
-#if TREX
-static Int local fastBuildRec(Cell e, Int co)	/* Try to build record, returning  */
-            /* no of elements, or (-1) if not a*/
-{				/* simple record		   */
-    if (e==nameNoRec) {
-	asCELL(NIL);
-	return 0;
-    }
-    else if (isExt(getHead(e)) && argCount==3) {
-	Int c = fastBuildRec(extRow(e),co);
-	if (c>=0) {
-	    build(extField(e),co);
-	    asMKAP(1);
-	    return (c+1);
-	}
-    }
-    return (-1);
-}
-#endif
 
 static Void local buildAp(Cell e, Int co, Label f, Bool str)  /* Build application, making use of */
                                        /* root optimisation if poss.       */
 {
     Int nr, rp, i;
 
-#if TREX
-    if ((i=fastBuildRec(e,co))>=0) {	/* Fast build for records whose	   */
-	asCELL(RECORD);			/* structure is known at compile   */
-	asMKAP(1);			/* time ... but the savings are	   */
-	return;				/* pretty small.		   */
-    }
-#endif
-#if OBSERVATIONS
-    if (!rootOpt){
-        rp = 0;
-        nr = 0;
-        while (isAp(e)){
-            build(arg(e),co);
-	    e = fun(e);
-	    nr++;
-        }
-    }
-    else {
-#endif
     nonRoots = 0;
     analyseAp(e);
     nr = nonRoots;
@@ -1105,14 +999,7 @@ static Void local buildAp(Cell e, Int co, Label f, Bool str)  /* Build applicati
         build(arg(e),co);
         e = fun(e);
     }
-#if OBSERVATIONS
-    }
-#endif
 
-#if TREX
-    if (isExt(e))
-	e = nameRecExt;
-#endif
     if (0<rp && rp<=definingArity) {
 	asROOT(rp-1);
     }
@@ -1205,43 +1092,6 @@ Void implementCfun(Name c, List scs)               /* Build implementation for c
     }
 }
 
-#if TREX
-Name nameInsFld;			/* Hooks to Trex library	   */
-Name nameShowRecRow;                    /* static.c:trexLoad() binds them  */
-Name nameEqRecRow;
-
-Name implementRecShw(Text t, Cell parent)		/* Build implementation for record */
-            /* display function.		   */
-{
-    Name n          = newName(inventText(),parent);
-    name(n).arity   = 0;
-    name(n).number  = DFUNNAME;
-    asSTART();
-    asSTRING(t);
-    asCELL(nameRecShw);
-    asMKAP(1);
-    asRETURN();
-    asEND();
-    name(n).code    = startInstr;
-    return n;
-}
-
-Name implementRecEq(Text t, Cell parent)		/* Build implementation for record */
-            /* compare function.		   */
-{
-    Name n         = newName(inventText(),parent);
-    name(n).arity  = 0;
-    name(n).number = DFUNNAME;
-    asSTART();
-    asSTRING(t);
-    asCELL(nameRecEq);
-    asMKAP(1);
-    asRETURN();
-    asEND();
-    name(n).code   = startInstr;
-    return n;
-}
-#endif
 
 /* --------------------------------------------------------------------------
  * Evaluator:
@@ -1272,12 +1122,6 @@ Int  rootsp = (-1);
 Cell evalRoots[NUM_STACK];
 #endif
 
-#if OBSERVATIONS
-#define obsMarker(p) (whatIs(stack(p))==OBSERVESTK)
-#define isFree(n) (whatIs(n)==OBSERVE && whatIs(markedExpr(n))==FREECELL)
-Int appNum;
-Int obsCount=0;
-#endif
 
 Void eval(Cell n)                            /* Graph reduction evaluator       */
 {
@@ -1303,12 +1147,6 @@ unw:switch (whatIs(n)) {                /* unwind spine of application     */
 			 allowBreak();
 			 goto unw;
 
-#if OBSERVATIONS
-        case OBSERVE   : push(pair(OBSERVESTK,markedObs(n)));
-                         obsCount++;
-                         n = markedExpr(n);
-                         goto unw;
-#endif
 
 	case NAME      : allowBreak();
 			 {
@@ -1318,9 +1156,6 @@ unw:switch (whatIs(n)) {                /* unwind spine of application     */
 			     Printf("%*sEntering name(%d): %s\n", base, "", 
 				    n - NAMEMIN, textToStr(name(n).text));
 			 }
-#endif
-#if OBSERVATIONS
-    if (!obsCount) {
 #endif
 			 if (!isCfun(n) && (ar=name(n).arity)<=(sp-base)) {
 			    if (ar>0) {                     /* fn with args*/
@@ -1380,137 +1215,6 @@ unw:switch (whatIs(n)) {                /* unwind spine of application     */
 #endif
 			     goto unw;
 			 }
-#if OBSERVATIONS
-    }
-    else { 		/* handle reduction in presence of observations	   */
-        StackPtr p, dest;
-        Int      args;
-        Cell     newCell, arg, newHead;
-
-        args = 0;                      /* count arguments */
-        for (p=sp; p>base; p--)
-           if (!obsMarker(p)) args++;  
-        
-        if (!isCfun(n) && (ar=name(n).arity)<=args) {
-           if (ar>0) {                     /* fn with args*/
-                StackPtr root;
-                StackPtr q;
-                Int      argNum, markers, i;
-                Cell     insCell;
-
-                push(NIL);
-                /* conv. AP to arg; count markers         */
-                for (p=sp-1, args=0, markers=0; args<ar; p--)
-                  if (obsMarker(p)) {
-                    stack(p+1) = stack(p);
-                    markers++;
-                  }
-                  else {
-                    stack(p+1) = arg(stack(p));
-                    args++;
-                  }
-                root = p+1;            /* posn of last app*/
-                /* add obs cells for marked args          */
-                if (markers){
-                  appNum++;
-                  for (p=sp; p>=root+1; p--)
-                    if (obsMarker(p)) {
-                       /* set function return value cell   */
-                       /* new result list elem    */
-                       insCell = triple(NIL,mkInt(appId(appNum,0)),NIL); 
-                       insertAfterObs(snd(stack(p)),insCell);
-                       seqObs(snd(stack(p))) = mkInt(0); 
-                       snd(stack(p)) = insCell;
-                       for (q=p-1, argNum=1; q>=root+1; q--)
-                         if (!obsMarker(q)) {
-                           arg     = triple(OBSERVE,stack(q), NIL);
-                           stack(q)=arg;
-                           newCell = triple(NIL, mkInt(-1), stack(q));
-                           newHead = triple(OBSERVEHEAD,newCell,newCell);
-                           /* fix back pointers */
-                           nextObs(newCell) = newHead;
-                           markedObs(arg)   = newCell;
-                           /* reuse newCell as inderect obs. list item */
-                           newCell = triple(NIL, mkInt(appId(appNum,argNum++)), newHead);
-                           insertAfterObs(insCell, newCell);
-                           insCell = newCell;
-                         }
-                    }
-                  /* reorganise stack (move markers)      */
-                  for (p=dest=sp; p>=root; p--)
-                    if (obsMarker(p))
-                      push(stack(p));
-                    else
-                      stack(dest--) = stack(p);
-                  for (i=1, p=root; i<=markers; i++)
-                    stack(p++) = pop();
-                  root = p;
-                }
-
-                saveProducer(n);
-#ifdef DOTNET
-		if (name(n).foreignInfo != NIL) 
-		  primInvoker(root,n);
-		else
-#endif
-                if (name(n).primDef){      /* reduce      */
-                    (*name(n).primDef)(root);
-                }   
-                else
-                    run(name(n).code,root);
-                numReductions++;
-                restoreProducer();
-
-                sp = root;                 /* continue... */
-                n      = pop();
-
-                if (markers) {         /* observe results */
-                  for (p=root-1, i=1; i<=markers; i++){
-                    exprObs(snd(stack(p--))) = n;
-                  }
-                  sp = sp - markers;
-		  obsCount -= markers;
-                }
-
-            }
-            else {                         /* CAF         */
-                if (isNull(name(n).defn)   /* build CAF   */
-                   /* || isFree(name(n).defn) */){
-                    StackPtr root = sp;
-                    push(n);               /* save CAF    */
-                    saveProducer(n);
-#ifdef DOTNET
-		    if (name(n).foreignInfo != NIL)
-		      primInvoker(root,n);
-		    else
-#endif
-                    if (name(n).primDef)
-                        (*name(n).primDef)(sp);
-                    else
-                        run(name(n).code,sp);
-                    numReductions++;
-                    restoreProducer();
-                    name(n).defn = top();
-                    sp       = root;   /* drop CAF    */
-                }
-                
-                n = name(n).defn;          /*already built*/
-
-                /* move OBSERVESTK markers                */
-		for (p=sp; p > base  && obsMarker(p); p--)  ;
-		if (p > base)
-		    fun(stack(p)) = n;
-            }
-#if DEBUG_CODE
-            if (debugCode) {
-                Printf("%*sLeaving name(%d): %s\n", base, "", 
-                       saveName - NAMEMIN, textToStr(name(saveName).text));
-            }
-#endif
-            goto unw;
-        }
-    }
-#endif
 			 }
 			 break;
 
@@ -1527,19 +1231,6 @@ unw:switch (whatIs(n)) {                /* unwind spine of application     */
 			 goto unw;
     }
 
-#if OBSERVATIONS
-    /* remove observation markers due to non-fun observations              */
-    if (obsCount){
-        StackPtr p, dest;
-        for (p=dest=base+1; p<=sp; p++)
-            if (!obsMarker(p))
-                stack(dest++) = stack(p);
-            else{
-                obsCount--;
-            }
-        sp = dest - 1;
-    }
-#endif
 
     whnfHead = n;                      /* rearrange components of term on  */
     whnfArgs = sp - base;              /* stack, now in whnf ...           */
@@ -1554,42 +1245,6 @@ unw:switch (whatIs(n)) {                /* unwind spine of application     */
     evalDepth--;
 }
 
-#if OBSERVATIONS
-Bool isWhnf(Cell n)                            /* is graph expr in WHNF      */
-{
-    Int      ar;
-    Int      args=0;
-
-unw:switch (whatIs(n)) {                /* unwind spine of application     */
-	case AP        : args++; 
-			 n = fun(n);
-			 goto unw;
-
-	case INDIRECT  : n = arg(n);
-			 goto unw;
-
-	case OBSERVE   : n = markedExpr(n);
-			 goto unw;
-
-	case NAME      : return isCfun(n) 
-	                        || (ar=name(n).arity) > args
-				|| ar == 0; 
-
-	case STRCELL   : evalString(n);
-			 goto unw;
-    }
-    return TRUE;
-}
-
-Cell getCaf(Cell n)
-{
-    while (whatIs(n) == INDIRECT) n = arg(n);
-    if (whatIs(n) == NAME && !isCfun(n) && name(n).arity == 0)
-        return n;
-    else
-        return 0;
-}
-#endif
 
 Void unwind(Cell n)                         /* unwind spine of application;     */
 {                              /* like eval except that we always  */
@@ -1774,26 +1429,6 @@ static  void *labs[] = { INSTRLIST };
 			pc++;
 			Continue;
 
-#if OBSERVATIONS
-	Case(iROOT)   : {   Cell t = stack(root);        /* partial root   */
-			    Int  i = pc->mint;
-			    Cell c;
-			    while ((c = fst(t))==INDIRECT || c==OBSERVE) {
-				allowBreak();
-				t = c == INDIRECT ? arg(t) : markedExpr(t);
-			    }
-			    while (0<i--) {
-				t = fun(t);
-			        while ((c = fst(t))==INDIRECT || c==OBSERVE) {
-				    allowBreak();
-				    t = c == INDIRECT ? arg(t) : markedExpr(t);
-				}
-			    }
-			    push(t);
-			}
-			pc++;
-			Continue;
-#else
 	Case(iROOT)   : {   Cell t = stack(root);        /* partial root   */
 			    Int  i = pc->mint;
 			    while (fst(t)==INDIRECT) {
@@ -1811,7 +1446,6 @@ static  void *labs[] = { INSTRLIST };
 			}
 			pc++;
 			Continue;
-#endif
 	Case(iSLIDE)  : pushed(pc->mint) = top();        /* remove loc vars*/
 			sp -= pc->mint;
 			pc++;
@@ -1869,9 +1503,6 @@ Void evalFails(StackPtr root)                   /* Eval of current redex fails  
 Void throwException(Cell ex)
 {
     exception = ex;
-#if OBSERVATIONS
-    obsCount=0;
-#endif
     if (evalError)
 	longjmp(*evalError,1);
     else
@@ -1908,10 +1539,6 @@ Void machine(Int what)
 #endif
 		       break;
 
-#if OBSERVATIONS
-	case BREAK   : obsCount = 0;
-	               break;
-#endif
 
         case EXIT    : 
 #if WANT_FIXED_SIZE_TABLES

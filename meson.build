@@ -129,7 +129,6 @@ option_macros = {
   'debug-code': ['DEBUG_CODE', 'DEBUG_PRINTER'],
   'tag-checks': ['CHECK_TAGS'],
   'internal-prims': ['INTERNAL_PRIMS', 'BYTECODE_PRIMS'],
-  'only98': ['HASKELL_98_ONLY'],
   'stack-dumps': ['GIMME_STACK_DUMPS'],
   'path-canonicalization': ['PATH_CANONICALIZATION'],
   'small-banner': ['SMALL_BANNER'],

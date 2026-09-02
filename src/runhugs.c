@@ -19,7 +19,6 @@
 #include "storage.h"
 #include "connect.h"
 #include "machdep.h"
-#include "observe.h"
 #include "server.h"
 
 #if defined(_MSC_VER) && !defined(_MANAGED)
