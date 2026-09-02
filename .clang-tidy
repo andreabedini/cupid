@@ -1,0 +1,21 @@
+# clang-tidy configuration for the Hugs C sources.
+#
+# Only checks whose findings are worth a human look on this codebase are
+# enabled.  The broad bugprone/modernize/cert groups were evaluated and
+# produce thousands of findings that are idiomatic here (unchecked fflush,
+# recursion in an interpreter, assignment in conditions) or that would tie
+# the sources to C23 (nullptr).  Their auto-fixes also break the build:
+# macro-parentheses wraps the bytecode dispatch `goto` in parentheses, and
+# use-internal-linkage cannot see cross-file uses through headers.
+#
+# Run from src/ with:  make tidy
+Checks: >
+  -*,
+  performance-no-int-to-ptr,
+  bugprone-suspicious-realloc-usage,
+  bugprone-implicit-widening-of-multiplication-result,
+  bugprone-narrowing-conversions,
+  bugprone-switch-missing-default-case
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+FormatStyle: none

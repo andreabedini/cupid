@@ -21,6 +21,7 @@
 # veryclean:      delete all machine generated files 
 #                   (you need perl, bison/yacc, etc to rebuild these files)
 # TAGS:           build emacs TAGS table
+# tidy:           run clang-tidy over the C sources
 
 CC		= @CC@
 CFLAGS		= @CFLAGS@ @DEBUGFLAGS@
@@ -147,6 +148,10 @@ veryclean	:: distclean
 veryclean	::
 TAGS		::
 		  etags *.[ych]
+
+# Static analysis with the checks enabled in ../.clang-tidy
+tidy		::
+		  clang-tidy --quiet $(CFILES) -- $(CFLAGS) -I.
 
 ################################################################
 # C and Yacc rules
