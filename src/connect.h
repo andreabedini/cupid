@@ -76,7 +76,6 @@ extern Name  nameListMonad;		/* builder function for List Monad */
 extern Name  namePrint;			/* printing primitive		   */
 extern Name  nameNPrint;		/* internal printer                */
 
-#if    IO_MONAD
 extern Type   typeIO;		        /* For the IO monad, IO 	   */
 extern Type   typeProgIO;		/* For the IO monad, IO ()	   */
 extern Name   nameIORun;	        /* IO monad executor		   */
@@ -87,18 +86,11 @@ extern Name   nameIOError, nameUserErr; /* primitives required for IOError */
 extern Name   namePermDenied;
 extern Name   nameAlreadyExists, nameAlreadyInUse, nameDoesNotExist, nameIsFull;
 extern Name   nameIllegal;
-#endif
 
 #define IOArity		1		/* arity of IO actions             */
 
-#if IO_HANDLES
 extern Name   nameEOFErr;
 extern Name   nameProtocolError;
-#endif
-
-#if DOTNET
-extern Name   nameNetException;
-#endif
 
 extern Name   namePrimThrow;
 
@@ -125,9 +117,6 @@ extern Text  textThreadsafe;
 extern Text  textExport;
 #if STDCALL_SUPPORTED
 extern Text  textStdcall;
-#endif
-#ifdef DOTNET
-extern Text  textDotnet;
 #endif
 
 extern Text  textPrelude;
@@ -165,9 +154,6 @@ extern Type  typeForeign;
 extern Type  typeStable;
 extern Type  typeBool;
 extern Type  typeString;
-#ifdef DOTNET
-extern Type  typeObject;
-#endif
 
 #define fn(from,to)  ap(ap(typeArrow,from),to)	/* make type: from -> to   */
 
@@ -336,10 +322,8 @@ extern  Name   nextCfun		(Name,Name);
 extern  Name   cfunByNum	(Name,Int);
 extern  Void   unwind           (Cell);
 extern  Void   run              (Addr,StackPtr);
-#if !WANT_FIXED_SIZE_TABLES
 extern DynTable* dynMemory;
 extern void    growMemory       (Void);
-#endif
 
 extern  Void   eval             (Cell);
 extern  Cell   evalWithNoError  (Cell);
@@ -361,7 +345,6 @@ extern  Void   abandon		(String,Cell);
 extern  Void   outputString	(FILE *);
 extern  Void   dialogue		(Cell);
 extern  Cell   consChar		(Char);
-#if BIGNUMS
 extern  Bignum bigInt		(Int);
 extern  Bignum bigDouble	(double);
 extern  Bignum bigNeg		(Bignum);
@@ -371,10 +354,7 @@ extern  Bignum bigStr		(String);
 extern  Cell   bigOut		(Bignum,Cell,Bool);
 extern  Bignum bigShift		(Bignum,Int,Int);
 extern  Int    bigCmp		(Bignum,Bignum);
-#endif
-#if IO_MONAD
 extern Void   setHugsArgs       (Int,String[]);
-#endif
 
 extern  Void   machdep          (Int);
 extern  String findPathname     (String);
@@ -394,12 +374,6 @@ extern  Void   plugins          (Int);
 extern  Bool   havePlugin       (String);
 extern  List   calcFunDepsPreds (List);
 extern  Inst   findInstFor      (Cell,Int);
-
-#if HUGS_FOR_WINDOWS
-extern  Void saveInputState	(Void);
-extern  Void restoreInputState	(Void);
-#endif
-
 
 extern  Void   charOps          (Int);
 
