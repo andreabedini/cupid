@@ -1843,7 +1843,8 @@ mc: switch (fst(c)) {
 			    weakPtrs = c;
 			    recordMark();
 			  }
-			  return;
+			  *slot = c;    /* c may have come through an      */
+			  return;       /* indirection chain               */
 			}
 #endif
     }
@@ -1865,9 +1866,9 @@ mc: switch (fst(c)) {
     }
 
     if (isGenPair(fst(c))) {
-	pushMarkSlot(&fst(c));
-	pushMarkSlot(&snd(c));
-    }
+	pushMarkSlot(&snd(c));  /* the fst link is popped first, so a long */
+	pushMarkSlot(&fst(c));  /* list leaves one pending snd link, not   */
+    }				/* one pending fst link per element        */
     else if (isNull(fst(c)) || fst(c)>=BCSTAG) {
 	pushMarkSlot(&snd(c));
     }

@@ -521,10 +521,14 @@ extern void growDynTable       (DynTable*);
  * literal or type is built (including the parser's tuple grammar rule, one
  * comma at a time); an n at or beyond NUM_TUPLES would alias the OFFSET
  * range below and confuse anything that later looks at the cell's tag, so
- * mkTupleChecked (machine.c) reports a clean error instead.
+ * tooManyTupleComponents (machine.c) reports a clean error instead.
  */
-extern  Cell	     mkTupleChecked (Int);
-#define mkTuple(n)   mkTupleChecked(n)
+extern  Void	     tooManyTupleComponents (Void);
+static inline Cell   mkTuple(Int n) {
+    if (n>=NUM_TUPLES)
+	tooManyTupleComponents();
+    return TUPMIN+n;
+}
 #define tupleOf(n)   ((Int)((n)-TUPMIN))
 
 #define mkExt(t) NIL
@@ -538,12 +542,16 @@ extern  Cell	     mkTupleChecked (Int);
 #define offsetOf(c)  ((c)-OFFMIN)
 /* mkOffset(o), similarly, is called with an unchecked offset wherever the
  * compiler hands out a stack/generic-type offset; an o at or beyond
- * NUM_OFFSETS would alias the MODMIN range, so mkOffsetChecked (machine.c)
+ * NUM_OFFSETS would alias the MODMIN range, so tooManyOffsets (machine.c)
  * reports a clean error instead of letting the aliased cell corrupt later
  * processing (as "INTERNAL ERROR: lift").
  */
-extern  Cell	     mkOffsetChecked (Int);
-#define mkOffset(o)  mkOffsetChecked(o)
+extern  Void	     tooManyOffsets (Void);
+static inline Cell   mkOffset(Int o) {
+    if (o>=NUM_OFFSETS)
+	tooManyOffsets();
+    return OFFMIN+o;
+}
 
 /* --------------------------------------------------------------------------
  * Observations
@@ -1014,16 +1022,19 @@ extern  Void hugsStackOverflow (Void);
 #define STACK_CHECK if (StackSpace() <= STACK_HEADROOM) \
 		      internal("Macintosh function parameter stack overflow.");
 #else
-/* cStackOverflow (machine.c) compares the address of a local variable
- * against a limit derived from CStackBase (machdep.c) and the process's
- * stack rlimit, so that every point in the interpreter that recurses on
- * the C stack -- eval, the static checker, the type checker, and the
- * compiler passes that walk the AST -- can detect an approaching C stack
- * overflow and report it through the ordinary error path instead of
- * crashing.
+/* STACK_CHECK compares the address of a local variable against a limit
+ * derived from CStackBase (machdep.c) and the process's stack rlimit, so
+ * that every point in the interpreter that recurses on the C stack --
+ * eval, the static checker, the type checker, and the compiler passes
+ * that walk the AST -- can detect an approaching C stack overflow and
+ * report it through the ordinary error path instead of crashing.  The
+ * limit starts out as the highest address, so the first check always
+ * takes the slow path, cStackCheck (machine.c), which computes it.
  */
-extern  Bool cStackOverflow	 (Void);
-#define STACK_CHECK if (cStackOverflow()) hugsStackOverflow();
+extern  char *cStackLimit;
+extern  Void  cStackCheck	 (Void);
+#define STACK_CHECK { char cStackProbe; \
+		      if (&cStackProbe <= cStackLimit) cStackCheck(); }
 #endif
 
 /* --------------------------------------------------------------------------

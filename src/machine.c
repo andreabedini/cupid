@@ -33,11 +33,11 @@ Int    evalDepth;			/* depth of nested eval()'s        */
  *
  * STACK_CHECK (storage.h) is used at every point in the interpreter that
  * recurses on the C stack with no other bound (eval, the static checker,
- * the type checker, the compiler passes that walk the AST): it calls
- * cStackOverflow() below and, if that returns TRUE, reports "Control
- * stack overflow" through the usual error path (hugsStackOverflow(),
- * storage.c) instead of letting the recursion run off the end of the
- * stack and segfault.
+ * the type checker, the compiler passes that walk the AST): it compares
+ * the address of a local against cStackLimit and, when that fails, calls
+ * cStackCheck() below, which reports "Control stack overflow" through
+ * the usual error path (hugsStackOverflow(), storage.c) instead of
+ * letting the recursion run off the end of the stack and segfault.
  *
  * CStackBase (machdep.c) is recorded once, very early in main(); it is
  * also used by the conservative collector.  The usable size of the
@@ -66,7 +66,8 @@ Int    evalDepth;			/* depth of nested eval()'s        */
 #define STACK_MARGIN	  (64*1024)	/* headroom kept below the limit   */
 #define FALLBACK_C_STACK (8*1024*1024) /* used when the rlimit is unknown */
 
-static char *cStackLimit = 0;		/* lowest address considered safe  */
+char *cStackLimit = (char *)(-1);	/* lowest address considered safe; */
+					/* see STACK_CHECK in storage.h    */
 
 static Void local initCStackLimit(Void) {
     Unsigned usable = FALLBACK_C_STACK;
@@ -82,12 +83,14 @@ static Void local initCStackLimit(Void) {
     cStackLimit = (char *)CStackBase - (usable-STACK_MARGIN);
 }
 
-Bool cStackOverflow(Void) {		/* TRUE => C stack nearly full     */
+Void cStackCheck(Void) {		/* slow path of STACK_CHECK        */
     char here;
-    if (!cStackLimit) {
+    if (cStackLimit == (char *)(-1)) {
 	initCStackLimit();
     }
-    return &here <= cStackLimit;
+    if (&here <= cStackLimit) {
+	hugsStackOverflow();
+    }
 }
 
 /* --------------------------------------------------------------------------
@@ -103,23 +106,17 @@ Bool cStackOverflow(Void) {		/* TRUE => C stack nearly full     */
  * offset regardless of which caller produced it.
  * ------------------------------------------------------------------------*/
 
-Cell mkTupleChecked(Int n)             /* Build cell for n-tuple con/tycon */
+Void tooManyTupleComponents(Void)      /* mkTuple(n) with n>=NUM_TUPLES    */
 {
-    if (n>=NUM_TUPLES) {
-	ERRMSG(0) "Tuples with more than %d components are not supported",
-		  NUM_TUPLES
-	EEND;
-    }
-    return TUPMIN+n;
+    ERRMSG(0) "Tuples with more than %d components are not supported",
+	      NUM_TUPLES
+    EEND;
 }
 
-Cell mkOffsetChecked(Int o)            /* Build cell for generic offset o  */
+Void tooManyOffsets(Void)              /* mkOffset(o) with o>=NUM_OFFSETS  */
 {
-    if (o>=NUM_OFFSETS) {
-	ERRMSG(0) "Compiled code too complex"
-	EEND;
-    }
-    return OFFMIN+o;
+    ERRMSG(0) "Compiled code too complex"
+    EEND;
 }
 
 /* --------------------------------------------------------------------------
