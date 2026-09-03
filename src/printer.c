@@ -12,6 +12,8 @@
  * $Date: 2006/09/05 22:43:44 $
  * ------------------------------------------------------------------------*/
 
+#include <inttypes.h>
+
 static Void   local printer		(Name,Int);
 static Void   local outName   		(Name);
 static Void   local outVar		(Name);
@@ -275,10 +277,12 @@ static Void local printer(Name pr, Int d)		/* Main part: primPrint/primNPrint */
 
 	case PTRCELL  : {   Pointer p = ptrOf(whnfHead);
 			    char buffer[32];
-			    char spec[16];
-			    /* Fall into line with how GHC shows Addrs  */
-			    sprintf(spec,"0x%%.%dx", (SIZEOF_INTP)*2);
-			    sprintf(buffer,spec,(long)p);
+			    /* Fall into line with how GHC shows Addrs.
+			     * (long)p truncated a 64-bit address on LP64
+			     * platforms where %x only takes 32 bits from
+			     * the vararg; use PRIxPTR/uintptr_t instead. */
+			    sprintf(buffer,"0x%0*" PRIxPTR,
+				    (SIZEOF_INTP)*2, (uintptr_t)p);
 #if 0
 			    /* Old skool */
 			    sprintf(buffer,"%p",p);
