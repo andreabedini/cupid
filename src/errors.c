@@ -30,17 +30,11 @@ Void stopAnyPrinting() {  /* terminate printing of expression,*/
 	Putchar('\n');
 	if (showStats) {
 #define plural(v)   v, (v==1?"":"s")
-#if HUGS_FOR_WINDOWS
-	    { int svColor = SetForeColor(BLUE);
-#endif
 	    Printf("(%lu reduction%s, ",plural(numReductions));
 	    Printf("%lu cell%s",plural(numCells));
 	    if (numGcs>0)
 		Printf(", %u garbage collection%s",plural(numGcs));
 	    Printf(")\n");
-#if HUGS_FOR_WINDOWS
-	    SetForeColor(svColor); }
-#endif
 #undef plural
 	}
 	FlushStdout();
@@ -61,14 +55,9 @@ Void errHead(Int l)                        /* print start of error message     *
      */
     if (scriptFile) {
 	setLastEdit(scriptFile,l);
-#ifdef HUGS_FOR_WINDOWS
-	FPrintf(errorStream," ");
-	WinHugsFilename(scriptFile, l);
-#else
 	FPrintf(errorStream," \"%s\"",scriptFile);
 	if (l)
 	    FPrintf(errorStream,":%d",l);
-#endif
 	scriptFile = 0;
     }
     FPrintf(errorStream," - ");
@@ -78,9 +67,6 @@ Void errHead(Int l)                        /* print start of error message     *
 Void errFail() {                        /* terminate error message and     */
     Putc('\n',errorStream);             /* produce exception to return to  */
     FFlush(errorStream);                /* main command loop               */
-#if USE_THREADS
-    stopEvaluatorThread();
-#endif /* USE_THREADS */
     longjmp(catch_error,1);
 }
 
@@ -92,37 +78,20 @@ Void errAbort() {                       /* altern. form of error handling  */
 
 Void internal(String msg)                      /* handle internal error           */
 {
-#if HUGS_FOR_WINDOWS
-    char buf[300];
-    sprintf(buf,"INTERNAL ERROR: %s",msg);
-    ErrorBox(buf);
-#endif
     failed();
     stopAnyPrinting();
     Printf("INTERNAL ERROR: %s\n",msg);
 
     Printf("Please report this Hugs bug to ");
-#if HUGS_FOR_WINDOWS
-    WinHugsHyperlink("http://hackage.haskell.org/trac/hugs");
-#else
     Printf("http://hackage.haskell.org/trac/hugs");
-#endif
     Printf("\n");
 
     FlushStdout();
-#if USE_THREADS
-    stopEvaluatorThread();
-#endif /* USE_THREADS */
     longjmp(catch_error,1);
 }
 
 Void fatal(String msg)                         /* handle fatal error              */
 {
-#if HUGS_FOR_WINDOWS
-    char buf[300];
-    sprintf(buf,"FATAL ERROR: %s",msg);
-    ErrorBox(buf);
-#endif
     FlushStdout();
     Printf("\nFATAL ERROR: %s\n",msg);
     everybody(EXIT);
@@ -139,16 +108,9 @@ Void fatal(String msg)                         /* handle fatal error            
  * not signal context, on every platform.
  */
 sigHandler(breakHandler) {              /* respond to break interrupt      */
-#if HUGS_FOR_WINDOWS
-    ErrorBox("Interrupted!");
-#endif
-#if HUGS_FOR_WINDOWS
-    FPrintf(errorStream,"{Interrupted!}\n");
-#else
     Hilite();
     Printf("{Interrupted!}\n");
     Lolite();
-#endif
     breakOn(TRUE);  /* reinstall break trapping (in case breakOn(FALSE) ran */
 		    /* while this break was pending)                        */
     everybody(BREAK);
@@ -156,9 +118,6 @@ sigHandler(breakHandler) {              /* respond to break interrupt      */
     stopAnyPrinting();
     FlushStdout();
     clearerr(stdin);
-#if USE_THREADS
-    stopEvaluatorThread();
-#endif /* USE_THREADS */
     longjmp(catch_error,1);
     sigResume;/*NOTREACHED*/
 }
@@ -169,14 +128,9 @@ sigHandler(breakHandler) {              /* respond to break interrupt      */
  * tweaking these functions.
  * ------------------------------------------------------------------------*/
 
-#if REDIRECT_OUTPUT && !HUGS_FOR_WINDOWS
 static Bool disableOutput = FALSE;      /* redirect output to buffer?      */
 
-#if HAVE_STDARG_H
 #include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
 
 /* ----------------------------------------------------------------------- */
 
@@ -198,10 +152,8 @@ static Void local vBufferedPrintf(HugsStream* stream, const char* fmt, va_list a
     Int charsAdded = vsnprintf(p, spaceLeft, fmt, ap);
     if (0 <= charsAdded && charsAdded < spaceLeft)
 	stream->next += charsAdded;
-#if 1 /* we can either buffer the first n chars or buffer the last n chars */
     else
 	stream->next = 0;
-#endif
 }
 
 static Void local bufferedPutchar(HugsStream*stream, int c)
@@ -291,4 +243,3 @@ Void hugsPutc(int c, FILE* fp)
     }
 }
 
-#endif /* REDIRECT_OUTPUT && !HUGS_FOR_WINDOWS */
