@@ -79,6 +79,18 @@ if readline_opt.enabled() and not readline_dep.found()
   error('readline was requested but neither readline nor libedit was found')
 endif
 use_readline = readline_dep.found() and not readline_opt.disabled()
+# GNU readline and libedit put the header in different places
+readline_h = ''
+if use_readline
+  foreach h : ['readline/readline.h', 'editline/readline.h']
+    if readline_h == '' and cc.has_header(h, dependencies: readline_dep)
+      readline_h = h
+    endif
+  endforeach
+  if readline_h == ''
+    error('a readline library was found but neither readline/readline.h nor editline/readline.h')
+  endif
+endif
 
 hp2ps = find_program('hp2ps', required: false)
 
@@ -111,6 +123,10 @@ conf.set_quoted('MKDLL_CMD', mkdll_cmd)
 conf.set('USE_PREPROCESSOR', 1)
 if use_readline
   conf.set('USE_READLINE', 1)
+  conf.set_quoted('READLINE_H', readline_h)
+  if readline_h == 'readline/readline.h'
+    conf.set_quoted('READLINE_HISTORY_H', 'readline/history.h')
+  endif
 endif
 if get_option('char-encoding') == 'utf8'
   conf.set('CHAR_ENCODING_UTF8', 1)

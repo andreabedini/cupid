@@ -193,11 +193,16 @@ static Bool   thisLiterate;
 static String nextStringChar;          /* next char in string buffer       */
 
 #if     USE_READLINE                   /* for command line editors         */
-static  String currentLine;            /* editline or GNU readline         */
+#include READLINE_H                    /* editline or GNU readline; the    */
+#ifdef  READLINE_HISTORY_H             /* build system says which headers  */
+#include READLINE_HISTORY_H
+#endif
+static  String currentLine;
 static  String nextChar;
 #define nextConsoleChar() (*nextChar=='\0' ? '\n' : ExtractChar(nextChar))
-extern  Void add_history  (String);
-extern  String readline   (String);
+#if     defined(RL_READLINE_VERSION) && RL_READLINE_VERSION >= 0x0500
+#define HAVE_RL_EVENT_HOOK 1           /* GNU readline, not libedit        */
+#endif
 #else
 #define nextConsoleChar() FGetChar(stdin)
 #endif
@@ -225,6 +230,25 @@ static int lineLength = 0;
 static int inCodeBlock = FALSE; /* Inside \begin{code}..\end{code} */
 static int linePtr = 0;
 
+#if HAVE_RL_EVENT_HOOK
+static int local readlineInterrupted(void) {
+    /* Called by readline every tenth of a second while it waits for a
+     * key.  The SIGINT handler only sets "broken" (see ctrlbrk in
+     * prelude.h), so this is where a Ctrl-C at the prompt is acted on:
+     * abandon the line being edited and make readline() return, and
+     * consoleInput reports the interrupt.  (readline's signal event hook
+     * would be the obvious place, but readline does not look at rl_done
+     * after calling it and blocks again until the next key.)  Without
+     * the hook, as with libedit, the flag is only noticed once the line
+     * is submitted.                                                     */
+    if (broken) {
+	rl_replace_line("",0);
+	rl_done = 1;
+    }
+    return 0;
+}
+#endif
+
 Void consoleInput(String prompt)              /* prepare to input characters from */
 {                       /* standard in (i.e. console/kbd)   */
     reading     = KEYBOARD;            /* keyboard input is Line oriented, */
@@ -249,7 +273,16 @@ Void consoleInput(String prompt)              /* prepare to input characters fro
 	currentLine = 0;           /* We may lose the space of currentLine */
 	free(oldCurrentLine);      /* if interrupted here - unlikely       */
     }
+#if HAVE_RL_EVENT_HOOK
+    rl_event_hook = readlineInterrupted;
+#endif
     currentLine = readline(prompt);
+    if (broken) {                      /* Ctrl-C while editing the line:  */
+	broken = FALSE;                /* drop the line and report it the */
+	if (currentLine)               /* way an interrupted evaluation   */
+	    *currentLine = '\0';       /* is reported                     */
+	Printf("{Interrupted!}\n");
+    }
     nextChar    = currentLine;
     if (currentLine) {
 	if (*currentLine)
