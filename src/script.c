@@ -118,28 +118,6 @@ Int numLoadedScripts() { /* return number of currently loaded scripts */
   return numScripts;
 }
 
-#if HUGS_FOR_WINDOWS
-/* UI pokes around the script stack, give it access... */
-Void setNumLoadedScripts(Script s)
-{
-  numScripts=s;
-}
-
-Void setScriptHwMark(Script s)
-{
-  namesUpto = s;
-}
-
-Void setScriptName(Script s, String scr)
-{
-  scriptTable[s].fileName = scr;
-}
-
-Void setScriptRealName(Script s, String scr)
-{
-  scriptTable[s].realName = scr;
-}
-#endif
 
 /* --------------------------------------------------------------------------
  * Loading script files:
@@ -179,10 +157,6 @@ Void addScriptName(String s, Bool sch)  /* Add script to list of scripts   */
 static Bool local addScript(String fname, Long len)  /* read single script file */
                                         /* name of script file     */
 {                           /* length of script file   */
-#if HUGS_FOR_WINDOWS         /* Set clock cursor while loading   */
-    allowBreak();
-    SetCursor(LoadCursor(NULL, IDC_WAIT));
-#endif
 
     if (!quiet) {
 	Printf("Reading file \"%s\":\n",fname);  FlushStdout();
@@ -268,23 +242,9 @@ Void addScriptsFromArgs(Int argc, String argv[])
 {
     Int i;
 
-#if USE_PREFERENCES_FILE
-    extern Int     iniArgc;
-    extern String* iniArgv;
-
-    if (iniArgc > 0) {
-        /* load additional files found in the preferences file */
-        for (i=0; i<iniArgc; i++) {
-	    addScriptName(iniArgv[i],TRUE);
-        }
-    }
-#endif
     for (i=1; i<argc; ++i) {
       if (argv[i] && argv[i][0] && !isOption(argv[i])) {
 	    addScriptName(argv[i],TRUE);
-#if HUGS_FOR_WINDOWS
-	    SetWorkingDir(argv[i]);
-#endif
       }
     }
 
@@ -332,9 +292,6 @@ Void readScripts(Int n)        /* Reread current list of scripts, */
     Time timeStamp;        /* including the first script which*/
     Long fileSize;         /* has been either changed or added*/
 
-#if HUGS_FOR_WINDOWS
-    SetCursor(LoadCursor(NULL, IDC_WAIT));
-#endif
 
     for (; n<numScripts; n++) {         /* Scan previously loaded scripts  */
 	getFileInfo(scriptTable[n].fileName, &timeStamp, &fileSize);
@@ -368,22 +325,11 @@ Void readScripts(Int n)        /* Reread current list of scripts, */
 
 Void whatScripts() {       /* list scripts in current session */
     int i;
-#if HUGS_FOR_WINDOWS
-    if (!InAutoReloadFiles) {
-#endif
     Printf("\nHugs session for:");
     for (i=0; i<numScripts; ++i) {
-#if HUGS_FOR_WINDOWS
-	Putchar('\n');
-	WinHugsFilename(scriptTable[i].fileName, 0);
-#else
 	Printf("\n%s",scriptTable[i].fileName);
-#endif
     }
     Putchar('\n');
-#if HUGS_FOR_WINDOWS
-    }
-#endif
 }
 
 Void script(Int what)
