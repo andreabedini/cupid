@@ -308,9 +308,6 @@ int macsystem(char *filenames);
 				   /* but breaks data hiding :-(	   */
 #define FloatFMT	   "%.7g"
 
-/* Is double too big for two ints?  (if so, use float instead) */
-#define DOUBLE_IS_FLOAT (SIZEOF_DOUBLE > 2*SIZEOF_INT)
-
 #define DoubleImpType	   double
 #define DoublePro	   double
 #define DoubleFMT          "%.15g"
