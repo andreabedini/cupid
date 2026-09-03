@@ -38,17 +38,6 @@ extern StringBuilder* newStringBuilder   (unsigned int sz);
 extern void           freeStringBuilder  (StringBuilder* b);
 
 /*
- * Function: prependString(builder, str)
- *
- * The preferred usage mode for StringBuilders is to
- * concatenate stuff at the back, but prependString()
- * handles addition at the other end.
- *
- * Returns TRUE if successful.
- */
-extern Bool           prependString      (StringBuilder* b, char* str);
-
-/*
  * Function: appendString(builder, str)
  *
  * Append 'str' to the back of 'builder', expanding its
@@ -57,23 +46,6 @@ extern Bool           prependString      (StringBuilder* b, char* str);
  * Returns TRUE if successful.
  */
 extern Bool           appendString       (StringBuilder* b,  char* str);
-
-/*
- * Function: appendStringFormat(builder, fmt, arg)
- *
- * This function provides an extremely limited form of
- * sprintf()-style format strings, allowing the substitution
- * of 'arg' zero or more times via the format string 'fmt':
- *
- *   appendStringFormat(builder, "-P%s -Y%s", "foo");
- *
- * is equivalent to
- *
- *   appendString(builder, "-Pfoo -Yfoo");
- *
- * Returns TRUE if successful.
- */
-extern Bool           appendStringFormat (StringBuilder* b, char* fmt, char* arg);
 
 /*
  * Function: toString(builder)
