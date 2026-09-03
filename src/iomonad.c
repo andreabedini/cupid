@@ -1395,7 +1395,7 @@ primFun(primHPutBuf) {			/* write binary data from a buffer   */
     errno = 0;
     while (size > 0) {
 	size -= (Int)fwrite(buf, 1, size, handles[h].hfp);
-	if (errno < 0)
+	if (errno != 0)
 	    throwErrno("System.IO.hPutBuf", TRUE, h, NULL);
     }
 
@@ -1460,7 +1460,7 @@ primFun(primHWaitForInput) { /* Check whether a character can be read
 	
 	maxfd = fd + 1;
 	tv.tv_sec  = msecs / 1000;
-	tv.tv_usec = msecs % 1000;
+	tv.tv_usec = (msecs % 1000) * 1000;	/* tv_usec counts microseconds */
 	
 	while ( (ready = select(maxfd, &rfd, NULL, NULL, &tv)) < 0 ) {
 	    if (errno != EINTR) {
@@ -1881,10 +1881,10 @@ primFun(primIOHash) {                      /* :: Eval a => a -> ST Mem Int */
     x = followInd(IOArg(1)); 
 
     switch(whatIs(x)) {
-	case INTCELL   : IOBoolResult(x); 
-	case CHARCELL  : IOBoolResult(mkInt(charOf(x)));
+	case INTCELL   : IOReturn(x);
+	case CHARCELL  : IOReturn(mkInt(charOf(x)));
     }
-    IOBoolResult(mkInt((Int)x));
+    IOReturn(mkInt((Int)x));
 }
 
 /*-------------------------------------------------------------------------*/
