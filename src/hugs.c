@@ -297,7 +297,10 @@ static Void local forHelp() {
  * ------------------------------------------------------------------------*/
 
 /*
- * Poor man's path expansion: expand out ~/ 
+ * Poor man's path expansion: expand out ~/
+ * expandedPath must have room for maxLen bytes, including the terminating
+ * NUL; a path (or its expansion) that does not fit is a clean error, not
+ * a truncated copy.
  */
 static Void local expandPath(String origPath, String expandedPath, unsigned int maxLen)
 {
@@ -308,25 +311,27 @@ static Void local expandPath(String origPath, String expandedPath, unsigned int 
 
   /* If the original path starts with "~/", expand it. */
   if (*origPath == '~' && *(origPath+1) == '/') {
-    unsigned int origLen;
-    String home          = getenv("HOME");
-    origLen = (origPath ? strlen(origPath) : 0);
-    /* The expansion of $HOME will fit in iff
-     *    (maxLength - length(unexpanded) - length("~")) >= length("$HOME")
-     */
-    if ( (maxLen - origLen - 1) >= strlen(home) ) {
-      strcpy(expandedPath, home);
-      strcat(expandedPath, origPath+1);
-      return;
+    String home = getenv("HOME");
+    if (!home) {
+	ERRMSG(0) "Cannot expand \"~\": the HOME environment variable is not set"
+	EEND;
     }
+    if ((unsigned)snprintf(expandedPath,maxLen,"%s%s",home,origPath+1) >= maxLen) {
+	ERRMSG(0) "Path \"%s\" is too long", origPath
+	EEND;
+    }
+    return;
   }
-  strcpy(expandedPath, origPath);
+  if ((unsigned)snprintf(expandedPath,maxLen,"%s",origPath) >= maxLen) {
+      ERRMSG(0) "Path \"%s\" is too long", origPath
+      EEND;
+  }
 }
 
 static Void local changeDir() {         /* change directory                */
     String path = readFilename();
     char expandedPath[FILENAME_MAX+1];
-    expandPath(path, expandedPath,FILENAME_MAX);
+    expandPath(path, expandedPath,sizeof(expandedPath));
     if (path && chdir(expandedPath)) {
 	ERRMSG(0) "Unable to change to directory \"%s\"", path
 	EEND;
@@ -556,37 +561,48 @@ static Void local runmain() {
 
 static String local objToStr(Module m, Cell c)
 {
-    static char newVar[60];
+    /* newVar grows to fit "module.name" for whatever names come up; it is
+     * never shrunk, and is reused (and, if necessary, enlarged) on every
+     * call, since the result is only ever used before the next call. */
+    static char   *newVar    = 0;
+    static size_t  newVarLen = 0;
+    String qualifier = 0;               /* module part, or 0 if unqualified*/
+    String unqual;                      /* name part                       */
+    size_t needed;
+
     switch (whatIs(c)) {
-	case NAME  : if (m == name(c).mod) {
-			 sprintf(newVar,"%s", textToStr(name(c).text));
-		     } else {
-			 sprintf(newVar,"%s.%s",
-					textToStr(module(name(c).mod).text),
-					textToStr(name(c).text));
-		     }
+	case NAME  : if (m != name(c).mod)
+			 qualifier = textToStr(module(name(c).mod).text);
+		     unqual = textToStr(name(c).text);
 		     break;
 
-	case TYCON : if (m == tycon(c).mod) {
-			 sprintf(newVar,"%s", textToStr(tycon(c).text));
-		     } else {
-			 sprintf(newVar,"%s.%s",
-					textToStr(module(tycon(c).mod).text),
-					textToStr(tycon(c).text));
-		     }
+	case TYCON : if (m != tycon(c).mod)
+			 qualifier = textToStr(module(tycon(c).mod).text);
+		     unqual = textToStr(tycon(c).text);
 		     break;
 
-	case CLASS : if (m == cclass(c).mod) {
-			 sprintf(newVar,"%s", textToStr(cclass(c).text));
-		     } else {
-			 sprintf(newVar,"%s.%s",
-					textToStr(module(cclass(c).mod).text),
-					textToStr(cclass(c).text));
-		     }
+	case CLASS : if (m != cclass(c).mod)
+			 qualifier = textToStr(module(cclass(c).mod).text);
+		     unqual = textToStr(cclass(c).text);
 		     break;
 
 	default    : internal("objToStr");
+		     unqual = "";         /* not reached; quiets a warning   */
     }
+
+    needed = strlen(unqual) + 1 + (qualifier ? strlen(qualifier)+1 : 0);
+    if (needed > newVarLen) {
+	newVar = realloc(newVar, needed);
+	if (!newVar) {
+	    ERRMSG(0) "Cannot allocate name buffer"
+	    EEND;
+	}
+	newVarLen = needed;
+    }
+    if (qualifier)
+	sprintf(newVar,"%s.%s", qualifier, unqual);
+    else
+	sprintf(newVar,"%s", unqual);
     return newVar;
 }
 
