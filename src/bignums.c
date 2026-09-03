@@ -330,12 +330,7 @@ primFun(primIntegerToInt) {		/* Conversion :: Integer -> Int	   */
 #endif
     {
 	eval(primArg(1));
-	whnfHead = bigToInt(whnfHead);
-	if (nonNull(whnfHead)) {
-	    updateRoot(whnfHead);
-	} else {
-	    throwException(ap(nameArithException, nameOverflow));
-	}
+	updateRoot(bigToInt(whnfHead));
     }
 }
 
@@ -346,11 +341,7 @@ primFun(primWordToInteger) {		/* Conversion :: Word -> Integer   */
 
 primFun(primIntegerToWord) {		/* Conversion :: Integer -> Word   */
     eval(primArg(1));
-    whnfHead = bigToInt(whnfHead);
-    if (nonNull(whnfHead))
-	updateRoot(whnfHead);
-    else
-	throwException(ap(nameArithException, nameOverflow));
+    updateRoot(bigToInt(whnfHead));
 }
 
 primFun(primIntegerToFloat) {		/* Conversion :: Integer -> Float  */

@@ -1395,8 +1395,8 @@ primFun(primHPutBuf) {			/* write binary data from a buffer   */
     errno = 0;
     while (size > 0) {
 	size -= (Int)fwrite(buf, 1, size, handles[h].hfp);
-	if (errno != 0)
-	    throwErrno("System.IO.hPutBuf", TRUE, h, NULL);
+	if (ferror(handles[h].hfp))    /* a successful fwrite may still  */
+	    throwErrno("System.IO.hPutBuf", TRUE, h, NULL); /* set errno */
     }
 
     IOReturn(nameUnit);
