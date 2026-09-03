@@ -3110,8 +3110,15 @@ Void incMallocPtrRefCnt(Int n, Int i)             /* change ref count of MallocP
  * It follows that stable pointers are strictly positive (>0).
  */
 static Cell stablePtrTable[NUM_STABLEPTRS];
+static Bool stablePtrFree[NUM_STABLEPTRS];   /* whether slot sp is on the    */
+					      /* free list, to catch double  */
+					      /* frees (the free list link   */
+					      /* and a live Cell share the   */
+					      /* same slot, so there's no    */
+					      /* other way to tell them apart*/
 static Int  sptFreeList;
-#define SPT(sp) stablePtrTable[(sp)-1]
+#define SPT(sp)     stablePtrTable[(sp)-1]
+#define SPTFREE(sp) stablePtrFree[(sp)-1]
 
 static Void local resetStablePtrs() {
     Int i;
@@ -3119,9 +3126,12 @@ static Void local resetStablePtrs() {
      * but, when debugging, it's way easier to understand if the first
      * pointer allocated is "1".
      */
-    for(i=1; i < NUM_STABLEPTRS; ++i)
+    for(i=1; i < NUM_STABLEPTRS; ++i) {
 	SPT(i) = i+1;
+	SPTFREE(i) = TRUE;
+    }
     SPT(NUM_STABLEPTRS) = 0;
+    SPTFREE(NUM_STABLEPTRS) = TRUE;
     sptFreeList = 1;
 }
 
@@ -3132,6 +3142,7 @@ Int mkStablePtr(Cell c)                  /* Create a stable pointer            *
 	return 0;
     sptFreeList = SPT(i);
     SPT(i) = c;
+    SPTFREE(i) = FALSE;
     return i;
 }
 
@@ -3145,11 +3156,19 @@ Cell derefStablePtr(Int p)              /* Dereference a stable pointer       */
 
 Void freeStablePtr(Int i)               /* Free a stable pointer             */
 {
-    SPT(i) = sptFreeList;
+    if (!(1 <= i && i <= NUM_STABLEPTRS)) {
+	internal("freeStablePtr");
+    }
+    if (SPTFREE(i))       /* freeing an already-free pointer is a no-op, the */
+	return;            /* same as C's free(); it must not corrupt the    */
+			   /* free list by threading it into itself           */
+    SPT(i)     = sptFreeList;
+    SPTFREE(i) = TRUE;
     sptFreeList = i;
 }
 
 #undef SPT
+#undef SPTFREE
 #endif /* GC_STABLEPTRS */
 
 /* --------------------------------------------------------------------------

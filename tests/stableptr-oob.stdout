@@ -1,0 +1,6 @@
+runhugs: Error occurred
+
+INTERNAL ERROR: freeStablePtr
+Please report this Hugs bug to http://hackage.haskell.org/trac/hugs
+
+
