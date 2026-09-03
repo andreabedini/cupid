@@ -23,7 +23,7 @@ gc_sensitive = files('compiler.c', 'module.c', 'subst.c', 'static.c', 'type.c')
 
 core = files(
   'builtin.c', 'char.c', 'errors.c', 'evaluator.c', 'ffi.c', 'goal.c',
-  'input.c', 'machdep.c', 'machine.c', 'opts.c', 'output.c', 'plugin.c',
+  'input.c', 'machdep.c', 'machine.c', 'opts.c', 'output.c',
   'script.c', 'storage.c', 'strutil.c', 'version.c',
 )
 

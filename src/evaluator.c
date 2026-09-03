@@ -230,7 +230,6 @@ Void everybody(Int what)            /* send command `what' to each component of*
     charOps(what);
     builtIn(what);
     controlFuns(what);
-    plugins(what);
     ffi(what);
     script(what);
 }

@@ -1531,9 +1531,6 @@ String mkFFIFilename(String file)                      /* get DLL path for modul
 
 Void needPrims(Int version, void*  dll)   /* Load dll containing prims for current module */
 {
-    if (havePlugin(textToStr(module(currentModule).text))) {
-	return;
-    }
     /* Version 2-5: the Haskell module specifies what module to expect
      *              (via a needPrims_hugs decl).
      *

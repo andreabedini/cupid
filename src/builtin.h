@@ -293,14 +293,6 @@ extern Cell   mkIOError (Cell *,Name,String,String,Cell *);
     r = e;                                         \
     WordResult(r);                                 \
 }
-/* e is an expression with free variable x        */
-#define Word2Word(nm,e)                            \
-  primFun(nm) {                                    \
-    Unsigned x, r;                                 \
-    WordArg(x,1);                                  \
-    r = e;                                         \
-    WordResult(r);                                 \
-}
 
 /* e is a predicate with free variables x and y   */
 #define WordWord2Bool(nm,e)                        \
@@ -557,10 +549,8 @@ extern Cell   mkIOError (Cell *,Name,String,String,Cell *);
  * This may lead to syntax errors if used where a statement is required - such
  * errors can be fixed by adding braces round the call.  Blech!
  * ------------------------------------------------------------------------*/
-#if IO_MONAD
 #define IOArg(n)    primArg((n)+IOArity)
 #define IOReturn(r) { updapRoot(primArg(1),r); return; }
 #define IOFail(r)   throwException(ap(nameIOException,r))
-#endif
 
 #endif /* __BUILTIN_H__ */

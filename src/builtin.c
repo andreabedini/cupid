@@ -29,18 +29,9 @@
 #endif
 
 /* Header files needed to compile the IO primitives */
-#if IO_MONAD
 
-#if HAVE_SYS_TYPES_H
 # include <sys/types.h>
-#elif HAVE_TYPES_H
-# include <types.h>
-#endif
-#if HAVE_SYS_STAT_H
 # include <sys/stat.h>
-#elif HAVE_STAT_H
-# include <stat.h>
-#endif
 
 #if HAVE_UNISTD_H
 # include <unistd.h>
@@ -58,9 +49,7 @@
 # include <sys/resource.h>
 #endif
 
-#if HAVE_ERRNO_H
 # include <errno.h>
-#endif
 
 #if HAVE_SYS_TIMEB_H
 # include <sys/timeb.h>
@@ -78,17 +67,8 @@
 # include <direct.h>
 #endif
 
-#if HAVE_FCNTL_H
 # include <fcntl.h>
-#endif
 
-#if defined(openbsd_HOST_OS) || defined(linux_HOST_OS)
-/* Needed for mallocBytesRWX() */
-#include <inttypes.h>
-#include <sys/mman.h>
-#endif
-
-#endif /* IO_MONAD */
 
 #include "builtin.h"
 
@@ -125,7 +105,6 @@ Name namePmInteger;
 
 Name nameRationalToFloat;
 Name nameRationalToDouble;
-#if SHORT_CIRCUIT_COERCIONS
 Name nameFloatToRational;
 Name nameDoubleToRational;
 Name nameDoubleToRatio;
@@ -134,7 +113,6 @@ Name nameIntToFloat;
 Name nameIntToDouble;
 Name nameDoubleToFloat;
 Name nameFloatToDouble;
-#endif
 
 /* --------------------------------------------------------------------------
  * Local function prototypes:
@@ -192,16 +170,15 @@ PROTO_PRIM(primDummyCvt);
 PROTO_PRIM(primRationalToFloat);
 PROTO_PRIM(primRationalToDouble);
 
-#if WORD_OPS
 PROTO_PRIM(primMaxWord);
 PROTO_PRIM(primPlusWord);
 PROTO_PRIM(primMinusWord);
 PROTO_PRIM(primNegateWord);
 PROTO_PRIM(primMulWord);
-PROTO_PRIM(primDivWord);
-PROTO_PRIM(primQuotWord);
-PROTO_PRIM(primModWord);
-PROTO_PRIM(primRemWord);
+PROTO_PRIM(primQuotWord);      /* also used, unsigned division being     */
+				/* truncating either way, for primDivWord */
+PROTO_PRIM(primRemWord);       /* also used, for the same reason, for    */
+				/* primModWord                            */
 PROTO_PRIM(primQrmWord);
 
 PROTO_PRIM(primAndWord);
@@ -222,7 +199,8 @@ PROTO_PRIM(primI16toI);
 PROTO_PRIM(primI32toI);
 
 PROTO_PRIM(primI32toI64);
-PROTO_PRIM(primI64toI32);
+PROTO_PRIM(primI64toI32);      /* also used, the two representations     */
+				/* being identical, for primW64toW32      */
 
 PROTO_PRIM(primWtoW8);
 PROTO_PRIM(primWtoW16);
@@ -233,8 +211,6 @@ PROTO_PRIM(primW16toW);
 PROTO_PRIM(primW32toW);
 
 PROTO_PRIM(primW32toW64);
-PROTO_PRIM(primW64toW32);
-#endif
 
 PROTO_PRIM(primFreeHFunPtr);
 
@@ -253,16 +229,12 @@ PROTO_PRIM(primMulDouble);
 PROTO_PRIM(primDivDouble);
 PROTO_PRIM(primNegDouble);
 
-#if FLOATS_SUPPORTED
 PROTO_PRIM(primSinFloat);
 PROTO_PRIM(primCosFloat);
 PROTO_PRIM(primTanFloat);
 PROTO_PRIM(primAsinFloat);
 PROTO_PRIM(primAcosFloat);
 PROTO_PRIM(primAtanFloat);
-#if 0 /* Not used in current Prelude */
-PROTO_PRIM(primAtan2Float);
-#endif
 PROTO_PRIM(primExpFloat);
 PROTO_PRIM(primLogFloat);
 PROTO_PRIM(primSqrtFloat);
@@ -280,9 +252,6 @@ PROTO_PRIM(primTanDouble);
 PROTO_PRIM(primAsinDouble);
 PROTO_PRIM(primAcosDouble);
 PROTO_PRIM(primAtanDouble);
-#if 0 /* Not used in current Prelude */
-PROTO_PRIM(primAtan2Double);
-#endif
 PROTO_PRIM(primExpDouble);
 PROTO_PRIM(primLogDouble);
 PROTO_PRIM(primSqrtDouble);
@@ -292,7 +261,6 @@ PROTO_PRIM(primDoubleMinExp);
 PROTO_PRIM(primDoubleMaxExp);
 PROTO_PRIM(primDoubleDecode);
 PROTO_PRIM(primDoubleEncode);
-#endif /* FLOATS_SUPPORTED */
 
 PROTO_PRIM(primNullPtr);
 PROTO_PRIM(primPlusPtr);
@@ -378,15 +346,14 @@ static struct primitive builtinPrimTable[] = {
   {"primBitInt",        1, primBitInt},
   {"primTestInt",       2, primTestInt},
 
-#if WORD_OPS
   {"primMaxWord",       0, primMaxWord},
   {"primPlusWord",      2, primPlusWord},
   {"primMinusWord",     2, primMinusWord},
   {"primNegateWord",    1, primNegateWord},
   {"primMulWord",       2, primMulWord},
-  {"primDivWord",       2, primDivWord},
+  {"primDivWord",       2, primQuotWord}, /* unsigned x/y truncates either way */
   {"primQuotWord",      2, primQuotWord},
-  {"primModWord",       2, primModWord},
+  {"primModWord",       2, primRemWord},  /* unsigned x%y is the same either way */
   {"primRemWord",       2, primRemWord},
   {"primQrmWord",       2, primQrmWord},
 
@@ -419,24 +386,12 @@ static struct primitive builtinPrimTable[] = {
   {"primWord32ToWord",  1, primW32toW},
 
   {"primWord32ToWord64",2, primW32toW64},
-  {"primWord64ToWord32",1, primW64toW32},
-#endif
+  {"primWord64ToWord32",1, primI64toI32}, /* splitting a 64-bit pair cell */
+					   /* into 32-bit halves doesn't    */
+					   /* depend on signedness          */
 
   {"freeHaskellFunPtr", 1+IOArity, primFreeHFunPtr},
 
-#if !BIGNUMS                            /* Implement Integer as Int        */
-  {"primPlusInteger",   2, primPlusInt},
-  {"primMinusInteger",  2, primMinusInt},
-  {"primMulInteger",    2, primMulInt},
-  {"primQrmInteger",    2, primQrmInt},
-  {"primNegInteger",    1, primNegInt},
-  {"primIntToInteger",  1, primDummyCvt},
-  {"primIntegerToInt",  1, primDummyCvt},
-  {"primIntegerToFloat",1, primIntToFloat},
-  {"primIntegerToDouble",1,primIntToDouble},
-  {"primEqInteger",     2, primEqInt},
-  {"primCmpInteger",    2, primCmpInt},
-#endif
 
   {"primPlusFloat",     2, primPlusFloat},
   {"primMinusFloat",    2, primMinusFloat},
@@ -450,7 +405,6 @@ static struct primitive builtinPrimTable[] = {
   {"primDivDouble",     2, primDivDouble},
   {"primNegDouble",     1, primNegDouble},
 
-#if FLOATS_SUPPORTED
   {"primSinFloat",      1, primSinFloat},
   {"primCosFloat",      1, primCosFloat},
   {"primTanFloat",      1, primTanFloat},
@@ -484,7 +438,6 @@ static struct primitive builtinPrimTable[] = {
   {"primDoubleMaxExp",  0, primDoubleMaxExp},
   {"primDoubleDecode",  1, primDoubleDecode},
   {"primDoubleEncode",  2, primDoubleEncode},
-#endif
 
   {"primIntToChar",     1, primIntToChar},
   {"primCharToInt",     1, primCharToInt},
@@ -926,18 +879,16 @@ primFun(primShiftInt) {
  * Unsigned arithmetic primitives:
  * ------------------------------------------------------------------------*/
 
-#if WORD_OPS
 CAFWord(primMaxWord,MAXHUGSWORD)       /* maximum integer CAF              */
 WordWord2Word(primPlusWord,x+y)        /* Word addition primitive          */
 WordWord2Word(primMinusWord,x-y)       /* Word subtraction primitive       */
 Word2Word(primNegateWord,-(Int)x)      /* Word negation (modulo MAXWORD)   */
 WordWord2Word(primMulWord,x*y)         /* Word multiplication primitive    */
-WordWord2WordNonZero(primQuotWord,x/y) /* Word division primitive          */
-				       /* truncated towards zero           */
-WordWord2WordNonZero(primDivWord,x/y)  /* Word division primitive          */
-				       /* truncated towards zero           */
-WordWord2WordNonZero(primRemWord,x%y)  /* Word remainder primitive         */
-WordWord2WordNonZero(primModWord,x%y)  /* Word modulo primitive            */
+WordWord2WordNonZero(primQuotWord,x/y) /* Word division primitive; also    */
+				       /* primDivWord, since unsigned x/y  */
+				       /* truncates the same way either way*/
+WordWord2WordNonZero(primRemWord,x%y)  /* Word remainder primitive; also   */
+				       /* primModWord, for the same reason */
 
 /* quot and rem satisfy:                                                   */
 /*     (x `quot` y)*y + (x `rem` y) == x                                   */
@@ -1004,9 +955,9 @@ Word2Word(primW8toW,  x)
 Word2Word(primW16toW, x)
 Word2Word(primW32toW, x)
 
-primFun(primI64toI32) {
-    Cell x, y;
-    eval(primArg(1)); 
+primFun(primI64toI32) { /* also used for primW64toW32: splitting a 64-bit */
+    Cell x, y;           /* pair cell into 32-bit halves doesn't depend   */
+    eval(primArg(1));    /* on signedness                                 */
     x = fst(snd(whnfHead));
     y = snd(snd(whnfHead));
     updapRoot(ap(mkTuple(2),x),y);
@@ -1019,14 +970,6 @@ primFun(primI32toI64) {
     updateRoot(pair(I64CELL,pair(mkInt(x),mkInt(y))));
 }
 
-primFun(primW64toW32) {
-    Cell x, y;
-    eval(primArg(1)); 
-    x = fst(snd(whnfHead));
-    y = snd(snd(whnfHead));
-    updapRoot(ap(mkTuple(2),x),y);
-}
-
 primFun(primW32toW64) {
     Unsigned x, y;
     WordArg(x,2);
@@ -1034,15 +977,12 @@ primFun(primW32toW64) {
     updateRoot(pair(I64CELL,pair(mkInt(x),mkInt(y))));
 }
 
-#endif /* WORD_OPS */
 
 /* --------------------------------------------------------------------------
  * Haskell Integer (bignum) primitives:
  * ------------------------------------------------------------------------*/
 
-#if BIGNUMS
 #include "bignums.c"
-#endif
 
 /* --------------------------------------------------------------------------
  * Coercion primitives:
@@ -1087,7 +1027,6 @@ primFun(primDummyCvt) {                /* dummy (identity) conversion      */
 }
 
 primFun(primRationalToFloat) {
-#if SHORT_CIRCUIT_COERCIONS
     /* Optimisation: we try to short-circuit trivial conversions */
     Cell x = followInd(primArg(1));
     if (isAp(x)) {
@@ -1111,12 +1050,10 @@ primFun(primRationalToFloat) {
 	    }
 	}
     }
-#endif
     updapRoot(nameRationalToFloat,primArg(1));
 }
 
 primFun(primRationalToDouble) {
-#if SHORT_CIRCUIT_COERCIONS
     /* Optimisation: we try to short-circuit trivial conversions */
     Cell x = followInd(primArg(1));
     if (isAp(x)) {
@@ -1139,7 +1076,6 @@ primFun(primRationalToDouble) {
 	    }
 	}
     }
-#endif
     updapRoot(nameRationalToDouble,primArg(1));
 }
 
@@ -1171,16 +1107,12 @@ DoubleDouble2Double(primMulDouble,x*y)  /* Double multiplication primitive  */
 Double2Double(primNegDouble,-x)         /* Double negation primitive        */
 DoubleDouble2Double(primDivDouble,x/y)  /* Double division primitive  */
 
-#if FLOATS_SUPPORTED
 Float2Float(primSinFloat,sin(x))       /* Float sin (trig) primitive       */
 Float2Float(primCosFloat,cos(x))       /* Float cos (trig) primitive       */
 Float2Float(primTanFloat,tan(x))       /* Float tan (trig) primitive       */
 Float2Float(primAsinFloat,asin(x))     /* Float arc sin (trig) primitive   */
 Float2Float(primAcosFloat,acos(x))     /* Float arc cos (trig) primitive   */
 Float2Float(primAtanFloat,atan(x))     /* Float arc tan (trig) primitive   */
-#if 0 /* not used in current version of Prelude */
-FloatFloat2Float(primAtan2Float,atan2(x,y)) /* Float arc tan with quadrant info*/
-#endif
 				       /*               (trig) primitive   */
 Float2Float(primExpFloat,exp(x))       /* Float exponential primitive      */
 Float2FloatPre(primLogFloat,log(x),x>0)/* Float logarithm primitive        */
@@ -1196,18 +1128,11 @@ Double2Double(primExpDouble,exp(x))    /* Double exponential primitive     */
 Double2DoublePre(primLogDouble,log(x),x>0)/* Double logarithm primitive    */
 Double2DoublePre(primSqrtDouble,sqrt(x),x>=0) /* Double square root primitive */
 
-#if 0 /* This was in Hugs 1.01 - not needed by prelude */
-Float2FloatPre(primLog10Float,log10(x),x>0) /* Float logarithm (base 10) prim*/
-#endif
 /* Not used in Hugs prelude, rounds towards zero */
 Float2Int(primFloatToInt,(Int) x)      /* Adhoc Float --> Int conversion   */
 Double2Int(primDoubleToInt,(Int) x)    /* Adhoc Double --> Int conversion  */
 
-#if BIGNUMS
 CAFBignum(primFloatRadix,bigInt(HUGS_FLT_RADIX)) /* Float radix primitive  */
-#else                                    
-CAFInt(primFloatRadix,HUGS_FLT_RADIX)  /* from K&R2, I hope it's portable  */
-#endif
 
 CAFInt(primFloatDigits,HUGS_FLT_MANT_DIG)/* Float sig. digits primitive    */
 				       /* again, courtesy K&R2             */
@@ -1229,13 +1154,8 @@ primFun(primFloatDecode) {             /* Float decode primitive           */
     f  = frexp((double)(f),&n);        /* 0.5   <= f < 1                   */
     f  = ldexp(f,HUGS_FLT_MANT_DIG);   /* 2^m-1 <= f < 2^m, m=HUGS_FLT_MANT_DIG*/
     n -= HUGS_FLT_MANT_DIG;
-#if BIGNUMS
     push(bigDouble(f));
     updapRoot(ap(mkTuple(2),top()),mkInt(n));
-#else
-    push(mkInt((Int)f));
-    updapRoot(ap(mkTuple(2),top()),mkInt(n));
-#endif
 }
 
 primFun(primFloatEncode) {             /* Float encode primitive           */
@@ -1243,14 +1163,7 @@ primFun(primFloatEncode) {             /* Float encode primitive           */
     Float f;                           /* Ugly hack, don't use Hugs for    */
     IntArg(n,1);                       /* numerical work                   */
     eval(primArg(2));                  /* get integer                      */
-#if DJGPP2                                     
-    _fpreset();                        /* Get round a possible DJGPP bug?  */
-#endif                                         
-#if BIGNUMS                                    
     f = (Float)bigToDouble(whnfHead);  /* and turn it into a float         */
-#else                                          
-    f = (Float) whnfInt;               /* and turn it into a float         */
-#endif
     updateRoot(mkFloat(ldexp(f,n)));
 }
 
@@ -1262,13 +1175,8 @@ primFun(primDoubleDecode) {            /* Double decode primitive           */
     f  = frexp((double)(f),&n);        /* 0.5   <= f < 1                   */
     f  = ldexp(f,HUGS_DBL_MANT_DIG);   /* 2^m-1 <= f < 2^m, m=HUGS_DBL_MANT_DIG*/
     n -= HUGS_DBL_MANT_DIG;
-#if BIGNUMS
     push(bigDouble(f));
     updapRoot(ap(mkTuple(2),top()),mkInt(n));
-#else
-    push(mkInt((Int)f));
-    updapRoot(ap(mkTuple(2),top()),mkInt(n));
-#endif
 }
 
 primFun(primDoubleEncode) {            /* Double encode primitive          */
@@ -1276,18 +1184,10 @@ primFun(primDoubleEncode) {            /* Double encode primitive          */
     Double f;                          /* Ugly hack, don't use Hugs for    */
     IntArg(n,1);                       /* numerical work                   */
     eval(primArg(2));                  /* get integer                      */
-#if DJGPP2                                     
-    _fpreset();                        /* Get round a possible DJGPP bug?  */
-#endif                                         
-#if BIGNUMS                                    
     f = (Double)bigToDouble(whnfHead); /* and turn it into a double        */
-#else                                          
-    f = (Double)whnfInt;               /* and turn it into a double        */
-#endif
     DoubleResult(ldexp(f,n));
 }
 
-#endif /* FLOATS_SUPPORTED */
 
 /* --------------------------------------------------------------------------
  * Ptr primitives:
@@ -1441,25 +1341,19 @@ Void outputString(FILE*fp)                   /* Evaluate string on top of stack 
  * IO monad implementation
  * ------------------------------------------------------------------------*/
 
-#if IO_MONAD
 #include "iomonad.c"
-#endif
 
 /* --------------------------------------------------------------------------
  * Time and CPUTime module implementations
  * ------------------------------------------------------------------------*/
 
-#if TIME_MODULE
 #include "timeprim.c"
-#endif
 
 /* --------------------------------------------------------------------------
  * Directory module implementation
  * ------------------------------------------------------------------------*/
 
-#if DIRECTORY_MODULE
 #include "dirprim.c"
-#endif
 
 /* --------------------------------------------------------------------------
  * Error catching primitives
@@ -1474,9 +1368,7 @@ Void outputString(FILE*fp)                   /* Evaluate string on top of stack 
  * Array primitives:
  * ------------------------------------------------------------------------*/
 
-#if HASKELL_ARRAYS
 #include "array.c"
-#endif
 
 /* --------------------------------------------------------------------------
  * Char primitives:
@@ -1781,7 +1673,7 @@ static void returnId(HugsStackPtr root, int n) /* return in identity monad */
      *  [6/01 --sof]
      */
     if ( isPair(stack(root))
-#if 0 || DEBUG   
+#if DEBUG
 	 || (whatIs(stack(root)) == AP)
 #endif
 	 ) {
@@ -1875,243 +1767,34 @@ struct thunk_data {
     struct thunk_data* next;
     struct thunk_data* prev;
     HugsStablePtr      stable;
-#if i386_HOST_ARCH
-    char               code[17];
-#elif powerpc_HOST_ARCH && defined(__GNUC__)
-    char               code[13*sizeof(unsigned long)];
-#elif sparc_HOST_ARCH && defined(__GNUC__)
-    char               code[11*sizeof(unsigned long)];
-#else
-    /* This is a placeholder intended to avoid compile-time warnings.
-     * A runtime warning will be generated by mkThunk if an attempt is
-     * make to use foreign wrappers
+    /* Machine-code generation for the adjustor thunk itself (the i386,
+     * PowerPC and SPARC cases GHC's Adjustor.c has) is gone: none of
+     * those architectures are supported, and mkThunk
+     * below now refuses "foreign import \"wrapper\"" outright, before
+     * a thunk_data is ever allocated. This placeholder field just
+     * keeps freeHaskellFunctionPtr's "&thunk->code" pointer arithmetic
+     * well defined for the caller-supplied pointers it is handed.
      */
     char               code[1];
-#endif
 };
 
 static void* mkThunk      (void (*)(void), HugsStablePtr);
 static void freeThunkAux  (struct thunk_data*);
 static void freeAllThunks (void);
-static void initAdjustor  (void);
 
 static struct thunk_data* foreignThunks = 0;
 
-#if i386_HOST_ARCH
-/* Comment from GHC's Adjustor.c:
-
-   Now here's something obscure for you:
-
-   When generating an adjustor thunk that uses the C calling
-   convention, we have to make sure that the thunk kicks off
-   the process of jumping into Haskell with a tail jump. Why?
-   Because as a result of jumping in into Haskell we may end
-   up freeing the very adjustor thunk we came from using
-   freeHaskellFunctionPtr(). Hence, we better not return to
-   the adjustor code on our way  out, since it could by then
-   point to junk.
-
-   The fix is readily at hand, just include the opcodes
-   for the C stack fixup code that we need to perform when
-   returning in some static piece of memory and arrange
-   to return to it before tail jumping from the adjustor thunk.
-*/
-static unsigned char *obscure_ccall_ret_code;	/* set by initAdjustor() */
-#endif /* i386_HOST_ARCH */
-
-/* Heavily arch-specific, I'm afraid.. */
-
-/*
- * Allocate len bytes which are readable, writable, and executable.
- *
- * ToDo: If this turns out to be a performance bottleneck, one could
- * e.g. cache the last VirtualProtect/mprotect-ed region and do
- * nothing in case of a cache hit.
- */
-static void* local mallocBytesRWX(int len) {
-    void *addr = (void *)malloc(len);
-#if defined(i386_HOST_ARCH) && defined(_WIN32)
-    /* This could be necessary for processors which distinguish between
-       READ and EXECUTE memory accesses, e.g. Itaniums. */
-    DWORD dwOldProtect = 0;
-    if (VirtualProtect(addr, len, PAGE_EXECUTE_READWRITE, &dwOldProtect) == 0) {
-        ERRMSG(0) "mallocBytesRWX: failed to protect 0x%p\n", addr
-	EEND;
-    }
-#elif defined(openbsd_HOST_OS) || defined(linux_HOST_OS)
-    /* malloced memory isn't executable by default on OpenBSD */
-    uintptr_t pageSize         = sysconf(_SC_PAGESIZE);
-    uintptr_t mask             = ~(pageSize - 1);
-    uintptr_t startOfFirstPage = ((uintptr_t)addr          ) & mask;
-    uintptr_t startOfLastPage  = ((uintptr_t)addr + len - 1) & mask;
-    uintptr_t size             = startOfLastPage - startOfFirstPage + pageSize;
-    if (mprotect((void*)startOfFirstPage, 
-                        (size_t)size, PROT_EXEC | PROT_READ | PROT_WRITE) != 0) {
-        ERRMSG(0) "mallocBytesRWX: failed to protect 0x%p\n", addr
-	EEND;
-    }
-#endif
-    return addr;
-}
-
-/* Perform initialisation of adjustor thunk layer (if needed). */
-static void local initAdjustor() {
-#if i386_HOST_ARCH
-    obscure_ccall_ret_code = (unsigned char *)mallocBytesRWX(4);
-    obscure_ccall_ret_code[0x00] = (unsigned char)0x83;  /* addl $0x4, %esp */
-    obscure_ccall_ret_code[0x01] = (unsigned char)0xc4;
-    obscure_ccall_ret_code[0x02] = (unsigned char)0x04;
-    obscure_ccall_ret_code[0x03] = (unsigned char)0xc3;  /* ret */
-#endif
-}
-
 static void* mkThunk(void (*app)(void), HugsStablePtr s) {
-    /* The code part of the thunk_data needs to be marked as executable,
-       but it's simple to do the whole struct. */
-    struct thunk_data* thunk
-        = (struct thunk_data*)mallocBytesRWX(sizeof(struct thunk_data));
-    if (!thunk) {
-        /* ToDo: better cleanup */
-        printf("Can't allocate thunk for foreign import wrapper\n");
-        exit(1);
-    }
-    if (foreignThunks) { /* non-empty list */
-        foreignThunks->prev = thunk;
-    }
-    thunk->next = foreignThunks;
-    thunk->prev = 0;
-    foreignThunks = thunk;
-    thunk->stable = s;
-#if i386_HOST_ARCH
-    /* Mostly cut-n-pasted from GHC's Adjustor.c. */
-    {
-	unsigned char *adj_code = (unsigned char*)thunk->code;
-
-	adj_code[0] = (char)0x68;	/* pushl s */
-	*((HugsStablePtr*)(adj_code + 1)) = s;
-
-	adj_code[5] = (char)0xb8;	/* movl app, %eax */
-	*((HsFunPtr*)(adj_code + 6)) = app;
-
-	adj_code[10] = (char)0x68;	/* pushl obscure_ccall_ret_code */
-	*((unsigned char**)(adj_code + 11)) = obscure_ccall_ret_code;
-
-	adj_code[15] = (char)0xff;	/* jmp *%eax */
-	adj_code[16] = (char)0xe0;
-    }
-#elif powerpc_HOST_ARCH && defined(__GNUC__)
-     /* This is only for MacOS X.
-      * It does not work on MacOS 9 because of the very strange
-      * handling of function pointers in OS 9.
-      * I don't know about LinuxPPC calling conventions.
-      * Please note that it only works for up to 7 arguments.
-      */
-    {
-	unsigned long *adj_code = (unsigned long*)thunk->code;
-
-	/* make room for extra arguments */
-	adj_code[0] = 0x7d2a4b78;	/* mr r10,r9 */
-	adj_code[1] = 0x7d094378;	/* mr r9,r8  */
-	adj_code[2] = 0x7ce83b78;	/* mr r8,r7  */
-	adj_code[3] = 0x7cc73378;	/* mr r7,r6  */
-	adj_code[4] = 0x7ca62b78;	/* mr r6,r5  */
-	adj_code[5] = 0x7c852378;	/* mr r5,r4  */
-	adj_code[6] = 0x7c641b78;	/* mr r4,r3  */
-
-	adj_code[7] = 0x3c000000;	/* lis r0,hi(app) */
-	adj_code[7] |= ((unsigned long)app) >> 16;
-
-	adj_code[8] = 0x3c600000;	/* lis r3,hi(s) */
-	adj_code[8] |= ((unsigned long)s) >> 16;
-
-	adj_code[9] = 0x60000000;	/* ori r0,r0,lo(app) */
-	adj_code[9] |= ((unsigned long)app) & 0xFFFF;
-
-	adj_code[10] = 0x60630000;	/* ori r3,r3,lo(s) */
-	adj_code[10] |= ((unsigned long)s) & 0xFFFF;
-
-	adj_code[11] = 0x7c0903a6;	/* mtctr r0 */
-	adj_code[12] = 0x4e800420;	/* bctr */
-
-	/* Flush the Instruction cache: */
-	/* MakeDataExecutable(adjustor,4*13); */
-	/* This would require us to link with CoreServices.framework */
-	{ /* this should do the same: */
-	    int n = 13;
-	    unsigned long *p = adj_code;
-	    while(n--)
-	    {
-		__asm__ volatile ("dcbf 0,%0\n\tsync\n\ticbi 0,%0"
-				: : "g" (p));
-		p++;
-	    }
-	    __asm__ volatile ("sync\n\tisync");
-	}
-    }
-#elif sparc_HOST_ARCH && defined(__GNUC__)
-    /* Mostly cut-n-pasted from GHC's Adjustor.c:
-
-	<00>: 9C23A008   sub   %sp, 8, %sp     ! make room for %o4/%o5 in caller's frame
-	<04>: DA23A060   st    %o5, [%sp + 96] ! shift registers by 2 positions
-	<08>: D823A05C   st    %o4, [%sp + 92]
-	<0C>: 9A10000B   mov   %o3, %o5
-	<10>: 9810000A   mov   %o2, %o4
-	<14>: 96100009   mov   %o1, %o3
-	<18>: 94100008   mov   %o0, %o2
-	<1C>: 13000000   sethi %hi(app), %o1   ! load up app (1 of 2)
-	<20>: 11000000   sethi %hi(s), %o0     ! load up s (1 of 2)
-	<24>: 81C26000   jmp   %o1 + %lo(app)  ! jump to app (load 2 of 2)
-	<28>: 90122000   or    %o0, %lo(), %o0 ! load up s (2 of 2, delay slot)
-
-	ccall'ing on SPARC is easy, because we are quite lucky to push a
-	multiple of 8 bytes (1 word stable pointer + 1 word dummy arg) in front
-	of the existing arguments (note that %sp must stay double-word aligned at
-	all times, see ABI spec at http://www.sparc.org/standards/psABI3rd.pdf).
-	To do this, we extend the *caller's* stack frame by 2 words and shift
-	the output registers used for argument passing (%o0 - %o5, we are a
-	*leaf* procedure because of the tail-jump) by 2 positions. This makes
-	room in %o0 and %o1 for the additinal arguments, namely  the stable
-	pointer and a dummy (used for destination addr of jump on SPARC). This
-	shouldn't cause any problems for a C-like caller: alloca is implemented
-	similarly, and local variables should be accessed via %fp, not %sp. In
-	a nutshell: This should work! (Famous last words! :-)
-     */
-    {
-	unsigned long *adj_code = (unsigned long *)thunk->code;
-	adj_code[ 0]  = 0x9C23A008UL;	/* sub   %sp, 8, %sp         */
-	adj_code[ 1]  = 0xDA23A060UL;	/* st    %o5, [%sp + 96]     */
-	adj_code[ 2]  = 0xD823A05CUL;	/* st    %o4, [%sp + 92]     */
-	adj_code[ 3]  = 0x9A10000BUL;	/* mov   %o3, %o5            */
-	adj_code[ 4]  = 0x9810000AUL;	/* mov   %o2, %o4            */
-	adj_code[ 5]  = 0x96100009UL;	/* mov   %o1, %o3            */
-	adj_code[ 6]  = 0x94100008UL;	/* mov   %o0, %o2            */
-	adj_code[ 7]  = 0x13000000UL;	/* sethi %hi(app), %o1       */
-	adj_code[ 7] |= ((unsigned long)app) >> 10;
-	adj_code[ 8]  = 0x11000000UL;	/* sethi %hi(s), %o0         */
-	adj_code[ 8] |= ((unsigned long)s) >> 10;
-	adj_code[ 9]  = 0x81C26000UL;	/* jmp   %o1 + %lo(app)      */
-	adj_code[ 9] |= ((unsigned long)app) & 0x000003FFUL;
-	adj_code[10]  = 0x90122000UL;	/* or    %o0, %lo(s), %o0    */
-	adj_code[10] |= ((unsigned long)s) & 0x000003FFUL;
-
-	/* flush cache */
-	asm("flush %0" : : "r" (adj_code     ));
-	asm("flush %0" : : "r" (adj_code +  2));
-	asm("flush %0" : : "r" (adj_code +  4));
-	asm("flush %0" : : "r" (adj_code +  6));
-	asm("flush %0" : : "r" (adj_code + 10));
-
-	/* max. 5 instructions latency, and we need at >= 1 for returning */
-	asm("nop");
-	asm("nop");
-	asm("nop");
-	asm("nop");
-    }
-#else
+    /* Every architecture we still support needs machine code written
+     * into the thunk to trampoline into Haskell (see the comment above
+     * struct thunk_data), and none of the ones that had it (i386,
+     * PowerPC, SPARC) are supported any more, so refuse right away -
+     * in particular before allocating a thunk_data and linking it into
+     * foreignThunks, which the earlier code did first and
+     * left there, half-initialised, once this error longjmp'd out. */
     ERRMSG(0) "Foreign import wrapper is not supported on this architecture"
     EEND;
-#endif
-    return &thunk->code; /* a pointer into the middle of the thunk */
+    return 0; /*NOTREACHED*/
 }
 
 static void freeThunkAux(struct thunk_data* thunk) {
@@ -2332,26 +2015,14 @@ static struct primInfo builtinPrims = { builtinControl, builtinPrimTable, 0 };
 Void builtIn(Int what)
 {
     switch (what) {
-	case INSTALL : 
-		       initAdjustor();
-
+	case INSTALL :
 		       registerPrims(&builtinPrims);
 		       registerPrims(&printerPrims);
-#if HASKELL_ARRAYS
 		       registerPrims(&arrayPrims);
-#endif
-#if BIGNUMS
 		       registerPrims(&bignumPrims);
-#endif
-#if IO_MONAD
 		       registerPrims(&iomonadPrims);
-#endif
-#if TIME_MODULE
 		       registerPrims(&timePrims);
-#endif
-#if DIRECTORY_MODULE
 		       registerPrims(&dirPrims);
-#endif
 #if INTERNAL_PRIMS
 		       registerPrims(&internalPrims);
 #endif
@@ -2405,7 +2076,6 @@ Void builtIn(Int what)
 		       predef(nameReturnIO,     "primretIO");
 		       predef(nameRationalToDouble, "rationalToDouble");
 		       predef(nameRationalToFloat,  "rationalToFloat");
-#if SHORT_CIRCUIT_COERCIONS
 		       predef(nameFloatToRational,  "floatToRational");
 		       predef(nameDoubleToRational, "doubleToRational");
 		       predef(nameDoubleToRatio,    "doubleToRatio");
@@ -2414,7 +2084,6 @@ Void builtIn(Int what)
 		       predef(nameIntToDouble,      "primIntToDouble");
 		       predef(nameDoubleToFloat,    "primDoubleToFloat");
 		       predef(nameFloatToDouble,    "primFloatToDouble");
-#endif
 #undef  predef
 		       break;
 
