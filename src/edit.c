@@ -53,19 +53,27 @@ Bool startEdit(Int line, String nm)    /* Start editor on file name at    */
 	  /* assume quotes are always put around the filename. */
 	  roomReqd += nmLen + 2;
 	  expandedName = TRUE;
+	  he++;
 	} else if (*he == 'f') {
 	  /* assume quotes are always put around the filename. */
 	  roomReqd += fullNmLen + 2;
 	  expandedName = TRUE;
+	  he++;
 	} else if ( *he == 'd' ) {
 	  roomReqd += lineLen;
+	  he++;
 	} else if ( *he == '%' ) {
 	  /* %% is contracted to % in the expanded string */
 	  roomReqd++;
+	  he++;
+	} else if ( *he == '\0' ) {
+	  /* trailing '%' with nothing after it: keep it literally, and
+	   * don't step past the terminating NUL. */
+	  roomReqd++;
 	} else {
 	  roomReqd += 2;
+	  he++;
 	}
-	he++;
       } else {
 	roomReqd++;
       }
@@ -113,8 +121,11 @@ Bool startEdit(Int line, String nm)    /* Start editor on file name at    */
 	  ec += lineLen;
 	  he++;
 	} else if (*he == 's' || *he == 'f') {
-	  /* Put quotes around it if the %s occurrence surrounded by wspace only. */
-	  Bool useQuotes = isspace(he[-2]) && (he[1] == '\0' || isspace(he[1]));
+	  /* Put quotes around it if the %s occurrence surrounded by wspace
+	   * only; the start/end of the template counts as whitespace too,
+	   * so he[-2] is only looked at when it is within hugsEdit. */
+	  Bool useQuotes = (he-hugsEdit<2 || isspace(he[-2]))
+			    && (he[1] == '\0' || isspace(he[1]));
 	  if (useQuotes) *ec++='\"';
 	  if (*he == 's') {
 	    strcpy(ec,nm);
@@ -130,8 +141,12 @@ Bool startEdit(Int line, String nm)    /* Start editor on file name at    */
 	} else if (*he == '%') { /* Unescape % */
 	  *ec++ = '%';
 	  he++;
+	} else if (*he == '\0') {
+	  /* trailing '%' with nothing after it: keep it literally, and
+	   * don't step past the terminating NUL. */
+	  *ec++ = '%';
 	} else {
-	  *ec++ = '%'; 
+	  *ec++ = '%';
 	  *ec++ = *he++;
 	}
       } else {
