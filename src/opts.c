@@ -229,8 +229,8 @@ Void optionInfo(Void) {                 /* Print information about command */
 
 #define PUTInt(optc,i)                  \
     if ( charsLeft > 20 /*conservative*/ ) { \
-      sprintf(next,"-%c%d",optc,i);     \
-      next+=strlen(next);               \
+      Int n = sprintf(next,"-%c%d",optc,i); \
+      next += n; charsLeft -= n;         \
     } else {                            \
       *next = '\0';                     \
     }
