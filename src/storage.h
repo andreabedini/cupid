@@ -26,7 +26,7 @@ typedef Int	     Text;			 /* text string 	   */
 typedef Unsigned     Syntax;			 /* syntax (assoc,preced)  */
 typedef Int	     Addr;			 /* address of code	   */
 typedef Int	     Cell;			 /* general cell value	   */
-typedef Cell far     *Heap;			 /* storage of heap	   */
+typedef Cell	     *Heap;			 /* storage of heap	   */
 typedef Cell	     Pair;			 /* pair cell		   */
 typedef Int	     StackPtr;			 /* stack pointer	   */
 typedef Cell	     Offset;			 /* offset/generic variable*/
@@ -43,15 +43,9 @@ typedef Cell	     Class;			 /* type class		   */
 typedef Cell	     Inst;			 /* instance of type class */
 typedef Cell	     Triple;			 /* triple of cell values  */
 typedef Cell	     List;			 /* list of cells	   */
-#if BIGNUMS
 typedef Cell	     Bignum;			 /* bignum integer	   */
-#endif
 typedef FloatImpType Float;			 /* implementation of Float*/
 typedef DoubleImpType Double;			 /* implementation of Double*/
-
-#ifdef DOTNET
-extern  Void         primInvoker (StackPtr,Name);
-#endif
 
 /* --------------------------------------------------------------------------
  * Text storage:
@@ -124,17 +118,6 @@ extern  Text         subText            (String,Int);
 #define FFI_TYPE_FUNPTR   16
 #define FFI_TYPE_FOREIGN  17
 #define FFI_TYPE_STABLE   18
-#ifdef DOTNET
-#define FFI_TYPE_OBJECT   19
-#define FFI_TYPE_STRING   20
-#endif
-
-#ifdef DOTNET
-#define FFI_DOTNET_STATIC 1
-#define FFI_DOTNET_FIELD  2
-#define FFI_DOTNET_CTOR   4
-#define FFI_DOTNET_METHOD 8
-#endif
 
 
 /* --------------------------------------------------------------------------
@@ -184,16 +167,8 @@ extern  Void	     nextInstr	(Addr);
 #define heapBuilt()  (heapFst)
 extern  Int          heapSize;
 extern  Heap	     heapFst, heapSnd;
-#ifdef  GLOBALfst
-register Heap	     heapTopFst GLOBALfst;
-#else
 extern   Heap        heapTopFst;
-#endif
-#ifdef  GLOBALsnd
-register Heap	     heapTopSnd GLOBALsnd;
-#else
 extern   Heap        heapTopSnd;
-#endif
 extern   Bool        consGC;		/* Set to FALSE to turn off gc from*/
 					/* C stack; use with extreme care! */
 extern   Int	     cellsRecovered;	/* cells recovered by last gc	   */
@@ -221,12 +196,8 @@ extern  Void	     markWithoutMove (Cell);
 #define isPair(c)    ((c)<0)
 #define isGenPair(c) ((c)<0 && -heapSize<=(c))
 
-#if FAST_WHATIS
 #define whatIs(c)    (isPair(c)? (isTag(fst(c)) ? fst(c) : AP ) : whatCode[c])
 extern unsigned char whatCode[];
-#else
-extern	Cell	     whatIs    (Cell);
-#endif
 
 /* --------------------------------------------------------------------------
  * Box cell tags are used as the fst element of a pair to indicate that
@@ -240,9 +211,7 @@ extern	Cell	     whatIs    (Cell);
 #define isTag(c)     (TAGMIN<=(c) && (c)<SPECMIN) /* Tag cell values	   */
 #define isBoxTag(c)  (TAGMIN<=(c) && (c)<BCSTAG)  /* Box cell tag values   */
 #define isConTag(c)  (BCSTAG<=(c) && (c)<SPECMIN) /* Constr cell tag values*/
-#if FAST_WHATIS1
 #define TAG_MASK     (~0x7f)	  /* This masks 0..SPECMIN-1		   */
-#endif
 
 #define INDIRECT     1		  /* Indirection node:	      snd :: Cell  */
 #define INDIRECT1    2		  /* Temporary indirection:   snd :: Cell  */
@@ -254,24 +223,13 @@ extern	Cell	     whatIs    (Cell);
 #define CONOPCELL    8		  /* Operator constructor:    snd :: Text  */
 #define STRCELL      9		  /* String literal:	      snd :: Text  */
 #define INTCELL	     10		  /* Int literal:	      snd :: Int   */
-#if IO_HANDLES
 #define HANDCELL     12		  /* IO monad Handle:	      snd :: Int   */
-#endif
-#if GC_WEAKPTRS
 #define WEAKCELL     13		  /* WeakPtr Cell:	      snd::(Cell,List)*/
 #define WEAKFIN	     14		  /* Weak pointer with fin:   snd::(k,(v,f))*/
-#endif
-#if !BREAK_FLOATS
 #define FLOATCELL    15		  /* Floating pt number:      snd :: Float */
-#endif
-#if GC_MALLOCPTRS
 #define MPCELL       17		  /* Malloc Ptr Cell:         snd :: Int   */
-#endif
 #if SIZEOF_INTP == SIZEOF_INT
 #define PTRCELL      18           /* C Heap Pointer:          snd ::Pointer*/
-#endif
-#if DOTNET
-#define NPCELL       21		  /* .NET Ptr Cell:           snd :: Int   */
 #endif
 /* CHARCELL is the whatIs code for chars; if UNICODE_CHARS is set, it
  * is also used for box cells representing character values greater than
@@ -370,14 +328,9 @@ extern void growDynTable       (DynTable*);
 #define FATBAR	     42 	  /* FATBAR	snd :: (Exp,Exp)	   */
 #define LAZYPAT      43 	  /* LAZYPAT	snd :: Exp		   */
 #define DERIVE	     45		  /* DERIVE	snd :: Cell		   */
-#if BREAK_FLOATS
-#define FLOATCELL    46		  /* FLOATCELL  snd :: (Int,Int)	   */
-#endif
 
-#if BIGNUMS
 #define POSNUM	     47		  /* POSNUM	snd :: [Int]		   */
 #define NEGNUM	     48		  /* NEGNUM	snd :: [Int]		   */
-#endif
 
 #define BOOLQUAL     49 	  /* BOOLQUAL	snd :: Exp		   */
 #define QWHERE	     50 	  /* QWHERE	snd :: [Decl]		   */
@@ -391,9 +344,7 @@ extern void growDynTable       (DynTable*);
 #define MUTVAR	     56		  /* Mutvar	snd :: Cell		   */
 #define HUGSOBJECT   57		  /* HUGSOBJECT	snd :: Cell	           */
 
-#if STABLE_NAMES
 #define STABLENAME   58		  /* Stable Nm  snd :: Cell		   */
-#endif
 
 
 #define POLYTYPE     60		  /* POLYTYPE	snd :: (Kind,Type)	   */
@@ -432,8 +383,6 @@ extern void growDynTable       (DynTable*);
  * Special cell values:
  * ------------------------------------------------------------------------*/
 
-#if FAST_WHATIS1
-
 #define SPECMIN      129	  /* must be out of TAG_MASK range         */
 
 #define NONE	     129	  /* Dummy stub				   */
@@ -444,9 +393,7 @@ extern void growDynTable       (DynTable*);
 
 #define DOTDOT       134          /* ".." in import/export list            */
 
-#if BIGNUMS
 #define ZERONUM      136	  /* The zero bignum (see POSNUM, NEGNUM)  */
-#endif
 
 #define NAME	     138	  /* whatIs code for isName		   */
 #define TYCON	     139	  /* whatIs code for isTycon		   */
@@ -469,47 +416,6 @@ extern void growDynTable       (DynTable*);
 
 #define NODEPENDS    163	  /* Stop calculation of deps in type check*/
 #define PREDEFINED   164	  /* Predefined name, not yet filled       */
-
-#else	/* !FAST_WHATIS1 */
-
-#define SPECMIN      101
-#define isSpec(c)    (SPECMIN<=(c) && (c)<TUPMIN)/* Special cell values    */
-
-#define NONE	     101	  /* Dummy stub				   */
-#define STAR	     102	  /* Representing the kind of types	   */
-#define WILDCARD     104	  /* Wildcard pattern			   */
-
-#define SKOLEM	     105	  /* Skolem constant			   */
-
-#define DOTDOT       106          /* ".." in import/export list            */
-
-#if BIGNUMS
-#define ZERONUM      108	  /* The zero bignum (see POSNUM, NEGNUM)  */
-#endif
-
-#define NAME	     110	  /* whatIs code for isName		   */
-#define TYCON	     111	  /* whatIs code for isTycon		   */
-#define CLASS	     112	  /* whatIs code for isClass		   */
-#define MODULE       113          /* whatIs code for isModule              */
-#define INSTANCE     114          /* whatIs code for isInst                */
-#define TUPLE	     115	  /* whatIs code for tuple constructor	   */
-#define OFFSET	     116	  /* whatis code for offset		   */
-#define AP	     117	  /* whatIs code for application node	   */
-
-#define SIGDECL      120	  /* Signature declaration		   */
-#define FIXDECL      121	  /* Fixity declaration			   */
-#define FUNBIND	     122	  /* Function binding			   */
-#define PATBIND	     123	  /* Pattern binding			   */
-
-#define DATATYPE     130	  /* Datatype type constructor		   */
-#define NEWTYPE	     131	  /* Newtype type constructor		   */
-#define SYNONYM	     132	  /* Synonym type constructor		   */
-#define RESTRICTSYN  133	  /* Synonym with restricted scope	   */
-
-#define NODEPENDS    135	  /* Stop calculation of deps in type check*/
-#define PREDEFINED   136	  /* Predefined name, not yet filled       */
-
-#endif 	/* !FAST_WHATIS1 */
 
 /* --------------------------------------------------------------------------
  * Tuple data/type constructors:
@@ -687,9 +593,6 @@ struct strName {
     Text extFun;                        /* for foreign import/export       */
     Int  foreignId;                     /* per module identifier           */
     Int  foreignFlags;                  /* encoding safety + calling conv  */
-#ifdef DOTNET
-    Cell foreignInfo;                   /* (funName,libName,isStatic,isIO,resultType, [paramType])       */
-#endif
     Prim primDef;
     Name nextNameHash;
 #if PROFILING
@@ -793,13 +696,8 @@ struct strClass {
     List   clashes;                     /* Conflicting classes/tycons      */
 };
 
-#if WANT_FIXED_SIZE_TABLES
-extern struct strClass    DECTABLE(tabClass);
-extern struct strInst far *tabInst;
-#else
 extern struct strClass    DYNDECTABLE(tabClass);
 extern struct strInst     DYNDECTABLE(tabInst);
-#endif
 
 extern Class  newClass	     (Text);
 extern Class  classMax	     (Void);
@@ -819,8 +717,6 @@ extern Text   findModAlias   (Text);
 
 #define CHARMIN      (CLASSMIN+NUM_CLASSES)
 
-#if UNICODE_CHARS
-
 /* --------------------------------------------------------------------------
  * Unicode Characters: NUM_SHORT_CHARS is the number of one-cell characters.
  * Such cells are recognized by the new predicate isShortChar().
@@ -837,29 +733,11 @@ extern	Bool isChar    (Cell);
 extern	Int  charOf    (Cell);
 extern	Cell mkChar    (Int);
 
-#else	/* !UNICODE_CHARS */
-
-#define isChar(c)    (CHARMIN<=(c) && (c)<INTMIN)
-#if defined(_MANAGED) && defined(__cplusplus)
-#define charOf(c)    ((::Char)(c-CHARMIN))
-#else
-#define charOf(c)    ((Char)(c-CHARMIN))
-#endif
-#define mkChar(c)    ((Cell)(CHARMIN+(((unsigned)(c))%NUM_LAT1_CHARS)))
-
-#endif
-
 /* --------------------------------------------------------------------------
  * Small Integer values:
  * ------------------------------------------------------------------------*/
 
-#if !UNICODE_CHARS
-#define INTMIN	     (CHARMIN+NUM_LAT1_CHARS)
-#else
 #define INTMIN	     (CHARMIN+NUM_SHORT_CHARS)
-#endif	/* UNICODE_CHARS */
-
-#if FAST_WHATIS
 
 /* All ints out of the range defined below are boxed, so we want the biggest
  * INTMAX possible. But the bigger INTMAX is, the bigger the whatIs array.
@@ -868,9 +746,6 @@ extern	Cell mkChar    (Int);
 
 #define INTMAX	     (INTMIN+4096)
 #define N_WHATCODE   (INTMAX+1)			 /* size of whatCode array */
-#else
-#define INTMAX	     (MAXPOSINT)
-#endif
 
 #define isSmall(c)   (INTMIN<=(c))
 #define INTZERO      (INTMIN/2 + INTMAX/2)
@@ -882,9 +757,7 @@ extern	Cell mkChar    (Int);
 extern	Bool isInt    (Cell);
 extern	Int  intOf    (Cell);
 extern	Cell mkInt    (Int);
-#if BIGNUMS
 extern  Bool isBignum (Cell);
-#endif
 
 /* --------------------------------------------------------------------------
  * Implementation of triples:
@@ -991,11 +864,7 @@ extern  Cell	     applyToArgs (Cell,List);
  * ------------------------------------------------------------------------*/
 
 extern  Cell DECTABLE(cellStack);
-#ifdef  GLOBALsp
-register StackPtr    sp GLOBALsp;
-#else
 extern	StackPtr sp;
-#endif
 
 #define clearStack() sp=(-1)
 #define stackEmpty() (sp==(-1))
@@ -1016,12 +885,6 @@ extern	StackPtr sp;
 
 extern  Void hugsStackOverflow (Void);
 
-#if __MWERKS__ && macintosh
-#include <Memory.h>
-#define STACK_HEADROOM 16384
-#define STACK_CHECK if (StackSpace() <= STACK_HEADROOM) \
-		      internal("Macintosh function parameter stack overflow.");
-#else
 /* STACK_CHECK compares the address of a local variable against a limit
  * derived from CStackBase (machdep.c) and the process's stack rlimit, so
  * that every point in the interpreter that recurses on the C stack --
@@ -1035,7 +898,6 @@ extern  char *cStackLimit;
 extern  Void  cStackCheck	 (Void);
 #define STACK_CHECK { char cStackProbe; \
 		      if (&cStackProbe <= cStackLimit) cStackCheck(); }
-#endif
 
 /* --------------------------------------------------------------------------
  * Script file control:
@@ -1061,7 +923,6 @@ extern Void        setScriptPrims   (void*);
  * I/O Handles:
  * ------------------------------------------------------------------------*/
 
-#if IO_HANDLES
 #define HSTDIN		0	/* Numbers for standard handles		   */
 #define HSTDOUT		1
 #define HSTDERR		2
@@ -1101,20 +962,14 @@ struct strHandle {		/* Handle description and status flags	   */
 
 #define	NO_HANDLE          (-1)
 
-#if !WANT_FIXED_SIZE_TABLES
 extern unsigned long     num_handles;
 extern DynTable*         dynTabHandles;
 extern struct strHandle* handles;
-#else
-extern struct strHandle  DECTABLE(handles);
-#endif
-#endif
 
 /* --------------------------------------------------------------------------
  * Malloc Pointers
  * ------------------------------------------------------------------------*/
 
-#if GC_MALLOCPTRS
 struct strMallocPtr {		/* Malloc Ptr description                  */
     Cell mpcell;		/* Back pointer to MPCELL                  */
     Void *ptr;			/* Pointer into C world                    */
@@ -1136,9 +991,7 @@ extern Int    mallocPtr_hw;
 
 #define mpOf(c)	   snd(c)
 #define derefMP(c) (mallocPtrs[(Int)mpOf(c)].ptr)
-#endif /* GC_MALLOCPTRS */
 
-#if GC_WEAKPTRS
 /* --------------------------------------------------------------------------
  * Weak Pointers
  * ------------------------------------------------------------------------*/
@@ -1149,8 +1002,6 @@ extern Int    mallocPtr_hw;
 
 extern List finalizers;
 extern List liveWeakPtrs;
-
-#endif /* GC_WEAKPTRS */
 
 /* --------------------------------------------------------------------------
  * Foreign Function Interface
@@ -1166,11 +1017,9 @@ extern HsInt64          int64FromParts  (Int,Int);
  * Stable pointers
  * ------------------------------------------------------------------------*/
 
-#if GC_STABLEPTRS
 extern  Int         mkStablePtr    (Cell);
 extern  Cell        derefStablePtr (Int);
 extern  Void        freeStablePtr  (Int);
-#endif
 
 /* --------------------------------------------------------------------------
  * Misc:
@@ -1183,8 +1032,6 @@ extern  List   addNamesMatching  (String,List);
 
 /*-------------------------------------------------------------------------*/
 
-#if FAST_WHATIS1
-
 /* whatIs1 is faster than whatIs, but it will return NIL if fst(c) is NIL
  * Used with care in the right places it gains us speed.
  */
@@ -1194,7 +1041,5 @@ extern  List   addNamesMatching  (String,List);
 #define whatIs1(c)  (isPair(c)? (isTag1(fst(c))? fst(c) : AP ) : whatCode[c])
 
 #define isAp1(c)    (isPair(c) && !isTag1(fst(c)))
-
-#endif
 
 #endif /* __STORAGE_H__ */

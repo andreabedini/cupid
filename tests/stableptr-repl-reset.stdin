@@ -1,0 +1,2 @@
+deRefStablePtr sp >>= print
+deRefStablePtr sp >>= print
