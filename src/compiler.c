@@ -105,6 +105,7 @@ static Void local debugConstructor      (FILE *fp,Name c);
 
 static Cell local translate(Cell e)         /* Translate expression:            */
 {
+    STACK_CHECK
     switch (whatIs(e)) {
 	case LETREC     : snd(snd(e)) = translate(snd(snd(e)));
 			  return expandLetrec(e);
@@ -255,10 +256,18 @@ static Cell local transRhs(Cell rhs)        /* Translate rhs: removing line nos 
 
 static Cell local mkConsList(List es)       /* Construct expression for list es */
 {                             /* using nameNil and nameCons       */
-    if (isNull(es))
-	return nameNil;
-    else
-	return ap(ap(nameCons,hd(es)),mkConsList(tl(es)));
+    Cell head = nameNil;                    /* iterative: a long literal list  */
+    Cell prev = NIL;                        /* must not recurse once per elem  */
+
+    for (; nonNull(es); es = tl(es)) {
+	Cell node = ap(ap(nameCons,hd(es)),nameNil);
+	if (isNull(prev))
+	    head = node;
+	else
+	    arg(prev) = node;
+	prev = node;
+    }
+    return head;
 }
 
 static Cell local expandLetrec(Cell root)   /* translate LETREC with list of    */
@@ -859,6 +868,7 @@ static Cell local pmcTerm(Int co, List sc, Cell e)     /* apply pattern matching
                                        /* co = current offset              */
                                        /* sc = scope                       */
 {                             /* e  = expr to transform           */
+    STACK_CHECK
     switch (whatIs(e)) {
 	case GUARDED  : map2Over(pmcPair,co,sc,snd(e));
 			break;
@@ -1310,6 +1320,7 @@ static Bool local eqNumDiscr(Cell d1, Cell d2)     /* Determine whether two nume
 
 static Cell local lift(Int co, List tr, Cell e)        /* lambda lift term                 */
 {
+    STACK_CHECK
     switch (whatIs(e)) {
 	case GUARDED   : map2Proc(liftPair,co,tr,snd(e));
 			 break;
@@ -1562,6 +1573,7 @@ static Int  localArity;    /* arity of function being compiled w/o extras  */
 
 static Cell local preComp(Cell e)		/* Adjust output from compiler to  */
 {				/* include extra parameters	   */
+    STACK_CHECK
     switch (whatIs(e)) {
 	case GUARDED   : mapOver(preCompPair,snd(e));
 			 break;
