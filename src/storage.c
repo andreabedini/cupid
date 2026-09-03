@@ -1780,15 +1780,56 @@ Cell markExpr(Cell c)                        /* External interface to markCell  
     return isGenPair(c) ? markCell(c) : c;
 }
 
-static Cell local markCell(Cell c)           /* Traverse part of graph marking  */
-{                               /* cells reachable from given root */
-					/* markCell(c) is only called if c */
-					/* is a pair                       */
+/* --------------------------------------------------------------------------
+ * markCell and markSnd used to recurse in C, once per cell, along the fst
+ * link of the object graph (with markSnd looping, rather than recursing,
+ * along a run of snd links -- see the old comments in the jj history of
+ * this file).  A long, thin part of the graph can still be many cells
+ * deep along the fst link: every list cons cell's fst is itself an
+ * application cell, so a long list, or the left-nested chain of thunks
+ * that a lazy foldl-shaped function leaves behind, used to recurse once
+ * per cell and could overflow the C stack.  Longjmp'ing out of the
+ * collector is not safe, so STACK_CHECK is not used here; instead both
+ * links are marked from an explicit work stack of pending slots, kept in
+ * a malloc'd array that is grown (doubled) as needed and kept between
+ * collections.
+ * ------------------------------------------------------------------------*/
+
+static Cell **markStack     = 0;    /* malloc'd stack of pending Cell* slots*/
+static Int    markStackSize = 0;    /* capacity of markStack, in entries    */
+static Int    markStackTop  = 0;    /* number of entries currently in use   */
+
+static Void local growMarkStack(Void)  /* Double the mark stack, reporting  */
+{                                       /* a fatal error if malloc fails --  */
+    Int    newSize  = markStackSize ? 2*markStackSize : 1024;
+					/* longjmp'ing out of the collector  */
+					/* is not safe here.                 */
+    Cell **newStack = (Cell **)realloc(markStack,newSize*sizeof(Cell *));
+    if (newStack==0) {
+	fatal("Cannot grow garbage collector mark stack");
+    }
+    markStack     = newStack;
+    markStackSize = newSize;
+}
+
+#define pushMarkSlot(slotp) \
+    do { if (markStackTop>=markStackSize) growMarkStack();	\
+	 markStack[markStackTop++] = (slotp);			\
+    } while (0)
+
+static Void local markSlot(Cell *slot)    /* Mark whatever *slot refers to,  */
+{                          /* pushing whichever of its own fst/snd links     */
+    Cell c = *slot;        /* still need marking.  Used for the fst and snd  */
+			    /* link of a cell, and for markCell's root arg.  */
+    if (!isPair(c))         /* fst/snd links pushed here are not guaranteed  */
+	return;             /* to be pairs (unlike markCell's root); a snd  */
+			    /* link commonly terminates the chain here.      */
 mc: switch (fst(c)) {
 	case INDIRECT : c = indirectChain(c);
 			if (isGenPair(c))
 			    goto mc;
-			return c;
+			*slot = c;
+			return;
 #if GC_WEAKPTRS
 	case WEAKCELL :
 			{
@@ -1802,84 +1843,62 @@ mc: switch (fst(c)) {
 			    weakPtrs = c;
 			    recordMark();
 			  }
-			  return c;
+			  return;
 			}
 #endif
     }
+    *slot = c;      /* the indirection chain above may have been resolved   */
+		    /* (possibly through several INDIRECT cells) before      */
+		    /* falling out of the switch here; write the final,      */
+		    /* indirection-free cell back so the caller's link no    */
+		    /* longer keeps the (now unreachable) indirection nodes  */
+		    /* alive for the sweep that follows marking.             */
 
     {   register int place = placeInSet(c);
 	register int mask  = maskInSet(c);
 	if (marks[place]&mask)
-	    return c;
+	    return;
 	else {
 	    marks[place] |= mask;
 	    recordMark();
 	}
     }
 
-    /* STACK_CHECK: Avoid stack overflows during recursive marking. */
     if (isGenPair(fst(c))) {
-	STACK_CHECK
-	fst(c) = markCell(fst(c));
-	return markSnd(c);
+	pushMarkSlot(&fst(c));
+	pushMarkSlot(&snd(c));
     }
     else if (isNull(fst(c)) || fst(c)>=BCSTAG) {
-	STACK_CHECK
-	return markSnd(c);
-    } else {
-        return c;
+	pushMarkSlot(&snd(c));
     }
 }
 
+static Cell markCellRoot;   /* Static (not stack) storage for markCell's own */
+			     /* root slot: pushMarkSlot needs the address of  */
+			     /* a slot that stays valid for the whole drain,  */
+			     /* which a local variable's address is not.      */
+
+static Cell local markCell(Cell c)           /* Traverse part of graph marking  */
+{                               /* cells reachable from given root */
+					/* markCell(c) is only called if c */
+					/* is a pair                       */
+    markCellRoot = c;
+    pushMarkSlot(&markCellRoot);
+    while (markStackTop>0) {
+	markSlot(markStack[--markStackTop]);
+    }
+    return markCellRoot;
+}
+
 static Cell local markSnd(Cell c)            /* Variant of markCell used to     */
-{                               /* update snd component of cell    */
-    Cell t;                             /* using tail recursion            */
-    Cell orig;
-    
-    orig = c;
-
-ma: t = c;                              /* Keep pointer to original pair   */
-    c = snd(c);
-mb: if (!isPair(c))
-	return orig;
-
-    switch (fst(c)) {
-	case INDIRECT : snd(t) = c = indirectChain(c);
-			goto mb;
-#if GC_WEAKPTRS
-	case WEAKCELL :
-			{
-			  register int place = placeInSet(c);
-			  register int mask  = maskInSet(c);
-			  if (!(marks[place]&mask)) {
-			    marks[place] |= mask;
-			    marks[placeInSet(snd(c))] |= maskInSet(snd(c));
-			    nextWeakPtr(c) = weakPtrs;
-			    weakPtrs = c;
-			    recordMark();
-			  }
-			  return orig;
-			}
-#endif
+{                               /* mark cells reachable from the snd       */
+				/* link of c; c itself is assumed already  */
+				/* marked.                                 */
+    pushMarkSlot(&snd(c));
+    while (markStackTop>0) {
+	markSlot(markStack[--markStackTop]);
     }
-
-    {   register int place = placeInSet(c);
-	register int mask  = maskInSet(c);
-	if (marks[place]&mask)
-	    return orig;
-	else {
-	    marks[place] |= mask;
-	    recordMark();
-	}
-    }
-
-    if (isGenPair(fst(c))) {
-	fst(c) = markCell(fst(c));
-	goto ma;
-    }
-    else if (isNull(fst(c)) || fst(c)>=BCSTAG)
-	goto ma;
-    return orig;
+    return c;
 }
 
 static Cell local indirectChain(Cell c)      /* Scan chain of indirections      */
@@ -2100,7 +2119,9 @@ Void garbageCollect()     {             /* Run garbage collector ...       */
 	else
 	    sysCount++;
 #endif
-	mask <<= 1;
+	mask = (Int)((Unsigned)mask << 1);  /* shift as unsigned: mask may  */
+					     /* reach bit 31, undefined for  */
+					     /* a plain (signed) int shift   */
 	if (++j == bitsPerWord) {
 	    place++;
 	    mask = 1;

@@ -779,7 +779,8 @@ typedef void*    Pointer;
 
 #define bitArraySize(n)    ((n)/bitsPerWord + 1)
 #define placeInSet(n)      ((-(n)-1)>>wordShift)
-#define maskInSet(n)       (1<<((-(n)-1)&wordMask))
+#define maskInSet(n)       (1u<<((-(n)-1)&wordMask))	/* unsigned: the shift */
+							/* can reach bit 31    */
 
 /*-------------------------------------------------------------------------*/
 
