@@ -29,6 +29,100 @@ Bool   debugSC	     = FALSE;		/* TRUE => print SC-code to screen */
 Int    evalDepth;			/* depth of nested eval()'s        */
 
 /* --------------------------------------------------------------------------
+ * C stack overflow detection:
+ *
+ * STACK_CHECK (storage.h) is used at every point in the interpreter that
+ * recurses on the C stack with no other bound (eval, the static checker,
+ * the type checker, the compiler passes that walk the AST): it calls
+ * cStackOverflow() below and, if that returns TRUE, reports "Control
+ * stack overflow" through the usual error path (hugsStackOverflow(),
+ * storage.c) instead of letting the recursion run off the end of the
+ * stack and segfault.
+ *
+ * CStackBase (machdep.c) is recorded once, very early in main(); it is
+ * also used by the conservative collector.  The usable size of the
+ * stack comes from getrlimit(RLIMIT_STACK): read lazily, on the first
+ * check, so that a test harness which lowers the limit with setrlimit()
+ * before exec (as tests/run-tests does for NAME.stack) is honoured.
+ * When the limit is unavailable or unlimited we fall back to a
+ * conservative 8 MB, the default stack size on every supported target.
+ * All supported targets grow the C stack downward (see STACK_DIRECTION
+ * in sysdeps.h), so the limit is CStackBase minus the usable size.
+ *
+ * STACK_MARGIN is headroom kept below the computed limit: room for the
+ * deepest primitive that still runs after STACK_CHECK trips, plus the
+ * error-reporting path itself (formatting and printing the message,
+ * which recurses a little to show the expression being evaluated).
+ * 64 KB was chosen empirically: measurements on this build showed under
+ * 8 KB of further C stack use between a STACK_CHECK tripping in eval()
+ * and the error message reaching the user, so 64 KB leaves a wide
+ * safety factor for the deeper recursions in the type checker and
+ * compiler passes.
+ * ------------------------------------------------------------------------*/
+#if HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+
+#define STACK_MARGIN	  (64*1024)	/* headroom kept below the limit   */
+#define FALLBACK_C_STACK (8*1024*1024) /* used when the rlimit is unknown */
+
+static char *cStackLimit = 0;		/* lowest address considered safe  */
+
+static Void local initCStackLimit(Void) {
+    Unsigned usable = FALLBACK_C_STACK;
+#if HAVE_SYS_RESOURCE_H
+    struct rlimit rl;
+    if (getrlimit(RLIMIT_STACK,&rl)==0 && rl.rlim_cur!=RLIM_INFINITY) {
+	usable = (Unsigned)rl.rlim_cur;
+    }
+#endif
+    if (usable<=STACK_MARGIN) {		/* absurdly small rlimit; keep */
+	usable = STACK_MARGIN+4096;		/* a sliver of headroom anyway */
+    }
+    cStackLimit = (char *)CStackBase - (usable-STACK_MARGIN);
+}
+
+Bool cStackOverflow(Void) {		/* TRUE => C stack nearly full     */
+    char here;
+    if (!cStackLimit) {
+	initCStackLimit();
+    }
+    return &here <= cStackLimit;
+}
+
+/* --------------------------------------------------------------------------
+ * mkTuple(n) and mkOffset(o) (storage.h) used to build a tagged cell
+ * without checking n against NUM_TUPLES or o against NUM_OFFSETS.  Once a
+ * count or offset ran past its limit the resulting cell aliased the next
+ * tag range up (OFFSET for an over-large tuple, MODULE for an over-large
+ * offset), so something downstream that inspected the cell's tag -- often
+ * far from where the excess count or offset first arose, e.g. a 200-tuple
+ * or a function with over 1000 let-bindings -- hit an "INTERNAL ERROR"
+ * sanity check instead of a clean message.  Checking here, at the single
+ * place both kinds of cell are built, catches every over-large tuple or
+ * offset regardless of which caller produced it.
+ * ------------------------------------------------------------------------*/
+
+Cell mkTupleChecked(Int n)             /* Build cell for n-tuple con/tycon */
+{
+    if (n>=NUM_TUPLES) {
+	ERRMSG(0) "Tuples with more than %d components are not supported",
+		  NUM_TUPLES
+	EEND;
+    }
+    return TUPMIN+n;
+}
+
+Cell mkOffsetChecked(Int o)            /* Build cell for generic offset o  */
+{
+    if (o>=NUM_OFFSETS) {
+	ERRMSG(0) "Compiled code too complex"
+	EEND;
+    }
+    return OFFMIN+o;
+}
+
+/* --------------------------------------------------------------------------
  * Data structures for machine memory (program storage):
  * ------------------------------------------------------------------------*/
 
@@ -1129,7 +1223,7 @@ Void eval(Cell n)                            /* Graph reduction evaluator       
     Int      ar;
 
     STACK_CHECK
-    if (++evalDepth == MAX_EVAL_DEPTH)
+    if (++evalDepth >= MAX_EVAL_DEPTH)
 	hugsStackOverflow();
 #if GIMME_STACK_DUMPS
     evalRoots[++rootsp] = n;		/* Save pointer to root expression */
@@ -1465,8 +1559,15 @@ static  void *labs[] = { INSTRLIST };
 
 Cell evalWithNoError(Cell e)                /* Evaluate expression, returning   */
 {                              /* NIL if successful,               */
-    Cell caughtEx;                     /* Exception value if not...        */
-    jmp_buf *oldCatch = evalError;
+    Cell     caughtEx;                 /* Exception value if not...        */
+    jmp_buf *oldCatch   = evalError;
+    Int      savedDepth = evalDepth;   /* throwException() longjmps straight*/
+    StackPtr savedSp    = sp;          /* past eval()'s own bookkeeping, so */
+#if GIMME_STACK_DUMPS               /* an exception caught here must undo   */
+    Int      savedRootsp = rootsp;  /* whatever the aborted evaluation left */
+#endif                              /* behind: eval() only decrements       */
+				     /* evalDepth, and restores sp/rootsp,   */
+				     /* along its normal return path.        */
 
 #if JMPBUF_ARRAY
     jmp_buf catcherr[1];
@@ -1488,6 +1589,13 @@ Cell evalWithNoError(Cell e)                /* Evaluate expression, returning   
 	caughtEx = exception;
 #endif
     evalError = oldCatch;
+    if (nonNull(caughtEx)) {
+	evalDepth = savedDepth;
+	sp        = savedSp;
+#if GIMME_STACK_DUMPS
+	rootsp    = savedRootsp;
+#endif
+    }
     return caughtEx;
 }
 

@@ -4154,6 +4154,7 @@ static List patVars;		       /* List of vars bound in pattern    */
 
 static Cell local checkPat(Int line, Cell p)     /* Check valid pattern syntax	   */
 {
+    STACK_CHECK
     switch (whatIs(p)) {
 	case VARIDCELL :
 	case VAROPCELL : addToPatVars(line,p);
@@ -5295,6 +5296,7 @@ static Void local depGuard(Cell g)	       /* find dependents of single guarded*/
 
 Cell depExpr(Int line, Cell e)      /* find dependents of expression    */
 {
+    STACK_CHECK
     switch (whatIs(e)) {
 
 	case VARIDCELL	:

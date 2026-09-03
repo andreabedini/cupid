@@ -517,7 +517,14 @@ extern void growDynTable       (DynTable*);
 
 #define TUPMIN	     201
 #define isTuple(c)   (TUPMIN<=(c) && (c)<OFFMIN)
-#define mkTuple(n)   (TUPMIN+(n))
+/* mkTuple(n) is called with an unchecked component count wherever a tuple
+ * literal or type is built (including the parser's tuple grammar rule, one
+ * comma at a time); an n at or beyond NUM_TUPLES would alias the OFFSET
+ * range below and confuse anything that later looks at the cell's tag, so
+ * mkTupleChecked (machine.c) reports a clean error instead.
+ */
+extern  Cell	     mkTupleChecked (Int);
+#define mkTuple(n)   mkTupleChecked(n)
 #define tupleOf(n)   ((Int)((n)-TUPMIN))
 
 #define mkExt(t) NIL
@@ -529,7 +536,14 @@ extern void growDynTable       (DynTable*);
 #define OFFMIN	     (TUPMIN+NUM_TUPLES)
 #define isOffset(c)  (OFFMIN<=(c) && (c)<MODMIN)
 #define offsetOf(c)  ((c)-OFFMIN)
-#define mkOffset(o)  (OFFMIN+(o))
+/* mkOffset(o), similarly, is called with an unchecked offset wherever the
+ * compiler hands out a stack/generic-type offset; an o at or beyond
+ * NUM_OFFSETS would alias the MODMIN range, so mkOffsetChecked (machine.c)
+ * reports a clean error instead of letting the aliased cell corrupt later
+ * processing (as "INTERNAL ERROR: lift").
+ */
+extern  Cell	     mkOffsetChecked (Int);
+#define mkOffset(o)  mkOffsetChecked(o)
 
 /* --------------------------------------------------------------------------
  * Observations
@@ -1000,7 +1014,16 @@ extern  Void hugsStackOverflow (Void);
 #define STACK_CHECK if (StackSpace() <= STACK_HEADROOM) \
 		      internal("Macintosh function parameter stack overflow.");
 #else
-#define STACK_CHECK
+/* cStackOverflow (machine.c) compares the address of a local variable
+ * against a limit derived from CStackBase (machdep.c) and the process's
+ * stack rlimit, so that every point in the interpreter that recurses on
+ * the C stack -- eval, the static checker, the type checker, and the
+ * compiler passes that walk the AST -- can detect an approaching C stack
+ * overflow and report it through the ordinary error path instead of
+ * crashing.
+ */
+extern  Bool cStackOverflow	 (Void);
+#define STACK_CHECK if (cStackOverflow()) hugsStackOverflow();
 #endif
 
 /* --------------------------------------------------------------------------

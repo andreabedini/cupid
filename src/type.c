@@ -669,6 +669,7 @@ static Cell local mytypeExpr(Int l, Cell e) /* Determine type of expr/pattern  *
 static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  */
 #endif
 {
+    STACK_CHECK
     static String cond	  = "conditional";
     static String list	  = "list";
     static String discr   = "case discriminant";
