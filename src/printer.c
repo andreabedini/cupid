@@ -141,7 +141,6 @@ static Void local printer(Name pr, Int d)		/* Main part: primPrint/primNPrint */
 				    name(whnfHead).arity>whnfArgs)
 				pr = nameNPrint;
 
-#ifndef VERBOSE_PRINT
 			    /* don't print dictionary arguments */
 			    while (used<whnfArgs) {
 				Cell h;
@@ -164,7 +163,6 @@ static Void local printer(Name pr, Int d)		/* Main part: primPrint/primNPrint */
 				else
 				    break;
 			    }
-#endif
 
 			    if (whnfHead==nameCons && whnfArgs==2) {/*list */
 				StackPtr ksp = sp;
@@ -206,7 +204,6 @@ static Void local printer(Name pr, Int d)		/* Main part: primPrint/primNPrint */
 				}
 				return;
 			    }
-#ifndef VERBOSE_PRINT
 			    /* hide fromInt/fromDouble */
 			    else if (whnfArgs==2 &&
 				     ((whnfHead==nameFromInt && whatIs(pushed(1))==INTCELL) ||
@@ -215,7 +212,6 @@ static Void local printer(Name pr, Int d)		/* Main part: primPrint/primNPrint */
 				printer(pr,d);
 				return;
 			    }
-#endif
 			    else if (whnfArgs-used==1 && sy!=APPLIC) { /* (e1+) */
 				outCh('(');
 				outPr(pr,FUN_PREC-1,pushed(used));
@@ -244,13 +240,11 @@ static Void local printer(Name pr, Int d)		/* Main part: primPrint/primNPrint */
 			}
 			break;
 
-#if BIGNUMS
 	case NEGNUM   :
 	case ZERONUM  :
 	case POSNUM   : out = rev(bigOut(whnfHead,NIL,d>=UMINUS_PREC));
 			pr  = nameNPrint;
 			break;
-#endif
 
 	case INTCELL  : {   Int digit;
 
@@ -283,10 +277,6 @@ static Void local printer(Name pr, Int d)		/* Main part: primPrint/primNPrint */
 			     * the vararg; use PRIxPTR/uintptr_t instead. */
 			    sprintf(buffer,"0x%0*" PRIxPTR,
 				    (SIZEOF_INTP)*2, (uintptr_t)p);
-#if 0
-			    /* Old skool */
-			    sprintf(buffer,"%p",p);
-#endif
 			    outStr(buffer);
 			    pr  = nameNPrint;
 			}
@@ -333,17 +323,13 @@ static Void local printer(Name pr, Int d)		/* Main part: primPrint/primNPrint */
 			pr = nameNPrint;
 			break;
 
-#if HASKELL_ARRAYS
 	case ARRAY    : outStr("{array}");
 			pr = nameNPrint;
 			break;
-#endif
 
-#if IO_REFS
 	case MUTVAR   : outStr("{mutable variable}");
 			pr = nameNPrint;
 			break;
-#endif
 
 	case HUGSOBJECT: 
 			outStr("{Cell ...}");
@@ -351,11 +337,9 @@ static Void local printer(Name pr, Int d)		/* Main part: primPrint/primNPrint */
 			break;
 
  
-#if IO_HANDLES
 	case HANDCELL : outStr("{handle}");
 			pr = nameNPrint;
 			break;
-#endif
 
 
 	default       : internal("Error in graph");
@@ -486,20 +470,6 @@ static Void local outName(Name nm)  /* output nm using parent field if possible 
 {
     Cell p = name(nm).parent;
     switch (whatIs(p)) {
-#ifdef VERBOSE_PRINT
-	case INSTANCE : outStr("inst");
-			outStr(textToStr(cclass(inst(p).c).text));
-			outCh('_');
-			break;
-
-	case CLASS    : outStr(textToStr(cclass(p).text));
-			outCh('_');
-			break;
-
-	case TYCON    : outStr(textToStr(tycon(p).text));
-			outCh('_');
-			break;
-#endif
 
 	case NAME     : outName(p);
 			outCh('_');

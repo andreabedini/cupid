@@ -22,13 +22,11 @@ PROTO_PRIM(primSubscript);
 PROTO_PRIM(primBounds);
 PROTO_PRIM(primElems);
 PROTO_PRIM(primEltUndef);
-#if IO_MONAD
 PROTO_PRIM(primIONewArr);
 PROTO_PRIM(primIOReadArr);
 PROTO_PRIM(primIOWriteArr);
 PROTO_PRIM(primIOFreeze);
 PROTO_PRIM(primIOArrEq);
-#endif
 
 static struct primitive arrayPrimTable[] = {
   {"primArray",		3, primArray},
@@ -40,14 +38,12 @@ static struct primitive arrayPrimTable[] = {
   {"primBounds",	1, primBounds},
   {"primElems",		1, primElems},
   {"eltUndef",		0, primEltUndef},
-#if IO_MONAD
   {"IONewArr",		3+IOArity, primIONewArr},
   {"IOReadArr",		2+IOArity, primIOReadArr},
   {"IOWriteArr",	3+IOArity, primIOWriteArr},
   {"IOFreeze",		1+IOArity, primIOFreeze},
   {"IOBounds",	        1, primBounds},
   {"IOArrEq",	        2, primIOArrEq},
-#endif
   {0,			0, 0}
 };
 
@@ -308,7 +304,6 @@ primFun(primEltUndef) {
     throwException(ap(nameArrayException, ap(nameUndefinedElement, nameNil)));
 }
 
-#if IO_MONAD
 primFun(primIONewArr) {			/* :: (a,a)			   */
     declArr;				/*    -> Int			   */
     aNewSet(3+IOArity,2+IOArity,IOArg(1));/*	 -> b			   */
@@ -342,7 +337,6 @@ primFun(primIOArrEq) {		        /* :: IOArray a b                 */
     BoolResult(primArg(1)==primArg(2));
 }
 
-#endif /* IO_MONAD */
 
 /* Retire macros used in the implementation of arrays -------------------- */
 

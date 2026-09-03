@@ -267,13 +267,11 @@ primFun(primClassifyCell) {          /* classifyCell                       */
 	    case TUPLE    : result = ap(nameHugsTuple,mkInt(tupleOf(whnfHead)));
 			    break;
 
-#if BIGNUMS
 	    case ZERONUM  : 
 	    case POSNUM   : 
 	    case NEGNUM   : 
 			    result = ap(nameHugsInteger, whnfHead);
 			    break;
-#endif
 
 	    case INTCELL  : result = ap(nameHugsInt, whnfHead);
 			    break;
@@ -287,20 +285,14 @@ primFun(primClassifyCell) {          /* classifyCell                       */
 	    case DOUBLECELL: result = ap(nameHugsDouble, whnfHead);
 			    break;
 
-#if IO_HANDLES
 	    case HANDCELL : result = ap(nameHugsPrim, mkStr(findText("{handle}")));
 			    break;
-#endif
 
-#if IO_REFS
 	    case MUTVAR   : result = ap(nameHugsPrim, mkStr(findText("{ref}")));
 			    break;
-#endif
 
-#if HASKELL_ARRAYS
 	    case ARRAY    : result = ap(nameHugsPrim, mkStr(findText("{primitive array}")));
 			    break;
-#endif
 
 	    case HUGSOBJECT : 
 			    /* ToDo: fix so that debugger can examine itself */
