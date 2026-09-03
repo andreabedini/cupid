@@ -609,13 +609,7 @@ extern void     exit       (int);
 # define FILENAME_MAX 8192
 #endif
 
-/* Hack, hack: if you have dos.h, you probably have a DOS filesystem */
-#ifndef __SYMBIAN32__
-/* No dos.h but a DOS filesystem */
-#define DOS_FILENAMES              HAVE_DOS_H
-#else
-#define DOS_FILENAMES 1
-#endif
+/* DOS_FILENAMES is a system fact set by sysdeps.h from _WIN32. */
 /* ToDo: can we replace this with a feature test? */
 #define MAC_FILENAMES              macintosh
 

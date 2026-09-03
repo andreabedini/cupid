@@ -101,6 +101,7 @@
 # define HAVE_FTIME		1
 # define HAVE_DECL__TIMEZONE	1
 # define HAVE_TZNAME		1
+# define DOS_FILENAMES		1	/* backslash paths, ';'-separated PATHSEP, ".dll" */
 # if defined(__MINGW32__)
 #  define HAVE_UNISTD_H		1
 #  define HAVE_DIRENT_H		1
@@ -137,6 +138,7 @@
 # define HAVE_VALLOC		1	/* page-aligned heap, as before */
 # define HAVE_STRUCT_TM_TM_ZONE	1	/* tm_zone and tm_gmtoff */
 # define HAVE_BIN_SH		1
+# define DOS_FILENAMES		0	/* slash paths, ':'-separated PATHSEP, ".so" */
 
 #endif
 
