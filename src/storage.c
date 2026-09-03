@@ -173,8 +173,11 @@ Text fixLitText(Text t)                /* fix literal text that might include \ 
 Text concatText(String s1, String s2)
 {
     char s[MAX_TEXTLEN];
+    int  n = snprintf(s,MAX_TEXTLEN,"%s%s",s1,s2);
 
-    if (snprintf(s,MAX_TEXTLEN,"%s%s",s1,s2) == -1) {
+    /* snprintf returns the length the string would have had, not -1, when
+     * the output is truncated; only a genuine encoding error returns -1. */
+    if (n<0 || n>=MAX_TEXTLEN) {
 	ERRMSG(0) "Generated name '%s%s' exceeds limit of %d",
                   s1, s2, MAX_TEXTLEN
 	EEND;
