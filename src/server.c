@@ -29,9 +29,7 @@
 
 static Void   setHugsAPI   (Void);
 static Bool   SetModule    (String);
-#ifndef NO_DYNAMIC_TYPES
 static Bool   linkDynamic     (Void);
-#endif
 
 /* --------------------------------------------------------------------------
  * Dynamic linking
@@ -222,18 +220,14 @@ DLLEXPORT(HugsServerAPI*) initHugsServer(Int argc, String argv[]) /*server initi
       EnableOutput(FALSE);
       loadPrelude();
 
-#ifndef NO_DYNAMIC_TYPES
       addScriptName("Hugs.Dynamic",TRUE);
-#endif
 
       readScripts(0);
       everybody(RESET);
-#ifndef NO_DYNAMIC_TYPES
       if (!linkDynamic()) {
 	setError("module Hugs.Dynamic doesn't define the expected functions");
 	return NULL;
       }
-#endif
       END_PROTECT
    }
    return &hugs;  /* error must have occurred */
@@ -274,7 +268,6 @@ DLLEXPORT(Void) shutdownHugsServer(HugsServerAPI* hserv) /* server shutdown */
  *            Lambada, and mod_haskell. By defining NO_DYNAMIC_TYPES,
  *            you may turn this feature off.
  * ------------------------------------------------------------------------*/
-#ifndef NO_DYNAMIC_TYPES
 static Name  nameRunDyn;
 static Name  nameDynApp;
 static Name  nameToDyn;
@@ -295,7 +288,6 @@ static Bool linkDynamic()
 	    && nonNull(nameCoerceDynamic )
 	    && nonNull(classTypeable     ));
 }
-#endif
 
 /* --------------------------------------------------------------------------
  * Miscellaneous:
@@ -395,14 +387,12 @@ static HVal CompileExpr(String m, String e)    /* compile expression e wrt modul
 	checkExp();
 	defaultDefns = evalDefaults;
 	type         = typeCheckExp(TRUE);
-#ifndef NO_DYNAMIC_TYPES
 	d = getTypeableDict(type);
 	if (isNull(d)) {
 	    setError("compileExpr: can't create Typeable instance");
 	    return 0;
 	}
 	inputExpr = ap(ap(nameToDyn,d),inputExpr);
-#endif
 	compileExp();
 	run(inputCode,sp);  /* Build graph for redex */
 
@@ -442,50 +432,36 @@ static Void LookupName(String m, String v) /*Push value of qualified name onto s
 	    setError(errbuf);
 	    return;
 	}
-#ifndef NO_DYNAMIC_TYPES
 	d = getTypeableDict(name(n).type);
 	if (isNull(d)) {
 	    setError("lookupName: can't create Typeable instance");
 	    return;
 	}
 	push(ap(ap(nameToDyn,d),n));
-#else
-	push(n);
-#endif
     END_PROTECT
 }
 
 static Void MkInt(Int i)              /* Push an Int onto the stack      */
 {
-#ifndef NO_DYNAMIC_TYPES
     /* getTypeableDict() must run inside protect() too, not just the push:
      * it can itself raise a Hugs error, and outside protect() that would
      * longjmp to whatever catch_error happens to hold from some earlier,
      * unrelated call.                                                  */
     protect(Cell d = getTypeableDict(typeInt);
 	    push(ap(ap(nameToDyn,d),mkInt(i))));
-#else
-    protect(push(mkInt(i)));
-#endif
 }
 
 static Void MkAddr(void* a)              /* Push an Addr onto the stack      */
 {
-#ifndef NO_DYNAMIC_TYPES
     protect(Cell d = getTypeableDict(typeAddr);
 	    push(ap(ap(nameToDyn,d),mkPtr(a))));
-#else
-    protect(push(mkPtr(a)));
-#endif
 }
 
 static Void MkString(String s)           /* Push a String onto the stack    */
 {
     BEGIN_PROTECT
 	pushString(s);
-#ifndef NO_DYNAMIC_TYPES
 	topfun(ap(nameToDyn,getTypeableDict(typeString)));
-#endif
     END_PROTECT
 }
 
@@ -494,11 +470,7 @@ static Void Apply()              /* Apply stack[sp-1] to stack[sp]   */
     BEGIN_PROTECT
 	Cell x = pop();
 	Cell f = pop();
-#ifndef NO_DYNAMIC_TYPES
 	push(ap(ap(nameDynApp,f),x));
-#else
-	push(ap(f,x));
-#endif
     END_PROTECT
 }
 
@@ -570,12 +542,8 @@ static Int EvalInt()            /* Evaluate a cell (:: Int)         */
     Cell d;
     BEGIN_PROTECT
 	startEval();
-#ifndef NO_DYNAMIC_TYPES
         d = getTypeableDict(typeInt);
 	safeEval(ap(ap(nameCoerceDynamic,d),pop()));
-#else
-	safeEval(pop());
-#endif
 	normalTerminal();
 	return whnfInt;
     END_PROTECT
@@ -587,12 +555,8 @@ static void* EvalAddr()          /* Evaluate a cell (:: Addr)         */
     Cell d;
     BEGIN_PROTECT
 	startEval();
-#ifndef NO_DYNAMIC_TYPES
         d = getTypeableDict(typeAddr);
 	safeEval(ap(ap(nameCoerceDynamic,d),pop()));
-#else
-	safeEval(pop());
-#endif
 	normalTerminal();
 	return ptrOf(whnfHead);
     END_PROTECT
@@ -611,12 +575,8 @@ static String EvalString()      /* Evaluate a cell (:: String)      */
 	startEval();
 
 	/* Evaluate spine of list onto stack */
-#ifndef NO_DYNAMIC_TYPES
         d = getTypeableDict(typeString);
 	ok = tryEval(ap(ap(nameCoerceDynamic,d),pop()));
-#else
-	ok = tryEval(pop());
-#endif
         if (!ok) { sp = oldsp-1; return NULL; }
 
 	while (whnfHead==nameCons && whnfArgs==2) {
@@ -665,11 +625,7 @@ static Int DoIO()        /* Evaluate a cell (:: IO ()) return exit status */
         Bool ok;
 	StackPtr oldsp = sp;
 	startEval();
-#ifndef NO_DYNAMIC_TYPES
 	ok = safeEval(ap(nameIORun,ap(nameRunDyn, pop())));
-#else
-	ok = safeEval(ap(nameIORun,pop()));
-#endif
         if (!ok)
         {
             sp = oldsp-1;   
@@ -701,11 +657,7 @@ static Int DoIO_Int(int* phval)
         Bool ok = TRUE;
         StackPtr oldsp = sp;
         startEval();
-#ifndef NO_DYNAMIC_TYPES
         ok = safeEval(ap(nameIORun,ap(nameRunDyn,pop())));
-#else
-        ok = safeEval(ap(nameIORun,pop()));
-#endif
         if (!ok)
         {
             sp = oldsp-1;   
@@ -742,11 +694,7 @@ static Int DoIO_Addr(void** phval)
         Bool ok;
         StackPtr oldsp = sp;
         startEval();
-#ifndef NO_DYNAMIC_TYPES
         ok = safeEval(ap(nameIORun,ap(nameRunDyn,pop())));
-#else
-        ok = safeEval(ap(nameIORun,pop()));
-#endif
         if (!ok)
         {
             sp = oldsp-1;   
@@ -808,7 +756,6 @@ static Void FreeHVal(HVal hval)      /* Free a Haskell value              */
 {
     protect(freeStablePtr(hval));
 }
-#ifndef NO_DYNAMIC_TYPES
 /* --------------------------------------------------------------------------
  * Testing for class membership:
  * ------------------------------------------------------------------------*/
@@ -829,6 +776,5 @@ Cell getTypeableDict(Type t) /* Find a Typeable dictionary for instance t, */
     }
     return provePred(ks,NIL,ap(c,t));
 }
-#endif
 
 /* ----------------------------------------------------------------------- */

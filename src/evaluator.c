@@ -42,9 +42,6 @@ Void startEvaluator(Void)
 
     hugsPath      = uniqPath(strCopy(HUGSPATH));
     hugsSuffixes  = strCopy(HUGSSUFFIXES);
-#if HSCRIPT
-    hscriptSuffixes();
-#endif
 }
 
 /* --------------------------------------------------------------------------
@@ -97,7 +94,6 @@ Void evaluator(Module m)
 #if WANT_TIMER
     updateTimers();
 #endif
-#if IO_MONAD
     if ((t = getProgType(ks,type)) != 0) {
         if (displayIO) {
             Cell printer = namePrint;
@@ -119,7 +115,6 @@ Void evaluator(Module m)
 	}
     }
     else
-#endif
     {   Cell printer = namePrint;
 	if (useShow) {
 	    Cell d = resolvePred(ks,ap(classShow,bd));
@@ -161,14 +156,8 @@ Void evaluator(Module m)
 	}
 	drop();
 	if (whnfHead == nameRight) {
-#if HUGS_FOR_WINDOWS
-	    INT svColor = SetForeColor(BLUE);
-#endif
 	    Printf(" :: ");
 	    printType(stdout,pop());
-#if HUGS_FOR_WINDOWS
-	    SetForeColor(svColor);
-#endif
 	}
     }
     else {
