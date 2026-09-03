@@ -1015,8 +1015,9 @@ un: if (tyv1)
 	else {
 	    Cell h2 = getDerefHead(t2,o2);	    /* t1 variable, t2 not */
 	    if (isSynonym(h2) && argCount>=tycon(h2).arity) {
-		expandSyn(h2,argCount,&t2,&o2);
-		deRef(tyv2,t2,o2);
+		expandSyn(h2,argCount,&t2,&o2);	    /* may grow (and re-   */
+		deRef(tyv1,t1,o1);		    /* alloc) tyvars, so   */
+		deRef(tyv2,t2,o2);		    /* re-derive tyv1 too  */
 		goto un;
 	    }
 	    return varToTypeBind(tyv1,t2,o2);
@@ -1025,8 +1026,9 @@ un: if (tyv1)
 	if (tyv2) {
 	    Cell h1 = getDerefHead(t1,o1);	    /* t2 variable, t1 not */
 	    if (isSynonym(h1) && argCount>=tycon(h1).arity) {
-		expandSyn(h1,argCount,&t1,&o1);
-		deRef(tyv1,t1,o1);
+		expandSyn(h1,argCount,&t1,&o1);	    /* may grow (and re-   */
+		deRef(tyv1,t1,o1);		    /* alloc) tyvars, so   */
+		deRef(tyv2,t2,o2);		    /* re-derive tyv2 too  */
 		goto un;
 	    }
 	    return varToTypeBind(tyv2,t1,o1);
