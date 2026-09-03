@@ -35,16 +35,6 @@ Bool showInstRes = FALSE;
 Bool printTypeUseDefaults = FALSE;
 
 
-#if USE_PREFERENCES_FILE
-/* --------------------------------------------------------------------------
- * Decls for MacOS preference file support:
- * ------------------------------------------------------------------------*/
-static Void    readPrefsFile          (FILE *);
-typedef char GVarname[2000];
-static GVarname hugsFlags = "";
-int  iniArgc;
-char iniArgv[10][33];
-#endif
 
 /* --------------------------------------------------------------------------
  * Keeping track of current file:
@@ -92,17 +82,11 @@ struct options toggle[] = {     /* List of command line toggles    */
     Option('I', "Display results of IO programs",        &displayIO),
     Option('T', "Apply 'defaulting' when printing types", &printTypeUseDefaults),
 /* Conditional toggles: */
-#if HUGS_FOR_WINDOWS
-    Option('A', "Auto load files",		   	    &autoLoadFiles),
-#endif
 #if EXPLAIN_INSTANCE_RESOLUTION
     Option('x', "Explain instance resolution",           &showInstRes),
 #endif
 #if DEBUG_CODE
     Option('D', "Debug: show generated G code",          &debugCode),
-#endif
-#if DEBUG_SHOWSC
-    Option('C', "Debug: show generated SC code",         &debugSC),
 #endif
     Option(0, 0, 0)
 };
@@ -169,9 +153,7 @@ Void optionInfo(Void) {                 /* Print information about command */
     Printf(fmts,"Sstr","Set list of source file suffixes to str");
     Printf(fmts,"Estr","Use editor setting given by str");
     Printf(fmts,"cnum","Set constraint cutoff limit");
-#if SUPPORT_PREPROCESSOR
     Printf(fmts,"Fstr","Set preprocessor filter to str");
-#endif
 #if PROFILING
     Printf(fmts,"dnum","Gather profiling statistics every <num> reductions\n");
 #endif
@@ -187,18 +169,12 @@ Void optionInfo(Void) {                 /* Print information about command */
     Printf(" -c%d",cutoff);
     Printf("\nSearch path     : -P");
     printString(hugsPath);
-#if __MWERKS__ && macintosh
-    Printf("\n{Hugs}          : %s",hugsdir());
-    Printf("\n{Current}       : %s",currentDir());
-#endif
     Printf("\nSource suffixes : -S");
     printString(hugsSuffixes);
     Printf("\nEditor setting  : -E");
     printString(hugsEdit);
-#if SUPPORT_PREPROCESSOR
     Printf("\nPreprocessor    : -F");
     printString(preprocessor);
-#endif
 #if PROFILING
     Printf("\nProfile interval: -d%d", profiling ? profInterval : 0);
 #endif
@@ -301,9 +277,7 @@ String optionsToStr() {          /* convert options to string */
     PUTStr('S',hugsSuffixes);
     PUTStr('E',hugsEdit);
     PUTInt('c',cutoff);  PUTC(' ');
-#if SUPPORT_PREPROCESSOR
     PUTStr('F',preprocessor);
-#endif
 #if PROFILING
     PUTInt('d',profiling ? profInterval : 0);
 #endif
@@ -434,7 +408,6 @@ Bool processOption(String s)    /* process string s for options,   */
 		       hugsEdit = strCopy(s+1);
 		       return TRUE;
 
-#if SUPPORT_PREPROCESSOR
 	    case 'F' : if (preprocessor) free(preprocessor);
 		       preprocessor = strCopy(s+1);
 		       if (preprocessor && strlen(preprocessor) == 0) {
@@ -442,7 +415,6 @@ Bool processOption(String s)    /* process string s for options,   */
 			   preprocessor = NULL;
 		       }
 		       return TRUE;
-#endif
 
 	    case 'i' : ffiAddCppInclude(s+1);
 		       return TRUE;
@@ -500,9 +472,6 @@ Void setHeapSize(String s)
 	    hpSize = MAXIMUMHEAP;
 	if (heapBuilt() && hpSize != heapSize) {
 #define HEAP_RESIZE_MSG "Change to heap size will not take effect until you rerun Hugs"
-#if HUGS_FOR_WINDOWS
-	    InfoBox(HEAP_RESIZE_MSG);
-#endif
 #if USE_REGISTRY
 	    FPrintf(stderr,HEAP_RESIZE_MSG "\n");
 #else
@@ -601,10 +570,6 @@ Void processOptionVector(Int argc, String argv[])
  *
  */
 Void readOptionSettings() {
-#if USE_PREFERENCES_FILE
-    FILE *f;
-    FileName hugsPrefsFile = "\0";
-#endif
 
 #if USE_REGISTRY
     readOptions(readRegString(HKEY_LOCAL_MACHINE,hugsRegRoot,"Options",""), TRUE);
@@ -616,59 +581,6 @@ Void readOptionSettings() {
       readOptions(readRegString(HKEY_CURRENT_USER, hugsRegRoot,"Options",""), TRUE);
     }
 #endif /* USE_REGISTRY */
-#if USE_PREFERENCES_FILE
-    if (f=fopen(PREFS_FILE_NAME,"r")) {
-           /* is preferences file in the {Current} folder? */
-	  readPrefsFile(f);
-	} else {
-          /* is preferences file in the {Hugs} folder? */
-        strcpy(hugsPrefsFile,macHugsDir);
-        strcat(hugsPrefsFile,":");
-        strcat(hugsPrefsFile,PREFS_FILE_NAME);
-        if (f=fopen(hugsPrefsFile,"r"))
-          readPrefsFile(f);
-	  } /* else: take default preferences */
-    readOptions(hugsFlags,FALSE);
-#else
     readOptions(fromEnv("HUGSFLAGS",""),FALSE);
-#endif
 }
 
-#if USE_PREFERENCES_FILE
-static Void readPrefsFile(FILE *f)
-{ GVarname line  = "";
-  int      linep = 0;
-
-  char c;
-      
-  while ( (c=fgetc(f)) != EOF && c != '\n') {     /* read HUGSFLAGS          */
-    if ((c != '\t') && (c != '\r')) {             /* skip some control chars */
-      line[linep++] = c;
-      line[linep]   = '\0';
-    }
-  }
-  strcpy(hugsFlags,line);
-    
-  iniArgc = 0;
-  do  {                                  /* read input command line files   */
-    while ((c == '\n') || (c == '\t') || (c == ' '))  /* skip blank spaces  */
-      c=fgetc(f);    
-    if (c == '"') {                      /* filename found                  */
-      linep = 0;
-      iniArgv[iniArgc][0] = '\0';
-      while ((c=fgetc(f)) != EOF && c != '"') {
-        if (linep <= 32) {              /* filename limit on a mac 32 chars */
-          iniArgv[iniArgc][linep++] = c;
-          iniArgv[iniArgc][linep]   = '\0';
-        }
-      }
-      if (c == EOF) {
-        ERRMSG(0) "Incorrect name specification in preferences file"
-		EEND;
-      } else {
-		  iniArgc++;
-	    }
-    }
-  } while ( (c = fgetc(f)) != EOF );
-}
-#endif

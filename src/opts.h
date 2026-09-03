@@ -59,26 +59,15 @@ extern Bool profiling;                 /* TRUE => perform profiling.      */
 extern Int  profInterval;              /* interval between samples        */
 #endif
 
-#if HUGS_FOR_WINDOWS
-extern Bool autoLoadFiles;	       /* TRUE => reload files before eval*/
-#endif
 #if EXPLAIN_INSTANCE_RESOLUTION
 extern Bool  showInstRes;              /* TRUE => show instance resolution */
 #endif
 #if DEBUG_CODE
 extern Bool  debugCode;		        /* TRUE => print G-code to screen  */
 #endif
-#if DEBUG_SHOWSC
-extern Bool  debugSC;			/* TRUE => print SC to screen  */
-#endif
 
-#if HUGS_FOR_WINDOWS
-extern Bool  autoLoadFiles;             /* TRUE => automatically reloaded modified files */
-#endif
 
-#if SUPPORT_PREPROCESSOR
 extern String preprocessor;             /* preprocessor command            */
-#endif
 
 extern Bool   printing;                 /* TRUE => currently printing value*/
 
