@@ -60,28 +60,9 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  * test to the configure script.
  *-------------------------------------------------------------------------*/
 
-#ifdef __RISCOS__ /* Acorn DesktopC running RISCOS2 or 3 */
-# define RISCOS 1
-#else
-# define RISCOS 0
-#endif
-
-#if defined __DJGPP__ && __DJGPP__==2
-# define DJGPP2 1
-#else
-# define DJGPP2 0
-#endif
-
-# define DOS 0
-
-#if defined(_WIN32) || defined(__WIN32__)
-# define IS_WIN32 1
-# define IS_WINDOWS 1
-#elif defined(_WIN64)
-# define IS_WIN64 1
+#if defined(_WIN32)
 # define IS_WINDOWS 1
 #else
-# define IS_WIN32 0
 # define IS_WINDOWS 0
 #endif
 
@@ -146,10 +127,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 #define WORD_OPS         1
 #define ADDR_OPS         1
 #define PROVIDE_INT64    1
-#define TIME_MODULE      1
-#define DIRECTORY_MODULE 1
-#define MULTI_LINEFEED   1 /* Platform-independent linefeed handling        */
-#define WANT_FIXED_SIZE_TABLES 0 /* use fixed-size tables for internal structs */
                                  /* (as opposed to dynamically growable ones)  */
 
 #define UNICODE_CHARS    1 /* Char is Unicode (ISO-10646) */
@@ -162,11 +139,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 /*---------------------------------------------------------------------------
  * Platform-dependent settings:
  *-------------------------------------------------------------------------*/
-
-#if HAVE_MACSYSTEM	/* Macintosh system() prototype. */
-int macsystem(char *filenames);
-#endif
-
 
 /*---------------------------------------------------------------------------
  * Macros used in declarations:
@@ -203,12 +175,6 @@ int macsystem(char *filenames);
 # define DLLIMPORT(rty) rty
 # define DLLEXPORT(rty) rty
 #endif /* Don't need to declare DLL exports */
-
-#ifdef __EXTERNAL
-#define HUGSAPI(rty) DLLIMPORT(rty)
-#else
-#define HUGSAPI(rty) DLLEXPORT(rty)
-#endif
 
 /*---------------------------------------------------------------------------
  * String operations:
@@ -300,7 +266,6 @@ int macsystem(char *filenames);
  *-------------------------------------------------------------------------*/
 
 /* Can we fit floats into ints? */
-#define BREAK_FLOATS (SIZEOF_FLOAT > SIZEOF_INT)
 
 #define FloatImpType	   float
 #define FloatPro	   double  /* type to use in prototypes		   */
@@ -327,10 +292,7 @@ int macsystem(char *filenames);
  * Memory allocation
  *-------------------------------------------------------------------------*/
 
-#if HAVE_FARCALLOC
-# include <alloc.h>
-# define farCalloc(n,s)	farcalloc((unsigned long)n,(unsigned long)s)
-#elif HAVE_VALLOC
+#if HAVE_VALLOC
 # define farCalloc(n,s)	(Void *)valloc(((size_t)(n))*((size_t)(s)))
 #else
 # define farCalloc(n,s)	(Void *)calloc(((unsigned)n),((unsigned)s))
@@ -410,9 +372,7 @@ extern int 	chdir 	   (const char*);
 
 /* DOS_FILENAMES is a system fact set by sysdeps.h from _WIN32. */
 /* ToDo: can we replace this with a feature test? */
-#define MAC_FILENAMES              0
-
-#define CASE_INSENSITIVE_FILENAMES (DOS_FILENAMES | RISCOS)
+#define CASE_INSENSITIVE_FILENAMES DOS_FILENAMES
 
 #if CASE_INSENSITIVE_FILENAMES
 # if HAVE_STRCASECMP

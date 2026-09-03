@@ -36,10 +36,6 @@
 #define SIZEOF_INTP		8
 
 #define STACK_DIRECTION		-1
-#define JMPBUF_ARRAY		1
-#define VOID_INT_SIGNALS	1
-#define FLOATS_SUPPORTED	1
-#define LARGE_HUGS		1	/* 32-bit int: use the large table sizes */
 
 #if defined(__GNUC__) || defined(__clang__)
 # define HAVE_LABELS_AS_VALUES	1	/* computed goto for bytecode dispatch */
@@ -48,38 +44,7 @@
 /* --------------------------------------------------------------------------
  * Headers and functions present on every supported target.
  * ------------------------------------------------------------------------*/
-
-#define HAVE_STDLIB_H		1
-#define HAVE_STDARG_H		1
-#define HAVE_STRING_H		1
-#define HAVE_CTYPE_H		1
-#define HAVE_ASSERT_H		1
-#define HAVE_LIMITS_H		1
-#define HAVE_FLOAT_H		1
-#define HAVE_ERRNO_H		1
-#define HAVE_LOCALE_H		1
-#define HAVE_WCHAR_H		1
-#define HAVE_SIGNAL_H		1
-#define HAVE_TIME_H		1
-#define HAVE_STDINT_H		1
-#define HAVE_INTTYPES_H		1
-#define HAVE_SYS_TYPES_H	1
-#define HAVE_SYS_STAT_H		1
-#define HAVE_FCNTL_H		1
-
-#define HAVE_STRCMP		1
-#define HAVE_STRRCHR		1
-#define HAVE_SNPRINTF		1
-#define HAVE_VSNPRINTF		1
-#define HAVE_FSEEK		1
-#define HAVE_FTELL		1
-#define HAVE_TIME		1
-#define HAVE_LOCALTIME		1
-#define HAVE_GMTIME		1
-#define HAVE_MKTIME		1
-#define HAVE_DUP		1
 #define HAVE_ISATTY		1
-#define HAVE_FSTAT		1
 
 /* --------------------------------------------------------------------------
  * Windows versus POSIX.
@@ -90,7 +55,6 @@
 # define HAVE_WINDOWS_H		1
 # define HAVE_IO_H		1
 # define HAVE_DIRECT_H		1
-# define HAVE_LOADLIBRARY	1
 # define HAVE_GETMODULEFILENAME	1
 # define HAVE__POPEN		1
 # define HAVE__PCLOSE		1
@@ -124,13 +88,10 @@
 # define HAVE_SYS_PARAM_H	1
 # define HAVE_SYS_IOCTL_H	1
 # define HAVE_SYS_WAIT_H	1
-
-# define HAVE_DLOPEN		1
 # define HAVE_POPEN		1
 # define HAVE_PCLOSE		1
 # define HAVE_STRCASECMP	1
 # define HAVE_REALPATH		1
-# define HAVE_SIGPROCMASK	1
 # define HAVE_GETRUSAGE		1
 # define HAVE_GETTIMEOFDAY	1
 # define HAVE_SELECT		1

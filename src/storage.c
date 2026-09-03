@@ -1089,16 +1089,6 @@ Inst newInst() {                       /* Add new instance to table        */
     return instHw++;
 }
 
-#if DEBUG_DICTS
-extern Void printInst (Inst);
-
-Void printInst(Inst in)
-{
-    Class cl = inst(in).c;
-    Printf("%s-", textToStr(cclass(cl).text));
-    printType(stdout,inst(in).t);
-}
-#endif /* DEBUG_DICTS */
 
 Inst findFirstInst(Tycon tc)                  /* look for 1st instance involving */
 {                             /* the type constructor tc         */
@@ -1365,12 +1355,6 @@ typedef struct strScriptStorage {      /* record of storage state prior to */
     struct primInfoDef* prims;
 } script;
 
-#ifdef  DEBUG_SHOWUSE
-static Void local showUse(String msg, Int val, Int mx)
-{
-    Printf("%6s : %d of %d (%d%%)\n",msg,val,mx,(100*val)/mx);
-}
-#endif
 
 static Script scriptHw;                 /* next unused script number       */
 static script* scripts = NULL;
@@ -1382,15 +1366,6 @@ Script startNewScript(String f)                /* start new script, keeping reco
       growDynTable(dynTabScripts);
       scripts = (script*)(dynTabScripts->data);
     }
-#if DEBUG_SHOWUSE
-    showUse("Text",   textHw,           NUM_TEXT);
-    showUse("Addr",   addrHw,           NUM_ADDRS);
-    showUse("Module", moduleHw-MODMIN,  NUM_MODULE);
-    showUse("Tycon",  tyconHw-TYCMIN,   NUM_TYCON);
-    showUse("Name",   nameHw-NAMEMIN,   NUM_NAME);
-    showUse("Class",  classHw-CLASSMIN, dynTabClass->maxIdx);
-    showUse("Inst",   instHw-INSTMIN,   dynTabInst->maxIdx);
-#endif
 
     scripts[scriptHw].file         = findText( f ? f : "<nofile>" );
     scripts[scriptHw].textHw       = textHw;

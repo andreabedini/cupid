@@ -1511,22 +1511,6 @@ static Void local unrestricted(List bs)	/* Type unrestricted binding group */
 	for (bs1=hd(bs); nonNull(bs1); bs1=tl(bs1))
 	    fst(snd(hd(bs1))) = NIL; 	/* reset imps type fields	   */
 
-#if DEBUG_DEPENDS
-    Printf("Binding group:");
-    for (bs1=imps; nonNull(bs1); bs1=tl(bs1)) {
-	Printf(" [imp:");
-	for (bs=hd(bs1); nonNull(bs); bs=tl(bs))
-	    Printf(" %s",textToStr(textOf(fst(hd(bs)))));
-	Printf("]");
-    }
-    if (nonNull(exps)) {
-	Printf(" [exp:");
-	for (bs=exps; nonNull(bs); bs=tl(bs))
-	    Printf(" %s",textToStr(textOf(fst(hd(bs)))));
-	Printf("]");
-    }
-    Printf("\n");
-#endif
 
     /* ----------------------------------------------------------------------
      * STEP 2: Add type assumptions about any explicitly typed variable.
@@ -2295,11 +2279,6 @@ static Pair local typeSel(Name s)		/* Calculate a suitable type for a */
     Int  o;
     Int  m;
 
-#if DEBUG_SELS
-    Printf("Selector %s, cns=",textToStr(name(s).text));
-    printExp(stdout,cns);
-    Putchar('\n');
-#endif
 
     emptySubstitution();
     preds = NIL;
@@ -2384,11 +2363,6 @@ static Pair local typeSel(Name s)		/* Calculate a suitable type for a */
     name(s).arity = 1 + length(preds);
     map1Proc(qualify,preds,alts);
 
-#if DEBUG_SELS
-    Printf("Inferred arity = %d, type = ",name(s).arity);
-    printType(stdout,name(s).type);
-    Putchar('\n');
-#endif
 
     return pair(s,alts);
 }

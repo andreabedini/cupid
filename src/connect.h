@@ -370,8 +370,6 @@ extern  String mkFFIFilename2   (String);
 extern  Void   freeDLL          (void*);
 extern  Void   compileAndLink   (String,String);
 
-extern  Void   plugins          (Int);
-extern  Bool   havePlugin       (String);
 extern  List   calcFunDepsPreds (List);
 extern  Inst   findInstFor      (Cell,Int);
 

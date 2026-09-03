@@ -1127,11 +1127,6 @@ List checkExports(List exports)
     map1Accum(checkExport,es,mt,exports);
     es = fixupIEList(es);
 
-#if DEBUG_MODULES
-    for(xs=es; nonNull(xs); xs=tl(xs)) {
-	Printf(" %s", textToStr(textOfEntity(hd(xs))));
-    }
-#endif
     return es;
 }
 

@@ -48,7 +48,7 @@ extern String readRegChildStrings (HKEY, String, String, String);
 extern String RealPath  (String);
 extern String substPath (String,String);
 extern String uniqPath  (String);
-#if !HUGS_SERVER
+#ifndef HUGS_SERVER
 extern Bool startEdit   (Int,String);
 #endif
 

@@ -135,13 +135,6 @@ static Bool   local scanSubDirs   (String);
 # define PATHSEP                 ';'
 # define isPATHSEP(x)            isPathSep(x)
 # define DLL_ENDING              ".dll"
-#elif MAC_FILENAMES
-# define SLASH                   ':'
-# define isSLASH(c)              ((c)==SLASH)
-# define PATHSEP                 ';'
-# define isPATHSEP(x)            (*(x) == PATHSEP)
-/* Mac PEF (Preferred Executable Format) file */
-# define DLL_ENDING              ".pef" 
 #else
 # define SLASH                   '/'
 # define isSLASH(c)              ((c)==SLASH)
@@ -150,7 +143,7 @@ static Bool   local scanSubDirs   (String);
 # define DLL_ENDING              ".so"
 #endif
 
-#if HAVE_GETMODULEFILENAME && !DOS && !cygwin32_HOST_OS
+#if HAVE_GETMODULEFILENAME
 static HMODULE hugsModule = (HMODULE)0;
 static String  hugsRoot   = 0;
 
@@ -179,7 +172,7 @@ Bool setHugsRoot(String s)
 
 
 String hugsdir() {		/* directory containing libraries/Prelude.hs */
-#if   HAVE_GETMODULEFILENAME && !DOS && !cygwin32_HOST_OS
+#if HAVE_GETMODULEFILENAME
     /* On Windows, we can find the binary we're running and it's
      * conventional to put the libraries in the same place.
      */
@@ -225,7 +218,7 @@ static String homeDir() {
 
 String local RealPath(String s)         /* Find absolute pathname of file  */
 {
-#if HAVE__FULLPATH  /* eg DOS */
+#if HAVE__FULLPATH  /* Windows */
     static char path[FILENAME_MAX+1];
     _fullpath(path,s,FILENAME_MAX+1);
 #elif HAVE_REALPATH /* eg Unix */
@@ -295,9 +288,6 @@ static Bool local tryEndings()  /* Try each of the listed endings          */
 	    if (searchPos<FILENAME_MAX)
 		searchBuf[searchPos++] = *sp;
 	searchBuf[searchPos] = '\0';
-#if DEBUG_SEARCH
-	Printf("trying '%s'\n", searchBuf);
-#endif
 	if (readable(searchBuf,TRUE))
 	    return TRUE;
 	if (*sp)
@@ -423,9 +413,6 @@ String findPathname(String filename)   /* Look for a file, trying various extens
 {              /* Return ***input name*** if no file was found */
     searchReset(0);
     searchStr(filename);
-#if DEBUG_SEARCH
-    Printf("trying '%s'\n", searchBuf);
-#endif
     if (!readable(searchBuf,TRUE) && !tryEndings())
 	searchStr("");
     return normPath(searchBuf);
@@ -720,16 +707,8 @@ Cell *CStackBase;                       /* Retain start of C control stack */
 Void gcCStack() {                       /* Garbage collect elements off    */
     Cell stackTop = NIL;                /* C stack                         */
     Cell *ptr = &stackTop;
-#if SIZEOF_INTP == 2
-    if (((long)(ptr) - (long)(CStackBase))&1)
-	fatal("gcCStack");
-#elif STACK_ALIGNMENT == 2 /* eg Macintosh 68000 */
-    if (((long)(ptr) - (long)(CStackBase))&1)
-	fatal("gcCStack");
-#else 
     if (((long)(ptr) - (long)(CStackBase))&3)
 	fatal("gcCStack");
-#endif
 
 #define StackGrowsDown  while (ptr<=CStackBase) markWithoutMove(*ptr++)
 #define StackGrowsUp    while (ptr>=CStackBase) markWithoutMove(*ptr--)
@@ -743,10 +722,6 @@ Void gcCStack() {                       /* Garbage collect elements off    */
     GuessDirection;
 #endif
 
-#if SIZEOF_INTP==4 && STACK_ALIGNMENT == 2 /* eg Macintosh 68000 */
-    ptr = (Cell *)((long)(&stackTop) + 2);
-    StackGrowsDown;
-#endif
 
 #undef  StackGrowsDown
 #undef  StackGrowsUp
@@ -757,32 +732,12 @@ Void gcCStack() {                       /* Garbage collect elements off    */
  * Terminal dependent stuff:
  * ------------------------------------------------------------------------*/
 
-#if (HAVE_TERMIO_H | HAVE_SGTTY_H | HAVE_TERMIOS_H)
+#if HAVE_TERMIOS_H                      /* every POSIX target              */
 
 /* grab the varargs prototype for ioctl */
 #if HAVE_SYS_IOCTL_H
 # include <sys/ioctl.h>
 #endif
-
-/* The order of these three tests is very important because
- * some systems have more than one of the requisite header file
- * but only one of them seems to work.
- * Anyone changing the order of the tests should try enabling each of the
- * three branches in turn and write down which ones work as well as which
- * OS/compiler they're using.
- *
- * OS            Compiler      sgtty     termio  termios   notes
- * Linux 2.0.18  gcc 2.7.2     absent    works   works     1
- *
- * Notes:
- * 1) On Linux, termio.h just #includes termios.h and sgtty.h is
- *    implemented using termios.h.
- *    sgtty.h is in /usr/include/bsd which is not on my standard include
- *    path.  Adding it does no harm but you might as well use termios.
- *    --
- *    alastair@reid-consulting-uk.ltd.uk
- */
-#if HAVE_TERMIOS_H
 
 #include <termios.h>
 typedef  struct termios  TermParams;
@@ -799,7 +754,6 @@ typedef  struct termios  TermParams;
 			 tp.c_cc[VEOF]  = '\04'; \
 			 tp.c_cc[VEOL]  = '\0';
 
-#endif
 
 static Bool messedWithTerminal = FALSE;
 static TermParams originalSettings;
@@ -857,10 +811,6 @@ Void setBuffTerminal(Int fd, Bool buffered) {
 
 Int getTerminalWidth() {                /* determine width of terminal     */
 #ifdef TIOCGWINSZ
-#ifdef _M_UNIX                          /* SCO Unix 3.2.4 defines TIOCGWINSZ*/
-#include <sys/stream.h>                 /* Required by sys/ptem.h          */
-#include <sys/ptem.h>                   /* Required to declare winsize     */
-#endif
     static struct winsize terminalSize;
     ioctl(fileno(stdout),TIOCGWINSZ,&terminalSize);
     return (terminalSize.ws_col==0)? 80 : terminalSize.ws_col;
@@ -950,31 +900,7 @@ Void setBuffTerminal(Int fd, Bool buffered) {
     }
 }
 
-#else /* no terminal driver - eg DOS, RISCOS */
-
-Int getTerminalWidth() {
-    return 80;
-}
-
-Void normalTerminal() {                 /* restore terminal initial state  */
-}
-
-Bool getEchoTerminal(Int fd) {
-    return fd==0;
-}
-
-Void setEchoTerminal(Int fd, Bool echo) {
-}
-
-Bool getBuffTerminal(Int fd) {
-    return fd==0;
-}
-
-Void setBuffTerminal(Int fd, Bool buffered) {
-}
-
-
-#endif /* no terminal driver */
+#endif /* HAVE_TERMIOS_H */
 
 /* --------------------------------------------------------------------------
  * Interrupt handling:
@@ -1019,7 +945,7 @@ static sigHandler(ignoreBreak) {        /* record but don't respond to break*/
     sigResume;
 }
 
-#if !DONT_PANIC && !DOS
+#if !DONT_PANIC
 /* Fatal signals (including a stack-overflowing SIGSEGV) are handled on an
  * alternate signal stack: if we run out of C stack, the handler itself
  * still needs somewhere to run in order to report the problem and exit
@@ -1037,7 +963,7 @@ static sigHandler(panic) {              /* exit in a panic, on receipt of  */
     exit(1);
     sigResume;/*NOTREACHED*/
 }
-#endif /* !DONT_PANIC && !DOS */
+#endif /* !DONT_PANIC */
 
 #if IS_WINDOWS
 BOOL WINAPI consoleHandler(DWORD dwCtrlType) {
@@ -1054,7 +980,7 @@ static Void local installHandlers() { /* Install handlers for all fatal    */
 #if IS_WINDOWS
     SetConsoleCtrlHandler(consoleHandler,TRUE);
 #endif
-#if !DONT_PANIC && !DOS
+#if !DONT_PANIC
     {
 	stack_t ss;
 	struct sigaction sa;
@@ -1095,7 +1021,7 @@ static Void local installHandlers() { /* Install handlers for all fatal    */
 	sigaction(SIGTERM,&sa,NULL);
 # endif
     }
-#endif /* !DONT_PANIC && !DOS */
+#endif /* !DONT_PANIC */
 
 }
 
@@ -1521,13 +1447,8 @@ String mkFFIFilename(String file)                      /* get DLL path for modul
     return path;
 }
 
-#if LEADING_UNDERSCORE
-#  define INIT_MODULE_FUN  "_initModule"
-#  define API_VERSION_FUN  "_HugsAPIVersion"
-#else
 #  define INIT_MODULE_FUN  "initModule"
 #  define API_VERSION_FUN  "HugsAPIVersion"
-#endif
 
 Void needPrims(Int version, void*  dll)   /* Load dll containing prims for current module */
 {

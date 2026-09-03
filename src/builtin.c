@@ -1673,9 +1673,6 @@ static void returnId(HugsStackPtr root, int n) /* return in identity monad */
      *  [6/01 --sof]
      */
     if ( isPair(stack(root))
-#if DEBUG
-	 || (whatIs(stack(root)) == AP)
-#endif
 	 ) {
       updateRoot(top());
     }
