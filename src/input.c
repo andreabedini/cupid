@@ -299,20 +299,21 @@ static Bool local fileInput(String nm, Long len)     /* prepare to input charact
     if (!readable(nm,FALSE)) { /* file not there */
 	inputStream = NULL;
     } else if (preprocessor) {
-	Int reallen = strlen(preprocessor) + 1 + strlen(nm) + 1;
+	/* nm is a file name, so not trustworthy: shell-quote it (see
+	 * shellQuote in machdep.c) rather than pasting it into the
+	 * command unquoted, which would let a name like
+	 * "x$(cmd).hs" run an arbitrary shell command.             */
+	Int  qlen    = shellQuote(NULL,nm);
+	Int  reallen = strlen(preprocessor) + 1 + qlen;
 	char *cmd = malloc(reallen+1);
 	if (cmd == NULL) {
 	    ERRMSG(0) "Unable to allocate memory for filter command."
 	    EEND_NORET;
 	    return FALSE;
 	}
-	if (snprintf(cmd,reallen, "%s %s", preprocessor, nm) < 0) {
-	    ERRMSG(0) "Unable to allocate memory for filter command."
-	    EEND_NORET;
-	    return FALSE;
-	} else {
-	    cmd[reallen] = '\0';
-	}
+	strcpy(cmd, preprocessor);
+	strcat(cmd, " ");
+	shellQuote(cmd + strlen(cmd), nm);
 	inputStream = popen(cmd,"r");
 	free(cmd);
     } else {

@@ -65,6 +65,7 @@ extern Bool startEdit   (Int,String);
 #endif
 
 extern  Int    shellEsc		(String,Bool,Bool);
+extern  Int    shellQuote		(String,String);
 extern  Int    getTerminalWidth (Void);
 extern  Void   normalTerminal	(Void);
 extern  Bool   getEchoTerminal	(Int);

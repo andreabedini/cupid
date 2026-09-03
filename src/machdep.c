@@ -1591,6 +1591,54 @@ static Void local installHandlers() { /* Install handlers for all fatal    */
  * Shell escapes:
  * ------------------------------------------------------------------------*/
 
+/* Append the quoted form of s to dst, so that a shell (cmd.exe on Windows,
+ * a POSIX shell everywhere else) sees s as a single word no matter what
+ * punctuation it contains - a file name is not trustworthy input, and both
+ * popen() and system() (see shellEsc below) pass their argument straight
+ * to a shell.  If dst is NULL, nothing is written, but the number of
+ * characters shellQuote(dst,s) would write (not counting the terminating
+ * NUL, which is written whenever dst is not NULL) is still returned, so a
+ * caller can size (or grow) a buffer first, e.g.
+ *
+ *     char *buf = malloc((size_t)shellQuote(NULL,s) + 1);
+ *     shellQuote(buf,s);
+ *
+ * On POSIX, s is wrapped in single quotes, with each embedded single quote
+ * replaced by '\'' (close the quote, an escaped literal quote, reopen the
+ * quote) - the standard way to quote arbitrary bytes for a POSIX shell.
+ * On Windows, s is wrapped in double quotes instead, with embedded double
+ * quotes backslash-escaped; this is the convention the MSVC runtime (and
+ * hence cmd.exe / CreateProcess argv parsing) expects.
+ */
+Int shellQuote(String dst, String s)
+{
+    Int n = 0;
+#if !IS_WINDOWS
+#define QUOTE_CHAR   '\''
+#define ESCAPED_QUOTE  "'\\''"		/* close, escaped quote, reopen    */
+#else
+#define QUOTE_CHAR   '"'
+#define ESCAPED_QUOTE  "\\\""		/* backslash-escaped quote         */
+#endif
+    if (dst) dst[n] = QUOTE_CHAR;
+    n++;
+    for ( ; *s; s++) {
+	if (*s == QUOTE_CHAR) {
+	    if (dst) strcpy(dst+n, ESCAPED_QUOTE);
+	    n += (Int)strlen(ESCAPED_QUOTE);
+	} else {
+	    if (dst) dst[n] = *s;
+	    n++;
+	}
+    }
+    if (dst) dst[n] = QUOTE_CHAR;
+    n++;
+    if (dst) dst[n] = '\0';
+#undef QUOTE_CHAR
+#undef ESCAPED_QUOTE
+    return n;
+}
+
 Int
 shellEsc(String cmd, Bool sync, Bool useShell) /* run a shell command (or shell)  */
 {
@@ -2324,10 +2372,11 @@ Void needPrims(Int version, void*  dll)   /* Load dll containing prims for curre
 static char*  buffer  = NULL;
 static size_t bufsize = 0;
 static size_t used    = 0;
-static Void local reserve    (size_t);
-static Void local insert     (String);
-static Void local insertPath (String);
-static Void local insertChar (Char);
+static Void local reserve      (size_t);
+static Void local insert       (String);
+static Void local insertPath   (String);
+static Void local insertChar   (Char);
+static Void local insertQuoted (String);
 
 static Void local reserve(size_t extra)
 {
@@ -2362,6 +2411,18 @@ static Void local insertPath(String s)
         s++;
     }
     buffer[used] = '\0';
+}
+
+/* Append the shell-quoted form of s (see shellQuote above): unlike the
+ * "\"...\"" wrapping this used to do, this is safe even if a file name
+ * (ultimately module- or user-supplied) contains a quote, '$' or backtick.
+ */
+static Void local insertQuoted(String s)
+{
+    Int l = shellQuote(NULL,s);
+    reserve((size_t)l);
+    shellQuote(buffer+used,s);
+    used += (size_t)l;
 }
 
 static Void local insertChar(Char c)
@@ -2406,14 +2467,12 @@ Void compileAndLink(String fn, String flags)
     insert("include\"");
 
     /* the output file */
-    insert(" -o \"");
-    insert(mkFFIFilename2(i));
-    insert("\"");
+    insert(" -o ");
+    insertQuoted(mkFFIFilename2(i));
 
     /* the file to compile */
-    insert(" \"");
-    insert(mkFFIFilename(i));
-    insert("\"");
+    insert(" ");
+    insertQuoted(mkFFIFilename(i));
 
     /* compiler and linker flags specified on Hugs command line */
     if (flags) {
