@@ -23,9 +23,6 @@
  * ------------------------------------------------------------------------*/
 
 static Void local foreignType    (Int,Type);
-#ifdef DOTNET
-static Cell local foreignTypeTag (Int,Type);
-#endif
 static Void local foreignGet     (Int,Type,String,Int);
 static Void local foreignPut     (Int,Type,String,Int);
 static Void local ffiInclude     (Text);
@@ -102,22 +99,7 @@ Void ffiAddCppInclude(String s) {
 
 Bool foreignNeedStubs(List imps, List exps)
 {
-#ifndef DOTNET
  return (nonNull(imps) || nonNull(exps)); 
-#else 
- if (isNull(exps)) {
-   List xs;
-   for (xs = imps; nonNull(xs); xs=tl(xs)) {
-     if (isName(hd(xs)) && 
-	 ((name(hd(xs)).foreignFlags & FFI_CCONV_DOTNET) == 0) ) {
-       return TRUE;
-     }
-   }
-   return FALSE;
- } else {
-   return TRUE;
- }
-#endif
 }
 
 Void foreignHeader(String fn) 
@@ -147,9 +129,6 @@ Void foreignFooter(String fn, Text mn, List is, List es)
     fprintf(out,"static struct hugs_primitive hugs_primTable[] = {\n");
     for(xs=is; nonNull(xs); xs=tl(xs)) {
         Name n       = hd(xs);
-#ifdef DOTNET
-	if (name(n).foreignFlags & FFI_CCONV_DOTNET != 0) continue;
-#endif
         fprintf(out,"    {\"%s\", ",textToStr(name(n).text));
         fprintf(out,"%d, ",name(n).arity);
         fprintf(out,"hugsprim_%s_%d},\n",textToStr(name(n).extFun),name(n).foreignId);
@@ -244,42 +223,6 @@ Void foreignFooter(String fn, Text mn, List is, List es)
     if (ffiFlags) { free(ffiFlags); ffiFlags=0; }
 }
 
-#ifdef DOTNET
-static Cell foreignTypeTag(Int l, Type t)
-{
-         if (t == typeUnit)   return mkInt(FFI_TYPE_UNIT);
-    else if (t == typeChar)   return mkInt(FFI_TYPE_CHAR);
-    else if (t == typeInt)    return mkInt(FFI_TYPE_INT);
-    else if (t == typeInt8)   return mkInt(FFI_TYPE_INT8);
-    else if (t == typeInt16)  return mkInt(FFI_TYPE_INT16);
-    else if (t == typeInt32)  return mkInt(FFI_TYPE_INT32);
-    else if (t == typeInt64)  return mkInt(FFI_TYPE_INT64);
-    else if (t == typeWord8)  return mkInt(FFI_TYPE_WORD8);
-    else if (t == typeWord16) return mkInt(FFI_TYPE_WORD16);
-    else if (t == typeWord32) return mkInt(FFI_TYPE_WORD32);
-    else if (t == typeWord64) return mkInt(FFI_TYPE_WORD64);
-    else if (t == typeFloat)  return mkInt(FFI_TYPE_FLOAT);
-    else if (t == typeDouble) return mkInt(FFI_TYPE_DOUBLE);
-    else if (t == typeBool)   return mkInt(FFI_TYPE_BOOL);
-    else if (t == typeAddr)   return mkInt(FFI_TYPE_ADDR);
-    else if (getHead(t) == typePtr)     return mkInt(FFI_TYPE_PTR);
-    else if (getHead(t) == typeFunPtr)  return mkInt(FFI_TYPE_FUNPTR);
-    else if (getHead(t) == typeForeign) return mkInt(FFI_TYPE_FOREIGN);
-    else if (getHead(t) == typeStable)  return mkInt(FFI_TYPE_STABLE);
-    else if (getHead(t) == typeObject)  return mkInt(FFI_TYPE_OBJECT);
-	 else if (getHead(t) == typeList && 
-		  nthArg(1,t) == typeChar) 
-		                        return mkInt(FFI_TYPE_STRING);
-    else {
-        ERRMSG(l) "Illegal foreign type" ETHEN
-        ERRTEXT " \"" ETHEN ERRTYPE(t);
-        ERRTEXT "\""
-        EEND;
-   }
-   return 0;
-
-} 
-#endif
 
 
 static Void local foreignType(Int l, Type t)
@@ -302,9 +245,6 @@ static Void local foreignType(Int l, Type t)
     else if (getHead(t) == typeFunPtr) fprintf(out,"HsFunPtr");
     else if (getHead(t) == typeForeign)fprintf(out,"HugsForeign");
     else if (getHead(t) == typeStable) fprintf(out,"HsStablePtr");
-#ifdef DOTNET
-    else if (getHead(t) == typeObject) fprintf(out,"HsPtr");
-#endif
     else {
         ERRMSG(l) "Illegal foreign type" ETHEN
         ERRTEXT " \"" ETHEN ERRTYPE(t);
@@ -334,9 +274,6 @@ static Void local foreignGet(Int l, Type t, String nm, Int num)
     else if (getHead(t) == typeFunPtr) fprintf(out,"%s%d = hugs->getFunPtr();\n",     nm, num);
     else if (getHead(t) == typeForeign)fprintf(out,"%s%d = hugs->getForeign();\n", nm, num);
     else if (getHead(t) == typeStable) fprintf(out,"%s%d = hugs->getStablePtr4();\n",  nm, num);
-#ifdef DOTNET
-    else if (getHead(t) == typeObject)    fprintf(out,"%s%d = hugs->getPtr();\n",        nm, num);
-#endif
     else {
         ERRMSG(l) "Illegal outbound (away from Haskell) type" ETHEN
         ERRTEXT " \"" ETHEN ERRTYPE(t);
@@ -366,9 +303,6 @@ static Void local foreignPut(Int l, Type t, String nm, Int num)
     else if (getHead(t) == typeFunPtr) fprintf(out,"hugs->putFunPtr(%s%d);\n",     nm, num);
     else if (getHead(t) == typeForeign)fprintf(out,"hugs->putForeign(%s%d);\n", nm, num);
     else if (getHead(t) == typeStable) fprintf(out,"hugs->putStablePtr4(%s%d);\n", nm, num);
-#ifdef DOTNET
-    else if (getHead(t) == typeObject) fprintf(out,"hugs->putPtr(%s%d);\n",        nm, num);
-#endif
     else {
         ERRMSG(l) "Illegal inbound (coming into Haskell) type" ETHEN
         ERRTEXT " \"" ETHEN ERRTYPE(t);
@@ -469,17 +403,7 @@ static Void local ffiDeclareFun(Int line, Text n, Bool indirect, Bool extraArg, 
     }
     fprintf(out,"(");
     if (extraArg) {
-#if sparc_TARGET_ARCH || i386_TARGET_ARCH
-        /* On SPARC we need an additional dummy argument due to stack alignment
-           restrictions, see the comment in mkThunk in builtin.c. On x86
-           platforms we need it, too, but for a different reason: The "real"
-           return address is still visible on the stack as an additional
-           argument, but we return to a small stub which pops the stable pointer
-           before the "real" return. */
-        fprintf(out,"HugsStablePtr fun1, void* unusedArg");
-#else
         fprintf(out,"HugsStablePtr fun1");
-#endif
         if (nonNull(argTys)) {
             fprintf(out,", ");
         }
@@ -580,43 +504,6 @@ Void implementForeignImport(Int line, Name n, Int id, Text fn, Text cid, Bool is
            /* Function name */
 {
 
-#ifdef DOTNET
-    if ( name(n).foreignFlags & FFI_CCONV_DOTNET ) {
-      /* .NET methods are bound when invoked, just record
-       * the method name + the types we're calling it at.
-       * 
-       */
-      List params = dupList(argTys);
-      Int  flags  = (Int)fn;
-      map1Over(foreignTypeTag,line,params);
-      
-      /* Qualifying the method name with the class & namespace
-       * prefix is redundant, but as a nicety we support being
-       * verbose -- symmetric with static methods 
-       * verbosity.
-       */
-      if ( ((flags & FFI_DOTNET_METHOD) != 0) &&
-	   ((flags & FFI_DOTNET_STATIC) == 0) ) {
-	char* meth = strrchr(textToStr(cid),'.');
-	if ( (meth && *(meth+1) != '\0') ) {
-	  /* Dotted name (with non-empty last component), use
-	   * last component.
-	   */
-	  cid = findText(meth+1);
-	}
-      }
-
-      name(n).number = EXECNAME;
-      name(n).foreignInfo = 
-	pair (cid,
-	      pair(libName,
-		   pair(mkInt(flags),
-			pair(mkInt(isIO),
-			     pair(foreignTypeTag(line,resultTy),
-				  params)))));
-      return;
-    } else {
-#endif
 
     checkCEntity(line,cid);
     ffiInclude(fn);
@@ -630,12 +517,6 @@ Void implementForeignImport(Int line, Name n, Int id, Text fn, Text cid, Bool is
     ffiPrimHeader(cid,id);
     fprintf(out,"{\n");
 
-#if 0
-    /* Prototype for function we're going to call */
-    fprintf(out,"    extern ");
-    ffiDeclareFun(line,cid,FALSE,FALSE,argTys,resultTy);
-    fprintf(out,";\n");
-#endif
 
     ffiDeclareList(line,argTys,"arg");
     ffiDeclare(line,resultTy,"res",1);
@@ -649,9 +530,6 @@ Void implementForeignImport(Int line, Name n, Int id, Text fn, Text cid, Bool is
               resultTy==typeUnit ? 0 : 1);
     }
     fprintf(out,"}\n");
-#ifdef DOTNET
-    }
-#endif
 }
 
 Void implementForeignImportDynamic(Int line, Int id, Text e, List argTys, Bool isIO, Type resultTy)
