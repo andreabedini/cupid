@@ -1560,6 +1560,13 @@ Void dropAScript(Script sno)   /* elide one script from the stack */
 
 	i++;
     }
+    /* The last slot's contents were just copied down into scripts[i-2]
+     * (or, if sno was already the last script, dropped outright), so it
+     * is now a duplicate: shrink the array so nothing iterates over it
+     * again.  Without this, scriptHw still counted it, and both it and
+     * the slot it was copied into held the same "prims" DLL handle,
+     * which dropScriptsFrom/EXIT would then free twice.               */
+    scriptHw--;
 }
 
 Void dropScriptsFrom(Script sno)               /* Restore storage to state prior  */
