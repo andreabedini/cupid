@@ -810,8 +810,13 @@ static Bool local find2(String s)	/* Turn module name into a filename */
 
     /* replace all dots in the module name with slashes */
     for (sp = s; *sp; sp++) {
+	if (searchPos>=FILENAME_MAX) {  /* module name (plus whatever was  */
+	    searchBuf[searchPos] = '\0'; /* already in searchBuf) too long  */
+	    return FALSE;                /* to fit: fail instead of         */
+	}                                 /* overrunning searchBuf           */
 	searchBuf[searchPos++] = *sp == '.' ? SLASH : *sp;
     }
+    searchBuf[searchPos] = '\0';
     return tryEndings();
 }
 
