@@ -68,18 +68,12 @@ primFun(primGetClockTime) { /* :: IO (Int,Int) */
     throwErrno("Time.getClockTime", TRUE, NO_HANDLE, NULL);
 
   IOReturn(ap(ap(mkTuple(2),mkInt(tb.time)),mkInt(tb.millitm * 1000)));
-#elif HAVE_TIME
+#else
   time_t t = time(NULL);
   
   if (t == (time_t)-1)
     throwErrno("Time.getClockTime", TRUE, NO_HANDLE, NULL);
   IOReturn(ap(ap(mkTuple(2),mkInt(t)),mkInt(0)));
-#else
-  IOFail(mkIOError(NULL,
-		   nameIllegal,
-		   "Time.getClockTime",
-		   "operation not supported",
-		   NULL));
 #endif
 }
 
@@ -93,7 +87,6 @@ primFun(primGetCalTime) { /* Int   -> Int -> IO (.....) */
                           /* isUTC => convert time to UTC, o/wise local time */
 
   Int isUTC;
-#if HAVE_LOCALTIME && HAVE_GMTIME
   time_t secs;
   struct tm* tm;
   char* zoneNm = NULL;
@@ -150,23 +143,12 @@ primFun(primGetCalTime) { /* Int   -> Int -> IO (.....) */
 		    mkInt(tm->tm_isdst)),
 		 zoneStr),
 	      mkInt(utcOff)));
-#else /* !(HAVE_LOCALTIME && HAVE_GMTIME) */
-
-  IntArg(isUTC,2+IOArity);
-
-  IOFail(mkIOError(NULL,
-		   nameIllegal,
-		   (isUTC ? "Time.toUTCTime" : "Time.toCalendarTime"),
-		   "operation not supported",
-		   NULL));
-#endif
 
 }
 
 primFun(primMkTime) { /* Int{-year-}  -> Int{-month-} -> Int{-day-} ->
                          Int{-hour-}  -> Int{-mins-}  -> Int{-sec-} ->
 			 Int{-tz offset-} -> IO Int{-secs since Epoch-} */
-#if HAVE_MKTIME
   Int year, month, day;
   Int hour,min,sec;
   Int tz;
@@ -217,13 +199,6 @@ primFun(primMkTime) { /* Int{-year-}  -> Int{-month-} -> Int{-day-} ->
 #endif
   
   IOReturn(mkInt(t+tz));
-#else /* !HAVE_MKTIME */
-  IOFail(mkIOError(NULL,
-		   nameIllegal,
-		   "Time.toClockTime",
-		   "operation not supported",
-		   NULL));
-#endif
 }
 
 /* --------------------------------------------------------------------------

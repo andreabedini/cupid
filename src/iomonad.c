@@ -23,13 +23,10 @@ Name nameIOBind;		        /* bind IO code                    */
 Name namePutStr;		        /* Prelude.putStr                  */
 
 static Name namePass;			/* auxiliary:: \f b a -> f a b     */
-#if IO_HANDLES
 static Name nameHreader;	        /* auxiliary function		   */
-#endif
 static Cell hugsProgName;		/* value of getProgName            */
 static Cell hugsArgs;			/* value of getArgs                */
 
-#if IO_HANDLES
 static Void   local throwErrno     (String,Bool,Int,Cell *);
 static String local toIOErrorDescr (int,Bool);
 static Name   local toIOError      (int);
@@ -43,15 +40,8 @@ static Void   local setRWState     (Int,Int);
 static Void   local checkOpen      (Int,String);
 static Void   local checkReadable  (Int,String);
 static Void   local checkWritable  (Int,String);
-#endif
 
-#if IO_HANDLES
-# if WANT_FIXED_SIZE_TABLES
-#  define MAX_HANDLES NUM_HANDLES
-# else
 #  define MAX_HANDLES num_handles
-# endif
-#endif
 
 extern Void local pushString       (String);
 
@@ -67,9 +57,7 @@ static Void iomonadControl(Int what)
 		       setCurrModule(modulePrelude);
 #define pFun(n,s,t)    addPrim(0,n=newName(findText(s),NIL),t,modulePrelude,NIL)
 		       pFun(namePass,	 "_pass",    "passIO");
-#if    IO_HANDLES
 		       pFun(nameHreader, "_hreader", "hreader");
-#endif
 #undef pFun
 #define predef(nm,str) nm=newName(findText(str),NIL); name(nm).defn=PREDEFINED
 		       predef(nameIORun,    "hugsIORun");
@@ -98,7 +86,6 @@ PROTO_PRIM(primGetArgs);
 PROTO_PRIM(primSetProgName);
 PROTO_PRIM(primSetArgs);
 
-#if IO_HANDLES
 static Void local fopenPrim   (StackPtr,Bool,String);
 static int local getIOMode    (Cell);
 
@@ -143,14 +130,11 @@ PROTO_PRIM(primHSetEcho);
 
 PROTO_PRIM(primIOEql);
 PROTO_PRIM(primIOHash);
-#endif
 
-#if IO_REFS
 PROTO_PRIM(primNewRef);
 PROTO_PRIM(primDerefRef);
 PROTO_PRIM(primAssignRef);
 PROTO_PRIM(primEqRef);
-#endif
 
 PROTO_PRIM(primMakeSP);
 PROTO_PRIM(primDerefSP);
@@ -166,7 +150,6 @@ PROTO_PRIM(primEqFP);
 PROTO_PRIM(primTouchFP);
 PROTO_PRIM(primFPToP);
 
-#if GC_WEAKPTRS
 PROTO_PRIM(primWeakPtrEq);
 PROTO_PRIM(primMkWeak);
 PROTO_PRIM(primDeRefWeak);
@@ -174,41 +157,13 @@ PROTO_PRIM(primReplaceFinalizer);
 PROTO_PRIM(primFinalize);
 PROTO_PRIM(primRunFinalizer);
 PROTO_PRIM(primFinalizerWaiting);
-#endif
 
-#if STABLE_NAMES
 PROTO_PRIM(primMakeSN);
 PROTO_PRIM(primDerefSN);
 PROTO_PRIM(primHashSN);
 PROTO_PRIM(primEqSN);
-#endif
 
-#ifdef HSCRIPT
-PROTO_PRIM(primGetCurrentScript);
-#endif
 
-#ifdef DOTNET
-/* These primops are remnants from the first attempt at
- * providing .NET interop for Haskell / Hugs. They've been
- * mostly superceeded by the integration of .NET interop
- * with the Haskell FFI, but we'll keep these primops around
- * for a little bit longer.
- */
-EXT_PROTO_PRIM(primCreateObject);
-EXT_PROTO_PRIM(primInvokeMethod);
-EXT_PROTO_PRIM(primInvokeStaticMethod);
-EXT_PROTO_PRIM(primNewString);
-EXT_PROTO_PRIM(primToHsString);
-EXT_PROTO_PRIM(primNewArgArray);
-EXT_PROTO_PRIM(primSetArg);
-EXT_PROTO_PRIM(primGetArg);
-EXT_PROTO_PRIM(primGetField);
-EXT_PROTO_PRIM(primSetField);
-EXT_PROTO_PRIM(primGetStaticField);
-EXT_PROTO_PRIM(primSetStaticField);
-EXT_PROTO_PRIM(primIsNullPtr);
-EXT_PROTO_PRIM(primMkPrimVector);
-#endif
 
 static struct primitive iomonadPrimTable[] = {
   {"primretIO",		1+IOArity, primReturnIO},
@@ -225,7 +180,6 @@ static struct primitive iomonadPrimTable[] = {
   {"primSetProgName",   1+IOArity, primSetProgName},
   {"primSetArgs",       1+IOArity, primSetArgs},
 
-#if IO_HANDLES
   {"hGetChar",		1+IOArity, primHGetChar},
   {"hPutChar",		2+IOArity, primHPutChar},
   {"hPutStr",		2+IOArity, primHPutStr},
@@ -262,14 +216,11 @@ static struct primitive iomonadPrimTable[] = {
   {"hIsTerminalDevice",	1+IOArity, primHIsTerminalDevice},
   {"hGetEcho",		1+IOArity, primHGetEcho},
   {"hSetEcho",		2+IOArity, primHSetEcho},
-#endif
 
-#if IO_REFS
   {"newRef",            1+IOArity, primNewRef},
   {"getRef",		1+IOArity, primDerefRef},
   {"setRef",		2+IOArity, primAssignRef},
   {"eqRef",		2, primEqRef},
-#endif
 
   {"makeStablePtr",	1+IOArity, primMakeSP},
   {"deRefStablePtr",	1+IOArity, primDerefSP},
@@ -286,7 +237,6 @@ static struct primitive iomonadPrimTable[] = {
   {"touchForeignPtr",	1+IOArity, primTouchFP},
   {"unsafeForeignPtrToPtr", 1, primFPToP},
 
-#if GC_WEAKPTRS
   {"weakPtrEq",		2, primWeakPtrEq},
   {"mkWeak",		3+IOArity, primMkWeak},
   {"deRefWeak",		1+IOArity, primDeRefWeak},
@@ -294,35 +244,13 @@ static struct primitive iomonadPrimTable[] = {
   {"finalize",		1+IOArity, primFinalize},
   {"runFinalizer",	0+IOArity, primRunFinalizer},
   {"finalizerWaiting",	0+IOArity, primFinalizerWaiting},
-#endif
 
-#if STABLE_NAMES
   {"makeStableName",	1+IOArity, primMakeSN},
   {"deRefStableName",	1, primDerefSN},
   {"hashStableName",	1, primHashSN},
   {"eqStableName",	2, primEqSN},
-#endif
   
-#ifdef HSCRIPT
-  {"getCurrentScript",  0+IOArity, primGetCurrentScript},
-#endif
 
-#ifdef DOTNET
-  {"createObject",       2+IOArity, primCreateObject},
-  {"invokeMethod",       3+IOArity, primInvokeMethod},
-  {"invokeStaticMethod", 2+IOArity, primInvokeStaticMethod},
-  {"newString",          1+IOArity, primNewString},
-  {"toString",           1+IOArity, primToHsString},
-  {"newArgArray",        1+IOArity, primNewArgArray},
-  {"setArrayArg",        3+IOArity, primSetArg},
-  {"getArrayArg",        2+IOArity, primGetArg},
-  {"getField",           2+IOArity, primGetField},
-  {"setField",           3+IOArity, primSetField},
-  {"getStaticField",     2+IOArity, primGetStaticField},
-  {"setStaticField",     3+IOArity, primSetStaticField},
-  {"isNullPtr",          1+IOArity, primIsNullPtr},
-  {"mkPrimVector",       2+IOArity, primMkPrimVector},
-#endif
   {"IOEql",              2+IOArity, primIOEql},
   {"IOHash",             1+IOArity, primIOHash},
 
@@ -354,7 +282,6 @@ primFun(primPass) {			/* Auxiliary function		   */
  * Handle operations:
  * ------------------------------------------------------------------------*/
 
-#if IO_HANDLES
 
 static
 Int local newHandle(Cell*sCell, String loc) /* return a free Handle or throw an IOError */
@@ -367,7 +294,6 @@ Int local newHandle(Cell*sCell, String loc) /* return a free Handle or throw an 
 	garbageCollect();                       /* succeed, garbage collect*/
 	for (i=0; i<(Int)MAX_HANDLES && nonNull(handles[i].hcell); ++i)
 	    ;                                   /* and try again ...       */
-#if !WANT_FIXED_SIZE_TABLES
 	if (i >= (Int)MAX_HANDLES) {
 	    Int j;
 	    growDynTable(dynTabHandles);
@@ -378,7 +304,6 @@ Int local newHandle(Cell*sCell, String loc) /* return a free Handle or throw an 
 		handles[j].hcell = NIL;
 	    }
 	}
-#endif
     }
 
     if (i>=(Int)MAX_HANDLES) {                  /* ... before we give up   */
@@ -521,11 +446,9 @@ static Void local hPutChar(Char c, Int h, String fname) {
 #endif
     if (retval == EOF)
 	throwErrno(fname, TRUE, h, NULL);
-#if FLUSHEVERY
     if (h <= 2) { /* Only flush the standard handles */
 	fflush(handles[h].hfp);
     }
-#endif
 }
 
 /* If the stream is read-write, set the state, otherwise do nothing */
@@ -626,7 +549,6 @@ mkIOError(Cell   *mbH,	/* a Handle or NULL */
 }
 
 
-#endif
 /* --------------------------------------------------------------------------
  * IO Errors (more defined for file ops)
  * ------------------------------------------------------------------------*/
@@ -645,7 +567,6 @@ static Void local throwErrno(String fname, Bool isFile, Int h, Cell *mbF)
  */
 static Name local toIOError(int errc)
 {
-#if HAVE_ERRNO_H  && !(__MWERKS__ && macintosh)
     switch(errc) {
 
     case EEXIST:
@@ -662,9 +583,6 @@ static Name local toIOError(int errc)
     default:
 	return nameIllegal;
     }
-#else
-    return nameIllegal;
-#endif
 }
 
 /*
@@ -672,7 +590,6 @@ static Name local toIOError(int errc)
  */
 static String local toIOErrorDescr(int errc, Bool isFile)
 {
-#if HAVE_ERRNO_H  && !(__MWERKS__ && macintosh)
     switch(errc) {
 
     case EEXIST:
@@ -689,9 +606,6 @@ static String local toIOErrorDescr(int errc, Bool isFile)
     default:
 	return "";
     }
-#else
-    return "";
-#endif
 }
 
 /* --------------------------------------------------------------------------
@@ -703,21 +617,12 @@ primFun(primGC) {			/* force a GC right now            */
     IOReturn(nameUnit);
 }
 
-#if BIGNUMS && defined HAVE_TIME_H
 #include <time.h>
 
 primFun(primGetRandomSeed) {		/* generate a random seed          */
     IOReturn(bigInt(clock()));
 }
 
-#else
-
-primFun(primGetRandomSeed) {		/* generate a random seed          */
-    ERRMSG(0) "getRandomSeed is not implemented on this architecture"
-    EEND;
-}
-
-#endif
 				     
 primFun(primGetEnv) {                 /* primGetEnv :: String -> IO String */
     String s = evalName(IOArg(1));    /* Eval name	                   */
@@ -740,9 +645,7 @@ primFun(primGetEnv) {                 /* primGetEnv :: String -> IO String */
     IOReturn(pop());
 }
 
-#if HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
 #if HAVE_SYS_WAIT_H
 # include <sys/wait.h>
 #endif
@@ -802,7 +705,6 @@ primFun(primSetArgs) {                  /* primSetArgs :: [String] -> IO () */
  * File IO
  * ------------------------------------------------------------------------*/
 
-#if IO_HANDLES
 
 #define HandleArg(nm,offset)  \
     eval(primArg(offset));    \
@@ -857,11 +759,6 @@ primFun(primHPutStr) {			/* print string on handle	   */
 	hPutChar(charOf(whnfHead),h,"IO.hPutStr");
 	eval(pop());
     }
-#if !FLUSHEVERY
-    if (h <= 2) { /* Only flush the standard handles */
-	fflush(handles[h].hfp);
-    }
-#endif
     IOReturn(nameUnit);
 }
 
@@ -994,7 +891,6 @@ primFun(primHandleToFd) {
 			 NULL));
     }
     checkOpen(h, "System.Posix.IO.handleToFd");
-#if HAVE_DUP
     {
         Int fd = dup(fileno(handles[h].hfp));
         fclose(handles[h].hfp);
@@ -1002,13 +898,6 @@ primFun(primHandleToFd) {
         handles[h].hmode = HCLOSED;
         IOReturn(mkInt(fd));
     }
-#else
-    IOFail(mkIOError(&handles[h].hcell,
-		     nameIllegal,
-		     "System.Posix.IO.handleToFd",
-		     "unsupported operation",
-		     NULL));
-#endif
 }
 
 primFun(primHIsEOF) {	/* Test for end of file on handle  */
@@ -1073,40 +962,21 @@ primFun(primHGetPosn) {			/* Get file position               */
     long pos;
     HandleArg(h,1+IOArity);
     checkOpen(h, "IO.hGetPosn");
-#if HAVE_FTELL
     pos = ftell(handles[h].hfp);
     IOReturn(mkInt((Int)pos));
-#else
-    IOFail(mkIOError(NULL,
-		     nameIllegal,
-		     "IO.hGetPosn",
-		     "unsupported operation",
-		     NULL));
-#endif
 }
 
 primFun(primHSetPosn) {			/* Set file position               */
-#if HAVE_FSEEK
     long   pos = 0;
-#endif
     Int    h;
     HandleArg(h,2+IOArity);
     IntArg(pos,1+IOArity);
     checkOpen(h, "IO.hSetPosn");
-#if HAVE_FSEEK
     setRWState(h, RW_NEUTRAL);
     fflush(handles[h].hfp);
     if (fseek(handles[h].hfp,pos,SEEK_SET) == 0) {
 	IOReturn(nameUnit);
     }
-#else
-    IOFail(mkIOError(NULL,
-		     nameIllegal,
-		     "IO.hSetPosn",
-		     "unsupported operation",
-		     NULL));
-    }
-#endif
 }
 
 primFun(primHSeek) {	/* Seek to new file posn */
@@ -1214,11 +1084,9 @@ primFun(primHSetBuffering) {	/* Change a Handle's buffering */
     rc = setvbuf(handles[h].hfp, NULL, ty, sz);
     if (rc != 0)
 	throwErrno("IO.hSetBuffering", TRUE, h, NULL);
-#if HAVE_ISATTY
     if ((handles[h].hmode&(HWRITE|HAPPEND|HREADWRITE)) &&
 	isatty(fileno(handles[h].hfp)))
 	setBuffTerminal(fileno(handles[h].hfp), ty!=0);
-#endif
     IOReturn(nameUnit);
 }
 
@@ -1230,7 +1098,6 @@ primFun(primHGetBuffering) {	/* Return buffering info of a handle. */
     checkOpen(h, "IO.hGetBuffering");
     if (handles[h].hbufMode == HUNKNOWN_BUFFERING) {
 	/* figure out buffer mode and size. */
-#if HAVE_ISATTY
 	if (isatty (fileno(handles[h].hfp)) ) {
 	    /* TTY connected handles are normally linebuffered. */
 	    handles[h].hbufMode =
@@ -1239,13 +1106,10 @@ primFun(primHGetBuffering) {	/* Return buffering info of a handle. */
 		    HANDLE_LINEBUFFERED : HANDLE_NOTBUFFERED;
 	    handles[h].hbufSize = 0;
 	} else {
-#endif
 	    /* ..if not, block buffered. */
 	    handles[h].hbufMode = HANDLE_BLOCKBUFFERED;
 	    handles[h].hbufSize = BUFSIZ;
-#if HAVE_ISATTY
 	}
-#endif
     }
     IOReturn(ap(ap(mkTuple(2),mkInt((Int)handles[h].hbufMode)),
 		mkInt((Int)handles[h].hbufSize)));
@@ -1283,38 +1147,25 @@ primFun(primHIsWritable) {		/* Test is handle writable         */
 primFun(primHIsSeekable) {		/* Test if handle is writable   */
     Int h;
     Bool okHandle;
-#if HAVE_FSTAT
     struct stat sb;
-#endif
 
     HandleArg(h,1+IOArity);
 
     okHandle = (handles[h].hmode&(HREAD|HWRITE|HREADWRITE|HAPPEND));
-#if HAVE_FSTAT
     if (okHandle && (fstat(fileno(handles[h].hfp), &sb) == 0)) {
 	okHandle = S_ISREG(sb.st_mode);
     }
     IOBoolResult(okHandle);
-#else
-    IOFail(mkIOError(&handles[h].hcell,
-		     nameIllegal,
-		     "IO.hIsSeekable",
-		     "unsupported operation",
-		     NULL));
-#endif
 }
 
 primFun(primHFileSize) {  /* If handle points to a regular file,
 			     return the size of the file   */
                           /* :: Handle -> IO Integer       */
     Int h;
-#if HAVE_FSTAT
     struct stat sb;
-#endif
 
     HandleArg(h,1+IOArity);
 
-#if HAVE_FSTAT
     checkOpen(h, "IO.hFileSize");
     if (handles[h].hmode&(HWRITE|HREADWRITE|HAPPEND))
 	fflush(handles[h].hfp);
@@ -1326,13 +1177,6 @@ primFun(primHFileSize) {  /* If handle points to a regular file,
 			 NULL));
     }
     IOReturn(bigWord(sb.st_size));
-#else
-    IOFail(mkIOError(&handles[h].hcell,
-		     nameIllegal,
-		     "IO.hFileSize",
-		     "unsupported operation",
-		     NULL));
-#endif
   }
 
 primFun(primEqHandle) {			/* Test for handle equality        */
@@ -1489,11 +1333,7 @@ primFun(primHIsTerminalDevice) { /* Does the handle refer to a terminal? */
     Int h;
     HandleArg(h, 1+IOArity);
     checkOpen(h, "System.IO.hIsTerminalDevice");
-#if HAVE_ISATTY
     IOBoolResult(isatty(fileno(handles[h].hfp)));
-#else
-    IOBoolResult(h<=HSTDERR);
-#endif
 }
 
 primFun(primHGetEcho) {
@@ -1502,11 +1342,7 @@ primFun(primHGetEcho) {
     HandleArg(h, 1+IOArity);
     checkOpen(h, "System.IO.hGetEcho");
     fd = fileno(handles[h].hfp);
-#if HAVE_ISATTY
     IOBoolResult(isatty(fd) && getEchoTerminal(fd));
-#else
-    IOBoolResult(FALSE);
-#endif
 }
 
 primFun(primHSetEcho) {
@@ -1517,20 +1353,16 @@ primFun(primHSetEcho) {
     BoolArg(echo, 1+IOArity);
     checkOpen(h, "System.IO.hSetEcho");
     fd = fileno(handles[h].hfp);
-#if HAVE_ISATTY
     if (isatty(fd))
 	setEchoTerminal(fd, echo);
-#endif
     IOReturn(nameUnit);
 }
 
-#endif /* IO_HANDLES */
 
 /* --------------------------------------------------------------------------
  * Mutable variables
  * ------------------------------------------------------------------------*/
 
-#if IO_REFS
 
 #if CHECK_TAGS
 #define checkRef() if (MUTVAR != whatIs(whnfHead)) internal("Ref expected")
@@ -1563,7 +1395,6 @@ primFun(primEqRef) {			/* Ref a -> Ref a -> Bool	   */
     checkRef();
     updateRoot(pop()==whnfHead ? nameTrue : nameFalse);
 }
-#endif
 
 /* --------------------------------------------------------------------------
  * Stable Pointers
@@ -1695,7 +1526,6 @@ primFun(primFPToP) {		/* ForeignPtr a -> Ptr a                   */
     PtrResult(derefMP(whnfHead));
 }
 
-#if STABLE_NAMES
 /* --------------------------------------------------------------------------
  * Stable Names
  * ------------------------------------------------------------------------*/
@@ -1719,9 +1549,7 @@ primFun(primEqSN) {		/* StableName a -> StableName a -> Bool	   */
     eval(primArg(1));
     updateRoot(pop()==whnfHead ? nameTrue : nameFalse);
 }
-#endif
 
-#if GC_WEAKPTRS
 /* --------------------------------------------------------------------------
  * Weak Pointers
  * ------------------------------------------------------------------------*/
@@ -1819,25 +1647,8 @@ primFun(primRunFinalizer) {		/* IO ()			   */
 primFun(primFinalizerWaiting) {		/* IO Boolean			   */
   IOBoolResult(!isNull(finalizers));
 }
-#endif /* GC_WEAKPTRS */
 
 
-#if HSCRIPT
-#if EMBEDDED
-extern void* getCurrentScript(void);
-
-primFun(primGetCurrentScript) {  /* IO Int */
-    IOReturn( mkInt( (int)getCurrentScript() ) );
-}
-
-#else
- 
-primFun(primGetCurrentScript) {  /* IO Int */
-    IOReturn( mkInt( 0 ) );
-}
-
-#endif /* EMBEDDED */
-#endif /* HSCRIPT */
 
 /* --------------------------------------------------------------------------
  * Primitives for implementing disposable memo functions
