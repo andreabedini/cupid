@@ -110,10 +110,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  *   FLUSHEVERY	    to force a fflush after every char in putStr/hPutStr.
  *   BIGNUMS	    to include support for Integer bignums.
  *   FIXED_SUBST    to force a fixed size for the current substitution.
- *   DYN_TABLES	    to allocate tables dynamically, currently just a memory
- *		    saving trick, but this may be extended at a later stage
- *		    to allow at least some of the tables to be extended
- *		    dynamically at run-time to avoid exhausted space errors.
  *   GC_STABLEPTRS  to include support for safely passing Haskell
  *                  pointers over to C
  *                  (only required if you use callbacks in the foreign
@@ -145,13 +141,12 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 #define FLUSHEVERY	 1
 #define BIGNUMS		 1 /* Experimental bignum implementation           */
 #define FIXED_SUBST	 0 /* Warning: This may not be appropriate for PCs */
-#define DYN_TABLES	 SMALL_HUGS /* For dynamically allocated tables	   */
 #define GC_STABLEPTRS    1 /* May be required by external libraries        */
 #define GC_MALLOCPTRS    1 /* May be required by external libraries        */
 #define GC_WEAKPTRS      1
 #define STABLE_NAMES     1
 #define MONAD_COMPS	 0
-#define REDIRECT_OUTPUT  (!HUGS_FOR_WINDOWS)
+#define REDIRECT_OUTPUT  1
 #define WORD_OPS         1
 #define ADDR_OPS         1
 #define PROVIDE_INT64    1
@@ -179,16 +174,14 @@ int macsystem(char *filenames);
 
 /*---------------------------------------------------------------------------
  * Macros used in declarations:
- *  local/far declarations
+ *  local declarations
  *  HUGS_noreturn/HUGS_unused (prevent spurious warnings)
  *  result type of main
  *  dynamic linking declarations
  *-------------------------------------------------------------------------*/
 
 /* local = prefix for locally defined functions */
-/* far   = prefix for far pointers              */
 #define local
-#define far
 
 #ifdef __GNUC__     /* Avoid spurious warnings                             */
 #if __GNUC__ > 2 || __GNUC__ == 2 && __GNUC_MINOR__ >= 7
@@ -535,7 +528,7 @@ typedef void*    Pointer;
 
 
 #define DECTABLE(tab)	   tab[]
-#define DYNDECTABLE(tab)   far *tab
+#define DYNDECTABLE(tab)   *tab
 #define DEFTABLE(tab,sz)   tab[sz]
 
 #define minRecovery	   1000

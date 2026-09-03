@@ -22,9 +22,6 @@
 #if DEBUG_CODE
 Bool   debugCode     = FALSE;		/* TRUE => print G-code to screen  */
 #endif
-#if DEBUG_SHOWSC
-Bool   debugSC	     = FALSE;		/* TRUE => print SC-code to screen */
-#endif
 
 Int    evalDepth;			/* depth of nested eval()'s        */
 
@@ -146,9 +143,7 @@ typedef Int Label;
 
 typedef union {
     Int   mint;
-#if !BREAK_FLOATS
     Float mfloat;
-#endif
     Cell  cell;
     Text  text;
     Addr  addr;
@@ -156,14 +151,11 @@ typedef union {
     Label lab;
 } MemCell;
 
-typedef MemCell far *Memory;
+typedef MemCell *Memory;
 static  Memory      memory;
-#if !WANT_FIXED_SIZE_TABLES
 /* (Dynamically) growable memory. */
 DynTable* dynMemory = NULL;
-#endif
 
-#if !WANT_FIXED_SIZE_TABLES
 void
 growMemory(void)
 {
@@ -172,12 +164,9 @@ growMemory(void)
     if (memory==0)
 	fatal("Cannot allocate program memory");
 }
-#endif
 
 #define intAt(m)    memory[m].mint
-#if !BREAK_FLOATS
 #define floatAt(m)  memory[m].mfloat
-#endif
 #define cellAt(m)   memory[m].cell
 #define textAt(m)   memory[m].text
 #define setAddrAt(m,a) memory[m].addr = ((a)-(m))
@@ -194,11 +183,7 @@ Int IntAt(Addr m)
 
 Float FloatAt(Addr m)
 {
-#if BREAK_FLOATS
-    return floatFromParts(cellAt(m),cellAt(m+1));
-#else
     return floatAt(m);
-#endif
 }
 
 Double DoubleAt(Addr m)
@@ -267,9 +252,7 @@ static Addr  local dissCellAddr (Addr,String);
 static Void  local build        (Cell,Int);
 static Void  local buildGuards  (List,Int);
 static Int   local buildLoc     (List,Int);
-#if BIGNUMS
 static Void  local buildBignum  (Bignum);
-#endif
 
 static Void  local make         (Cell,Int,Label,Label);
 static Void  local makeCond     (Cell,Cell,Cell,Int,Label,Label);
@@ -377,12 +360,9 @@ static  Addr          fixups[NUM_FIXUPS]; /* fixup table maps Label -> Addr*/
 #define endLabel(d,l) if (d==RUNON) atLabel(l)
 #define fix(a)        setAddrAt(a,fixups[labAt(a)])
 
-static  Addr          lengthAddr;
-
 static Void local asSTART() {          /* initialise assembler             */
     fixups[0]   = noMatch;
     nextLab     = 1;
-    lengthAddr  = getMem(1);
     startInstr  = getMem(0);
     lastInstr   = startInstr-1;
     newBasicBlock = TRUE;
@@ -405,7 +385,6 @@ static Label local newLabel(Label d)         /* allocate new label              
 static Void local asEND() {            /* Fix addresses in assembled code  */
     Addr pc = startInstr;
 
-    intAt(lengthAddr) = lastInstr - startInstr + 1;
     while (pc<=lastInstr)
 	switch (instrAt(pc)) {
 	    case iEVAL   :             /* opcodes taking no arguments      */
@@ -762,12 +741,10 @@ static Void local build(Cell e, Int co)           /* Generate code which will bu
 	case NAME      : asCELL(e);
 			 break;
 
-#if BIGNUMS
 	case ZERONUM   :
 	case POSNUM    :
 	case NEGNUM    : buildBignum(e);
 			 break;
-#endif
 
 	case INTCELL   : asINTEGER(intOf(e));
 			 break;
@@ -820,7 +797,6 @@ static Int local buildLoc(List vs, Int co)        /* Generate code to build loca
     return n;
 }
 
-#if BIGNUMS
 static Void local buildBignum(Bignum b)        /* Generate code to build bignum   */
 {
     if (b==ZERONUM) {
@@ -838,7 +814,6 @@ static Void local buildBignum(Bignum b)        /* Generate code to build bignum 
 	asMKAP(1);
     }
 }
-#endif
 
 
 /* --------------------------------------------------------------------------
@@ -931,13 +906,11 @@ static Void local make(Cell e, Int co, Label f, Label d)       /* Construct code
 			 asGOTO(d);
 			 break;
 
-#if BIGNUMS
 	case ZERONUM   :
 	case POSNUM    :
 	case NEGNUM    : buildBignum(e);
 			 asGOTO(d);
 			 break;
-#endif
 
 	case INTCELL   : asINTEGER(intOf(e));
 			 asGOTO(d);
@@ -994,15 +967,11 @@ static Void local makeNumcase(Triple nc, Int co, Label f, Label d)/* Build code 
 			  make(arg(fun(discr)),co,SHOULDNTFAIL,RUNON);
 			  asCELL(namePmInt);
 		      }
-#if BIGNUMS
 		      else if (h==nameFromInteger) {
 			  buildBignum(arg(discr));
 			  make(arg(fun(discr)),co,SHOULDNTFAIL,RUNON);
 			  asCELL(namePmInteger);
 		      }
-#else
-		      /* ToDo: should this be the same as fromInt? */
-#endif
 		      else if (h==nameFromDouble) {
 			  asDOUBLE(doubleOf(arg(discr)));
 			  make(arg(fun(discr)),co,SHOULDNTFAIL,RUNON);
@@ -1260,11 +1229,6 @@ unw:switch (whatIs(n)) {                /* unwind spine of application     */
 				 } while (--ar>0);
 
 				 saveProducer(n);
-#ifdef DOTNET
-				 if (name(n).foreignInfo != NIL) 
-				    primInvoker(root,n);
-				 else
-#endif
 				 if (name(n).primDef)       /* reduce      */
 				     (*name(n).primDef)(root);
 				 else
@@ -1280,11 +1244,6 @@ unw:switch (whatIs(n)) {                /* unwind spine of application     */
 				     StackPtr root = sp;
 				     push(n);               /* save CAF    */
 				     saveProducer(n);
-#ifdef DOTNET
-				     if (name(n).foreignInfo != NIL) 
-				       primInvoker(root,n);
-				     else
-#endif
 				     if (name(n).primDef)
 					 (*name(n).primDef)(sp);
 				     else
@@ -1566,7 +1525,6 @@ Cell evalWithNoError(Cell e)                /* Evaluate expression, returning   
 				     /* evalDepth, and restores sp/rootsp,   */
 				     /* along its normal return path.        */
 
-#if JMPBUF_ARRAY
     jmp_buf catcherr[1];
     evalError = catcherr;
     if (setjmp(catcherr[0])==0) {
@@ -1575,16 +1533,6 @@ Cell evalWithNoError(Cell e)                /* Evaluate expression, returning   
     }
     else
 	caughtEx = exception;
-#else
-    jmp_buf catcherr;
-    evalError = &catcherr;
-    if (setjmp(catcherr)==0) {
-	eval(e);
-	caughtEx = NIL;
-    }
-    else
-	caughtEx = exception;
-#endif
     evalError = oldCatch;
     if (nonNull(caughtEx)) {
 	evalDepth = savedDepth;
@@ -1622,13 +1570,9 @@ Void machine(Int what)
 {
     switch (what) {
 	case INSTALL : 
-#if WANT_FIXED_SIZE_TABLES
-	               memory  = (Memory)farCalloc(NUM_ADDRS,sizeof(MemCell));
-#else
 		       /* prelude.h defines NUM_ADDRS; 0 is the upper bound (=> unbounded.) */
 		       dynMemory = allocDynTable(sizeof(Memory), NUM_ADDRS, 0, "memory");
 		       memory    = (Memory)(dynMemory->data);
-#endif
 		       if (memory==0)
 			   fatal("Cannot allocate program memory");
 		       instrNone(iFAIL);
@@ -1646,11 +1590,7 @@ Void machine(Int what)
 
 
         case EXIT    : 
-#if WANT_FIXED_SIZE_TABLES
-	               free(memory);
-#else
 		       if (dynMemory) freeDynTable(dynMemory);
-#endif
 	               break;
     }
 }
