@@ -34,7 +34,7 @@ extern  unsigned char   charTable[];
 #define	MAXCHARVAL	(NUM_LAT1_CHARS-1)
 #endif
 
-#define isIn(c,x)       (charTable[(unsigned char)(c)]&(x))
+#define isIn(c,x)       ((unsigned)(c)<NUM_LAT1_CHARS ? (charTable[(unsigned char)(c)]&(x)) : 0)
 #define isLatin1(c)     (0<=(c) && (c)<NUM_LAT1_CHARS)
 
 /* character classes for lexical analysis */
@@ -71,6 +71,15 @@ extern	Bool	isPrint 	(Char);
 #define	isPrint(c)	isPrintLat1(c)
 
 #endif
+
+/* Lexical classification of a decoded Char that may lie outside the
+ * Latin-1 range: use the (table-driven) Lat1 classes when the value fits
+ * charTable, otherwise fall back to the Unicode-aware predicates above so
+ * that letters from other scripts are recognised as identifier
+ * characters. */
+#define	isConStart(c)	(isLatin1(c) ? isIn((c),LARGE)   : isUpper(c))
+#define	isIdStart(c)	(isLatin1(c) ? isIn((c),(SMALL|LARGE)) : isAlpha(c))
+#define	isIdCont(c)	(isLatin1(c) ? isIn((c),IDAFTER) : isAlphaNum(c))
 
 extern	Void	initCharTab	(void);
 extern	Char	toUpper		(Char);

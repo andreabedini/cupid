@@ -216,7 +216,7 @@ static  Int lastLine;                  /* records type of last line read:  */
 
 Bool startsQual(Char c)
 {
-    return isIn(c,LARGE);
+    return isConStart(c);
 }
 
 #define LINEBUFFER_SIZE 1000
@@ -655,13 +655,14 @@ static Text local readOperator() {     /* read operator symbol             */
 }
 
 static Text local readIdent() {        /* read identifier                  */
+    Char first = c0;                   /* remember the decoded first char  */
     startToken();
     do {
 	saveTokenChar(c0);
 	skip();
-    } while (isLatin1(c0) && isIn(c0,IDAFTER));
+    } while (isIdCont(c0));
     endToken();
-    identType = isIn(tokenStr[0],LARGE) ? CONID : VARID;
+    identType = isConStart(first) ? CONID : VARID;
     return findText(tokenStr);
 }
 
@@ -1563,9 +1564,9 @@ static Int local yylex() {             /* Read next input token ...        */
 		    return STRINGLIT;
     }
 
-    if (isIn(c0,LARGE)) {               /* Look for qualified name         */
+    if (isConStart(c0)) {               /* Look for qualified name         */
 	Text it = readIdent();          /* No keyword begins with LARGE ...*/
-	if (c0=='.' && isIn(c1,(SMALL|LARGE|SYMBOL))) {
+	if (c0=='.' && (isIdStart(c1) || isIn(c1,SYMBOL))) {
 	    Text it2 = NIL;
 loop:	    skip();                     /* Skip qualifying dot             */
 	    if (isIn(c0,SYMBOL)) { /* Qualified operator */
@@ -1596,7 +1597,7 @@ loop:	    skip();                     /* Skip qualifying dot             */
 	    return identType;
 	}
     }
-    if (isIn(c0,(SMALL|LARGE))) {
+    if (isIdStart(c0)) {
 	Text it = readIdent();
 
 	if (it==textCase)              return CASEXP;
@@ -1675,11 +1676,11 @@ Bool isModuleId(String s)
     Char c;
     do {
 	c = ExtractChar(s);
-	if (!isIn(c,LARGE))
+	if (!isConStart(c))
 	    return FALSE;
 	do {
 	    c = ExtractChar(s);
-	} while (isIn(c,IDAFTER));
+	} while (isIdCont(c));
     } while (c == '.');
     return (c == '\0');
 }
