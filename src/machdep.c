@@ -26,35 +26,17 @@
 
 /*#define DEBUG_SEARCH*/
 
-#if HAVE_SIGNAL_H
-# include <signal.h>
-#endif
-#if HAVE_SYS_TYPES_H
-# include <sys/types.h>
-#else
-# if HAVE_TYPES_H
-#  include <types.h>
-# endif
-#endif
+#include <signal.h>
+#include <sys/types.h>
 #if HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
-#if HAVE_LIMITS_H
-# include <limits.h>
-#endif
-#if HAVE_SYS_STAT_H
-# include <sys/stat.h>
-#else
-# if HAVE_STAT_H
-#  include <stat.h>
-# endif
-#endif
+#include <limits.h>
+#include <sys/stat.h>
 #if HAVE_DIRENT_H
 #  include <dirent.h>
 #endif
-#if HAVE_LOCALE_H
-#  include <locale.h>
-#endif
+#include <locale.h>
 
 /* Hack for systems with unlimited path length (e.g. the Hurd), which
  * will not define PATH_MAX or MAXPATHLEN.  The Right Thing would be
@@ -69,62 +51,17 @@
 #endif
 #endif
 
-/* Windows/DOS include files */
-#if HAVE_DOS_H
-# include <dos.h>
-#endif
-#if HAVE_CONIO_H && ! HUGS_FOR_WINDOWS
-# include <conio.h>
-#endif
+/* Windows include files */
 #if HAVE_IO_H
 # include <io.h>
-#endif
-#if HAVE_STD_H
-# include <std.h>
 #endif
 #if HAVE_WINDOWS_H
 # include <windows.h>
 #endif
 
-#if DOS
-#include <mem.h>
-extern unsigned _stklen = 8000;         /* Allocate an 8k stack segment    */
-#endif
-
-#if RISCOS
-#include "swis.h"
-#include "os.h"
-#endif
-
-/* Macintosh include files */
-#if HAVE_CONSOLE_H
-# include <console.h>
-#endif
-#if HAVE_FILES_H
-# include <Files.h>
-#endif
-#if HAVE_FCNTL_H
-# include <fcntl.h>
-#endif
-#if HAVE_ERRNO_H
-# include <errno.h>
-#endif
-#if HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
-#if HAVE_UNIX_H
-#include <unix.h>
-#endif
-
-#if __MWERKS__ && macintosh
-#include <SIOUX.h>
-
-/*	The variable time_release should be set to a value which gives
-	good cooperative multitasking.
-*/
-int time_release = 20000;
-int allow_break_count = 0;
-#endif
+#include <fcntl.h>
+#include <errno.h>
+#include <stdlib.h>
 
 /* --------------------------------------------------------------------------
  * Prototypes for registry reading
@@ -132,9 +69,6 @@ int allow_break_count = 0;
 #if USE_REGISTRY
 
 /* where have we hidden things in the registry? */
-#if HSCRIPT
-#define HScriptRoot ("SOFTWARE\\Haskell\\HaskellScript\\")
-#endif
 
 extern String readRegString        (HKEY, String, String, String);
 
@@ -150,7 +84,6 @@ static Bool   local setValue       (HKEY, String, String, DWORD, LPBYTE, DWORD);
 
 Void getFileInfo(String f, Time*tm, Long*sz)  /* find time stamp and size of file*/
 {
-#if HAVE_SYS_STAT_H || HAVE_STAT_H || HAVE_UNIX_H
     struct stat scbuf;
     if (!stat(f,&scbuf)) {
 	*tm = scbuf.st_mtime;
@@ -159,77 +92,16 @@ Void getFileInfo(String f, Time*tm, Long*sz)  /* find time stamp and size of fil
 	*tm = 0;
 	*sz = 0;
     }
-#else                                   /* normally just use stat()        */
-    os_regset r;                        /* RISCOS PRM p.850 and p.837      */
-    r.r[0] = 17;                        /* Read catalogue, no path         */
-    r.r[1] = (int)s;
-    os_swi(OS_File, &r);
-    if(r.r[0] == 1 && (r.r[2] & 0xFFF00000) == 0xFFF00000) {
-	tm->hi = r.r[2] & 0xFF;         /* Load address (high byte)        */
-	tm->lo = r.r[3];                /* Execution address (low 4 bytes) */
-    } else {                            /* Not found, or not time-stamped  */
-	tm->hi = tm->lo = 0;
-    }
-    *sz = (Long)(r.r[0] == 1 ? r.r[4] : 0);
-#endif
 }
 
-#if HAVE_GETFINFO               /* Mac971031 */
-/* --------------------------------------------------------------------------
- * Define a MacOS version of access():
- *   If the file is not accessible, -1 is returned and errno is set to
- * the reason for the failure.
- *   If the file is accessible and the dummy is 0 (existence), 2 (write), 
- * or 4 (read), the return is 0.
- *   If the file is accessible, and the dummy is 1 (executable), then if
- * the file is a program (of type 'APPL'), the return is 0, otherwise -1.
- *   Warnings: Use with caution. UNIX access do no translate to Macs.
- * Check of write access is not implemented (same as read).
- * ------------------------------------------------------------------------*/
-
-int access(char *fileName, int dummy);
-
-int access(char *fileName, int dummy) { 
-	FInfo   fi;
-	short   rc;
-	
-	errno = getfinfo(fileName, 0, &fi);
-	if (errno != 0)  return -1;             /* Check file accessible. */
-	
-	/* Cases dummy = existence, read, write. */
-	if (dummy == 0 || dummy & 0x6)  return 0;
-	
-	/* Case dummy = executable. */
-	if (dummy == 1) { 
-		if (fi.fdType == 'APPL')  return 0;
-		errno = fi.fdType;
-		return -1;
-	}
-	
-	return 0;
-}
-#endif
 
 Bool readable(String f, Bool isReg)        /* is f readable (and also, a regular file?) */
 {
-#if DJGPP2 || HAVE_GETFINFO /* stat returns bogus mode bits on djgpp2 */
-    return (0 == access(f,4));
-#elif HAVE_SYS_STAT_H || HAVE_STAT_H
     struct stat scbuf;
     return (  !stat(f,&scbuf) 
-#if !(defined macintosh)	/* Macintosh files always have read permission */
 	   && (scbuf.st_mode & S_IREAD) /* readable     */
-#endif
 	   && ( !isReg || (scbuf.st_mode & S_IFREG)) /* regular file */
 	   );
-#elif HAVE_OS_SWI /* RISCOS specific */
-    os_regset r;                        /* RISCOS PRM p.850     -- JBS     */
-    assert(dummy == 0);
-    r.r[0] = 17; /* Read catalogue, no path */
-    r.r[1] = (int)f;
-    os_swi(OS_File, &r);
-    return r.r[0] != 1; /* Does this check it's a regular file? ADR */
-#endif
 }
 
 
@@ -239,19 +111,8 @@ Bool readable(String f, Bool isReg)        /* is f readable (and also, a regular
 
 static String local homeDir	  (void);
 
-#if __MWERKS__ && macintosh
-static String local currentDir	  (void);
-#endif
 
-#if HSCRIPT
-static String local hscriptDir    (Void);
-static void   local hscriptSuffixes (Void);
-#endif
 
-#if 0
-/* UNUSED */
-static int    local pathCmp       (String, String);
-#endif
 static String local normPath      (String);
 static Void   local searchChr     (Int);
 static Void   local searchStr     (String);
@@ -267,10 +128,6 @@ static Bool   local isPathSep     (String);
 #endif
 static Bool   local scanSubDirs   (String);
 
-#if __MWERKS__ && macintosh
-typedef char FileName[FILENAME_MAX + 1];
-FileName macHugsDir; /* Directory where Hugs was found. */
-#endif
 
 #if DOS_FILENAMES
 # define SLASH                   '\\'
@@ -322,25 +179,7 @@ Bool setHugsRoot(String s)
 
 
 String hugsdir() {		/* directory containing libraries/Prelude.hs */
-#if HSCRIPT
-    /* In HaskellScript (Win32 only), we lookup InstallDir in the registry. */
-    static char dir[FILENAME_MAX+1] = "";
-    if (dir[0] == '\0') { /* not initialised yet */
-	String s = readRegString(HKEY_LOCAL_MACHINE,hugsRegRoot,"InstallDir", 
-				 HUGSDIR);
-	if (s) { 
-	  /* Protect against overruns */
-	  strncpy(dir,s,FILENAME_MAX);
-	  dir[sizeof(dir)-1] = '\0';
-	  free(s);
-	}
-    }
-    return dir;
-#elif __MWERKS__ && macintosh
-    static FileName dir = "\0"; /* Directory containing lib: Prelude.hs */
-    strcpy(dir,macHugsDir);
-    return dir;
-#elif HAVE_GETMODULEFILENAME && !DOS && !cygwin32_HOST_OS
+#if   HAVE_GETMODULEFILENAME && !DOS && !cygwin32_HOST_OS
     /* On Windows, we can find the binary we're running and it's
      * conventional to put the libraries in the same place.
      */
@@ -382,35 +221,7 @@ static String homeDir() {
     return getenv("HOME");
 }
 
-#if __MWERKS__ && macintosh
-static String currentDir() {
-    static FileName dir = "\0";
-    getcwd(dir, FILENAME_MAX);
-    dir[strlen(dir) - 1] = '\0';
-    return dir;
-}
-#endif
 
-#if HSCRIPT    
-static String local hscriptDir() {  /* Directory containing hscript.dll	   */
-    static char dir[FILENAME_MAX+1] = "";
-    if (dir[0] == '\0') { /* not initialised yet */
-	String s = readRegString(HKEY_LOCAL_MACHINE,HScriptRoot,"InstallDir","");
-	if (s) {
-	  /* Protect against overruns */
-	  strncpy(dir,s,FILENAME_MAX);
-	  free(s);
-	}
-    }
-    return dir;
-}
-
-static void hscriptSuffixes() {
-    String ss = hugsSuffixes;
-    hugsSuffixes = substPath(":.hsx:.hash",hugsSuffixes);
-    free(ss);
-}
-#endif
 
 String local RealPath(String s)         /* Find absolute pathname of file  */
 {
@@ -438,33 +249,6 @@ String local RealPath(String s)         /* Find absolute pathname of file  */
     return path;
 }
 
-#if 0
-/* UNUSED */
-static int local pathCmp(String p1, String p2)       /* Compare paths after normalisation */
-{
-#if HAVE__FULLPATH  /* eg DOS */
-    static char path1[FILENAME_MAX+1];
-    static char path2[FILENAME_MAX+1];
-    _fullpath(path1,p1,FILENAME_MAX+1);
-    _fullpath(path2,p2,FILENAME_MAX+1);
-#elif HAVE_REALPATH /* eg Unix */
-    static char path1[MAXPATHLEN+1];
-    static char path2[MAXPATHLEN+1];
-    realpath(p1,path1);                
-    realpath(p2,path2);                
-#else
-    static char path1[FILENAME_MAX+1];
-    static char path2[FILENAME_MAX+1];
-    strcpy(path1,p1);
-    strcpy(path2,p2);
-#endif
-#if CASE_INSENSITIVE_FILENAMES
-    strlwr(path1);
-    strlwr(path2);
-#endif
-    return filenamecmp(path1,path2);
-}
-#endif
 
 static String local normPath(String s) /* Try, as much as possible, to normalize  */
 {                     /* a pathname in some appropriate manner.  */
@@ -610,66 +394,6 @@ static Bool scanSubDirs(String s)
     return FALSE;
 }
 
-#elif __MWERKS__ && macintosh  /* Macintosh subscan */
-
-#include <Files.h>
-#include "MoreFilesExtras.h"
-#include <Errors.h>
-
-#define MAXSPECS 50
-
-extern StringPtr c2pstr(char *aStr);
-extern char *p2cstr(StringPtr aStr);
-
-static Bool scanSubDirs(String s)
-{   FileName name  = "\0";
-    ConstStr255Param pname = "\p";
-    String subdir = "\0";
-    OSErr error;
-
-    FSSpec specs[MAXSPECS];
-    short found = 0;
-    short start = 1;
-    int i, save;
-    
-    save = searchPos;
-    
-    /* is it in the current directory ? */
-    if (find2(s)) return TRUE;
-
-    searchReset(save);
-    
-    /* initiate the search */
-    
-    /* the complete path to the directory is in searchBuf */
-    strncpy(name,searchBuf,FILENAME_MAX);  /* do not mess up :-) */
-    pname = c2pstr(name);
- 
-    /* get all subdirectories in path */
-    error = GetDirItems( 0, 0, pname, false, true, specs
-                       , MAXSPECS, &found, &start );
-    
-    /* search over the found directories */
-    if ((error != noErr) && (error != fnfErr))
-    { errno = 0;
-      return FALSE;
-    }
-    else
-    { if (found > 0)
-        for (i = 0; i < found; i++)
-        { subdir = p2cstr(specs[i].name);
-
-          searchStr(subdir);
-          searchChr(SLASH);
-
-          if (find2(s))
-             return TRUE;
-          searchReset(save);
-        }
-    }
-
-    return FALSE;
-}
 #else
 
 static Bool scanSubDirs(String name)
@@ -688,12 +412,6 @@ struct shellVariable {
 static struct shellVariable shell_var[] = {
     { "Hugs",		&hugsdir },
     { "Home",		&homeDir },
-#if __MWERKS__ && macintosh
-    { "Current",	&currentDir },
-#endif
-#if HSCRIPT
-    { "HScript",	&hscriptDir },
-#endif
     { 0, 0 }
 };
 
@@ -998,64 +716,6 @@ Void gcRecovered(Int recovered)		/* Notify garbage collection done  */
 
 Cell *CStackBase;                       /* Retain start of C control stack */
 
-#if RISCOS                              /* Stack traversal for RISCOS      */
-
-/* Warning: The following code is specific to the Acorn ARM under RISCOS
-   (and C4).  We must explicitly walk back through the stack frames, since
-   the stack is extended from the heap. (see PRM pp. 1757).  gcCStack must
-   not be modified, since the offset '5' assumes that only v1 is used inside
-   this function. Hence we do all the real work in gcARM.
-*/
-		  
-#define spreg 13 /* C3 has SP=R13 */
-
-#define previousFrame(fp)       ((int *)((fp)[-3]))
-#define programCounter(fp)      ((int *)((*(fp)-12) & ~0xFC000003))
-#define isSubSPSP(w)            (((w)&dontCare) == doCare)
-#define doCare                  (0xE24DD000)  /* SUB r13,r13,#0 */
-#define dontCare                (~0x00100FFF) /* S and # bits   */
-#define immediateArg(x)         ( ((x)&0xFF) << (((x)&0xF00)>>7) )
-
-static void gcARM(int *fp) {
-    int si = *programCounter(fp);       /* Save instruction indicates how */
-					/* many registers in this frame   */
-    int *regs = fp - 4;
-    if (si & (1<<0)) markWithoutMove(*regs--);
-    if (si & (1<<1)) markWithoutMove(*regs--);
-    if (si & (1<<2)) markWithoutMove(*regs--);
-    if (si & (1<<3)) markWithoutMove(*regs--);
-    if (si & (1<<4)) markWithoutMove(*regs--);
-    if (si & (1<<5)) markWithoutMove(*regs--);
-    if (si & (1<<6)) markWithoutMove(*regs--);
-    if (si & (1<<7)) markWithoutMove(*regs--);
-    if (si & (1<<8)) markWithoutMove(*regs--);
-    if (si & (1<<9)) markWithoutMove(*regs--);
-    if (previousFrame(fp)) {
-	/* The non-register stack space is for the previous frame is above
-	   this fp, and not below the previous fp, because of the way stack
-	   extension works. It seems the only way of discovering its size is
-	   finding the SUB sp, sp, #? instruction by walking through the code
-	   following the entry point.
-	*/
-	int *oldpc = programCounter(previousFrame(fp));
-	int fsize = 0, i;
-	for(i = 1; i < 6; ++i)
-	    if(isSubSPSP(oldpc[i])) fsize += immediateArg(oldpc[i]) / 4;
-	for(i=1; i<=fsize; ++i)
-	    markWithoutMove(fp[i]);
-    }
-}
-
-void gcCStack() {
-    int dummy;
-    int *fp = 5 + &dummy;
-    while (fp) {
-	gcARM(fp);
-	fp = previousFrame(fp);
-    }
-}
-
-#else                   /* Garbage collection for standard stack machines  */
 
 Void gcCStack() {                       /* Garbage collect elements off    */
     Cell stackTop = NIL;                /* C stack                         */
@@ -1092,7 +752,6 @@ Void gcCStack() {                       /* Garbage collect elements off    */
 #undef  StackGrowsUp
 #undef  GuessDirection
 }
-#endif
 
 /* --------------------------------------------------------------------------
  * Terminal dependent stuff:
@@ -1129,42 +788,6 @@ Void gcCStack() {                       /* Garbage collect elements off    */
 typedef  struct termios  TermParams;
 #define  getTerminal(fd,tp) tcgetattr(fd, &tp)
 #define  setTerminal(fd,tp) tcsetattr(fd, TCSAFLUSH, &tp)
-#define  getEcho(tp)     ((tp.c_lflag | ECHO) != 0)
-#define  noEcho(tp)      tp.c_lflag    &= ~ECHO;
-#define  doEcho(tp)      tp.c_lflag    |= ECHO;
-#define  getBuff(tp)     ((tp.c_lflag | ICANON) != 0)
-#define  noBuff(tp)      tp.c_lflag    &= ~ICANON; \
-			 tp.c_cc[VMIN]  = 1; \
-			 tp.c_cc[VTIME] = 0;
-#define  doBuff(tp)      tp.c_lflag    |= ICANON; \
-			 tp.c_cc[VEOF]  = '\04'; \
-			 tp.c_cc[VEOL]  = '\0';
-
-#elif HAVE_SGTTY_H
-
-#include <sgtty.h>
-typedef  struct sgttyb   TermParams;
-#define  getTerminal(fd,tp) ioctl(fd,TIOCGETP,&tp)
-#define  setTerminal(fd,tp) ioctl(fd,TIOCSETP,&tp)
-#define  getEcho(tp)     ((tp.sg_flags | ECHO) != 0)
-#define  noEcho(tp)      tp.sg_flags &= ~ECHO;
-#define  doEcho(tp)      tp.sg_flags |= ECHO;
-#if HPUX
-#define  getBuff(tp)     ((tp.sg_flags | RAW) == 0)
-#define  noBuff(tp)      tp.sg_flags |= RAW;
-#define  doBuff(tp)      tp.sg_flags &= ~RAW;
-#else
-#define  getBuff(tp)     ((tp.sg_flags | CBREAK) == 0)
-#define  noBuff(tp)      tp.sg_flags |= CBREAK;
-#define  doBuff(tp)      tp.sg_flags &= ~CBREAK;
-#endif
-
-#elif HAVE_TERMIO_H
-
-#include <termio.h>
-typedef  struct termio   TermParams;
-#define  getTerminal(fd,tp) ioctl(fd,TCGETA,&tp)
-#define  setTerminal(fd,tp) ioctl(fd,TCSETAF,&tp)
 #define  getEcho(tp)     ((tp.c_lflag | ECHO) != 0)
 #define  noEcho(tp)      tp.c_lflag    &= ~ECHO;
 #define  doEcho(tp)      tp.c_lflag    |= ECHO;
@@ -1244,31 +867,6 @@ Int getTerminalWidth() {                /* determine width of terminal     */
 #else
     return 80;
 #endif
-}
-
-#elif __MWERKS__ && macintosh
-#include <limits.h>
-
-Int getTerminalWidth() {
-    /* Never insert extra '\n' in output, as the console softwraps. */
-    return INT_MAX;
-}
-
-Void normalTerminal() {
-}
-
-Bool getEchoTerminal(Int fd) {
-    return TRUE;
-}
-
-Void setEchoTerminal(Int fd, Bool echo) {
-}
-
-Bool getBuffTerminal(Int fd) {
-    return TRUE;
-}
-
-Void setBuffTerminal(Int fd, Bool buffered) {
 }
 
 #elif IS_WINDOWS
@@ -1355,13 +953,7 @@ Void setBuffTerminal(Int fd, Bool buffered) {
 #else /* no terminal driver - eg DOS, RISCOS */
 
 Int getTerminalWidth() {
-#if RISCOS
-    int dummy, width;
-    (void) os_swi3r(OS_ReadModeVariable, -1, 1, 0, &dummy, &dummy, &width);
-    return width+1;
-#else
     return 80;
-#endif
 }
 
 Void normalTerminal() {                 /* restore terminal initial state  */
@@ -1381,86 +973,6 @@ Bool getBuffTerminal(Int fd) {
 Void setBuffTerminal(Int fd, Bool buffered) {
 }
 
-#if 0
-Int readTerminalChar() {                /* read character from terminal    */
-    if (terminalEchoReqd) {
-	return getchar();
-    } else {
-#if IS_WINDOWS && !HUGS_FOR_WINDOWS && !__BORLANDC__
-	/* When reading a character from the console/terminal, we want
-	 * to operate in 'raw' mode (to use old UNIX tty parlance) and have
- 	 * it return when a character is available and _not_ wait until
- 	 * the next time the user hits carriage return. On Windows platforms,
- 	 * this _can_ be done by reading directly from the console, using
-	 * getch().  However, this doesn't sit well with programming
-	 * environments such as Emacs which allow you to create sub-processes
-	 * running Hugs, and then communicate with the running interpreter
-	 * through its standard input and output handles. If you use getch()
-	 * in that setting, you end up trying to read the (unused) console
-	 * of the editor itself, through which not a lot of characters is
-	 * bound to come out, since the editor communicates input to Hugs
-	 * via the standard input handle.
- 	 *
- 	 * To avoid this rather unfortunate situation, we use the Win32
-	 * console API and re-jig the input properties of the standard
-	 * input handle before trying to read a character using stdio's
-	 * getchar().
- 	 * 
- 	 * The 'cost' of this solution is that it is Win32 specific and
-	 * won't work with Windows 3.1 + it is kind of ugly and verbose
-	 * to have to futz around with the console properties on a
-	 * per-char basis. Both of these disadvantages aren't in my
-	 * opinion fatal.
- 	 *
- 	 * -- sof 5/99
- 	 */
-        Int c;
- 	DWORD mo;
- 	HANDLE hIn;
-	static int isEmacs = -1;
- 
- 	/* Cannot claim to fully understand, but if the FILE*s underlying
-	   file descriptor is in text mode, we seem to lose the first
-	   carriage return.
- 	 */
- 	setmode(fileno(stdin), _O_BINARY);
- 	hIn = GetStdHandle(STD_INPUT_HANDLE);
- 	GetConsoleMode(hIn, &mo);
- 	SetConsoleMode(hIn, mo & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT));
-	/* 
-	 * When using the read-eval-print loop inside of a Win32 console, a
-	 * lone '\n' is returned by getc() after switching to binary mode.
-	 * Since Enter maps to a raw '\r', and we map this (below) to '\n',
-	 * we can just ignore all *raw* '\n's.
-	 *
-	 * However, Emacs subshells (via comint) doesn't emit '\r's, just \n's,
-	 * which is incompatible with the above. The hack/workaround, is to
-	 * dynamically check whether we're exec'ing within Emacs and fall
-	 * back to the simple, non-\n stripping input mode if we are. sigh.
-	 * 
-	 */
-	if (isEmacs < 0) {
-	  isEmacs = (getenv("EMACS") != NULL);
-	}
-
-	if (isEmacs) {
-	  c = getc(stdin);
-	} else {
-	  do {
-	    c = getc(stdin);
-	  } while (c == '\n');
-	}
-
- 	/* Same as it ever was - revert back state of stdin. */
- 	SetConsoleMode(hIn, mo);
-	setmode(fileno(stdin), _O_TEXT);
-#else
-	Int c = getch();
-#endif
-	return c=='\r' ? '\n' : c;      /* slight paranoia about CR-LF    */
-    }
-}
-#endif
 
 #endif /* no terminal driver */
 
@@ -1645,16 +1157,12 @@ shellEsc(String cmd, Bool sync, Bool useShell) /* run a shell command (or shell)
 #ifndef HAVE_WINDOWS_H
 
   /* currently ignore the 'useShell' and 'sync' flags */
-# if HAVE_MACSYSTEM
-    return macsystem(cmd);
-# else
 #  if HAVE_BIN_SH
     if (cmd[0]=='\0') {
 	cmd = fromEnv("SHELL","/bin/sh");
     }
 # endif
     return system(cmd);
-# endif
 #else
   STARTUPINFO si;
   PROCESS_INFORMATION pi;
@@ -1696,77 +1204,19 @@ shellEsc(String cmd, Bool sync, Bool useShell) /* run a shell command (or shell)
       CloseHandle(pi.hProcess);
       return 0;
     } else {
-# if !HUGS_FOR_WINDOWS
       dwResult = WaitForSingleObject(pi.hProcess, INFINITE);
       return (dwResult == WAIT_OBJECT_0 ? 0 : 1);
-# else
-      MSG msg;
-
-      while (1) {
-	dwResult = MsgWaitForMultipleObjects(1, 
-					     &pi.hProcess,
-					     FALSE, /* fWaitAll */
-					     INFINITE,
-					     QS_PAINT);
-	if (dwResult == WAIT_OBJECT_0) {
-	  return 0;
-	} else if (dwResult == (WAIT_OBJECT_0 + 1)) {
-	  /* Dispatch waiting messages. */
-	  while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-	    TranslateMessage(&msg);
-	    DispatchMessage(&msg);
-	  }
-	} else {
-	  return 1;
-	}
-      }
-# endif
     }
   }
 #endif
 }
 
-#if RISCOS                              /* RISCOS also needs a chdir()     */
-int chdir(char *s) {                    /* RISCOS PRM p. 885    -- JBS     */
-    return os_swi2(OS_FSControl + XOS_Bit, 0, (int)s) != NULL;
-}
-#endif
 
 
 /* --------------------------------------------------------------------------
  * Floating point support:
  * ------------------------------------------------------------------------*/
 
-#if FLOATS_SUPPORTED
-#if BREAK_FLOATS
-static union {
-    Float  flVal;
-    struct {
-	Cell flPart1,flPart2;
-    }      clVal;
-} fudgeCoerce;
-
-Cell bfTemp = NIL;
-
-Cell mkFloat(FloatPro fl)
-{
-    Cell p1,p2;
-    fudgeCoerce.flVal = fl;
-    bfTemp = mkInt(fudgeCoerce.clVal.flPart1);
-    p2     = mkInt(fudgeCoerce.clVal.flPart2);
-    p1     = bfTemp;
-    bfTemp = NIL;
-    return pair(FLOATCELL,pair(p1,p2));
-}
-
-FloatPro floatOf(Cell c)
-{
-    fudgeCoerce.clVal.flPart1 = intOf(fst(snd(c)));
-    fudgeCoerce.clVal.flPart2 = intOf(snd(snd(c)));
-    return fudgeCoerce.flVal;
-}
-
-#else /* !BREAK_FLOATS */
 static union {
     Float flVal;
     Cell  clVal;
@@ -1783,7 +1233,6 @@ FloatPro floatOf(Cell c)
     fudgeCoerce.clVal = snd(c);
     return fudgeCoerce.flVal;
 }
-#endif /* !BREAK_FLOATS */
 
 String floatToString(FloatPro fl)                     /* Make sure that floating    */
 {                               /* point values print out in  */
@@ -1877,67 +1326,11 @@ DoublePro stringToDouble(String s)
 {
     return atof(s);
 }
-#else /* !FLOATS_SUPPORTED */
-Cell mkFloat(FloatPro fl)
-{
-    internal("mkFloat");
-    return 0;/*NOTREACHED*/
-}
-
-FloatPro floatOf(Cell c)
-{
-    internal("floatOf");
-    return 0;/*NOTREACHED*/
-}
-
-String floatToString(FloatPro fl)
-{
-    internal("floatToString");
-    return "";/*NOTREACHED*/
-}
-
-Cell part1Double(DoublePro dbl)
-{
-    internal("part1Double");
-    return 0;/*NOTREACHED*/
-}
-
-Cell part2Double(DoublePro dbl)
-{
-    internal("part2Double");
-    return 0;/*NOTREACHED*/
-}
-
-DoublePro doubleFromParts(Cell c1, Cell c2)
-{
-    internal("doubleFromParts");
-    return 0;/*NOTREACHED*/
-}
-
-Cell mkDouble(DoublePro fl)
-{
-    internal("mkDouble");
-    return 0;/*NOTREACHED*/
-}
-
-DoublePro doubleOf(Cell c)
-{
-    internal("doubleOf");
-    return 0;/*NOTREACHED*/
-}
-
-String doubleToString(DoublePro fl)
-{
-    internal("doubleToString");
-    return "";/*NOTREACHED*/
-}
-#endif /* !FLOATS_SUPPORTED */
 
 /*---------------------------------------------------------------------------
  * Int64-related operations:
  *-------------------------------------------------------------------------*/
 
-#if PROVIDE_INT64
 Int part1Int64(HsInt64 i)
 {
     return (Int)(i >> 32);
@@ -1952,38 +1345,12 @@ HsInt64 int64FromParts(Int c1, Int c2)
 {
     return ((HsInt64)c1 << 32) | (HsInt64)((HsWord32)c2);
 }
-#endif /* PROVIDE_INT64 */
 
 /*---------------------------------------------------------------------------
  * Printf-related operations:
  *-------------------------------------------------------------------------*/
 
-#if !HAVE_VSNPRINTF
-int vsnprintf(char* buffer, size_t count, const char* fmt, va_list ap);
-int vsnprintf(char* buffer, size_t count, const char* fmt, va_list ap) {
-#if HAVE__VSNPRINTF
-    return _vsnprintf(buffer, count, fmt, ap);
-#else
-    return 0;
-#endif
-}
-#endif /* HAVE_VSNPRINTF */
 
-#if !HAVE_SNPRINTF && !HAVE__SNPRINTF
-int snprintf(char* buffer, size_t count, const char* fmt, ...);
-int snprintf(char* buffer, size_t count, const char* fmt, ...) {
-#if HAVE_VSNPRINTF || HAVE__VSNPRINTF
-    int r;
-    va_list ap;                    /* pointer into argument list           */
-    va_start(ap, fmt);             /* make ap point to first arg after fmt */
-    r = vsnprintf(buffer, count, fmt, ap);
-    va_end(ap);                    /* clean up                             */
-    return r;
-#else
-    return 0;
-#endif
-}
-#endif /* HAVE_SNPRINTF */
 
 /* --------------------------------------------------------------------------
  * Dynamic loading:
@@ -2043,37 +1410,7 @@ void freeDLL(void* dll) /* free up DLL */
   return;
 }
 
-#elif HAVE_DL_H /* eg HPUX */
-
-#include <dl.h>
-
-static void* local getDLL(String dll)  /* load dll */
-{
-    shl_t instance = shl_load(dll,BIND_IMMEDIATE,0L);
-
-    if (NULL == instance) {
-	ERRMSG(0) "Error while importing DLL \"%s\"", dll
-	EEND;
-    }
-    /* Assuming that shl_t can be converted into a void* with
-       loss of information here... is this OK? */
-    return instance;
-}
-static void* local getDLLSymbol(void* dll, String symbol)  /* lookup dll symbol */
-{
-    void* r;
-    return (0 == shl_findsym(&(shl_t)dll,symbol,TYPE_PROCEDURE,&r)) ? r : 0;
-}
-
-Void freeDLL(void* dll)
-{
-  if (dll) {
-    shl_unload((shl_t)dll);
-  }
-  return;
-}
-
-#elif HAVE_WINDOWS_H && !defined(__MSDOS__)
+#elif HAVE_WINDOWS_H
 
 static void* local getDLL(String dll)  /* load dll */
 {
@@ -2104,119 +1441,15 @@ Void freeDLL(void* dll)
 }
 
 
-#elif HAVE_MACH_O_DYLD_H         /* MacOS X */
-
-/*****************************************************************************/
-
-#include <stdio.h>
-#include <mach-o/dyld.h>
-
-/* static char* dl_last_error = ( char* ) 0; */
-
-static int dlerror_index = 1;
-
-static char* dlerror(  ) {
-  static char* OFIErrorStrings[] = {
-    "Object Image Load Failure\n",
-    "Object Image Load Success\n",
-    "Not an recognisable object file\n",
-    "No valid architecture\n",
-    "Object image has an invalid format\n",
-    "Invalid access (permissions?)\n",
-    "Unknown error code from NSCreateObjectFileImageFromFile\n",
-  };
-
-#define NUM_OFI_ERRORS ( sizeof( OFIErrorStrings ) /\
-                         sizeof( OFIErrorStrings[ 0 ] ) )
-
-  if( dlerror_index > NUM_OFI_ERRORS - 1 )
-    dlerror_index = NUM_OFI_ERRORS - 1;
-
-  return OFIErrorStrings[ dlerror_index ];
-}
-
-int dlclose( void* handle ) {
-  NSUnLinkModule( handle, FALSE );
-  return 0;
-}
-
-static void* dlopen( char* path, int mode /* mode is ignored */ ) {
-  int dyld_result;
-  NSObjectFileImage ofile;
-  NSModule handle = NULL;
-
-  dyld_result = NSCreateObjectFileImageFromFile( path, &ofile );
-  if( dyld_result != NSObjectFileImageSuccess )
-    dlerror_index = dyld_result;
-  else {
-    handle = NSLinkModule( ofile, path, NSLINKMODULE_OPTION_PRIVATE );
-  }
-
-  return handle;
-}
-
-void* dlsym( void* handle, char* symbol ) {
-  void* addr;
-
-  NSSymbol s = NSLookupSymbolInModule( (NSModule)handle, symbol );
-  if( s ) {
-    addr = NSAddressOfSymbol(s);
-  } else {
-    addr = NULL;
-  }
-  return addr;
-}
-
-/*****************************************************************************/
-
-static void* local getDLL(String dll)  /* load dll */
-{
-  void *instance = dlopen(dll,1);
-  if (NULL == instance) {
-    ERRMSG(0) "Error while importing DLL \"%s\":\n%s\n", dll, dlerror()
-      EEND;
-  }
-  return instance;
-}
-
-static void* local getDLLSymbol(void* instance, String symbol)  /* lookup dll symbol */
-{
-  void *sym;
-  
-  if (sym = dlsym(instance,symbol))
-    return sym;
-  
-  ERRMSG(0) "Error loading sym: %s\n", symbol
-    EEND;
-}
-
-Void freeDLL(void* dll)
-{
-  if (dll) {
-    dlclose(dll);
-  }
-  return;
-}
-
 #else /* Dynamic loading not available */
 
 static void* local getDLL(String dll)  /* load dll */
 {
-#if 1 /* very little to choose between these options */
     return 0;
-#else
-    ERRMSG(0) "This Hugs build does not support plugins\n"
-    EEND;
-#endif
 }
 static void* local getDLLSymbol(void* dll, String symbol)  /* load dll and lookup symbol */
 {
-#if 1 /* very little to choose between these options */
     return 0;
-#else
-    ERRMSG(0) "This Hugs build does not support plugins\n"
-    EEND;
-#endif
 }
 
 Void freeDLL(void* dll)
@@ -2480,9 +1713,6 @@ Void compileAndLink(String fn, String flags)
         insert(flags);
     }
 
-#if 0
-    printf("Executing '%s'\n",buffer);
-#endif
     if (shellEsc(buffer,TRUE,TRUE) != 0) {
         ERRMSG(0) "Error while running compilation command '%s'", buffer
         EEND;
@@ -2591,31 +1821,6 @@ Bool writeRegString(String var, String val)      /* write String to registry */
 		    REG_SZ, (LPBYTE)realVal, lstrlen(realVal)+1);
 }
 
-#if HUGS_FOR_WINDOWS
-Bool writeRegInt(String var, Int val)         /* write String to registry */
-{
-    return setValue(HKEY_CURRENT_USER, hugsRegRoot, var, 
-		    REG_DWORD, (LPBYTE)&val, sizeof(val));
-}
-
-Int readRegInt(String var, Int def)          /* read Int from registry */
-{
-    DWORD buf;
-    DWORD type;
-
-    if (queryValue(HKEY_CURRENT_USER, hugsRegRoot, var, &type, 
-		   (LPBYTE)&buf, sizeof(buf))
-	&& type == REG_DWORD) {
-	return (Int)buf;
-    } else if (queryValue(HKEY_LOCAL_MACHINE, hugsRegRoot, var, &type, 
-			  (LPBYTE)&buf, sizeof(buf))
-	       && type == REG_DWORD) {
-	return (Int)buf;
-    } else {
-	return def;
-    }
-}
-#endif
 
 /* concatenate together all strings from registry of the form regPath\\*\\var,
  * separated by PATHSEP.
@@ -2685,20 +1890,7 @@ Bool local
 initSystem()
 {
   /* Called right away by main()  */
-#if __MWERKS__ && macintosh
-    strcpy(macHugsDir,currentDir());
-    SIOUXSettings.autocloseonquit   = true;
-    SIOUXSettings.asktosaveonclose  = false;
-    SIOUXSettings.columns           = 80;
-    SIOUXSettings.rows              = 40; 
-    SIOUXSettings.tabspaces         = 8;
-    SIOUXSettings.enabledraganddrop = true;
-    SIOUXSetTitle("\pHugs 98");
-    
-#endif
-#if HAVE_LOCALE_H
     setlocale(LC_CTYPE, "");
-#endif
     return TRUE;
 }
 
@@ -2710,30 +1902,14 @@ Void machdep(Int what)                      /* Handle machine specific         *
 {                             /* initialisation etc..            */
     switch (what) {
 	case MARK    :
-#if FLOATS_SUPPORTED
-#if BREAK_FLOATS
-		       mark(bfTemp);
-#endif
 		       mark(bdTemp);
-#endif
 		       break;
 	case INSTALL : installHandlers();
 		       break;
 	case RESET   :
-#if FLOATS_SUPPORTED
-#if BREAK_FLOATS
-		       bfTemp = NIL;
-#endif
 		       bdTemp = NIL;
-#endif
 	case BREAK   :
 	case EXIT    : normalTerminal();
-#if HUGS_FOR_WINDOWS
-		       if (what==EXIT)
-			   WinHugsExit();
-		       else
-			   SetCursor(LoadCursor(NULL,IDC_ARROW));
-#endif
 		       break;
     }
 }
