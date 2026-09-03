@@ -1,4 +1,5 @@
 Main> Main> EDIT % edit-template.hs
 Main> Main> EDITOR
 Main> Main> EDITOR % edit-template.hs
+Main> Main> EDITOR evil$(echo INJECTED)`echo INJECTED`"quoted.hs
 Main> [Leaving Hugs]

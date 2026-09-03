@@ -4,3 +4,5 @@
 :edit bin/fake-editor
 :set -E"fake-editor %"
 :edit edit-template.hs
+:set -E"fake-editor %s"
+:edit "evil$(echo INJECTED)`echo INJECTED`\"quoted.hs"

@@ -26,9 +26,7 @@ Bool startEdit(Int line, String nm)    /* Start editor on file name at    */
      * is often desirable.
      */
     if (!hugsEdit 
-#if !(defined(macintosh))
         || *hugsEdit == '\0'
-#endif
 	             ) {
 	ERRMSG(0) "Hugs is not configured to use an editor"
 	EEND;
@@ -50,13 +48,13 @@ Bool startEdit(Int line, String nm)    /* Start editor on file name at    */
     while (*he) {
       if (*he++ == '%') {
 	if (*he == 's') {
-	  /* assume quotes are always put around the filename. */
-	  roomReqd += nmLen + 2;
+	  /* assume quotes (shellQuote's) are always put around the name;
+	   * this may over-allocate when they are not, but never under. */
+	  roomReqd += (unsigned int)shellQuote(NULL,nm);
 	  expandedName = TRUE;
 	  he++;
 	} else if (*he == 'f') {
-	  /* assume quotes are always put around the filename. */
-	  roomReqd += fullNmLen + 2;
+	  roomReqd += (unsigned int)shellQuote(NULL,fullNm);
 	  expandedName = TRUE;
 	  he++;
 	} else if ( *he == 'd' ) {
@@ -80,8 +78,8 @@ Bool startEdit(Int line, String nm)    /* Start editor on file name at    */
     }
     
     if (!expandedName) {
-      /* include room for quotes and an extra space */
-      roomReqd += nmLen + 3;
+      /* include room for the shell-quoted name and a leading space */
+      roomReqd += 1 + (unsigned int)shellQuote(NULL,nm);
     }
     
     editorCmd = (String)malloc(sizeof(char) * (roomReqd + 1));
@@ -121,21 +119,20 @@ Bool startEdit(Int line, String nm)    /* Start editor on file name at    */
 	  ec += lineLen;
 	  he++;
 	} else if (*he == 's' || *he == 'f') {
-	  /* Put quotes around it if the %s occurrence surrounded by wspace
-	   * only; the start/end of the template counts as whitespace too,
-	   * so he[-2] is only looked at when it is within hugsEdit. */
+	  /* Shell-quote it (see shellQuote in machdep.c) if the %s
+	   * occurrence is surrounded by wspace only; the start/end of the
+	   * template counts as whitespace too, so he[-2] is only looked at
+	   * when it is within hugsEdit. Quoting protects against the name
+	   * (module- or user-supplied) containing shell metacharacters. */
 	  Bool useQuotes = (he-hugsEdit<2 || isspace(he[-2]))
 			    && (he[1] == '\0' || isspace(he[1]));
-	  if (useQuotes) *ec++='\"';
-	  if (*he == 's') {
-	    strcpy(ec,nm);
-	    ec += nmLen;
+	  String src = (*he == 's') ? nm : fullNm;
+	  if (useQuotes) {
+	    ec += shellQuote(ec,src);
 	  } else {
-	    strcpy(ec,fullNm);
-	    ec += fullNmLen;
+	    strcpy(ec,src);
+	    ec += (*he == 's') ? nmLen : fullNmLen;
 	  }
-	  if (useQuotes) *ec++='\"';
-	  *ec='\0';
 	  expandedName = TRUE;
 	  he++;
 	} else if (*he == '%') { /* Unescape % */
@@ -156,8 +153,8 @@ Bool startEdit(Int line, String nm)    /* Start editor on file name at    */
 
     if (!expandedName) {  /* If file name was not included, add it. */
       *ec++=' ';
-      /* Protect the filename by putting quotes around it */
-      *ec++='\"'; strcpy(ec,nm); ec += nmLen; *ec++='\"';
+      /* Protect the filename with shell quoting */
+      ec += shellQuote(ec,nm);
     }
     
     /* Terminate the string and go! */
