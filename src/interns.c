@@ -21,8 +21,12 @@
 
 static Void linkInternals (Void);
 
-static Name nameLeft;			/* standard data constructors      */
-static Name nameRight;			
+/* nameLeft and nameRight (the standard Left/Right data constructors) are
+ * declared extern in connect.h and defined in type.c; interns.c is #included
+ * into builtin.c (see the INTERNAL_PRIMS block there), so redeclaring them
+ * here - as this used to, with "static" - conflicts with connect.h's extern
+ * declaration in the same translation unit and fails to compile.
+ */
 
 static Void local internalControl (Int);
 static Void local internalControl(Int what)
