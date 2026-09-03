@@ -2177,6 +2177,16 @@ Void freeDLL(void* dll)
 
 #endif /* Dynamic loading not available */
 
+static String local lastExtDot(String path)  /* strrchr(path,'.'), but only  */
+{                                        /* within the last path component:   */
+    String base = path;                 /* a '.' in a directory name (e.g.   */
+    String s;                           /* "../dir/Foo" or "./Foo") must not */
+    for (s = path; *s; s++)             /* be mistaken for a file extension  */
+	if (isSLASH(*s))
+	    base = s+1;
+    return strrchr(base,'.');
+}
+
 static void* local getModDLL(String file)		/* load DLL for module     */
 {
 #if HAVE_REALPATH && !HAVE__FULLPATH
@@ -2192,7 +2202,7 @@ static void* local getModDLL(String file)		/* load DLL for module     */
 	strcpy(dllPath, file);			/* pathname for module     */
     else /* if in this directory, prefix ./ so search won't use the path   */
 	sprintf(dllPath, ".%c%s", SLASH, file);
-    dot = strrchr(dllPath,'.');        		/* patch file extension    */
+    dot = lastExtDot(dllPath);        		/* patch file extension    */
     if (dot == NULL || dot == file) {
 	dot = dllPath + strlen(dllPath);
     }
@@ -2207,7 +2217,7 @@ String mkFFIFilename2(String file)
 #else
     static char path[FILENAME_MAX+1];
 #endif
-    String dot = strrchr(file,'.');             /* patch file extension    */
+    String dot = lastExtDot(file);              /* patch file extension    */
     if (isNull(dot))
         dot = file + strlen(file);
     strcpy(path, file);
@@ -2222,7 +2232,7 @@ String mkFFIFilename(String file)                      /* get DLL path for modul
 #else
     static char path[FILENAME_MAX+1];
 #endif
-    String dot = strrchr(file,'.');             /* patch file extension    */
+    String dot = lastExtDot(file);              /* patch file extension    */
     if (isNull(dot))
         dot = file + strlen(file);
     strcpy(path, file);
