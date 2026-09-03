@@ -13,12 +13,8 @@
 #ifndef __SUBST_H__
 #define __SUBST_H__
 
-/* #define DEBUG_TYPES    1 */
-/* #define DEBUG_KINDS    1 */
-/* #define DEBUG_DEFAULTS 1 */
 /* #define DEBUG_SELS     1 */
 /* #define DEBUG_DEPENDS  1 */
-/* #define DEBUG_DERIVING 1 */
 
 typedef struct {			/* Each type variable contains:	   */
     Type bound;				/* A type skeleton (unbound==NIL)  */
@@ -26,11 +22,7 @@ typedef struct {			/* Each type variable contains:	   */
     Kind kind;				/* kind annotation		   */
 } Tyvar;
 
-#if     FIXED_SUBST			/* storage for type variables	   */
-extern	Tyvar		tyvars[];
-#else
 extern  Tyvar		*tyvars;	/* storage for type variables	   */
-#endif
 extern	Int		typeOff;	/* offset of result type 	   */
 extern	Type		typeIs;		/* skeleton of result type	   */
 extern  Int		typeFree;	/* freedom in instantiated type	   */
@@ -89,12 +81,6 @@ extern Type  dropRank1		(Type,Int,Int);
 extern Void  liftRank2Args	(List,Int,Int);
 extern Type  liftRank2		(Type,Int,Int);
 extern Type  liftRank1		(Type,Int,Int);
-#if DEBUG_TYPES
-extern Type  debugTyvar		(Int);
-extern Type  debugType		(Type,Int);
-extern List  debugContext	(List);
-extern Cell  debugPred		(Cell,Int);
-#endif
 extern Kind  copyKindvar	(Int);
 extern Kind  copyKind		(Kind,Int);
 

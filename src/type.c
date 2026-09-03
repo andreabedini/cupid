@@ -50,9 +50,6 @@ Type typeForeign;
 Type typeStable;
 Type typeBool;
 Type typeString;
-#ifdef DOTNET
-Type typeObject;
-#endif
 
 static Type typeInteger; 
 static Type typeMaybe;
@@ -93,7 +90,6 @@ Name nameMFail;
 Name nameGt;				/* for readsPrec		   */
 
 
-#if    IO_MONAD
 Type   typeIO;			        /* For the IO monad, IO 	   */
 Type   typeProgIO;			/* For the IO monad, IO a	   */
 
@@ -101,11 +97,8 @@ Name   nameIOError, nameUserErr;	/* loosely coupled IOError cfuns   */
 Name   namePermDenied;
 Name   nameAlreadyExists, nameAlreadyInUse, nameDoesNotExist, nameIsFull;
 Name   nameIllegal;
-#endif
-#if    IO_HANDLES
 Name   nameEOFErr;
 Name   nameProtocolError;
-#endif
 Name   nameArithException;
 Name   nameArrayException;
 Name   nameErrorCall;
@@ -121,11 +114,6 @@ Name   nameOverflow;
 Name   nameDivideByZero;
 Name   nameIndexOutOfBounds;
 Name   nameUndefinedElement;
-
-
-#if DOTNET
-Name   nameNetException;
-#endif
 
 
 /* --------------------------------------------------------------------------
@@ -385,11 +373,6 @@ static Int local newVarsBind(Cell v)        /* make new assump for pattern var  
 {
     Int beta = newTyvars(1);
     addVarAssump(v,mkInt(beta));
-#if DEBUG_TYPES
-    Printf("variable, assume ");
-    printExp(stdout,v);
-    Printf(" :: _%d\n",beta);
-#endif
     return beta;
 }
 
@@ -402,11 +385,6 @@ static Void local newDefnBind(Cell v, Type type)  /* make new assump for defn va
     if (nonNull(type) && isPolyType(type))
 	ta = pair(POLYREC,pair(ta,type));
     hd(defnBounds) = cons(pair(v,ta), hd(defnBounds));
-#if DEBUG_TYPES
-    Printf("definition, assume ");
-    printExp(stdout,v);
-    Printf(" :: _%d\n",beta);
-#endif
     bindTv(beta,typeIs,typeOff);       /* Bind beta to new type skeleton   */
 }
 
@@ -574,16 +552,6 @@ static Void local typeError(Int l, Cell e, Cell in, String wh, Type t, Int o)
 
     clearMarks();		      /* types printed here are monotypes  */
 				      /* use marking to give sensible names*/
-#if DEBUG_KINDS
-{ List vs = genericVars;
-  for (; nonNull(vs); vs=tl(vs)) {
-     Int v = intOf(hd(vs));
-     Printf("%c :: ", ('a'+tyvar(v)->offs));
-     printKind(stdout,tyvar(v)->kind);
-     Putchar('\n');
-  }
-}
-#endif
 
     reportTypeError(l,e,in,wh,copyType(typeIs,typeOff),copyType(t,o));
 }
@@ -645,29 +613,7 @@ static Void local tooGeneral(Int l, Cell e, Type dt, Type it)	/* explicit type s
 #define OLD_PATTERN 2			/* pattern, involving bound vars   */
 static int tcMode = EXPRESSION;
 
-#if DEBUG_TYPES
-static Cell local mytypeExpr	(Int,Cell);
-static Cell local typeExpr(Int l, Cell e)
-{
-    static int number = 0;
-    Cell retv;
-    int  mynumber = number++;
-    STACK_CHECK
-    Printf("%d) to check: ",mynumber);
-    printExp(stdout,e);
-    Putchar('\n');
-    retv = mytypeExpr(l,e);
-    Printf("%d) result: ",mynumber);
-    printType(stdout,debugType(typeIs,typeOff));
-    Printf("\n%d) preds: ",mynumber);
-    printContext(stdout,debugContext(preds));
-    Putchar('\n');
-    return retv;
-}
-static Cell local mytypeExpr(Int l, Cell e) /* Determine type of expr/pattern  */
-#else
 static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  */
-#endif
 {
     STACK_CHECK
     static String cond	  = "conditional";
@@ -690,7 +636,6 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
 	case TUPLE	: typeTuple(e);
 			  break;
 
-#if BIGNUMS
 	case POSNUM	:
 	case ZERONUM	:
 	case NEGNUM	: {   Int alpha = newTyvars(1);
@@ -699,7 +644,6 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
 					   assumeEvid(predNum,alpha)),
 					   e);
 			  }
-#endif
 	case INTCELL	: {   Int alpha = newTyvars(1);
 			      inferType(aVar,alpha);
 			      return ap(ap(nameFromInt,
@@ -1209,10 +1153,8 @@ static Cell local typeMonadComp(Int l, Cell e)	/* type check monad comprehension
     Cell mon	      = ap(mkInt(beta),aVar);
     Cell m	      = assumeEvid(predMonad,beta);
     tyvar(beta)->kind = starToStar;
-#if !MONAD_COMPS
     bindTv(beta,typeList,0);
     m = nameListMonad;
-#endif
 
     typeComp(l,mon,snd(e),snd(snd(e)));
     bindTv(alpha,typeIs,typeOff);
@@ -1761,26 +1703,6 @@ static Void local typeClassDefn(Class c)	/* Type check implementations of   */
     for (; nonNull(mems); mems=tl(mems)) {
 	Name   n;
 	Text member           = name(hd(mems)).text;
-#if 0
-	char buf[FILENAME_MAX+1];
-	Int  j      = 0;
-	/* This is unsafe, creating a new name that's in the
-	   same namespace as the user's -- indeed, a bug was
-	   reported as a result of this.
-	   
-	   Instead, invent a new name. Simpler and safer.
-	*/
-	static String deftext = "default_";
-	String s	      = textToStr(member);
-	for (i = 0; i<FILENAME_MAX && deftext[i]!='\0'; i++) {
-	    buf[i] = deftext[i];
-	}
-	for(j = 0; (i+j)<FILENAME_MAX && s[j]!='\0'; j++) {
-	    buf[i+j] = s[j];
-	}
-	buf[i+j] = '\0';
-	n = newName(findText(buf),c);
-#endif
 	n = newName(inventText(),c);
 
 	if (isNull(hd(defs))) {		/* No default definition	   */
@@ -1977,16 +1899,6 @@ static Void local typeMember(String wh, Name mem, Cell alts, List evids, Cell he
     List qs;
     Type rt;
 
-#if DEBUG_TYPES
-    Printf("Type check member: ");
-    printExp(stdout,mem);
-    Printf(" :: ");
-    printType(stdout,name(mem).type);
-    Printf("\nfor the instance: ");
-    printPred(stdout,head);
-    Printf("\n");
-#endif
-
     instantiate(name(mem).type);	/* Find required type		   */
     o  = typeOff;
     m  = typeFree;
@@ -1997,12 +1909,6 @@ static Void local typeMember(String wh, Name mem, Cell alts, List evids, Cell he
     clearMarks();
     qs = copyPreds(ps);
     rt = generalize(qs,liftRank2(t,o,m));
-
-#if DEBUG_TYPES
-    Printf("Required type is: ");
-    printType(stdout,rt);
-    Printf("\n");
-#endif
 
     hd(defnBounds) = NIL;		/* Type check each alternative	   */
     hd(depends)    = NODEPENDS;
@@ -2034,11 +1940,6 @@ static Void local typeMember(String wh, Name mem, Cell alts, List evids, Cell he
     resetGenerics();			/* Make sure we're general enough  */
     ps = copyPreds(ps);
     t  = generalize(ps,liftRank2(t,o,m));
-#if DEBUG_TYPES
-    Printf("Inferred type is: ");
-    printType(stdout,t);
-    Printf("\n");
-#endif
     if (!sameSchemes(t,rt))
 	tooGeneral(line,mem,rt,t);
     if (nonNull(preds)) {
@@ -2190,12 +2091,6 @@ static Void local genAss(Int l, List ps, Cell v, Type dt)	/* Calculate inferred 
 
     snd(ass) = genTest(l,v,ps,dt,aVar,intOf(defType(snd(ass))));
 
-#if DEBUG_TYPES
-    printExp(stdout,v);
-    Printf(" :: ");
-    printType(stdout,snd(ass));
-    Printf("\n");
-#endif
 }
 
 static Type local genTest(Int l, Cell v, List ps, Type dt, Type t, Int o)/* Generalize and test inferred	   */
@@ -2236,13 +2131,6 @@ static Type local generalize(List qs, Type t)	/* calculate generalization of t  
 	    k = ap(ka,k);
 	}
 	t = mkPolyType(k,t);
-#if DEBUG_KINDS
-	Printf("Generalized type: ");
-	printType(stdout,t);
-	Printf(" ::: ");
-	printKind(stdout,k);
-	Printf("\n");
-#endif
     }
     return t;
 }
@@ -2392,29 +2280,8 @@ static Void local typeForeignExport(Name n)	/* Typecheck a foreign export decl *
 {
     Int line = name(n).line;
     /* todo */
-#if 0
-    /* Old comment from checkForeignExport: */
-
-    /* The following doesn't work because the type written into the
-     * dummy binding has been through the typechecker once already
-     * so it has the wrong type.
-     * What's needed here is something like what we do for bindings
-     * in instance decls: insert enough dictionaries to make the export
-     * have the stated type (or report why this can't be done).
-     */
-    /* We have to generate a dummy definition to
-     * pass to the typechecker.  This is done here rather than in
-     * foreign export because valDefns gets set at the end of parsing
-     * which would overwrite the result of the following assignment.
-     */
-    Cell v   = mkVar(name(p).text);
-    Cell rhs = pair(mkInt(line),name(p).defn);
-    Cell alt = pair(NIL,rhs);
-    valDefns = cons(pair(v,pair(name(p).type,singleton(alt))),valDefns);
-#else
     ERRMSG(line) "Foreign export not implemented yet."
     EEND;
-#endif
 }
 
 static Pair local typeSel(Name s)		/* Calculate a suitable type for a */
@@ -2561,9 +2428,7 @@ Void typeChecker(Int what)
 		       mark(starToStar);
 		       mark(predMonad);
 
-#if IO_MONAD
 		       mark(typeProgIO);
-#endif
 		       break;
 
 	case INSTALL : typeChecker(RESET);
@@ -2670,9 +2535,6 @@ Void linkPreludeTC() {			/* Hook to tycons and classes in   */
 	typeForeignP = linkTycon("ForeignPtr");
 	typeForeign  = linkTycon("ForeignObj"); /* deprecated */
 	typeStable   = linkTycon("StablePtr");
-#ifdef DOTNET
-	typeObject   = linkTycon("Object");
-#endif
 	typeBool     = linkTycon("Bool");
 	typeString   = linkTycon("String");
 	typeInteger  = linkTycon("Integer");
@@ -2703,10 +2565,8 @@ Void linkPreludeTC() {			/* Hook to tycons and classes in   */
 	classMonad      = linkClass("Monad");
 	predMonad       = ap(classMonad,aVar);
 
-#if IO_MONAD
 	typeIO          = linkTycon("IO");
 	typeProgIO      = ap(typeIO,aVar);
-#endif
 
 	/* The following primitives are referred to in derived instances and
 	 * hence require types; the following types are a little more general
@@ -2774,7 +2634,6 @@ Void linkPreludeCM() {			/* Hook to cfuns and mfuns in	   */
 	nameThen        = linkName(">>");
 	nameMFail       = linkName("fail");
 
-#if IO_MONAD
         /* The constructor names better match up with the defn
 	   of IOErrorType in Prelude. 
 	*/
@@ -2788,10 +2647,6 @@ Void linkPreludeCM() {			/* Hook to cfuns and mfuns in	   */
 	nameIllegal        = linkName("IllegalOperation");
 	namePermDenied     = linkName("PermissionDenied");
 	nameUserErr        = linkName("UserError");
-#ifdef DOTNET
-	nameNetException   = linkName("DotNetException");
-#endif
-#endif
 
 	nameArithException = linkName("ArithException");
 	nameArrayException = linkName("ArrayException");

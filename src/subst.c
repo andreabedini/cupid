@@ -24,11 +24,7 @@ static Int numTyvars;			/* no. type vars currently in use  */
 static Int maxTyvars = 0;
 static Int nextGeneric;			/* number of generics found so far */
 
-#if    FIXED_SUBST
-Tyvar  tyvars[NUM_TYVARS];		/* storage for type variables	   */
-#else
 Tyvar  *tyvars = 0;			/* storage for type variables	   */
-#endif
 Int    typeOff;				/* offset of result type 	   */
 Type   typeIs;				/* skeleton of result type	   */
 Int    typeFree;			/* freedom in instantiated type	   */
@@ -57,9 +53,7 @@ static Type local liftRank1Body		(Type,Int);
 static Bool local matchTypeAbove	(Type,Int,Type,Int,Int);
 static Bool local varToVarBind		(Tyvar *,Tyvar *);
 static Bool local varToTypeBind		(Tyvar *,Type,Int);
-#if IO_MONAD
 static Void local expandSynFully	(Type *, Int *);
-#endif
 
 static Bool local improveAgainst	(Int,List,Cell,Int);
 static Bool local instImprove		(Int,Class,Cell,Int);
@@ -109,7 +103,6 @@ static Bool local kvarToTypeBind	(Tyvar *,Type,Int);
 
 Void emptySubstitution() {		/* clear current substitution	   */
     numTyvars   = 0;
-#if !FIXED_SUBST
     /* If the table has grown larger than NUM_TYVARS, free 'tyvars'.
      * If not, keep it around as it's bound to get used again.
      */
@@ -120,7 +113,6 @@ Void emptySubstitution() {		/* clear current substitution	   */
 	    tyvars = 0;
 	}
     }
-#endif
     nextGeneric = 0;
     genericVars = NIL;
     typeIs      = NIL;
@@ -130,12 +122,6 @@ Void emptySubstitution() {		/* clear current substitution	   */
 
 static Void local expandSubst(Int n)	/* add further n type variables to */
 {				/* current substituion		   */
-#if FIXED_SUBST
-    if (numTyvars+n>NUM_TYVARS) {
-	ERRMSG(0) "Too many type variables in type checker"
-	EEND;
-    }
-#else
     if (numTyvars+n>maxTyvars) {	/* need to expand substitution	   */
 	Int   newMax = maxTyvars+NUM_TYVARS;
 	Tyvar *newTvs;
@@ -169,7 +155,6 @@ static Void local expandSubst(Int n)	/* add further n type variables to */
 	tyvars    = newTvs;
 	maxTyvars = newMax;
     }
-#endif
 }
 
 Int newTyvars(Int n)		        /* allocate new type variables	   */
@@ -181,11 +166,6 @@ Int newTyvars(Int n)		        /* allocate new type variables	   */
 	tyvars[numTyvars-n].offs  = UNUSED_GENERIC;
 	tyvars[numTyvars-n].bound = NIL;
 	tyvars[numTyvars-n].kind  = STAR;
-#if DEBUG_TYPES
-	Printf("new type variable: _%d ::: ",numTyvars-n);
-	printKind(stdout,tyvars[numTyvars-n].kind);
-	Putchar('\n');
-#endif
     }
     return beta;
 }
@@ -198,11 +178,6 @@ Int newKindedVars(Kind k)			/* allocate new variables with	   */
 	tyvars[numTyvars].offs  = UNUSED_GENERIC;
 	tyvars[numTyvars].bound = NIL;
 	tyvars[numTyvars].kind  = fst(k);
-#if DEBUG_TYPES
-	Printf("new type variable: _%d ::: ",numTyvars);
-	printKind(stdout,tyvars[numTyvars].kind);
-	Putchar('\n');
-#endif
 	numTyvars++;
     }
     return beta;
@@ -292,11 +267,7 @@ Type localizeBtyvs(Type t)			/* Localize type to eliminate refs */
 Tyvar *getTypeVar(Type t, Int o)			/* get number of type variable	   */
             /* represented by (t,o) [if any].  */
 {
-#if FAST_WHATIS1
     switch (whatIs1(t)) {
-#else
-    switch (whatIs(t)) {
-#endif
 	case INTCELL   : return tyvar(intOf(t));
 	case OFFSET    : return tyvar(o+offsetOf(t));
 	case VARIDCELL :
@@ -334,11 +305,6 @@ Void bindTv(Int vn, Type t, Int o)			/* set type variable vn to (t,o)   */
     Tyvar *tyv = tyvar(vn);
     tyv->bound = t;
     tyv->offs  = o;
-#if DEBUG_TYPES
-    Printf("binding type variable: _%d to ",vn);
-    printType(stdout,debugType(t,o));
-    Putchar('\n');
-#endif
 }
 
 Cell getDerefHead(Type t, Int o)			/* get value at head of type exp.  */
@@ -572,52 +538,6 @@ Type zonkType(Type t, Int o)	/* flatten type by chasing all references	   */
 
     return t;
 }
-
-#if DEBUG_TYPES
-Type debugTyvar(Int vn)			/* expand type structure in full   */
-{				/* detail			   */
-    Tyvar *tyv = tyvar(vn);
-
-    if (isBound(tyv))
-	return debugType(tyv->bound,tyv->offs);
-    return mkInt(vn);
-}
-
-Type debugType(Type t, Int o)
-{
-    STACK_CHECK
-    switch (whatIs(t)) {
-	case AP        : {   Type l = debugType(fst(t),o);
-			     Type r = debugType(snd(t),o);
-			     return ap(l,r);
-			 }
-	case OFFSET    : return debugTyvar(o+offsetOf(t));
-	case INTCELL   : return debugTyvar(intOf(t));
-	case VARIDCELL :
-	case VAROPCELL : return debugTyvar(findBtyvsInt(textOf(t)));
-    }
-
-    return t;
-}
-List debugContext(List ps)
-{
-    Cell p;
-    List qs = NIL;
-    for (; nonNull(ps); ps=tl(ps)) {
-        p = debugPred(fst3(hd(ps)),intOf(snd3(hd(ps))));
-	qs = cons(p,qs);
-    }
-    return rev(qs);
-}
-
-Cell debugPred(Cell pi, Int o)
-{
-    if (isAp(pi)) {
-	return pair(debugPred(fun(pi),o),debugType(arg(pi),o));
-    }
-    return pi;
-}
-#endif /*DEBUG_TYPES*/
 
 Kind copyKindvar(Int vn)			/* build kind attatched to variable*/
 {
@@ -861,9 +781,6 @@ Kind getKind(Cell c, Int o)			/* Find kind of constr during type */
 	case VAROPCELL : return tyvar(findBtyvsInt(textOf(c)))->kind;
 	case TYCON     : return tycon(c).kind;
     }
-#if DEBUG_KINDS
-    Printf("getKind c = %d, whatIs=%d\n",c,whatIs(c));
-#endif
     internal("getKind");
     return STAR;/* not reached */
 }
@@ -965,9 +882,6 @@ static Bool local varToVarBind(Tyvar*tyv1, Tyvar*tyv2)/* Make binding tyv1 := ty
 	}
 	tyv1->bound = aVar;
 	tyv1->offs  = tyvNum(tyv2);
-#if DEBUG_TYPES
-	Printf("vv binding tyvar: _%d to _%d\n",tyvNum(tyv1),tyvNum(tyv2));
-#endif
     }
     return TRUE;
 }
@@ -990,11 +904,6 @@ static Bool local varToTypeBind(Tyvar*tyv, Type t, Int o)/* Make binding tyv := 
     else {
 	tyv->bound = t;
 	tyv->offs  = o;
-#if DEBUG_TYPES
-	Printf("vt binding type variable: _%d to ",tyvNum(tyv));
-	printType(stdout,debugType(t,o));
-	Putchar('\n');
-#endif
 	return TRUE;
     }
     return FALSE;
@@ -1039,13 +948,6 @@ un: if (tyv1)
 	    Type h2 = getDerefHead(t2,o2);
 	    Int  a2 = argCount;
 
-#if DEBUG_TYPES
-	    Printf("tt unifying types: ");
-	    printType(stdout,debugType(t1,o1));
-	    Printf(" with ");
-	    printType(stdout,debugType(t2,o2));
-	    Putchar('\n');
-#endif
 	    if (isOffset(h1) || isInt(h1)) h1=NIL;  /* represent var by NIL*/
 	    if (isOffset(h2) || isInt(h2)) h2=NIL;
 
@@ -1114,7 +1016,6 @@ un: if (tyv1)
 }
 
 
-#if IO_MONAD
 static Void local expandSynFully(Type*at, Int*ao)	/* repeatedly expand synonyms	   */
               /* original expression (*at,*ao)   */
 {				/* expansion returned in (*at,*ao) */
@@ -1128,9 +1029,7 @@ static Void local expandSynFully(Type*at, Int*ao)	/* repeatedly expand synonyms	
 	expandSyn(h,a,at,ao);
     }
 }
-#endif
 
-#if IO_MONAD
 Type getProgType(List ks, Type type)		/* Extract t, if type is of the    */
             /* form IO t, otherwise return     */
 {				/* NULL cell			   */
@@ -1150,7 +1049,6 @@ Type getProgType(List ks, Type type)		/* Extract t, if type is of the    */
     emptySubstitution();
     return result ? arg(type) : 0;
 }
-#endif
 
 /* --------------------------------------------------------------------------
  * Matching predicates:
@@ -1549,9 +1447,6 @@ static Bool local kvarToVarBind(Tyvar*tyv1, Tyvar*tyv2)/* Make binding tyv1 := t
     if (tyv1!=tyv2) {
 	tyv1->bound = aVar;
 	tyv1->offs  = tyvNum(tyv2);
-#if DEBUG_KINDS
-	Printf("vv binding kvar: _%d to _%d\n",tyvNum(tyv1),tyvNum(tyv2));
-#endif
     }
     return TRUE;
 }
@@ -1563,11 +1458,6 @@ static Bool local kvarToTypeBind(Tyvar*tyv, Type t, Int o)/* Make binding tyv :=
     if (doesntOccurIn(tyv,t,o)) {
 	tyv->bound = t;
 	tyv->offs  = o;
-#if DEBUG_KINDS
-	Printf("vt binding kind variable: _%d to ",tyvNum(tyv));
-	printType(stdout,debugType(t,o));
-	Putchar('\n');
-#endif
 	return TRUE;
     }
     unifyFails = "unification would give infinite kind";
@@ -1591,13 +1481,6 @@ Bool kunify(Kind k1, Int o1, Kind k2, Int o2)		/* Unify kind expr (k1,o1) with	 
 	if (kyv2)
 	    return kvarToTypeBind(kyv2,k1,o1);	    /* k2 variable, k1 not */
 	else {
-#if DEBUG_KINDS
-	    Printf("unifying kinds: ");
-	    printType(stdout,debugType(k1,o1));
-	    Printf(" with ");
-	    printType(stdout,debugType(k2,o2));
-	    Putchar('\n');
-#endif
 	    if (k1==STAR && k2==STAR)		    /* k1, k2 not vars	   */
 		return TRUE;
 	    else if (isAp(k1) && isAp(k2))
@@ -1732,9 +1615,7 @@ Void substitution(Int what)
 		       break;
 
        case EXIT     : 
-#if !FIXED_SUBST
 	               free(tyvars);
-#endif
 	               break;
     }
 }

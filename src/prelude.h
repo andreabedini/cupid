@@ -109,7 +109,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  *   IO_REFS	    Ref type for IO_MONAD, and simple operations.
  *   FLUSHEVERY	    to force a fflush after every char in putStr/hPutStr.
  *   BIGNUMS	    to include support for Integer bignums.
- *   FIXED_SUBST    to force a fixed size for the current substitution.
  *   GC_STABLEPTRS  to include support for safely passing Haskell
  *                  pointers over to C
  *                  (only required if you use callbacks in the foreign
@@ -118,7 +117,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  *                  C objects when Haskell is done with them.
  *   GC_WEAKPTRS    to include support for weak pointers.
  *   STABLE_NAMES   stable names a la Simon PJ
- *   MONAD_COMPS    to allow monad comprehensions.
  *   REDIRECT_OUTPUT ability to redirect stdout/stderr to a buffer.
  *                  Only necessary for the Hugs server interface
  *                  (which is used in the Netscape plugin and the standalone
@@ -140,12 +138,10 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 #define IO_REFS		 1 /* Experimental IO Ref type			   */
 #define FLUSHEVERY	 1
 #define BIGNUMS		 1 /* Experimental bignum implementation           */
-#define FIXED_SUBST	 0 /* Warning: This may not be appropriate for PCs */
 #define GC_STABLEPTRS    1 /* May be required by external libraries        */
 #define GC_MALLOCPTRS    1 /* May be required by external libraries        */
 #define GC_WEAKPTRS      1
 #define STABLE_NAMES     1
-#define MONAD_COMPS	 0
 #define REDIRECT_OUTPUT  1
 #define WORD_OPS         1
 #define ADDR_OPS         1
