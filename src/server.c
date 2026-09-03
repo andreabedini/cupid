@@ -356,8 +356,7 @@ static Void LoadStringF(String mod)      /* load a module (from a string) into t
 
 static Void SetOptions(String opt)
 {
-  readOptions2(opt);
-  return;
+  protect(readOptions2(opt));
 }
 
 static String GetOptions() {
@@ -419,7 +418,7 @@ static HVal CompileExpr(String m, String e)    /* compile expression e wrt modul
 
 static Void GarbageCollect()
 {
-    garbageCollect();
+    protect(garbageCollect());
 }
 
 /* --------------------------------------------------------------------------
@@ -459,8 +458,12 @@ static Void LookupName(String m, String v) /*Push value of qualified name onto s
 static Void MkInt(Int i)              /* Push an Int onto the stack      */
 {
 #ifndef NO_DYNAMIC_TYPES
-    Cell d = getTypeableDict(typeInt);
-    protect(push(ap(ap(nameToDyn,d),mkInt(i))));
+    /* getTypeableDict() must run inside protect() too, not just the push:
+     * it can itself raise a Hugs error, and outside protect() that would
+     * longjmp to whatever catch_error happens to hold from some earlier,
+     * unrelated call.                                                  */
+    protect(Cell d = getTypeableDict(typeInt);
+	    push(ap(ap(nameToDyn,d),mkInt(i))));
 #else
     protect(push(mkInt(i)));
 #endif
@@ -469,8 +472,8 @@ static Void MkInt(Int i)              /* Push an Int onto the stack      */
 static Void MkAddr(void* a)              /* Push an Addr onto the stack      */
 {
 #ifndef NO_DYNAMIC_TYPES
-    Cell d = getTypeableDict(typeAddr);
-    protect(push(ap(ap(nameToDyn,d),mkPtr(a))));
+    protect(Cell d = getTypeableDict(typeAddr);
+	    push(ap(ap(nameToDyn,d),mkPtr(a))));
 #else
     protect(push(mkPtr(a)));
 #endif
