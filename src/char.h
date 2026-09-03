@@ -14,11 +14,7 @@
  * ------------------------------------------------------------------------*/
 
 /* Possibly shorter version of Char for use in arrays. */
-#if UNICODE_CHARS
 typedef	Char ShortChar;
-#else
-typedef	unsigned char ShortChar;
-#endif
 
 /* --------------------------------------------------------------------------
  * Character classification and other primitives.
@@ -27,12 +23,8 @@ typedef	unsigned char ShortChar;
 extern	Bool		charTabBuilt;
 extern  unsigned char   charTable[];
 
-#if UNICODE_CHARS
 /* cf HS_CHAR_MAX in HsFFI.h */
 #define	MAXCHARVAL	0x10FFFF
-#else
-#define	MAXCHARVAL	(NUM_LAT1_CHARS-1)
-#endif
 
 #define isIn(c,x)       ((unsigned)(c)<NUM_LAT1_CHARS ? (charTable[(unsigned char)(c)]&(x)) : 0)
 #define isLatin1(c)     (0<=(c) && (c)<NUM_LAT1_CHARS)
@@ -54,7 +46,6 @@ extern  unsigned char   charTable[];
 #define	isAlphaNumLat1(c) (isIn((c),IDAFTER) && (c)!='_' && (c)!='\'')
 #define	isPrintLat1(c)	isIn((c),PRINT)
 
-#if UNICODE_CHARS
 
 extern	Bool	isLower		(Char);
 extern	Bool	isUpper		(Char);
@@ -62,15 +53,6 @@ extern	Bool	isAlpha		(Char);
 extern	Bool	isAlphaNum	(Char);
 extern	Bool	isPrint 	(Char);
 
-#else
-
-#define	isLower(c)	isLowerLat1(c)
-#define	isUpper(c)	isUpperLat1(c)
-#define	isAlpha(c)	isAlphaLat1(c)
-#define	isAlphaNum(c)	isAlphaNumLat1(c)
-#define	isPrint(c)	isPrintLat1(c)
-
-#endif
 
 /* Lexical classification of a decoded Char that may lie outside the
  * Latin-1 range: use the (table-driven) Lat1 classes when the value fits
