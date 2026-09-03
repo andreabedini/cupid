@@ -15,9 +15,7 @@
  * ------------------------------------------------------------------------*/
 
 %{
-#ifndef lint
 #define lint
-#endif
 #define defTycon(n,l,lhs,rhs,w)	 tyconDefn(intOf(l),lhs,rhs,w); sp-=n
 #define sigdecl(l,vs,t)		 ap(SIGDECL,triple(l,vs,t))
 #define fixdecl(l,ops,a,p)	 ap(FIXDECL,\
@@ -37,9 +35,6 @@ static void __yy_memcpy (char*,char*, unsigned int);
 # endif
 #endif
 
-#ifdef _MANAGED
-static void yymemcpy (char *yyto, const char *yyfrom, size_t yycount);
-#endif
 
 static Cell   local gcShadow	 (Int,Cell);
 static Void   local syntaxError	 (String);
@@ -101,7 +96,7 @@ static Cell   local checkConstr	 (Cell);
 %%
 /*- Top level script/module structure -------------------------------------*/
 
-start	  : EXPR exp lwherePart		{inputExpr = letrec($3,$2); sp-=2;}
+start	  : EXPR exp wherePart		{inputExpr = letrec($3,$2); sp-=2;}
 	  | CTXT context		{inputContext = $2;	    sp-=1;}
 	  | SCRIPT topModule		{valDefns  = $2;	    sp-=1;}
 	  | error			{syntaxError("input");}
@@ -551,27 +546,6 @@ gddef	  : '|' quals '=' exp		{$$ = gc4(pair($3,pair(rev($2),$4)));}
 wherePart : /* empty */			{$$ = gc0(NIL);}
 	  | WHERE decls			{$$ = gc2($2);}
 	  ;
-/* lwherePart and ldecls permit the binding of both 'normal' 
- * and implicit parameter bindings.
- */
-lwherePart : /* empty */		{$$ = gc0(NIL);}
-	  | WHERE ldecls		{$$ = gc2($2);}
-	  ;
-
-ldecls	  : '{' ldecls0 end		{$$ = gc3($2);}
-	  | '{' ldecls1 end		{$$ = gc3($2);}
-	  ;
-
-ldecls0	  : /* empty */			{$$ = gc0(NIL);}
-	  | ldecls0 ';'			{$$ = gc2($1);}
-	  | ldecls1 ';'			{$$ = gc2($1);}
-	  ;
-
-ldecls1	  : ldecls0 ldecl		{$$ = gc2(cons($2,$1));}
-	  ;
-ldecl	  : decl 			{$$ = $1;} 
-	  ;
-
 /*- Patterns: -------------------------------------------------------------*/
 
 pat	  : pat_npk			{$$ = $1;}
@@ -675,7 +649,7 @@ exp10a	  : CASEXP exp OF '{' alts end	{$$ = gc6(ap(CASE,pair($2,rev($5))));}
 exp10b	  : '\\' pats ARROW exp		{$$ = gc4(ap(LAMBDA,      
 						     pair(rev($2),
 							  pair($3,$4))));}
-	  | LET ldecls IN exp		{$$ = gc4(letrec($2,$4));}
+	  | LET decls IN exp		{$$ = gc4(letrec($2,$4));}
 	  | IF exp then_exp else_exp	{$$ = gc4(ap(COND,triple($2,$3,$4)));}
 	  ;
 /* Allow optional semicolons before 'then' and 'else' (as suggested by
@@ -744,7 +718,7 @@ stmts1	  : stmts1 ';' stmt		{$$ = gc3(cons($3,$1));}
 	  ;
 
 stmt      : exp_err FROM exp		{$$ = gc3(ap(FROMQUAL,pair($1,$3)));}
-	  | LET ldecls			{$$ = gc2(ap(QWHERE,$2));}
+	  | LET decls			{$$ = gc2(ap(QWHERE,$2));}
 /*	  | IF exp			{$$ = gc2(ap(BOOLQUAL,$2));}*/
 	  | exp_err			{$$ = gc1(ap(DOQUAL,$1));}
 	  ;
@@ -762,27 +736,19 @@ fbind	  : var				{$$ = $1;}
 
 list	  : exp				{$$ = gc1(ap(FINLIST,cons($1,NIL)));}
 	  | exps2			{$$ = gc1(ap(FINLIST,rev($1)));}
-	  | exp zipquals		{
-					 if (length($2)!=1) {
-					     syntaxError("list comprehension");
-					 }
-					 $$ = gc2(ap(COMP,pair($1,hd($2))));
-					}
+	  | exp '|' quals		{$$ = gc3(ap(COMP,pair($1,rev($3))));}
 	  | exp         UPTO exp	{$$ = gc3(ap(ap(nameFromTo,$1),$3));}
 	  | exp ',' exp UPTO		{$$ = gc4(ap(ap(nameFromThen,$1),$3));}
 	  | exp         UPTO		{$$ = gc2(ap(nameFrom,$1));}
 	  | exp ',' exp UPTO exp	{$$ = gc5(ap(ap(ap(nameFromThenTo,
 								$1),$3),$5));}
 	  ;
-zipquals  : zipquals '|' quals		{$$ = gc3(cons(rev($3),$1));}
-	  | '|' quals			{$$ = gc2(cons(rev($2),NIL));}
-	  ;
 quals	  : quals ',' qual		{$$ = gc3(cons($3,$1));}
 	  | qual			{$$ = gc1(cons($1,NIL));}
 	  ;
 qual	  : exp FROM exp		{$$ = gc3(ap(FROMQUAL,pair($1,$3)));}
 	  | exp				{$$ = gc1(ap(BOOLQUAL,$1));}
-	  | LET ldecls			{$$ = gc2(ap(QWHERE,$2));}
+	  | LET decls			{$$ = gc2(ap(QWHERE,$2));}
 	  ;
 
 /*- Identifiers and symbols: ----------------------------------------------*/
