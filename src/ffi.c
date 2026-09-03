@@ -29,6 +29,7 @@ static Cell local foreignTypeTag (Int,Type);
 static Void local foreignGet     (Int,Type,String,Int);
 static Void local foreignPut     (Int,Type,String,Int);
 static Void local ffiInclude     (Text);
+static Void local checkCEntity   (Int,Text);
 static Void local ffiDeclare     (Int,Type,String,Int);
 static Void local ffiDeclareList (Int,List,String);
 static Void local foreignType    (Int,Type);
@@ -52,6 +53,8 @@ Void ffi(Int what)
                            out = NIL;
                        }
                        includes = NIL;
+		       break;
+        case MARK    : mark(includes);
 		       break;
     }
 }
@@ -382,6 +385,30 @@ static Void local ffiInclude(Text fn)                     /* Add #include  */
     }
 }
 
+/* checkForeignImport (static.c) only checks that the entity string of a
+ * "static"/label foreign import parses into a [fname] [&] [cid]; cid, the
+ * bit we treat as a C identifier below (and in implementForeignImport and
+ * implementForeignImportLabel), is whatever text is left over - it could
+ * be an operator like "+", or default to the Haskell name, which need not
+ * be a valid C identifier either.  Printed raw into generated C (as a
+ * function/variable name, and after #undef), anything else produces
+ * uncompilable C and a C compiler error instead of a Hugs one; catch that
+ * here instead.
+ */
+static Void local checkCEntity(Int line, Text cid)
+{
+    String s = textToStr(cid);
+    String p = s;
+    Bool ok = (*p == '_' || (*p>='A' && *p<='Z') || (*p>='a' && *p<='z'));
+    for (++p; ok && *p; p++)
+        ok = (*p == '_' || (*p>='A' && *p<='Z') || (*p>='a' && *p<='z')
+                        || (*p>='0' && *p<='9'));
+    if (!ok) {
+        ERRMSG(line) "Foreign import entity \"%s\" is not a valid C identifier", s
+        EEND;
+    }
+}
+
 static Void local ffiDeclare(Int line, Type ty, String prefix, Int i)       /* Declare variable  */
 {
     if (ty != typeUnit) {
@@ -591,6 +618,7 @@ Void implementForeignImport(Int line, Name n, Int id, Text fn, Text cid, Bool is
     } else {
 #endif
 
+    checkCEntity(line,cid);
     ffiInclude(fn);
 
     /* Prevent the cid from matching a C macro */
@@ -822,6 +850,7 @@ Void implementForeignImportLabel(Int line, Int id, Text fn, Text cid, Text n, Ty
            /* Function name */
            /* Haskell name */
 {
+    checkCEntity(line,cid);
     ffiInclude(fn);
 
     /* Prevent the cid from matching a C macro */
