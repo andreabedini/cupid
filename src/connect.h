@@ -215,7 +215,8 @@ extern Double whnfDouble;	 	/* double value of term in whnf	   */
 extern Long  numReductions;		/* number of reductions used       */
 extern Long  numCells;			/* number of cells allocated       */
 extern Int   numGcs;			/* number of garbage collections   */
-extern Bool  broken;			/* indicates interrupt received    */
+extern volatile sig_atomic_t broken;	/* indicates interrupt received;   */
+					/* set only from a signal handler  */
 extern Bool  preludeLoaded;		/* TRUE => prelude has been loaded */
 
 

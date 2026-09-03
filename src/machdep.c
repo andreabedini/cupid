@@ -1463,7 +1463,10 @@ Int readTerminalChar() {                /* read character from terminal    */
  * Interrupt handling:
  * ------------------------------------------------------------------------*/
 
-Bool    broken         = FALSE;		/* pending break to be handled     */
+volatile sig_atomic_t broken = FALSE;		/* pending break to be handled     */
+						/* only ever set from the SIGINT   */
+						/* handler, so it must stay        */
+						/* sig_atomic_t, not Bool          */
 static  Bool breakReqd = FALSE;		/* currently trapping breaks       */
 static  Bool trapBreak = FALSE;		/* ever asked to trap breaks       */
 static  sigProto(ignoreBreak);
@@ -1481,11 +1484,9 @@ Bool breakOn(Bool reqd)                      /* set break trapping on if reqd,  
 	    sigRaise(breakHandler);
 	    /* not reached */
 	}
-#if HANDLERS_CANT_LONGJMP
-	ctrlbrk(ignoreBreak);
-#else
-	ctrlbrk(breakHandler);
-#endif
+	ctrlbrk(ignoreBreak);		/* install the flag-setting handler;*/
+					/* allowBreak() polls it and raises */
+					/* breakHandler() as a plain call.  */
     } else if (trapBreak) {		/* If we have been trapping breaks, */
 	ctrlbrk(ignoreBreak);		/* switch to deferring them.        */
     }
@@ -1493,14 +1494,25 @@ Bool breakOn(Bool reqd)                      /* set break trapping on if reqd,  
 }
 
 static sigHandler(ignoreBreak) {        /* record but don't respond to break*/
-    ctrlbrk(ignoreBreak);         /* reinstall signal handler               */
-				  /* redundant on BSD systems but essential */
-				  /* on POSIX and other systems             */
+    /* async-signal-safe: only sets the flag, nothing else.  ctrlbrk()   */
+    /* installs this handler with sigaction() on POSIX, so (unlike the   */
+    /* old signal()-based scheme) it does not need to be reinstalled     */
+    /* here to survive delivery.                                        */
     broken = TRUE;
     sigResume;
 }
 
-#if !DONT_PANIC
+#if !DONT_PANIC && !DOS
+/* Fatal signals (including a stack-overflowing SIGSEGV) are handled on an
+ * alternate signal stack: if we run out of C stack, the handler itself
+ * still needs somewhere to run in order to report the problem and exit
+ * cleanly instead of the process just dying with no message.  A fixed
+ * size is used instead of SIGSTKSZ because on current glibc that is no
+ * longer a compile-time constant.
+ */
+#define PANIC_STACK_SIZE 65536
+static char panicStack[PANIC_STACK_SIZE];
+
 static sigProto(panic);
 static sigHandler(panic) {              /* exit in a panic, on receipt of  */
     everybody(EXIT);                    /* an unexpected signal            */
@@ -1508,7 +1520,7 @@ static sigHandler(panic) {              /* exit in a panic, on receipt of  */
     exit(1);
     sigResume;/*NOTREACHED*/
 }
-#endif /* !DONT_PANIC */
+#endif /* !DONT_PANIC && !DOS */
 
 #if IS_WINDOWS
 BOOL WINAPI consoleHandler(DWORD dwCtrlType) {
@@ -1520,36 +1532,52 @@ BOOL WINAPI consoleHandler(DWORD dwCtrlType) {
 }
 #endif
 
-static Void local installHandlers() { /* Install handlers for all fatal    */ 
+static Void local installHandlers() { /* Install handlers for all fatal    */
 				      /* signals except SIGINT and SIGBREAK*/
 #if IS_WINDOWS
     SetConsoleCtrlHandler(consoleHandler,TRUE);
 #endif
 #if !DONT_PANIC && !DOS
+    {
+	stack_t ss;
+	struct sigaction sa;
+
+	ss.ss_sp    = panicStack;
+	ss.ss_size  = sizeof(panicStack);
+	ss.ss_flags = 0;
+	sigaltstack(&ss,NULL);          /* ok to fail (e.g. already smaller */
+					 /* handler stack in place); panic() */
+					 /* still runs, just without the     */
+					 /* overflow protection then.        */
+
+	sa.sa_handler = panic;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_ONSTACK;
 # ifdef SIGABRT
-    signal(SIGABRT,panic);
+	sigaction(SIGABRT,&sa,NULL);
 # endif
 # ifdef SIGBUS
-    signal(SIGBUS,panic);
+	sigaction(SIGBUS,&sa,NULL);
 # endif
 # ifdef SIGFPE
-    signal(SIGFPE,panic);
+	sigaction(SIGFPE,&sa,NULL);
 # endif
 # ifdef SIGHUP
-    signal(SIGHUP,panic);
+	sigaction(SIGHUP,&sa,NULL);
 # endif
 # ifdef SIGILL
-    signal(SIGILL,panic);
+	sigaction(SIGILL,&sa,NULL);
 # endif
 # ifdef SIGQUIT
-    signal(SIGQUIT,panic);
+	sigaction(SIGQUIT,&sa,NULL);
 # endif
 # ifdef SIGSEGV
-    signal(SIGSEGV,panic);
+	sigaction(SIGSEGV,&sa,NULL);
 # endif
 # ifdef SIGTERM
-    signal(SIGTERM,panic);
+	sigaction(SIGTERM,&sa,NULL);
 # endif
+    }
 #endif /* !DONT_PANIC && !DOS */
 
 }

@@ -378,46 +378,50 @@ extern int vsnprintf  (char*, size_t, const char*, va_list);
  * ctrlbrk:    set control break handler
  */
 
-/* On Unix (and almost every other system), the interrupt handlers perform
- * a longjmp to break out of the current computation.
- * On Win32 this does not work because the interrupt handler is run in
- * a separate thread from the main computation.  Instead we set a 
- * flag (the global variable "broken") to request an interrupt and
- * all potentially infinite loops of the evaluator check the flag using
- * the "allowBreak" call.
- */ 
-#define HANDLERS_CANT_LONGJMP IS_WINDOWS
+/* The interrupt handler must not do unsafe things (longjmp, stdio, the
+ * allocator) from signal context.  On every platform we therefore only
+ * set a flag (the global variable "broken") from the handler to request
+ * an interrupt; all potentially infinite loops of the evaluator check
+ * the flag using the "allowBreak" call, which raises breakHandler() as
+ * an ordinary (safe) function call once we are back in normal control
+ * flow.  This used to be Windows-only (the interrupt handler runs in a
+ * separate thread there, so it cannot longjmp out of the computation);
+ * POSIX now uses the same scheme so that the SIGINT handler itself stays
+ * async-signal-safe.
+ */
+#define HANDLERS_CANT_LONGJMP 1
 
 
 #if DOS
 
 # define allowBreak()	;
 
-#elif HANDLERS_CANT_LONGJMP /* eg Win32 */
+#else /* !DOS - eg Win32 and Unix */
 
-# define ctrlbrk(bh)	do { signal(SIGINT,bh); signal(SIGBREAK,bh); } while (0)
 # define allowBreak()	if (broken) { broken = FALSE; sigRaise(breakHandler); }
 
-#else /* !DOS && !HANDLERS_CANT_LONGJMP - eg Unix */
+# if IS_WINDOWS
 
-# if HAVE_SIGPROCMASK
+#  define ctrlbrk(bh)	do { signal(SIGINT,bh); signal(SIGBREAK,bh); } while (0)
+
+# else /* Unix */
+
 #  include <signal.h>
-#  define ctrlbrk(bh)	{ sigset_t mask; \
-			  signal(SIGINT,bh); \
-			  sigemptyset(&mask); \
-			  sigaddset(&mask, SIGINT); \
-			  sigprocmask(SIG_UNBLOCK, &mask, NULL); \
-			}
-# else
-#  define ctrlbrk(bh)	signal(SIGINT,bh)
-# endif
-#if __MWERKS__ && macintosh
-# define allowBreak()   doNothing()
-#else
-# define allowBreak()   doNothing()
-#endif
+   /* SA_RESTART is deliberately left off: a blocking read() at the
+    * prompt must return EINTR on Ctrl-C rather than silently resume,
+    * so that the prompt can be redrawn instead of hanging.
+    */
+#  define ctrlbrk(bh)	do { \
+			  struct sigaction hugs_sigbrk_sa; \
+			  hugs_sigbrk_sa.sa_handler = (bh); \
+			  sigemptyset(&hugs_sigbrk_sa.sa_mask); \
+			  hugs_sigbrk_sa.sa_flags = 0; \
+			  sigaction(SIGINT, &hugs_sigbrk_sa, NULL); \
+			} while (0)
 
-#endif /* !DOS && !HANDLERS_CANT_LONGJMP */
+# endif
+
+#endif /* !DOS */
 
 
 #ifndef SIGBREAK /* Sigh, not defined in cygwin32 beta release 16 */

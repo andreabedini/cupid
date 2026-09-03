@@ -132,6 +132,12 @@ Void fatal(String msg)                         /* handle fatal error            
 /* --------------------------------------------------------------------------
  * Break interrupt handler:
  * ------------------------------------------------------------------------*/
+/* breakHandler is never installed as the OS-level signal handler: it is
+ * raised as an ordinary function call from allowBreak(), once the "broken"
+ * flag set by the real (async-signal-safe) handler has been noticed at a
+ * safe point.  So the Printf/longjmp/etc below run in normal control flow,
+ * not signal context, on every platform.
+ */
 sigHandler(breakHandler) {              /* respond to break interrupt      */
 #if HUGS_FOR_WINDOWS
     ErrorBox("Interrupted!");
@@ -143,8 +149,8 @@ sigHandler(breakHandler) {              /* respond to break interrupt      */
     Printf("{Interrupted!}\n");
     Lolite();
 #endif
-    breakOn(TRUE);  /* reinstall signal handler - redundant on BSD systems */
-		    /* but essential on POSIX (and other?) systems         */
+    breakOn(TRUE);  /* reinstall break trapping (in case breakOn(FALSE) ran */
+		    /* while this break was pending)                        */
     everybody(BREAK);
     failed();
     stopAnyPrinting();
