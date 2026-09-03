@@ -66,6 +66,17 @@ or pass a search path to `runhugs` for a script:
 build/src/runhugs -P'build/libraries/hugsdir/packages/*' Main.hs
 ```
 
+### Testing
+
+```sh
+meson test -C build
+```
+
+runs the regression tests under `tests/`.  Each `NAME.hs` there is a
+program whose output is compared with `NAME.stdout`, or a session with
+the interpreter when `NAME.stdin` exists; the comment at the top of
+`tests/run-tests` describes the other files a test may have.  Add a
+test for every bug you fix.
 
 ### Installing
 
@@ -109,6 +120,7 @@ The full list, and more detail on every step, is in
   platform-dependent module `Hugs.SysConfig`
 - `docs/` — the documentation: a tutorial, how-to guides, reference
   and explanation pages, and the manual page
+- `tests/` — the regression tests and the script that runs them
 - `demos/` — example programs, installed alongside the libraries
 
 ## Documentation
