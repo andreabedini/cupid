@@ -20,9 +20,6 @@ extern Void printKinds	 (FILE *,Kinds);
 extern Void printFD	 (FILE *,Pair);
 
 
-#if DEBUG_SHOWSC
-extern Void  printSc (FILE*, Text, Int, Cell);
-#endif
 
 
 #endif /* __OUTPUT_H__ */
