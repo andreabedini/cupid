@@ -19,14 +19,10 @@
 #include "errors.h"
 #include "goal.h"
 #include "char.h"
-#include "output.h"	/* needed for DEBUG_CODE|DEBUG_SHOWSC */
-#include "opts.h"	/* needed for DEBUG_SHOWSC */
+#include "output.h"	/* needed for DEBUG_CODE */
 
 Addr inputCode;                        /* Addr of compiled code for expr   */
 static Name currentName;               /* Top level name being processed   */
-#if DEBUG_SHOWSC
-static FILE *scfp;		       /* super combinator file pointer    */
-#endif
 
 /* --------------------------------------------------------------------------
  * Local function prototypes:
@@ -92,11 +88,6 @@ static Void local compileGenFunction	(Name);
 static Name local compileSelFunction	(Pair);
 static Void local newGlobalFunction     (Name,Int,List,Int,Cell);
 
-#if DEBUG_SHOWSC
-static Void local debugConstructors     (FILE *fp,Cell c);
-static Void local debugConstructor      (FILE *fp,Name c);
-#endif
-
 /* --------------------------------------------------------------------------
  * Translation:    Convert input expressions into a less complex language
  *                 of terms using only LETREC, AP, constants and vars.
@@ -125,11 +116,9 @@ static Cell local translate(Cell e)         /* Translate expression:            
 			  snd(e) = translate(snd(e));
 			  return e;
 
-#if BIGNUMS
 	case POSNUM     :
 	case ZERONUM    :
 	case NEGNUM     : return e;
-#endif
 	case NAME       : if (e==nameOtherwise)
 			      return nameTrue;
 			  if (isCfun(e)) {
@@ -164,12 +153,7 @@ static Cell local translate(Cell e)         /* Translate expression:            
 			      if (m == nameListMonad)
 				  return transComp(r,qs,nameNil);
 			      else {
-#if MONAD_COMPS
-				  r = ap(ap(nameReturn,m),r);
-				  return transDo(m,r,qs);
-#else
 				  internal("translate: monad comps");
-#endif
 			      }
 			  }
 
@@ -884,11 +868,9 @@ static Cell local pmcTerm(Int co, List sc, Cell e)     /* apply pattern matching
 
 	case AP       : return pmcPair(co,sc,e);
 
-#if BIGNUMS
 	case POSNUM   :
 	case ZERONUM  :
 	case NEGNUM   :
-#endif
 	case TUPLE    :
 	case NAME     :
 	case CHARCELL :
@@ -1304,10 +1286,8 @@ static Bool local eqNumDiscr(Cell d1, Cell d2)     /* Determine whether two nume
 	return isInt(arg(d2)) && intOf(arg(d1))==intOf(arg(d2));
     if (isDouble(arg(d1)))
 	return isDouble(arg(d2)) && doubleOf(arg(d1))==doubleOf(arg(d2));
-#if BIGNUMS
     if (isBignum(arg(d1)))
 	return isBignum(arg(d2)) && bigCmp(arg(d1),arg(d2))==0;
-#endif
     internal("eqNumDiscr");
     return FALSE;/*NOTREACHED*/
 }
@@ -1346,11 +1326,9 @@ static Cell local lift(Int co, List tr, Cell e)        /* lambda lift term      
 
 	case LETREC    : return liftLetrec(co,tr,e);
 
-#if BIGNUMS
 	case POSNUM    :
 	case ZERONUM   :
 	case NEGNUM    :
-#endif
 	case TUPLE     :
 	case NAME      :
 	case INTCELL   :
@@ -1597,11 +1575,9 @@ static Cell local preComp(Cell e)		/* Adjust output from compiler to  */
 
 	case OFFSET    : return preCompOffset(offsetOf(e));
 
-#if BIGNUMS
 	case POSNUM    :
 	case ZERONUM   :
 	case NEGNUM    :
-#endif
 	case TUPLE     :
 	case NAME      :
 	case INTCELL   :
@@ -1663,10 +1639,6 @@ Void compileExp() {			/* compile input expression	   */
     localOffset  = 0;
     localArity   = 0;
     inputExpr    = preComp(inputExpr);
-#if DEBUG_SHOWSC
-    if (debugSC)
-	printSc(stdout,findText("main"),0,inputExpr);
-#endif
     inputCode    = codeGen(NIL,0,inputExpr);
     inputExpr    = NIL;
 }
@@ -1675,53 +1647,6 @@ Void compileExp() {			/* compile input expression	   */
 Void compileDefns() {			/* compile script definitions	   */
     Target t = length(valDefns) + length(genDefns) + length(selDefns);
     Target i = 0;
-
-#if DEBUG_SHOWSC
-    Module mod;
-    String modName;
-    char name[256];
-    List dataCons = NIL;
-
-    if (debugSC) {
-      mod = currentModule;
-      modName = textToStr(module(currentModule).text);
-      if (snprintf(name,sizeof(name)-1, "%s.cor", modName) < 0) {
-	  ERRMSG(0) "Module name (%s) too long", modName
-          EEND_NORET;
-      } else {
-	  name[sizeof(name)-1] = '\0';
-	  scfp = fopen(name,"w");
-	  fprintf(scfp,"module %s;\n",modName);
-	  dataCons = dupOnto(dataCons,module(currentModule).tycons);
-	  dataCons = dupOnto(dataCons,module(currentModule).classes);
-	  for (; nonNull(dataCons); dataCons=tl(dataCons)) {
-	      Cell t = hd(dataCons);
-	      switch(whatIs(t)) {
-	      case TYCON:
-		  if (tycon(t).what == DATATYPE
-		      && nonNull(tycon(t).defn)
-		      && tycon(t).mod == mod) {
-		      fprintf(scfp,"data %s",
-			      textToStr(tycon(t).text));
-		      debugConstructors(scfp,tycon(t).defn);
-		      fprintf(scfp,";\n");
-		  }
-		  break;
-	      case CLASS:
-		  if (cclass(t).mod == mod) {
-		      fprintf(scfp,"data %s = ",
-			      textToStr(cclass(t).text));
-		      debugConstructor(scfp,cclass(t).dcon);
-		      fprintf(scfp,";\n");
-		  }
-		  break;
-	      default:
-		  fprintf(scfp,"** unknown datacons **");
-	      }
-	  }
-      }
-    }
-#endif
 
     setGoal("Compiling",t);
 
@@ -1739,43 +1664,8 @@ Void compileDefns() {			/* compile script definitions	   */
 	soFar(i++);
     }
 
-#if DEBUG_SHOWSC
-    if (debugSC) {
-      fprintf(scfp,"\n-- end of module %s --\n",modName);
-      fclose(scfp);
-    }
-#endif
-
     done();
 }
-
-#if DEBUG_SHOWSC
-static Void local debugConstructors(FILE *fp,Cell c) {
-  char ch = '=';
-  while(isAp(c)) {
-    if (whatIs(hd(c)) == NAME) {
-      fprintf(fp,"\n %c ",ch);
-      ch = '|';
-      debugConstructor(fp,hd(c));
-    }
-    c = tl(c);
-  }
-}
-
-static Void local debugConstructor(FILE *fp,Name c) {
-  int i;
-  switch(whatIs(c)) {
-  case NAME: 
-    fprintf(fp,"%s",textToStr(name(c).text));
-    for(i=0;i < name(c).arity;i++) {
-      fprintf(scfp," *");
-    }
-    break;
-  default:
-    fprintf(fp,"** unknown constructor **");
-  }
-}
-#endif
 
 static Void local compileGlobalFunction(Pair bind)
 {
@@ -1826,11 +1716,6 @@ static Void local newGlobalFunction(Name n, Int arity, List fvs, Int co, Cell e)
     localArity    = arity;
     name(n).arity = arity+numExtraVars;
     e             = preComp(e);
-#if DEBUG_SHOWSC
-    if (debugSC) {
-	printSc(scfp,name(n).text,name(n).arity,e);
-    }
-#endif
     name(n).code  = codeGen(n,name(n).arity,e);
 }
 
