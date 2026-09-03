@@ -117,7 +117,10 @@ Bignum bigInt(Int n)			/* convert Int to bignum	   */
 	unsigned long no;
 	Cell nx;
 	if (n<0) {
-	    no = (unsigned long)(-n);
+	    /* -n overflows in Int arithmetic when n==MINNEGINT; negate the
+	     * unsigned reinterpretation instead, which wraps to the same
+	     * (correct) magnitude without relying on signed overflow.     */
+	    no = (unsigned long)(0u - (Unsigned)n);
 	    bn = pair(NEGNUM,NIL);
 	}
 	else {
@@ -180,41 +183,29 @@ Bignum bigDouble(double a)			/* convert double to bignum	   */
 /* The library documentation says that conversion between signed and
  * unsigned types preserves representation, not sign.  Since this
  * conversion uses fromInteger, and we do note know the original type,
- * fromInteger is the same for Int and Word, and must accept values
- * in the range MINNEGINT..MAXHUGSWORD.
+ * fromInteger is the same for Int and Word.
+ *
+ * Haskell's fixed-width Integer->Int/Word conversions do not check
+ * range: they wrap, taking the low bits of the (arbitrary precision)
+ * value.  Compute the wrapped magnitude in Unsigned arithmetic (which
+ * cannot overflow) instead of checking bounds in Int arithmetic (which
+ * can, e.g. when MINNEGINT-m itself overflows).
  */
 
-Cell bigToInt(Bignum n)			/* convert bignum to Int	   */
+Cell bigToInt(Bignum n)			/* convert bignum to Int, wrapping*/
 {
     if (n!=ZERONUM) {
 	List ds = snd(n);
 	if (nonNull(ds)) {
-	    Int m;
-	    Int b = 1;
-	    if (fst(n)==POSNUM) {
-		m = digitOf(hd(ds));
-		while (nonNull(ds=tl(ds))) {
-		    Int d = digitOf(hd(ds));
-		    if (b > (Int)(MAXHUGSWORD/BIGBASE))
-			return NIL;
-		    b *= BIGBASE;
-		    if (d > (Int)((MAXHUGSWORD - m)/b))
-			return NIL;
-		    m += b*d;
-		}
-	    } else { /* fst(n)==NEGNUM */
-		m = - digitOf(hd(ds));
-		while (nonNull(ds=tl(ds))) {
-		    Int d = - digitOf(hd(ds));
-		    if (b > (MAXPOSINT/BIGBASE))
-			return NIL;
-		    b *= BIGBASE;
-		    if (d < (MINNEGINT - m)/b)
-			return NIL;
-		    m += b*d;
-		}
+	    Unsigned m = 0;
+	    Unsigned b = 1;
+	    for (; nonNull(ds); ds=tl(ds)) {
+		m += b * (Unsigned)digitOf(hd(ds));
+		b *= BIGBASE;
 	    }
-	    return mkInt(m);
+	    if (fst(n)==NEGNUM)
+		m = 0u - m;
+	    return mkInt((Int)m);
 	}
     }
     return mkInt(0);

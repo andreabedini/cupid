@@ -754,7 +754,10 @@ static Cell local readNumber() {        /* read numeric constant           */
     do {
 	if (overflows(n,10,(c0-'0'),MAXPOSINT))
 	    intTooLarge = TRUE;
-	n  = 10*n  + (c0-'0');
+	/* n is discarded (in favour of bigStr(tokenStr)) once intTooLarge is
+	 * set, but it keeps accumulating regardless, which would overflow
+	 * signed int (undefined behaviour); do it in Unsigned instead.     */
+	n  = (Int)(10*(Unsigned)n + (Unsigned)(c0-'0'));
 	saveTokenChar(c0);
 	skip();
     } while (isLatin1(c0) && isIn(c0,DIGIT));

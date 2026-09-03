@@ -795,20 +795,52 @@ primFun(primEnFrTh) {                   /* derived enumFromThen for enum ty*/
  * Integer arithmetic primitives:
  * ------------------------------------------------------------------------*/
 
+/* Signed integer overflow is undefined behaviour in C, but Haskell's Int
+ * is defined to wrap silently (Int is a fixed-width type).  Do the
+ * arithmetic in Unsigned, which wraps modulo 2^bitsize by definition, and
+ * convert the bit pattern back, instead of letting +, -, * and negate
+ * overflow signed int directly.                                          */
+static Int local wrapAdd(Int x, Int y) { return (Int)((Unsigned)x + (Unsigned)y); }
+static Int local wrapSub(Int x, Int y) { return (Int)((Unsigned)x - (Unsigned)y); }
+static Int local wrapMul(Int x, Int y) { return (Int)((Unsigned)x * (Unsigned)y); }
+static Int local wrapNeg(Int x)        { return (Int)(0u - (Unsigned)x); }
+
 CAFInt(primMinInt,MINNEGINT)           /* minimum integer CAF              */
 CAFInt(primMaxInt,MAXPOSINT)           /* maximum integer CAF              */
-IntInt2Int(primPlusInt,x+y)            /* Integer addition primitive       */
-IntInt2Int(primMinusInt,x-y)           /* Integer subtraction primitive    */
-IntInt2Int(primMulInt,x*y)             /* Integer multiplication primitive */
-Int2Int(primNegInt,-x)                 /* Integer negation primitive       */
-IntInt2IntNonZero(primQuotInt,x/y)     /* Integer division primitive       */
-				       /* truncated towards zero           */
-IntInt2IntNonZero(primRemInt,x%y)      /* Integer remainder primitive      */
+IntInt2Int(primPlusInt,wrapAdd(x,y))   /* Integer addition primitive       */
+IntInt2Int(primMinusInt,wrapSub(x,y))  /* Integer subtraction primitive    */
+IntInt2Int(primMulInt,wrapMul(x,y))    /* Integer multiplication primitive */
+Int2Int(primNegInt,wrapNeg(x))         /* Integer negation primitive       */
 
 /* quot and rem satisfy:                                                   */
 /*     (x `quot` y)*y + (x `rem` y) == x                                   */
 /* which is exactly the property described in K&R 2:                       */
 /*     (a/b)*b + a%b == a                                                  */
+/*                                                                          */
+/* minBound `quot` (-1) and minBound `quotRem` (-1) overflow (the true     */
+/* quotient, maxBound+1, isn't representable), so raise the same           */
+/* "arithmetic overflow" error used for Integer.  minBound `rem` (-1) is   */
+/* always 0 and doesn't overflow.                                          */
+
+primFun(primQuotInt) {                 /* Integer division primitive       */
+    Int x, y;                          /* truncated towards zero           */
+    IntArg(x,2);
+    IntArg(y,1);
+    if (y==0)
+	throwException(ap(nameArithException, nameDivideByZero));
+    if (x==MINNEGINT && y==-1)
+	throwException(ap(nameArithException, nameOverflow));
+    IntResult(x/y);
+}
+
+primFun(primRemInt) {                  /* Integer remainder primitive      */
+    Int x, y;
+    IntArg(x,2);
+    IntArg(y,1);
+    if (y==0)
+	throwException(ap(nameArithException, nameDivideByZero));
+    IntResult((x==MINNEGINT && y==-1) ? 0 : x%y);
+}
 
 primFun(primQrmInt) {                  /* Integer quotient and remainder   */
     Int x, y;                          /* truncated towards zero           */
@@ -816,6 +848,8 @@ primFun(primQrmInt) {                  /* Integer quotient and remainder   */
     IntArg(y,1);
     if (y==0)
 	throwException(ap(nameArithException, nameDivideByZero));
+    if (x==MINNEGINT && y==-1)
+	throwException(ap(nameArithException, nameOverflow));
     IntIntResult(x/y,x%y);
 }
 
@@ -825,6 +859,8 @@ primFun(primDivInt) {                  /* Integer division primitive       */
     IntArg(y,1);
     if (y==0)
 	throwException(ap(nameArithException, nameDivideByZero));
+    if (x==MINNEGINT && y==-1)
+	throwException(ap(nameArithException, nameOverflow));
     r = x%y;
     x = x/y;
     if ((y<0 && r>0) || (y>0 && r<0))
@@ -838,20 +874,35 @@ primFun(primModInt) {                  /* Integer modulo primitive         */
     IntArg(y,1);
     if (y==0)
 	throwException(ap(nameArithException, nameDivideByZero));
-    r = x%y;                           /* "... the modulo having the sign  */
-    if ((r<0 && y>0) ||                /*              of the divisor ..." */
-	(r>0 && y<0)) {                /* See definition on p.91 of Haskell*/
-	IntResult(r+y);                /* report... (Haskell 1.1?)         */
+    if (x==MINNEGINT && y==-1) {
+	IntResult(0);
     } else {
-	IntResult(r);
+	r = x%y;                       /* "... the modulo having the sign  */
+	if ((r<0 && y>0) ||             /*              of the divisor ..." */
+	    (r>0 && y<0)) {             /* See definition on p.91 of Haskell*/
+	    IntResult(r+y);             /* report... (Haskell 1.1?)         */
+	} else {
+	    IntResult(r);
+	}
     }
 }
 
-IntInt2Int(primAndInt,x&y)  
-IntInt2Int(primOrInt, x|y)  
-IntInt2Int(primXorInt,(x&~y) | (~x&y))   
+IntInt2Int(primAndInt,x&y)
+IntInt2Int(primOrInt, x|y)
+IntInt2Int(primXorInt,(x&~y) | (~x&y))
 Int2Int(primComplementInt,~x)
-Int2Int(primBitInt, 1<<x)
+
+primFun(primBitInt) {                  /* Data.Bits.bit :: Int -> Int      */
+    Int x;
+    IntArg(x,1);
+    /* 1<<x is undefined for x<0 or x>=bitsize(Int); Haskell's bit gives 0 */
+    if (x < 0 || x >= (Int)(sizeof(Int)*8)) {
+	IntResult(0);
+    } else {
+	IntResult((Int)((Unsigned)1 << x));
+    }
+}
+
 IntInt2Bool(primTestInt,(x >> y) & 1)
 
 primFun(primShiftInt) {
@@ -859,9 +910,15 @@ primFun(primShiftInt) {
     IntArg(x,2);
     IntArg(y,1);
     if (y >= 0) {
-	IntResult(x << y);
+	/* << isn't defined for y larger than the Int size, and left-      */
+	/* shifting a negative Int is undefined behaviour in C; do it in   */
+	/* Unsigned instead, which wraps the way Haskell's shiftL does.    */
+	IntResult(y >= (Int)(sizeof(x)*8) ? 0 : (Int)((Unsigned)x << y));
     } else {
-	IntResult(x >> (-y));
+	y = -y;
+	/* arithmetic right shift of a negative Int by >= the Int size     */
+	/* gives -1, not 0 (unlike the unsigned case in primShiftWord)     */
+	IntResult(y >= (Int)(sizeof(x)*8) ? (x<0 ? -1 : 0) : x >> y);
     }
 }
 
@@ -1238,8 +1295,15 @@ primFun(primDoubleEncode) {            /* Double encode primitive          */
 
 CAFPtr(primNullPtr,0)                  /* Null pointer                     */
 PtrInt2Ptr(primPlusPtr,(char*)x+y)     /* Pointer arithmetic               */
-PtrInt2Ptr(primAlignPtr,(char*)x+(int)((y - (long)x%y)%y))
-				       /* Aligning the pointer             */
+primFun(primAlignPtr) {                /* Aligning the pointer             */
+    Pointer x;
+    Int     y;
+    PtrArg(x,2);
+    IntArg(y,1);
+    if (y <= 0)
+	throwException(ap(nameArithException, nameDivideByZero));
+    PtrResult((char*)x+(int)((y - (long)x%y)%y));
+}
 PtrPtr2Int(primMinusPtr,(char*)x-(char*)y) /* Pointer arithmetic           */
 PtrPtr2Bool(primEqPtr,x==y)            /* Pointer equality primitive       */
 
@@ -1637,7 +1701,7 @@ static void putStablePtr4(HsStablePtr   x) {
     push((HugsStablePtr)x);
 }
 
-static HsStablePtr getStablePtr4(void) { 
+static HsStablePtr getStablePtr4(void) {
     HugsStablePtr x = pop();
     return (HsStablePtr)x;
 }
