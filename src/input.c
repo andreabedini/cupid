@@ -56,9 +56,7 @@ Bool literateScripts = FALSE;           /* TRUE => default to lit scripts  */
 
 String repeatStr     = 0;               /* Repeat last expr                */
 
-#if SUPPORT_PREPROCESSOR
 String preprocessor  = 0;
-#endif
 
 /* --------------------------------------------------------------------------
  * Local function prototypes:
@@ -136,9 +134,6 @@ Text   textExport;                      /* export                          */
 #if STDCALL_SUPPORTED
 Text   textStdcall;                     /* stdcall                         */
 #endif
-#ifdef DOTNET
-Text   textDotnet;                      /* dotnet                          */
-#endif
 
 Text   textNum;                         /* Num                             */
 Text   textPrelude;                     /* Prelude / Hugs.Prelude          */
@@ -159,11 +154,7 @@ static Cell varAsMod;                   /* as                              */
 static List imps;                       /* List of imports to be chased    */
 
 
-#if MULTI_LINEFEED
 #define FOPEN_MODE                "rb"
-#else
-#define FOPEN_MODE                "r"
-#endif
 
 /* --------------------------------------------------------------------------
  * Single character input routines:
@@ -291,44 +282,15 @@ Void consoleInput(String prompt)              /* prepare to input characters fro
     else
 	c0 = c1 = EOF;
 #else
-#if HUGS_FOR_WINDOWS
-    {
-    INT svColor = SetForeColor(GREEN);
-#endif
     Printf("%s",prompt);
     FlushStdout();
-#if HUGS_FOR_WINDOWS
-    SetForeColor(svColor);
-    }
-#endif
 #endif
 }
 
-#if HUGS_FOR_WINDOWS
-/* These variables and functions are used to save the current */
-/* state of the input, to implement auto load of files        */
-static Int    	saveReading;
-static int    	savec0, savec1;
-
-Void saveInputState(Void)
-{
-    saveReading = reading;
-    savec0 = c0;
-    savec1 = c1;
-}
-
-Void restoreInputState(Void)
-{
-    reading = saveReading;
-    c0 = savec0;
-    c1 = savec1;
-}
-#endif
 
 static Bool local fileInput(String nm, Long len)     /* prepare to input characters from*/
                                         /* named file (specified length is */
 {                           /* used to set target for reading) */
-#if SUPPORT_PREPROCESSOR
     if (!readable(nm,FALSE)) { /* file not there */
 	inputStream = NULL;
     } else if (preprocessor) {
@@ -352,12 +314,6 @@ static Bool local fileInput(String nm, Long len)     /* prepare to input charact
     } else {
 	inputStream = fopen(nm,FOPEN_MODE);
     }
-#else
-    if (nm[0] == '\0')
-	inputStream = NULL;
-    else
-	inputStream = fopen(nm,FOPEN_MODE);
-#endif
     if (inputStream) {
 	reading      = SCRIPTFILE;
 	c0           = ' ';
@@ -452,7 +408,6 @@ static Int local nextLine()
         lineBuffer[lineLength] = (ch = FGetChar(inputStream));
         if (ch == EOF)
             break;
-#if MULTI_LINEFEED
         if ((char)ch == '\r') {
             ch = fgetc(inputStream);
 	    /* ToDo: verify that this behaves correctly re EOF */
@@ -462,7 +417,6 @@ static Int local nextLine()
             lineLength++;
             break;
         } else 
-#endif
         if ((char)ch == '\n') {
             lineLength++;
             break;
@@ -621,15 +575,11 @@ static Void local newlineSkip() {      /* skip `\n' (supports lit scripts) */
 static Void local closeAnyInput() {    /* Close input stream, if open,     */
     switch (reading) {                 /* or skip to end of console line   */
 	case SCRIPTFILE : if (inputStream) {
-#if SUPPORT_PREPROCESSOR
 			      if (preprocessor) {
 				  pclose(inputStream);
 			      } else {
 				  fclose(inputStream);
 			      }
-#else
-			      fclose(inputStream);
-#endif
 			      inputStream = 0;
 			  }
 			  break;
@@ -644,11 +594,7 @@ static Void local closeAnyInput() {    /* Close input stream, if open,     */
  * Parser: Uses table driven parser generated from parser.y using yacc
  * ------------------------------------------------------------------------*/
 
-# if __MWERKS__ && macintosh
-#include "parser.tab.c"
-#else
 #include "parser.c"
-#endif
 
 /* --------------------------------------------------------------------------
  * Single token input routines:
@@ -708,33 +654,19 @@ static Cell local readRadixNumber(Int r)   /* Read literal in specified radix  *
 	return mkInt(0);               /* if it had been written "0 c..."  */
     else {
 	Int  n = 0;
-#if BIGNUMS
 	Cell big = NIL;
-#endif
 	skip();
 	do {
-#if BIGNUMS
 	    if (nonNull(big))
 		big = bigShift(big,d,r);
 	    else if (overflows(n,r,d,MAXPOSINT))
 		big = bigShift(bigInt(n),d,r);
 	    else
-#else
-	    if (overflows(n,r,d,MAXPOSINT)) {
-		ERRMSG(row) "Integer literal out of range"
-		EEND;
-	    }
-	    else
-#endif
 		n = r*n + d;
 	    skip();
 	    d = readHexDigit(c0);
 	} while (d>=0 && d<r);
-#if BIGNUMS
 	return nonNull(big) ? big : mkInt(n);
-#else
-	return mkInt(n);
-#endif
     }
 }
 
@@ -802,21 +734,9 @@ static Cell local readNumber() {        /* read numeric constant           */
     endToken();
 
     if (floatingPt) {
-#if FLOATS_SUPPORTED
 	return mkDouble(stringToDouble(tokenStr));
-#else
-	ERRMSG(row) "No floating point numbers in this implementation"
-	EEND;
-	return NIL;
-#endif
     } else if (intTooLarge) {
-#if BIGNUMS
 	return bigStr(tokenStr);
-#else
-	ERRMSG(row) "Integer literal out of range"
-	EEND;
-	return NIL;
-#endif
     } else
 	return mkInt(n);
 }
@@ -931,12 +851,6 @@ static Cell local readAChar(Bool isStrLit)  /* read single char constant        
     if (c0=='\\') {                    /* escape character?                */
 	return readEscapeChar(isStrLit,TRUE);
     }
-#if !UNICODE_CHARS
-    if (!isLatin1(c0)) {
-	ERRMSG(row) "Non Latin-1 character `\\%d' in constant", ((int)c0)
-	EEND;
-    }
-#endif
     skip();                            /* normal character?                */
     return c;
 }
@@ -1194,11 +1108,7 @@ Command readCommand(struct cmd*cmds, Char start, Char sys)    /* read command at
     if (c0=='\n')                      /* look for blank command lines     */
 	return NOCMD;		      					   
     if (c0==EOF)                       /* look for end of input stream     */
-#if HUGS_FOR_WINDOWS
-	return NOCMD;
-#else
 	return QUIT;
-#endif
     if (c0==sys) {                     /* single character system escape   */
 	skip();			      					   
 	return SYSTEM;		      					   
@@ -1852,9 +1762,6 @@ Void input(Int what)
 		       textThreadsafe = findText("threadsafe");
 #if STDCALL_SUPPORTED		       
 		       textStdcall    = findText("stdcall");
-#endif
-#ifdef DOTNET
-		       textDotnet     = findText("dotnet");
 #endif
 		       textAsMod      = findText("as");
 		       textWildcard   = findText("_");
