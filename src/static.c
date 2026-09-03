@@ -231,7 +231,6 @@ static Void   local checkTypeIn		(Pair);
  *  - Infix expressions
  *  - Value definitions
  *  - Top-level static analysis and control
- *  - Haskell 98 compatibility tests
  * ------------------------------------------------------------------------*/
 
 /* --------------------------------------------------------------------------
@@ -286,10 +285,6 @@ static List unkindTypes;		/* types in need of kind annotation*/
  * Static analysis of modules:
  * ------------------------------------------------------------------------*/
 
-#if HSCRIPT
-String reloadModule;
-#endif
-
 Void startModule(Cell nm)                             /* switch to a new module */
 {
     Module m;
@@ -302,9 +297,6 @@ Void startModule(Cell nm)                             /* switch to a new module 
 	}
     } else if (!isPreludeScript()) {
 	/* You're allowed to break the rules in the Prelude! */
-#if HSCRIPT
-	reloadModule = textToStr(t);
-#endif
 	ERRMSG(0) "Module \"%s\" already loaded", textToStr(t)
 	EEND;
     }
@@ -707,12 +699,8 @@ static Int local userArity(Name c)		/* Find arity for cfun, ignoring   */
 	t = monotypeOf(t);
     }
     if ((w=whatIs(t))==QUAL) {
-#if FAST_WHATIS			  /* decompose expression for whatIs macro */
 	t=snd(snd(t));
 	w = whatIs(t);
-#else
-	w = whatIs(t=snd(snd(t)));
-#endif
     }
     if (w==CDICTS) {
 	a -= length(fst(snd(t)));
@@ -1800,13 +1788,6 @@ static List local checkQuantVars(Int line, List vs, List tvs, Cell body)
 			     textToStr(u)
 		EEND;
 	    }
-#if 0
-	    if (varIsMember(u,tvs)) {
-		ERRMSG(line) "Local quantifier for %s hides an outer use",
-			     textToStr(u)
-		EEND;
-	    }
-#endif
 	    if (!varIsMember(u,bvs)) {
 		ERRMSG(line) "Locally quantified variable %s is not used",
 			     textToStr(u)
@@ -2011,12 +1992,6 @@ static Void local kindConstr(Int line, Int alpha, Int m, Cell c)
     Cell h = getHead(c);
     Int  n = argCount;
 
-#if DEBUG_KINDS
-    Printf("kindConstr: alpha=%d, m=%d, c=",alpha,m);
-    printType(stdout,c);
-    Printf("\n");
-#endif
-
     switch (whatIs(h)) {
 	case POLYTYPE : if (n!=0) {
 			    internal("kindConstr1");
@@ -2095,11 +2070,6 @@ static Kind local kindAtom(Int alpha, Cell c)	/* Find kind of atomic constructor
 			     }
 			 }
     }
-#if DEBUG_KINDS
-    Printf("kindAtom(%d,whatIs(%d)) on ",alpha,whatIs(c));
-    printType(stdout,c);
-    Printf("\n");
-#endif
     internal("kindAtom");
     return STAR;/* not reached */
 }
@@ -2143,13 +2113,6 @@ static Void local fixKinds() {		/* add kind annotations to types   */
 		break;
 	    }
 	}
-#if DEBUG_KINDS
-	Printf("Type expression: ");
-	printType(stdout,snd(pr));
-	Printf(" :: ");
-	printKind(stdout,polySigOf(snd(pr)));
-	Printf("\n");
-#endif
     }
 }
 
@@ -2234,21 +2197,11 @@ static Void local genTC(Cell c)		/* generalise kind inferred for	   */
 {				/* given tycon/class		   */
     if (isTycon(c)) {
 	tycon(c).kind = copyKindvar(intOf(tycon(c).kind));
-#if DEBUG_KINDS
-	Printf("%s :: ",textToStr(tycon(c).text));
-	printKind(stdout,tycon(c).kind);
-	Putchar('\n');
-#endif
     } else {
 	Kinds ks = cclass(c).kinds;
 	for (; nonNull(ks); ks=tl(ks)) {
 	    hd(ks) = copyKindvar(intOf(hd(ks)));
 	}
-#if DEBUG_KINDS
-	Printf("%s :: ",textToStr(cclass(c).text));
-	printKinds(stdout,cclass(c).kinds);
-	Putchar('\n');
-#endif
     }
 }
 
@@ -2499,13 +2452,6 @@ static Void local kindInst(Inst in, Int freedom)	/* check predicates in instance
     for (inst(in).kinds = NIL; 0<freedom--; ) {
 	inst(in).kinds = cons(copyKindvar(beta+freedom),inst(in).kinds);
     }
-#if DEBUG_KINDS
-    Printf("instance ");
-    printPred(stdout,inst(in).head);
-    Printf(" :: ");
-    printKinds(stdout,inst(in).kinds);
-    Putchar('\n');
-#endif
     emptySubstitution();
 }
 
@@ -2631,13 +2577,6 @@ static Void local initDerInst(Inst in)	/* Prepare instance for calculation*/
     }
     inst(in).numSpecifics = beta;
 
-#if DEBUG_DERIVING
-    Printf("initDerInst: ");
-    printPred(stdout,inst(in).head);
-    Printf("\n");
-    printContext(stdout,snd(snd(inst(in).specifics)));
-    Printf("\n");
-#endif
 }
 
 static Void local calcInstPreds(Inst in)	/* Calculate next approximation	   */
@@ -2648,12 +2587,6 @@ static Void local calcInstPreds(Inst in)	/* Calculate next approximation	   */
     Int  beta   = inst(in).numSpecifics;
     Int  its    = 1;
     Int  factor = 1+length(ps);
-
-#if DEBUG_DERIVING
-    Printf("calcInstPreds: ");
-    printPred(stdout,inst(in).head);
-    Printf("\n");
-#endif
 
     while (nonNull(ps)) {
 	Cell p = hd(ps);
@@ -2768,13 +2701,6 @@ static Void local tidyDerInst(Inst in)	/* Tidy up results of derived inst */
     inst(in).specifics    = simpleContext(ps,o);
     inst(in).numSpecifics = length(inst(in).specifics);
 
-#if DEBUG_DERIVING
-    Printf("Derived instance: ");
-    printContext(stdout,inst(in).specifics);
-    Printf(" ||- ");
-    printPred(stdout,inst(in).head);
-    Printf("\n");
-#endif
 }
 
 /* --------------------------------------------------------------------------
@@ -3688,9 +3614,6 @@ static Int checkCallConv(Int line, Text t)
   /* also support the stdcall calling convention */
   if (t == textStdcall) return FFI_CCONV_STDCALL;
 #endif
-#ifdef DOTNET
-  if (t == textDotnet) return FFI_CCONV_DOTNET;
-#endif
   return FFI_CCONV_UNKNOWN;
 }
 
@@ -3847,9 +3770,6 @@ static Void local checkForeignImport(Name p)   /* Check foreign import          
     List argTys    = NIL;
 
     Bool generate_stub = generate_ffi
-#ifdef DOTNET
-      ||  (name(p).foreignFlags & FFI_CCONV_DOTNET != 0)
-#endif
       ;
 
     emptySubstitution();
@@ -3960,60 +3880,28 @@ static Void local checkForeignImport(Name p)   /* Check foreign import          
          */
 	Bool isStatic = FALSE;
         Text fn       = -1;
-        Text libn     = -1;
         Text cid      = -1;
         Bool isLabel  = FALSE;
-#ifdef DOTNET
-	Int  methFlags = FFI_DOTNET_METHOD;
-#endif
 
         if ((e = matchToken("static",ext))) {
 	    isStatic = TRUE;
-#ifdef DOTNET
-	    methFlags |= FFI_DOTNET_STATIC;
-#endif
             ext = skipSpaces(e);
         }
-#ifdef DOTNET
-	if ( name(p).foreignFlags & FFI_CCONV_DOTNET ) {
-	    if ( e = matchToken("ctor", ext) ) {
-		methFlags = ((methFlags & ~FFI_DOTNET_METHOD) | FFI_DOTNET_CTOR) ;
-		ext = skipSpaces(e);
-	    } else if ( e = matchToken("field", ext) ) {
-		methFlags = ((methFlags & ~FFI_DOTNET_METHOD) | FFI_DOTNET_FIELD) ;
-		ext = skipSpaces(e);
-	    } else if ( e = matchToken("method", ext) ) {
-		/* redundant */
-		methFlags |= FFI_DOTNET_METHOD;
-		ext = skipSpaces(e);
-	    }
-	} else {
-#endif
         if ((e = matchFname(ext))) {
             fn = subText(ext,e-ext);
             ext = skipSpaces(e);
         }
-#ifdef DOTNET
-	}
-#endif
 
         if ((e = matchToken("&",ext))) {
             isLabel = TRUE;
             ext = skipSpaces(e);
-#ifdef DOTNET
-	    if ( name(p).foreignFlags & FFI_CCONV_DOTNET ) goto no_dnet_label;
-#endif
         }
 
         if ((e = matchToken("[",ext))) {
             ext = skipToChar(e,']');
             if (*ext != ']' || ext == e) goto cantparse;
-            libn = subText(e,ext-e);
-            ext = skipSpaces(ext+1);
-#if !defined(SILENTLY_IGNORE_FFI_LIB_SPECS) && !defined(DOTNET)
             ERRMSG(line) "Hugs doesn't use library specifications."
             EEND;
-#endif
         }
         if (*ext != '\0') {
             e = skipToSpace(ext);
@@ -4050,13 +3938,9 @@ static Void local checkForeignImport(Name p)   /* Check foreign import          
                     = length(argTys)
                     + (isIO ? IOArity : 0);
                 implementForeignImport(line,p,name(p).foreignId,
-#ifndef DOTNET
 				       fn,
-#else
-				       (Text)methFlags,
-#endif
 				       cid,isStatic,
-				       libn, argTys,isIO,t);
+				       -1, argTys,isIO,t);
                 name(p).extFun = cid;
             }
         }
@@ -4082,11 +3966,6 @@ static Void local checkForeignImport(Name p)   /* Check foreign import          
     ERRMSG(line) "foreign import & must have type 'Ptr a' or 'FunPtr a'"
     EEND;
 
-#ifdef DOTNET
-  no_dnet_label:
-    ERRMSG(line) "foreign import & with 'dotnet' calling convention not supported."
-    EEND;
-#endif
 }
 
 static Void local checkForeignExport(Name p)       /* Check foreign export      */
@@ -4169,11 +4048,9 @@ static Cell local checkPat(Int line, Cell p)     /* Check valid pattern syntax	 
 	case CONIDCELL :
 	case CONOPCELL : return checkApPat(line,0,p);
 
-#if BIGNUMS
 	case ZERONUM   :
 	case POSNUM    :
 	case NEGNUM    :
-#endif
 	case WILDCARD  :
 	case STRCELL   :
 	case CHARCELL  :
@@ -4506,13 +4383,6 @@ static List local extractBindings(List ds)	/* extract untyped bindings from   */
 		bs = cons(pair(pat,pair(NIL,singleton(pair(NIL,rhs)))),bs);
 	    } else {
 		List vs	= getPatVars(line,pat,NIL);
-#if 0
-		/* Legal Haskell, and a bit useful (intros typing constraints.) */
-		if (isNull(vs)) {
-		    ERRMSG(line) "No variables defined in lhs pattern"
-		    EEND;
-		}
-#endif
 		map2Proc(notDefined,line,bs,vs);
 		bs	= cons(pair(vs,pair(NIL,snd(d))),bs);
 	    }
@@ -4891,12 +4761,10 @@ static Cell local tidyInfix(Int line, Cell e)	/* Convert infixExp to Exp	   */
 				if (nneg&1)		/* for literals    */
 				    arg(temp) = mkInt(-intOf(arg(temp)));
 			    }
-#if BIGNUMS
 			    else if (isBignum(arg(temp))) {
 				if (nneg&1)
 				    arg(temp) = bigNeg(arg(temp));
 			    }
-#endif
 			    else if (isDouble(arg(temp))) {
 				if (nneg&1)
 				    arg(temp) = mkDouble(-doubleOf(arg(temp)));
@@ -5211,13 +5079,6 @@ static Void local depBinding(Cell b)        /* find dependents of binding	   */
 	patVars = NIL;
 	fst(defpart) = checkPat(line,fst(defpart));
 	depRhs(snd(defpart));
-#if 0
-	if (nonNull(hd(btyvars))) {
-	    ERRMSG(line)
-	      "Sorry, no type variables are allowed in pattern binding type annotations"
-	    EEND;
-	}
-#endif
 	fst(defpart) = applyBtyvs(fst(defpart));
     }
     depVal(b) = hd(depends);
@@ -5316,11 +5177,9 @@ Cell depExpr(Int line, Cell e)      /* find dependents of expression    */
 	case AP 	: depPair(line,e);
 			  break;
 
-#if BIGNUMS
 	case ZERONUM	:
 	case POSNUM	:
 	case NEGNUM	:
-#endif
 	case NAME	:
 	case TUPLE	:
 	case STRCELL	:
@@ -5874,9 +5733,6 @@ Void checkDefns() {			/* Top level static analysis	   */
 	if (need_stubs && (generate_ffi || !generateFFI)) {
 	  needPrims(0, NULL);
 	  mapProc(linkForeign,foreignImports);
-#if 0
-	  mapProc(linkForeign,foreignExports);
-#endif
 	}
 
         /* We are now finished with foreign import declarations but
