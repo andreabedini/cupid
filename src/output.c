@@ -43,7 +43,6 @@ static Void local putSimpleAp    (Cell,Int);
 static Void local putTuple       (Int,Cell);
 static Int  local unusedTups     (Int,Cell);
 static Void local unlexVar       (Text);
-static Void local unlexFullVar   (Name);
 static Void local unlexOp        (Text);
 static Void local unlexCharConst (Char);
 static Void local unlexStrConst  (Text);
@@ -569,29 +568,6 @@ static Void local unlexVar(Text t)          /* print text as a variable name    
 	putStr(s);
 	putChr(')');
     }
-}
-
-static Void local unlexFullVar(Name n)  /* print text as a variable name    */
-{
-  Module m = name(n).mod;
-  Text t = name(n).text;
-  if (name(n).parent 
-      && isName(name(n).parent)
-      && isPair(name(name(n).parent).defn)
-      && snd(name(name(n).parent).defn) == n) {
-    /* Constructor with strict fields are handled in
-     * a strange manner. Here we print the true construtor name
-     */
-    unlexFullVar(name(n).parent);  
-  } else {
-    if (name(n).primDef) {
-      putStr("Prelude");
-    } else {
-      putStr(textToStr(module(m).text));
-    }
-    putChr('.');
-    putStr(textToStr(t));
-  }
 }
 
 
