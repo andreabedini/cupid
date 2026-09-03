@@ -1697,13 +1697,20 @@ static void putWord64(HsWord64 x) { push(pair(I64CELL,pair(mkInt(part1Int64(x)),
 static void putPtr   (HsPtr    x) { push(mkPtr(x)); }
 static void putFunPtr(HsFunPtr x) { push(mkPtr((Pointer)x)); }
 
+/* A StablePtr is represented in Haskell as mkInt(sp), the stable-pointer
+ * table index returned by mkStablePtr/newStablePtr (see primMakeSP and the
+ * SPArg/SPResult macros in iomonad.c) -- not as a raw Cell number, so it
+ * must be boxed with mkInt() on the way out, and evaluated (it may still
+ * be an unevaluated thunk) and unboxed with checkInt()/whnfInt on the way
+ * in, exactly like every other get()/put() pair here.                    */
 static void putStablePtr4(HsStablePtr   x) {
-    push((HugsStablePtr)x);
+    push(mkInt((HugsStablePtr)x));
 }
 
 static HsStablePtr getStablePtr4(void) {
-    HugsStablePtr x = pop();
-    return (HsStablePtr)x;
+    eval(pop());
+    checkInt();
+    return (HsStablePtr)(HugsStablePtr)whnfInt;
 }
 
 static Void freeStablePtr4(HsStablePtr x) {
