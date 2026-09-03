@@ -175,8 +175,10 @@ The FFI of Haskell 2010 is implemented with these limits:
 - `foreign import` in its `static` form, and `foreign import
   "dynamic"` (calling through a `FunPtr`), work on all targets.
 - `foreign import "wrapper"`, which turns a Haskell function into a C
-  function pointer, is implemented only for 32-bit x86, PowerPC and
-  SPARC.  On the targets this tree builds for it fails at run time.
+  function pointer, needs architecture-specific machine code that the
+  2006 release had only for 32-bit x86, PowerPC and SPARC; none of the
+  targets this tree builds for are among them, and that code has been
+  removed, so it fails at run time everywhere.
   See [Foreign import wrappers](../explanation/foreign-import-wrappers.md).
 - `foreign export` declarations are accepted and `ffihugs` generates C
   for them, but nothing in the tree exercises them and they should be

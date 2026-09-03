@@ -38,9 +38,10 @@ back by hand.
 
 ### 3. What is not built
 
-The WinHugs graphical interface under `src/winhugs` and the .NET bridge
-under `src/dotnet` are not built by meson.  They keep their own project
-files from the 2006 release and are not part of the supported build.
+The WinHugs graphical interface and the .NET bridge are not part of
+the supported build; their sources, under
+`src/winhugs` and `src/dotnet` in the 2006 release, have been deleted
+from this tree.
 
 ## See also
 

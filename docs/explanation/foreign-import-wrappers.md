@@ -1,11 +1,12 @@
 # Foreign import wrappers
 
 A `foreign import "wrapper"` declaration turns a Haskell function into
-a C function pointer, so that C code can call back into Haskell.  Hugs
-implements it with a small piece of machine code generated at run
-time, which exists for three architectures none of which this tree
-targets.  This page explains how it works and why it is not simply
-ported.
+a C function pointer, so that C code can call back into Haskell.  The
+2006 release implemented it with a small piece of machine code
+generated at run time, for three architectures none of which this
+tree targets; that code is no longer in the tree.  This page explains
+how the mechanism works, why it needs architecture-specific code, and
+what happens when a program uses it today.
 
 ## The problem
 
@@ -33,10 +34,10 @@ where `app` is the entry point that `ffihugs` generated for the
 declaration.  `app` is ordinary C compiled ahead of time; only the
 step of adding `s` to the argument list must be created per closure.
 
-## The solution
+## The solution the 2006 release used
 
-`mkThunk` in `src/builtin.c` allocates a small structure in memory
-that is both writable and executable:
+`mkThunk` in `src/builtin.c` allocated a small structure in memory
+that was both writable and executable:
 
 ```c
 struct thunk_data {
@@ -46,34 +47,43 @@ struct thunk_data {
 };
 ```
 
-It fills `code` with a few instructions that insert `s` in front of
+It filled `code` with a few instructions that insert `s` in front of
 the incoming arguments and jump to `app`.  On 32-bit x86, where
 arguments are on the stack, that is: push the return address up one
 slot, store `s` where it was, jump.  The code is the same whatever the
 function's type, because the C calling convention does not depend on
 the argument types for the purpose of shifting them along.  The
-structure's address, offset to `code`, is the function pointer
+structure's address, offset to `code`, would be the function pointer
 returned to Haskell.
-
-The list of thunks lets the garbage collector find every live
-callback and keeps their stable pointers alive; `freeHaskellFunPtr`
-unlinks and frees one.
-
-## Why it exists for i386, PowerPC and SPARC only
 
 The instruction sequence is different for every architecture and
 calling convention, and hand-written as bytes.  The 2006 release
 carried sequences for 32-bit x86 (stack arguments), PowerPC on macOS
-(register arguments, up to seven) and SPARC.  On x86-64 and ARM64 the
-first several arguments arrive in registers, and the fix-up would have
-to shift them along a register at a time, spill the last one to the
-stack, and handle floating-point arguments, which travel in a separate
-register file.  It is the same problem GHC's `Adjustor.c` solves for
-those targets, with considerable care.
+(register arguments, up to seven) and SPARC - the only architectures
+the 2006 tree ran on where `foreign import "wrapper"`
+worked at all.  On x86-64 and ARM64 the first several arguments arrive
+in registers, and the fix-up would have to shift them along a register
+at a time, spill the last one to the stack, and handle floating-point
+arguments, which travel in a separate register file.  It is the same
+problem GHC's `Adjustor.c` solves for those targets, with considerable
+care.
 
-In this tree `mkThunk` has no code for the supported targets.  A
-program that evaluates a `wrapper` import gets a run-time error rather
-than a crash, and no shipped library uses one.
+## What happens today
+
+None of i386, PowerPC or SPARC is a supported target,
+so that machine code was dead on every target this tree builds for,
+and has been deleted along with the executable-memory allocator
+(`mallocBytesRWX`) it depended on.  `mkThunk` now raises "Foreign
+import wrapper is not supported on this architecture" as soon as it is
+called - before allocating or linking anything into the list of live
+thunks, unlike the 2006 code, which allocated and linked a thunk_data
+first and only then discovered (via the same architecture check) that
+it had no code to put in it, leaking a half-initialised thunk into the
+list on every call.  `struct thunk_data`'s `code` field is now a
+one-byte placeholder; `freeHaskellFunPtr` and the thunk list otherwise
+work exactly as before, they just never have anything to free, since
+no `wrapper` import ever produces a live thunk to begin with.  No
+shipped library uses one.
 
 ## What works instead
 
