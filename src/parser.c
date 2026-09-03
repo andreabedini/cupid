@@ -5674,7 +5674,7 @@ static String local unexpected() {     /* find name for unexpected token   */
     switch (yychar) {
 	case 0         : return "end of input";
 
-#define keyword(kw) sprintf(buffer,fmt,kwd,kw); return buffer;
+#define keyword(kw) snprintf(buffer,sizeof(buffer),fmt,kwd,kw); return buffer;
 	case INFIXL    : keyword("infixl");
 	case INFIXR    : keyword("infixr");
 	case INFIXN    : keyword("infix");
@@ -5724,13 +5724,13 @@ static String local unexpected() {     /* find name for unexpected token   */
 	case VAROP     :
 	case VARID     :
 	case CONOP     :
-	case CONID     : sprintf(buffer,"symbol \"%s\"",
+	case CONID     : snprintf(buffer,sizeof(buffer),"symbol \"%s\"",
 				 textToStr(textOf(yylval)));
 			 return buffer;
 	case QVAROP    :
 	case QVARID    :
-	case QCONOP    : 
-	case QCONID    : sprintf(buffer,"symbol \"%s\"",
+	case QCONOP    :
+	case QCONID    : snprintf(buffer,sizeof(buffer),"symbol \"%s\"",
 				 identToStr(yylval));
 			 return buffer;
 	case HIDING    : return "symbol \"hiding\"";
