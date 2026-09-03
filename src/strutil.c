@@ -46,9 +46,15 @@ String strnCopy(String s, Int n)      /* make malloced copy of a substring */
 /* Given a string containing a possibly qualified name,
  * split it up into a module and a name portion.
  */
-Void splitQualString(String nm, String* pMod, String* pName) 
+Void splitQualString(String nm, String* pMod, String* pName)
 {
     String dot;
+
+    if (*nm == '\0') {                  /* nothing to split in an empty    */
+	*pMod  = NULL;                   /* string; nm+strlen(nm)-1 would   */
+	*pName = nm;                     /* point before the start of nm    */
+	return;
+    }
 
     /* Find the last occurrence of '.' preceded by an identifier */
     dot = nm + strlen(nm) - 1;
