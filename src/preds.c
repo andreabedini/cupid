@@ -11,33 +11,27 @@
  * $Date: 2003/11/01 17:02:47 $
  * ------------------------------------------------------------------------*/
 
+#include "prelude.h"
+#include "storage.h"
+#include "connect.h"
+#include "errors.h"
+#include "output.h"
+#include "subst.h"
+#include "opts.h"	/* allowOverlap, EXPLAIN_INSTANCE_RESOLUTION */
+#include "preds.h"
+
 /* --------------------------------------------------------------------------
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Cell   local assumeEvid        (Cell,Int);
-static List   local makePredAss	      (List,Int);
-static List   local copyPreds	      (List);
-static Void   local qualify	      (List,Cell);
-static Void   local qualifyBinding    (List,Cell);
-static Cell   local qualifyExpr	      (Int,List,Cell);
 static Void   local overEvid	      (Cell,Cell);
 
 static Void   local cutoffExceeded    (Cell,Int,List);
 static Cell   local scFind	      (Cell,Cell,Int,Cell,Int,Int);
-static Cell   local scEntail	      (List,Cell,Int,Int);
 static Cell   local entail	      (List,Cell,Int,Int);
-static Cell   local inEntail	      (List,Cell,Int,Int);
 
-static List   local scSimplify	      (List);
-static Void   local elimTauts	      (Void);
 static Bool   local anyGenerics       (Type,Int);
-static List   local elimOuterPreds    (List);
-static List   local elimPredsUsing    (List,List);
-static Void   local reducePreds	      (Void);
-static Void   local normPreds	      (Int);
 
-static Bool   local resolveDefs	      (List,Bool);
 static Bool   local resolveVar	      (Int,Bool);
 static Class  local classConstraining (Int,Cell,Int);
 
@@ -52,9 +46,9 @@ static Class  local classConstraining (Int,Cell,Int);
  * subsequently.
  * ------------------------------------------------------------------------*/
 
-static List preds;			/* Current predicate assignment	   */
+List preds;				/* Current predicate assignment	   */
 
-static Cell local assumeEvid(Cell pi, Int o)	/* Add predicate pi (offset o) to  */
+Cell assumeEvid(Cell pi, Int o)	/* Add predicate pi (offset o) to  */
             /* preds with new dict var nd	   */
 {
     Cell nd = inventDictVar();
@@ -63,7 +57,7 @@ static Cell local assumeEvid(Cell pi, Int o)	/* Add predicate pi (offset o) to  
 }
 
 
-static List local makePredAss(List qs, Int o)	/* Make list of predicate assumps. */
+List makePredAss(List qs, Int o)	/* Make list of predicate assumps. */
             /* from qs (offset o), w/ new dict */
 {				/* vars for each predicate	   */
     List result = NIL;
@@ -72,7 +66,7 @@ static List local makePredAss(List qs, Int o)	/* Make list of predicate assumps.
     return rev(result);
 }
 
-static List local copyPreds(List qs)		/* Copy list of predicates         */
+List copyPreds(List qs)		/* Copy list of predicates         */
 {
     List result = NIL;
     for (; nonNull(qs); qs=tl(qs)) {
@@ -82,7 +76,7 @@ static List local copyPreds(List qs)		/* Copy list of predicates         */
     return rev(result);
 }
 
-static Void local qualify(List qs, Cell alt)	/* Add extra dictionary args to	   */
+Void qualify(List qs, Cell alt)	/* Add extra dictionary args to	   */
             /* qualify alt by predicates in qs */
 {				/* :: ([Pat],Rhs)		   */
     List ds;
@@ -91,7 +85,7 @@ static Void local qualify(List qs, Cell alt)	/* Add extra dictionary args to	   
     fst(alt) = revOnto(ds,fst(alt));
 }
 
-static Void local qualifyBinding(List qs, Cell b)	/* Add extra dict args to each	   */
+Void qualifyBinding(List qs, Cell b)	/* Add extra dict args to each	   */
             /* alternative in function binding */
 {
     if (!isVar(fst(b)))			/* check for function binding	   */
@@ -99,7 +93,7 @@ static Void local qualifyBinding(List qs, Cell b)	/* Add extra dict args to each
     map1Proc(qualify,qs,snd(snd(b)));
 }
 
-static Cell local qualifyExpr(Int l, List ps, Cell e)	/* Add dictionary params to expr   */
+Cell qualifyExpr(Int l, List ps, Cell e)	/* Add dictionary params to expr   */
 {
     if (nonNull(ps)) {			/* Qualify input expression with   */
 	if (whatIs(e)!=LAMBDA)		/* additional dictionary params	   */
@@ -241,7 +235,7 @@ static Cell local scFind(Cell e, Cell pi1, Int o1, Cell pi, Int o, Int d)/* Use 
     return NIL;
 }
 
-static Cell local scEntail(List ps, Cell pi, Int o, Int d)	/* Calc evidence for (pi,o) from ps*/
+Cell scEntail(List ps, Cell pi, Int o, Int d)	/* Calc evidence for (pi,o) from ps*/
             /* Using superclasses and equality.*/
 {
     if (d++ >= cutoff)
@@ -348,7 +342,7 @@ static Cell local entail(List ps, Cell pi, Int o, Int d)	/* Calc evidence for (p
     return ev;
 }
 
-static Cell local inEntail(List ps, Cell pi, Int o, Int d)	/* Calc evidence for (pi,o) from ps*/
+Cell inEntail(List ps, Cell pi, Int o, Int d)	/* Calc evidence for (pi,o) from ps*/
             /* using a top-level instance	   */
             /* entailment			   */
 {
@@ -446,7 +440,7 @@ Cell resolvePred(Kinds ks, Cell pi)			/* Find evidence for predicate pi. */
  * Calculate a minimal equivalent subset of a given set of predicates.
  * ------------------------------------------------------------------------*/
 
-static List local scSimplify(List qs)	/* Simplify predicates in qs,      */
+List scSimplify(List qs)	/* Simplify predicates in qs,      */
 {				/* returning equiv minimal subset  */
     Int n = length(qs);
 
@@ -490,7 +484,7 @@ List simpleContext(List ps, Int o)		/* Simplify context of skeletons   */
  * Context splitting --- tautological and locally tautological predicates:
  * ------------------------------------------------------------------------*/
 
-static Void local elimTauts() {		/* Remove tautological constraints */
+Void elimTauts() {		/* Remove tautological constraints */
     if (!allowOverlap && !allowUnsafeOverlap) {	/* from preds		   */
 	reducePreds();			/* Context reduction to head normal*/
     } else {				/* form is unsound with overlapping*/
@@ -546,7 +540,7 @@ static Bool local anyGenerics(Type t, Int o)	/* Test for generic vars, and count
     }
 }
 
-static List local elimOuterPreds(List sps)	/* Simplify and defer any remaining*/
+List elimOuterPreds(List sps)	/* Simplify and defer any remaining*/
 {				/* preds that contain no generics. */
     List qs = NIL;
     elimTauts();
@@ -569,7 +563,7 @@ static List local elimOuterPreds(List sps)	/* Simplify and defer any remaining*/
     return sps;
 }
 
-static List local elimPredsUsing(List ps, List sps)/* Try to discharge or defer preds,*/
+List elimPredsUsing(List ps, List sps)/* Try to discharge or defer preds,*/
             /* splitting if necessary to match */
 {				/* context ps.  sps = savePreds.   */
     List rems = NIL;
@@ -604,7 +598,7 @@ static List local elimPredsUsing(List ps, List sps)/* Try to discharge or defer 
     return sps;
 }
 
-static Void local reducePreds() {	/* Context reduce predicates: uggh!*/
+Void reducePreds() {	/* Context reduce predicates: uggh!*/
     List rems = NIL;         		/* (A last resort for defaulting)  */
     while (nonNull(preds)) {		/* Pick a predicate from preds	   */
 	Cell p  = preds;
@@ -628,7 +622,7 @@ static Void local reducePreds() {	/* Context reduce predicates: uggh!*/
     preds = scSimplify(rems);		/* Return any remaining predicates */
 }
 
-static Void local normPreds(Int line)	/* Normalize each element of preds */
+Void normPreds(Int line)	/* Normalize each element of preds */
 {				/* in some appropriate manner	   */
 }
 
@@ -636,7 +630,7 @@ static Void local normPreds(Int line)	/* Normalize each element of preds */
  * Mechanisms for dealing with defaults:
  * ------------------------------------------------------------------------*/
 
-static Bool local resolveDefs(List vs, Bool interactive)/* Attempt to resolve defaults */
+Bool resolveDefs(List vs, Bool interactive)/* Attempt to resolve defaults */
             /* for variables vs subject to  */
 {			/* constraints in preds		*/
     List pvs       = NIL;

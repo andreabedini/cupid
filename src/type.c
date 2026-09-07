@@ -15,6 +15,7 @@
 #include "storage.h"
 #include "connect.h"
 #include "scc.h"
+#include "preds.h"
 #include "errors.h"
 #include "output.h"
 #include "subst.h"
@@ -388,12 +389,6 @@ static Void local newDefnBind(Cell v, Type type)  /* make new assump for defn va
     hd(defnBounds) = cons(pair(v,ta), hd(defnBounds));
     bindTv(beta,typeIs,typeOff);       /* Bind beta to new type skeleton   */
 }
-
-/* --------------------------------------------------------------------------
- * Predicates:
- * ------------------------------------------------------------------------*/
-
-#include "preds.c"
 
 /* --------------------------------------------------------------------------
  * Bound and skolemized type variables:
