@@ -125,8 +125,8 @@ String ClearError() {
 
     if (err && (numLoadedScripts() > 0)) {
         everybody(RESET);
-        dropScriptsFrom(numLoadedScripts() -
-                        1); /* remove partially loaded scripts */
+        /* remove partially loaded scripts */
+        dropScriptsFrom(numLoadedScripts());
     }
     return err;
 }

@@ -1,0 +1,10 @@
+main
+:set -E"echo EDIT %"
+:find auxValue
+:reload
+main
+:load
+:load script-stack.hs
+main
+:find main
+:quit

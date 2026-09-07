@@ -1139,8 +1139,61 @@ CUDDLES_inline Void stackCheck(Void) /* call at the top of a recursive  */
 
 /* --------------------------------------------------------------------------
  * Script file control:
- * The implementation of script file storage is hidden.
+ *
+ * There is one record per script, numbered from zero, and script 0 is the
+ * Prelude implementation.  A record has two halves.  The name half says
+ * which file the script was read from; it is filled when the script is
+ * queued for loading and script.c owns it.  The marks half holds the state
+ * of the tables as it was immediately before the script was read, so that
+ * dropScriptsFrom(s) restores the system to that moment; storage.c owns it.
+ * Both halves, and every Script value in the system, use this numbering.
  * ------------------------------------------------------------------------*/
+
+#include "machdep.h" /* for Time */
+
+struct primInfoDef; /* a script's primitives; defined in storage.c */
+
+struct strScriptName {
+    String fileName;  /* Script file name                */
+    String realName;  /* Full path to canonical name     */
+    String directory; /* Directory module was found in   */
+    Time lastChange;  /* Time of last change to script   */
+    Bool postponed;   /* Indicates postponed load        */
+    Bool chased;      /* Added by import chasing?        */
+};
+
+struct strScriptMarks {
+    Text file; /* Script file name, as a text     */
+    Text textHw;
+    Text nextNewText;
+    Text nextNewDText;
+    Addr addrHw;
+    Module moduleHw;
+    Tycon tyconHw;
+    Name nameHw;
+    Class classHw;
+    Inst instHw;
+    /*
+     * handle to the script's primInfoDef containing primops associated
+     * with this script (if any.)
+     */
+    struct primInfoDef *prims;
+};
+
+struct strScript {
+    struct strScriptName name;
+    struct strScriptMarks marks;
+};
+
+extern struct strScript DECTABLE(tabScript);
+
+CUDDLES_inline struct strScript *scriptRec(Script s) {
+#if CHECK_TAGS
+    if (s < 0 || s >= NUM_SCRIPTS)
+        tagError("script", __func__, s);
+#endif
+    return tabScript + s;
+}
 
 extern Script startNewScript(String);
 extern Bool moduleThisScript(Module);

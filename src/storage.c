@@ -1367,81 +1367,101 @@ List getModuleImports(
  * before reading a new script.  In the event of being unable to read the
  * script, or if otherwise requested, the system can be restored to its
  * original state immediately before the file was read.
+ *
+ * That state is the marks half of the script records, which script.c shares;
+ * see the script file control section of storage.h.  scriptHw counts the
+ * records whose marks have been taken, so script scriptHw-1 is the one being
+ * read, or the anonymous record startNewScript(0) makes to give an
+ * expression at the prompt something to recover to.
  * ------------------------------------------------------------------------*/
 
-typedef struct strScriptStorage { /* record of storage state prior to */
-    Text file;                    /* reading script/module            */
-    Text textHw;
-    Text nextNewText;
-    Text nextNewDText;
-    Addr addrHw;
-    Module moduleHw;
-    Tycon tyconHw;
-    Name nameHw;
-    Class classHw;
-    Inst instHw;
-    /*
-     * handle to the script's primInfoDef containing primops associated
-     * with this script (if any.)
-     */
-    struct primInfoDef *prims;
-} script;
+struct strScript DEFTABLE(tabScript, NUM_SCRIPTS); /* Script storage       */
 
-static Script scriptHw; /* next unused script number       */
-static script *scripts = NULL;
-static DynTable *dynTabScripts = NULL; /* storage for script records      */
+static Script scriptHw; /* number of scripts whose marks   */
+                        /* have been recorded              */
 
 Script startNewScript(String f) /* start new script, keeping record */
 {                               /* of status for later restoration  */
-    if (scriptHw >= (Int)(dynTabScripts->maxIdx)) {
-        growDynTable(dynTabScripts);
-        scripts = (script *)(dynTabScripts->data);
+    struct strScriptMarks *m;
+
+    if (scriptHw >= NUM_SCRIPTS) {
+        errHead(0);
+        errPrintf("Too many module files (maximum of %d allowed)", NUM_SCRIPTS);
+        errFail();
     }
 
-    scripts[scriptHw].file = findText(f ? f : "<nofile>");
-    scripts[scriptHw].textHw = textHw;
-    scripts[scriptHw].nextNewText = nextNewText;
-    scripts[scriptHw].nextNewDText = nextNewDText;
-    scripts[scriptHw].addrHw = addrHw;
-    scripts[scriptHw].moduleHw = moduleHw;
-    scripts[scriptHw].tyconHw = tyconHw;
-    scripts[scriptHw].nameHw = nameHw;
-    scripts[scriptHw].classHw = classHw;
-    scripts[scriptHw].instHw = instHw;
-    scripts[scriptHw].prims = NULL;
+    m = &scriptRec(scriptHw)->marks;
+    m->file = findText(f ? f : "<nofile>");
+    m->textHw = textHw;
+    m->nextNewText = nextNewText;
+    m->nextNewDText = nextNewDText;
+    m->addrHw = addrHw;
+    m->moduleHw = moduleHw;
+    m->tyconHw = tyconHw;
+    m->nameHw = nameHw;
+    m->classHw = classHw;
+    m->instHw = instHw;
+    m->prims = NULL;
 
     return scriptHw++;
 }
 
-Bool isPreludeScript() { /* Test whether this is the Prelude*/
-    return (scriptHw == 0);
+Bool isPreludeScript() { /* Test whether script 0 is being read */
+    return (scriptHw <= 1);
 }
 
 Bool moduleThisScript(Module m) /* Test if given module is defined */
 {                               /* in current script file          */
-    return scriptHw < 1 || m >= scripts[scriptHw - 1].moduleHw;
+    return scriptHw < 1 || m >= scriptRec(scriptHw - 1)->marks.moduleHw;
 }
 
 Module lastModule() { /* Return module in current script file */
     return (moduleHw > MODMIN ? moduleHw - 1 : modulePrelude);
 }
 
-#define scriptThis(nm, t, tag)                                                 \
-    Script nm(t x) {                                                           \
-        Script s = 0;                                                          \
-        while (s < scriptHw && x >= scripts[s].tag)                            \
-            s++;                                                               \
-        return s;                                                              \
-    }
+/* Each table grows as the scripts are read, so the script that made entry
+ * x is the last one whose mark for that table is at or below x; entries
+ * below the first mark are built in and belong to the Prelude.
+ */
+static Script local
+scriptThisMark(Cell x, Cell (*markOf)(const struct strScriptMarks *)) {
+    Script s = 1;
+    while (s < scriptHw && x >= markOf(&scriptRec(s)->marks))
+        s++;
+    return s - 1;
+}
 
-scriptThis(scriptThisName, Name, nameHw)
-    scriptThis(scriptThisTycon, Tycon, tyconHw)
-        scriptThis(scriptThisInst, Inst, instHw)
-            scriptThis(scriptThisClass, Class, classHw)
-#undef scriptThis
+static Cell local markName(const struct strScriptMarks *m) {
+    return m->nameHw;
+}
+static Cell local markTycon(const struct strScriptMarks *m) {
+    return m->tyconHw;
+}
+static Cell local markInst(const struct strScriptMarks *m) {
+    return m->instHw;
+}
+static Cell local markClass(const struct strScriptMarks *m) {
+    return m->classHw;
+}
 
-                Module moduleOfScript(Script s) {
-    return (s == 0) ? modulePrelude : scripts[s - 1].moduleHw;
+Script scriptThisName(Name x) {
+    return scriptThisMark(x, markName);
+}
+Script scriptThisTycon(Tycon x) {
+    return scriptThisMark(x, markTycon);
+}
+Script scriptThisInst(Inst x) {
+    return scriptThisMark(x, markInst);
+}
+Script scriptThisClass(Class x) {
+    return scriptThisMark(x, markClass);
+}
+
+Module moduleOfScript(Script s) {
+    /* The Prelude's module is made before its script is read, so script 0
+     * does not follow the rule that a script's module is the one its marks
+     * were taken at.                                                    */
+    return (s == 0) ? modulePrelude : scriptRec(s)->marks.moduleHw;
 }
 
 String fileOfModule(Module m) {
@@ -1449,9 +1469,9 @@ String fileOfModule(Module m) {
     if (m == modulePrelude) {
         return findMPathname(STD_PRELUDE_CUDDLES);
     }
-    for (s = 0; s < scriptHw; ++s) {
-        if (scripts[s].moduleHw == m) {
-            return textToStr(scripts[s].file);
+    for (s = 1; s < scriptHw; ++s) {
+        if (scriptRec(s)->marks.moduleHw == m) {
+            return textToStr(scriptRec(s)->marks.file);
         }
     }
     return 0;
@@ -1459,9 +1479,9 @@ String fileOfModule(Module m) {
 
 Script scriptThisFile(Text f) {
     Script s;
-    for (s = 0; s < scriptHw; ++s) {
-        if (scripts[s].file == f) {
-            return s + 1;
+    for (s = 1; s < scriptHw; ++s) {
+        if (scriptRec(s)->marks.file == f) {
+            return s;
         }
     }
     if (f == textPrelude) {
@@ -1472,50 +1492,39 @@ Script scriptThisFile(Text f) {
 
 Void dropAScript(Script sno) /* elide one script from the stack */
 {
+    Script i;
 
-    int i = sno + 1;
+    if (sno < 0 || sno >= scriptHw)
+        return;
 
-    while (i < scriptHw) {
-        scripts[i - 1].file = scripts[i].file;
-        scripts[i - 1].textHw = scripts[i].textHw;
-        scripts[i - 1].nextNewText = scripts[i].nextNewText;
-        scripts[i - 1].nextNewDText = scripts[i].nextNewDText;
-        scripts[i - 1].addrHw = scripts[i].addrHw;
-        scripts[i - 1].moduleHw = scripts[i].moduleHw;
-        scripts[i - 1].tyconHw = scripts[i].tyconHw;
-        scripts[i - 1].nameHw = scripts[i].nameHw;
-        scripts[i - 1].classHw = scripts[i].classHw;
-        scripts[i - 1].instHw = scripts[i].instHw;
-        if (scripts[i - 1].prims) {
-            freePrimInfo(scripts[i - 1].prims);
-            scripts[i - 1].prims = 0;
-        }
-        scripts[i - 1].prims = scripts[i].prims;
-
-        i++;
+    if (scriptRec(sno)->marks.prims) {
+        freePrimInfo(scriptRec(sno)->marks.prims);
+        scriptRec(sno)->marks.prims = 0;
     }
-    /* The last slot's contents were just copied down into scripts[i-2]
-     * (or, if sno was already the last script, dropped outright), so it
-     * is now a duplicate: shrink the array so nothing iterates over it
-     * again.  Without this, scriptHw still counted it, and both it and
-     * the slot it was copied into held the same "prims" DLL handle,
-     * which dropScriptsFrom/EXIT would then free twice.               */
+    for (i = sno + 1; i < scriptHw; i++)
+        scriptRec(i - 1)->marks = scriptRec(i)->marks;
+    /* The last slot's marks were just copied down, so it is now a
+     * duplicate: shrink the stack so that nothing iterates over it again.
+     * Without this, scriptHw still counted it, and both it and the slot it
+     * was copied into held the same "prims" DLL handle, which
+     * dropScriptsFrom/EXIT would then free twice.                       */
     scriptHw--;
 }
 
 Void dropScriptsFrom(Script sno)      /* Restore storage to state prior  */
 {                                     /* to reading script sno           */
     if (sno >= 0 && sno < scriptHw) { /* is there anything to restore?   */
+        struct strScriptMarks *m = &scriptRec(sno)->marks;
         int i;
-        textHw = scripts[sno].textHw;
-        nextNewText = scripts[sno].nextNewText;
-        nextNewDText = scripts[sno].nextNewDText;
-        moduleHw = scripts[sno].moduleHw;
-        addrHw = scripts[sno].addrHw;
-        tyconHw = scripts[sno].tyconHw;
-        nameHw = scripts[sno].nameHw;
-        classHw = scripts[sno].classHw;
-        instHw = scripts[sno].instHw;
+        textHw = m->textHw;
+        nextNewText = m->nextNewText;
+        nextNewDText = m->nextNewDText;
+        moduleHw = m->moduleHw;
+        addrHw = m->addrHw;
+        tyconHw = m->tyconHw;
+        nameHw = m->nameHw;
+        classHw = m->classHw;
+        instHw = m->instHw;
 
         for (i = 0; i < TEXTHSZ; ++i) {
             int j = 0;
@@ -1549,13 +1558,11 @@ Void dropScriptsFrom(Script sno)      /* Restore storage to state prior  */
             cclassRec(i)->instances = rev(is);
         }
 
-        i = sno;
-        while (i < scriptHw) {
-            if (scripts[i].prims) {
-                freePrimInfo(scripts[i].prims);
-                scripts[i].prims = 0;
+        for (i = sno; i < scriptHw; i++) {
+            if (scriptRec(i)->marks.prims) {
+                freePrimInfo(scriptRec(i)->marks.prims);
+                scriptRec(i)->marks.prims = 0;
             }
-            i++;
         }
         scriptHw = sno;
     }
@@ -1563,7 +1570,7 @@ Void dropScriptsFrom(Script sno)      /* Restore storage to state prior  */
 
 Void setScriptPrims(void *p) /* set the current script's primitive record. */
 {
-    scripts[scriptHw - 1].prims = (struct primInfoDef *)p;
+    scriptRec(scriptHw - 1)->marks.prims = (struct primInfoDef *)p;
     return;
 }
 
@@ -3133,13 +3140,11 @@ Void controlFuns(Int what) {
         struct primInfoDef *ptr, *tmp;
 
         /* Release all primitive DLLs */
-        i = 0;
-        while (i < scriptHw) {
-            if (scripts[i].prims) {
-                freePrimInfo(scripts[i].prims);
-                scripts[i].prims = 0;
+        for (i = 0; i < scriptHw; i++) {
+            if (scriptRec(i)->marks.prims) {
+                freePrimInfo(scriptRec(i)->marks.prims);
+                scriptRec(i)->marks.prims = 0;
             }
-            i++;
         }
 
         ptr = firstPrimInfo;
@@ -3148,9 +3153,6 @@ Void controlFuns(Int what) {
             free(ptr);
             ptr = tmp;
         }
-
-        if (dynTabScripts)
-            freeDynTable(dynTabScripts);
     }
 }
 
@@ -3331,8 +3333,6 @@ Void storage(Int what) {
             errFail();
         }
 
-        dynTabScripts = allocDynTable(sizeof(script), 10, 0, "scripts");
-        scripts = (script *)(dynTabScripts->data);
         dynTabHandles =
             allocDynTable(sizeof(struct strHandle), 4, 0, "handles");
         handles = (struct strHandle *)(dynTabHandles->data);

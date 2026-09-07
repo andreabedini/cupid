@@ -946,9 +946,8 @@ interpreter(Int argc, String argv[]) /* main interpreter loop           */
 
 static Void local initInterpreter() {
     everybody(RESET); /* reset to sensible initial state */
-    dropScriptsFrom(numLoadedScripts() - 1);
     /* remove partially loaded scripts */
-    /* not counting prelude as a script*/
+    dropScriptsFrom(numLoadedScripts());
 
     promptForInput(textToStr(moduleRec(findEvalModule())->text));
 }
