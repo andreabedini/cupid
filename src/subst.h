@@ -25,6 +25,7 @@ typedef struct {			/* Each type variable contains:	   */
 extern  Tyvar		*tyvars;	/* storage for type variables	   */
 extern	Int		typeOff;	/* offset of result type 	   */
 extern	Type		typeIs;		/* skeleton of result type	   */
+CUDDLES_inline Void inferType(Type t, Int o) { typeIs = t; typeOff = o; }
 extern  Int		typeFree;	/* freedom in instantiated type	   */
 extern	List		predsAre;	/* list of predicates in type	   */
 extern  List		genericVars;	/* list of generic vars		   */

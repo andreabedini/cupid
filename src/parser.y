@@ -31,16 +31,15 @@
 #include "goal.h"
 #include "machdep.h"	/* needPrims */
 
-#define defTycon(n,l,lhs,rhs,w)	 tyconDefn(intOf(l),lhs,rhs,w); sp-=n
-#define sigdecl(l,vs,t)		 ap(SIGDECL,triple(l,vs,t))
-#define fixdecl(l,ops,a,p)	 ap(FIXDECL,\
-				    triple(l,ops,mkInt(mkSyntax(a,intOf(p)))))
-#define grded(gs)		 ap(GUARDED,gs)
-#define bang(t)			 ap(BANG,t)
-#define only(t)			 ap(ONLY,t)
-#define letrec(bs,e)		 (nonNull(bs) ? ap(LETREC,pair(bs,e)) : e)
-#define qualify(ps,t)		 (nonNull(ps) ? ap(QUAL,pair(ps,t)) : t)
-#define exportSelf()		 singleton(ap(MODULEENT,mkCon(module(currentModule).text)))
+static Void   local defTycon	 (Int,Cell,Cell,Cell,Cell);
+static Cell   local sigdecl	 (Cell,List,Type);
+static Cell   local fixdecl	 (Cell,List,Syntax,Cell);
+static Cell   local grded	 (List);
+static Cell   local bang	 (Type);
+static Cell   local only	 (Cell);
+static Cell   local letrec	 (List,Cell);
+static Cell   local qualType	 (List,Type);
+static List   local exportSelf	 (Void);
 #define yyerror(s)		 /* errors handled elsewhere */
 
 static Cell   local gcShadow	 (Int,Cell);
@@ -73,14 +72,6 @@ static Cell   local checkConstr	 (Cell);
  * of the parse.
  */
 
-#define gc0(e)			gcShadow(0,e)
-#define gc1(e)			gcShadow(1,e)
-#define gc2(e)			gcShadow(2,e)
-#define gc3(e)			gcShadow(3,e)
-#define gc4(e)			gcShadow(4,e)
-#define gc5(e)			gcShadow(5,e)
-#define gc6(e)			gcShadow(6,e)
-#define gc7(e)			gcShadow(7,e)
 
 %}
 
@@ -122,14 +113,14 @@ start	  : EXPR exp wherePart		{inputExpr = letrec($3,$2); sp-=2;}
  */
 topModule : startMain begin modBody end {
 					 setExportList(singleton(ap(MODULEENT,mkCon(module(currentModule).text))));
-					 $$ = gc3($3);
+					 $$ = gcShadow(3,$3);
 					}
           | startMain '{' modBody '}'   {
 					 setExportList(singleton(ap(MODULEENT,mkCon(module(currentModule).text))));
-					 $$ = gc4($3);
+					 $$ = gcShadow(4,$3);
 					}
 	  | TMODULE modname expspec WHERE '{' modBody end
-					{setExportList($3);   $$ = gc7($6);}
+					{setExportList($3);   $$ = gcShadow(7,$6);}
 	  | TMODULE modname expspec WHERE error
 					{syntaxError("declaration");}
 	  | TMODULE error		{syntaxError("module definition");}
@@ -139,9 +130,9 @@ topModule : startMain begin modBody end {
  * side effect happens before any declarations within the module.
  */
 startMain : /* empty */			{startModule(conMain); 
-					 $$ = gc0(NIL);}
+					 $$ = gcShadow(0,NIL);}
 	  ;
-modname	  : qconid			{startModule(mkCon(mkNestedQual($1))); $$ = gc1(NIL);}
+modname	  : qconid			{startModule(mkCon(mkNestedQual($1))); $$ = gcShadow(1,NIL);}
 	  ;
 modid	  : qconid			{$$ = mkCon(mkNestedQual($1));}
 	  | STRINGLIT			{ String modName = findPathname(textToStr(textOf($1)));
@@ -152,40 +143,40 @@ modid	  : qconid			{$$ = mkCon(mkNestedQual($1));}
 					  }
 					}
 	  ;
-modBody	  : /* empty */                 {$$ = gc0(NIL); }
-          | ';' modBody 		{$$ = gc2($2);}
-          | topDecls			{$$ = gc1($1);}
-	  | impDecls chase		{$$ = gc2(NIL);}
-	  | impDecls ';' chase topDecls	{$$ = gc4($4);}
+modBody	  : /* empty */                 {$$ = gcShadow(0,NIL); }
+          | ';' modBody 		{$$ = gcShadow(2,$2);}
+          | topDecls			{$$ = gcShadow(1,$1);}
+	  | impDecls chase		{$$ = gcShadow(2,NIL);}
+	  | impDecls ';' chase topDecls	{$$ = gcShadow(4,$4);}
 	  ;
 
 /*- Exports: --------------------------------------------------------------*/
 
-expspec	  : /* empty */			{$$ = gc0(exportSelf());}
-	  | '(' ')'			{$$ = gc2(NIL);}
-	  | '(' ',' ')'			{$$ = gc3(NIL);}
-	  | '(' exports ')'		{$$ = gc3($2);}
-	  | '(' exports ',' ')'		{$$ = gc4($2);}
+expspec	  : /* empty */			{$$ = gcShadow(0,exportSelf());}
+	  | '(' ')'			{$$ = gcShadow(2,NIL);}
+	  | '(' ',' ')'			{$$ = gcShadow(3,NIL);}
+	  | '(' exports ')'		{$$ = gcShadow(3,$2);}
+	  | '(' exports ',' ')'		{$$ = gcShadow(4,$2);}
 	  ;
-exports	  : exports ',' export		{$$ = gc3(cons($3,$1));}
-	  | export			{$$ = gc1(singleton($1));}
+exports	  : exports ',' export		{$$ = gcShadow(3,cons($3,$1));}
+	  | export			{$$ = gcShadow(1,singleton($1));}
 	  ;
 /* The qcon should be qconid.  
  * Relaxing the rule lets us explicitly export (:) from the Prelude.
  */
 export	  : qvar			{$$ = $1;}
 	  | qcon			{$$ = $1;}
-	  | qconid '(' UPTO ')'		{$$ = gc4(pair($1,DOTDOT));}
-	  | qconid '(' qnames ')'	{$$ = gc4(pair($1,$3));}
-	  | TMODULE modid		{$$ = gc2(ap(MODULEENT,$2));}
+	  | qconid '(' UPTO ')'		{$$ = gcShadow(4,pair($1,DOTDOT));}
+	  | qconid '(' qnames ')'	{$$ = gcShadow(4,pair($1,$3));}
+	  | TMODULE modid		{$$ = gcShadow(2,ap(MODULEENT,$2));}
 	  ;
-qnames	  : /* empty */			{$$ = gc0(NIL);}
-	  | ','				{$$ = gc1(NIL);}
+qnames	  : /* empty */			{$$ = gcShadow(0,NIL);}
+	  | ','				{$$ = gcShadow(1,NIL);}
 	  | qnames1			{$$ = $1;}
-	  | qnames1 ','			{$$ = gc2($1);}
+	  | qnames1 ','			{$$ = gcShadow(2,$1);}
 	  ;
-qnames1	  : qnames1 ',' qname		{$$ = gc3(cons($3,$1));}
-	  | qname			{$$ = gc1(singleton($1));}
+qnames1	  : qnames1 ',' qname		{$$ = gcShadow(3,cons($3,$1));}
+	  | qname			{$$ = gcShadow(1,singleton($1));}
 	  ;
 qname	  : qvar			{$$ = $1;}
 	  | qcon			{$$ = $1;}
@@ -193,9 +184,9 @@ qname	  : qvar			{$$ = $1;}
 
 /*- Import declarations: --------------------------------------------------*/
 
-impDecls  : impDecls ';' impDecl	{imps = cons($3,imps); $$=gc3(NIL);}
-	  | impDecls ';'		{$$   = gc2(NIL); }
-	  | impDecl			{imps = singleton($1); $$=gc1(NIL);}
+impDecls  : impDecls ';' impDecl	{imps = cons($3,imps); $$=gcShadow(3,NIL);}
+	  | impDecls ';'		{$$   = gcShadow(2,NIL); }
+	  | impDecl			{imps = singleton($1); $$=gcShadow(1,NIL);}
 	  ;
 chase	  : /* empty */			{if (chase(imps)) {
 					     clearStack();
@@ -204,47 +195,47 @@ chase	  : /* empty */			{if (chase(imps)) {
 					     closeAnyInput();
 					     return 0;
 					 }
-					 $$ = gc0(NIL);
+					 $$ = gcShadow(0,NIL);
 					}
 	  ;
 /* Note that qualified import ignores the import list. */
 impDecl	  : IMPORT modid impspec	{addUnqualImport($2,NIL,$3);
-					 $$ = gc3($2);}
+					 $$ = gcShadow(3,$2);}
 	  | IMPORT modid ASMOD modid impspec
 					{addUnqualImport($2,$4,$5);
-					 $$ = gc5($2);}
+					 $$ = gcShadow(5,$2);}
 	  | IMPORT QUALIFIED modid ASMOD modid impspec
 					{addQualImport($3,$5,$6);
-					 $$ = gc6($3);}
+					 $$ = gcShadow(6,$3);}
 	  | IMPORT QUALIFIED modid impspec
 					{addQualImport($3,$3,$4);
-					 $$ = gc4($3);}
+					 $$ = gcShadow(4,$3);}
 	  | IMPORT error		{syntaxError("import declaration");}
 	  ;
-impspec	  : /* empty */			{$$ = gc0(DOTDOT);}
-	  | HIDING '(' imports ')'	{$$ = gc4(ap(HIDDEN,$3));}
-	  | '(' imports ')'		{$$ = gc3($2);}
+impspec	  : /* empty */			{$$ = gcShadow(0,DOTDOT);}
+	  | HIDING '(' imports ')'	{$$ = gcShadow(4,ap(HIDDEN,$3));}
+	  | '(' imports ')'		{$$ = gcShadow(3,$2);}
 	  ;
-imports	  : /* empty */			{$$ = gc0(NIL);}
-	  | ','				{$$ = gc1(NIL);}
+imports	  : /* empty */			{$$ = gcShadow(0,NIL);}
+	  | ','				{$$ = gcShadow(1,NIL);}
 	  | imports1			{$$ = $1;}
-	  | imports1 ','		{$$ = gc2($1);}
+	  | imports1 ','		{$$ = gcShadow(2,$1);}
 	  ;
-imports1  : imports1 ',' import		{$$ = gc3(cons($3,$1));}
-	  | import			{$$ = gc1(singleton($1));}
+imports1  : imports1 ',' import		{$$ = gcShadow(3,cons($3,$1));}
+	  | import			{$$ = gcShadow(1,singleton($1));}
 	  ;
 import	  : var				{$$ = $1;}
-	  | CONID			{$$ = gc1(pair($1,NONE));}
-	  | CONID '(' UPTO ')'		{$$ = gc4(pair($1,DOTDOT));}
-	  | CONID '(' names ')'		{$$ = gc4(pair($1,$3));}
+	  | CONID			{$$ = gcShadow(1,pair($1,NONE));}
+	  | CONID '(' UPTO ')'		{$$ = gcShadow(4,pair($1,DOTDOT));}
+	  | CONID '(' names ')'		{$$ = gcShadow(4,pair($1,$3));}
 	  ;
-names	  : /* empty */			{$$ = gc0(NIL);}
-	  | ','				{$$ = gc1(NIL);}
+names	  : /* empty */			{$$ = gcShadow(0,NIL);}
+	  | ','				{$$ = gcShadow(1,NIL);}
 	  | names1			{$$ = $1;}
-	  | names1 ','			{$$ = gc2($1);}
+	  | names1 ','			{$$ = gcShadow(2,$1);}
 	  ;
-names1	  : names1 ',' name		{$$ = gc3(cons($3,$1));}
-	  | name			{$$ = gc1(singleton($1));}
+names1	  : names1 ',' name		{$$ = gcShadow(3,cons($3,$1));}
+	  | name			{$$ = gcShadow(1,singleton($1));}
 	  ;
 name	  : var				{$$ = $1;}
 	  | con				{$$ = $1;}
@@ -252,11 +243,11 @@ name	  : var				{$$ = $1;}
 
 /*- Top-level declarations: -----------------------------------------------*/
 
-topDecls  : topDecls ';'		{$$ = gc2($1);}
-          | topDecls ';' topDecl	{$$ = gc2($1);}
-	  | topDecls ';' decl		{$$ = gc3(cons($3,$1));}
-	  | topDecl			{$$ = gc0(NIL);}
-	  | decl			{$$ = gc1(cons($1,NIL));}
+topDecls  : topDecls ';'		{$$ = gcShadow(2,$1);}
+          | topDecls ';' topDecl	{$$ = gcShadow(2,$1);}
+	  | topDecls ';' decl		{$$ = gcShadow(3,cons($3,$1));}
+	  | topDecl			{$$ = gcShadow(0,NIL);}
+	  | decl			{$$ = gcShadow(1,cons($1,NIL));}
 	  ;
 
 /*- Type declarations: ----------------------------------------------------*/
@@ -271,12 +262,12 @@ topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
 						    ap(rev($4),$5),DATATYPE);}
 	  | DATA context IMPLIES tyLhs '=' constrs deriving
 					{defTycon(7,$5,$4,
-						  ap(qualify($2,rev($6)),
+						  ap(qualType($2,rev($6)),
 						     $7),DATATYPE);}
 	  | DATA btype2			{defTycon(2,$1,checkTyLhs($2),
 						    ap(NIL,NIL),DATATYPE);}
 	  | DATA context IMPLIES tyLhs  {defTycon(4,$1,$4,
-						  ap(qualify($2,NIL),
+						  ap(qualType($2,NIL),
 						     NIL),DATATYPE);}
 	  | DATA error			{syntaxError("data declaration");}
 	  | TNEWTYPE btype2 '=' nconstr deriving
@@ -284,7 +275,7 @@ topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
 						    ap($4,$5),NEWTYPE);}
 	  | TNEWTYPE context IMPLIES tyLhs '=' nconstr deriving
 					{defTycon(7,$5,$4,
-						  ap(qualify($2,$6),
+						  ap(qualType($2,$6),
 						     $7),NEWTYPE);}
 	  | TNEWTYPE error		{syntaxError("newtype declaration");}
 	  | NEEDPRIMS NUMLIT		{if (isInt($2)) {
@@ -295,77 +286,77 @@ topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
 					 sp-=2;}
 	  | NEEDPRIMS error		{syntaxError("needprims decl");}
 	  ;
-tyLhs	  : tyLhs varid			{$$ = gc2(ap($1,$2));}
+tyLhs	  : tyLhs varid			{$$ = gcShadow(2,ap($1,$2));}
 	  | CONID			{$$ = $1;}
 	  | error			{syntaxError("type defn lhs");}
 	  ;
-invars	  : invars ',' invar		{$$ = gc3(cons($3,$1));}
-	  | invar			{$$ = gc1(cons($1,NIL));}
+invars	  : invars ',' invar		{$$ = gcShadow(3,cons($3,$1));}
+	  | invar			{$$ = gcShadow(1,cons($1,NIL));}
 	  ;
-invar	  : var COCO topType		{$$ = gc3(sigdecl($2,singleton($1),
+invar	  : var COCO topType		{$$ = gcShadow(3,sigdecl($2,singleton($1),
 									$3));}
 	  | var				{$$ = $1;}
 	  ;
-constrs	  : constrs '|' pconstr		{$$ = gc3(cons($3,$1));}
-	  | pconstr			{$$ = gc1(cons($1,NIL));}
+constrs	  : constrs '|' pconstr		{$$ = gcShadow(3,cons($3,$1));}
+	  | pconstr			{$$ = gcShadow(1,cons($1,NIL));}
 	  ;
-pconstr	  : ALL varids '.' qconstr	{$$ = gc4(ap(POLYTYPE,
+pconstr	  : ALL varids '.' qconstr	{$$ = gcShadow(4,ap(POLYTYPE,
 						     pair(rev($2),$4)));}
 	  | constr			{$$ = $1;}
 	  ;
-qconstr	  : context IMPLIES constr	{$$ = gc3(qualify($1,$3));}
+qconstr	  : context IMPLIES constr	{$$ = gcShadow(3,qualType($1,$3));}
 	  | constr			{$$ = $1;}
 	  ;
-constr	  : '!' btype conop bbtype	{$$ = gc4(ap(ap($3,bang($2)),$4));}
-	  | btype1    conop bbtype	{$$ = gc3(ap(ap($2,$1),$3));}
-	  | btype2    conop bbtype	{$$ = gc3(ap(ap($2,$1),$3));}
-	  | bpolyType conop bbtype	{$$ = gc3(ap(ap($2,$1),$3));}
+constr	  : '!' btype conop bbtype	{$$ = gcShadow(4,ap(ap($3,bang($2)),$4));}
+	  | btype1    conop bbtype	{$$ = gcShadow(3,ap(ap($2,$1),$3));}
+	  | btype2    conop bbtype	{$$ = gcShadow(3,ap(ap($2,$1),$3));}
+	  | bpolyType conop bbtype	{$$ = gcShadow(3,ap(ap($2,$1),$3));}
 	  | btype2			{$$ = checkConstr($1);}
 	  | btype3			{$$ = checkConstr($1);}
-	  | con '{' fieldspecs '}'	{$$ = gc4(ap(LABC,pair($1,rev($3))));}
-	  | con '{' '}'			{$$ = gc3(ap(LABC,pair($1,NIL)));}
+	  | con '{' fieldspecs '}'	{$$ = gcShadow(4,ap(LABC,pair($1,rev($3))));}
+	  | con '{' '}'			{$$ = gcShadow(3,ap(LABC,pair($1,NIL)));}
 	  | error			{syntaxError("data type declaration");}
 	  ;
-btype3	  : btype2 '!' atype		{$$ = gc3(ap($1,bang($3)));}
-	  | btype2 bpolyType		{$$ = gc2(ap($1,$2));}
-	  | btype3 atype		{$$ = gc2(ap($1,$2));}
-	  | btype3 '!' atype		{$$ = gc3(ap($1,bang($3)));}
-	  | btype3 bpolyType		{$$ = gc2(ap($1,$2));}
-	  | '(' CONOP ')'		{$$ = gc3($2);}
+btype3	  : btype2 '!' atype		{$$ = gcShadow(3,ap($1,bang($3)));}
+	  | btype2 bpolyType		{$$ = gcShadow(2,ap($1,$2));}
+	  | btype3 atype		{$$ = gcShadow(2,ap($1,$2));}
+	  | btype3 '!' atype		{$$ = gcShadow(3,ap($1,bang($3)));}
+	  | btype3 bpolyType		{$$ = gcShadow(2,ap($1,$2));}
+	  | '(' CONOP ')'		{$$ = gcShadow(3,$2);}
 	  ;
-bbtype	  : '!' btype			{$$ = gc2(bang($2));}
+bbtype	  : '!' btype			{$$ = gcShadow(2,bang($2));}
 	  | btype			{$$ = $1;}
 	  | bpolyType			{$$ = $1;}
 	  ;
-nconstr	  : pconstr			{$$ = gc1(singleton($1));}
+nconstr	  : pconstr			{$$ = gcShadow(1,singleton($1));}
 	  ;
-fieldspecs: fieldspecs ',' fieldspec	{$$ = gc3(cons($3,$1));}
-	  | fieldspec			{$$ = gc1(cons($1,NIL));}
+fieldspecs: fieldspecs ',' fieldspec	{$$ = gcShadow(3,cons($3,$1));}
+	  | fieldspec			{$$ = gcShadow(1,cons($1,NIL));}
 	  ;
-fieldspec : vars COCO polyType		{$$ = gc3(pair(rev($1),$3));}
-	  | vars COCO type		{$$ = gc3(pair(rev($1),$3));}
-	  | vars COCO '!' type		{$$ = gc4(pair(rev($1),bang($4)));}
+fieldspec : vars COCO polyType		{$$ = gcShadow(3,pair(rev($1),$3));}
+	  | vars COCO type		{$$ = gcShadow(3,pair(rev($1),$3));}
+	  | vars COCO '!' type		{$$ = gcShadow(4,pair(rev($1),bang($4)));}
 	  ;
-deriving  : /* empty */			{$$ = gc0(NIL);}
-	  | DERIVING qconid		{$$ = gc2(singleton($2));}
-	  | DERIVING '(' derivs0 ')'	{$$ = gc4($3);}
+deriving  : /* empty */			{$$ = gcShadow(0,NIL);}
+	  | DERIVING qconid		{$$ = gcShadow(2,singleton($2));}
+	  | DERIVING '(' derivs0 ')'	{$$ = gcShadow(4,$3);}
 	  ;
-derivs0	  : /* empty */			{$$ = gc0(NIL);}
-	  | derivs			{$$ = gc1(rev($1));}
+derivs0	  : /* empty */			{$$ = gcShadow(0,NIL);}
+	  | derivs			{$$ = gcShadow(1,rev($1));}
 	  ;
-derivs	  : derivs ',' qconid		{$$ = gc3(cons($3,$1));}
-	  | qconid			{$$ = gc1(singleton($1));}
+derivs	  : derivs ',' qconid		{$$ = gcShadow(3,cons($3,$1));}
+	  | qconid			{$$ = gcShadow(1,singleton($1));}
 	  ;
 
 /*- Processing definitions of primitives ----------------------------------*/
 
 topDecl	  : PRIMITIVE prims COCO topType{primDefn($1,$2,$4); sp-=4;}
 	  ;
-prims	  : prims ',' prim		{$$ = gc3(cons($3,$1));}
-	  | prim			{$$ = gc1(cons($1,NIL));}
+prims	  : prims ',' prim		{$$ = gcShadow(3,cons($3,$1));}
+	  | prim			{$$ = gcShadow(1,cons($1,NIL));}
 	  | error			{syntaxError("primitive defn");}
 	  ;
-prim	  : var STRINGLIT		{$$ = gc2(pair($1,$2));}
+prim	  : var STRINGLIT		{$$ = gcShadow(2,pair($1,$2));}
 	  | var				{$$ = $1;}
 	  ;
 
@@ -392,173 +383,173 @@ topDecl	  : TCLASS crule fds wherePart	{classDefn(intOf($1),$2,$4,$3); sp-=4;}
 	  | TINSTANCE error		{syntaxError("instance declaration");}
 	  | DEFAULT error		{syntaxError("default declaration");}
 	  ;
-crule	  : context IMPLIES btype2	{$$ = gc3(pair($1,checkPred($3)));}
-	  | btype2			{$$ = gc1(pair(NIL,checkPred($1)));}
+crule	  : context IMPLIES btype2	{$$ = gcShadow(3,pair($1,checkPred($3)));}
+	  | btype2			{$$ = gcShadow(1,pair(NIL,checkPred($1)));}
 	  ;
-irule	  : context IMPLIES btype2	{$$ = gc3(pair($1,checkPred($3)));}
-	  | btype2			{$$ = gc1(pair(NIL,checkPred($1)));}
+irule	  : context IMPLIES btype2	{$$ = gcShadow(3,pair($1,checkPred($3)));}
+	  | btype2			{$$ = gcShadow(1,pair(NIL,checkPred($1)));}
 	  ;
-dtypes	  : /* empty */			{$$ = gc0(NIL);}
-	  | dtypes1			{$$ = gc1(rev($1));}
+dtypes	  : /* empty */			{$$ = gcShadow(0,NIL);}
+	  | dtypes1			{$$ = gcShadow(1,rev($1));}
 	  ;
-dtypes1	  : dtypes1 ',' type		{$$ = gc3(cons($3,$1));}
-	  | type			{$$ = gc1(cons($1,NIL));}
+dtypes1	  : dtypes1 ',' type		{$$ = gcShadow(3,cons($3,$1));}
+	  | type			{$$ = gcShadow(1,cons($1,NIL));}
 	  ;
-fds	  : /* empty */			{$$ = gc0(NIL);}
-	  | '|' fds1			{$$ = gc2(rev($2));}
+fds	  : /* empty */			{$$ = gcShadow(0,NIL);}
+	  | '|' fds1			{$$ = gcShadow(2,rev($2));}
 	  ;
-fds1	  : fds1 ',' fd			{$$ = gc3(cons($3,$1));}
-	  | fd				{$$ = gc1(cons($1,NIL));}
+fds1	  : fds1 ',' fd			{$$ = gcShadow(3,cons($3,$1));}
+	  | fd				{$$ = gcShadow(1,cons($1,NIL));}
 	  ;
-fd	  : varids0 ARROW varids0	{$$ = gc3(pair(rev($1),rev($3)));}
+fd	  : varids0 ARROW varids0	{$$ = gcShadow(3,pair(rev($1),rev($3)));}
 	  | error			{syntaxError("functional dependency");}
 	  ;
-varids0   : /* empty */			{$$ = gc0(NIL);}
-	  | varids0 varid		{$$ = gc2(cons($2,$1));}
+varids0   : /* empty */			{$$ = gcShadow(0,NIL);}
+	  | varids0 varid		{$$ = gcShadow(2,cons($2,$1));}
 	  ;
 
 /*- Type expressions: -----------------------------------------------------*/
 
-topType	  : ALL varids '.' topType0	{$$ = gc4(ap(POLYTYPE,
+topType	  : ALL varids '.' topType0	{$$ = gcShadow(4,ap(POLYTYPE,
 						     pair(rev($2),$4)));}
 	  | topType0			{$$ = $1;}
 	  ;
-topType0  : context IMPLIES topType1	{$$ = gc3(qualify($1,$3));}
+topType0  : context IMPLIES topType1	{$$ = gcShadow(3,qualType($1,$3));}
 	  | topType1			{$$ = $1;}
 	  ;
-topType1  : bpolyType ARROW topType1	{$$ = gc3(fn($1,$3));}
-	  | btype1    ARROW topType1	{$$ = gc3(fn($1,$3));}
-	  | btype2    ARROW topType1	{$$ = gc3(fn($1,$3));}
+topType1  : bpolyType ARROW topType1	{$$ = gcShadow(3,fn($1,$3));}
+	  | btype1    ARROW topType1	{$$ = gcShadow(3,fn($1,$3));}
+	  | btype2    ARROW topType1	{$$ = gcShadow(3,fn($1,$3));}
 	  | btype			{$$ = $1;}
 	  ;
-polyType  : ALL varids '.' sigType	{$$ = gc4(ap(POLYTYPE,
+polyType  : ALL varids '.' sigType	{$$ = gcShadow(4,ap(POLYTYPE,
 						     pair(rev($2),$4)));}
 	  | bpolyType			{$$ = $1;}
 	  ;
-bpolyType : '(' polyType ')'		{$$ = gc3($2);}
+bpolyType : '(' polyType ')'		{$$ = gcShadow(3,$2);}
 	  ;
-varids	  : varids varid		{$$ = gc2(cons($2,$1));}
-	  | varid			{$$ = gc1(singleton($1));}
+varids	  : varids varid		{$$ = gcShadow(2,cons($2,$1));}
+	  | varid			{$$ = gcShadow(1,singleton($1));}
 	  ;
-sigType   : context IMPLIES type	{$$ = gc3(qualify($1,$3));}
+sigType   : context IMPLIES type	{$$ = gcShadow(3,qualType($1,$3));}
 	  | type			{$$ = $1;}
 	  ;
-context	  : '(' ')'			{$$ = gc2(NIL);}
-	  | btype2			{$$ = gc1(singleton(checkPred($1)));}
-	  | '(' btype2 ')'		{$$ = gc3(singleton(checkPred($2)));}
-	  | '(' btypes2 ')'		{$$ = gc3(checkCtxt(rev($2)));}
+context	  : '(' ')'			{$$ = gcShadow(2,NIL);}
+	  | btype2			{$$ = gcShadow(1,singleton(checkPred($1)));}
+	  | '(' btype2 ')'		{$$ = gcShadow(3,singleton(checkPred($2)));}
+	  | '(' btypes2 ')'		{$$ = gcShadow(3,checkCtxt(rev($2)));}
  	  ;
 type	  : type1			{$$ = $1;}
 	  | btype2			{$$ = $1;}
 	  ;
 type1	  : btype1			{$$ = $1;}
-	  | bpolyType ARROW type	{$$ = gc3(fn($1,$3));}
-	  | btype1    ARROW type	{$$ = gc3(fn($1,$3));}
-	  | btype2    ARROW type	{$$ = gc3(fn($1,$3));}
+	  | bpolyType ARROW type	{$$ = gcShadow(3,fn($1,$3));}
+	  | btype1    ARROW type	{$$ = gcShadow(3,fn($1,$3));}
+	  | btype2    ARROW type	{$$ = gcShadow(3,fn($1,$3));}
 	  | error			{syntaxError("type expression");}
 	  ;
 btype	  : btype1			{$$ = $1;}
 	  | btype2			{$$ = $1;}
 	  ;
-btype1	  : btype1 atype		{$$ = gc2(ap($1,$2));}
+btype1	  : btype1 atype		{$$ = gcShadow(2,ap($1,$2));}
 	  | atype1			{$$ = $1;}
 	  ;
-btype2	  : btype2 atype		{$$ = gc2(ap($1,$2));}
+btype2	  : btype2 atype		{$$ = gcShadow(2,ap($1,$2));}
 	  | qconid			{$$ = $1;}
 	  ;
 atype	  : atype1			{$$ = $1;}
 	  | qconid			{$$ = $1;}
 	  ;
 atype1	  : varid			{$$ = $1;}
-	  | '(' ')'			{$$ = gc2(typeUnit);}
-	  | '(' ARROW ')'		{$$ = gc3(typeArrow);}
-	  | '(' type1 ')'		{$$ = gc3($2);}
-	  | '(' btype2 ')'		{$$ = gc3($2);}
-	  | '(' tupCommas ')'		{$$ = gc3($2);}
-	  | '(' btypes2 ')'		{$$ = gc3(buildTuple($2));}
-	  | '(' typeTuple ')'		{$$ = gc3(buildTuple($2));}
-	  | '[' type ']'		{$$ = gc3(ap(typeList,$2));}
-	  | '[' ']'			{$$ = gc2(typeList);}
-	  | '_'				{$$ = gc1(inventVar());}
+	  | '(' ')'			{$$ = gcShadow(2,typeUnit);}
+	  | '(' ARROW ')'		{$$ = gcShadow(3,typeArrow);}
+	  | '(' type1 ')'		{$$ = gcShadow(3,$2);}
+	  | '(' btype2 ')'		{$$ = gcShadow(3,$2);}
+	  | '(' tupCommas ')'		{$$ = gcShadow(3,$2);}
+	  | '(' btypes2 ')'		{$$ = gcShadow(3,buildTuple($2));}
+	  | '(' typeTuple ')'		{$$ = gcShadow(3,buildTuple($2));}
+	  | '[' type ']'		{$$ = gcShadow(3,ap(typeList,$2));}
+	  | '[' ']'			{$$ = gcShadow(2,typeList);}
+	  | '_'				{$$ = gcShadow(1,inventVar());}
 	  ;
-btypes2	  : btypes2 ',' btype2		{$$ = gc3(cons($3,$1));}
-	  | btype2  ',' btype2		{$$ = gc3(cons($3,cons($1,NIL)));}
+btypes2	  : btypes2 ',' btype2		{$$ = gcShadow(3,cons($3,$1));}
+	  | btype2  ',' btype2		{$$ = gcShadow(3,cons($3,cons($1,NIL)));}
 	  ;
-typeTuple : type1     ',' type		{$$ = gc3(cons($3,cons($1,NIL)));}
-	  | btype2    ',' type1		{$$ = gc3(cons($3,cons($1,NIL)));}
-	  | btypes2   ',' type1		{$$ = gc3(cons($3,$1));}
-	  | typeTuple ',' type		{$$ = gc3(cons($3,$1));}
+typeTuple : type1     ',' type		{$$ = gcShadow(3,cons($3,cons($1,NIL)));}
+	  | btype2    ',' type1		{$$ = gcShadow(3,cons($3,cons($1,NIL)));}
+	  | btypes2   ',' type1		{$$ = gcShadow(3,cons($3,$1));}
+	  | typeTuple ',' type		{$$ = gcShadow(3,cons($3,$1));}
 	  ;
 
 /*- Value declarations: ---------------------------------------------------*/
 
-gendecl	  : INFIXN optDigit ops		{$$ = gc3(fixdecl($1,$3,NON_ASS,$2));}
+gendecl	  : INFIXN optDigit ops		{$$ = gcShadow(3,fixdecl($1,$3,NON_ASS,$2));}
 	  | INFIXN error		{syntaxError("fixity decl");}
-	  | INFIXL optDigit ops		{$$ = gc3(fixdecl($1,$3,LEFT_ASS,$2));}
+	  | INFIXL optDigit ops		{$$ = gcShadow(3,fixdecl($1,$3,LEFT_ASS,$2));}
 	  | INFIXL error		{syntaxError("fixity decl");}
-	  | INFIXR optDigit ops		{$$ = gc3(fixdecl($1,$3,RIGHT_ASS,$2));}
+	  | INFIXR optDigit ops		{$$ = gcShadow(3,fixdecl($1,$3,RIGHT_ASS,$2));}
 	  | INFIXR error		{syntaxError("fixity decl");}
-	  | vars COCO topType		{$$ = gc3(sigdecl($2,$1,$3));}
+	  | vars COCO topType		{$$ = gcShadow(3,sigdecl($2,$1,$3));}
 	  | vars COCO error		{syntaxError("type signature");}
 	  ;
-optDigit  : NUMLIT			{$$ = gc1(checkPrec($1));}
-	  | /* empty */			{$$ = gc0(mkInt(DEF_PREC));}
+optDigit  : NUMLIT			{$$ = gcShadow(1,checkPrec($1));}
+	  | /* empty */			{$$ = gcShadow(0,mkInt(DEF_PREC));}
 	  ;
-ops	  : ops ',' op			{$$ = gc3(cons($3,$1));}
-	  | op				{$$ = gc1(singleton($1));}
+ops	  : ops ',' op			{$$ = gcShadow(3,cons($3,$1));}
+	  | op				{$$ = gcShadow(1,singleton($1));}
 	  ;
-vars	  : vars ',' var		{$$ = gc3(cons($3,$1));}
-	  | var				{$$ = gc1(singleton($1));}
+vars	  : vars ',' var		{$$ = gcShadow(3,cons($3,$1));}
+	  | var				{$$ = gcShadow(1,singleton($1));}
 	  ;
-decls	  : '{' decls0 end		{$$ = gc3($2);}
-	  | '{' decls1 end		{$$ = gc3($2);}
+decls	  : '{' decls0 end		{$$ = gcShadow(3,$2);}
+	  | '{' decls1 end		{$$ = gcShadow(3,$2);}
 	  ;
-decls0	  : /* empty */			{$$ = gc0(NIL);}
-	  | decls0 ';'			{$$ = gc2($1);}
-	  | decls1 ';'			{$$ = gc2($1);}
+decls0	  : /* empty */			{$$ = gcShadow(0,NIL);}
+	  | decls0 ';'			{$$ = gcShadow(2,$1);}
+	  | decls1 ';'			{$$ = gcShadow(2,$1);}
 	  ;
-decls1	  : decls0 decl			{$$ = gc2(cons($2,$1));}
+decls1	  : decls0 decl			{$$ = gcShadow(2,cons($2,$1));}
 	  ;
 decl	  : gendecl			{$$ = $1;}
-	  | funlhs rhs			{$$ = gc2(ap(FUNBIND,pair($1,$2)));}
-	  | funlhs COCO type rhs	{$$ = gc4(ap(FUNBIND,
+	  | funlhs rhs			{$$ = gcShadow(2,ap(FUNBIND,pair($1,$2)));}
+	  | funlhs COCO type rhs	{$$ = gcShadow(4,ap(FUNBIND,
 						     pair($1,ap(RSIGN,
 								ap($4,$3)))));}
-	  | pat0 rhs			{$$ = gc2(ap(PATBIND,pair($1,$2)));}
+	  | pat0 rhs			{$$ = gcShadow(2,ap(PATBIND,pair($1,$2)));}
 	  ;
 funlhs	  : funlhs0			{$$ = $1;}
 	  | funlhs1			{$$ = $1;}
 	  ;
-funlhs0	  : pat10_vI varop    pat0	{$$ = gc3(ap2($2,$1,$3));}
-	  | var      '+'      pat0	{$$ = gc3(ap2(varPlus,$1,$3));}
-	  | infixPat varop    pat0	{$$ = gc3(ap2($2,$1,$3));}
-	  | NUMLIT   varop    pat0	{$$ = gc3(ap2($2,$1,$3));}
-	  | var      varop_pl pat0	{$$ = gc3(ap2($2,$1,$3));}
+funlhs0	  : pat10_vI varop    pat0	{$$ = gcShadow(3,ap2($2,$1,$3));}
+	  | var      '+'      pat0	{$$ = gcShadow(3,ap2(varPlus,$1,$3));}
+	  | infixPat varop    pat0	{$$ = gcShadow(3,ap2($2,$1,$3));}
+	  | NUMLIT   varop    pat0	{$$ = gcShadow(3,ap2($2,$1,$3));}
+	  | var      varop_pl pat0	{$$ = gcShadow(3,ap2($2,$1,$3));}
 	  ;
-funlhs1	  : '(' funlhs0 ')' apat	{$$ = gc4(ap($2,$4));}
-	  | '(' funlhs1 ')' apat	{$$ = gc4(ap($2,$4));}
-	  | var     apat		{$$ = gc2(ap($1,$2));}
-	  | funlhs1 apat		{$$ = gc2(ap($1,$2));}
+funlhs1	  : '(' funlhs0 ')' apat	{$$ = gcShadow(4,ap($2,$4));}
+	  | '(' funlhs1 ')' apat	{$$ = gcShadow(4,ap($2,$4));}
+	  | var     apat		{$$ = gcShadow(2,ap($1,$2));}
+	  | funlhs1 apat		{$$ = gcShadow(2,ap($1,$2));}
 	  ;
-rhs	  : rhs1 wherePart		{$$ = gc2(letrec($2,$1));}
+rhs	  : rhs1 wherePart		{$$ = gcShadow(2,letrec($2,$1));}
 	  | error			{syntaxError("declaration");}
 	  ;
-rhs1	  : '=' exp			{$$ = gc2(pair($1,$2));}
-	  | gdrhs			{$$ = gc1(desugarGuards(rev($1)));}
+rhs1	  : '=' exp			{$$ = gcShadow(2,pair($1,$2));}
+	  | gdrhs			{$$ = gcShadow(1,desugarGuards(rev($1)));}
 	  ;
-gdrhs	  : gdrhs gddef			{$$ = gc2(cons($2,$1));}
-	  | gddef			{$$ = gc1(singleton($1));}
+gdrhs	  : gdrhs gddef			{$$ = gcShadow(2,cons($2,$1));}
+	  | gddef			{$$ = gcShadow(1,singleton($1));}
 	  ;
-gddef	  : '|' quals '=' exp		{$$ = gc4(pair($3,pair(rev($2),$4)));}
+gddef	  : '|' quals '=' exp		{$$ = gcShadow(4,pair($3,pair(rev($2),$4)));}
 	  ;
-wherePart : /* empty */			{$$ = gc0(NIL);}
-	  | WHERE decls			{$$ = gc2($2);}
+wherePart : /* empty */			{$$ = gcShadow(0,NIL);}
+	  | WHERE decls			{$$ = gcShadow(2,$2);}
 	  ;
 /*- Patterns: -------------------------------------------------------------*/
 
 pat	  : pat_npk			{$$ = $1;}
 	  ;
-pat_npk	  : pat0 COCO type		{$$ = gc3(ap(ESIGN,pair($1,$3)));}
+pat_npk	  : pat0 COCO type		{$$ = gcShadow(3,ap(ESIGN,pair($1,$3)));}
 	  | pat0			{$$ = $1;}
 	  ;
 pat0	  : var				{$$ = $1;}
@@ -566,18 +557,18 @@ pat0	  : var				{$$ = $1;}
 	  | pat0_vI			{$$ = $1;}
 	  ;
 pat0_vI	  : pat10_vI			{$$ = $1;}
-	  | infixPat			{$$ = gc1(ap(INFIX,$1));}
+	  | infixPat			{$$ = gcShadow(1,ap(INFIX,$1));}
 	  ;
-infixPat  : '-' pat10			{$$ = gc2(ap(NEG,only($2)));}
+infixPat  : '-' pat10			{$$ = gcShadow(2,ap(NEG,only($2)));}
 	  | '-' error			{syntaxError("pattern");}
-	  | var qconop pat10		{$$ = gc3(ap(ap($2,only($1)),$3));}
-	  | var qconop '-' pat10	{$$ = gc4(ap(NEG,ap2($2,only($1),$4)));}
-	  | NUMLIT qconop pat10		{$$ = gc3(ap(ap($2,only($1)),$3));}
-	  | NUMLIT qconop '-' pat10	{$$ = gc4(ap(NEG,ap2($2,only($1),$4)));}
-	  | pat10_vI qconop pat10	{$$ = gc3(ap(ap($2,only($1)),$3));}
-	  | pat10_vI qconop '-' pat10	{$$ = gc4(ap(NEG,ap2($2,only($1),$4)));}
-	  | infixPat qconop pat10	{$$ = gc3(ap(ap($2,$1),$3));}
-	  | infixPat qconop '-' pat10	{$$ = gc4(ap(NEG,ap(ap($2,$1),$4)));}
+	  | var qconop pat10		{$$ = gcShadow(3,ap(ap($2,only($1)),$3));}
+	  | var qconop '-' pat10	{$$ = gcShadow(4,ap(NEG,ap2($2,only($1),$4)));}
+	  | NUMLIT qconop pat10		{$$ = gcShadow(3,ap(ap($2,only($1)),$3));}
+	  | NUMLIT qconop '-' pat10	{$$ = gcShadow(4,ap(NEG,ap2($2,only($1),$4)));}
+	  | pat10_vI qconop pat10	{$$ = gcShadow(3,ap(ap($2,only($1)),$3));}
+	  | pat10_vI qconop '-' pat10	{$$ = gcShadow(4,ap(NEG,ap2($2,only($1),$4)));}
+	  | infixPat qconop pat10	{$$ = gcShadow(3,ap(ap($2,$1),$3));}
+	  | infixPat qconop '-' pat10	{$$ = gcShadow(4,ap(NEG,ap(ap($2,$1),$4)));}
 	  ;
 pat10	  : fpat			{$$ = $1;}
 	  | apat			{$$ = $1;}
@@ -585,37 +576,37 @@ pat10	  : fpat			{$$ = $1;}
 pat10_vI  : fpat			{$$ = $1;}
 	  | apat_vI			{$$ = $1;}
 	  ;
-fpat	  : fpat apat			{$$ = gc2(ap($1,$2));}
-	  | gcon apat			{$$ = gc2(ap($1,$2));}
+fpat	  : fpat apat			{$$ = gcShadow(2,ap($1,$2));}
+	  | gcon apat			{$$ = gcShadow(2,ap($1,$2));}
 	  ;
 apat	  : NUMLIT			{$$ = $1;}
 	  | var				{$$ = $1;}
 	  | apat_vI			{$$ = $1;}
 	  ;
-apat_vI	  : var '@' apat		{$$ = gc3(ap(ASPAT,pair($1,$3)));}
+apat_vI	  : var '@' apat		{$$ = gcShadow(3,ap(ASPAT,pair($1,$3)));}
 	  | gcon			{$$ = $1;}
-	  | qcon '{' patbinds '}'	{$$ = gc4(ap(CONFLDS,pair($1,$3)));}
+	  | qcon '{' patbinds '}'	{$$ = gcShadow(4,ap(CONFLDS,pair($1,$3)));}
 	  | CHARLIT			{$$ = $1;}
 	  | STRINGLIT			{$$ = $1;}
-	  | '_'				{$$ = gc1(WILDCARD);}
-	  | '(' pat_npk ')'		{$$ = gc3($2);}
-	  | '(' pats2 ')'		{$$ = gc3(buildTuple($2));}
-	  | '[' pats1 ']'		{$$ = gc3(ap(FINLIST,rev($2)));}
-	  | '~' apat			{$$ = gc2(ap(LAZYPAT,$2));}
+	  | '_'				{$$ = gcShadow(1,WILDCARD);}
+	  | '(' pat_npk ')'		{$$ = gcShadow(3,$2);}
+	  | '(' pats2 ')'		{$$ = gcShadow(3,buildTuple($2));}
+	  | '[' pats1 ']'		{$$ = gcShadow(3,ap(FINLIST,rev($2)));}
+	  | '~' apat			{$$ = gcShadow(2,ap(LAZYPAT,$2));}
 	  ;
-pats2	  : pats2 ',' pat		{$$ = gc3(cons($3,$1));}
-	  | pat ',' pat			{$$ = gc3(cons($3,singleton($1)));}
+pats2	  : pats2 ',' pat		{$$ = gcShadow(3,cons($3,$1));}
+	  | pat ',' pat			{$$ = gcShadow(3,cons($3,singleton($1)));}
 	  ;
-pats1	  : pats1 ',' pat		{$$ = gc3(cons($3,$1));}
-	  | pat				{$$ = gc1(singleton($1));}
+pats1	  : pats1 ',' pat		{$$ = gcShadow(3,cons($3,$1));}
+	  | pat				{$$ = gcShadow(1,singleton($1));}
 	  ;
-patbinds  : /* empty */			{$$ = gc0(NIL);}
-	  | patbinds1			{$$ = gc1(rev($1));}
+patbinds  : /* empty */			{$$ = gcShadow(0,NIL);}
+	  | patbinds1			{$$ = gcShadow(1,rev($1));}
 	  ;
-patbinds1 : patbinds1 ',' patbind	{$$ = gc3(cons($3,$1));}
-	  | patbind			{$$ = gc1(singleton($1));}
+patbinds1 : patbinds1 ',' patbind	{$$ = gcShadow(3,cons($3,$1));}
+	  | patbind			{$$ = gcShadow(1,singleton($1));}
 	  ;
-patbind	  : qvar '=' pat		{$$ = gc3(pair($1,$3));}
+patbind	  : qvar '=' pat		{$$ = gcShadow(3,pair($1,$3));}
 	  | var				{$$ = $1;}
 	  ;
 
@@ -624,205 +615,205 @@ patbind	  : qvar '=' pat		{$$ = gc3(pair($1,$3));}
 exp	  : exp_err			{$$ = $1;}
 	  | error			{syntaxError("expression");}
 	  ;
-exp_err	  : exp0a COCO sigType		{$$ = gc3(ap(ESIGN,pair($1,$3)));}
+exp_err	  : exp0a COCO sigType		{$$ = gcShadow(3,ap(ESIGN,pair($1,$3)));}
 	  | exp0			{$$ = $1;}
 	  ;
 exp0	  : exp0a			{$$ = $1;}
 	  | exp0b			{$$ = $1;}
 	  ;
-exp0a	  : infixExpa			{$$ = gc1(ap(INFIX,$1));}
+exp0a	  : infixExpa			{$$ = gcShadow(1,ap(INFIX,$1));}
 	  | exp10a			{$$ = $1;}
 	  ;
-exp0b	  : infixExpb			{$$ = gc1(ap(INFIX,$1));}
+exp0b	  : infixExpb			{$$ = gcShadow(1,ap(INFIX,$1));}
 	  | exp10b			{$$ = $1;}
 	  ;
-infixExpa : infixExpa qop '-' exp10a	{$$ = gc4(ap(NEG,ap(ap($2,$1),$4)));}
-	  | infixExpa qop exp10a	{$$ = gc3(ap(ap($2,$1),$3));}
-	  | '-' exp10a			{$$ = gc2(ap(NEG,only($2)));}
-	  | exp10a qop '-' exp10a	{$$ = gc4(ap(NEG,
+infixExpa : infixExpa qop '-' exp10a	{$$ = gcShadow(4,ap(NEG,ap(ap($2,$1),$4)));}
+	  | infixExpa qop exp10a	{$$ = gcShadow(3,ap(ap($2,$1),$3));}
+	  | '-' exp10a			{$$ = gcShadow(2,ap(NEG,only($2)));}
+	  | exp10a qop '-' exp10a	{$$ = gcShadow(4,ap(NEG,
 						     ap(ap($2,only($1)),$4)));}
-	  | exp10a qop exp10a		{$$ = gc3(ap(ap($2,only($1)),$3));}
+	  | exp10a qop exp10a		{$$ = gcShadow(3,ap(ap($2,only($1)),$3));}
 	  ;
-infixExpb : infixExpa qop '-' exp10b	{$$ = gc4(ap(NEG,ap(ap($2,$1),$4)));}
-	  | infixExpa qop exp10b	{$$ = gc3(ap(ap($2,$1),$3));}
-	  | '-' exp10b			{$$ = gc2(ap(NEG,only($2)));}
-	  | exp10a qop '-' exp10b	{$$ = gc4(ap(NEG,
+infixExpb : infixExpa qop '-' exp10b	{$$ = gcShadow(4,ap(NEG,ap(ap($2,$1),$4)));}
+	  | infixExpa qop exp10b	{$$ = gcShadow(3,ap(ap($2,$1),$3));}
+	  | '-' exp10b			{$$ = gcShadow(2,ap(NEG,only($2)));}
+	  | exp10a qop '-' exp10b	{$$ = gcShadow(4,ap(NEG,
 						     ap(ap($2,only($1)),$4)));}
-	  | exp10a qop exp10b		{$$ = gc3(ap(ap($2,only($1)),$3));}
+	  | exp10a qop exp10b		{$$ = gcShadow(3,ap(ap($2,only($1)),$3));}
 	  ;
-exp10a	  : CASEXP exp OF '{' alts end	{$$ = gc6(ap(CASE,pair($2,rev($5))));}
-	  | DO '{' stmts end		{$$ = gc4(ap(DOCOMP,checkDo($3)));}
+exp10a	  : CASEXP exp OF '{' alts end	{$$ = gcShadow(6,ap(CASE,pair($2,rev($5))));}
+	  | DO '{' stmts end		{$$ = gcShadow(4,ap(DOCOMP,checkDo($3)));}
 	  | appExp			{$$ = $1;}
 	  ;
-exp10b	  : '\\' pats ARROW exp		{$$ = gc4(ap(LAMBDA,      
+exp10b	  : '\\' pats ARROW exp		{$$ = gcShadow(4,ap(LAMBDA,      
 						     pair(rev($2),
 							  pair($3,$4))));}
-	  | LET decls IN exp		{$$ = gc4(letrec($2,$4));}
-	  | IF exp then_exp else_exp	{$$ = gc4(ap(COND,triple($2,$3,$4)));}
+	  | LET decls IN exp		{$$ = gcShadow(4,letrec($2,$4));}
+	  | IF exp then_exp else_exp	{$$ = gcShadow(4,ap(COND,triple($2,$3,$4)));}
 	  ;
 /* Allow optional semicolons before 'then' and 'else' (as suggested by
    John Meacham), to remove a common pitfall when using if-then-else
    inside do expressions with implicit layout. */
-then_exp  : ';' THEN exp		{$$ = gc3($3);}
-	  | THEN exp			{$$ = gc2($2);}
+then_exp  : ';' THEN exp		{$$ = gcShadow(3,$3);}
+	  | THEN exp			{$$ = gcShadow(2,$2);}
 	  ;
-else_exp  : ';' ELSE exp		{$$ = gc3($3);}
-	  | ELSE exp			{$$ = gc2($2);}
+else_exp  : ';' ELSE exp		{$$ = gcShadow(3,$3);}
+	  | ELSE exp			{$$ = gcShadow(2,$2);}
 	  ;
 
-pats      : pats apat			{$$ = gc2(cons($2,$1));}
-	  | apat			{$$ = gc1(cons($1,NIL));}
+pats      : pats apat			{$$ = gcShadow(2,cons($2,$1));}
+	  | apat			{$$ = gcShadow(1,cons($1,NIL));}
 	  ;
-appExp    : appExp aexp			{$$ = gc2(ap($1,$2));}
+appExp    : appExp aexp			{$$ = gcShadow(2,ap($1,$2));}
 	  | aexp			{$$ = $1;}
 	  ;
 aexp	  : qvar			{$$ = $1;}
-	  | qvar '@' aexp		{$$ = gc3(ap(ASPAT,pair($1,$3)));}
-	  | '~' aexp			{$$ = gc2(ap(LAZYPAT,$2));}
-	  | '_'				{$$ = gc1(WILDCARD);}
+	  | qvar '@' aexp		{$$ = gcShadow(3,ap(ASPAT,pair($1,$3)));}
+	  | '~' aexp			{$$ = gcShadow(2,ap(LAZYPAT,$2));}
+	  | '_'				{$$ = gcShadow(1,WILDCARD);}
 	  | gcon			{$$ = $1;}
-	  | qcon '{' fbinds '}'		{$$ = gc4(ap(CONFLDS,pair($1,$3)));}
-	  | aexp '{' fbinds '}'		{$$ = gc4(ap(UPDFLDS,
+	  | qcon '{' fbinds '}'		{$$ = gcShadow(4,ap(CONFLDS,pair($1,$3)));}
+	  | aexp '{' fbinds '}'		{$$ = gcShadow(4,ap(UPDFLDS,
 						     triple($1,NIL,$3)));}
 	  | NUMLIT			{$$ = $1;}
 	  | CHARLIT			{$$ = $1;}
 	  | STRINGLIT			{$$ = $1;}
 	  | REPEAT			{$$ = $1;}
-	  | '(' exp ')'			{$$ = gc3($2);}
-	  | '(' exps2 ')'		{$$ = gc3(buildTuple($2));}
-	  | '[' list ']'		{$$ = gc3($2);}
-	  | '(' exp10a qop ')'		{$$ = gc4(ap($3,$2));}
-	  | '(' qvarop_mi exp0 ')'	{$$ = gc4(ap(ap(nameFlip,$2),$3));}
-	  | '(' qconop exp0 ')'		{$$ = gc4(ap(ap(nameFlip,$2),$3));}
+	  | '(' exp ')'			{$$ = gcShadow(3,$2);}
+	  | '(' exps2 ')'		{$$ = gcShadow(3,buildTuple($2));}
+	  | '[' list ']'		{$$ = gcShadow(3,$2);}
+	  | '(' exp10a qop ')'		{$$ = gcShadow(4,ap($3,$2));}
+	  | '(' qvarop_mi exp0 ')'	{$$ = gcShadow(4,ap(ap(nameFlip,$2),$3));}
+	  | '(' qconop exp0 ')'		{$$ = gcShadow(4,ap(ap(nameFlip,$2),$3));}
 	  ;
-exps2	  : exps2 ',' exp		{$$ = gc3(cons($3,$1));}
-	  | exp ',' exp			{$$ = gc3(cons($3,cons($1,NIL)));}
+exps2	  : exps2 ',' exp		{$$ = gcShadow(3,cons($3,$1));}
+	  | exp ',' exp			{$$ = gcShadow(3,cons($3,cons($1,NIL)));}
 	  ;
 alts      : alts1                       {$$ = $1;}
-          | ';' alts                    {$$ = gc2($2);}
+          | ';' alts                    {$$ = gcShadow(2,$2);}
           ;
-alts1     : alts1 ';' alt               {$$ = gc3(cons($3,$1));}
-          | alts1 ';'                   {$$ = gc2($1);}
-          | alt                         {$$ = gc1(cons($1,NIL));}
+alts1     : alts1 ';' alt               {$$ = gcShadow(3,cons($3,$1));}
+          | alts1 ';'                   {$$ = gcShadow(2,$1);}
+          | alt                         {$$ = gcShadow(1,cons($1,NIL));}
 	  ;
-alt	  : pat altRhs wherePart	{$$ = gc3(pair($1,letrec($3,$2)));}
+alt	  : pat altRhs wherePart	{$$ = gcShadow(3,pair($1,letrec($3,$2)));}
 	  ;
-altRhs	  : guardAlts			{$$ = gc1(desugarGuards(rev($1)));}
-	  | ARROW exp			{$$ = gc2(pair($1,$2));}
+altRhs	  : guardAlts			{$$ = gcShadow(1,desugarGuards(rev($1)));}
+	  | ARROW exp			{$$ = gcShadow(2,pair($1,$2));}
 	  | error			{syntaxError("case expression");}
 	  ;
-guardAlts : guardAlts guardAlt		{$$ = gc2(cons($2,$1));}
-	  | guardAlt			{$$ = gc1(cons($1,NIL));}
+guardAlts : guardAlts guardAlt		{$$ = gcShadow(2,cons($2,$1));}
+	  | guardAlt			{$$ = gcShadow(1,cons($1,NIL));}
 	  ;
-guardAlt  : '|' quals ARROW exp		{$$ = gc4(pair($3,pair(rev($2),$4)));}
+guardAlt  : '|' quals ARROW exp		{$$ = gcShadow(4,pair($3,pair(rev($2),$4)));}
 	  ;
 
 stmts     : stmts1                      {$$ = $1;}
-          | ';' stmts                   {$$ = gc2($2);}
+          | ';' stmts                   {$$ = gcShadow(2,$2);}
 	  ;
-stmts1	  : stmts1 ';' stmt		{$$ = gc3(cons($3,$1));}
-          | stmts1 ';'			{$$ = gc2($1);}
-	  | stmt			{$$ = gc1(cons($1,NIL));}
+stmts1	  : stmts1 ';' stmt		{$$ = gcShadow(3,cons($3,$1));}
+          | stmts1 ';'			{$$ = gcShadow(2,$1);}
+	  | stmt			{$$ = gcShadow(1,cons($1,NIL));}
 	  ;
 
-stmt      : exp_err FROM exp		{$$ = gc3(ap(FROMQUAL,pair($1,$3)));}
-	  | LET decls			{$$ = gc2(ap(QWHERE,$2));}
-/*	  | IF exp			{$$ = gc2(ap(BOOLQUAL,$2));}*/
-	  | exp_err			{$$ = gc1(ap(DOQUAL,$1));}
+stmt      : exp_err FROM exp		{$$ = gcShadow(3,ap(FROMQUAL,pair($1,$3)));}
+	  | LET decls			{$$ = gcShadow(2,ap(QWHERE,$2));}
+/*	  | IF exp			{$$ = gcShadow(2,ap(BOOLQUAL,$2));}*/
+	  | exp_err			{$$ = gcShadow(1,ap(DOQUAL,$1));}
 	  ;
-fbinds	  : /* empty */			{$$ = gc0(NIL);}
-	  | fbinds1			{$$ = gc1(rev($1));}
+fbinds	  : /* empty */			{$$ = gcShadow(0,NIL);}
+	  | fbinds1			{$$ = gcShadow(1,rev($1));}
 	  ;
-fbinds1	  : fbinds1 ',' fbind		{$$ = gc3(cons($3,$1));}
-	  | fbind			{$$ = gc1(singleton($1));}
+fbinds1	  : fbinds1 ',' fbind		{$$ = gcShadow(3,cons($3,$1));}
+	  | fbind			{$$ = gcShadow(1,singleton($1));}
 	  ;
 fbind	  : var				{$$ = $1;}
-	  | qvar '=' exp		{$$ = gc3(pair($1,$3));}
+	  | qvar '=' exp		{$$ = gcShadow(3,pair($1,$3));}
 	  ;
 
 /*- List Expressions: -------------------------------------------------------*/
 
-list	  : exp				{$$ = gc1(ap(FINLIST,cons($1,NIL)));}
-	  | exps2			{$$ = gc1(ap(FINLIST,rev($1)));}
-	  | exp '|' quals		{$$ = gc3(ap(COMP,pair($1,rev($3))));}
-	  | exp         UPTO exp	{$$ = gc3(ap(ap(nameFromTo,$1),$3));}
-	  | exp ',' exp UPTO		{$$ = gc4(ap(ap(nameFromThen,$1),$3));}
-	  | exp         UPTO		{$$ = gc2(ap(nameFrom,$1));}
-	  | exp ',' exp UPTO exp	{$$ = gc5(ap(ap(ap(nameFromThenTo,
+list	  : exp				{$$ = gcShadow(1,ap(FINLIST,cons($1,NIL)));}
+	  | exps2			{$$ = gcShadow(1,ap(FINLIST,rev($1)));}
+	  | exp '|' quals		{$$ = gcShadow(3,ap(COMP,pair($1,rev($3))));}
+	  | exp         UPTO exp	{$$ = gcShadow(3,ap(ap(nameFromTo,$1),$3));}
+	  | exp ',' exp UPTO		{$$ = gcShadow(4,ap(ap(nameFromThen,$1),$3));}
+	  | exp         UPTO		{$$ = gcShadow(2,ap(nameFrom,$1));}
+	  | exp ',' exp UPTO exp	{$$ = gcShadow(5,ap(ap(ap(nameFromThenTo,
 								$1),$3),$5));}
 	  ;
-quals	  : quals ',' qual		{$$ = gc3(cons($3,$1));}
-	  | qual			{$$ = gc1(cons($1,NIL));}
+quals	  : quals ',' qual		{$$ = gcShadow(3,cons($3,$1));}
+	  | qual			{$$ = gcShadow(1,cons($1,NIL));}
 	  ;
-qual	  : exp FROM exp		{$$ = gc3(ap(FROMQUAL,pair($1,$3)));}
-	  | exp				{$$ = gc1(ap(BOOLQUAL,$1));}
-	  | LET decls			{$$ = gc2(ap(QWHERE,$2));}
+qual	  : exp FROM exp		{$$ = gcShadow(3,ap(FROMQUAL,pair($1,$3)));}
+	  | exp				{$$ = gcShadow(1,ap(BOOLQUAL,$1));}
+	  | LET decls			{$$ = gcShadow(2,ap(QWHERE,$2));}
 	  ;
 
 /*- Identifiers and symbols: ----------------------------------------------*/
 
 gcon	  : qcon			{$$ = $1;}
-	  | '(' ')'			{$$ = gc2(nameUnit);}
-	  | '[' ']'			{$$ = gc2(nameNil);}
-	  | '(' tupCommas ')'		{$$ = gc3($2);}
+	  | '(' ')'			{$$ = gcShadow(2,nameUnit);}
+	  | '[' ']'			{$$ = gcShadow(2,nameNil);}
+	  | '(' tupCommas ')'		{$$ = gcShadow(3,$2);}
 	  ;
-tupCommas : tupCommas ','		{$$ = gc2(mkTuple(tupleOf($1)+1));}
-	  | ','				{$$ = gc1(mkTuple(2));}
+tupCommas : tupCommas ','		{$$ = gcShadow(2,mkTuple(tupleOf($1)+1));}
+	  | ','				{$$ = gcShadow(1,mkTuple(2));}
 	  ;
 varid	  : VARID			{$$ = $1;}
-	  | HIDING			{$$ = gc1(varHiding);}
-	  | QUALIFIED			{$$ = gc1(varQualified);}
-	  | ASMOD			{$$ = gc1(varAsMod);}
+	  | HIDING			{$$ = gcShadow(1,varHiding);}
+	  | QUALIFIED			{$$ = gcShadow(1,varQualified);}
+	  | ASMOD			{$$ = gcShadow(1,varAsMod);}
 	  ;
 qconid	  : QCONID			{$$ = $1;}
 	  | CONID			{$$ = $1;}
 	  ;
 var	  : varid			{$$ = $1;}
-	  | '(' VAROP ')'		{$$ = gc3($2);}
-	  | '(' '+' ')'			{$$ = gc3(varPlus);}
-	  | '(' '-' ')'			{$$ = gc3(varMinus);}
-	  | '(' '!' ')'			{$$ = gc3(varBang);}
-	  | '(' '.' ')'			{$$ = gc3(varDot);}
+	  | '(' VAROP ')'		{$$ = gcShadow(3,$2);}
+	  | '(' '+' ')'			{$$ = gcShadow(3,varPlus);}
+	  | '(' '-' ')'			{$$ = gcShadow(3,varMinus);}
+	  | '(' '!' ')'			{$$ = gcShadow(3,varBang);}
+	  | '(' '.' ')'			{$$ = gcShadow(3,varDot);}
 	  ;
 qvar	  : QVARID			{$$ = $1;}
-	  | '(' QVAROP ')'		{$$ = gc3($2);}
+	  | '(' QVAROP ')'		{$$ = gcShadow(3,$2);}
 	  | var				{$$ = $1;}
 	  ;
 con	  : CONID			{$$ = $1;}
-	  | '(' CONOP ')'		{$$ = gc3($2);}
+	  | '(' CONOP ')'		{$$ = gcShadow(3,$2);}
 	  ;
 qcon	  : QCONID			{$$ = $1;}
-	  | '(' QCONOP ')'		{$$ = gc3($2);}
+	  | '(' QCONOP ')'		{$$ = gcShadow(3,$2);}
 	  | con				{$$ = $1;}
 	  ;
-varop	  : '+'				{$$ = gc1(varPlus);}
-	  | '-'				{$$ = gc1(varMinus);}
+varop	  : '+'				{$$ = gcShadow(1,varPlus);}
+	  | '-'				{$$ = gcShadow(1,varMinus);}
 	  | varop_mipl			{$$ = $1;}
 	  ;
-varop_mi  : '+'				{$$ = gc1(varPlus);}
+varop_mi  : '+'				{$$ = gcShadow(1,varPlus);}
 	  | varop_mipl			{$$ = $1;}
 	  ;
-varop_pl  : '-'				{$$ = gc1(varMinus);}
+varop_pl  : '-'				{$$ = gcShadow(1,varMinus);}
 	  | varop_mipl			{$$ = $1;}
 	  ;
 varop_mipl: VAROP			{$$ = $1;}
-	  | '`' varid '`'		{$$ = gc3($2);}
-	  | '!'				{$$ = gc1(varBang);}
-	  | '.'				{$$ = gc1(varDot);}
+	  | '`' varid '`'		{$$ = gcShadow(3,$2);}
+	  | '!'				{$$ = gcShadow(1,varBang);}
+	  | '.'				{$$ = gcShadow(1,varDot);}
 	  ;
-qvarop	  : '-'				{$$ = gc1(varMinus);}
+qvarop	  : '-'				{$$ = gcShadow(1,varMinus);}
 	  | qvarop_mi			{$$ = $1;}
 	  ;
 qvarop_mi : QVAROP			{$$ = $1;}
-	  | '`' QVARID '`'		{$$ = gc3($2);}
+	  | '`' QVARID '`'		{$$ = gcShadow(3,$2);}
 	  | varop_mi			{$$ = $1;}
 	  ;
 
 conop	  : CONOP 			{$$ = $1;}
-	  | '`' CONID  '`'		{$$ = gc3($2);}
+	  | '`' CONID  '`'		{$$ = gcShadow(3,$2);}
 	  ;
 qconop	  : QCONOP			{$$ = $1;}
-	  | '`' QCONID '`'		{$$ = gc3($2);}
+	  | '`' QCONID '`'		{$$ = gcShadow(3,$2);}
 	  | conop			{$$ = $1;}
 	  ;
 op	  : varop			{$$ = $1;}
@@ -1118,3 +1109,42 @@ static Cell local checkConstr(Cell c)	/* check that data constructor has */
 
 
 /*-------------------------------------------------------------------------*/
+
+/* --------------------------------------------------------------------------
+ * Building declarations and types:
+ * ------------------------------------------------------------------------*/
+
+static Void local defTycon(Int n, Cell l, Cell lhs, Cell rhs, Cell w)
+{				/* define tycon, popping n items   */
+    tyconDefn(intOf(l),lhs,rhs,w);
+    sp -= n;
+}
+
+static Cell local sigdecl(Cell l, List vs, Type t)
+{
+    return ap(SIGDECL,triple(l,vs,t));
+}
+
+static Cell local fixdecl(Cell l, List ops, Syntax a, Cell p)
+{
+    return ap(FIXDECL,triple(l,ops,mkInt(mkSyntax(a,intOf(p)))));
+}
+
+static Cell local grded(List gs)   { return ap(GUARDED,gs); }
+static Cell local bang (Type t)    { return ap(BANG,t); }
+static Cell local only (Cell t)    { return ap(ONLY,t); }
+
+static Cell local letrec(List bs, Cell e)	/* wrap e in bs, if any	   */
+{
+    return nonNull(bs) ? ap(LETREC,pair(bs,e)) : e;
+}
+
+static Cell local qualType(List ps, Type t)	/* qualify t by ps, if any  */
+{
+    return nonNull(ps) ? ap(QUAL,pair(ps,t)) : t;
+}
+
+static List local exportSelf(Void)		/* the module's own name   */
+{
+    return singleton(ap(MODULEENT,mkCon(module(currentModule).text)));
+}

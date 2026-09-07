@@ -96,7 +96,7 @@ static Void local newGlobalFunction     (Name,Int,List,Int,Cell);
 
 static Cell local translate(Cell e)         /* Translate expression:            */
 {
-    STACK_CHECK
+    stackCheck();
     switch (whatIs(e)) {
 	case LETREC     : snd(snd(e)) = translate(snd(snd(e)));
 			  return expandLetrec(e);
@@ -852,7 +852,7 @@ static Cell local pmcTerm(Int co, List sc, Cell e)     /* apply pattern matching
                                        /* co = current offset              */
                                        /* sc = scope                       */
 {                             /* e  = expr to transform           */
-    STACK_CHECK
+    stackCheck();
     switch (whatIs(e)) {
 	case GUARDED  : map2Over(pmcPair,co,sc,snd(e));
 			break;
@@ -1303,7 +1303,7 @@ static Bool local eqNumDiscr(Cell d1, Cell d2)     /* Determine whether two nume
 
 static Cell local lift(Int co, List tr, Cell e)        /* lambda lift term                 */
 {
-    STACK_CHECK
+    stackCheck();
     switch (whatIs(e)) {
 	case GUARDED   : map2Proc(liftPair,co,tr,snd(e));
 			 break;
@@ -1554,7 +1554,7 @@ static Int  localArity;    /* arity of function being compiled w/o extras  */
 
 static Cell local preComp(Cell e)		/* Adjust output from compiler to  */
 {				/* include extra parameters	   */
-    STACK_CHECK
+    stackCheck();
     switch (whatIs(e)) {
 	case GUARDED   : mapOver(preCompPair,snd(e));
 			 break;

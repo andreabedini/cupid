@@ -711,7 +711,7 @@ static Void local build(Cell e, Int co)           /* Generate code which will bu
 {                              /* perform no evaluation           */
     Int n;
 
-    STACK_CHECK
+    stackCheck();
     switch (whatIs(e)) {
 
 	case LETREC    : n = buildLoc(fst(snd(e)),co);
@@ -840,7 +840,7 @@ static Void local make(Cell e, Int co, Label f, Label d)       /* Construct code
                                        /* current offset co, and branch    */
                                        /* to f on failure, d on completion */
 {
-    STACK_CHECK
+    stackCheck();
     switch (whatIs(e)) {
 
 	case LETREC    : {   Int n = buildLoc(fst(snd(e)),co);
@@ -1190,7 +1190,7 @@ Void eval(Cell n)                            /* Graph reduction evaluator       
     StackPtr base = sp;
     Int      ar;
 
-    STACK_CHECK
+    stackCheck();
     if (++evalDepth >= MAX_EVAL_DEPTH)
 	cuddlesStackOverflow();
 #if GIMME_STACK_DUMPS

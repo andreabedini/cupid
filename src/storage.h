@@ -817,6 +817,7 @@ CUDDLES_inline Cell inventVar    (Void) { return mkVar(inventText()); }
 CUDDLES_inline Cell mkDictVar    (Text t) { return ap(DICTVAR,t); }
 CUDDLES_inline Cell inventDictVar(Void) { return mkDictVar(inventDictText()); }
 CUDDLES_inline Cell mkStr    (Text t) { return ap(STRCELL,t); }
+CUDDLES_inline Bool isFloat  (Cell c) { return isPair(c) && fst(c)==FLOATCELL; }
 CUDDLES_inline Bool isDouble (Cell c) { return isPair(c) && fst(c)==DOUBLECELL; }
 CUDDLES_inline Bool isPtr    (Cell c) { return isPair(c) && fst(c)==PTRCELL; }
 
@@ -900,24 +901,21 @@ extern  Cell	     applyToArgs (Cell,List);
 extern  Cell DECTABLE(cellStack);
 extern	StackPtr sp;
 
-#define clearStack() sp=(-1)
-#define stackEmpty() (sp==(-1))
-#define stack(p)     cellStack[p]
-#define chkStack(n)  if (sp>=NUM_STACK-(n)) cuddlesStackOverflow()
-#define push(c)      \
-  do {               \
-    chkStack(1);     \
-    onto(c);         \
-  } while (0)
-#define onto(c)	     stack(++sp)=(c)
-#define pop()	     stack(sp--)
-#define drop()	     sp--
+#define stack(p)     cellStack[p]		/* lvalues: assigned through	   */
 #define top()	     stack(sp)
 #define pushed(n)    stack(sp-(n))
-#define topfun(f)    top()=ap((f),top())
-#define toparg(x)    top()=ap(top(),(x))
+extern  Void	     cuddlesStackOverflow (Void);
 
-extern  Void cuddlesStackOverflow (Void);
+CUDDLES_inline Void clearStack(Void) { sp = -1; }
+CUDDLES_inline Bool stackEmpty(Void) { return sp==-1; }
+CUDDLES_inline Void chkStack  (Int n)  { if (sp>=NUM_STACK-n) cuddlesStackOverflow(); }
+CUDDLES_inline Void onto      (Cell c) { stack(++sp) = c; }	/* push, unchecked */
+CUDDLES_inline Void push      (Cell c) { chkStack(1); onto(c); }
+CUDDLES_inline Cell pop       (Void)   { return stack(sp--); }
+CUDDLES_inline Void drop      (Void)   { sp--; }
+CUDDLES_inline Void topfun    (Cell f) { top() = ap(f,top()); }
+CUDDLES_inline Void toparg    (Cell x) { top() = ap(top(),x); }
+
 
 /* STACK_CHECK compares the address of a local variable against a limit
  * derived from CStackBase (machdep.c) and the process's stack rlimit, so
@@ -930,8 +928,12 @@ extern  Void cuddlesStackOverflow (Void);
  */
 extern  char *cStackLimit;
 extern  Void  cStackCheck	 (Void);
-#define STACK_CHECK { char cStackProbe; \
-		      if (&cStackProbe <= cStackLimit) cStackCheck(); }
+CUDDLES_inline Void stackCheck(Void)	/* call at the top of a recursive  */
+{					/* function; inlined, so the probe */
+    char cStackProbe;			/* is in the caller's frame	   */
+    if (&cStackProbe <= cStackLimit)
+	cStackCheck();
+}
 
 /* --------------------------------------------------------------------------
  * Script file control:

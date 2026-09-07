@@ -79,16 +79,15 @@
 #include "goal.h"
 #include "machdep.h"	/* needPrims */
 
-#define defTycon(n,l,lhs,rhs,w)	 tyconDefn(intOf(l),lhs,rhs,w); sp-=n
-#define sigdecl(l,vs,t)		 ap(SIGDECL,triple(l,vs,t))
-#define fixdecl(l,ops,a,p)	 ap(FIXDECL,\
-				    triple(l,ops,mkInt(mkSyntax(a,intOf(p)))))
-#define grded(gs)		 ap(GUARDED,gs)
-#define bang(t)			 ap(BANG,t)
-#define only(t)			 ap(ONLY,t)
-#define letrec(bs,e)		 (nonNull(bs) ? ap(LETREC,pair(bs,e)) : e)
-#define qualify(ps,t)		 (nonNull(ps) ? ap(QUAL,pair(ps,t)) : t)
-#define exportSelf()		 singleton(ap(MODULEENT,mkCon(module(currentModule).text)))
+static Void   local defTycon	 (Int,Cell,Cell,Cell,Cell);
+static Cell   local sigdecl	 (Cell,List,Type);
+static Cell   local fixdecl	 (Cell,List,Syntax,Cell);
+static Cell   local grded	 (List);
+static Cell   local bang	 (Type);
+static Cell   local only	 (Cell);
+static Cell   local letrec	 (List,Cell);
+static Cell   local qualType	 (List,Type);
+static List   local exportSelf	 (Void);
 #define yyerror(s)		 /* errors handled elsewhere */
 
 static Cell   local gcShadow	 (Int,Cell);
@@ -121,17 +120,9 @@ static Cell   local checkConstr	 (Cell);
  * of the parse.
  */
 
-#define gc0(e)			gcShadow(0,e)
-#define gc1(e)			gcShadow(1,e)
-#define gc2(e)			gcShadow(2,e)
-#define gc3(e)			gcShadow(3,e)
-#define gc4(e)			gcShadow(4,e)
-#define gc5(e)			gcShadow(5,e)
-#define gc6(e)			gcShadow(6,e)
-#define gc7(e)			gcShadow(7,e)
 
 
-#line 135 "parser.c"
+#line 126 "parser.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -767,52 +758,52 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   107,   107,   108,   109,   110,   123,   127,   131,   133,
-     135,   141,   144,   146,   147,   155,   156,   157,   158,   159,
-     164,   165,   166,   167,   168,   170,   171,   176,   177,   178,
-     179,   180,   182,   183,   184,   185,   187,   188,   190,   191,
-     196,   197,   198,   200,   211,   213,   216,   219,   222,   224,
-     225,   226,   228,   229,   230,   231,   233,   234,   236,   237,
-     238,   239,   241,   242,   243,   244,   246,   247,   249,   250,
-     255,   256,   257,   258,   259,   264,   265,   268,   269,   272,
-     276,   278,   281,   282,   285,   289,   290,   296,   298,   299,
-     300,   302,   303,   305,   307,   309,   310,   312,   314,   316,
-     317,   319,   320,   321,   322,   323,   324,   325,   326,   327,
-     329,   330,   331,   332,   333,   334,   336,   337,   338,   340,
-     342,   343,   345,   346,   347,   349,   350,   351,   353,   354,
-     356,   357,   362,   364,   365,   366,   368,   369,   374,   376,
-     378,   380,   382,   388,   389,   390,   391,   392,   393,   395,
-     396,   398,   399,   401,   402,   404,   405,   407,   408,   410,
-     411,   413,   414,   416,   417,   422,   424,   426,   427,   429,
-     430,   431,   432,   434,   436,   438,   440,   441,   443,   444,
-     446,   447,   448,   449,   451,   452,   454,   455,   456,   457,
-     458,   460,   461,   463,   464,   466,   467,   469,   470,   472,
-     473,   474,   475,   476,   477,   478,   479,   480,   481,   482,
-     484,   485,   487,   488,   489,   490,   495,   496,   497,   498,
-     499,   500,   501,   502,   504,   505,   507,   508,   510,   511,
-     513,   514,   516,   517,   518,   520,   522,   523,   524,   527,
-     529,   530,   532,   533,   534,   535,   536,   538,   539,   540,
-     541,   543,   544,   546,   547,   549,   550,   552,   554,   555,
-     559,   561,   562,   564,   565,   566,   568,   569,   571,   572,
-     573,   574,   575,   576,   577,   578,   579,   580,   582,   583,
-     585,   586,   588,   589,   591,   592,   593,   595,   596,   597,
-     598,   599,   600,   601,   602,   603,   604,   606,   607,   609,
-     610,   612,   613,   615,   616,   618,   619,   624,   625,   627,
-     628,   630,   631,   633,   634,   636,   637,   639,   640,   641,
-     642,   644,   646,   647,   648,   649,   651,   653,   654,   655,
-     657,   660,   661,   666,   667,   669,   670,   673,   674,   676,
-     677,   679,   680,   681,   682,   683,   684,   685,   687,   688,
-     689,   690,   691,   692,   693,   694,   695,   696,   698,   699,
-     701,   702,   704,   705,   706,   708,   710,   711,   712,   714,
-     715,   717,   720,   721,   723,   724,   725,   728,   729,   731,
-     733,   734,   736,   737,   739,   740,   745,   746,   747,   748,
-     749,   750,   751,   754,   755,   757,   758,   759,   764,   765,
-     766,   767,   769,   770,   772,   773,   774,   775,   777,   778,
-     780,   781,   782,   783,   784,   785,   787,   788,   789,   791,
-     792,   794,   795,   796,   798,   799,   800,   802,   803,   805,
-     806,   808,   809,   810,   811,   813,   814,   816,   817,   818,
-     821,   822,   824,   825,   826,   828,   829,   831,   832,   837,
-     840,   841
+       0,    98,    98,    99,   100,   101,   114,   118,   122,   124,
+     126,   132,   135,   137,   138,   146,   147,   148,   149,   150,
+     155,   156,   157,   158,   159,   161,   162,   167,   168,   169,
+     170,   171,   173,   174,   175,   176,   178,   179,   181,   182,
+     187,   188,   189,   191,   202,   204,   207,   210,   213,   215,
+     216,   217,   219,   220,   221,   222,   224,   225,   227,   228,
+     229,   230,   232,   233,   234,   235,   237,   238,   240,   241,
+     246,   247,   248,   249,   250,   255,   256,   259,   260,   263,
+     267,   269,   272,   273,   276,   280,   281,   287,   289,   290,
+     291,   293,   294,   296,   298,   300,   301,   303,   305,   307,
+     308,   310,   311,   312,   313,   314,   315,   316,   317,   318,
+     320,   321,   322,   323,   324,   325,   327,   328,   329,   331,
+     333,   334,   336,   337,   338,   340,   341,   342,   344,   345,
+     347,   348,   353,   355,   356,   357,   359,   360,   365,   367,
+     369,   371,   373,   379,   380,   381,   382,   383,   384,   386,
+     387,   389,   390,   392,   393,   395,   396,   398,   399,   401,
+     402,   404,   405,   407,   408,   413,   415,   417,   418,   420,
+     421,   422,   423,   425,   427,   429,   431,   432,   434,   435,
+     437,   438,   439,   440,   442,   443,   445,   446,   447,   448,
+     449,   451,   452,   454,   455,   457,   458,   460,   461,   463,
+     464,   465,   466,   467,   468,   469,   470,   471,   472,   473,
+     475,   476,   478,   479,   480,   481,   486,   487,   488,   489,
+     490,   491,   492,   493,   495,   496,   498,   499,   501,   502,
+     504,   505,   507,   508,   509,   511,   513,   514,   515,   518,
+     520,   521,   523,   524,   525,   526,   527,   529,   530,   531,
+     532,   534,   535,   537,   538,   540,   541,   543,   545,   546,
+     550,   552,   553,   555,   556,   557,   559,   560,   562,   563,
+     564,   565,   566,   567,   568,   569,   570,   571,   573,   574,
+     576,   577,   579,   580,   582,   583,   584,   586,   587,   588,
+     589,   590,   591,   592,   593,   594,   595,   597,   598,   600,
+     601,   603,   604,   606,   607,   609,   610,   615,   616,   618,
+     619,   621,   622,   624,   625,   627,   628,   630,   631,   632,
+     633,   635,   637,   638,   639,   640,   642,   644,   645,   646,
+     648,   651,   652,   657,   658,   660,   661,   664,   665,   667,
+     668,   670,   671,   672,   673,   674,   675,   676,   678,   679,
+     680,   681,   682,   683,   684,   685,   686,   687,   689,   690,
+     692,   693,   695,   696,   697,   699,   701,   702,   703,   705,
+     706,   708,   711,   712,   714,   715,   716,   719,   720,   722,
+     724,   725,   727,   728,   730,   731,   736,   737,   738,   739,
+     740,   741,   742,   745,   746,   748,   749,   750,   755,   756,
+     757,   758,   760,   761,   763,   764,   765,   766,   768,   769,
+     771,   772,   773,   774,   775,   776,   778,   779,   780,   782,
+     783,   785,   786,   787,   789,   790,   791,   793,   794,   796,
+     797,   799,   800,   801,   802,   804,   805,   807,   808,   809,
+     812,   813,   815,   816,   817,   819,   820,   822,   823,   828,
+     831,   832
 };
 #endif
 
@@ -2484,86 +2475,86 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* start: EXPR exp wherePart  */
-#line 107 "parser.y"
+#line 98 "parser.y"
                                         {inputExpr = letrec(yyvsp[0],yyvsp[-1]); sp-=2;}
-#line 2490 "parser.c"
+#line 2481 "parser.c"
     break;
 
   case 3: /* start: CTXT context  */
-#line 108 "parser.y"
+#line 99 "parser.y"
                                         {inputContext = yyvsp[0];	    sp-=1;}
-#line 2496 "parser.c"
+#line 2487 "parser.c"
     break;
 
   case 4: /* start: SCRIPT topModule  */
-#line 109 "parser.y"
+#line 100 "parser.y"
                                         {valDefns  = yyvsp[0];	    sp-=1;}
-#line 2502 "parser.c"
+#line 2493 "parser.c"
     break;
 
   case 5: /* start: error  */
-#line 110 "parser.y"
+#line 101 "parser.y"
                                         {syntaxError("input");}
-#line 2508 "parser.c"
+#line 2499 "parser.c"
     break;
 
   case 6: /* topModule: startMain begin modBody end  */
-#line 123 "parser.y"
+#line 114 "parser.y"
                                         {
 					 setExportList(singleton(ap(MODULEENT,mkCon(module(currentModule).text))));
-					 yyval = gc3(yyvsp[-1]);
+					 yyval = gcShadow(3,yyvsp[-1]);
+					}
+#line 2508 "parser.c"
+    break;
+
+  case 7: /* topModule: startMain '{' modBody '}'  */
+#line 118 "parser.y"
+                                        {
+					 setExportList(singleton(ap(MODULEENT,mkCon(module(currentModule).text))));
+					 yyval = gcShadow(4,yyvsp[-1]);
 					}
 #line 2517 "parser.c"
     break;
 
-  case 7: /* topModule: startMain '{' modBody '}'  */
-#line 127 "parser.y"
-                                        {
-					 setExportList(singleton(ap(MODULEENT,mkCon(module(currentModule).text))));
-					 yyval = gc4(yyvsp[-1]);
-					}
-#line 2526 "parser.c"
-    break;
-
   case 8: /* topModule: TMODULE modname expspec WHERE '{' modBody end  */
-#line 132 "parser.y"
-                                        {setExportList(yyvsp[-4]);   yyval = gc7(yyvsp[-1]);}
-#line 2532 "parser.c"
+#line 123 "parser.y"
+                                        {setExportList(yyvsp[-4]);   yyval = gcShadow(7,yyvsp[-1]);}
+#line 2523 "parser.c"
     break;
 
   case 9: /* topModule: TMODULE modname expspec WHERE error  */
-#line 134 "parser.y"
+#line 125 "parser.y"
                                         {syntaxError("declaration");}
-#line 2538 "parser.c"
+#line 2529 "parser.c"
     break;
 
   case 10: /* topModule: TMODULE error  */
-#line 135 "parser.y"
+#line 126 "parser.y"
                                         {syntaxError("module definition");}
-#line 2544 "parser.c"
+#line 2535 "parser.c"
     break;
 
   case 11: /* startMain: %empty  */
-#line 141 "parser.y"
+#line 132 "parser.y"
                                         {startModule(conMain); 
-					 yyval = gc0(NIL);}
-#line 2551 "parser.c"
+					 yyval = gcShadow(0,NIL);}
+#line 2542 "parser.c"
     break;
 
   case 12: /* modname: qconid  */
-#line 144 "parser.y"
-                                        {startModule(mkCon(mkNestedQual(yyvsp[0]))); yyval = gc1(NIL);}
-#line 2557 "parser.c"
+#line 135 "parser.y"
+                                        {startModule(mkCon(mkNestedQual(yyvsp[0]))); yyval = gcShadow(1,NIL);}
+#line 2548 "parser.c"
     break;
 
   case 13: /* modid: qconid  */
-#line 146 "parser.y"
+#line 137 "parser.y"
                                         {yyval = mkCon(mkNestedQual(yyvsp[0]));}
-#line 2563 "parser.c"
+#line 2554 "parser.c"
     break;
 
   case 14: /* modid: STRINGLIT  */
-#line 147 "parser.y"
+#line 138 "parser.y"
                                         { String modName = findPathname(textToStr(textOf(yyvsp[0])));
 					  if (modName) { /* fillin pathname if known */
 					      yyval = mkStr(findText(modName));
@@ -2571,179 +2562,179 @@ yyreduce:
 					      yyval = yyvsp[0];
 					  }
 					}
-#line 2575 "parser.c"
+#line 2566 "parser.c"
     break;
 
   case 15: /* modBody: %empty  */
-#line 155 "parser.y"
-                                        {yyval = gc0(NIL); }
-#line 2581 "parser.c"
+#line 146 "parser.y"
+                                        {yyval = gcShadow(0,NIL); }
+#line 2572 "parser.c"
     break;
 
   case 16: /* modBody: ';' modBody  */
-#line 156 "parser.y"
-                                        {yyval = gc2(yyvsp[0]);}
-#line 2587 "parser.c"
+#line 147 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[0]);}
+#line 2578 "parser.c"
     break;
 
   case 17: /* modBody: topDecls  */
-#line 157 "parser.y"
-                                        {yyval = gc1(yyvsp[0]);}
-#line 2593 "parser.c"
+#line 148 "parser.y"
+                                        {yyval = gcShadow(1,yyvsp[0]);}
+#line 2584 "parser.c"
     break;
 
   case 18: /* modBody: impDecls chase  */
-#line 158 "parser.y"
-                                        {yyval = gc2(NIL);}
-#line 2599 "parser.c"
+#line 149 "parser.y"
+                                        {yyval = gcShadow(2,NIL);}
+#line 2590 "parser.c"
     break;
 
   case 19: /* modBody: impDecls ';' chase topDecls  */
-#line 159 "parser.y"
-                                        {yyval = gc4(yyvsp[0]);}
-#line 2605 "parser.c"
+#line 150 "parser.y"
+                                        {yyval = gcShadow(4,yyvsp[0]);}
+#line 2596 "parser.c"
     break;
 
   case 20: /* expspec: %empty  */
-#line 164 "parser.y"
-                                        {yyval = gc0(exportSelf());}
-#line 2611 "parser.c"
+#line 155 "parser.y"
+                                        {yyval = gcShadow(0,exportSelf());}
+#line 2602 "parser.c"
     break;
 
   case 21: /* expspec: '(' ')'  */
-#line 165 "parser.y"
-                                        {yyval = gc2(NIL);}
-#line 2617 "parser.c"
+#line 156 "parser.y"
+                                        {yyval = gcShadow(2,NIL);}
+#line 2608 "parser.c"
     break;
 
   case 22: /* expspec: '(' ',' ')'  */
-#line 166 "parser.y"
-                                        {yyval = gc3(NIL);}
-#line 2623 "parser.c"
+#line 157 "parser.y"
+                                        {yyval = gcShadow(3,NIL);}
+#line 2614 "parser.c"
     break;
 
   case 23: /* expspec: '(' exports ')'  */
-#line 167 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 2629 "parser.c"
+#line 158 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 2620 "parser.c"
     break;
 
   case 24: /* expspec: '(' exports ',' ')'  */
-#line 168 "parser.y"
-                                        {yyval = gc4(yyvsp[-2]);}
-#line 2635 "parser.c"
+#line 159 "parser.y"
+                                        {yyval = gcShadow(4,yyvsp[-2]);}
+#line 2626 "parser.c"
     break;
 
   case 25: /* exports: exports ',' export  */
-#line 170 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 2641 "parser.c"
+#line 161 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 2632 "parser.c"
     break;
 
   case 26: /* exports: export  */
-#line 171 "parser.y"
-                                        {yyval = gc1(singleton(yyvsp[0]));}
-#line 2647 "parser.c"
+#line 162 "parser.y"
+                                        {yyval = gcShadow(1,singleton(yyvsp[0]));}
+#line 2638 "parser.c"
     break;
 
   case 27: /* export: qvar  */
-#line 176 "parser.y"
+#line 167 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 2653 "parser.c"
+#line 2644 "parser.c"
     break;
 
   case 28: /* export: qcon  */
-#line 177 "parser.y"
+#line 168 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 2659 "parser.c"
+#line 2650 "parser.c"
     break;
 
   case 29: /* export: qconid '(' UPTO ')'  */
-#line 178 "parser.y"
-                                        {yyval = gc4(pair(yyvsp[-3],DOTDOT));}
-#line 2665 "parser.c"
+#line 169 "parser.y"
+                                        {yyval = gcShadow(4,pair(yyvsp[-3],DOTDOT));}
+#line 2656 "parser.c"
     break;
 
   case 30: /* export: qconid '(' qnames ')'  */
-#line 179 "parser.y"
-                                        {yyval = gc4(pair(yyvsp[-3],yyvsp[-1]));}
-#line 2671 "parser.c"
+#line 170 "parser.y"
+                                        {yyval = gcShadow(4,pair(yyvsp[-3],yyvsp[-1]));}
+#line 2662 "parser.c"
     break;
 
   case 31: /* export: TMODULE modid  */
-#line 180 "parser.y"
-                                        {yyval = gc2(ap(MODULEENT,yyvsp[0]));}
-#line 2677 "parser.c"
+#line 171 "parser.y"
+                                        {yyval = gcShadow(2,ap(MODULEENT,yyvsp[0]));}
+#line 2668 "parser.c"
     break;
 
   case 32: /* qnames: %empty  */
-#line 182 "parser.y"
-                                        {yyval = gc0(NIL);}
-#line 2683 "parser.c"
+#line 173 "parser.y"
+                                        {yyval = gcShadow(0,NIL);}
+#line 2674 "parser.c"
     break;
 
   case 33: /* qnames: ','  */
-#line 183 "parser.y"
-                                        {yyval = gc1(NIL);}
-#line 2689 "parser.c"
+#line 174 "parser.y"
+                                        {yyval = gcShadow(1,NIL);}
+#line 2680 "parser.c"
     break;
 
   case 34: /* qnames: qnames1  */
-#line 184 "parser.y"
+#line 175 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 2695 "parser.c"
+#line 2686 "parser.c"
     break;
 
   case 35: /* qnames: qnames1 ','  */
-#line 185 "parser.y"
-                                        {yyval = gc2(yyvsp[-1]);}
-#line 2701 "parser.c"
+#line 176 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[-1]);}
+#line 2692 "parser.c"
     break;
 
   case 36: /* qnames1: qnames1 ',' qname  */
-#line 187 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 2707 "parser.c"
+#line 178 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 2698 "parser.c"
     break;
 
   case 37: /* qnames1: qname  */
-#line 188 "parser.y"
-                                        {yyval = gc1(singleton(yyvsp[0]));}
-#line 2713 "parser.c"
+#line 179 "parser.y"
+                                        {yyval = gcShadow(1,singleton(yyvsp[0]));}
+#line 2704 "parser.c"
     break;
 
   case 38: /* qname: qvar  */
-#line 190 "parser.y"
+#line 181 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 2719 "parser.c"
+#line 2710 "parser.c"
     break;
 
   case 39: /* qname: qcon  */
-#line 191 "parser.y"
+#line 182 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 2725 "parser.c"
+#line 2716 "parser.c"
     break;
 
   case 40: /* impDecls: impDecls ';' impDecl  */
-#line 196 "parser.y"
-                                        {imps = cons(yyvsp[0],imps); yyval=gc3(NIL);}
-#line 2731 "parser.c"
+#line 187 "parser.y"
+                                        {imps = cons(yyvsp[0],imps); yyval=gcShadow(3,NIL);}
+#line 2722 "parser.c"
     break;
 
   case 41: /* impDecls: impDecls ';'  */
-#line 197 "parser.y"
-                                        {yyval   = gc2(NIL); }
-#line 2737 "parser.c"
+#line 188 "parser.y"
+                                        {yyval   = gcShadow(2,NIL); }
+#line 2728 "parser.c"
     break;
 
   case 42: /* impDecls: impDecl  */
-#line 198 "parser.y"
-                                        {imps = singleton(yyvsp[0]); yyval=gc1(NIL);}
-#line 2743 "parser.c"
+#line 189 "parser.y"
+                                        {imps = singleton(yyvsp[0]); yyval=gcShadow(1,NIL);}
+#line 2734 "parser.c"
     break;
 
   case 43: /* chase: %empty  */
-#line 200 "parser.y"
+#line 191 "parser.y"
                                         {if (chase(imps)) {
 					     clearStack();
 					     onto(imps);
@@ -2751,2486 +2742,2486 @@ yyreduce:
 					     closeAnyInput();
 					     return 0;
 					 }
-					 yyval = gc0(NIL);
+					 yyval = gcShadow(0,NIL);
 					}
-#line 2757 "parser.c"
+#line 2748 "parser.c"
     break;
 
   case 44: /* impDecl: IMPORT modid impspec  */
-#line 211 "parser.y"
+#line 202 "parser.y"
                                         {addUnqualImport(yyvsp[-1],NIL,yyvsp[0]);
-					 yyval = gc3(yyvsp[-1]);}
-#line 2764 "parser.c"
+					 yyval = gcShadow(3,yyvsp[-1]);}
+#line 2755 "parser.c"
     break;
 
   case 45: /* impDecl: IMPORT modid ASMOD modid impspec  */
-#line 214 "parser.y"
+#line 205 "parser.y"
                                         {addUnqualImport(yyvsp[-3],yyvsp[-1],yyvsp[0]);
-					 yyval = gc5(yyvsp[-3]);}
-#line 2771 "parser.c"
+					 yyval = gcShadow(5,yyvsp[-3]);}
+#line 2762 "parser.c"
     break;
 
   case 46: /* impDecl: IMPORT QUALIFIED modid ASMOD modid impspec  */
-#line 217 "parser.y"
+#line 208 "parser.y"
                                         {addQualImport(yyvsp[-3],yyvsp[-1],yyvsp[0]);
-					 yyval = gc6(yyvsp[-3]);}
-#line 2778 "parser.c"
+					 yyval = gcShadow(6,yyvsp[-3]);}
+#line 2769 "parser.c"
     break;
 
   case 47: /* impDecl: IMPORT QUALIFIED modid impspec  */
-#line 220 "parser.y"
+#line 211 "parser.y"
                                         {addQualImport(yyvsp[-1],yyvsp[-1],yyvsp[0]);
-					 yyval = gc4(yyvsp[-1]);}
-#line 2785 "parser.c"
+					 yyval = gcShadow(4,yyvsp[-1]);}
+#line 2776 "parser.c"
     break;
 
   case 48: /* impDecl: IMPORT error  */
-#line 222 "parser.y"
+#line 213 "parser.y"
                                         {syntaxError("import declaration");}
-#line 2791 "parser.c"
+#line 2782 "parser.c"
     break;
 
   case 49: /* impspec: %empty  */
-#line 224 "parser.y"
-                                        {yyval = gc0(DOTDOT);}
-#line 2797 "parser.c"
+#line 215 "parser.y"
+                                        {yyval = gcShadow(0,DOTDOT);}
+#line 2788 "parser.c"
     break;
 
   case 50: /* impspec: HIDING '(' imports ')'  */
-#line 225 "parser.y"
-                                        {yyval = gc4(ap(HIDDEN,yyvsp[-1]));}
-#line 2803 "parser.c"
+#line 216 "parser.y"
+                                        {yyval = gcShadow(4,ap(HIDDEN,yyvsp[-1]));}
+#line 2794 "parser.c"
     break;
 
   case 51: /* impspec: '(' imports ')'  */
-#line 226 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 2809 "parser.c"
+#line 217 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 2800 "parser.c"
     break;
 
   case 52: /* imports: %empty  */
-#line 228 "parser.y"
-                                        {yyval = gc0(NIL);}
-#line 2815 "parser.c"
+#line 219 "parser.y"
+                                        {yyval = gcShadow(0,NIL);}
+#line 2806 "parser.c"
     break;
 
   case 53: /* imports: ','  */
-#line 229 "parser.y"
-                                        {yyval = gc1(NIL);}
-#line 2821 "parser.c"
+#line 220 "parser.y"
+                                        {yyval = gcShadow(1,NIL);}
+#line 2812 "parser.c"
     break;
 
   case 54: /* imports: imports1  */
-#line 230 "parser.y"
+#line 221 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 2827 "parser.c"
+#line 2818 "parser.c"
     break;
 
   case 55: /* imports: imports1 ','  */
-#line 231 "parser.y"
-                                        {yyval = gc2(yyvsp[-1]);}
-#line 2833 "parser.c"
+#line 222 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[-1]);}
+#line 2824 "parser.c"
     break;
 
   case 56: /* imports1: imports1 ',' import  */
-#line 233 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 2839 "parser.c"
+#line 224 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 2830 "parser.c"
     break;
 
   case 57: /* imports1: import  */
-#line 234 "parser.y"
-                                        {yyval = gc1(singleton(yyvsp[0]));}
-#line 2845 "parser.c"
+#line 225 "parser.y"
+                                        {yyval = gcShadow(1,singleton(yyvsp[0]));}
+#line 2836 "parser.c"
     break;
 
   case 58: /* import: var  */
-#line 236 "parser.y"
+#line 227 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 2851 "parser.c"
+#line 2842 "parser.c"
     break;
 
   case 59: /* import: CONID  */
-#line 237 "parser.y"
-                                        {yyval = gc1(pair(yyvsp[0],NONE));}
-#line 2857 "parser.c"
+#line 228 "parser.y"
+                                        {yyval = gcShadow(1,pair(yyvsp[0],NONE));}
+#line 2848 "parser.c"
     break;
 
   case 60: /* import: CONID '(' UPTO ')'  */
-#line 238 "parser.y"
-                                        {yyval = gc4(pair(yyvsp[-3],DOTDOT));}
-#line 2863 "parser.c"
+#line 229 "parser.y"
+                                        {yyval = gcShadow(4,pair(yyvsp[-3],DOTDOT));}
+#line 2854 "parser.c"
     break;
 
   case 61: /* import: CONID '(' names ')'  */
-#line 239 "parser.y"
-                                        {yyval = gc4(pair(yyvsp[-3],yyvsp[-1]));}
-#line 2869 "parser.c"
+#line 230 "parser.y"
+                                        {yyval = gcShadow(4,pair(yyvsp[-3],yyvsp[-1]));}
+#line 2860 "parser.c"
     break;
 
   case 62: /* names: %empty  */
-#line 241 "parser.y"
-                                        {yyval = gc0(NIL);}
-#line 2875 "parser.c"
+#line 232 "parser.y"
+                                        {yyval = gcShadow(0,NIL);}
+#line 2866 "parser.c"
     break;
 
   case 63: /* names: ','  */
-#line 242 "parser.y"
-                                        {yyval = gc1(NIL);}
-#line 2881 "parser.c"
+#line 233 "parser.y"
+                                        {yyval = gcShadow(1,NIL);}
+#line 2872 "parser.c"
     break;
 
   case 64: /* names: names1  */
-#line 243 "parser.y"
+#line 234 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 2887 "parser.c"
+#line 2878 "parser.c"
     break;
 
   case 65: /* names: names1 ','  */
-#line 244 "parser.y"
-                                        {yyval = gc2(yyvsp[-1]);}
-#line 2893 "parser.c"
+#line 235 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[-1]);}
+#line 2884 "parser.c"
     break;
 
   case 66: /* names1: names1 ',' name  */
-#line 246 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 2899 "parser.c"
+#line 237 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 2890 "parser.c"
     break;
 
   case 67: /* names1: name  */
-#line 247 "parser.y"
-                                        {yyval = gc1(singleton(yyvsp[0]));}
-#line 2905 "parser.c"
+#line 238 "parser.y"
+                                        {yyval = gcShadow(1,singleton(yyvsp[0]));}
+#line 2896 "parser.c"
     break;
 
   case 68: /* name: var  */
-#line 249 "parser.y"
+#line 240 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 2911 "parser.c"
+#line 2902 "parser.c"
     break;
 
   case 69: /* name: con  */
-#line 250 "parser.y"
+#line 241 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 2917 "parser.c"
+#line 2908 "parser.c"
     break;
 
   case 70: /* topDecls: topDecls ';'  */
-#line 255 "parser.y"
-                                        {yyval = gc2(yyvsp[-1]);}
-#line 2923 "parser.c"
+#line 246 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[-1]);}
+#line 2914 "parser.c"
     break;
 
   case 71: /* topDecls: topDecls ';' topDecl  */
-#line 256 "parser.y"
-                                        {yyval = gc2(yyvsp[-2]);}
-#line 2929 "parser.c"
+#line 247 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[-2]);}
+#line 2920 "parser.c"
     break;
 
   case 72: /* topDecls: topDecls ';' decl  */
-#line 257 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 2935 "parser.c"
+#line 248 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 2926 "parser.c"
     break;
 
   case 73: /* topDecls: topDecl  */
-#line 258 "parser.y"
-                                        {yyval = gc0(NIL);}
-#line 2941 "parser.c"
+#line 249 "parser.y"
+                                        {yyval = gcShadow(0,NIL);}
+#line 2932 "parser.c"
     break;
 
   case 74: /* topDecls: decl  */
-#line 259 "parser.y"
-                                        {yyval = gc1(cons(yyvsp[0],NIL));}
-#line 2947 "parser.c"
+#line 250 "parser.y"
+                                        {yyval = gcShadow(1,cons(yyvsp[0],NIL));}
+#line 2938 "parser.c"
     break;
 
   case 75: /* topDecl: TYPE tyLhs '=' type  */
-#line 264 "parser.y"
+#line 255 "parser.y"
                                         {defTycon(4,yyvsp[-1],yyvsp[-2],yyvsp[0],SYNONYM);}
-#line 2953 "parser.c"
+#line 2944 "parser.c"
     break;
 
   case 76: /* topDecl: TYPE tyLhs '=' type IN invars  */
-#line 266 "parser.y"
+#line 257 "parser.y"
                                         {defTycon(6,yyvsp[-3],yyvsp[-4],
 						    ap(yyvsp[-2],yyvsp[0]),RESTRICTSYN);}
-#line 2960 "parser.c"
+#line 2951 "parser.c"
     break;
 
   case 77: /* topDecl: TYPE error  */
-#line 268 "parser.y"
+#line 259 "parser.y"
                                         {syntaxError("type declaration");}
-#line 2966 "parser.c"
+#line 2957 "parser.c"
     break;
 
   case 78: /* topDecl: DATA btype2 '=' constrs deriving  */
-#line 270 "parser.y"
+#line 261 "parser.y"
                                         {defTycon(5,yyvsp[-2],checkTyLhs(yyvsp[-3]),
 						    ap(rev(yyvsp[-1]),yyvsp[0]),DATATYPE);}
-#line 2973 "parser.c"
+#line 2964 "parser.c"
     break;
 
   case 79: /* topDecl: DATA context IMPLIES tyLhs '=' constrs deriving  */
-#line 273 "parser.y"
+#line 264 "parser.y"
                                         {defTycon(7,yyvsp[-2],yyvsp[-3],
-						  ap(qualify(yyvsp[-5],rev(yyvsp[-1])),
+						  ap(qualType(yyvsp[-5],rev(yyvsp[-1])),
 						     yyvsp[0]),DATATYPE);}
-#line 2981 "parser.c"
+#line 2972 "parser.c"
     break;
 
   case 80: /* topDecl: DATA btype2  */
-#line 276 "parser.y"
+#line 267 "parser.y"
                                         {defTycon(2,yyvsp[-1],checkTyLhs(yyvsp[0]),
 						    ap(NIL,NIL),DATATYPE);}
-#line 2988 "parser.c"
+#line 2979 "parser.c"
     break;
 
   case 81: /* topDecl: DATA context IMPLIES tyLhs  */
-#line 278 "parser.y"
+#line 269 "parser.y"
                                         {defTycon(4,yyvsp[-3],yyvsp[0],
-						  ap(qualify(yyvsp[-2],NIL),
+						  ap(qualType(yyvsp[-2],NIL),
 						     NIL),DATATYPE);}
-#line 2996 "parser.c"
+#line 2987 "parser.c"
     break;
 
   case 82: /* topDecl: DATA error  */
-#line 281 "parser.y"
+#line 272 "parser.y"
                                         {syntaxError("data declaration");}
-#line 3002 "parser.c"
+#line 2993 "parser.c"
     break;
 
   case 83: /* topDecl: TNEWTYPE btype2 '=' nconstr deriving  */
-#line 283 "parser.y"
+#line 274 "parser.y"
                                         {defTycon(5,yyvsp[-2],checkTyLhs(yyvsp[-3]),
 						    ap(yyvsp[-1],yyvsp[0]),NEWTYPE);}
-#line 3009 "parser.c"
+#line 3000 "parser.c"
     break;
 
   case 84: /* topDecl: TNEWTYPE context IMPLIES tyLhs '=' nconstr deriving  */
-#line 286 "parser.y"
+#line 277 "parser.y"
                                         {defTycon(7,yyvsp[-2],yyvsp[-3],
-						  ap(qualify(yyvsp[-5],yyvsp[-1]),
+						  ap(qualType(yyvsp[-5],yyvsp[-1]),
 						     yyvsp[0]),NEWTYPE);}
-#line 3017 "parser.c"
+#line 3008 "parser.c"
     break;
 
   case 85: /* topDecl: TNEWTYPE error  */
-#line 289 "parser.y"
+#line 280 "parser.y"
                                         {syntaxError("newtype declaration");}
-#line 3023 "parser.c"
+#line 3014 "parser.c"
     break;
 
   case 86: /* topDecl: NEEDPRIMS NUMLIT  */
-#line 290 "parser.y"
+#line 281 "parser.y"
                                         {if (isInt(yyvsp[0])) {
 					     needPrims(intOf(yyvsp[0]), NULL);
 					 } else {
 					     syntaxError("needprims decl");
 					 }
 					 sp-=2;}
-#line 3034 "parser.c"
+#line 3025 "parser.c"
     break;
 
   case 87: /* topDecl: NEEDPRIMS error  */
-#line 296 "parser.y"
+#line 287 "parser.y"
                                         {syntaxError("needprims decl");}
-#line 3040 "parser.c"
+#line 3031 "parser.c"
     break;
 
   case 88: /* tyLhs: tyLhs varid  */
-#line 298 "parser.y"
-                                        {yyval = gc2(ap(yyvsp[-1],yyvsp[0]));}
-#line 3046 "parser.c"
+#line 289 "parser.y"
+                                        {yyval = gcShadow(2,ap(yyvsp[-1],yyvsp[0]));}
+#line 3037 "parser.c"
     break;
 
   case 89: /* tyLhs: CONID  */
-#line 299 "parser.y"
+#line 290 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3052 "parser.c"
+#line 3043 "parser.c"
     break;
 
   case 90: /* tyLhs: error  */
-#line 300 "parser.y"
+#line 291 "parser.y"
                                         {syntaxError("type defn lhs");}
-#line 3058 "parser.c"
+#line 3049 "parser.c"
     break;
 
   case 91: /* invars: invars ',' invar  */
-#line 302 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 3064 "parser.c"
+#line 293 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 3055 "parser.c"
     break;
 
   case 92: /* invars: invar  */
-#line 303 "parser.y"
-                                        {yyval = gc1(cons(yyvsp[0],NIL));}
-#line 3070 "parser.c"
+#line 294 "parser.y"
+                                        {yyval = gcShadow(1,cons(yyvsp[0],NIL));}
+#line 3061 "parser.c"
     break;
 
   case 93: /* invar: var COCO topType  */
-#line 305 "parser.y"
-                                        {yyval = gc3(sigdecl(yyvsp[-1],singleton(yyvsp[-2]),
+#line 296 "parser.y"
+                                        {yyval = gcShadow(3,sigdecl(yyvsp[-1],singleton(yyvsp[-2]),
 									yyvsp[0]));}
-#line 3077 "parser.c"
+#line 3068 "parser.c"
     break;
 
   case 94: /* invar: var  */
-#line 307 "parser.y"
+#line 298 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3083 "parser.c"
+#line 3074 "parser.c"
     break;
 
   case 95: /* constrs: constrs '|' pconstr  */
-#line 309 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 3089 "parser.c"
+#line 300 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 3080 "parser.c"
     break;
 
   case 96: /* constrs: pconstr  */
-#line 310 "parser.y"
-                                        {yyval = gc1(cons(yyvsp[0],NIL));}
-#line 3095 "parser.c"
+#line 301 "parser.y"
+                                        {yyval = gcShadow(1,cons(yyvsp[0],NIL));}
+#line 3086 "parser.c"
     break;
 
   case 97: /* pconstr: ALL varids '.' qconstr  */
-#line 312 "parser.y"
-                                        {yyval = gc4(ap(POLYTYPE,
+#line 303 "parser.y"
+                                        {yyval = gcShadow(4,ap(POLYTYPE,
 						     pair(rev(yyvsp[-2]),yyvsp[0])));}
-#line 3102 "parser.c"
+#line 3093 "parser.c"
     break;
 
   case 98: /* pconstr: constr  */
-#line 314 "parser.y"
+#line 305 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3108 "parser.c"
+#line 3099 "parser.c"
     break;
 
   case 99: /* qconstr: context IMPLIES constr  */
-#line 316 "parser.y"
-                                        {yyval = gc3(qualify(yyvsp[-2],yyvsp[0]));}
-#line 3114 "parser.c"
+#line 307 "parser.y"
+                                        {yyval = gcShadow(3,qualType(yyvsp[-2],yyvsp[0]));}
+#line 3105 "parser.c"
     break;
 
   case 100: /* qconstr: constr  */
-#line 317 "parser.y"
+#line 308 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3120 "parser.c"
+#line 3111 "parser.c"
     break;
 
   case 101: /* constr: '!' btype conop bbtype  */
-#line 319 "parser.y"
-                                        {yyval = gc4(ap(ap(yyvsp[-1],bang(yyvsp[-2])),yyvsp[0]));}
-#line 3126 "parser.c"
+#line 310 "parser.y"
+                                        {yyval = gcShadow(4,ap(ap(yyvsp[-1],bang(yyvsp[-2])),yyvsp[0]));}
+#line 3117 "parser.c"
     break;
 
   case 102: /* constr: btype1 conop bbtype  */
-#line 320 "parser.y"
-                                        {yyval = gc3(ap(ap(yyvsp[-1],yyvsp[-2]),yyvsp[0]));}
-#line 3132 "parser.c"
+#line 311 "parser.y"
+                                        {yyval = gcShadow(3,ap(ap(yyvsp[-1],yyvsp[-2]),yyvsp[0]));}
+#line 3123 "parser.c"
     break;
 
   case 103: /* constr: btype2 conop bbtype  */
-#line 321 "parser.y"
-                                        {yyval = gc3(ap(ap(yyvsp[-1],yyvsp[-2]),yyvsp[0]));}
-#line 3138 "parser.c"
+#line 312 "parser.y"
+                                        {yyval = gcShadow(3,ap(ap(yyvsp[-1],yyvsp[-2]),yyvsp[0]));}
+#line 3129 "parser.c"
     break;
 
   case 104: /* constr: bpolyType conop bbtype  */
-#line 322 "parser.y"
-                                        {yyval = gc3(ap(ap(yyvsp[-1],yyvsp[-2]),yyvsp[0]));}
-#line 3144 "parser.c"
+#line 313 "parser.y"
+                                        {yyval = gcShadow(3,ap(ap(yyvsp[-1],yyvsp[-2]),yyvsp[0]));}
+#line 3135 "parser.c"
     break;
 
   case 105: /* constr: btype2  */
-#line 323 "parser.y"
+#line 314 "parser.y"
                                         {yyval = checkConstr(yyvsp[0]);}
-#line 3150 "parser.c"
+#line 3141 "parser.c"
     break;
 
   case 106: /* constr: btype3  */
-#line 324 "parser.y"
+#line 315 "parser.y"
                                         {yyval = checkConstr(yyvsp[0]);}
-#line 3156 "parser.c"
+#line 3147 "parser.c"
     break;
 
   case 107: /* constr: con '{' fieldspecs '}'  */
-#line 325 "parser.y"
-                                        {yyval = gc4(ap(LABC,pair(yyvsp[-3],rev(yyvsp[-1]))));}
-#line 3162 "parser.c"
+#line 316 "parser.y"
+                                        {yyval = gcShadow(4,ap(LABC,pair(yyvsp[-3],rev(yyvsp[-1]))));}
+#line 3153 "parser.c"
     break;
 
   case 108: /* constr: con '{' '}'  */
-#line 326 "parser.y"
-                                        {yyval = gc3(ap(LABC,pair(yyvsp[-2],NIL)));}
-#line 3168 "parser.c"
+#line 317 "parser.y"
+                                        {yyval = gcShadow(3,ap(LABC,pair(yyvsp[-2],NIL)));}
+#line 3159 "parser.c"
     break;
 
   case 109: /* constr: error  */
-#line 327 "parser.y"
+#line 318 "parser.y"
                                         {syntaxError("data type declaration");}
-#line 3174 "parser.c"
+#line 3165 "parser.c"
     break;
 
   case 110: /* btype3: btype2 '!' atype  */
-#line 329 "parser.y"
-                                        {yyval = gc3(ap(yyvsp[-2],bang(yyvsp[0])));}
-#line 3180 "parser.c"
+#line 320 "parser.y"
+                                        {yyval = gcShadow(3,ap(yyvsp[-2],bang(yyvsp[0])));}
+#line 3171 "parser.c"
     break;
 
   case 111: /* btype3: btype2 bpolyType  */
-#line 330 "parser.y"
-                                        {yyval = gc2(ap(yyvsp[-1],yyvsp[0]));}
-#line 3186 "parser.c"
+#line 321 "parser.y"
+                                        {yyval = gcShadow(2,ap(yyvsp[-1],yyvsp[0]));}
+#line 3177 "parser.c"
     break;
 
   case 112: /* btype3: btype3 atype  */
-#line 331 "parser.y"
-                                        {yyval = gc2(ap(yyvsp[-1],yyvsp[0]));}
-#line 3192 "parser.c"
+#line 322 "parser.y"
+                                        {yyval = gcShadow(2,ap(yyvsp[-1],yyvsp[0]));}
+#line 3183 "parser.c"
     break;
 
   case 113: /* btype3: btype3 '!' atype  */
-#line 332 "parser.y"
-                                        {yyval = gc3(ap(yyvsp[-2],bang(yyvsp[0])));}
-#line 3198 "parser.c"
+#line 323 "parser.y"
+                                        {yyval = gcShadow(3,ap(yyvsp[-2],bang(yyvsp[0])));}
+#line 3189 "parser.c"
     break;
 
   case 114: /* btype3: btype3 bpolyType  */
-#line 333 "parser.y"
-                                        {yyval = gc2(ap(yyvsp[-1],yyvsp[0]));}
-#line 3204 "parser.c"
+#line 324 "parser.y"
+                                        {yyval = gcShadow(2,ap(yyvsp[-1],yyvsp[0]));}
+#line 3195 "parser.c"
     break;
 
   case 115: /* btype3: '(' CONOP ')'  */
-#line 334 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 3210 "parser.c"
+#line 325 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 3201 "parser.c"
     break;
 
   case 116: /* bbtype: '!' btype  */
-#line 336 "parser.y"
-                                        {yyval = gc2(bang(yyvsp[0]));}
-#line 3216 "parser.c"
+#line 327 "parser.y"
+                                        {yyval = gcShadow(2,bang(yyvsp[0]));}
+#line 3207 "parser.c"
     break;
 
   case 117: /* bbtype: btype  */
-#line 337 "parser.y"
+#line 328 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3222 "parser.c"
+#line 3213 "parser.c"
     break;
 
   case 118: /* bbtype: bpolyType  */
-#line 338 "parser.y"
+#line 329 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3228 "parser.c"
+#line 3219 "parser.c"
     break;
 
   case 119: /* nconstr: pconstr  */
-#line 340 "parser.y"
-                                        {yyval = gc1(singleton(yyvsp[0]));}
-#line 3234 "parser.c"
+#line 331 "parser.y"
+                                        {yyval = gcShadow(1,singleton(yyvsp[0]));}
+#line 3225 "parser.c"
     break;
 
   case 120: /* fieldspecs: fieldspecs ',' fieldspec  */
-#line 342 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 3240 "parser.c"
+#line 333 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 3231 "parser.c"
     break;
 
   case 121: /* fieldspecs: fieldspec  */
-#line 343 "parser.y"
-                                        {yyval = gc1(cons(yyvsp[0],NIL));}
-#line 3246 "parser.c"
+#line 334 "parser.y"
+                                        {yyval = gcShadow(1,cons(yyvsp[0],NIL));}
+#line 3237 "parser.c"
     break;
 
   case 122: /* fieldspec: vars COCO polyType  */
-#line 345 "parser.y"
-                                        {yyval = gc3(pair(rev(yyvsp[-2]),yyvsp[0]));}
-#line 3252 "parser.c"
+#line 336 "parser.y"
+                                        {yyval = gcShadow(3,pair(rev(yyvsp[-2]),yyvsp[0]));}
+#line 3243 "parser.c"
     break;
 
   case 123: /* fieldspec: vars COCO type  */
-#line 346 "parser.y"
-                                        {yyval = gc3(pair(rev(yyvsp[-2]),yyvsp[0]));}
-#line 3258 "parser.c"
+#line 337 "parser.y"
+                                        {yyval = gcShadow(3,pair(rev(yyvsp[-2]),yyvsp[0]));}
+#line 3249 "parser.c"
     break;
 
   case 124: /* fieldspec: vars COCO '!' type  */
-#line 347 "parser.y"
-                                        {yyval = gc4(pair(rev(yyvsp[-3]),bang(yyvsp[0])));}
-#line 3264 "parser.c"
+#line 338 "parser.y"
+                                        {yyval = gcShadow(4,pair(rev(yyvsp[-3]),bang(yyvsp[0])));}
+#line 3255 "parser.c"
     break;
 
   case 125: /* deriving: %empty  */
-#line 349 "parser.y"
-                                        {yyval = gc0(NIL);}
-#line 3270 "parser.c"
+#line 340 "parser.y"
+                                        {yyval = gcShadow(0,NIL);}
+#line 3261 "parser.c"
     break;
 
   case 126: /* deriving: DERIVING qconid  */
-#line 350 "parser.y"
-                                        {yyval = gc2(singleton(yyvsp[0]));}
-#line 3276 "parser.c"
+#line 341 "parser.y"
+                                        {yyval = gcShadow(2,singleton(yyvsp[0]));}
+#line 3267 "parser.c"
     break;
 
   case 127: /* deriving: DERIVING '(' derivs0 ')'  */
-#line 351 "parser.y"
-                                        {yyval = gc4(yyvsp[-1]);}
-#line 3282 "parser.c"
+#line 342 "parser.y"
+                                        {yyval = gcShadow(4,yyvsp[-1]);}
+#line 3273 "parser.c"
     break;
 
   case 128: /* derivs0: %empty  */
-#line 353 "parser.y"
-                                        {yyval = gc0(NIL);}
-#line 3288 "parser.c"
+#line 344 "parser.y"
+                                        {yyval = gcShadow(0,NIL);}
+#line 3279 "parser.c"
     break;
 
   case 129: /* derivs0: derivs  */
-#line 354 "parser.y"
-                                        {yyval = gc1(rev(yyvsp[0]));}
-#line 3294 "parser.c"
+#line 345 "parser.y"
+                                        {yyval = gcShadow(1,rev(yyvsp[0]));}
+#line 3285 "parser.c"
     break;
 
   case 130: /* derivs: derivs ',' qconid  */
-#line 356 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 3300 "parser.c"
+#line 347 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 3291 "parser.c"
     break;
 
   case 131: /* derivs: qconid  */
-#line 357 "parser.y"
-                                        {yyval = gc1(singleton(yyvsp[0]));}
-#line 3306 "parser.c"
+#line 348 "parser.y"
+                                        {yyval = gcShadow(1,singleton(yyvsp[0]));}
+#line 3297 "parser.c"
     break;
 
   case 132: /* topDecl: PRIMITIVE prims COCO topType  */
-#line 362 "parser.y"
+#line 353 "parser.y"
                                         {primDefn(yyvsp[-3],yyvsp[-2],yyvsp[0]); sp-=4;}
-#line 3312 "parser.c"
+#line 3303 "parser.c"
     break;
 
   case 133: /* prims: prims ',' prim  */
-#line 364 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 3318 "parser.c"
+#line 355 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 3309 "parser.c"
     break;
 
   case 134: /* prims: prim  */
-#line 365 "parser.y"
-                                        {yyval = gc1(cons(yyvsp[0],NIL));}
-#line 3324 "parser.c"
+#line 356 "parser.y"
+                                        {yyval = gcShadow(1,cons(yyvsp[0],NIL));}
+#line 3315 "parser.c"
     break;
 
   case 135: /* prims: error  */
-#line 366 "parser.y"
+#line 357 "parser.y"
                                         {syntaxError("primitive defn");}
-#line 3330 "parser.c"
+#line 3321 "parser.c"
     break;
 
   case 136: /* prim: var STRINGLIT  */
-#line 368 "parser.y"
-                                        {yyval = gc2(pair(yyvsp[-1],yyvsp[0]));}
-#line 3336 "parser.c"
+#line 359 "parser.y"
+                                        {yyval = gcShadow(2,pair(yyvsp[-1],yyvsp[0]));}
+#line 3327 "parser.c"
     break;
 
   case 137: /* prim: var  */
-#line 369 "parser.y"
+#line 360 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3342 "parser.c"
+#line 3333 "parser.c"
     break;
 
   case 138: /* topDecl: FOREIGN IMPORT var STRINGLIT var COCO topType  */
-#line 375 "parser.y"
+#line 366 "parser.y"
                {foreignImport(yyvsp[-6],yyvsp[-4],NIL,yyvsp[-3],yyvsp[-2],yyvsp[0]); sp-=7;}
-#line 3348 "parser.c"
+#line 3339 "parser.c"
     break;
 
   case 139: /* topDecl: FOREIGN IMPORT var var COCO topType  */
-#line 377 "parser.y"
+#line 368 "parser.y"
                {foreignImport(yyvsp[-5],yyvsp[-3],NIL,yyvsp[-2],yyvsp[-2],yyvsp[0]); sp-=6;}
-#line 3354 "parser.c"
+#line 3345 "parser.c"
     break;
 
   case 140: /* topDecl: FOREIGN IMPORT var var STRINGLIT var COCO topType  */
-#line 379 "parser.y"
+#line 370 "parser.y"
                {foreignImport(yyvsp[-7],yyvsp[-5],yyvsp[-4],yyvsp[-3],yyvsp[-2],yyvsp[0]); sp-=8;}
-#line 3360 "parser.c"
+#line 3351 "parser.c"
     break;
 
   case 141: /* topDecl: FOREIGN IMPORT var var var COCO topType  */
-#line 381 "parser.y"
+#line 372 "parser.y"
                {foreignImport(yyvsp[-6],yyvsp[-4],yyvsp[-3],yyvsp[-2],yyvsp[-2],yyvsp[0]); sp-=7;}
-#line 3366 "parser.c"
+#line 3357 "parser.c"
     break;
 
   case 142: /* topDecl: FOREIGN var var STRINGLIT var COCO topType  */
-#line 383 "parser.y"
+#line 374 "parser.y"
                {foreignExport(yyvsp[-6],yyvsp[-5],yyvsp[-4],yyvsp[-3],yyvsp[-2],yyvsp[0]); sp-=7;}
-#line 3372 "parser.c"
+#line 3363 "parser.c"
     break;
 
   case 143: /* topDecl: TCLASS crule fds wherePart  */
-#line 388 "parser.y"
+#line 379 "parser.y"
                                         {classDefn(intOf(yyvsp[-3]),yyvsp[-2],yyvsp[0],yyvsp[-1]); sp-=4;}
-#line 3378 "parser.c"
+#line 3369 "parser.c"
     break;
 
   case 144: /* topDecl: TINSTANCE irule wherePart  */
-#line 389 "parser.y"
+#line 380 "parser.y"
                                         {instDefn(intOf(yyvsp[-2]),yyvsp[-1],yyvsp[0]);  sp-=3;}
-#line 3384 "parser.c"
+#line 3375 "parser.c"
     break;
 
   case 145: /* topDecl: DEFAULT '(' dtypes ')'  */
-#line 390 "parser.y"
+#line 381 "parser.y"
                                         {defaultDefn(intOf(yyvsp[-3]),yyvsp[-1]);  sp-=4;}
-#line 3390 "parser.c"
+#line 3381 "parser.c"
     break;
 
   case 146: /* topDecl: TCLASS error  */
-#line 391 "parser.y"
+#line 382 "parser.y"
                                         {syntaxError("class declaration");}
-#line 3396 "parser.c"
+#line 3387 "parser.c"
     break;
 
   case 147: /* topDecl: TINSTANCE error  */
-#line 392 "parser.y"
+#line 383 "parser.y"
                                         {syntaxError("instance declaration");}
-#line 3402 "parser.c"
+#line 3393 "parser.c"
     break;
 
   case 148: /* topDecl: DEFAULT error  */
-#line 393 "parser.y"
+#line 384 "parser.y"
                                         {syntaxError("default declaration");}
-#line 3408 "parser.c"
+#line 3399 "parser.c"
     break;
 
   case 149: /* crule: context IMPLIES btype2  */
-#line 395 "parser.y"
-                                        {yyval = gc3(pair(yyvsp[-2],checkPred(yyvsp[0])));}
-#line 3414 "parser.c"
+#line 386 "parser.y"
+                                        {yyval = gcShadow(3,pair(yyvsp[-2],checkPred(yyvsp[0])));}
+#line 3405 "parser.c"
     break;
 
   case 150: /* crule: btype2  */
-#line 396 "parser.y"
-                                        {yyval = gc1(pair(NIL,checkPred(yyvsp[0])));}
-#line 3420 "parser.c"
+#line 387 "parser.y"
+                                        {yyval = gcShadow(1,pair(NIL,checkPred(yyvsp[0])));}
+#line 3411 "parser.c"
     break;
 
   case 151: /* irule: context IMPLIES btype2  */
-#line 398 "parser.y"
-                                        {yyval = gc3(pair(yyvsp[-2],checkPred(yyvsp[0])));}
-#line 3426 "parser.c"
+#line 389 "parser.y"
+                                        {yyval = gcShadow(3,pair(yyvsp[-2],checkPred(yyvsp[0])));}
+#line 3417 "parser.c"
     break;
 
   case 152: /* irule: btype2  */
-#line 399 "parser.y"
-                                        {yyval = gc1(pair(NIL,checkPred(yyvsp[0])));}
-#line 3432 "parser.c"
+#line 390 "parser.y"
+                                        {yyval = gcShadow(1,pair(NIL,checkPred(yyvsp[0])));}
+#line 3423 "parser.c"
     break;
 
   case 153: /* dtypes: %empty  */
-#line 401 "parser.y"
-                                        {yyval = gc0(NIL);}
-#line 3438 "parser.c"
+#line 392 "parser.y"
+                                        {yyval = gcShadow(0,NIL);}
+#line 3429 "parser.c"
     break;
 
   case 154: /* dtypes: dtypes1  */
-#line 402 "parser.y"
-                                        {yyval = gc1(rev(yyvsp[0]));}
-#line 3444 "parser.c"
+#line 393 "parser.y"
+                                        {yyval = gcShadow(1,rev(yyvsp[0]));}
+#line 3435 "parser.c"
     break;
 
   case 155: /* dtypes1: dtypes1 ',' type  */
-#line 404 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 3450 "parser.c"
+#line 395 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 3441 "parser.c"
     break;
 
   case 156: /* dtypes1: type  */
-#line 405 "parser.y"
-                                        {yyval = gc1(cons(yyvsp[0],NIL));}
-#line 3456 "parser.c"
+#line 396 "parser.y"
+                                        {yyval = gcShadow(1,cons(yyvsp[0],NIL));}
+#line 3447 "parser.c"
     break;
 
   case 157: /* fds: %empty  */
-#line 407 "parser.y"
-                                        {yyval = gc0(NIL);}
-#line 3462 "parser.c"
+#line 398 "parser.y"
+                                        {yyval = gcShadow(0,NIL);}
+#line 3453 "parser.c"
     break;
 
   case 158: /* fds: '|' fds1  */
-#line 408 "parser.y"
-                                        {yyval = gc2(rev(yyvsp[0]));}
-#line 3468 "parser.c"
+#line 399 "parser.y"
+                                        {yyval = gcShadow(2,rev(yyvsp[0]));}
+#line 3459 "parser.c"
     break;
 
   case 159: /* fds1: fds1 ',' fd  */
-#line 410 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 3474 "parser.c"
+#line 401 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 3465 "parser.c"
     break;
 
   case 160: /* fds1: fd  */
-#line 411 "parser.y"
-                                        {yyval = gc1(cons(yyvsp[0],NIL));}
-#line 3480 "parser.c"
+#line 402 "parser.y"
+                                        {yyval = gcShadow(1,cons(yyvsp[0],NIL));}
+#line 3471 "parser.c"
     break;
 
   case 161: /* fd: varids0 ARROW varids0  */
-#line 413 "parser.y"
-                                        {yyval = gc3(pair(rev(yyvsp[-2]),rev(yyvsp[0])));}
-#line 3486 "parser.c"
+#line 404 "parser.y"
+                                        {yyval = gcShadow(3,pair(rev(yyvsp[-2]),rev(yyvsp[0])));}
+#line 3477 "parser.c"
     break;
 
   case 162: /* fd: error  */
-#line 414 "parser.y"
+#line 405 "parser.y"
                                         {syntaxError("functional dependency");}
-#line 3492 "parser.c"
+#line 3483 "parser.c"
     break;
 
   case 163: /* varids0: %empty  */
-#line 416 "parser.y"
-                                        {yyval = gc0(NIL);}
-#line 3498 "parser.c"
+#line 407 "parser.y"
+                                        {yyval = gcShadow(0,NIL);}
+#line 3489 "parser.c"
     break;
 
   case 164: /* varids0: varids0 varid  */
-#line 417 "parser.y"
-                                        {yyval = gc2(cons(yyvsp[0],yyvsp[-1]));}
-#line 3504 "parser.c"
+#line 408 "parser.y"
+                                        {yyval = gcShadow(2,cons(yyvsp[0],yyvsp[-1]));}
+#line 3495 "parser.c"
     break;
 
   case 165: /* topType: ALL varids '.' topType0  */
-#line 422 "parser.y"
-                                        {yyval = gc4(ap(POLYTYPE,
+#line 413 "parser.y"
+                                        {yyval = gcShadow(4,ap(POLYTYPE,
 						     pair(rev(yyvsp[-2]),yyvsp[0])));}
-#line 3511 "parser.c"
+#line 3502 "parser.c"
     break;
 
   case 166: /* topType: topType0  */
-#line 424 "parser.y"
+#line 415 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3517 "parser.c"
+#line 3508 "parser.c"
     break;
 
   case 167: /* topType0: context IMPLIES topType1  */
-#line 426 "parser.y"
-                                        {yyval = gc3(qualify(yyvsp[-2],yyvsp[0]));}
-#line 3523 "parser.c"
+#line 417 "parser.y"
+                                        {yyval = gcShadow(3,qualType(yyvsp[-2],yyvsp[0]));}
+#line 3514 "parser.c"
     break;
 
   case 168: /* topType0: topType1  */
-#line 427 "parser.y"
+#line 418 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3529 "parser.c"
+#line 3520 "parser.c"
     break;
 
   case 169: /* topType1: bpolyType ARROW topType1  */
-#line 429 "parser.y"
-                                        {yyval = gc3(fn(yyvsp[-2],yyvsp[0]));}
-#line 3535 "parser.c"
+#line 420 "parser.y"
+                                        {yyval = gcShadow(3,fn(yyvsp[-2],yyvsp[0]));}
+#line 3526 "parser.c"
     break;
 
   case 170: /* topType1: btype1 ARROW topType1  */
-#line 430 "parser.y"
-                                        {yyval = gc3(fn(yyvsp[-2],yyvsp[0]));}
-#line 3541 "parser.c"
+#line 421 "parser.y"
+                                        {yyval = gcShadow(3,fn(yyvsp[-2],yyvsp[0]));}
+#line 3532 "parser.c"
     break;
 
   case 171: /* topType1: btype2 ARROW topType1  */
-#line 431 "parser.y"
-                                        {yyval = gc3(fn(yyvsp[-2],yyvsp[0]));}
-#line 3547 "parser.c"
+#line 422 "parser.y"
+                                        {yyval = gcShadow(3,fn(yyvsp[-2],yyvsp[0]));}
+#line 3538 "parser.c"
     break;
 
   case 172: /* topType1: btype  */
-#line 432 "parser.y"
+#line 423 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3553 "parser.c"
+#line 3544 "parser.c"
     break;
 
   case 173: /* polyType: ALL varids '.' sigType  */
-#line 434 "parser.y"
-                                        {yyval = gc4(ap(POLYTYPE,
+#line 425 "parser.y"
+                                        {yyval = gcShadow(4,ap(POLYTYPE,
 						     pair(rev(yyvsp[-2]),yyvsp[0])));}
-#line 3560 "parser.c"
+#line 3551 "parser.c"
     break;
 
   case 174: /* polyType: bpolyType  */
-#line 436 "parser.y"
+#line 427 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3566 "parser.c"
+#line 3557 "parser.c"
     break;
 
   case 175: /* bpolyType: '(' polyType ')'  */
-#line 438 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 3572 "parser.c"
+#line 429 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 3563 "parser.c"
     break;
 
   case 176: /* varids: varids varid  */
-#line 440 "parser.y"
-                                        {yyval = gc2(cons(yyvsp[0],yyvsp[-1]));}
-#line 3578 "parser.c"
+#line 431 "parser.y"
+                                        {yyval = gcShadow(2,cons(yyvsp[0],yyvsp[-1]));}
+#line 3569 "parser.c"
     break;
 
   case 177: /* varids: varid  */
-#line 441 "parser.y"
-                                        {yyval = gc1(singleton(yyvsp[0]));}
-#line 3584 "parser.c"
+#line 432 "parser.y"
+                                        {yyval = gcShadow(1,singleton(yyvsp[0]));}
+#line 3575 "parser.c"
     break;
 
   case 178: /* sigType: context IMPLIES type  */
-#line 443 "parser.y"
-                                        {yyval = gc3(qualify(yyvsp[-2],yyvsp[0]));}
-#line 3590 "parser.c"
+#line 434 "parser.y"
+                                        {yyval = gcShadow(3,qualType(yyvsp[-2],yyvsp[0]));}
+#line 3581 "parser.c"
     break;
 
   case 179: /* sigType: type  */
-#line 444 "parser.y"
+#line 435 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3596 "parser.c"
+#line 3587 "parser.c"
     break;
 
   case 180: /* context: '(' ')'  */
-#line 446 "parser.y"
-                                        {yyval = gc2(NIL);}
-#line 3602 "parser.c"
+#line 437 "parser.y"
+                                        {yyval = gcShadow(2,NIL);}
+#line 3593 "parser.c"
     break;
 
   case 181: /* context: btype2  */
-#line 447 "parser.y"
-                                        {yyval = gc1(singleton(checkPred(yyvsp[0])));}
-#line 3608 "parser.c"
+#line 438 "parser.y"
+                                        {yyval = gcShadow(1,singleton(checkPred(yyvsp[0])));}
+#line 3599 "parser.c"
     break;
 
   case 182: /* context: '(' btype2 ')'  */
-#line 448 "parser.y"
-                                        {yyval = gc3(singleton(checkPred(yyvsp[-1])));}
-#line 3614 "parser.c"
+#line 439 "parser.y"
+                                        {yyval = gcShadow(3,singleton(checkPred(yyvsp[-1])));}
+#line 3605 "parser.c"
     break;
 
   case 183: /* context: '(' btypes2 ')'  */
-#line 449 "parser.y"
-                                        {yyval = gc3(checkCtxt(rev(yyvsp[-1])));}
-#line 3620 "parser.c"
+#line 440 "parser.y"
+                                        {yyval = gcShadow(3,checkCtxt(rev(yyvsp[-1])));}
+#line 3611 "parser.c"
     break;
 
   case 184: /* type: type1  */
-#line 451 "parser.y"
+#line 442 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3626 "parser.c"
+#line 3617 "parser.c"
     break;
 
   case 185: /* type: btype2  */
-#line 452 "parser.y"
+#line 443 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3632 "parser.c"
+#line 3623 "parser.c"
     break;
 
   case 186: /* type1: btype1  */
-#line 454 "parser.y"
+#line 445 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3638 "parser.c"
+#line 3629 "parser.c"
     break;
 
   case 187: /* type1: bpolyType ARROW type  */
-#line 455 "parser.y"
-                                        {yyval = gc3(fn(yyvsp[-2],yyvsp[0]));}
-#line 3644 "parser.c"
+#line 446 "parser.y"
+                                        {yyval = gcShadow(3,fn(yyvsp[-2],yyvsp[0]));}
+#line 3635 "parser.c"
     break;
 
   case 188: /* type1: btype1 ARROW type  */
-#line 456 "parser.y"
-                                        {yyval = gc3(fn(yyvsp[-2],yyvsp[0]));}
-#line 3650 "parser.c"
+#line 447 "parser.y"
+                                        {yyval = gcShadow(3,fn(yyvsp[-2],yyvsp[0]));}
+#line 3641 "parser.c"
     break;
 
   case 189: /* type1: btype2 ARROW type  */
-#line 457 "parser.y"
-                                        {yyval = gc3(fn(yyvsp[-2],yyvsp[0]));}
-#line 3656 "parser.c"
+#line 448 "parser.y"
+                                        {yyval = gcShadow(3,fn(yyvsp[-2],yyvsp[0]));}
+#line 3647 "parser.c"
     break;
 
   case 190: /* type1: error  */
-#line 458 "parser.y"
+#line 449 "parser.y"
                                         {syntaxError("type expression");}
-#line 3662 "parser.c"
+#line 3653 "parser.c"
     break;
 
   case 191: /* btype: btype1  */
-#line 460 "parser.y"
+#line 451 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3668 "parser.c"
+#line 3659 "parser.c"
     break;
 
   case 192: /* btype: btype2  */
-#line 461 "parser.y"
+#line 452 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3674 "parser.c"
+#line 3665 "parser.c"
     break;
 
   case 193: /* btype1: btype1 atype  */
-#line 463 "parser.y"
-                                        {yyval = gc2(ap(yyvsp[-1],yyvsp[0]));}
-#line 3680 "parser.c"
+#line 454 "parser.y"
+                                        {yyval = gcShadow(2,ap(yyvsp[-1],yyvsp[0]));}
+#line 3671 "parser.c"
     break;
 
   case 194: /* btype1: atype1  */
-#line 464 "parser.y"
+#line 455 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3686 "parser.c"
+#line 3677 "parser.c"
     break;
 
   case 195: /* btype2: btype2 atype  */
-#line 466 "parser.y"
-                                        {yyval = gc2(ap(yyvsp[-1],yyvsp[0]));}
-#line 3692 "parser.c"
+#line 457 "parser.y"
+                                        {yyval = gcShadow(2,ap(yyvsp[-1],yyvsp[0]));}
+#line 3683 "parser.c"
     break;
 
   case 196: /* btype2: qconid  */
-#line 467 "parser.y"
+#line 458 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3698 "parser.c"
+#line 3689 "parser.c"
     break;
 
   case 197: /* atype: atype1  */
-#line 469 "parser.y"
+#line 460 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3704 "parser.c"
+#line 3695 "parser.c"
     break;
 
   case 198: /* atype: qconid  */
-#line 470 "parser.y"
+#line 461 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3710 "parser.c"
+#line 3701 "parser.c"
     break;
 
   case 199: /* atype1: varid  */
-#line 472 "parser.y"
+#line 463 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3716 "parser.c"
+#line 3707 "parser.c"
     break;
 
   case 200: /* atype1: '(' ')'  */
-#line 473 "parser.y"
-                                        {yyval = gc2(typeUnit);}
-#line 3722 "parser.c"
+#line 464 "parser.y"
+                                        {yyval = gcShadow(2,typeUnit);}
+#line 3713 "parser.c"
     break;
 
   case 201: /* atype1: '(' ARROW ')'  */
-#line 474 "parser.y"
-                                        {yyval = gc3(typeArrow);}
-#line 3728 "parser.c"
+#line 465 "parser.y"
+                                        {yyval = gcShadow(3,typeArrow);}
+#line 3719 "parser.c"
     break;
 
   case 202: /* atype1: '(' type1 ')'  */
-#line 475 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 3734 "parser.c"
+#line 466 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 3725 "parser.c"
     break;
 
   case 203: /* atype1: '(' btype2 ')'  */
-#line 476 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 3740 "parser.c"
+#line 467 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 3731 "parser.c"
     break;
 
   case 204: /* atype1: '(' tupCommas ')'  */
-#line 477 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 3746 "parser.c"
+#line 468 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 3737 "parser.c"
     break;
 
   case 205: /* atype1: '(' btypes2 ')'  */
-#line 478 "parser.y"
-                                        {yyval = gc3(buildTuple(yyvsp[-1]));}
-#line 3752 "parser.c"
+#line 469 "parser.y"
+                                        {yyval = gcShadow(3,buildTuple(yyvsp[-1]));}
+#line 3743 "parser.c"
     break;
 
   case 206: /* atype1: '(' typeTuple ')'  */
-#line 479 "parser.y"
-                                        {yyval = gc3(buildTuple(yyvsp[-1]));}
-#line 3758 "parser.c"
+#line 470 "parser.y"
+                                        {yyval = gcShadow(3,buildTuple(yyvsp[-1]));}
+#line 3749 "parser.c"
     break;
 
   case 207: /* atype1: '[' type ']'  */
-#line 480 "parser.y"
-                                        {yyval = gc3(ap(typeList,yyvsp[-1]));}
-#line 3764 "parser.c"
+#line 471 "parser.y"
+                                        {yyval = gcShadow(3,ap(typeList,yyvsp[-1]));}
+#line 3755 "parser.c"
     break;
 
   case 208: /* atype1: '[' ']'  */
-#line 481 "parser.y"
-                                        {yyval = gc2(typeList);}
-#line 3770 "parser.c"
+#line 472 "parser.y"
+                                        {yyval = gcShadow(2,typeList);}
+#line 3761 "parser.c"
     break;
 
   case 209: /* atype1: '_'  */
-#line 482 "parser.y"
-                                        {yyval = gc1(inventVar());}
-#line 3776 "parser.c"
+#line 473 "parser.y"
+                                        {yyval = gcShadow(1,inventVar());}
+#line 3767 "parser.c"
     break;
 
   case 210: /* btypes2: btypes2 ',' btype2  */
-#line 484 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 3782 "parser.c"
+#line 475 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 3773 "parser.c"
     break;
 
   case 211: /* btypes2: btype2 ',' btype2  */
-#line 485 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],cons(yyvsp[-2],NIL)));}
-#line 3788 "parser.c"
+#line 476 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],cons(yyvsp[-2],NIL)));}
+#line 3779 "parser.c"
     break;
 
   case 212: /* typeTuple: type1 ',' type  */
-#line 487 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],cons(yyvsp[-2],NIL)));}
-#line 3794 "parser.c"
+#line 478 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],cons(yyvsp[-2],NIL)));}
+#line 3785 "parser.c"
     break;
 
   case 213: /* typeTuple: btype2 ',' type1  */
-#line 488 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],cons(yyvsp[-2],NIL)));}
-#line 3800 "parser.c"
+#line 479 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],cons(yyvsp[-2],NIL)));}
+#line 3791 "parser.c"
     break;
 
   case 214: /* typeTuple: btypes2 ',' type1  */
-#line 489 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 3806 "parser.c"
+#line 480 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 3797 "parser.c"
     break;
 
   case 215: /* typeTuple: typeTuple ',' type  */
-#line 490 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 3812 "parser.c"
+#line 481 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 3803 "parser.c"
     break;
 
   case 216: /* gendecl: INFIXN optDigit ops  */
-#line 495 "parser.y"
-                                        {yyval = gc3(fixdecl(yyvsp[-2],yyvsp[0],NON_ASS,yyvsp[-1]));}
-#line 3818 "parser.c"
+#line 486 "parser.y"
+                                        {yyval = gcShadow(3,fixdecl(yyvsp[-2],yyvsp[0],NON_ASS,yyvsp[-1]));}
+#line 3809 "parser.c"
     break;
 
   case 217: /* gendecl: INFIXN error  */
-#line 496 "parser.y"
+#line 487 "parser.y"
                                         {syntaxError("fixity decl");}
-#line 3824 "parser.c"
+#line 3815 "parser.c"
     break;
 
   case 218: /* gendecl: INFIXL optDigit ops  */
-#line 497 "parser.y"
-                                        {yyval = gc3(fixdecl(yyvsp[-2],yyvsp[0],LEFT_ASS,yyvsp[-1]));}
-#line 3830 "parser.c"
+#line 488 "parser.y"
+                                        {yyval = gcShadow(3,fixdecl(yyvsp[-2],yyvsp[0],LEFT_ASS,yyvsp[-1]));}
+#line 3821 "parser.c"
     break;
 
   case 219: /* gendecl: INFIXL error  */
-#line 498 "parser.y"
+#line 489 "parser.y"
                                         {syntaxError("fixity decl");}
-#line 3836 "parser.c"
+#line 3827 "parser.c"
     break;
 
   case 220: /* gendecl: INFIXR optDigit ops  */
-#line 499 "parser.y"
-                                        {yyval = gc3(fixdecl(yyvsp[-2],yyvsp[0],RIGHT_ASS,yyvsp[-1]));}
-#line 3842 "parser.c"
+#line 490 "parser.y"
+                                        {yyval = gcShadow(3,fixdecl(yyvsp[-2],yyvsp[0],RIGHT_ASS,yyvsp[-1]));}
+#line 3833 "parser.c"
     break;
 
   case 221: /* gendecl: INFIXR error  */
-#line 500 "parser.y"
+#line 491 "parser.y"
                                         {syntaxError("fixity decl");}
-#line 3848 "parser.c"
+#line 3839 "parser.c"
     break;
 
   case 222: /* gendecl: vars COCO topType  */
-#line 501 "parser.y"
-                                        {yyval = gc3(sigdecl(yyvsp[-1],yyvsp[-2],yyvsp[0]));}
-#line 3854 "parser.c"
+#line 492 "parser.y"
+                                        {yyval = gcShadow(3,sigdecl(yyvsp[-1],yyvsp[-2],yyvsp[0]));}
+#line 3845 "parser.c"
     break;
 
   case 223: /* gendecl: vars COCO error  */
-#line 502 "parser.y"
+#line 493 "parser.y"
                                         {syntaxError("type signature");}
-#line 3860 "parser.c"
+#line 3851 "parser.c"
     break;
 
   case 224: /* optDigit: NUMLIT  */
-#line 504 "parser.y"
-                                        {yyval = gc1(checkPrec(yyvsp[0]));}
-#line 3866 "parser.c"
+#line 495 "parser.y"
+                                        {yyval = gcShadow(1,checkPrec(yyvsp[0]));}
+#line 3857 "parser.c"
     break;
 
   case 225: /* optDigit: %empty  */
-#line 505 "parser.y"
-                                        {yyval = gc0(mkInt(DEF_PREC));}
-#line 3872 "parser.c"
+#line 496 "parser.y"
+                                        {yyval = gcShadow(0,mkInt(DEF_PREC));}
+#line 3863 "parser.c"
     break;
 
   case 226: /* ops: ops ',' op  */
-#line 507 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 3878 "parser.c"
+#line 498 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 3869 "parser.c"
     break;
 
   case 227: /* ops: op  */
-#line 508 "parser.y"
-                                        {yyval = gc1(singleton(yyvsp[0]));}
-#line 3884 "parser.c"
+#line 499 "parser.y"
+                                        {yyval = gcShadow(1,singleton(yyvsp[0]));}
+#line 3875 "parser.c"
     break;
 
   case 228: /* vars: vars ',' var  */
-#line 510 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 3890 "parser.c"
+#line 501 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 3881 "parser.c"
     break;
 
   case 229: /* vars: var  */
-#line 511 "parser.y"
-                                        {yyval = gc1(singleton(yyvsp[0]));}
-#line 3896 "parser.c"
+#line 502 "parser.y"
+                                        {yyval = gcShadow(1,singleton(yyvsp[0]));}
+#line 3887 "parser.c"
     break;
 
   case 230: /* decls: '{' decls0 end  */
-#line 513 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 3902 "parser.c"
+#line 504 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 3893 "parser.c"
     break;
 
   case 231: /* decls: '{' decls1 end  */
-#line 514 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 3908 "parser.c"
+#line 505 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 3899 "parser.c"
     break;
 
   case 232: /* decls0: %empty  */
-#line 516 "parser.y"
-                                        {yyval = gc0(NIL);}
-#line 3914 "parser.c"
+#line 507 "parser.y"
+                                        {yyval = gcShadow(0,NIL);}
+#line 3905 "parser.c"
     break;
 
   case 233: /* decls0: decls0 ';'  */
-#line 517 "parser.y"
-                                        {yyval = gc2(yyvsp[-1]);}
-#line 3920 "parser.c"
+#line 508 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[-1]);}
+#line 3911 "parser.c"
     break;
 
   case 234: /* decls0: decls1 ';'  */
-#line 518 "parser.y"
-                                        {yyval = gc2(yyvsp[-1]);}
-#line 3926 "parser.c"
+#line 509 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[-1]);}
+#line 3917 "parser.c"
     break;
 
   case 235: /* decls1: decls0 decl  */
-#line 520 "parser.y"
-                                        {yyval = gc2(cons(yyvsp[0],yyvsp[-1]));}
-#line 3932 "parser.c"
+#line 511 "parser.y"
+                                        {yyval = gcShadow(2,cons(yyvsp[0],yyvsp[-1]));}
+#line 3923 "parser.c"
     break;
 
   case 236: /* decl: gendecl  */
-#line 522 "parser.y"
+#line 513 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3938 "parser.c"
+#line 3929 "parser.c"
     break;
 
   case 237: /* decl: funlhs rhs  */
-#line 523 "parser.y"
-                                        {yyval = gc2(ap(FUNBIND,pair(yyvsp[-1],yyvsp[0])));}
-#line 3944 "parser.c"
+#line 514 "parser.y"
+                                        {yyval = gcShadow(2,ap(FUNBIND,pair(yyvsp[-1],yyvsp[0])));}
+#line 3935 "parser.c"
     break;
 
   case 238: /* decl: funlhs COCO type rhs  */
-#line 524 "parser.y"
-                                        {yyval = gc4(ap(FUNBIND,
+#line 515 "parser.y"
+                                        {yyval = gcShadow(4,ap(FUNBIND,
 						     pair(yyvsp[-3],ap(RSIGN,
 								ap(yyvsp[0],yyvsp[-1])))));}
-#line 3952 "parser.c"
+#line 3943 "parser.c"
     break;
 
   case 239: /* decl: pat0 rhs  */
-#line 527 "parser.y"
-                                        {yyval = gc2(ap(PATBIND,pair(yyvsp[-1],yyvsp[0])));}
-#line 3958 "parser.c"
+#line 518 "parser.y"
+                                        {yyval = gcShadow(2,ap(PATBIND,pair(yyvsp[-1],yyvsp[0])));}
+#line 3949 "parser.c"
     break;
 
   case 240: /* funlhs: funlhs0  */
-#line 529 "parser.y"
+#line 520 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3964 "parser.c"
+#line 3955 "parser.c"
     break;
 
   case 241: /* funlhs: funlhs1  */
-#line 530 "parser.y"
+#line 521 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 3970 "parser.c"
+#line 3961 "parser.c"
     break;
 
   case 242: /* funlhs0: pat10_vI varop pat0  */
-#line 532 "parser.y"
-                                        {yyval = gc3(ap2(yyvsp[-1],yyvsp[-2],yyvsp[0]));}
-#line 3976 "parser.c"
+#line 523 "parser.y"
+                                        {yyval = gcShadow(3,ap2(yyvsp[-1],yyvsp[-2],yyvsp[0]));}
+#line 3967 "parser.c"
     break;
 
   case 243: /* funlhs0: var '+' pat0  */
-#line 533 "parser.y"
-                                        {yyval = gc3(ap2(varPlus,yyvsp[-2],yyvsp[0]));}
-#line 3982 "parser.c"
+#line 524 "parser.y"
+                                        {yyval = gcShadow(3,ap2(varPlus,yyvsp[-2],yyvsp[0]));}
+#line 3973 "parser.c"
     break;
 
   case 244: /* funlhs0: infixPat varop pat0  */
-#line 534 "parser.y"
-                                        {yyval = gc3(ap2(yyvsp[-1],yyvsp[-2],yyvsp[0]));}
-#line 3988 "parser.c"
+#line 525 "parser.y"
+                                        {yyval = gcShadow(3,ap2(yyvsp[-1],yyvsp[-2],yyvsp[0]));}
+#line 3979 "parser.c"
     break;
 
   case 245: /* funlhs0: NUMLIT varop pat0  */
-#line 535 "parser.y"
-                                        {yyval = gc3(ap2(yyvsp[-1],yyvsp[-2],yyvsp[0]));}
-#line 3994 "parser.c"
+#line 526 "parser.y"
+                                        {yyval = gcShadow(3,ap2(yyvsp[-1],yyvsp[-2],yyvsp[0]));}
+#line 3985 "parser.c"
     break;
 
   case 246: /* funlhs0: var varop_pl pat0  */
-#line 536 "parser.y"
-                                        {yyval = gc3(ap2(yyvsp[-1],yyvsp[-2],yyvsp[0]));}
-#line 4000 "parser.c"
+#line 527 "parser.y"
+                                        {yyval = gcShadow(3,ap2(yyvsp[-1],yyvsp[-2],yyvsp[0]));}
+#line 3991 "parser.c"
     break;
 
   case 247: /* funlhs1: '(' funlhs0 ')' apat  */
-#line 538 "parser.y"
-                                        {yyval = gc4(ap(yyvsp[-2],yyvsp[0]));}
-#line 4006 "parser.c"
+#line 529 "parser.y"
+                                        {yyval = gcShadow(4,ap(yyvsp[-2],yyvsp[0]));}
+#line 3997 "parser.c"
     break;
 
   case 248: /* funlhs1: '(' funlhs1 ')' apat  */
-#line 539 "parser.y"
-                                        {yyval = gc4(ap(yyvsp[-2],yyvsp[0]));}
-#line 4012 "parser.c"
+#line 530 "parser.y"
+                                        {yyval = gcShadow(4,ap(yyvsp[-2],yyvsp[0]));}
+#line 4003 "parser.c"
     break;
 
   case 249: /* funlhs1: var apat  */
-#line 540 "parser.y"
-                                        {yyval = gc2(ap(yyvsp[-1],yyvsp[0]));}
-#line 4018 "parser.c"
+#line 531 "parser.y"
+                                        {yyval = gcShadow(2,ap(yyvsp[-1],yyvsp[0]));}
+#line 4009 "parser.c"
     break;
 
   case 250: /* funlhs1: funlhs1 apat  */
-#line 541 "parser.y"
-                                        {yyval = gc2(ap(yyvsp[-1],yyvsp[0]));}
-#line 4024 "parser.c"
+#line 532 "parser.y"
+                                        {yyval = gcShadow(2,ap(yyvsp[-1],yyvsp[0]));}
+#line 4015 "parser.c"
     break;
 
   case 251: /* rhs: rhs1 wherePart  */
-#line 543 "parser.y"
-                                        {yyval = gc2(letrec(yyvsp[0],yyvsp[-1]));}
-#line 4030 "parser.c"
+#line 534 "parser.y"
+                                        {yyval = gcShadow(2,letrec(yyvsp[0],yyvsp[-1]));}
+#line 4021 "parser.c"
     break;
 
   case 252: /* rhs: error  */
-#line 544 "parser.y"
+#line 535 "parser.y"
                                         {syntaxError("declaration");}
-#line 4036 "parser.c"
+#line 4027 "parser.c"
     break;
 
   case 253: /* rhs1: '=' exp  */
-#line 546 "parser.y"
-                                        {yyval = gc2(pair(yyvsp[-1],yyvsp[0]));}
-#line 4042 "parser.c"
+#line 537 "parser.y"
+                                        {yyval = gcShadow(2,pair(yyvsp[-1],yyvsp[0]));}
+#line 4033 "parser.c"
     break;
 
   case 254: /* rhs1: gdrhs  */
-#line 547 "parser.y"
-                                        {yyval = gc1(desugarGuards(rev(yyvsp[0])));}
-#line 4048 "parser.c"
+#line 538 "parser.y"
+                                        {yyval = gcShadow(1,desugarGuards(rev(yyvsp[0])));}
+#line 4039 "parser.c"
     break;
 
   case 255: /* gdrhs: gdrhs gddef  */
-#line 549 "parser.y"
-                                        {yyval = gc2(cons(yyvsp[0],yyvsp[-1]));}
-#line 4054 "parser.c"
+#line 540 "parser.y"
+                                        {yyval = gcShadow(2,cons(yyvsp[0],yyvsp[-1]));}
+#line 4045 "parser.c"
     break;
 
   case 256: /* gdrhs: gddef  */
-#line 550 "parser.y"
-                                        {yyval = gc1(singleton(yyvsp[0]));}
-#line 4060 "parser.c"
+#line 541 "parser.y"
+                                        {yyval = gcShadow(1,singleton(yyvsp[0]));}
+#line 4051 "parser.c"
     break;
 
   case 257: /* gddef: '|' quals '=' exp  */
-#line 552 "parser.y"
-                                        {yyval = gc4(pair(yyvsp[-1],pair(rev(yyvsp[-2]),yyvsp[0])));}
-#line 4066 "parser.c"
+#line 543 "parser.y"
+                                        {yyval = gcShadow(4,pair(yyvsp[-1],pair(rev(yyvsp[-2]),yyvsp[0])));}
+#line 4057 "parser.c"
     break;
 
   case 258: /* wherePart: %empty  */
-#line 554 "parser.y"
-                                        {yyval = gc0(NIL);}
-#line 4072 "parser.c"
+#line 545 "parser.y"
+                                        {yyval = gcShadow(0,NIL);}
+#line 4063 "parser.c"
     break;
 
   case 259: /* wherePart: WHERE decls  */
-#line 555 "parser.y"
-                                        {yyval = gc2(yyvsp[0]);}
-#line 4078 "parser.c"
+#line 546 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[0]);}
+#line 4069 "parser.c"
     break;
 
   case 260: /* pat: pat_npk  */
-#line 559 "parser.y"
+#line 550 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4084 "parser.c"
+#line 4075 "parser.c"
     break;
 
   case 261: /* pat_npk: pat0 COCO type  */
-#line 561 "parser.y"
-                                        {yyval = gc3(ap(ESIGN,pair(yyvsp[-2],yyvsp[0])));}
-#line 4090 "parser.c"
+#line 552 "parser.y"
+                                        {yyval = gcShadow(3,ap(ESIGN,pair(yyvsp[-2],yyvsp[0])));}
+#line 4081 "parser.c"
     break;
 
   case 262: /* pat_npk: pat0  */
-#line 562 "parser.y"
+#line 553 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4096 "parser.c"
+#line 4087 "parser.c"
     break;
 
   case 263: /* pat0: var  */
-#line 564 "parser.y"
+#line 555 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4102 "parser.c"
+#line 4093 "parser.c"
     break;
 
   case 264: /* pat0: NUMLIT  */
-#line 565 "parser.y"
+#line 556 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4108 "parser.c"
+#line 4099 "parser.c"
     break;
 
   case 265: /* pat0: pat0_vI  */
-#line 566 "parser.y"
+#line 557 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4114 "parser.c"
+#line 4105 "parser.c"
     break;
 
   case 266: /* pat0_vI: pat10_vI  */
-#line 568 "parser.y"
+#line 559 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4120 "parser.c"
+#line 4111 "parser.c"
     break;
 
   case 267: /* pat0_vI: infixPat  */
-#line 569 "parser.y"
-                                        {yyval = gc1(ap(INFIX,yyvsp[0]));}
-#line 4126 "parser.c"
+#line 560 "parser.y"
+                                        {yyval = gcShadow(1,ap(INFIX,yyvsp[0]));}
+#line 4117 "parser.c"
     break;
 
   case 268: /* infixPat: '-' pat10  */
-#line 571 "parser.y"
-                                        {yyval = gc2(ap(NEG,only(yyvsp[0])));}
-#line 4132 "parser.c"
+#line 562 "parser.y"
+                                        {yyval = gcShadow(2,ap(NEG,only(yyvsp[0])));}
+#line 4123 "parser.c"
     break;
 
   case 269: /* infixPat: '-' error  */
-#line 572 "parser.y"
+#line 563 "parser.y"
                                         {syntaxError("pattern");}
-#line 4138 "parser.c"
+#line 4129 "parser.c"
     break;
 
   case 270: /* infixPat: var qconop pat10  */
-#line 573 "parser.y"
-                                        {yyval = gc3(ap(ap(yyvsp[-1],only(yyvsp[-2])),yyvsp[0]));}
-#line 4144 "parser.c"
+#line 564 "parser.y"
+                                        {yyval = gcShadow(3,ap(ap(yyvsp[-1],only(yyvsp[-2])),yyvsp[0]));}
+#line 4135 "parser.c"
     break;
 
   case 271: /* infixPat: var qconop '-' pat10  */
-#line 574 "parser.y"
-                                        {yyval = gc4(ap(NEG,ap2(yyvsp[-2],only(yyvsp[-3]),yyvsp[0])));}
-#line 4150 "parser.c"
+#line 565 "parser.y"
+                                        {yyval = gcShadow(4,ap(NEG,ap2(yyvsp[-2],only(yyvsp[-3]),yyvsp[0])));}
+#line 4141 "parser.c"
     break;
 
   case 272: /* infixPat: NUMLIT qconop pat10  */
-#line 575 "parser.y"
-                                        {yyval = gc3(ap(ap(yyvsp[-1],only(yyvsp[-2])),yyvsp[0]));}
-#line 4156 "parser.c"
+#line 566 "parser.y"
+                                        {yyval = gcShadow(3,ap(ap(yyvsp[-1],only(yyvsp[-2])),yyvsp[0]));}
+#line 4147 "parser.c"
     break;
 
   case 273: /* infixPat: NUMLIT qconop '-' pat10  */
-#line 576 "parser.y"
-                                        {yyval = gc4(ap(NEG,ap2(yyvsp[-2],only(yyvsp[-3]),yyvsp[0])));}
-#line 4162 "parser.c"
+#line 567 "parser.y"
+                                        {yyval = gcShadow(4,ap(NEG,ap2(yyvsp[-2],only(yyvsp[-3]),yyvsp[0])));}
+#line 4153 "parser.c"
     break;
 
   case 274: /* infixPat: pat10_vI qconop pat10  */
-#line 577 "parser.y"
-                                        {yyval = gc3(ap(ap(yyvsp[-1],only(yyvsp[-2])),yyvsp[0]));}
-#line 4168 "parser.c"
+#line 568 "parser.y"
+                                        {yyval = gcShadow(3,ap(ap(yyvsp[-1],only(yyvsp[-2])),yyvsp[0]));}
+#line 4159 "parser.c"
     break;
 
   case 275: /* infixPat: pat10_vI qconop '-' pat10  */
-#line 578 "parser.y"
-                                        {yyval = gc4(ap(NEG,ap2(yyvsp[-2],only(yyvsp[-3]),yyvsp[0])));}
-#line 4174 "parser.c"
+#line 569 "parser.y"
+                                        {yyval = gcShadow(4,ap(NEG,ap2(yyvsp[-2],only(yyvsp[-3]),yyvsp[0])));}
+#line 4165 "parser.c"
     break;
 
   case 276: /* infixPat: infixPat qconop pat10  */
-#line 579 "parser.y"
-                                        {yyval = gc3(ap(ap(yyvsp[-1],yyvsp[-2]),yyvsp[0]));}
-#line 4180 "parser.c"
+#line 570 "parser.y"
+                                        {yyval = gcShadow(3,ap(ap(yyvsp[-1],yyvsp[-2]),yyvsp[0]));}
+#line 4171 "parser.c"
     break;
 
   case 277: /* infixPat: infixPat qconop '-' pat10  */
-#line 580 "parser.y"
-                                        {yyval = gc4(ap(NEG,ap(ap(yyvsp[-2],yyvsp[-3]),yyvsp[0])));}
-#line 4186 "parser.c"
+#line 571 "parser.y"
+                                        {yyval = gcShadow(4,ap(NEG,ap(ap(yyvsp[-2],yyvsp[-3]),yyvsp[0])));}
+#line 4177 "parser.c"
     break;
 
   case 278: /* pat10: fpat  */
-#line 582 "parser.y"
+#line 573 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4192 "parser.c"
+#line 4183 "parser.c"
     break;
 
   case 279: /* pat10: apat  */
-#line 583 "parser.y"
+#line 574 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4198 "parser.c"
+#line 4189 "parser.c"
     break;
 
   case 280: /* pat10_vI: fpat  */
-#line 585 "parser.y"
+#line 576 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4204 "parser.c"
+#line 4195 "parser.c"
     break;
 
   case 281: /* pat10_vI: apat_vI  */
-#line 586 "parser.y"
+#line 577 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4210 "parser.c"
+#line 4201 "parser.c"
     break;
 
   case 282: /* fpat: fpat apat  */
-#line 588 "parser.y"
-                                        {yyval = gc2(ap(yyvsp[-1],yyvsp[0]));}
-#line 4216 "parser.c"
+#line 579 "parser.y"
+                                        {yyval = gcShadow(2,ap(yyvsp[-1],yyvsp[0]));}
+#line 4207 "parser.c"
     break;
 
   case 283: /* fpat: gcon apat  */
-#line 589 "parser.y"
-                                        {yyval = gc2(ap(yyvsp[-1],yyvsp[0]));}
-#line 4222 "parser.c"
+#line 580 "parser.y"
+                                        {yyval = gcShadow(2,ap(yyvsp[-1],yyvsp[0]));}
+#line 4213 "parser.c"
     break;
 
   case 284: /* apat: NUMLIT  */
-#line 591 "parser.y"
+#line 582 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4228 "parser.c"
+#line 4219 "parser.c"
     break;
 
   case 285: /* apat: var  */
-#line 592 "parser.y"
+#line 583 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4234 "parser.c"
+#line 4225 "parser.c"
     break;
 
   case 286: /* apat: apat_vI  */
-#line 593 "parser.y"
+#line 584 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4240 "parser.c"
+#line 4231 "parser.c"
     break;
 
   case 287: /* apat_vI: var '@' apat  */
-#line 595 "parser.y"
-                                        {yyval = gc3(ap(ASPAT,pair(yyvsp[-2],yyvsp[0])));}
-#line 4246 "parser.c"
+#line 586 "parser.y"
+                                        {yyval = gcShadow(3,ap(ASPAT,pair(yyvsp[-2],yyvsp[0])));}
+#line 4237 "parser.c"
     break;
 
   case 288: /* apat_vI: gcon  */
-#line 596 "parser.y"
+#line 587 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4252 "parser.c"
+#line 4243 "parser.c"
     break;
 
   case 289: /* apat_vI: qcon '{' patbinds '}'  */
-#line 597 "parser.y"
-                                        {yyval = gc4(ap(CONFLDS,pair(yyvsp[-3],yyvsp[-1])));}
-#line 4258 "parser.c"
+#line 588 "parser.y"
+                                        {yyval = gcShadow(4,ap(CONFLDS,pair(yyvsp[-3],yyvsp[-1])));}
+#line 4249 "parser.c"
     break;
 
   case 290: /* apat_vI: CHARLIT  */
-#line 598 "parser.y"
+#line 589 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4264 "parser.c"
+#line 4255 "parser.c"
     break;
 
   case 291: /* apat_vI: STRINGLIT  */
-#line 599 "parser.y"
+#line 590 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4270 "parser.c"
+#line 4261 "parser.c"
     break;
 
   case 292: /* apat_vI: '_'  */
-#line 600 "parser.y"
-                                        {yyval = gc1(WILDCARD);}
-#line 4276 "parser.c"
+#line 591 "parser.y"
+                                        {yyval = gcShadow(1,WILDCARD);}
+#line 4267 "parser.c"
     break;
 
   case 293: /* apat_vI: '(' pat_npk ')'  */
-#line 601 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 4282 "parser.c"
+#line 592 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 4273 "parser.c"
     break;
 
   case 294: /* apat_vI: '(' pats2 ')'  */
-#line 602 "parser.y"
-                                        {yyval = gc3(buildTuple(yyvsp[-1]));}
-#line 4288 "parser.c"
+#line 593 "parser.y"
+                                        {yyval = gcShadow(3,buildTuple(yyvsp[-1]));}
+#line 4279 "parser.c"
     break;
 
   case 295: /* apat_vI: '[' pats1 ']'  */
-#line 603 "parser.y"
-                                        {yyval = gc3(ap(FINLIST,rev(yyvsp[-1])));}
-#line 4294 "parser.c"
+#line 594 "parser.y"
+                                        {yyval = gcShadow(3,ap(FINLIST,rev(yyvsp[-1])));}
+#line 4285 "parser.c"
     break;
 
   case 296: /* apat_vI: '~' apat  */
-#line 604 "parser.y"
-                                        {yyval = gc2(ap(LAZYPAT,yyvsp[0]));}
-#line 4300 "parser.c"
+#line 595 "parser.y"
+                                        {yyval = gcShadow(2,ap(LAZYPAT,yyvsp[0]));}
+#line 4291 "parser.c"
     break;
 
   case 297: /* pats2: pats2 ',' pat  */
-#line 606 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 4306 "parser.c"
+#line 597 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 4297 "parser.c"
     break;
 
   case 298: /* pats2: pat ',' pat  */
-#line 607 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],singleton(yyvsp[-2])));}
-#line 4312 "parser.c"
+#line 598 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],singleton(yyvsp[-2])));}
+#line 4303 "parser.c"
     break;
 
   case 299: /* pats1: pats1 ',' pat  */
-#line 609 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 4318 "parser.c"
+#line 600 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 4309 "parser.c"
     break;
 
   case 300: /* pats1: pat  */
-#line 610 "parser.y"
-                                        {yyval = gc1(singleton(yyvsp[0]));}
-#line 4324 "parser.c"
+#line 601 "parser.y"
+                                        {yyval = gcShadow(1,singleton(yyvsp[0]));}
+#line 4315 "parser.c"
     break;
 
   case 301: /* patbinds: %empty  */
-#line 612 "parser.y"
-                                        {yyval = gc0(NIL);}
-#line 4330 "parser.c"
+#line 603 "parser.y"
+                                        {yyval = gcShadow(0,NIL);}
+#line 4321 "parser.c"
     break;
 
   case 302: /* patbinds: patbinds1  */
-#line 613 "parser.y"
-                                        {yyval = gc1(rev(yyvsp[0]));}
-#line 4336 "parser.c"
+#line 604 "parser.y"
+                                        {yyval = gcShadow(1,rev(yyvsp[0]));}
+#line 4327 "parser.c"
     break;
 
   case 303: /* patbinds1: patbinds1 ',' patbind  */
-#line 615 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 4342 "parser.c"
+#line 606 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 4333 "parser.c"
     break;
 
   case 304: /* patbinds1: patbind  */
-#line 616 "parser.y"
-                                        {yyval = gc1(singleton(yyvsp[0]));}
-#line 4348 "parser.c"
+#line 607 "parser.y"
+                                        {yyval = gcShadow(1,singleton(yyvsp[0]));}
+#line 4339 "parser.c"
     break;
 
   case 305: /* patbind: qvar '=' pat  */
-#line 618 "parser.y"
-                                        {yyval = gc3(pair(yyvsp[-2],yyvsp[0]));}
-#line 4354 "parser.c"
+#line 609 "parser.y"
+                                        {yyval = gcShadow(3,pair(yyvsp[-2],yyvsp[0]));}
+#line 4345 "parser.c"
     break;
 
   case 306: /* patbind: var  */
-#line 619 "parser.y"
+#line 610 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4360 "parser.c"
+#line 4351 "parser.c"
     break;
 
   case 307: /* exp: exp_err  */
-#line 624 "parser.y"
+#line 615 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4366 "parser.c"
+#line 4357 "parser.c"
     break;
 
   case 308: /* exp: error  */
-#line 625 "parser.y"
+#line 616 "parser.y"
                                         {syntaxError("expression");}
-#line 4372 "parser.c"
+#line 4363 "parser.c"
     break;
 
   case 309: /* exp_err: exp0a COCO sigType  */
-#line 627 "parser.y"
-                                        {yyval = gc3(ap(ESIGN,pair(yyvsp[-2],yyvsp[0])));}
-#line 4378 "parser.c"
+#line 618 "parser.y"
+                                        {yyval = gcShadow(3,ap(ESIGN,pair(yyvsp[-2],yyvsp[0])));}
+#line 4369 "parser.c"
     break;
 
   case 310: /* exp_err: exp0  */
-#line 628 "parser.y"
+#line 619 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4384 "parser.c"
+#line 4375 "parser.c"
     break;
 
   case 311: /* exp0: exp0a  */
-#line 630 "parser.y"
+#line 621 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4390 "parser.c"
+#line 4381 "parser.c"
     break;
 
   case 312: /* exp0: exp0b  */
-#line 631 "parser.y"
+#line 622 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4396 "parser.c"
+#line 4387 "parser.c"
     break;
 
   case 313: /* exp0a: infixExpa  */
-#line 633 "parser.y"
-                                        {yyval = gc1(ap(INFIX,yyvsp[0]));}
-#line 4402 "parser.c"
+#line 624 "parser.y"
+                                        {yyval = gcShadow(1,ap(INFIX,yyvsp[0]));}
+#line 4393 "parser.c"
     break;
 
   case 314: /* exp0a: exp10a  */
-#line 634 "parser.y"
+#line 625 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4408 "parser.c"
+#line 4399 "parser.c"
     break;
 
   case 315: /* exp0b: infixExpb  */
-#line 636 "parser.y"
-                                        {yyval = gc1(ap(INFIX,yyvsp[0]));}
-#line 4414 "parser.c"
+#line 627 "parser.y"
+                                        {yyval = gcShadow(1,ap(INFIX,yyvsp[0]));}
+#line 4405 "parser.c"
     break;
 
   case 316: /* exp0b: exp10b  */
-#line 637 "parser.y"
+#line 628 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4420 "parser.c"
+#line 4411 "parser.c"
     break;
 
   case 317: /* infixExpa: infixExpa qop '-' exp10a  */
-#line 639 "parser.y"
-                                        {yyval = gc4(ap(NEG,ap(ap(yyvsp[-2],yyvsp[-3]),yyvsp[0])));}
-#line 4426 "parser.c"
+#line 630 "parser.y"
+                                        {yyval = gcShadow(4,ap(NEG,ap(ap(yyvsp[-2],yyvsp[-3]),yyvsp[0])));}
+#line 4417 "parser.c"
     break;
 
   case 318: /* infixExpa: infixExpa qop exp10a  */
-#line 640 "parser.y"
-                                        {yyval = gc3(ap(ap(yyvsp[-1],yyvsp[-2]),yyvsp[0]));}
-#line 4432 "parser.c"
+#line 631 "parser.y"
+                                        {yyval = gcShadow(3,ap(ap(yyvsp[-1],yyvsp[-2]),yyvsp[0]));}
+#line 4423 "parser.c"
     break;
 
   case 319: /* infixExpa: '-' exp10a  */
-#line 641 "parser.y"
-                                        {yyval = gc2(ap(NEG,only(yyvsp[0])));}
-#line 4438 "parser.c"
+#line 632 "parser.y"
+                                        {yyval = gcShadow(2,ap(NEG,only(yyvsp[0])));}
+#line 4429 "parser.c"
     break;
 
   case 320: /* infixExpa: exp10a qop '-' exp10a  */
-#line 642 "parser.y"
-                                        {yyval = gc4(ap(NEG,
+#line 633 "parser.y"
+                                        {yyval = gcShadow(4,ap(NEG,
 						     ap(ap(yyvsp[-2],only(yyvsp[-3])),yyvsp[0])));}
-#line 4445 "parser.c"
+#line 4436 "parser.c"
     break;
 
   case 321: /* infixExpa: exp10a qop exp10a  */
-#line 644 "parser.y"
-                                        {yyval = gc3(ap(ap(yyvsp[-1],only(yyvsp[-2])),yyvsp[0]));}
-#line 4451 "parser.c"
+#line 635 "parser.y"
+                                        {yyval = gcShadow(3,ap(ap(yyvsp[-1],only(yyvsp[-2])),yyvsp[0]));}
+#line 4442 "parser.c"
     break;
 
   case 322: /* infixExpb: infixExpa qop '-' exp10b  */
-#line 646 "parser.y"
-                                        {yyval = gc4(ap(NEG,ap(ap(yyvsp[-2],yyvsp[-3]),yyvsp[0])));}
-#line 4457 "parser.c"
+#line 637 "parser.y"
+                                        {yyval = gcShadow(4,ap(NEG,ap(ap(yyvsp[-2],yyvsp[-3]),yyvsp[0])));}
+#line 4448 "parser.c"
     break;
 
   case 323: /* infixExpb: infixExpa qop exp10b  */
-#line 647 "parser.y"
-                                        {yyval = gc3(ap(ap(yyvsp[-1],yyvsp[-2]),yyvsp[0]));}
-#line 4463 "parser.c"
+#line 638 "parser.y"
+                                        {yyval = gcShadow(3,ap(ap(yyvsp[-1],yyvsp[-2]),yyvsp[0]));}
+#line 4454 "parser.c"
     break;
 
   case 324: /* infixExpb: '-' exp10b  */
-#line 648 "parser.y"
-                                        {yyval = gc2(ap(NEG,only(yyvsp[0])));}
-#line 4469 "parser.c"
+#line 639 "parser.y"
+                                        {yyval = gcShadow(2,ap(NEG,only(yyvsp[0])));}
+#line 4460 "parser.c"
     break;
 
   case 325: /* infixExpb: exp10a qop '-' exp10b  */
-#line 649 "parser.y"
-                                        {yyval = gc4(ap(NEG,
+#line 640 "parser.y"
+                                        {yyval = gcShadow(4,ap(NEG,
 						     ap(ap(yyvsp[-2],only(yyvsp[-3])),yyvsp[0])));}
-#line 4476 "parser.c"
+#line 4467 "parser.c"
     break;
 
   case 326: /* infixExpb: exp10a qop exp10b  */
-#line 651 "parser.y"
-                                        {yyval = gc3(ap(ap(yyvsp[-1],only(yyvsp[-2])),yyvsp[0]));}
-#line 4482 "parser.c"
+#line 642 "parser.y"
+                                        {yyval = gcShadow(3,ap(ap(yyvsp[-1],only(yyvsp[-2])),yyvsp[0]));}
+#line 4473 "parser.c"
     break;
 
   case 327: /* exp10a: CASEXP exp OF '{' alts end  */
-#line 653 "parser.y"
-                                        {yyval = gc6(ap(CASE,pair(yyvsp[-4],rev(yyvsp[-1]))));}
-#line 4488 "parser.c"
+#line 644 "parser.y"
+                                        {yyval = gcShadow(6,ap(CASE,pair(yyvsp[-4],rev(yyvsp[-1]))));}
+#line 4479 "parser.c"
     break;
 
   case 328: /* exp10a: DO '{' stmts end  */
-#line 654 "parser.y"
-                                        {yyval = gc4(ap(DOCOMP,checkDo(yyvsp[-1])));}
-#line 4494 "parser.c"
+#line 645 "parser.y"
+                                        {yyval = gcShadow(4,ap(DOCOMP,checkDo(yyvsp[-1])));}
+#line 4485 "parser.c"
     break;
 
   case 329: /* exp10a: appExp  */
-#line 655 "parser.y"
+#line 646 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4500 "parser.c"
+#line 4491 "parser.c"
     break;
 
   case 330: /* exp10b: '\\' pats ARROW exp  */
-#line 657 "parser.y"
-                                        {yyval = gc4(ap(LAMBDA,      
+#line 648 "parser.y"
+                                        {yyval = gcShadow(4,ap(LAMBDA,      
 						     pair(rev(yyvsp[-2]),
 							  pair(yyvsp[-1],yyvsp[0]))));}
-#line 4508 "parser.c"
+#line 4499 "parser.c"
     break;
 
   case 331: /* exp10b: LET decls IN exp  */
-#line 660 "parser.y"
-                                        {yyval = gc4(letrec(yyvsp[-2],yyvsp[0]));}
-#line 4514 "parser.c"
+#line 651 "parser.y"
+                                        {yyval = gcShadow(4,letrec(yyvsp[-2],yyvsp[0]));}
+#line 4505 "parser.c"
     break;
 
   case 332: /* exp10b: IF exp then_exp else_exp  */
-#line 661 "parser.y"
-                                        {yyval = gc4(ap(COND,triple(yyvsp[-2],yyvsp[-1],yyvsp[0])));}
-#line 4520 "parser.c"
+#line 652 "parser.y"
+                                        {yyval = gcShadow(4,ap(COND,triple(yyvsp[-2],yyvsp[-1],yyvsp[0])));}
+#line 4511 "parser.c"
     break;
 
   case 333: /* then_exp: ';' THEN exp  */
-#line 666 "parser.y"
-                                        {yyval = gc3(yyvsp[0]);}
-#line 4526 "parser.c"
+#line 657 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[0]);}
+#line 4517 "parser.c"
     break;
 
   case 334: /* then_exp: THEN exp  */
-#line 667 "parser.y"
-                                        {yyval = gc2(yyvsp[0]);}
-#line 4532 "parser.c"
+#line 658 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[0]);}
+#line 4523 "parser.c"
     break;
 
   case 335: /* else_exp: ';' ELSE exp  */
-#line 669 "parser.y"
-                                        {yyval = gc3(yyvsp[0]);}
-#line 4538 "parser.c"
+#line 660 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[0]);}
+#line 4529 "parser.c"
     break;
 
   case 336: /* else_exp: ELSE exp  */
-#line 670 "parser.y"
-                                        {yyval = gc2(yyvsp[0]);}
-#line 4544 "parser.c"
+#line 661 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[0]);}
+#line 4535 "parser.c"
     break;
 
   case 337: /* pats: pats apat  */
-#line 673 "parser.y"
-                                        {yyval = gc2(cons(yyvsp[0],yyvsp[-1]));}
-#line 4550 "parser.c"
+#line 664 "parser.y"
+                                        {yyval = gcShadow(2,cons(yyvsp[0],yyvsp[-1]));}
+#line 4541 "parser.c"
     break;
 
   case 338: /* pats: apat  */
-#line 674 "parser.y"
-                                        {yyval = gc1(cons(yyvsp[0],NIL));}
-#line 4556 "parser.c"
+#line 665 "parser.y"
+                                        {yyval = gcShadow(1,cons(yyvsp[0],NIL));}
+#line 4547 "parser.c"
     break;
 
   case 339: /* appExp: appExp aexp  */
-#line 676 "parser.y"
-                                        {yyval = gc2(ap(yyvsp[-1],yyvsp[0]));}
-#line 4562 "parser.c"
+#line 667 "parser.y"
+                                        {yyval = gcShadow(2,ap(yyvsp[-1],yyvsp[0]));}
+#line 4553 "parser.c"
     break;
 
   case 340: /* appExp: aexp  */
-#line 677 "parser.y"
+#line 668 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4568 "parser.c"
+#line 4559 "parser.c"
     break;
 
   case 341: /* aexp: qvar  */
-#line 679 "parser.y"
+#line 670 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4574 "parser.c"
+#line 4565 "parser.c"
     break;
 
   case 342: /* aexp: qvar '@' aexp  */
-#line 680 "parser.y"
-                                        {yyval = gc3(ap(ASPAT,pair(yyvsp[-2],yyvsp[0])));}
-#line 4580 "parser.c"
+#line 671 "parser.y"
+                                        {yyval = gcShadow(3,ap(ASPAT,pair(yyvsp[-2],yyvsp[0])));}
+#line 4571 "parser.c"
     break;
 
   case 343: /* aexp: '~' aexp  */
-#line 681 "parser.y"
-                                        {yyval = gc2(ap(LAZYPAT,yyvsp[0]));}
-#line 4586 "parser.c"
+#line 672 "parser.y"
+                                        {yyval = gcShadow(2,ap(LAZYPAT,yyvsp[0]));}
+#line 4577 "parser.c"
     break;
 
   case 344: /* aexp: '_'  */
-#line 682 "parser.y"
-                                        {yyval = gc1(WILDCARD);}
-#line 4592 "parser.c"
+#line 673 "parser.y"
+                                        {yyval = gcShadow(1,WILDCARD);}
+#line 4583 "parser.c"
     break;
 
   case 345: /* aexp: gcon  */
-#line 683 "parser.y"
+#line 674 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4598 "parser.c"
+#line 4589 "parser.c"
     break;
 
   case 346: /* aexp: qcon '{' fbinds '}'  */
-#line 684 "parser.y"
-                                        {yyval = gc4(ap(CONFLDS,pair(yyvsp[-3],yyvsp[-1])));}
-#line 4604 "parser.c"
+#line 675 "parser.y"
+                                        {yyval = gcShadow(4,ap(CONFLDS,pair(yyvsp[-3],yyvsp[-1])));}
+#line 4595 "parser.c"
     break;
 
   case 347: /* aexp: aexp '{' fbinds '}'  */
-#line 685 "parser.y"
-                                        {yyval = gc4(ap(UPDFLDS,
+#line 676 "parser.y"
+                                        {yyval = gcShadow(4,ap(UPDFLDS,
 						     triple(yyvsp[-3],NIL,yyvsp[-1])));}
-#line 4611 "parser.c"
+#line 4602 "parser.c"
     break;
 
   case 348: /* aexp: NUMLIT  */
-#line 687 "parser.y"
+#line 678 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4617 "parser.c"
+#line 4608 "parser.c"
     break;
 
   case 349: /* aexp: CHARLIT  */
-#line 688 "parser.y"
+#line 679 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4623 "parser.c"
+#line 4614 "parser.c"
     break;
 
   case 350: /* aexp: STRINGLIT  */
-#line 689 "parser.y"
+#line 680 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4629 "parser.c"
+#line 4620 "parser.c"
     break;
 
   case 351: /* aexp: REPEAT  */
-#line 690 "parser.y"
+#line 681 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4635 "parser.c"
+#line 4626 "parser.c"
     break;
 
   case 352: /* aexp: '(' exp ')'  */
-#line 691 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 4641 "parser.c"
+#line 682 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 4632 "parser.c"
     break;
 
   case 353: /* aexp: '(' exps2 ')'  */
-#line 692 "parser.y"
-                                        {yyval = gc3(buildTuple(yyvsp[-1]));}
-#line 4647 "parser.c"
+#line 683 "parser.y"
+                                        {yyval = gcShadow(3,buildTuple(yyvsp[-1]));}
+#line 4638 "parser.c"
     break;
 
   case 354: /* aexp: '[' list ']'  */
-#line 693 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 4653 "parser.c"
+#line 684 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 4644 "parser.c"
     break;
 
   case 355: /* aexp: '(' exp10a qop ')'  */
-#line 694 "parser.y"
-                                        {yyval = gc4(ap(yyvsp[-1],yyvsp[-2]));}
-#line 4659 "parser.c"
+#line 685 "parser.y"
+                                        {yyval = gcShadow(4,ap(yyvsp[-1],yyvsp[-2]));}
+#line 4650 "parser.c"
     break;
 
   case 356: /* aexp: '(' qvarop_mi exp0 ')'  */
-#line 695 "parser.y"
-                                        {yyval = gc4(ap(ap(nameFlip,yyvsp[-2]),yyvsp[-1]));}
-#line 4665 "parser.c"
+#line 686 "parser.y"
+                                        {yyval = gcShadow(4,ap(ap(nameFlip,yyvsp[-2]),yyvsp[-1]));}
+#line 4656 "parser.c"
     break;
 
   case 357: /* aexp: '(' qconop exp0 ')'  */
-#line 696 "parser.y"
-                                        {yyval = gc4(ap(ap(nameFlip,yyvsp[-2]),yyvsp[-1]));}
-#line 4671 "parser.c"
+#line 687 "parser.y"
+                                        {yyval = gcShadow(4,ap(ap(nameFlip,yyvsp[-2]),yyvsp[-1]));}
+#line 4662 "parser.c"
     break;
 
   case 358: /* exps2: exps2 ',' exp  */
-#line 698 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 4677 "parser.c"
+#line 689 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 4668 "parser.c"
     break;
 
   case 359: /* exps2: exp ',' exp  */
-#line 699 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],cons(yyvsp[-2],NIL)));}
-#line 4683 "parser.c"
+#line 690 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],cons(yyvsp[-2],NIL)));}
+#line 4674 "parser.c"
     break;
 
   case 360: /* alts: alts1  */
-#line 701 "parser.y"
+#line 692 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4689 "parser.c"
+#line 4680 "parser.c"
     break;
 
   case 361: /* alts: ';' alts  */
-#line 702 "parser.y"
-                                        {yyval = gc2(yyvsp[0]);}
-#line 4695 "parser.c"
+#line 693 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[0]);}
+#line 4686 "parser.c"
     break;
 
   case 362: /* alts1: alts1 ';' alt  */
-#line 704 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 4701 "parser.c"
+#line 695 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 4692 "parser.c"
     break;
 
   case 363: /* alts1: alts1 ';'  */
-#line 705 "parser.y"
-                                        {yyval = gc2(yyvsp[-1]);}
-#line 4707 "parser.c"
+#line 696 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[-1]);}
+#line 4698 "parser.c"
     break;
 
   case 364: /* alts1: alt  */
-#line 706 "parser.y"
-                                        {yyval = gc1(cons(yyvsp[0],NIL));}
-#line 4713 "parser.c"
+#line 697 "parser.y"
+                                        {yyval = gcShadow(1,cons(yyvsp[0],NIL));}
+#line 4704 "parser.c"
     break;
 
   case 365: /* alt: pat altRhs wherePart  */
-#line 708 "parser.y"
-                                        {yyval = gc3(pair(yyvsp[-2],letrec(yyvsp[0],yyvsp[-1])));}
-#line 4719 "parser.c"
+#line 699 "parser.y"
+                                        {yyval = gcShadow(3,pair(yyvsp[-2],letrec(yyvsp[0],yyvsp[-1])));}
+#line 4710 "parser.c"
     break;
 
   case 366: /* altRhs: guardAlts  */
-#line 710 "parser.y"
-                                        {yyval = gc1(desugarGuards(rev(yyvsp[0])));}
-#line 4725 "parser.c"
+#line 701 "parser.y"
+                                        {yyval = gcShadow(1,desugarGuards(rev(yyvsp[0])));}
+#line 4716 "parser.c"
     break;
 
   case 367: /* altRhs: ARROW exp  */
-#line 711 "parser.y"
-                                        {yyval = gc2(pair(yyvsp[-1],yyvsp[0]));}
-#line 4731 "parser.c"
+#line 702 "parser.y"
+                                        {yyval = gcShadow(2,pair(yyvsp[-1],yyvsp[0]));}
+#line 4722 "parser.c"
     break;
 
   case 368: /* altRhs: error  */
-#line 712 "parser.y"
+#line 703 "parser.y"
                                         {syntaxError("case expression");}
-#line 4737 "parser.c"
+#line 4728 "parser.c"
     break;
 
   case 369: /* guardAlts: guardAlts guardAlt  */
-#line 714 "parser.y"
-                                        {yyval = gc2(cons(yyvsp[0],yyvsp[-1]));}
-#line 4743 "parser.c"
+#line 705 "parser.y"
+                                        {yyval = gcShadow(2,cons(yyvsp[0],yyvsp[-1]));}
+#line 4734 "parser.c"
     break;
 
   case 370: /* guardAlts: guardAlt  */
-#line 715 "parser.y"
-                                        {yyval = gc1(cons(yyvsp[0],NIL));}
-#line 4749 "parser.c"
+#line 706 "parser.y"
+                                        {yyval = gcShadow(1,cons(yyvsp[0],NIL));}
+#line 4740 "parser.c"
     break;
 
   case 371: /* guardAlt: '|' quals ARROW exp  */
-#line 717 "parser.y"
-                                        {yyval = gc4(pair(yyvsp[-1],pair(rev(yyvsp[-2]),yyvsp[0])));}
-#line 4755 "parser.c"
+#line 708 "parser.y"
+                                        {yyval = gcShadow(4,pair(yyvsp[-1],pair(rev(yyvsp[-2]),yyvsp[0])));}
+#line 4746 "parser.c"
     break;
 
   case 372: /* stmts: stmts1  */
-#line 720 "parser.y"
+#line 711 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4761 "parser.c"
+#line 4752 "parser.c"
     break;
 
   case 373: /* stmts: ';' stmts  */
-#line 721 "parser.y"
-                                        {yyval = gc2(yyvsp[0]);}
-#line 4767 "parser.c"
+#line 712 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[0]);}
+#line 4758 "parser.c"
     break;
 
   case 374: /* stmts1: stmts1 ';' stmt  */
-#line 723 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 4773 "parser.c"
+#line 714 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 4764 "parser.c"
     break;
 
   case 375: /* stmts1: stmts1 ';'  */
-#line 724 "parser.y"
-                                        {yyval = gc2(yyvsp[-1]);}
-#line 4779 "parser.c"
+#line 715 "parser.y"
+                                        {yyval = gcShadow(2,yyvsp[-1]);}
+#line 4770 "parser.c"
     break;
 
   case 376: /* stmts1: stmt  */
-#line 725 "parser.y"
-                                        {yyval = gc1(cons(yyvsp[0],NIL));}
-#line 4785 "parser.c"
+#line 716 "parser.y"
+                                        {yyval = gcShadow(1,cons(yyvsp[0],NIL));}
+#line 4776 "parser.c"
     break;
 
   case 377: /* stmt: exp_err FROM exp  */
-#line 728 "parser.y"
-                                        {yyval = gc3(ap(FROMQUAL,pair(yyvsp[-2],yyvsp[0])));}
-#line 4791 "parser.c"
+#line 719 "parser.y"
+                                        {yyval = gcShadow(3,ap(FROMQUAL,pair(yyvsp[-2],yyvsp[0])));}
+#line 4782 "parser.c"
     break;
 
   case 378: /* stmt: LET decls  */
-#line 729 "parser.y"
-                                        {yyval = gc2(ap(QWHERE,yyvsp[0]));}
-#line 4797 "parser.c"
+#line 720 "parser.y"
+                                        {yyval = gcShadow(2,ap(QWHERE,yyvsp[0]));}
+#line 4788 "parser.c"
     break;
 
   case 379: /* stmt: exp_err  */
-#line 731 "parser.y"
-                                        {yyval = gc1(ap(DOQUAL,yyvsp[0]));}
-#line 4803 "parser.c"
+#line 722 "parser.y"
+                                        {yyval = gcShadow(1,ap(DOQUAL,yyvsp[0]));}
+#line 4794 "parser.c"
     break;
 
   case 380: /* fbinds: %empty  */
-#line 733 "parser.y"
-                                        {yyval = gc0(NIL);}
-#line 4809 "parser.c"
+#line 724 "parser.y"
+                                        {yyval = gcShadow(0,NIL);}
+#line 4800 "parser.c"
     break;
 
   case 381: /* fbinds: fbinds1  */
-#line 734 "parser.y"
-                                        {yyval = gc1(rev(yyvsp[0]));}
-#line 4815 "parser.c"
+#line 725 "parser.y"
+                                        {yyval = gcShadow(1,rev(yyvsp[0]));}
+#line 4806 "parser.c"
     break;
 
   case 382: /* fbinds1: fbinds1 ',' fbind  */
-#line 736 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 4821 "parser.c"
+#line 727 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 4812 "parser.c"
     break;
 
   case 383: /* fbinds1: fbind  */
-#line 737 "parser.y"
-                                        {yyval = gc1(singleton(yyvsp[0]));}
-#line 4827 "parser.c"
+#line 728 "parser.y"
+                                        {yyval = gcShadow(1,singleton(yyvsp[0]));}
+#line 4818 "parser.c"
     break;
 
   case 384: /* fbind: var  */
-#line 739 "parser.y"
+#line 730 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4833 "parser.c"
+#line 4824 "parser.c"
     break;
 
   case 385: /* fbind: qvar '=' exp  */
-#line 740 "parser.y"
-                                        {yyval = gc3(pair(yyvsp[-2],yyvsp[0]));}
-#line 4839 "parser.c"
+#line 731 "parser.y"
+                                        {yyval = gcShadow(3,pair(yyvsp[-2],yyvsp[0]));}
+#line 4830 "parser.c"
     break;
 
   case 386: /* list: exp  */
-#line 745 "parser.y"
-                                        {yyval = gc1(ap(FINLIST,cons(yyvsp[0],NIL)));}
-#line 4845 "parser.c"
+#line 736 "parser.y"
+                                        {yyval = gcShadow(1,ap(FINLIST,cons(yyvsp[0],NIL)));}
+#line 4836 "parser.c"
     break;
 
   case 387: /* list: exps2  */
-#line 746 "parser.y"
-                                        {yyval = gc1(ap(FINLIST,rev(yyvsp[0])));}
-#line 4851 "parser.c"
+#line 737 "parser.y"
+                                        {yyval = gcShadow(1,ap(FINLIST,rev(yyvsp[0])));}
+#line 4842 "parser.c"
     break;
 
   case 388: /* list: exp '|' quals  */
-#line 747 "parser.y"
-                                        {yyval = gc3(ap(COMP,pair(yyvsp[-2],rev(yyvsp[0]))));}
-#line 4857 "parser.c"
+#line 738 "parser.y"
+                                        {yyval = gcShadow(3,ap(COMP,pair(yyvsp[-2],rev(yyvsp[0]))));}
+#line 4848 "parser.c"
     break;
 
   case 389: /* list: exp UPTO exp  */
-#line 748 "parser.y"
-                                        {yyval = gc3(ap(ap(nameFromTo,yyvsp[-2]),yyvsp[0]));}
-#line 4863 "parser.c"
+#line 739 "parser.y"
+                                        {yyval = gcShadow(3,ap(ap(nameFromTo,yyvsp[-2]),yyvsp[0]));}
+#line 4854 "parser.c"
     break;
 
   case 390: /* list: exp ',' exp UPTO  */
-#line 749 "parser.y"
-                                        {yyval = gc4(ap(ap(nameFromThen,yyvsp[-3]),yyvsp[-1]));}
-#line 4869 "parser.c"
+#line 740 "parser.y"
+                                        {yyval = gcShadow(4,ap(ap(nameFromThen,yyvsp[-3]),yyvsp[-1]));}
+#line 4860 "parser.c"
     break;
 
   case 391: /* list: exp UPTO  */
-#line 750 "parser.y"
-                                        {yyval = gc2(ap(nameFrom,yyvsp[-1]));}
-#line 4875 "parser.c"
+#line 741 "parser.y"
+                                        {yyval = gcShadow(2,ap(nameFrom,yyvsp[-1]));}
+#line 4866 "parser.c"
     break;
 
   case 392: /* list: exp ',' exp UPTO exp  */
-#line 751 "parser.y"
-                                        {yyval = gc5(ap(ap(ap(nameFromThenTo,
+#line 742 "parser.y"
+                                        {yyval = gcShadow(5,ap(ap(ap(nameFromThenTo,
 								yyvsp[-4]),yyvsp[-2]),yyvsp[0]));}
-#line 4882 "parser.c"
+#line 4873 "parser.c"
     break;
 
   case 393: /* quals: quals ',' qual  */
-#line 754 "parser.y"
-                                        {yyval = gc3(cons(yyvsp[0],yyvsp[-2]));}
-#line 4888 "parser.c"
+#line 745 "parser.y"
+                                        {yyval = gcShadow(3,cons(yyvsp[0],yyvsp[-2]));}
+#line 4879 "parser.c"
     break;
 
   case 394: /* quals: qual  */
-#line 755 "parser.y"
-                                        {yyval = gc1(cons(yyvsp[0],NIL));}
-#line 4894 "parser.c"
+#line 746 "parser.y"
+                                        {yyval = gcShadow(1,cons(yyvsp[0],NIL));}
+#line 4885 "parser.c"
     break;
 
   case 395: /* qual: exp FROM exp  */
-#line 757 "parser.y"
-                                        {yyval = gc3(ap(FROMQUAL,pair(yyvsp[-2],yyvsp[0])));}
-#line 4900 "parser.c"
+#line 748 "parser.y"
+                                        {yyval = gcShadow(3,ap(FROMQUAL,pair(yyvsp[-2],yyvsp[0])));}
+#line 4891 "parser.c"
     break;
 
   case 396: /* qual: exp  */
-#line 758 "parser.y"
-                                        {yyval = gc1(ap(BOOLQUAL,yyvsp[0]));}
-#line 4906 "parser.c"
+#line 749 "parser.y"
+                                        {yyval = gcShadow(1,ap(BOOLQUAL,yyvsp[0]));}
+#line 4897 "parser.c"
     break;
 
   case 397: /* qual: LET decls  */
-#line 759 "parser.y"
-                                        {yyval = gc2(ap(QWHERE,yyvsp[0]));}
-#line 4912 "parser.c"
+#line 750 "parser.y"
+                                        {yyval = gcShadow(2,ap(QWHERE,yyvsp[0]));}
+#line 4903 "parser.c"
     break;
 
   case 398: /* gcon: qcon  */
-#line 764 "parser.y"
+#line 755 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4918 "parser.c"
+#line 4909 "parser.c"
     break;
 
   case 399: /* gcon: '(' ')'  */
-#line 765 "parser.y"
-                                        {yyval = gc2(nameUnit);}
-#line 4924 "parser.c"
+#line 756 "parser.y"
+                                        {yyval = gcShadow(2,nameUnit);}
+#line 4915 "parser.c"
     break;
 
   case 400: /* gcon: '[' ']'  */
-#line 766 "parser.y"
-                                        {yyval = gc2(nameNil);}
-#line 4930 "parser.c"
+#line 757 "parser.y"
+                                        {yyval = gcShadow(2,nameNil);}
+#line 4921 "parser.c"
     break;
 
   case 401: /* gcon: '(' tupCommas ')'  */
-#line 767 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 4936 "parser.c"
+#line 758 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 4927 "parser.c"
     break;
 
   case 402: /* tupCommas: tupCommas ','  */
-#line 769 "parser.y"
-                                        {yyval = gc2(mkTuple(tupleOf(yyvsp[-1])+1));}
-#line 4942 "parser.c"
+#line 760 "parser.y"
+                                        {yyval = gcShadow(2,mkTuple(tupleOf(yyvsp[-1])+1));}
+#line 4933 "parser.c"
     break;
 
   case 403: /* tupCommas: ','  */
-#line 770 "parser.y"
-                                        {yyval = gc1(mkTuple(2));}
-#line 4948 "parser.c"
+#line 761 "parser.y"
+                                        {yyval = gcShadow(1,mkTuple(2));}
+#line 4939 "parser.c"
     break;
 
   case 404: /* varid: VARID  */
-#line 772 "parser.y"
+#line 763 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4954 "parser.c"
+#line 4945 "parser.c"
     break;
 
   case 405: /* varid: HIDING  */
-#line 773 "parser.y"
-                                        {yyval = gc1(varHiding);}
-#line 4960 "parser.c"
+#line 764 "parser.y"
+                                        {yyval = gcShadow(1,varHiding);}
+#line 4951 "parser.c"
     break;
 
   case 406: /* varid: QUALIFIED  */
-#line 774 "parser.y"
-                                        {yyval = gc1(varQualified);}
-#line 4966 "parser.c"
+#line 765 "parser.y"
+                                        {yyval = gcShadow(1,varQualified);}
+#line 4957 "parser.c"
     break;
 
   case 407: /* varid: ASMOD  */
-#line 775 "parser.y"
-                                        {yyval = gc1(varAsMod);}
-#line 4972 "parser.c"
+#line 766 "parser.y"
+                                        {yyval = gcShadow(1,varAsMod);}
+#line 4963 "parser.c"
     break;
 
   case 408: /* qconid: QCONID  */
-#line 777 "parser.y"
+#line 768 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4978 "parser.c"
+#line 4969 "parser.c"
     break;
 
   case 409: /* qconid: CONID  */
-#line 778 "parser.y"
+#line 769 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4984 "parser.c"
+#line 4975 "parser.c"
     break;
 
   case 410: /* var: varid  */
-#line 780 "parser.y"
+#line 771 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 4990 "parser.c"
+#line 4981 "parser.c"
     break;
 
   case 411: /* var: '(' VAROP ')'  */
-#line 781 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 4996 "parser.c"
+#line 772 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 4987 "parser.c"
     break;
 
   case 412: /* var: '(' '+' ')'  */
-#line 782 "parser.y"
-                                        {yyval = gc3(varPlus);}
-#line 5002 "parser.c"
+#line 773 "parser.y"
+                                        {yyval = gcShadow(3,varPlus);}
+#line 4993 "parser.c"
     break;
 
   case 413: /* var: '(' '-' ')'  */
-#line 783 "parser.y"
-                                        {yyval = gc3(varMinus);}
-#line 5008 "parser.c"
+#line 774 "parser.y"
+                                        {yyval = gcShadow(3,varMinus);}
+#line 4999 "parser.c"
     break;
 
   case 414: /* var: '(' '!' ')'  */
-#line 784 "parser.y"
-                                        {yyval = gc3(varBang);}
-#line 5014 "parser.c"
+#line 775 "parser.y"
+                                        {yyval = gcShadow(3,varBang);}
+#line 5005 "parser.c"
     break;
 
   case 415: /* var: '(' '.' ')'  */
-#line 785 "parser.y"
-                                        {yyval = gc3(varDot);}
-#line 5020 "parser.c"
+#line 776 "parser.y"
+                                        {yyval = gcShadow(3,varDot);}
+#line 5011 "parser.c"
     break;
 
   case 416: /* qvar: QVARID  */
-#line 787 "parser.y"
+#line 778 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5026 "parser.c"
+#line 5017 "parser.c"
     break;
 
   case 417: /* qvar: '(' QVAROP ')'  */
-#line 788 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 5032 "parser.c"
+#line 779 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 5023 "parser.c"
     break;
 
   case 418: /* qvar: var  */
-#line 789 "parser.y"
+#line 780 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5038 "parser.c"
+#line 5029 "parser.c"
     break;
 
   case 419: /* con: CONID  */
-#line 791 "parser.y"
+#line 782 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5044 "parser.c"
+#line 5035 "parser.c"
     break;
 
   case 420: /* con: '(' CONOP ')'  */
-#line 792 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 5050 "parser.c"
+#line 783 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 5041 "parser.c"
     break;
 
   case 421: /* qcon: QCONID  */
-#line 794 "parser.y"
+#line 785 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5056 "parser.c"
+#line 5047 "parser.c"
     break;
 
   case 422: /* qcon: '(' QCONOP ')'  */
-#line 795 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 5062 "parser.c"
+#line 786 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 5053 "parser.c"
     break;
 
   case 423: /* qcon: con  */
-#line 796 "parser.y"
+#line 787 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5068 "parser.c"
+#line 5059 "parser.c"
     break;
 
   case 424: /* varop: '+'  */
-#line 798 "parser.y"
-                                        {yyval = gc1(varPlus);}
-#line 5074 "parser.c"
+#line 789 "parser.y"
+                                        {yyval = gcShadow(1,varPlus);}
+#line 5065 "parser.c"
     break;
 
   case 425: /* varop: '-'  */
-#line 799 "parser.y"
-                                        {yyval = gc1(varMinus);}
-#line 5080 "parser.c"
+#line 790 "parser.y"
+                                        {yyval = gcShadow(1,varMinus);}
+#line 5071 "parser.c"
     break;
 
   case 426: /* varop: varop_mipl  */
-#line 800 "parser.y"
+#line 791 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5086 "parser.c"
+#line 5077 "parser.c"
     break;
 
   case 427: /* varop_mi: '+'  */
-#line 802 "parser.y"
-                                        {yyval = gc1(varPlus);}
-#line 5092 "parser.c"
+#line 793 "parser.y"
+                                        {yyval = gcShadow(1,varPlus);}
+#line 5083 "parser.c"
     break;
 
   case 428: /* varop_mi: varop_mipl  */
-#line 803 "parser.y"
+#line 794 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5098 "parser.c"
+#line 5089 "parser.c"
     break;
 
   case 429: /* varop_pl: '-'  */
-#line 805 "parser.y"
-                                        {yyval = gc1(varMinus);}
-#line 5104 "parser.c"
+#line 796 "parser.y"
+                                        {yyval = gcShadow(1,varMinus);}
+#line 5095 "parser.c"
     break;
 
   case 430: /* varop_pl: varop_mipl  */
-#line 806 "parser.y"
+#line 797 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5110 "parser.c"
+#line 5101 "parser.c"
     break;
 
   case 431: /* varop_mipl: VAROP  */
-#line 808 "parser.y"
+#line 799 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5116 "parser.c"
+#line 5107 "parser.c"
     break;
 
   case 432: /* varop_mipl: '`' varid '`'  */
-#line 809 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 5122 "parser.c"
+#line 800 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 5113 "parser.c"
     break;
 
   case 433: /* varop_mipl: '!'  */
-#line 810 "parser.y"
-                                        {yyval = gc1(varBang);}
-#line 5128 "parser.c"
+#line 801 "parser.y"
+                                        {yyval = gcShadow(1,varBang);}
+#line 5119 "parser.c"
     break;
 
   case 434: /* varop_mipl: '.'  */
-#line 811 "parser.y"
-                                        {yyval = gc1(varDot);}
-#line 5134 "parser.c"
+#line 802 "parser.y"
+                                        {yyval = gcShadow(1,varDot);}
+#line 5125 "parser.c"
     break;
 
   case 435: /* qvarop: '-'  */
-#line 813 "parser.y"
-                                        {yyval = gc1(varMinus);}
-#line 5140 "parser.c"
+#line 804 "parser.y"
+                                        {yyval = gcShadow(1,varMinus);}
+#line 5131 "parser.c"
     break;
 
   case 436: /* qvarop: qvarop_mi  */
-#line 814 "parser.y"
+#line 805 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5146 "parser.c"
+#line 5137 "parser.c"
     break;
 
   case 437: /* qvarop_mi: QVAROP  */
-#line 816 "parser.y"
+#line 807 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5152 "parser.c"
+#line 5143 "parser.c"
     break;
 
   case 438: /* qvarop_mi: '`' QVARID '`'  */
-#line 817 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 5158 "parser.c"
+#line 808 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 5149 "parser.c"
     break;
 
   case 439: /* qvarop_mi: varop_mi  */
-#line 818 "parser.y"
+#line 809 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5164 "parser.c"
+#line 5155 "parser.c"
     break;
 
   case 440: /* conop: CONOP  */
-#line 821 "parser.y"
+#line 812 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5170 "parser.c"
+#line 5161 "parser.c"
     break;
 
   case 441: /* conop: '`' CONID '`'  */
-#line 822 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 5176 "parser.c"
+#line 813 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 5167 "parser.c"
     break;
 
   case 442: /* qconop: QCONOP  */
-#line 824 "parser.y"
+#line 815 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5182 "parser.c"
+#line 5173 "parser.c"
     break;
 
   case 443: /* qconop: '`' QCONID '`'  */
-#line 825 "parser.y"
-                                        {yyval = gc3(yyvsp[-1]);}
-#line 5188 "parser.c"
+#line 816 "parser.y"
+                                        {yyval = gcShadow(3,yyvsp[-1]);}
+#line 5179 "parser.c"
     break;
 
   case 444: /* qconop: conop  */
-#line 826 "parser.y"
+#line 817 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5194 "parser.c"
+#line 5185 "parser.c"
     break;
 
   case 445: /* op: varop  */
-#line 828 "parser.y"
+#line 819 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5200 "parser.c"
+#line 5191 "parser.c"
     break;
 
   case 446: /* op: conop  */
-#line 829 "parser.y"
+#line 820 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5206 "parser.c"
+#line 5197 "parser.c"
     break;
 
   case 447: /* qop: qvarop  */
-#line 831 "parser.y"
+#line 822 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5212 "parser.c"
+#line 5203 "parser.c"
     break;
 
   case 448: /* qop: qconop  */
-#line 832 "parser.y"
+#line 823 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5218 "parser.c"
+#line 5209 "parser.c"
     break;
 
   case 449: /* begin: %empty  */
-#line 837 "parser.y"
+#line 828 "parser.y"
                                         {goOffside(startColumn);}
-#line 5224 "parser.c"
+#line 5215 "parser.c"
     break;
 
   case 450: /* end: '}'  */
-#line 840 "parser.y"
+#line 831 "parser.y"
                                         {yyval = yyvsp[0];}
-#line 5230 "parser.c"
+#line 5221 "parser.c"
     break;
 
   case 451: /* end: error  */
-#line 841 "parser.y"
+#line 832 "parser.y"
                                         {yyerrok; 
 					 if (canUnOffside()) {
 					     unOffside();
@@ -5242,11 +5233,11 @@ yyreduce:
 					 else
 					     syntaxError("declaration");
 					}
-#line 5246 "parser.c"
+#line 5237 "parser.c"
     break;
 
 
-#line 5250 "parser.c"
+#line 5241 "parser.c"
 
       default: break;
     }
@@ -5439,7 +5430,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 856 "parser.y"
+#line 847 "parser.y"
 
 
 static Cell local gcShadow(Int n, Cell e)		/* keep parsed fragments on stack  */
@@ -5705,3 +5696,42 @@ static Cell local checkConstr(Cell c)	/* check that data constructor has */
 
 
 /*-------------------------------------------------------------------------*/
+
+/* --------------------------------------------------------------------------
+ * Building declarations and types:
+ * ------------------------------------------------------------------------*/
+
+static Void local defTycon(Int n, Cell l, Cell lhs, Cell rhs, Cell w)
+{				/* define tycon, popping n items   */
+    tyconDefn(intOf(l),lhs,rhs,w);
+    sp -= n;
+}
+
+static Cell local sigdecl(Cell l, List vs, Type t)
+{
+    return ap(SIGDECL,triple(l,vs,t));
+}
+
+static Cell local fixdecl(Cell l, List ops, Syntax a, Cell p)
+{
+    return ap(FIXDECL,triple(l,ops,mkInt(mkSyntax(a,intOf(p)))));
+}
+
+static Cell local grded(List gs)   { return ap(GUARDED,gs); }
+static Cell local bang (Type t)    { return ap(BANG,t); }
+static Cell local only (Cell t)    { return ap(ONLY,t); }
+
+static Cell local letrec(List bs, Cell e)	/* wrap e in bs, if any	   */
+{
+    return nonNull(bs) ? ap(LETREC,pair(bs,e)) : e;
+}
+
+static Cell local qualType(List ps, Type t)	/* qualify t by ps, if any  */
+{
+    return nonNull(ps) ? ap(QUAL,pair(ps,t)) : t;
+}
+
+static List local exportSelf(Void)		/* the module's own name   */
+{
+    return singleton(ap(MODULEENT,mkCon(module(currentModule).text)));
+}

@@ -260,8 +260,6 @@ static Int      maxScopes = 0;
 
 #define scope()   (scopes+numScopes-1)	/* the innermost open scope	   */
 
-#define saveVarsAss()     List saveAssump = hd(varsBounds)
-#define restoreVarsAss()  hd(varsBounds)  = saveAssump
 #define addVarAssump(v,t) hd(varsBounds)  = cons(pair(v,t),hd(varsBounds))
 #define findTopBinding(v) findInAssumList(textOf(v),hd(defnBounds))
 
@@ -605,12 +603,18 @@ static Void local reportTypeError(Int l, Cell e, Cell in, String wh, Type inft, 
     EEND;
 }
 
-#define shouldBe(l,e,in,where,t,o) if (!unify(typeIs,typeOff,t,o)) \
-				       typeError(l,e,in,where,t,o);
-#define check(l,e,in,where,t,o)    e=typeExpr(l,e); shouldBe(l,e,in,where,t,o)
-#define inferType(t,o)		   typeIs=t; typeOff=o
-#define spTypeExpr(l,e)			e = typeExpr(l,e);
-#define spCheck(l,e,in,where,t,o)	check(l,e,in,where,t,o);
+static Void local shouldBe(Int l, Cell e, Cell in, String where, Type t, Int o)
+{				/* unify the inferred type with (t,o) */
+    if (!unify(typeIs,typeOff,t,o))
+	typeError(l,e,in,where,t,o);
+}
+
+static Cell local check(Int l,Cell e,Cell in,String where,Type t,Int o)
+{				/* type check e against (t,o); returns */
+    e = typeExpr(l,e);		/* the translated e		   */
+    shouldBe(l,e,in,where,t,o);
+    return e;
+}
 
 static Void local cantEstablish(Int line, String wh, Cell e, Type t, List ps)
                 /* Complain when declared preds	   */
@@ -647,7 +651,7 @@ static int tcMode = EXPRESSION;
 
 static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  */
 {
-    STACK_CHECK
+    stackCheck();
     static String cond	  = "conditional";
     static String list	  = "list";
     static String discr   = "case discriminant";
@@ -712,9 +716,9 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
 
 
 	case COND	: {   Int beta = newTyvars(1);
-			      check(l,fst3(snd(e)),e,cond,typeBool,0);
-			      spCheck(l,snd3(snd(e)),e,cond,aVar,beta);
-			      spCheck(l,thd3(snd(e)),e,cond,aVar,beta);
+			      fst3(snd(e)) = check(l,fst3(snd(e)),e,cond,typeBool,0);
+			      snd3(snd(e)) = check(l,snd3(snd(e)),e,cond,aVar,beta);
+			      thd3(snd(e)) = check(l,thd3(snd(e)),e,cond,aVar,beta);
 			      tyvarType(beta);
 			  }
 			  break;
@@ -722,7 +726,7 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
 	case LETREC	: enterBindings();
 			  enterScope();
 			  mapProc(typeBindings,fst(snd(e)));
-			  spTypeExpr(l,snd(snd(e)));
+			  snd(snd(e)) = typeExpr(l,snd(snd(e)));
 			  leaveBindings();
 			  leaveScope(l,typeIs,typeOff,0);
 			  break;
@@ -730,7 +734,7 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
 	case FINLIST	: {   Int  beta = newTyvars(1);
 			      List xs;
 			      for (xs=snd(e); nonNull(xs); xs=tl(xs)) {
-				 spCheck(l,hd(xs),e,list,aVar,beta);
+				 hd(xs) = check(l,hd(xs),e,list,aVar,beta);
 			      }
 			      inferType(listof,beta);
 			  }
@@ -743,7 +747,7 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
 
 
 	case CASE	: {    Int beta = newTyvars(2);    /* discr result */
-			       check(l,fst(snd(e)),NIL,discr,aVar,beta);
+			       fst(snd(e)) = check(l,fst(snd(e)),NIL,discr,aVar,beta);
 			       map2Proc(typeCase,l,beta,snd(snd(e)));
 			       tyvarType(beta+1);
 			  }
@@ -766,7 +770,7 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
 	case ASPAT	: {   Int beta = newTyvars(1);
 			      snd(snd(e)) = typeExpr(l,snd(snd(e)));
 			      bindTv(beta,typeIs,typeOff);
-			      check(l,fst(snd(e)),e,aspat,aVar,beta);
+			      fst(snd(e)) = check(l,fst(snd(e)),e,aspat,aVar,beta);
 			      tyvarType(beta);
 			  }
 			  break;
@@ -924,7 +928,7 @@ static Cell local typeAp(Int l, Cell e)		/* Type check application, which   */
 		}
 	    }
 	    else {				/* Not a poly/qual type	   */
-		spCheck(l,hd(as),e,app,expect,alpha);
+		hd(as) = check(l,hd(as),e,app,expect,alpha);
 	    }
 	    h = ap(h,hd(as));			/* Save checked argument   */
 	}
@@ -936,7 +940,7 @@ static Cell local typeAp(Int l, Cell e)		/* Type check application, which   */
 	Int beta = funcType(n);		/* check h::t1->t2->...->tn->rn+1  */
 	shouldBe(l,h,e,app,aVar,beta);
 	for (i=n; i>0; --i) {		/* check e_i::t_i for each i	   */
-	    spCheck(l,arg(a),e,app,aVar,beta+2*i-1);
+	    arg(a) = check(l,arg(a),e,app,aVar,beta+2*i-1);
 	    p = a;
 	    a = fun(a);
 	}
@@ -971,7 +975,7 @@ static Cell local typeExpected(Int l, String wh, Cell e, Type reqd, Int alpha, I
     ps    = makePredAss(predsAre,o);
 
     preds = NIL;
-    check(l,e,NIL,wh,t,o);
+    e = check(l,e,NIL,wh,t,o);
     improve(l,ps,preds);
 
     clearMarks();
@@ -1034,7 +1038,7 @@ static Void local typeAlt(String wh, Cell e, Cell a, Type t, Int o, Int m)	/* Ty
     List as    = NIL;
     Bool added = FALSE;
 
-    saveVarsAss();
+    List savedVars = hd(varsBounds);
     enterScope();
     if (whatIs(t)==RANK2) {
 	if (n<(nr2=intOf(fst(snd(t))))) {
@@ -1097,7 +1101,7 @@ static Void local typeAlt(String wh, Cell e, Cell a, Type t, Int o, Int m)	/* Ty
 	reportTypeError(l,e,NIL,wh,got,req);
     }
 
-    restoreVarsAss();
+    hd(varsBounds) = savedVars;
     doneBtyvs(l);
     leaveScope(l,origt,o,m);
 }
@@ -1118,14 +1122,14 @@ static Void local typeCase(Int l, Int beta, Cell c)   /* type check case: pat ->
     static String casePat  = "case pattern";
     static String caseExpr = "case expression";
 
-    saveVarsAss();
+    List savedVars = hd(varsBounds);
     enterScope();
     fst(c) = typeFreshPat(l,patBtyvs(fst(c)));
     shouldBe(l,fst(c),NIL,casePat,aVar,beta);
     snd(c) = typeRhs(snd(c));
     shouldBe(l,rhsExpr(snd(c)),NIL,caseExpr,aVar,beta+1);
 
-    restoreVarsAss();
+    hd(varsBounds) = savedVars;
     doneBtyvs(l);
     leaveScope(l,typeIs,typeOff,0);
 }
@@ -1136,14 +1140,14 @@ static Void local typeComp(Int l, Type m, Cell e, List qs)	/* type check compreh
     static String boolQual = "boolean qualifier";
     static String genQual  = "generator";
 
-    STACK_CHECK
+    stackCheck();
     if (isNull(qs)) {			/* no qualifiers left		   */
-	spTypeExpr(l,fst(e));
+	fst(e) = typeExpr(l,fst(e));
     } else {
 	Cell q   = hd(qs);
 	List qs1 = tl(qs);
 	switch (whatIs(q)) {
-	    case BOOLQUAL : spCheck(l,snd(q),NIL,boolQual,typeBool,0);
+	    case BOOLQUAL : snd(q) = check(l,snd(q),NIL,boolQual,typeBool,0);
 			    typeComp(l,m,e,qs1);
 			    break;
 
@@ -1156,21 +1160,21 @@ static Void local typeComp(Int l, Type m, Cell e, List qs)	/* type check compreh
 			    break;
 
 	    case FROMQUAL : {   Int beta = newTyvars(1);
-				saveVarsAss();
+				List savedVars = hd(varsBounds);
 				enterPendingBtyvs();
-				spCheck(l,snd(snd(q)),NIL,genQual,m,beta);
+				snd(snd(q)) = check(l,snd(snd(q)),NIL,genQual,m,beta);
 				enterScope();
 				fst(snd(q))
 				    = typeFreshPat(l,patBtyvs(fst(snd(q))));
 				shouldBe(l,fst(snd(q)),NIL,genQual,aVar,beta);
 				typeComp(l,m,e,qs1);
-				restoreVarsAss();
+				hd(varsBounds) = savedVars;
 			        leavePendingBtyvs();
 				leaveScope(l,typeIs,typeOff,0);
 			    }
 			    break;
 
-	    case DOQUAL   : spCheck(l,snd(q),NIL,genQual,m,newTyvars(1));
+	    case DOQUAL   : snd(q) = check(l,snd(q),NIL,genQual,m,newTyvars(1));
 			    typeComp(l,m,e,qs1);
 			    break;
 	    default       : break;
@@ -1238,7 +1242,7 @@ static Void local typeConFlds(Int l, Cell e)	/* Type check a construction	   */
 	if (isPolyOrQualType(t))
 	    snd(hd(fs)) = typeExpected(l,conExpr,snd(hd(fs)),t,to,tf,TRUE);
 	else {
-	    spCheck(l,snd(hd(fs)),e,conExpr,t,to);
+	    snd(hd(fs)) = check(l,snd(hd(fs)),e,conExpr,t,to);
 	}
     }
     for (i=name(c).arity; i>0; i--)
@@ -1260,7 +1264,7 @@ static Void local typeUpdFlds(Int line, Cell e)	/* Type check an update		   */
 
     /* Calculate type and translation for each expr in the field list	   */
     for (fs1=fs, i=alpha+2; nonNull(fs1); fs1=tl(fs1), i++) {
-	spTypeExpr(line,snd(hd(fs1)));
+	snd(hd(fs1)) = typeExpr(line,snd(hd(fs1)));
 	bindTv(i,typeIs,typeOff);
     }
 
@@ -1277,7 +1281,7 @@ static Void local typeUpdFlds(Int line, Cell e)	/* Type check an update		   */
     ts = rev(ts);
 
     /* Type check expression to be updated				   */
-    spTypeExpr(line,fst3(snd(e)));
+    fst3(snd(e)) = typeExpr(line,fst3(snd(e)));
     bindTv(alpha,typeIs,typeOff);
 
     for (; nonNull(cs); cs=tl(cs)) {	/* Loop through constrs		   */
@@ -1998,7 +2002,7 @@ static Void local typeBind(Cell b)	       /* Type check binding		   */
 	tcMode  = OLD_PATTERN;
 	enterPendingBtyvs();
 	fst(pb) = patBtyvs(fst(pb));
-	check(l,fst(pb),NIL,lhsPat,aVar,beta);
+	fst(pb) = check(l,fst(pb),NIL,lhsPat,aVar,beta);
 	tcMode  = EXPRESSION;
 	snd(pb) = typeRhs(snd(pb));
 	shouldBe(l,rhsExpr(snd(pb)),NIL,rhs,aVar,beta);
@@ -2051,13 +2055,13 @@ static Void local guardedType(Int beta, Cell gded)/* check type of guard (li,(gd
     Int line = intOf(fst(gded));
 
     gded     = snd(gded);
-    spCheck(line,fst(gded),NIL,guard,typeBool,0);
-    spCheck(line,snd(gded),NIL,guarded,aVar,beta);
+    fst(gded) = check(line,fst(gded),NIL,guard,typeBool,0);
+    snd(gded) = check(line,snd(gded),NIL,guarded,aVar,beta);
 }
 
 Cell rhsExpr(Cell rhs)		       /* find first expression on a rhs   */
 {
-    STACK_CHECK
+    stackCheck();
     switch (whatIs(rhs)) {
 	case GUARDED : return snd(snd(hd(snd(rhs))));
 	case LETREC  : return rhsExpr(snd(snd(rhs)));
@@ -2068,7 +2072,7 @@ Cell rhsExpr(Cell rhs)		       /* find first expression on a rhs   */
 
 Int rhsLine(Cell rhs)		       /* find line number associated with */
 {			       /* a right hand side		   */
-    STACK_CHECK
+    stackCheck();
     switch (whatIs(rhs)) {
 	case GUARDED : return intOf(fst(hd(snd(rhs))));
 	case LETREC  : return rhsLine(snd(snd(rhs)));
@@ -2161,7 +2165,7 @@ static Type local generalize(List qs, Type t)	/* calculate generalization of t  
 
 static Bool local equalTypes(Type t1, Type t2)    /* Compare simple types for equality*/
 {
-    STACK_CHECK
+    stackCheck();
 et: if (whatIs(t1)!=whatIs(t2))
 	return FALSE;
 

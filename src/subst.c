@@ -422,7 +422,7 @@ Void markTyvar(Int vn)	        	/* mark fixed vars in type bound to*/
 
 Void markType(Type t, Int o)	        	/* mark fixed vars in type (t,o)   */
 {
-    STACK_CHECK
+    stackCheck();
     switch (whatIs(t)) {
 	case POLYTYPE  :
 	case QUAL      :
@@ -492,7 +492,7 @@ Type copyType(Type t, Int o)	        	/* calculate most general form of  */
                    /* type expression (t,o) 	   */
 {
     assertType(t);
-    STACK_CHECK
+    stackCheck();
     switch (whatIs(t)) {
 	case AP        : {   Type l = copyType(fst(t),o);/* ensure correct */
 			     Type r = copyType(snd(t),o);/* eval. order    */
@@ -532,7 +532,7 @@ Type zonkTyvar(Int vn)	/* flatten type by chasing all references	   */
 Type zonkType(Type t, Int o)	/* flatten type by chasing all references	   */
           /* and collapsing OFFSETS to absolute indexes	   */
 {
-    STACK_CHECK
+    stackCheck();
     switch (whatIs(t)) {
 	case AP        : {   Type l = zonkType(fst(t),o);/* ensure correct */
 			     Type r = zonkType(snd(t),o);/* eval. order    */
@@ -841,7 +841,7 @@ Bool doesntOccurIn(Tyvar*lookFor, Type t, Int o)		/* Return TRUE if var lookFor	
 {
     Tyvar *tyv;
 
-    STACK_CHECK
+    stackCheck();
     for (;;) {
 	tyv = deRef(&t,&o);
 	if (tyv)			/* type variable		   */
@@ -865,9 +865,9 @@ Bool doesntOccurIn(Tyvar*lookFor, Type t, Int o)		/* Return TRUE if var lookFor	
 char   *unifyFails   = 0;		/* Unification error message	   */
 static Int bindAbove = 0;		/* Used to restrict var binding	   */
 
-#define bindOnlyAbove(beta)	bindAbove=beta
-#define noBind()		bindAbove=MAXPOSINT
-#define unrestrictBind()	bindAbove=0
+static Void local bindOnlyAbove(Int beta) { bindAbove = beta; }
+static Void local noBind        (Void)     { bindAbove = MAXPOSINT; }
+static Void local unrestrictBind(Void)     { bindAbove = 0; }
 
 static Bool local varToVarBind(Tyvar*tyv1, Tyvar*tyv2)/* Make binding tyv1 := tyv2	   */
 {
@@ -928,7 +928,7 @@ Bool unify(Type t1, Int o1, Type t2, Int o2)			/* Main unification routine	   */
     assertType(t2);
     Tyvar *tyv1, *tyv2;
 
-    STACK_CHECK
+    stackCheck();
     tyv1 = deRef(&t1,&o1);
     tyv2 = deRef(&t2,&o2);
 

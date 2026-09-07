@@ -1695,7 +1695,7 @@ Cell markExpr(Cell c)                        /* External interface to markCell  
  * application cell, so a long list, or the left-nested chain of thunks
  * that a lazy foldl-shaped function leaves behind, used to recurse once
  * per cell and could overflow the C stack.  Longjmp'ing out of the
- * collector is not safe, so STACK_CHECK is not used here; instead both
+ * collector is not safe, so stackCheck() is not used here; instead both
  * links are marked from an explicit work stack of pending slots, kept in
  * a malloc'd array that is grown (doubled) as needed and kept between
  * collections.

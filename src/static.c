@@ -275,11 +275,18 @@ static Void local kindError(Int l, Constr c, Constr in, String wh, Kind k, Int o
     EEND;
 }
 
-#define shouldKind(l,c,in,wh,k,o)	if (!kunify(typeIs,typeOff,k,o)) \
-					    kindError(l,c,in,wh,k,o)
-#define checkKind(l,a,m,c,in,wh,k,o)	kindConstr(l,a,m,c); \
-					shouldKind(l,c,in,wh,k,o)
-#define inferKind(k,o)			typeIs=k; typeOff=o
+static Void local shouldKind(Int l, Cell c, Cell in, String wh, Kind k, Int o)
+{				/* unify the inferred kind with (k,o) */
+    if (!kunify(typeIs,typeOff,k,o))
+	kindError(l,c,in,wh,k,o);
+}
+
+static Void local checkKind(Int l, Int a, Int m, Cell c, Cell in, String wh,
+			    Kind k, Int o)
+{				/* infer the kind of c, then as above */
+    kindConstr(l,a,m,c);
+    shouldKind(l,c,in,wh,k,o);
+}
 
 static List unkindTypes;		/* types in need of kind annotation*/
 
@@ -4035,7 +4042,7 @@ static List patVars;		       /* List of vars bound in pattern    */
 
 static Cell local checkPat(Int line, Cell p)     /* Check valid pattern syntax	   */
 {
-    STACK_CHECK
+    stackCheck();
     switch (whatIs(p)) {
 	case VARIDCELL :
 	case VAROPCELL : addToPatVars(line,p);
@@ -5160,7 +5167,7 @@ static Void local depGuard(Cell g)	       /* find dependents of single guarded*/
 
 Cell depExpr(Int line, Cell e)      /* find dependents of expression    */
 {
-    STACK_CHECK
+    stackCheck();
     switch (whatIs(e)) {
 
 	case VARIDCELL	:
