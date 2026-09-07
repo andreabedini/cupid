@@ -529,7 +529,7 @@ Void checkImportList(Bool isQual, Pair importSpec) /*Import a module (un)qualifi
 	      } else {
 		modImps = cons(importEntity(m,e), modImps);
 	      }
-	    } else if isPair(hd(ms)) {
+	    } else if (isPair(hd(ms))) {
 		/* The parent tycon/class is hidden, but perhaps
 		   not all of its subentities. */
 	        Cell ent = fst(hd(ms));

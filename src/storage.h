@@ -80,9 +80,9 @@ extern  Text         subText            (String,Int);
 #define UMINUS_PREC  6			/* Change these settings at your   */
 #define UMINUS_ASSOC LEFT_ASS		/* own risk; they may not work!	   */
 
-#define assocOf(x)	((x)&NON_ASS)
-#define precOf(x)	((x)>>2)
-#define mkSyntax(a,p)	((a)|((p)<<2))
+CUDDLES_inline Syntax assocOf (Syntax x)        { return x&NON_ASS; }
+CUDDLES_inline Int    precOf  (Syntax x)        { return (Int)(x>>2); }
+CUDDLES_inline Syntax mkSyntax(Syntax a, Int p) { return a|((Syntax)p<<2); }
 #define DEF_OPSYNTAX	mkSyntax(DEF_ASS,DEF_PREC)
 #define NO_SYNTAX	((Syntax)(-1))
 
@@ -163,9 +163,9 @@ extern  Void	     nextInstr	(Addr);
  * ------------------------------------------------------------------------*/
 
 #define heapAlloc(s) (Heap)(farCalloc(s,sizeof(Cell)))
-#define heapBuilt()  (heapFst)
 extern  Int          heapSize;
 extern  Heap	     heapFst, heapSnd;
+CUDDLES_inline Bool   heapBuilt(Void) { return heapFst!=0; }
 extern   Heap        heapTopFst;
 extern   Heap        heapTopSnd;
 extern   Bool        consGC;		/* Set to FALSE to turn off gc from*/
@@ -200,11 +200,11 @@ extern  Void	     markWithoutMove (Cell);
 extern  Void	     gcRegisterRoots (Cell *const *,Int);
 #define registerRoots(t) gcRegisterRoots((t),(Int)(sizeof(t)/sizeof((t)[0])))
 
-#define isPair(c)    ((c)<0)
-#define isGenPair(c) ((c)<0 && -heapSize<=(c))
+CUDDLES_inline Bool isPair   (Cell c) { return c<0; }
+CUDDLES_inline Bool isGenPair(Cell c) { return c<0 && -heapSize<=c; }
 
-#define whatIs(c)    ((CellTag)(isPair(c)? (isTag(fst(c)) ? fst(c) : AP ) : whatCode[c]))
-extern unsigned char whatCode[];
+extern unsigned char whatCode[];	/* whatIs code of each atom; see   */
+					/* whatIs below the tag definitions*/
 
 /* --------------------------------------------------------------------------
  * Box cell tags are used as the fst element of a pair to indicate that
@@ -215,9 +215,6 @@ extern unsigned char whatCode[];
 
 #define TAGMIN	     1		  /* Box and constructor cell tag values   */
 #define BCSTAG	     30 	  /* Box=TAGMIN..BCSTAG-1		   */
-#define isTag(c)     (TAGMIN<=(c) && (c)<SPECMIN) /* Tag cell values	   */
-#define isBoxTag(c)  (TAGMIN<=(c) && (c)<BCSTAG)  /* Box cell tag values   */
-#define isConTag(c)  (BCSTAG<=(c) && (c)<SPECMIN) /* Constr cell tag values*/
 #define TAG_MASK     (~0x7f)	  /* This masks 0..SPECMIN-1		   */
 
 /* Every tag and special value, so that whatIs() has a type the compiler can
@@ -349,25 +346,6 @@ typedef enum CellTag {
     PREDEFINED  = 164,	  /* Predefined name, not yet filled       */
 } CellTag;
 
-#define textOf(c)	((Text)(snd(c)))         /* c ::  (VAR|CON)(ID|OP) */
-#define qmodOf(c)       (textOf(fst(snd(c))))    /* c ::  QUALIDENT        */
-#define qtextOf(c)      (textOf(snd(snd(c))))    /* c ::  QUALIDENT        */
-#define mkVar(t)	ap(VARIDCELL,t)
-#define mkVarop(t)	ap(VAROPCELL,t)
-#define mkCon(t)	ap(CONIDCELL,t)
-#define mkConop(t)	ap(CONOPCELL,t)
-#define mkQId(m,c)      ap(QUALIDENT,pair(mkCon(m),c))
-#define mkQVar(m,t)	ap(QUALIDENT,pair(mkCon(m),mkVar(t)))
-#define mkQCon(m,t)	ap(QUALIDENT,pair(mkCon(m),mkCon(t)))
-#define mkQVarOp(m,t)	ap(QUALIDENT,pair(mkCon(m),mkVarop(t)))
-#define mkQConOp(m,t)	ap(QUALIDENT,pair(mkCon(m),mkConop(t)))
-#define mkNestedQual(c) findText(identToStr(c))	/* fragile...              */
-#define intValOf(c)	(snd(c))
-#define inventVar()	mkVar(inventText())
-#define mkDictVar(t)	ap(DICTVAR,t)
-#define inventDictVar() mkDictVar(inventDictText())
-#define mkStr(t)	ap(STRCELL,t)
-#define isIP(p)		FALSE
 
 extern	Bool		isVar       (Cell);
 extern	Bool		isCon       (Cell);
@@ -376,12 +354,10 @@ extern	Bool		isQCon      (Cell);
 extern	Bool		isQualIdent (Cell);
 extern	Bool		isIdent     (Cell);
 
-#define isFloat(c)      (isPair(c) && fst(c)==FLOATCELL)
 extern	Cell	        mkFloat		(FloatPro);
 extern  FloatPro	floatOf		(Cell);
 extern  String		floatToString   (FloatPro);
 
-#define isDouble(c)     (isPair(c) && fst(c)==DOUBLECELL)
 extern	Cell	        mkDouble	(DoublePro);
 extern  DoublePro	doubleOf	(Cell);
 extern  String		doubleToString  (DoublePro);
@@ -390,7 +366,6 @@ extern  Cell		part1Double	(DoublePro);
 extern  Cell		part2Double	(DoublePro);
 extern  DoublePro	doubleFromParts	(Cell,Cell);
 
-#define isPtr(c)        (isPair(c) && fst(c)==PTRCELL)
 extern  Cell            mkPtr           (Pointer);
 extern  Pointer         ptrOf           (Cell);
 
@@ -436,7 +411,6 @@ extern void growDynTable       (DynTable*);
  * ------------------------------------------------------------------------*/
 
 #define TUPMIN	     201
-#define isTuple(c)   (TUPMIN<=(c) && (c)<OFFMIN)
 /* mkTuple(n) is called with an unchecked component count wherever a tuple
  * literal or type is built (including the parser's tuple grammar rule, one
  * comma at a time); an n at or beyond NUM_TUPLES would alias the OFFSET
@@ -449,17 +423,13 @@ static inline Cell   mkTuple(Int n) {
 	tooManyTupleComponents();
     return TUPMIN+n;
 }
-#define tupleOf(n)   ((Int)((n)-TUPMIN))
 
-#define mkExt(t) NIL
 
 /* --------------------------------------------------------------------------
  * Offsets: (generic types/stack offsets)
  * ------------------------------------------------------------------------*/
 
 #define OFFMIN	     (TUPMIN+NUM_TUPLES)
-#define isOffset(c)  (OFFMIN<=(c) && (c)<MODMIN)
-#define offsetOf(c)  ((c)-OFFMIN)
 /* mkOffset(o), similarly, is called with an unchecked offset wherever the
  * compiler hands out a stack/generic-type offset; an o at or beyond
  * NUM_OFFSETS would alias the MODMIN range, so tooManyOffsets (machine.c)
@@ -484,8 +454,6 @@ static inline Cell   mkOffset(Int o) {
 
 #define MODMIN        (OFFMIN+NUM_OFFSETS)
 
-#define isModule(c)   (MODMIN<=(c) && (c)<TYCMIN)
-#define mkModule(n)   (MODMIN+(n))
 #define module(n)     tabModule[(n)-MODMIN]
 
 /* Under Haskell 1.3, the list of qualified imports is always a subset
@@ -542,15 +510,12 @@ extern Module findModid     (Cell);
 extern Void   setCurrModule (Module);
 extern List   getModuleImports (Module);
 
-#define isPrelude(m) (m==modulePrelude)
 
 /* --------------------------------------------------------------------------
  * Type constructor names:
  * ------------------------------------------------------------------------*/
 
 #define TYCMIN	     (MODMIN+NUM_MODULE)
-#define isTycon(c)   (TYCMIN<=(c) && (c)<NAMEMIN)
-#define mkTycon(n)   (TCMIN+(n))
 #define tycon(n)     tabTycon[(n)-TYCMIN]
 
 struct strTycon {
@@ -574,12 +539,6 @@ extern Void  removeTycon  (Tycon);
 extern Tycon findQualTycon (Cell);
 extern Tycon addPrimTycon (Text,Kind,Int,Cell,Cell);
 
-#define isSynonym(h)	(isTycon(h) && tycon(h).what==SYNONYM)
-#define isNewtype(h)	(isTycon(h) && tycon(h).what==NEWTYPE)
-#define isQualType(t)	(isPair(t) && fst(t)==QUAL)
-#define mkPolyType(n,t)	pair(POLYTYPE,pair(n,t))
-#define isPolyType(t)	(isPair(t) && fst(t)==POLYTYPE)
-#define isPolyOrQualType(t) (isPair(t) && (fst(t)==POLYTYPE || fst(t)==QUAL))
 #define polySigOf(t)	fst(snd(t))
 #define monotypeOf(t)	snd(snd(t))
 
@@ -588,8 +547,6 @@ extern Tycon addPrimTycon (Text,Kind,Int,Cell,Cell);
  * ------------------------------------------------------------------------*/
 
 #define NAMEMIN      (TYCMIN+NUM_TYCON)
-#define isName(c)    (NAMEMIN<=(c) && (c)<INSTMIN)
-#define mkName(n)    (NAMEMIN+(n))
 #define name(n)      tabName[(n)-NAMEMIN]
 
 struct strName {
@@ -634,17 +591,8 @@ extern struct strName DECTABLE(tabName);
 #define DFUNNAME	2
 #define CFUNNAME	3
 
-#define isSfun(n)	(name(n).number==SELNAME)
-#define isDfun(n)	(name(n).number==DFUNNAME)
 
-#define isCfun(n)	(name(n).number>=CFUNNAME)
-#define cfunOf(n)	(name(n).number-CFUNNAME)
-#define cfunNo(i)	((i)+CFUNNAME)
-#define hasCfun(cs)	(nonNull(cs) && isCfun(hd(cs)))
 
-#define isMfun(n)	(name(n).number<0)
-#define mfunOf(n)	((-1)-name(n).number)
-#define mfunNo(i)	((-1)-(i))
 
 extern Name   newName	    (Text,Cell);
 extern Name   findName	    (Text);
@@ -663,9 +611,6 @@ extern Bool   setOldDLLFlag (Bool);
  * ------------------------------------------------------------------------*/
 
 #define INSTMIN      (NAMEMIN+NUM_NAME)	/* instances			   */
-#define isInst(c)    (INSTMIN<=(c) && (c)<CLASSMIN)
-#define mkInst(n)    (INSTMIN+(n))
-#define instOf(c)    ((Int)((c)-INSTMIN))
 #define inst(in)     tabInst[(in)-INSTMIN]
 
 struct strInst {
@@ -684,8 +629,6 @@ struct strInst {
  */
 
 #define CLASSMIN     (INSTMIN+NUM_INSTS)
-#define isClass(c)   (CLASSMIN<=(c) && (c)<CHARMIN)
-#define mkClass(n)   (CLASSMIN+(n))
 #define cclass(n)    tabClass[(n)-CLASSMIN]
 
 struct strClass {
@@ -741,7 +684,6 @@ extern Text   findModAlias   (Text);
 #define	NUM_SHORT_CHARS	1280	/* number of one-cell characters           */
 				/* (Latin, Greek and Cyrillic)             */
 
-#define isShortChar(c)   ((CHARMIN<=(c))&&(INTMIN>(c)))
 
 extern	Bool isChar    (Cell);
 extern	Int  charOf    (Cell);
@@ -761,12 +703,9 @@ extern	Cell mkChar    (Int);
 #define INTMAX	     (INTMIN+4096)
 #define N_WHATCODE   (INTMAX+1)			 /* size of whatCode array */
 
-#define isSmall(c)   (INTMIN<=(c))
 #define INTZERO      (INTMIN/2 + INTMAX/2)
 #define MINSMALLINT  (INTMIN - INTZERO)
 #define MAXSMALLINT  (INTMAX - INTZERO)
-#define mkDigit(c)   ((Cell)((c)+INTMIN))
-#define digitOf(c)   ((Int)((c)-INTMIN))
 
 extern	Bool isInt    (Cell);
 extern	Int  intOf    (Cell);
@@ -777,7 +716,6 @@ extern  Bool isBignum (Cell);
  * Implementation of triples:
  * ------------------------------------------------------------------------*/
 
-#define triple(x,y,z) pair(x,pair(y,z))
 #define fst3(c)      fst(c)
 #define snd3(c)      fst(snd(c))
 #define thd3(c)      snd(snd(c))
@@ -787,11 +725,6 @@ extern  Bool isBignum (Cell);
  * ------------------------------------------------------------------------*/
 
 #define NIL	     0
-#define isNull(c)    ((c)==NIL)
-#define nonNull(c)   (c)
-#define cons(x,xs)   pair(x,xs)
-#define singleton(x) cons(x,NIL)
-#define doubleton(x,y) cons(x,cons(y,NIL))
 #define hd(c)	     fst(c)
 #define tl(c)	     snd(c)
 
@@ -801,7 +734,99 @@ extern	List	     dupOnto       (List,List);
 extern  List	     dupList	   (List);
 extern  List	     dupUpto	   (List,Cell);
 extern	List	     revOnto	   (List, List);	/* destructive	   */
-#define rev(xs)      revOnto((xs),NIL)			/* destructive	   */
+CUDDLES_inline List rev(List xs) { return revOnto(xs,NIL); }	/* non-destructive */
+
+/* --------------------------------------------------------------------------
+ * Predicates, projections and constructors on cells.  These were macros;
+ * as functions they have types, evaluate their argument once, and can be
+ * stepped into.  fst, snd, hd, tl and the table accessors stay macros
+ * because they are assigned through.
+ * ------------------------------------------------------------------------*/
+
+CUDDLES_inline Bool isTag    (Cell c) { return TAGMIN<=c && c<SPECMIN; }
+CUDDLES_inline Bool isBoxTag (Cell c) { return TAGMIN<=c && c<BCSTAG;  }
+CUDDLES_inline Bool isConTag (Cell c) { return BCSTAG<=c && c<SPECMIN; }
+CUDDLES_inline Bool isTag1   (Cell c) { return (c & TAG_MASK)==0; }	/* NIL too */
+
+CUDDLES_inline CellTag whatIs(Cell c)
+{
+    return (CellTag)(isPair(c) ? (isTag(fst(c)) ? fst(c) : AP) : whatCode[c]);
+}
+CUDDLES_inline CellTag whatIs1(Cell c)	/* faster; NIL if fst(c) is NIL	   */
+{
+    return (CellTag)(isPair(c) ? (isTag1(fst(c)) ? fst(c) : AP) : whatCode[c]);
+}
+CUDDLES_inline Bool isAp  (Cell c) { return isPair(c) && !isTag(fst(c));  }
+CUDDLES_inline Bool isAp1 (Cell c) { return isPair(c) && !isTag1(fst(c)); }
+
+CUDDLES_inline Cell ap (Cell f, Cell x) { return pair(f,x); }
+
+CUDDLES_inline Bool isNull  (Cell c) { return c==NIL; }
+CUDDLES_inline Bool nonNull (Cell c) { return c!=NIL; }
+
+CUDDLES_inline Bool isTuple  (Cell c) { return TUPMIN<=c && c<OFFMIN; }
+CUDDLES_inline Int  tupleOf  (Cell c) { return (Int)(c-TUPMIN); }
+CUDDLES_inline Bool isOffset (Cell c) { return OFFMIN<=c && c<MODMIN; }
+CUDDLES_inline Int  offsetOf (Cell c) { return c-OFFMIN; }
+CUDDLES_inline Bool isModule (Cell c) { return MODMIN<=c && c<TYCMIN; }
+CUDDLES_inline Bool isTycon  (Cell c) { return TYCMIN<=c && c<NAMEMIN; }
+CUDDLES_inline Bool isName   (Cell c) { return NAMEMIN<=c && c<INSTMIN; }
+CUDDLES_inline Bool isInst   (Cell c) { return INSTMIN<=c && c<CLASSMIN; }
+CUDDLES_inline Bool isClass  (Cell c) { return CLASSMIN<=c && c<CHARMIN; }
+CUDDLES_inline Bool isShortChar(Cell c) { return CHARMIN<=c && c<INTMIN; }
+CUDDLES_inline Bool isSmall  (Cell c) { return INTMIN<=c; }
+CUDDLES_inline Cell mkDigit  (Int c)  { return (Cell)(c+INTMIN); }
+CUDDLES_inline Int  digitOf  (Cell c) { return (Int)(c-INTMIN); }
+
+CUDDLES_inline Bool isSynonym (Cell h) { return isTycon(h) && tycon(h).what==SYNONYM; }
+CUDDLES_inline Bool isNewtype (Cell h) { return isTycon(h) && tycon(h).what==NEWTYPE; }
+
+CUDDLES_inline Bool isQualType (Cell t) { return isPair(t) && fst(t)==QUAL; }
+CUDDLES_inline Bool isPolyType (Cell t) { return isPair(t) && fst(t)==POLYTYPE; }
+CUDDLES_inline Bool isPolyOrQualType(Cell t)
+{
+    return isPair(t) && (fst(t)==POLYTYPE || fst(t)==QUAL);
+}
+CUDDLES_inline Type mkPolyType(Kinds ks, Type t) { return pair(POLYTYPE,pair(ks,t)); }
+
+CUDDLES_inline Bool isSfun  (Name n) { return name(n).number==SELNAME; }
+CUDDLES_inline Bool isDfun  (Name n) { return name(n).number==DFUNNAME; }
+CUDDLES_inline Bool isCfun  (Name n) { return name(n).number>=CFUNNAME; }
+CUDDLES_inline Int  cfunOf  (Name n) { return name(n).number-CFUNNAME; }
+CUDDLES_inline Int  cfunNo  (Int i)  { return i+CFUNNAME; }
+CUDDLES_inline Bool isMfun  (Name n) { return name(n).number<0; }
+CUDDLES_inline Int  mfunOf  (Name n) { return (-1)-name(n).number; }
+CUDDLES_inline Int  mfunNo  (Int i)  { return (-1)-i; }
+CUDDLES_inline Bool hasCfun (List cs) { return nonNull(cs) && isCfun(hd(cs)); }
+
+CUDDLES_inline Text textOf   (Cell c) { return (Text)snd(c); }	/* c :: (VAR|CON)(ID|OP) */
+CUDDLES_inline Text qmodOf   (Cell c) { return textOf(fst(snd(c))); }	/* c :: QUALIDENT */
+CUDDLES_inline Text qtextOf  (Cell c) { return textOf(snd(snd(c))); }
+CUDDLES_inline Int  intValOf (Cell c) { return (Int)snd(c); }
+CUDDLES_inline Cell mkVar    (Text t) { return ap(VARIDCELL,t); }
+CUDDLES_inline Cell mkVarop  (Text t) { return ap(VAROPCELL,t); }
+CUDDLES_inline Cell mkCon    (Text t) { return ap(CONIDCELL,t); }
+CUDDLES_inline Cell mkConop  (Text t) { return ap(CONOPCELL,t); }
+CUDDLES_inline Cell mkQId    (Text m, Cell c) { return ap(QUALIDENT,pair(mkCon(m),c)); }
+CUDDLES_inline Cell mkQVar   (Text m, Text t) { return mkQId(m,mkVar(t)); }
+CUDDLES_inline Cell mkQCon   (Text m, Text t) { return mkQId(m,mkCon(t)); }
+CUDDLES_inline Cell mkQVarOp (Text m, Text t) { return mkQId(m,mkVarop(t)); }
+CUDDLES_inline Cell mkQConOp (Text m, Text t) { return mkQId(m,mkConop(t)); }
+CUDDLES_inline Text mkNestedQual(Cell c) { return findText(identToStr(c)); }	/* fragile... */
+CUDDLES_inline Cell inventVar    (Void) { return mkVar(inventText()); }
+CUDDLES_inline Cell mkDictVar    (Text t) { return ap(DICTVAR,t); }
+CUDDLES_inline Cell inventDictVar(Void) { return mkDictVar(inventDictText()); }
+CUDDLES_inline Cell mkStr    (Text t) { return ap(STRCELL,t); }
+CUDDLES_inline Bool isDouble (Cell c) { return isPair(c) && fst(c)==DOUBLECELL; }
+CUDDLES_inline Bool isPtr    (Cell c) { return isPair(c) && fst(c)==PTRCELL; }
+
+CUDDLES_inline Cell triple    (Cell x, Cell y, Cell z) { return pair(x,pair(y,z)); }
+CUDDLES_inline List cons      (Cell x, List xs) { return pair(x,xs); }
+CUDDLES_inline List singleton (Cell x) { return cons(x,NIL); }
+CUDDLES_inline Cell ap2 (Cell f, Cell x, Cell y) { return ap(ap(f,x),y); }
+CUDDLES_inline Cell ap3 (Cell f, Cell x, Cell y, Cell z) { return ap(ap(ap(f,x),y),z); }
+
+CUDDLES_inline Bool IS_STANDARD_HANDLE(Int h) { return h<=2; }
 extern	Cell	     cellIsMember  (Cell,List);
 extern  Cell         cellAssoc     (Cell,List);
 extern  Cell         cellRevAssoc  (Cell,List);
@@ -856,13 +881,8 @@ extern  List         nubList       (List);        /* non-destructive */
  * Implementation of function application nodes:
  * ------------------------------------------------------------------------*/
 
-#define ap(f,x)      pair(f,x)
-#define ap1(f,x)     ap(f,x)
-#define ap2(f,x,y)   ap(ap(f,x),y)
-#define ap3(f,x,y,z) ap(ap(ap(f,x),y),z)
 #define fun(c)	     fst(c)
 #define arg(c)	     snd(c)
-#define isAp(c)      (isPair(c) && !isTag(fst(c)))
 extern	Cell	     getHead	 (Cell);
 extern	List	     getArgs	 (Cell);
 extern	Int	     argCount;
@@ -940,7 +960,6 @@ extern Void        setScriptPrims   (void*);
 #define HSTDIN		0	/* Numbers for standard handles		   */
 #define HSTDOUT		1
 #define HSTDERR		2
-#define IS_STANDARD_HANDLE(h)  ((h) <= 2)
 
 struct strHandle {		/* Handle description and status flags	   */
     Cell  hcell;		/* Heap representation of handle (or NIL)  */
@@ -1010,7 +1029,6 @@ extern Int    mallocPtr_hw;
  * Weak Pointers
  * ------------------------------------------------------------------------*/
 
-#define mkWeakPtr(c)    pair(WEAKCELL,pair(c,NIL))
 #define derefWeakPtr(c) fst(snd(c))
 #define nextWeakPtr(c) snd(snd(c))
 
@@ -1050,10 +1068,7 @@ extern  List   addNamesMatching  (String,List);
  * Used with care in the right places it gains us speed.
  */
 
-#define isTag1(c)   (((c) & TAG_MASK) == 0)	    /* doesn't exclude NIL */
 
-#define whatIs1(c)  ((CellTag)(isPair(c)? (isTag1(fst(c))? fst(c) : AP ) : whatCode[c]))
 
-#define isAp1(c)    (isPair(c) && !isTag1(fst(c)))
 
 #endif /* __STORAGE_H__ */

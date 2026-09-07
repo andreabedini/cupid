@@ -531,11 +531,11 @@ static Bool local anyGenerics(Type t, Int o)	/* Test for generic vars, and count
     else {
 	Tyvar* tyv;
 	for (; 0<a--; t=fun(t)) {	/* cycle through any arguments	   */
-	    deRef(tyv,t,o);
+	    tyv = deRef(&t,&o);
 	    if (anyGenerics(arg(t),o))
 		return TRUE;
 	}
-	deRef(tyv,t,o);
+	tyv = deRef(&t,&o);
 	if (tyv)
 	    if (tyv->offs == FIXED_TYVAR) {
 		numFixedVars++;
@@ -556,8 +556,7 @@ List elimOuterPreds(List sps)	/* Simplify and defer any remaining*/
 	Cell pi = hd(preds);
 	Cell nx = tl(preds);
 	if (anyGenerics(fst3(pi),intOf(snd3(pi)))
-	    || !isAp(fst3(pi))
-	    || isIP(fun(fst3(pi)))) {
+	    || !isAp(fst3(pi))) {
 	    tl(preds) = qs;				/* Retain predicate*/
 	    qs	      = preds;
 	}
@@ -584,7 +583,7 @@ List elimPredsUsing(List ps, List sps)/* Try to discharge or defer preds,*/
 
 	if (nonNull(ev)) {		/* Discharge if ps ||- (pi,o)	   */
 	    overEvid(thd3(hd(p)),ev);
-	} else if (!isAp(pi) || isIP(fun(pi)) || !anyGenerics(pi,o)) {
+	} else if (!isAp(pi) || !anyGenerics(pi,o)) {
 	    tl(p) = sps;		/* Defer if no generics		   */
 	    sps   = p;
 	}
@@ -699,7 +698,7 @@ static Bool local resolveVar(Int vn, Bool interactive)/* Determine whether an am
 	    {	Type  t = arg(fst3(pi));/* Check for single var as arg	   */
 		Int   o = intOf(snd3(pi));
 		Tyvar *tyv;
-		deRef(tyv,t,o);
+		tyv = deRef(&t,&o);
 		if (!tyv || tyvNum(tyv)!=vn)
 		    return FALSE;
 	    }

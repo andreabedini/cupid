@@ -1088,13 +1088,6 @@ static Void local checkClassDefn(Class c)    /* validate class definition	   */
     tcDeps	        = NIL;		/* find dependents		   */
     map2Over(depPredExp,cclass(c).line,tyvars,cclass(c).supers);
 
-    for ( ss = cclass(c).supers; nonNull(ss); ss=tl(ss) ) {
-      if ( isIP(getHead(hd(ss))) ) {
-	    ERRMSG(cclass(c).line)
-	          "Implicit parameters not permitted in class context"
-	    EEND;
-      }
-    }
 
     cclass(c).numSupers = length(cclass(c).supers);
     cclass(c).defaults  = extractBindings(cclass(c).members);	/* defaults*/
@@ -1438,10 +1431,8 @@ static Int local visitClass(Class c)		/* visit class defn to check that  */
 	Int  lev = 0;
 	cclass(c).level = (-1);
 	for (; nonNull(scs); scs=tl(scs)) {
-	    if ( !isIP(getHead(hd(scs))) ) {
-		Int l = visitClass(getHead(hd(scs)));
-		if (l>lev) lev=l;
-	    }
+	    Int l = visitClass(getHead(hd(scs)));
+	    if (l>lev) lev=l;
 	}
 	cclass(c).level = 1+lev;	/* level = 1 + max level of supers */
     }

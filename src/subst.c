@@ -349,10 +349,9 @@ Void expandSyn(Tycon h, Int ar, Type*at, Int*ao)		/* Expand type synonym with:	 
 	Type args = NIL;		/* will not be changed by expansion*/
 	Int  i;
 	while (ar-- > 0) {		/* find part to expand, and the	   */
-	    Tyvar *tyv;			/* unused arguments		   */
-	    args = cons(arg(t),args);
+	    args = cons(arg(t),args);	/* unused arguments		   */
 	    t    = fun(t);
-	    deRef(tyv,t,o);
+	    deRef(&t,&o);
 	}
 	expandSyn1(h,&t,&o);		/* do the expansion		   */
 	bindTv((i=newTyvars(1)),t,o);	/* and embed the results back in   */
@@ -373,7 +372,7 @@ static Void local expandSyn1(Tycon h, Type*at, Int*ao)	/* Expand type synonym wi
     *at = tycon(h).defn;
     *ao = newKindedVars(tycon(h).kind);
     for (; 0<n--; t=fun(t)) {
-	deRef(tyv,t,o);
+	tyv = deRef(&t,&o);
 	if (tyv || !isAp(t))
 	    internal("expandSyn1");
 	bindTv(*ao+n,arg(t),o);
@@ -844,7 +843,7 @@ Bool doesntOccurIn(Tyvar*lookFor, Type t, Int o)		/* Return TRUE if var lookFor	
 
     STACK_CHECK
     for (;;) {
-	deRef(tyv,t,o);
+	tyv = deRef(&t,&o);
 	if (tyv)			/* type variable		   */
 	    return tyv!=lookFor;
 	else if (isAp(t)) {		/* application			   */
@@ -930,8 +929,8 @@ Bool unify(Type t1, Int o1, Type t2, Int o2)			/* Main unification routine	   */
     Tyvar *tyv1, *tyv2;
 
     STACK_CHECK
-    deRef(tyv1,t1,o1);
-    deRef(tyv2,t2,o2);
+    tyv1 = deRef(&t1,&o1);
+    tyv2 = deRef(&t2,&o2);
 
 un: if (tyv1)
 	if (tyv2)
@@ -940,8 +939,8 @@ un: if (tyv1)
 	    Cell h2 = getDerefHead(t2,o2);	    /* t1 variable, t2 not */
 	    if (isSynonym(h2) && argCount>=tycon(h2).arity) {
 		expandSyn(h2,argCount,&t2,&o2);	    /* may grow (and re-   */
-		deRef(tyv1,t1,o1);		    /* alloc) tyvars, so   */
-		deRef(tyv2,t2,o2);		    /* re-derive tyv1 too  */
+		tyv1 = deRef(&t1,&o1);		    /* alloc) tyvars, so   */
+		tyv2 = deRef(&t2,&o2);		    /* re-derive tyv1 too  */
 		goto un;
 	    }
 	    return varToTypeBind(tyv1,t2,o2);
@@ -951,8 +950,8 @@ un: if (tyv1)
 	    Cell h1 = getDerefHead(t1,o1);	    /* t2 variable, t1 not */
 	    if (isSynonym(h1) && argCount>=tycon(h1).arity) {
 		expandSyn(h1,argCount,&t1,&o1);	    /* may grow (and re-   */
-		deRef(tyv1,t1,o1);		    /* alloc) tyvars, so   */
-		deRef(tyv2,t2,o2);		    /* re-derive tyv2 too  */
+		tyv1 = deRef(&t1,&o1);		    /* alloc) tyvars, so   */
+		tyv2 = deRef(&t2,&o2);		    /* re-derive tyv2 too  */
 		goto un;
 	    }
 	    return varToTypeBind(tyv2,t1,o1);
@@ -975,9 +974,9 @@ un: if (tyv1)
 		    if (!unify(arg(t1),o1,arg(t2),o2))
 			return FALSE;
 		    t1 = fun(t1);
-		    deRef(tyv1,t1,o1);
+		    tyv1 = deRef(&t1,&o1);
 		    t2 = fun(t2);
-		    deRef(tyv2,t2,o2);
+		    tyv2 = deRef(&t2,&o2);
 		}
 		unifyFails = 0;
 		return TRUE;
@@ -987,20 +986,20 @@ un: if (tyv1)
 
 	    if (isSynonym(h1) && a1>=tycon(h1).arity) {
 		expandSyn(h1,a1,&t1,&o1);
-		deRef(tyv1,t1,o1);
+		tyv1 = deRef(&t1,&o1);
 		goto un;
 	    }
 	    if (isSynonym(h2) && a2>=tycon(h2).arity) {
 		expandSyn(h2,a2,&t2,&o2);
-		deRef(tyv2,t2,o2);
+		tyv2 = deRef(&t2,&o2);
 		goto un;
 	    }
 
 	    if ((isNull(h1) && a1<=a2) ||       /* last attempt -- maybe   */
 		(isNull(h2) && a2<=a1))	{	/* one head is a variable? */
 		for (;;) {
-		    deRef(tyv1,t1,o1);
-		    deRef(tyv2,t2,o2);
+		    tyv1 = deRef(&t1,&o1);
+		    tyv2 = deRef(&t2,&o2);
 
 		    if (tyv1)				/* unify heads!	   */
 			if (tyv2)
@@ -1211,10 +1210,9 @@ Void improve(Int line, List sps, List ps)		/* Improve a list of predicates    */
 	    Cell pi = fst3(hd(ps1));
 	    Int  o  = intOf(snd3(hd(ps1)));
 	    Cell c  = getHead(pi);
-	    if ((isClass(c) && nonNull(cclass(c).xfds)) || isIP(c)) {
+	    if (isClass(c) && nonNull(cclass(c).xfds)) {
 		improved |= improveAgainst(line,sps,pi,o);
-		if (!isIP(c))
-		    improved |= instImprove(line,c,pi,o);
+		improved |= instImprove(line,c,pi,o);
 		improved |= improveAgainst(line,tl(ps1),pi,o);
 	    }
 	}
@@ -1227,10 +1225,9 @@ Void improve1(Int line, List sps, Cell pi, Int o)		/* Improve a single predicate
     Cell c  = getHead(pi);
     do {
 	improved = FALSE;
-	if ((isClass(c) && nonNull(cclass(c).xfds)) || isIP(c)) {
+	if (isClass(c) && nonNull(cclass(c).xfds)) {
 	    improved |= improveAgainst(line,sps,pi,o);
-	    if (!isIP(c))
-		improved |= instImprove(line,c,pi,o);
+	    improved |= instImprove(line,c,pi,o);
 	}
     } while (improved);
 }
@@ -1493,8 +1490,8 @@ Bool kunify(Kind k1, Int o1, Kind k2, Int o2)		/* Unify kind expr (k1,o1) with	 
     assertKind(k2);
     Tyvar *kyv1, *kyv2;
 
-    deRef(kyv1,k1,o1);
-    deRef(kyv2,k2,o2);
+    kyv1 = deRef(&k1,&o1);
+    kyv2 = deRef(&k2,&o2);
 
     if (kyv1)
 	if (kyv2)

@@ -1425,7 +1425,7 @@ String mkFFIFilename2(String file)
     static char path[FILENAME_MAX+1];
 #endif
     String dot = lastExtDot(file);              /* patch file extension    */
-    if (isNull(dot))
+    if (dot==NULL)
         dot = file + strlen(file);
     strcpy(path, file);
     strcpy(path + (dot - file),DLL_ENDING);
@@ -1440,7 +1440,7 @@ String mkFFIFilename(String file)                      /* get DLL path for modul
     static char path[FILENAME_MAX+1];
 #endif
     String dot = lastExtDot(file);              /* patch file extension    */
-    if (isNull(dot))
+    if (dot==NULL)
         dot = file + strlen(file);
     strcpy(path, file);
     strcpy(path + (dot - file),".c");

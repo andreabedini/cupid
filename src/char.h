@@ -26,8 +26,11 @@ extern  unsigned char   charTable[];
 /* cf HS_CHAR_MAX in HsFFI.h */
 #define	MAXCHARVAL	0x10FFFF
 
-#define isIn(c,x)       ((unsigned)(c)<NUM_LAT1_CHARS ? (charTable[(unsigned char)(c)]&(x)) : 0)
-#define isLatin1(c)     (0<=(c) && (c)<NUM_LAT1_CHARS)
+CUDDLES_inline Int isIn(Char c, unsigned x)	/* c in the lexical classes x?	   */
+{
+    return (unsigned)c<NUM_LAT1_CHARS ? (charTable[(unsigned char)c]&x) : 0;
+}
+CUDDLES_inline Bool isLatin1(Char c) { return 0<=c && c<NUM_LAT1_CHARS; }
 
 /* character classes for lexical analysis */
 #define DIGIT           0x01

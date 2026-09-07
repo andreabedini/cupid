@@ -307,7 +307,7 @@ Void readScripts(Int n)        /* Reread current list of scripts, */
 
     while (numScripts<namesUpto) {      /* Process any remaining scripts   */
 	getFileInfo(scriptTable[numScripts].fileName, &timeStamp, &fileSize);
-	timeSet(scriptTable[numScripts].lastChange,timeStamp);
+	scriptTable[numScripts].lastChange = timeStamp;
 	if (numScripts>0)               /* no new script for prelude       */
 	    startNewScript(scriptTable[numScripts].fileName);
         generate_ffi = generateFFI && !scriptTable[numScripts].chased;

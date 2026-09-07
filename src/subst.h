@@ -30,18 +30,14 @@ extern	List		predsAre;	/* list of predicates in type	   */
 extern  List		genericVars;	/* list of generic vars		   */
 extern  List		btyvars;	/* explicitly scoped type vars	   */
 
-#define tyvar(n)	(tyvars+(n))	/* nth type variable		   */
-#define tyvNum(t)	((t)-tyvars)	/* and the corresp. inverse funct. */
-#define isBound(t)	(((t)->bound) && ((t)->bound!=SKOLEM))
+CUDDLES_inline Tyvar *tyvar (Int n)    { return tyvars+n; }	/* nth type variable	   */
+CUDDLES_inline Int    tyvNum(Tyvar *t) { return (Int)(t-tyvars); }	/* and its inverse	   */
+CUDDLES_inline Bool   isBound(Tyvar *t) { return t->bound && t->bound!=SKOLEM; }
 #define aVar		mkOffset(0)	/* Simple skeletons for type vars  */
 #define bVar		mkOffset(1)
-#define enterBtyvs()	btyvars = cons(NIL,btyvars)
-#define leaveBtyvs()	btyvars = tl(btyvars)
+CUDDLES_inline Void enterBtyvs(Void) { btyvars = cons(NIL,btyvars); }
+CUDDLES_inline Void leaveBtyvs(Void) { btyvars = tl(btyvars); }
 
-#define deRef(tyv,t,o)  while ((tyv=getTypeVar(t,o)) && isBound(tyv)) { \
-			    t = tyv->bound;                             \
-			    o = tyv->offs;                              \
-			}
 
 					/* offs values when isNull(bound): */
 #define FIXED_TYVAR	0	        /* fixed in current assumption	   */
@@ -52,7 +48,7 @@ extern  char		*unifyFails;	/* Unification error message	   */
 
 extern Void  emptySubstitution	(Void);
 extern Int   newTyvars		(Int);
-#define      newKindvars(n)	newTyvars(n)
+CUDDLES_inline Int newKindvars(Int n) { return newTyvars(n); }
 extern Int   newKindedVars	(Kind);
 extern Void  instantiate	(Type);
 
@@ -61,6 +57,19 @@ extern Void  markBtyvs		(Void);
 extern Type  localizeBtyvs	(Type);
 
 extern Tyvar *getTypeVar	(Type,Int);
+
+/* Follow the substitution from (t,o) to the first type that is not a
+ * bound variable, updating t and o, and return that variable if it is
+ * one, else NULL */
+CUDDLES_inline Tyvar *deRef(Type *t, Int *o)
+{
+    Tyvar *tyv;
+    while ((tyv=getTypeVar(*t,*o)) && isBound(tyv)) {
+	*t = tyv->bound;
+	*o = tyv->offs;
+    }
+    return tyv;
+}
 extern Void  tyvarType		(Int);
 extern Void  bindTv		(Int,Type,Int);
 extern Cell  getDerefHead	(Type,Int);

@@ -148,6 +148,17 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  *  dynamic linking declarations
  *-------------------------------------------------------------------------*/
 
+/* CUDDLES_inline marks the small functions in the headers that replace the
+ * old accessor macros.  They must inline even in the files built without
+ * optimisation (see src/meson.build), so the attribute is not optional. */
+#if defined(__GNUC__) || defined(__clang__)
+#define CUDDLES_inline static inline __attribute__((always_inline))
+#elif defined(_MSC_VER)
+#define CUDDLES_inline static __forceinline
+#else
+#define CUDDLES_inline static inline
+#endif
+
 /* local = prefix for locally defined functions */
 #define local
 
@@ -233,7 +244,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  * async-signal-safe.
  */
 
-#define allowBreak()	if (broken) { broken = FALSE; sigRaise(breakHandler); }
 
 # if IS_WINDOWS
 
@@ -489,10 +499,15 @@ typedef void*    Pointer;
 #define wordShift	   5
 #define wordMask	   31
 
-#define bitArraySize(n)    ((n)/bitsPerWord + 1)
-#define placeInSet(n)      ((-(n)-1)>>wordShift)
-#define maskInSet(n)       (1u<<((-(n)-1)&wordMask))	/* unsigned: the shift */
-							/* can reach bit 31    */
+CUDDLES_inline Int bitArraySize(Int n) { return n/bitsPerWord + 1; }
+CUDDLES_inline Int placeInSet(Int n)	/* n is a (negative) pair cell	   */
+{
+    return (-n-1)>>wordShift;
+}
+CUDDLES_inline unsigned maskInSet(Int n)	/* unsigned: the shift can reach   */
+{					/* bit 31			   */
+    return 1u<<((-n-1)&wordMask);
+}
 
 /*-------------------------------------------------------------------------*/
 

@@ -68,6 +68,15 @@ extern Void errFail	 (Void) CUDDLES_noreturn;
 extern Void errAbort	 (Void);
 
 extern sigProto(breakHandler);
+extern volatile sig_atomic_t broken;	/* set by the interrupt handler;   */
+					/* see the note in prelude.h	   */
+CUDDLES_inline Void allowBreak(Void)	/* act on an interrupt, if one came*/
+{
+    if (broken) {
+	broken = FALSE;
+	sigRaise(breakHandler);
+    }
+}
 
 extern Bool breakOn      (Bool);		   /* in machdep.c	   */
 

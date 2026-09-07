@@ -24,8 +24,7 @@
  * ------------------------------------------------------------------------*/
 
 typedef time_t Time;
-#define timeChanged(now,thn)    (now!=thn)
-#define timeSet(var,tm)         var = tm
+CUDDLES_inline Bool timeChanged(Time now, Time thn) { return now!=thn; }
 
 extern Void getFileInfo (String, Time *, Long *);
 

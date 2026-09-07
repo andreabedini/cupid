@@ -18,6 +18,7 @@
  * ------------------------------------------------------------------------*/
 
 extern Module modulePrelude;
+CUDDLES_inline Bool isPrelude(Module m) { return m==modulePrelude; }
 extern Module moduleUserPrelude;
 
 /* --------------------------------------------------------------------------
