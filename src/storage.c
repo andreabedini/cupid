@@ -1003,18 +1003,15 @@ static Class classHw; /* next unused class                */
 static List classes;  /* list of classes in current scope */
 static Inst instHw;   /* next unused instance record      */
 
-/* (Dynamically) growable tables holding the class and instance info */
-static DynTable *dynTabClass = NULL;
-static DynTable *dynTabInst = NULL;
-
-struct strClass *tabClass;
-struct strInst *tabInst; /* (pointer to) table of instances  */
+struct strClass DEFTABLE(tabClass, NUM_CLASSES); /* Class storage        */
+struct strInst DEFTABLE(tabInst, NUM_INSTS);     /* Instance storage     */
 
 Class newClass(Text t) /* add new class to class table     */
 {
-    if (classHw - CLASSMIN >= (Int)(dynTabClass->maxIdx)) {
-        growDynTable(dynTabClass);
-        tabClass = (struct strClass *)(dynTabClass->data);
+    if (classHw - CLASSMIN >= NUM_CLASSES) {
+        errHead(0);
+        errPrintf("Class storage space exhausted");
+        errFail();
     }
 
     cclass(classHw).text = t;
@@ -1100,9 +1097,10 @@ Class findQualClass(Cell c) /* Look for (possibly qualified)   */
 }
 
 Inst newInst() { /* Add new instance to table        */
-    if (instHw - INSTMIN >= (Int)(dynTabInst->maxIdx)) {
-        growDynTable(dynTabInst);
-        tabInst = (struct strInst *)(dynTabInst->data);
+    if (instHw - INSTMIN >= NUM_INSTS) {
+        errHead(0);
+        errPrintf("Instance storage space exhausted");
+        errFail();
     }
     inst(instHw).kinds = NIL;
     inst(instHw).head = NIL;
@@ -3046,9 +3044,6 @@ Void freeStablePtr(Int i) /* Free a stable pointer             */
  * storage control:
  * ------------------------------------------------------------------------*/
 
-#define TABALLOC(v, t, n)
-#define TABFREE(v)
-
 DynTable *allocDynTable(unsigned long eltSize, unsigned long maxIdx,
                         unsigned long hWater, const char *tabName) {
     DynTable *tab = (DynTable *)malloc(sizeof(struct strDynTable));
@@ -3330,28 +3325,11 @@ Void storage(Int what) {
 
         dynTabScripts = allocDynTable(sizeof(script), 10, 0, "scripts");
         scripts = (script *)(dynTabScripts->data);
-        dynTabClass =
-            allocDynTable(sizeof(struct strClass), 10, NUM_CLASSES, "class");
-        tabClass = (struct strClass *)(dynTabClass->data);
-
-        dynTabInst =
-            allocDynTable(sizeof(struct strInst), 50, NUM_INSTS, "instance");
-        tabInst = (struct strInst *)(dynTabInst->data);
         dynTabHandles =
             allocDynTable(sizeof(struct strHandle), 4, 0, "handles");
         handles = (struct strHandle *)(dynTabHandles->data);
         num_handles = dynTabHandles->maxIdx;
-        TABALLOC(text, char, NUM_TEXT)
-        TABALLOC(tyconHash, Tycon, TYCONHSZ)
-        TABALLOC(tabTycon, struct strTycon, NUM_TYCON)
-        TABALLOC(nameHash, Name, NAMEHSZ)
-        TABALLOC(tabName, struct strName, NUM_NAME)
-        TABALLOC(tabClass, struct strClass, NUM_CLASSES)
-        TABALLOC(cellStack, Cell, NUM_STACK)
-        TABALLOC(tabModule, struct strModule, NUM_MODULE)
         clearStack();
-
-        TABALLOC(handles, struct strHandle, NUM_HANDLES)
         for (i = 0; i < (Int)num_handles; i++)
             handles[i].hcell = NIL;
 
@@ -3410,20 +3388,8 @@ Void storage(Int what) {
         if (heapThd)
             free(heapThd);
 #endif
-        if (dynTabClass)
-            freeDynTable(dynTabClass);
-        if (dynTabInst)
-            freeDynTable(dynTabInst);
         if (dynTabHandles)
             freeDynTable(dynTabHandles);
-        TABFREE(text);
-        TABFREE(tyconHash);
-        TABFREE(tabTycon);
-        TABFREE(nameHash);
-        TABFREE(tabName);
-        TABFREE(tabClass);
-        TABFREE(cellStack);
-        TABFREE(tabModule);
         if (marks)
             free(marks);
 

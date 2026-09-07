@@ -457,52 +457,23 @@ typedef void *Pointer;
 # define STD_EMPTY_MODULE "Cuddles"
 #endif
 
-#define NUM_HANDLES 40
-#define NUM_TUPLES 100
-#define NUM_OFFSETS 1024
-#define NUM_LAT1_CHARS 256
+/* The table and heap sizes, which are a group of their own */
+#include "sizes.h"
 
 #if PROFILING
 # define DEF_PROFINTDIV 10 /* hpsize/this cells between samples*/
 #endif
 
-#define NUM_SCRIPTS 800
-#define NUM_FIXUPS 1000
-#define NUM_TYCON 2000
-#define NUM_NAME 32000
-#define NUM_CLASSES 1000
-#define NUM_INSTS 4000
-#define NUM_TEXT 320000
-#define NUM_TEXTH 10
-#define NUM_TYVARS 8000
-#define NUM_STACK 160000
-#define NUM_ADDRS 1280000
-#define MINIMUMHEAP 19000
-#define MAXIMUMHEAP 0
-#define DEFAULTHEAP 1000000
+/* Representation of Int */
 #define MAXPOSINT 0x7fffffff
+#define MINNEGINT (-MAXPOSINT - 1)
 #define MAXCUDDLESWORD 0xffffffffU
-#define NUM_STABLEPTRS 10000
-#define NUM_MALLOCPTRS 10000
-#define NUM_DTUPLES 5
-
-/* Some infinite computations generate an infinite depth of alternations
- * between eval() and run().  If they don't use the Cuddles stack or heap,
- * they will overrun the C stack, crashing the interpreter.  To protect
- * against this, we place a limit on the depth of recursion of eval().
- */
-#define MAX_EVAL_DEPTH 16384
 
 /* Representation of Integer: requires BIGBASE == 10^BIGEXP */
 #define BIGBASE 10000
 #define BIGEXP 4
 
-#define MINNEGINT (-MAXPOSINT - 1)
-
-#define NUM_MODULE NUM_SCRIPTS
-
 #define DECTABLE(tab) tab[]
-#define DYNDECTABLE(tab) *tab
 #define DEFTABLE(tab, sz) tab[sz]
 
 #define minRecovery 1000

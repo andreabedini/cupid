@@ -14,6 +14,8 @@
 #ifndef __STORAGE_H__
 #define __STORAGE_H__
 
+#include <limits.h> /* UCHAR_MAX, for the assertions at the end */
+
 /* --------------------------------------------------------------------------
  * Typedefs for main data types:
  * Many of these type names are used to indicate the intended us of a data
@@ -655,8 +657,8 @@ struct strClass {
     List clashes;   /* Conflicting classes/tycons      */
 };
 
-extern struct strClass DYNDECTABLE(tabClass);
-extern struct strInst DYNDECTABLE(tabInst);
+extern struct strClass DECTABLE(tabClass);
+extern struct strInst DECTABLE(tabInst);
 
 extern Class newClass(Text);
 extern Class classMax(Void);
@@ -1223,5 +1225,53 @@ extern List addNamesMatching(String, List);
 /* whatIs1 is faster than whatIs, but it will return NIL if fst(c) is NIL
  * Used with care in the right places it gains us speed.
  */
+
+/* --------------------------------------------------------------------------
+ * What the partition above depends on.
+ *
+ * Every range from TUPMIN up is computed from a table size in sizes.h, so
+ * raising one silently shifts every range above it.  These say what may
+ * not move.  They are compile-time checks: if one fires, the number that
+ * was changed cannot take the value it was given.
+ * ------------------------------------------------------------------------*/
+
+/* Tags, then the special values, then the tables: three groups that may
+ * not overlap.  TAG_MASK masks everything below SPECMIN. */
+static_assert(TAGMIN < BCSTAG, "box tags come before constructor tags");
+static_assert(BCSTAG <= SPECMIN, "constructor tags come before the specials");
+static_assert(SPECMIN > ~TAG_MASK, "SPECMIN must be out of TAG_MASK range");
+static_assert(SPECMIN < TUPMIN, "the specials come before the tables");
+
+/* The tables tile the positive Cell space in this order, and nothing may
+ * be given a size of zero, which would make a range empty and let the one
+ * below it collide with the one above. */
+static_assert(TUPMIN < OFFMIN, "the tuple range is empty");
+static_assert(OFFMIN < MODMIN, "the offset range is empty");
+static_assert(MODMIN < TYCMIN, "the module range is empty");
+static_assert(TYCMIN < NAMEMIN, "the tycon range is empty");
+static_assert(NAMEMIN < INSTMIN, "the name range is empty");
+static_assert(INSTMIN < CLASSMIN, "the instance range is empty");
+static_assert(CLASSMIN < CHARMIN, "the class range is empty");
+static_assert(CHARMIN < INTMIN, "the short character range is empty");
+static_assert(INTMIN < INTMAX, "the small integer range is empty");
+
+/* whatIs() indexes whatCode[] with any cell that is not a pair, so the
+ * partition has to end exactly where that array does, and stay inside a
+ * positive Int: a negative cell is a heap pair. */
+static_assert(N_WHATCODE == INTMAX + 1, "whatCode must cover the partition");
+static_assert(INTMAX < MAXPOSINT, "the partition must fit in a positive Int");
+
+/* whatCode is an unsigned char array that initFastWhat (storage.c) fills
+ * with whatCode[i] = i below TUPMIN and with tag codes above it, so both
+ * the cell values below TUPMIN and every tag stored have to fit in one. */
+static_assert(TUPMIN - 1 <= UCHAR_MAX, "whatCode[i] = i would truncate");
+static_assert(OFFSET <= UCHAR_MAX, "the tag codes must fit in whatCode");
+
+/* The module table is indexed off the script numbering. */
+static_assert(NUM_MODULE == NUM_SCRIPTS, "one module record per script");
+
+/* Small integers straddle zero. */
+static_assert(MINSMALLINT < 0, "the small integers must reach below zero");
+static_assert(MAXSMALLINT > 0, "the small integers must reach above zero");
 
 #endif /* __STORAGE_H__ */
