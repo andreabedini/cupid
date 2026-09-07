@@ -407,11 +407,6 @@ static Void local enterPendingBtyvs() {
     pendingBtyvs = cons(NIL, pendingBtyvs);
 }
 
-static Void local leavePendingBtyvsQuietly() {
-    pendingBtyvs = tl(pendingBtyvs);
-    leaveBtyvs();
-}
-
 static Void local leavePendingBtyvs() {
     List pts = hd(pendingBtyvs);
     pendingBtyvs = tl(pendingBtyvs);

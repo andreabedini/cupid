@@ -114,8 +114,7 @@ static Void local putInt(Int n) /* print integer                           */
  * Print an expression (used to display context of type errors):
  * ------------------------------------------------------------------------*/
 
-static Int putDepth = 0;  /* limits depth of printing DBG     */
-static Bool inString = 0; /* is char string being put?        */
+static Int putDepth = 0; /* limits depth of printing DBG     */
 
 static Void local put(Int d, Cell e) /* print expression e in context of */
                                      /* operator of precedence d         */

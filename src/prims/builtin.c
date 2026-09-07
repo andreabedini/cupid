@@ -23,6 +23,7 @@
 #include "machdep.h"
 #include "char.h"
 #include <ctype.h>
+#include <stdint.h> /* intptr_t, for the StablePtr conversions */
 
 #if HAVE_IO_H
 # include <io.h>
@@ -1649,18 +1650,18 @@ static void putFunPtr(HsFunPtr x) {
  * be an unevaluated thunk) and unboxed with checkInt()/whnfInt on the way
  * in, exactly like every other get()/put() pair here.                    */
 static void putStablePtr4(HsStablePtr x) {
-    push(mkInt((CuddlesStablePtr)x));
+    push(mkInt((CuddlesStablePtr)(intptr_t)x));
 }
 
 static HsStablePtr getStablePtr4(void) {
     eval(pop());
     checkInt();
-    return (HsStablePtr)(CuddlesStablePtr)whnfInt;
+    return (HsStablePtr)(intptr_t)(CuddlesStablePtr)whnfInt;
 }
 
 static Void freeStablePtr4(HsStablePtr x) {
     if (x)
-        freeStablePtr((CuddlesStablePtr)x);
+        freeStablePtr((CuddlesStablePtr)(intptr_t)x);
 }
 
 static HsFloat getFloat() {

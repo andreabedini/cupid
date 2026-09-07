@@ -26,6 +26,7 @@
 #include "builtin.h"
 #include "char.h"
 #include <ctype.h>
+#include <stdint.h> /* intptr_t, for the StablePtr conversions */
 #include <sys/types.h>
 #include <sys/stat.h>
 #if HAVE_UNISTD_H
@@ -816,7 +817,7 @@ primFun(primOpenFd) { /* open handle to file descriptor. */
     Int m;            /* :: Int{-Fd-} -> Bool -> IOMode -> Bool -> IO Handle */
     Int fd;
     Bool binary;
-    Bool isSock;
+    [[maybe_unused]] Bool isSock;
 
     IntArg(fd, 4 + IOArity);
     BoolArg(isSock, 3 + IOArity);
@@ -1378,13 +1379,15 @@ primFun(primFreeSP) { /* StablePtr a -> IO ()              */
 primFun(primCastSPToP) { /* StablePtr a -> Ptr ()          */
     CuddlesStablePtr x;
     SPArg(x, 1);
-    PtrResult((Pointer)x);
+    PtrResult((Pointer)(intptr_t)x);
 }
 
 primFun(primCastPToSP) { /* Ptr () -> StablePtr a          */
     Pointer x;
+    CuddlesStablePtr idx; /* not sp: that is the machine stack pointer */
     PtrArg(x, 1);
-    SPResult((HsStablePtr)x);
+    idx = (CuddlesStablePtr)(intptr_t)x;
+    SPResult(idx);
 }
 
 /* --------------------------------------------------------------------------

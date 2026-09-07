@@ -323,7 +323,6 @@ Char extc_mb(String *sp) {
  */
 
 int fgetc_mb(FILE *f) {
-    unsigned char buf[MAX_CHAR_ENCODING];
     Int b;
     Char c;
     Int size, i;

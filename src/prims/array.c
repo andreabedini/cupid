@@ -158,7 +158,7 @@ struct primInfo arrayPrims = {arrayControl, arrayPrimTable, 0};
 
 #define declArr                                                                \
     StackPtr arrPos = sp + 1;                                                  \
-    Int alen;                                                                  \
+    [[maybe_unused]] Int alen;                                                 \
     push(NIL)
 #define arr stack(arrPos)
 

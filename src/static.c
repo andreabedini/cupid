@@ -1311,7 +1311,6 @@ static Void local checkMems(Class c, List tyvars,
                             Cell m) /* check member function details   */
 {
     Int line = intOf(fst3(m));
-    List vs = snd3(m);
     Type t = thd3(m);
     List sig = NIL;
     List tvs = NIL;
@@ -3981,7 +3980,6 @@ static Void local checkForeignImport(Name p) /* Check foreign import          */
 
     } else if ((e = matchToken("wrapper", ext))) { /* thunk builder */
         Bool isIO = FALSE;
-        Type ta = NIL;
 
         e = skipSpaces(e);
         if (*e != '\0')
@@ -3989,7 +3987,6 @@ static Void local checkForeignImport(Name p) /* Check foreign import          */
 
         if (length(argTys) != 1)
             goto wraperr;
-        ta = hd(argTys);
 
         if (getHead(t) != typeIO || argCount != 1)
             goto wraperr;
@@ -3999,7 +3996,7 @@ static Void local checkForeignImport(Name p) /* Check foreign import          */
             goto wraperr;
         t = fullerExpand(hd(getArgs(t)));
 
-        /* ToDo: check that ta == t */
+        /* ToDo: check that hd(argTys) is the type t we just unwrapped */
 
         t = fullerExpand(t);
         argTys = NIL;

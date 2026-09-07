@@ -494,7 +494,6 @@ static Void local ffiDeclareFun(Int line, Text n, Bool indirect, Bool extraArg,
 }
 
 static Void local ffiFunTypeCast(Int line, List argTys, List resultTy) {
-    Int i;
     fprintf(out, "(");
     if (resultTy == typeUnit) {
         fprintf(out, "void");
@@ -502,7 +501,7 @@ static Void local ffiFunTypeCast(Int line, List argTys, List resultTy) {
         foreignType(line, resultTy);
     }
     fprintf(out, " (*)(");
-    for (i = 1; nonNull(argTys); argTys = tl(argTys), ++i) {
+    for (; nonNull(argTys); argTys = tl(argTys)) {
         foreignType(line, hd(argTys));
         if (nonNull(tl(argTys))) {
             fprintf(out, ", ");
