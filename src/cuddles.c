@@ -23,6 +23,7 @@
 #include "machdep.h"
 #include "output.h"
 #include "module.h"
+#include "timer.h"
 #include <setjmp.h>
 #include <ctype.h>
 
@@ -54,13 +55,6 @@ static Void   local browse	      (Void);
 static Void   local initialize        (Int, String []);
 static Void   local clearEvalModule   (Void);
 
-
-/* --------------------------------------------------------------------------
- * Optional timer hooks:
- * ------------------------------------------------------------------------*/
-#if WANT_TIMER
-#include "timer.c"
-#endif
 
 /* --------------------------------------------------------------------------
  * Local data areas:

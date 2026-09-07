@@ -14,72 +14,15 @@
 #include "connect.h"
 #include "errors.h"
 #include "char.h"
+#include "unitable.h"
 #include <errno.h>
 
 /* --------------------------------------------------------------------------
  * Unicode character properties (cf http://www.unicode.org/ucd/)
  * ------------------------------------------------------------------------*/
 
-/* Unicode general categories, listed in the same order as in the Unicode
- * standard -- this must be the same order as in Data.Char.
- */
-enum {
-    GENCAT_Lu,	/* Letter, Uppercase */
-    GENCAT_Ll,	/* Letter, Lowercase */
-    GENCAT_Lt,	/* Letter, Titlecase */
-    GENCAT_Lm,	/* Letter, Modifier */
-    GENCAT_Lo,	/* Letter, Other */
-    GENCAT_Mn,	/* Mark, Non-Spacing */
-    GENCAT_Mc,	/* Mark, Spacing Combining */
-    GENCAT_Me,	/* Mark, Enclosing */
-    GENCAT_Nd,	/* Number, Decimal */
-    GENCAT_Nl,	/* Number, Letter */
-    GENCAT_No,	/* Number, Other */
-    GENCAT_Pc,	/* Punctuation, Connector */
-    GENCAT_Pd,	/* Punctuation, Dash */
-    GENCAT_Ps,	/* Punctuation, Open */
-    GENCAT_Pe,	/* Punctuation, Close */
-    GENCAT_Pi,	/* Punctuation, Initial quote */
-    GENCAT_Pf,	/* Punctuation, Final quote */
-    GENCAT_Po,	/* Punctuation, Other */
-    GENCAT_Sm,	/* Symbol, Math */
-    GENCAT_Sc,	/* Symbol, Currency */
-    GENCAT_Sk,	/* Symbol, Modifier */
-    GENCAT_So,	/* Symbol, Other */
-    GENCAT_Zs,	/* Separator, Space */
-    GENCAT_Zl,	/* Separator, Line */
-    GENCAT_Zp,	/* Separator, Paragraph */
-    GENCAT_Cc,	/* Other, Control */
-    GENCAT_Cf,	/* Other, Format */
-    GENCAT_Cs,	/* Other, Surrogate */
-    GENCAT_Co,	/* Other, Private Use */
-    GENCAT_Cn	/* Other, Not Assigned */
-};
-
-
-/* properties of a Unicode character */
-struct CharProperties {
-    int category;		/* Unicode general category */
-    int upper_offset;		/* offset of the result of toUpper */
-    int lower_offset;		/* offset of the result of toUpper */
-    int title_offset;		/* offset of the result of toUpper */
-};
-
-/* A contiguous block of characters with the same properties */
-struct CharBlock {
-    Char blk_start;		/* first character in the block            */
-    Char blk_length;		/* number of characters in the block       */
-    const struct CharProperties *blk_properties;
-				/* properties shared by these characters,  */
-    				/* and possibly by other blocks too.       */
-};
-
-/* property table automatically generated from UnicodeData file */
-#include "unitable.c"
-
 /* properties for an character not covered by the table */
 static const struct CharProperties null_properties = { GENCAT_Cn, 0, 0, 0 };
-
 
 /* --------------------------------------------------------------------------
  * Local function prototypes:
@@ -159,7 +102,6 @@ Void initCharTab() {			/* Initialize char decode table    */
  * Char primitives.
  * ------------------------------------------------------------------------*/
 
-
 #define	UPPER_MASK	((1<<GENCAT_Lu)|(1<<GENCAT_Lt))
 
 Bool isLower(Char c) {
@@ -207,22 +149,21 @@ Int uni_gencat(Char c) {
 static const struct CharProperties * local get_properties(Char c) {
     Int lo, hi, mid;
     lo = 0;
-    hi = NUM_BLOCKS-1;
+    hi = unicode_block_count-1;
     while (lo!=hi) {
-	/* i <= lo => char_block[i].blk_start <= c */
-	/* i >  hi => char_block[i].blk_start >  c */
+	/* i <= lo => unicode_blocks[i].blk_start <= c */
+	/* i >  hi => unicode_blocks[i].blk_start >  c */
 	mid = (lo+hi+1)/2;	/* lo < mid <= hi */
-	if (char_block[mid].blk_start<=c)
+	if (unicode_blocks[mid].blk_start<=c)
 	    lo = mid;
 	else
 	    hi = mid-1;
     }
-    /* i <= lo => char_block[i].blk_start <= c */
-    /* i >  lo => char_block[i].blk_start >  c */
-    return c<char_block[lo].blk_start+char_block[lo].blk_length ?
-		char_block[lo].blk_properties : &null_properties;
+    /* i <= lo => unicode_blocks[i].blk_start <= c */
+    /* i >  lo => unicode_blocks[i].blk_start >  c */
+    return c<unicode_blocks[lo].blk_start+unicode_blocks[lo].blk_length ?
+		unicode_blocks[lo].blk_properties : &null_properties;
 }
-
 
 /* --------------------------------------------------------------------------
  * Multibyte character incodings.
@@ -465,7 +406,6 @@ static Int local utfcodelen(Char c) {
  * a tabulation of (:) c for each character c.
  * ------------------------------------------------------------------------*/
 
-
 /* --------------------------------------------------------------------------
  * To save space, we maintain a sparse array of character conses,
  * allocated and filled lazily.  The sparseness is achieved by making the
@@ -577,7 +517,6 @@ static void local freeConsCharTable() {
 	    }
     }
 }
-
 
 Void charOps(Int what)
 {

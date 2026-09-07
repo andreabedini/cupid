@@ -18,6 +18,7 @@
 #include "machdep.h"
 #include "evaluator.h"
 #include "scc.h"
+#include "timer.h"
 
 #if HAVE_WINDOWS_H
 #include <windows.h>
