@@ -89,13 +89,19 @@ List sccSort(List bs, List cs, SccDepends d, SccSetDepends s)
     return rev(daSccs);			/* reverse to obtain correct order */
 }
 
+/* The statics that hold cells: registered as roots at INSTALL and marked
+ * by the collector on every collection */
+static Cell *const sccRoots[] = {
+    &daSccs,
+};
+
 Void sccControl(Int what)
 {
     switch (what) {
 	case RESET : daSccs = NIL;
 		     break;
-	case MARK  : mark(daSccs);
-		     break;
+	case INSTALL : registerRoots(sccRoots);
+		       break;
     }
 }
 

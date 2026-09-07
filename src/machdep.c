@@ -1816,13 +1816,17 @@ initSystem()
  * Machine dependent control:
  * ------------------------------------------------------------------------*/
 
+/* The statics that hold cells: registered as roots at INSTALL and marked
+ * by the collector on every collection */
+static Cell *const machdepRoots[] = {
+    &bdTemp,
+};
+
 Void machdep(Int what)                      /* Handle machine specific         */
 {                             /* initialisation etc..            */
     switch (what) {
-	case MARK    :
-		       mark(bdTemp);
-		       break;
-	case INSTALL : installHandlers();
+	case INSTALL : registerRoots(machdepRoots);
+		       installHandlers();
 		       break;
 	case RESET   :
 		       bdTemp = NIL;

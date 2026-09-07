@@ -42,6 +42,12 @@ static Void local ffiReturn      (Type,String,Int);
 static FILE* out = NIL;                /* file we're generating code into */
 static List  includes = NIL;           /* files already #included         */
 
+/* The statics that hold cells: registered as roots at INSTALL and marked
+ * by the collector on every collection */
+static Cell *const ffiRoots[] = {
+    &includes,
+};
+
 Void ffi(Int what)
 {
     switch (what) {
@@ -51,7 +57,7 @@ Void ffi(Int what)
                        }
                        includes = NIL;
 		       break;
-        case MARK    : mark(includes);
+        case INSTALL : registerRoots(ffiRoots);
 		       break;
     }
 }

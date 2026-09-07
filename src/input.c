@@ -1699,10 +1699,22 @@ Void parseContext() {                  /* Read a context to prove   */
  * Input control:
  * ------------------------------------------------------------------------*/
 
+/* The statics that hold cells: registered as roots at INSTALL and marked
+ * by the collector on every collection */
+static Cell *const inputRoots[] = {
+    &tyconDefns, &typeInDefns, &valDefns, &classDefns,
+    &instDefns, &selDefns, &genDefns, &primDefns,
+    &unqualImports, &foreignImports, &foreignExports, &defaultDefns,
+    &evalDefaults, &inputExpr, &varMinus, &varPlus,
+    &varBang, &varDot, &varHiding, &varQualified,
+    &varAsMod, &varMain, &conMain, &imps,
+};
+
 Void input(Int what)
 {
     switch (what) {
-	case INSTALL : textCase       = findText("case");
+	case INSTALL : registerRoots(inputRoots);
+		       textCase       = findText("case");
 		       textOfK        = findText("of");
 		       textData       = findText("data");
 		       textType       = findText("type");
@@ -1793,31 +1805,6 @@ Void input(Int what)
 			   c0 = EOF;
 		       break;
 
-	case MARK    : mark(tyconDefns);
-		       mark(typeInDefns);
-		       mark(valDefns);
-		       mark(classDefns);
-		       mark(instDefns);
-		       mark(selDefns);
-		       mark(genDefns);
-		       mark(primDefns);
-		       mark(unqualImports);
-                       mark(foreignImports);
-                       mark(foreignExports);
-		       mark(defaultDefns);
-		       mark(evalDefaults);
-		       mark(inputExpr);
-		       mark(varMinus);
-		       mark(varPlus);
-		       mark(varBang);
-		       mark(varDot);
-		       mark(varHiding);
-		       mark(varQualified);
-		       mark(varAsMod);
-		       mark(varMain);
-		       mark(conMain);
-		       mark(imps);
-		       break;
     }
 }
 

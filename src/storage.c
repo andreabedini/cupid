@@ -1642,6 +1642,45 @@ Void overwrite(Cell dst, Cell src)                 /* overwrite dst cell with sr
 static Int *marks;
 static Int marksSize;
 
+/* --------------------------------------------------------------------------
+ * Roots: the tables of static cells registered by the modules (see
+ * registerRoots in storage.h).
+ * ------------------------------------------------------------------------*/
+
+struct rootTable {
+    Cell *const *cells;
+    Int          count;
+};
+
+static struct rootTable *rootTables    = 0;
+static Int               numRootTables = 0;
+static Int               maxRootTables = 0;
+
+Void gcRegisterRoots(Cell *const *cells, Int count)
+{
+    if (numRootTables==maxRootTables) {
+	Int more = maxRootTables ? 2*maxRootTables : 16;
+	struct rootTable *grown = realloc(rootTables,more*sizeof(*grown));
+	if (!grown) {
+	    ERRMSG(0) "Cannot allocate root table"
+	    EEND;
+	}
+	rootTables    = grown;
+	maxRootTables = more;
+    }
+    rootTables[numRootTables].cells = cells;
+    rootTables[numRootTables].count = count;
+    numRootTables++;
+}
+
+static Void local markRoots(Void)
+{
+    Int t, i;
+    for (t=0; t<numRootTables; t++)
+	for (i=0; i<rootTables[t].count; i++)
+	    *rootTables[t].cells[i] = markExpr(*rootTables[t].cells[i]);
+}
+
 Cell markExpr(Cell c)                        /* External interface to markCell  */
 {
     return isGenPair(c) ? markCell(c) : c;
@@ -1839,6 +1878,7 @@ Void garbageCollect()     {             /* Run garbage collector ...       */
 	marks[i] = 0;
     weakPtrs = NIL;                     /* clear list of weak pointers     */
     everybody(MARK);                    /* Mark all components of system   */
+    markRoots();                        /* and the registered roots        */
 
     for (i=0; i<(Int)num_handles; ++i)  /* release any unused handles      */
 	if (nonNull(handles[i].hcell)) {

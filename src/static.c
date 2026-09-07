@@ -5873,6 +5873,14 @@ static Void local checkTypeIn(Pair cvs)	/* Check that vars in restricted   */
  * Static Analysis control:
  * ------------------------------------------------------------------------*/
 
+/* The statics that hold cells: registered as roots at INSTALL and marked
+ * by the collector on every collection */
+static Cell *const staticRoots[] = {
+    &patVars, &bounds, &bindings, &depends,
+    &tcDeps, &derivedInsts, &diVars, &cfunSfuns,
+    &unkindTypes,
+};
+
 Void staticAnalysis(Int what)
 {
     switch (what) {
@@ -5888,18 +5896,9 @@ Void staticAnalysis(Int what)
 		       unkindTypes  = NIL;
 		       break;
 
-	case MARK    : mark(patVars);
-		       mark(bounds);
-		       mark(bindings);
-		       mark(depends);
-		       mark(tcDeps);
-		       mark(derivedInsts);
-		       mark(diVars);
-		       mark(cfunSfuns);
-		       mark(unkindTypes);
-		       break;
 
-	case INSTALL : staticAnalysis(RESET);
+	case INSTALL : registerRoots(staticRoots);
+		       staticAnalysis(RESET);
 		       break;
     }
 }

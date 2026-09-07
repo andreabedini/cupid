@@ -70,14 +70,17 @@ static struct primitive bignumPrimTable[] = {
 
 static Name nameIntToInteger;
 
+/* The statics that hold cells: registered as roots at INSTALL and marked
+ * by the collector on every collection */
+static Cell *const bignumRoots[] = {
+    &bn, &bigRem,
+};
+
 static Void bignumControl (Int);
 static Void bignumControl(Int what)
 {
     switch (what) {
-	case MARK    : mark(bn);
-		       mark(bigRem);
-		       break;
-	case INSTALL : 
+	case INSTALL : registerRoots(bignumRoots);
 #define predef(nm,str) nm=newName(findText(str),NIL); name(nm).defn=PREDEFINED
 		       predef(nameIntToInteger, "primIntToInteger");
 #undef predef

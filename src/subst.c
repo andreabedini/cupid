@@ -1589,6 +1589,12 @@ Void varKind(Int n)				/* return (possibly cached) var	   */
  * Substitutution control:
  * ------------------------------------------------------------------------*/
 
+/* The statics that hold cells: registered as roots at INSTALL and marked
+ * by the collector on every collection */
+static Cell *const substRoots[] = {
+    &btyvars, &typeIs, &predsAre, &genericVars,
+};
+
 Void substitution(Int what)
 {
     Int  i;
@@ -1607,13 +1613,10 @@ Void substitution(Int what)
 		       }
 		       for (i=0; i<numTyvars; ++i)
 			   mark(tyvars[i].bound);
-		       mark(btyvars);
-		       mark(typeIs);
-		       mark(predsAre);
-		       mark(genericVars);
 		       break;
 
-	case INSTALL : substitution(RESET);
+	case INSTALL : registerRoots(substRoots);
+		       substitution(RESET);
 		       for (i=0; i<MAXTUPCON; ++i)
 			   tupleConTypes[i] = NIL;
 		       for (i=0; i<MAXKINDFUN; ++i) {

@@ -192,6 +192,14 @@ extern  Void	     markWithoutMove (Cell);
 
 #define mark(v)      v=markExpr(v)
 
+/* A static that holds a cell is a root.  A module lists the addresses of
+ * its roots in a table and registers it once, at INSTALL; the collector
+ * then marks them on every collection.  MARK cases remain only for data
+ * a flat table cannot describe: the symbol tables, the substitution, the
+ * type checker's scope stack. */
+extern  Void	     gcRegisterRoots (Cell *const *,Int);
+#define registerRoots(t) gcRegisterRoots((t),(Int)(sizeof(t)/sizeof((t)[0])))
+
 #define isPair(c)    ((c)<0)
 #define isGenPair(c) ((c)<0 && -heapSize<=(c))
 

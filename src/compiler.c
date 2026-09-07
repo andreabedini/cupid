@@ -1726,10 +1726,16 @@ static Void local newGlobalFunction(Name n, Int arity, List fvs, Int co, Cell e)
  * Compiler control:
  * ------------------------------------------------------------------------*/
 
+/* The statics that hold cells: registered as roots at INSTALL and marked
+ * by the collector on every collection */
+static Cell *const compilerRoots[] = {
+    &freeVars, &freeFuns, &extraVars,
+};
+
 Void compiler(Int what)
 {
     switch (what) {
-	case INSTALL :
+	case INSTALL : registerRoots(compilerRoots);
 	case RESET   : freeVars      = NIL;
 		       freeFuns      = NIL;
 		       freeBegin     = mkOffset(0);
@@ -1739,10 +1745,6 @@ Void compiler(Int what)
 		       localArity    = 0;
 		       break;
 
-	case MARK    : mark(freeVars);
-		       mark(freeFuns);
-		       mark(extraVars);
-		       break;
     }
 }
 

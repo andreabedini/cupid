@@ -49,13 +49,17 @@ static Cell out;			/* GC'd var used by printer code   */
  * Printer control:
  * ------------------------------------------------------------------------*/
 
+/* The statics that hold cells: registered as roots at INSTALL and marked
+ * by the collector on every collection */
+static Cell *const printerRoots[] = {
+    &out,
+};
+
 static Void printerControl (Int);
 static Void printerControl(Int what)
 {
     switch (what) {
-	case MARK    : mark(out);
-		       break;
-	case INSTALL : 
+	case INSTALL : registerRoots(printerRoots);
 		       setCurrModule(modulePrelude);
 #define pFun(n,s,t)    addPrim(0,n=newName(findText(s),NIL),t,modulePrelude,NIL)
 		       pFun(namePrint,	   "_print",   "print");

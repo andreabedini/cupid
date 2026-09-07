@@ -71,11 +71,17 @@ extern Void local pushString       (String);
  * IO monad control:
  * ------------------------------------------------------------------------*/
 
+/* The statics that hold cells: registered as roots at INSTALL and marked
+ * by the collector on every collection */
+static Cell *const iomonadRoots[] = {
+    &cuddlesProgName, &cuddlesArgs,
+};
+
 static Void iomonadControl (Int);
 static Void iomonadControl(Int what)
 {
     switch (what) {
-	case INSTALL : 
+	case INSTALL : registerRoots(iomonadRoots);
 		       setCurrModule(modulePrelude);
 #define pFun(n,s,t)    addPrim(0,n=newName(findText(s),NIL),t,modulePrelude,NIL)
 		       pFun(namePass,	 "_pass",    "passIO");
@@ -88,9 +94,6 @@ static Void iomonadControl(Int what)
 #undef predef
 		       break;
 
-	case MARK    : mark(cuddlesProgName);
-		       mark(cuddlesArgs);
-		       break;
     }
 }
 

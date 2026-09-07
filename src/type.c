@@ -2408,6 +2408,16 @@ static Pair local typeSel(Name s)		/* Calculate a suitable type for a */
  * Type checker control:
  * ------------------------------------------------------------------------*/
 
+/* The statics that hold cells: registered as roots at INSTALL and marked
+ * by the collector on every collection */
+static Cell *const typeRoots[] = {
+    &defnBounds, &varsBounds, &depends, &pendingBtyvs,
+    &dummyVar, &preds, &stdDefaults, &arrow,
+    &boundPair, &listof, &typeVarToVar, &predNum,
+    &predFractional, &predIntegral, &starToStar, &predMonad,
+    &typeProgIO,
+};
+
 Void typeChecker(Int what)
 {
     switch (what) {
@@ -2417,34 +2427,17 @@ Void typeChecker(Int what)
 		       emptyAssumption();
 		       break;
 
-	case MARK    : mark(defnBounds);
-		       mark(varsBounds);
-		       mark(depends);
-		       mark(pendingBtyvs);
-		       {   Int i = 0;
-			   for (; i<numScopes; i++) {
+	case MARK    : {   Int i = 0;		/* the scope stack; the rest  */
+			   for (; i<numScopes; i++) {	/* is in typeRoots	   */
 			       mark(scopes[i].skolems);
 			       mark(scopes[i].givens);
 			       mark(scopes[i].savedPreds);
 			   }
 		       }
-		       mark(dummyVar);
-		       mark(preds);
-		       mark(stdDefaults);
-		       mark(arrow);
-		       mark(boundPair);
-		       mark(listof);
-		       mark(typeVarToVar);
-		       mark(predNum);
-		       mark(predFractional);
-		       mark(predIntegral);
-		       mark(starToStar);
-		       mark(predMonad);
-
-		       mark(typeProgIO);
 		       break;
 
-	case INSTALL : typeChecker(RESET);
+	case INSTALL : registerRoots(typeRoots);
+		       typeChecker(RESET);
 
 		       dummyVar     = inventVar();
 
