@@ -822,7 +822,7 @@ static Cell local typeAp(Int l, Cell e) /* Type check application, which   */
 
     switch (whatIs(h)) {
     case NAME:
-        typeIs = name(h).type;
+        typeIs = nameRec(h)->type;
         break;
 
     case VAROPCELL:
@@ -839,7 +839,7 @@ static Cell local typeAp(Int l, Cell e) /* Type check application, which   */
                 h = findName(textOf(h));
                 if (isNull(h))
                     internal("typeAp0");
-                typeIs = name(h).type;
+                typeIs = nameRec(h)->type;
             }
         }
         break;
@@ -1264,7 +1264,7 @@ static Void local typeConFlds(Int l,
     Int tf;
     Int i;
 
-    instantiate(name(c).type);
+    instantiate(nameRec(c)->type);
     for (; nonNull(predsAre); predsAre = tl(predsAre))
         assumeEvid(hd(predsAre), typeOff);
     if (whatIs(typeIs) == RANK2)
@@ -1285,7 +1285,7 @@ static Void local typeConFlds(Int l,
             snd(hd(fs)) = check(l, snd(hd(fs)), e, conExpr, t, to);
         }
     }
-    for (i = name(c).arity; i > 0; i--)
+    for (i = nameRec(c)->arity; i > 0; i--)
         tc = arg(tc);
     inferType(tc, to);
 }
@@ -1327,12 +1327,12 @@ static Void local typeUpdFlds(Int line,
 
     for (; nonNull(cs); cs = tl(cs)) { /* Loop through constrs             */
         Name c = hd(cs);
-        List ta = replicate(name(c).arity, NIL);
+        List ta = replicate(nameRec(c)->arity, NIL);
         Type td, tr;
         Int od, or ;
 
         tcMode = NEW_PATTERN; /* Domain type                       */
-        instantiate(name(c).type);
+        instantiate(nameRec(c)->type);
         tcMode = EXPRESSION;
         td = typeIs;
         od = typeOff;
@@ -1342,7 +1342,8 @@ static Void local typeUpdFlds(Int line,
         if (whatIs(td) == RANK2) /* Skip rank2 annotation, if any   */
             td = snd(snd(td));
 
-        instantiate(name(c).type); /* Range type                           */
+        instantiate(
+            nameRec(c)->type); /* Range type                           */
         tr = typeIs;
         or = typeOff;
         for (; nonNull(predsAre); predsAre = tl(predsAre))
@@ -1759,42 +1760,42 @@ static Void local typeClassDefn(Class c) /* Type check implementations of   */
      * Generate code for default dictionary builder functions:
      * --------------------------------------------------------------------*/
 
-    Int beta = newKindedVars(cclass(c).kinds);
+    Int beta = newKindedVars(cclassRec(c)->kinds);
     Cell d = inventDictVar();
-    List dparam = singleton(triple(cclass(c).head, mkInt(beta), d));
-    List mems = cclass(c).members;
-    List defs = cclass(c).defaults;
-    List dsels = cclass(c).dsels;
-    Cell pat = cclass(c).dcon;
-    Int width = cclass(c).numSupers + cclass(c).numMembers;
+    List dparam = singleton(triple(cclassRec(c)->head, mkInt(beta), d));
+    List mems = cclassRec(c)->members;
+    List defs = cclassRec(c)->defaults;
+    List dsels = cclassRec(c)->dsels;
+    Cell pat = cclassRec(c)->dcon;
+    Int width = cclassRec(c)->numSupers + cclassRec(c)->numMembers;
     Int i = 0;
 
     if (isNull(defs) && nonNull(mems)) {
-        defs = cclass(c).defaults = cons(NIL, NIL);
+        defs = cclassRec(c)->defaults = cons(NIL, NIL);
     }
 
     for (; nonNull(mems); mems = tl(mems)) {
         Name n;
-        Text member = name(hd(mems)).text;
+        Text member = nameRec(hd(mems))->text;
         n = newName(inventText(), c);
 
         if (isNull(hd(defs))) { /* No default definition           */
-            name(n).line = cclass(c).line;
-            name(n).arity = 1;
-            name(n).defn = singleton(pair(
+            nameRec(n)->line = cclassRec(c)->line;
+            nameRec(n)->arity = 1;
+            nameRec(n)->defn = singleton(pair(
                 singleton(d),
-                ap(mkInt(cclass(c).line),
+                ap(mkInt(cclassRec(c)->line),
                    ap(namePrimThrow, ap(nameNoMethodError, mkStr(member))))));
         } else { /* User supplied default defn     */
             List alts = snd(hd(defs));
             Int line = rhsLine(snd(hd(alts)));
 
             typeMember("default member binding", hd(mems), alts, dparam,
-                       cclass(c).head, beta);
+                       cclassRec(c)->head, beta);
 
-            name(n).line = line;
-            name(n).arity = 1 + length(fst(hd(alts)));
-            name(n).defn = alts;
+            nameRec(n)->line = line;
+            nameRec(n)->arity = 1 + length(fst(hd(alts)));
+            nameRec(n)->defn = alts;
 
             for (; nonNull(alts); alts = tl(alts)) {
                 fst(hd(alts)) = cons(d, fst(hd(alts)));
@@ -1818,13 +1819,13 @@ static Void local typeClassDefn(Class c) /* Type check implementations of   */
     }
     pat = singleton(pat);
     for (i = 0; nonNull(dsels); dsels = tl(dsels)) {
-        name(hd(dsels)).defn = singleton(
-            pair(pat, ap(mkInt(cclass(c).line), nthArg(i++, hd(pat)))));
+        nameRec(hd(dsels))->defn = singleton(
+            pair(pat, ap(mkInt(cclassRec(c)->line), nthArg(i++, hd(pat)))));
         genDefns = cons(hd(dsels), genDefns);
     }
-    for (mems = cclass(c).members; nonNull(mems); mems = tl(mems)) {
-        name(hd(mems)).defn = singleton(
-            pair(pat, ap(mkInt(name(hd(mems)).line), nthArg(i++, hd(pat)))));
+    for (mems = cclassRec(c)->members; nonNull(mems); mems = tl(mems)) {
+        nameRec(hd(mems))->defn = singleton(pair(
+            pat, ap(mkInt(nameRec(hd(mems))->line), nthArg(i++, hd(pat)))));
         genDefns = cons(hd(mems), genDefns);
     }
 }
@@ -1852,10 +1853,10 @@ static Void local typeInstDefn(Inst in) /* Type check implementations of   */
      * the default implementation, partially applied to d.
      * --------------------------------------------------------------------*/
 
-    Int alpha = newKindedVars(cclass(inst(in).c).kinds);
-    List supers = makePredAss(cclass(inst(in).c).supers, alpha);
-    Int beta = newKindedVars(inst(in).kinds);
-    List params = makePredAss(inst(in).specifics, beta);
+    Int alpha = newKindedVars(cclassRec(instRec(in)->c)->kinds);
+    List supers = makePredAss(cclassRec(instRec(in)->c)->supers, alpha);
+    Int beta = newKindedVars(instRec(in)->kinds);
+    List params = makePredAss(instRec(in)->specifics, beta);
     Cell d = inventDictVar();
     /* A previous comment indicated that evids may be wrong
        in some cases when you have overlapping instances.
@@ -1865,16 +1866,17 @@ static Void local typeInstDefn(Inst in) /* Type check implementations of   */
        self-recursive. */
     List evids = dupList(params);
 
-    List imps = inst(in).implements;
-    Cell l = mkInt(inst(in).line);
-    Cell dictDef = cclass(inst(in).c).dcon;
-    List mems = cclass(inst(in).c).members;
-    List defs = cclass(inst(in).c).defaults;
+    List imps = instRec(in)->implements;
+    Cell l = mkInt(instRec(in)->line);
+    Cell dictDef = cclassRec(instRec(in)->c)->dcon;
+    List mems = cclassRec(instRec(in)->c)->members;
+    List defs = cclassRec(instRec(in)->c)->defaults;
     List args = NIL;
     List locs = NIL;
     List ps;
 
-    if (!unifyPred(cclass(inst(in).c).head, alpha, inst(in).head, beta))
+    if (!unifyPred(cclassRec(instRec(in)->c)->head, alpha, instRec(in)->head,
+                   beta))
         internal("typeInstDefn");
 
     for (ps = params; nonNull(ps); ps = tl(ps)) /* Build arglist           */
@@ -1908,10 +1910,10 @@ static Void local typeInstDefn(Inst in) /* Type check implementations of   */
         }
         if (isNull(ev)) {
             clearMarks();
-            errHead(inst(in).line);
+            errHead(instRec(in)->line);
             errPrintf("Cannot build superclass instance");
             errPrintf("\n*** Instance            : ");
-            errPred(copyPred(inst(in).head, beta));
+            errPred(copyPred(instRec(in)->head, beta));
             errPrintf("\n*** Context supplied    : ");
             errContext(copyPreds(params));
             errPrintf("\n*** Required superclass : ");
@@ -1935,16 +1937,16 @@ static Void local typeInstDefn(Inst in) /* Type check implementations of   */
             Cell v = inventVar();
             dictDef = ap(dictDef, v);
             typeMember("instance member binding", hd(mems), snd(imp), evids,
-                       inst(in).head, beta);
+                       instRec(in)->head, beta);
             locs = cons(pair(v, snd(imp)), locs);
         }
         mems = tl(mems);
     }
     locs = cons(pair(d, singleton(pair(NIL, ap(l, dictDef)))), locs);
 
-    name(inst(in).builder).defn /* Register builder imp    */
+    nameRec(instRec(in)->builder)->defn /* Register builder imp    */
         = singleton(pair(args, ap(LETREC, pair(singleton(locs), ap(l, d)))));
-    genDefns = cons(inst(in).builder, genDefns);
+    genDefns = cons(instRec(in)->builder, genDefns);
 }
 
 static Void local typeMember(String wh, Name mem, Cell alts, List evids,
@@ -1962,7 +1964,7 @@ static Void local typeMember(String wh, Name mem, Cell alts, List evids,
     List qs;
     Type rt;
 
-    instantiate(name(mem).type); /* Find required type             */
+    instantiate(nameRec(mem)->type); /* Find required type             */
     o = typeOff;
     m = typeFree;
     t = dropRank2(typeIs, o, m);
@@ -1993,7 +1995,7 @@ static Void local typeMember(String wh, Name mem, Cell alts, List evids,
     if (nonNull(qs)) {
         errHead(line);
         errPrintf("Implementation of %s requires extra context",
-                  textToStr(name(mem).text));
+                  textToStr(nameRec(mem)->text));
         errPrintf("\n*** Expected type   : ");
         errType(rt);
         errPrintf("\n*** Missing context : ");
@@ -2332,7 +2334,7 @@ static Void local typeDefnGroup(List bs) /* type check group of value defns */
     if (nonNull(preds)) {
         Cell v = fst(hd(hd(varsBounds)));
         Name n = findName(textOf(v));
-        Int l = nonNull(n) ? name(n).line : 0;
+        Int l = nonNull(n) ? nameRec(n)->line : 0;
         preds = scSimplify(preds);
         errHead(l);
         errPrintf("Instance%s of ", (length(preds) == 1 ? "" : "s"));
@@ -2346,7 +2348,7 @@ static Void local typeDefnGroup(List bs) /* type check group of value defns */
     if (nonNull(scope()->skolems)) {
         Cell b = hd(bs);
         Name n = findName(isVar(fst(b)) ? textOf(fst(b)) : textOf(hd(fst(b))));
-        Int l = nonNull(n) ? name(n).line : 0;
+        Int l = nonNull(n) ? nameRec(n)->line : 0;
         leaveScope(l, typeUnit, 0, 0);
         enterScope();
     }
@@ -2356,7 +2358,7 @@ static Void local typeDefnGroup(List bs) /* type check group of value defns */
         Name n = findName(textOf(fst(a)));
         if (isNull(n))
             internal("typeDefnGroup");
-        name(n).type = snd(a);
+        nameRec(n)->type = snd(a);
     }
     hd(varsBounds) = NIL;
 }
@@ -2364,7 +2366,7 @@ static Void local typeDefnGroup(List bs) /* type check group of value defns */
 static Void local
 typeForeignExport(Name n) /* Typecheck a foreign export decl */
 {
-    Int line = name(n).line;
+    Int line = nameRec(n)->line;
     /* todo */
     errHead(line);
     errPrintf("Foreign export not implemented yet.");
@@ -2373,8 +2375,8 @@ typeForeignExport(Name n) /* Typecheck a foreign export decl */
 
 static Pair local typeSel(Name s) /* Calculate a suitable type for a */
 {                                 /* particular selector, s.       */
-    List cns = name(s).defn;
-    Int line = name(s).line;
+    List cns = nameRec(s)->defn;
+    Int line = nameRec(s)->line;
     Type dom = NIL; /* Inferred domain             */
     Type rng = NIL; /* Inferred range              */
     Cell nv = inventVar();
@@ -2388,14 +2390,15 @@ static Pair local typeSel(Name s) /* Calculate a suitable type for a */
     for (; nonNull(cns); cns = tl(cns)) {
         Name c = fst(hd(cns));
         Int n = intOf(snd(hd(cns)));
-        Int a = name(c).arity;
+        Int a = nameRec(c)->arity;
         Cell pat = c;
         Type dom1;
         Type rng1;
         Int o1;
         Int m1;
 
-        instantiate(name(c).type); /* Instantiate constructor type         */
+        instantiate(
+            nameRec(c)->type); /* Instantiate constructor type         */
         o1 = typeOff;
         m1 = typeFree;
         for (; nonNull(predsAre); predsAre = tl(predsAre))
@@ -2429,9 +2432,9 @@ static Pair local typeSel(Name s) /* Calculate a suitable type for a */
             clearMarks();
             rng = liftRank1(rng, o, m);
             rng1 = liftRank1(rng1, o1, m1);
-            errHead(name(s).line);
+            errHead(nameRec(s)->line);
             errPrintf("Mismatch in field types for selector \"%s\"",
-                      textToStr(name(s).text));
+                      textToStr(nameRec(s)->text));
             errPrintf("\n*** Field type     : ");
             errType(rng1);
             errPrintf("\n*** Does not match : ");
@@ -2463,8 +2466,8 @@ static Pair local typeSel(Name s) /* Calculate a suitable type for a */
         }
         preds = appendOnto(preds, ps);
     }
-    name(s).type = generalize(copyPreds(preds), fn(dom, rng));
-    name(s).arity = 1 + length(preds);
+    nameRec(s)->type = generalize(copyPreds(preds), fn(dom, rng));
+    nameRec(s)->arity = 1 + length(preds);
     map1Proc(qualify, preds, alts);
 
     return pair(s, alts);
@@ -2523,16 +2526,16 @@ Void typeChecker(Int what) {
         boundPair = ap(ap(mkTuple(2), aVar), aVar);
 
         nameUnit = addPrimCfun(findText("()"), 0, 0, typeUnit);
-        tycon(typeUnit).defn = singleton(nameUnit);
+        tyconRec(typeUnit)->defn = singleton(nameUnit);
 
         nameNil =
             addPrimCfun(findText("[]"), 0, 1, mkPolyType(starToStar, listof));
         nameCons =
             addPrimCfun(findText(":"), 2, 2,
                         mkPolyType(starToStar, fn(aVar, fn(listof, listof))));
-        name(nameCons).syntax = mkSyntax(RIGHT_ASS, 5);
+        nameRec(nameCons)->syntax = mkSyntax(RIGHT_ASS, 5);
 
-        tycon(typeList).defn = cons(nameNil, cons(nameCons, NIL));
+        tyconRec(typeList)->defn = cons(nameNil, cons(nameCons, NIL));
 
         typeVarToVar = fn(aVar, aVar);
         /* bogus definitions to avoid changing the prelude */
@@ -2635,18 +2638,19 @@ Void linkPreludeTC() {      /* Hook to tycons and classes in   */
          * than we might like, but they are the closest we can get without a
          * special datatype class.
          */
-        name(nameConCmp).type =
+        nameRec(nameConCmp)->type =
             mkPolyType(starToStar, fn(aVar, fn(aVar, typeOrdering)));
-        name(nameEnRange).type = mkPolyType(starToStar, fn(boundPair, listof));
-        name(nameEnIndex).type =
+        nameRec(nameEnRange)->type =
+            mkPolyType(starToStar, fn(boundPair, listof));
+        nameRec(nameEnIndex)->type =
             mkPolyType(starToStar, fn(boundPair, fn(aVar, typeInt)));
-        name(nameEnInRng).type =
+        nameRec(nameEnInRng)->type =
             mkPolyType(starToStar, fn(boundPair, fn(aVar, typeBool)));
-        name(nameEnToEn).type =
+        nameRec(nameEnToEn)->type =
             mkPolyType(starToStar, fn(aVar, fn(typeInt, aVar)));
-        name(nameEnFrEn).type = mkPolyType(starToStar, fn(aVar, typeInt));
-        name(nameEnFrom).type = mkPolyType(starToStar, fn(aVar, listof));
-        name(nameEnFrTo).type = name(nameEnFrTh).type =
+        nameRec(nameEnFrEn)->type = mkPolyType(starToStar, fn(aVar, typeInt));
+        nameRec(nameEnFrom)->type = mkPolyType(starToStar, fn(aVar, listof));
+        nameRec(nameEnFrTo)->type = nameRec(nameEnFrTh)->type =
             mkPolyType(starToStar, fn(aVar, fn(aVar, listof)));
 
         for (i = 2; i <= NUM_DTUPLES;

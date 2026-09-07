@@ -575,16 +575,16 @@ static Void local asGOTO(Label l) /* End evaluation of expr in manner*/
 
 Void addCfunTable(Tycon tc) /* Add a constructor fun table to  */
 {                           /* constructors for tycon tc       */
-    if (isTycon(tc) && tycon(tc).what == DATATYPE) {
-        List cs = tycon(tc).defn;
-        if (hasCfun(cs) && hasCfun(tl(cs)) && name(hd(cs)).code <= 0) {
+    if (isTycon(tc) && tyconRec(tc)->what == DATATYPE) {
+        List cs = tyconRec(tc)->defn;
+        if (hasCfun(cs) && hasCfun(tl(cs)) && nameRec(hd(cs))->code <= 0) {
             Int l = length(cs);
             Addr a = getMem(2 + l);
             instrAt(a) = iTABLE;
             intAt(a + 1) = l;
             for (l = 0; nonNull(cs); l++, cs = tl(cs)) {
                 cellAt(a + l + 2) = hd(cs);
-                name(hd(cs)).code = a;
+                nameRec(hd(cs))->code = a;
             }
         }
     }
@@ -596,7 +596,7 @@ Name succCfun(Name n) /* get next constructor in sequence*/
         return NIL;
     else {
         Int d = cfunOf(n) + 1;
-        Addr a = name(n).code;
+        Addr a = nameRec(n)->code;
         return (d > intAt(a + 1)) ? NIL : cellAt(a + d + 1);
     }
 }
@@ -607,7 +607,7 @@ Name nextCfun(Name n1, Name n2) /* get next constructor in series  */
         return n1;              /* only possibility is n1 == n2    */
     else {
         Int d = 2 * cfunOf(n2) - cfunOf(n1);
-        Addr a = name(n1).code;
+        Addr a = nameRec(n1)->code;
         return (d <= 0 || d > intAt(a + 1)) ? NIL : cellAt(a + d + 1);
     }
 }
@@ -618,7 +618,7 @@ Name cfunByNum(Name n, Int i) /* get ith constructor (0<=i<m)    */
     if (cfunOf(n) == 0)
         return i == 0 ? n : NIL;
     else {
-        Addr a = name(n).code;
+        Addr a = nameRec(n)->code;
         return (i >= 0 && i < intAt(a + 1)) ? cellAt(a + i + 2) : NIL;
     }
 }
@@ -722,7 +722,7 @@ static Addr local dissInstr(Addr pc) /* print dissassembly of instruction */
 static Void local printCell(Cell c) /* printable representation of Cell */
 {
     if (isName(c))
-        Printf("%s", textToStr(name(c).text));
+        Printf("%s", textToStr(nameRec(c)->text));
     else
         Printf("$%d", c);
 }
@@ -1197,7 +1197,7 @@ Addr codeGen(Name n, Int arity, Cell e) /* Generate code for expression e,  */
     if (debugCode) {
         Printf("------------------\n");
         if (nonNull(n))
-            Printf("name=%s\n", textToStr(name(n).text));
+            Printf("name=%s\n", textToStr(nameRec(n)->text));
         Printf("Arity   = %d\n", arity);
         Printf("codeGen = ");
         printExp(stdout, e);
@@ -1218,7 +1218,7 @@ Addr codeGen(Name n, Int arity, Cell e) /* Generate code for expression e,  */
 #if DEBUG_CODE
     if (debugCode) {
         if (nonNull(n))
-            Printf("name=%s\n", textToStr(name(n).text));
+            Printf("name=%s\n", textToStr(nameRec(n)->text));
         dissassemble(startInstr, lastInstr);
         Printf("------------------\n");
     }
@@ -1229,14 +1229,14 @@ Addr codeGen(Name n, Int arity, Cell e) /* Generate code for expression e,  */
 Void implementCfun(Name c, List scs) /* Build implementation for constr */
                                      /* fun c.  scs lists integers (1..)*/
 {                                    /* in incr order of strict comps.  */
-    Int a = name(c).arity;
+    Int a = nameRec(c)->arity;
     if (a == 0 || isNull(scs))
-        name(c).defn = c; /* Name ==> no special imp.        */
+        nameRec(c)->defn = c; /* Name ==> no special imp.        */
     else {
         Name n = newName(inventText(), c);
         Int i = 1;
-        name(c).defn = pair(scs, n); /* (scs,n) => strict components    */
-        name(n).arity = a;           /* Initialize name data as approp. */
+        nameRec(c)->defn = pair(scs, n); /* (scs,n) => strict components    */
+        nameRec(n)->arity = a;           /* Initialize name data as approp. */
 
         asSTART(); /* inaccurate srsp doesn't matter  */
         asCELL(c);
@@ -1248,7 +1248,7 @@ Void implementCfun(Name c, List scs) /* Build implementation for constr */
                 asMKAP(1);
         asRUPDATE();
         asEND();
-        name(n).code = startInstr;
+        nameRec(n)->code = startInstr;
 #if DEBUG_CODE
         if (debugCode) {
             Printf("Implement constructor ");
@@ -1330,10 +1330,10 @@ unw:
             Name saveName = n;
             if (debugCode) {
                 Printf("%*sEntering name(%d): %s\n", base, "", n - NAMEMIN,
-                       textToStr(name(n).text));
+                       textToStr(nameRec(n)->text));
             }
 #endif
-            if (!isCfun(n) && (ar = name(n).arity) <= (sp - base)) {
+            if (!isCfun(n) && (ar = nameRec(n)->arity) <= (sp - base)) {
                 if (ar > 0) { /* fn with args*/
                     StackPtr root;
 
@@ -1345,37 +1345,38 @@ unw:
                     } while (--ar > 0);
 
                     saveProducer(n);
-                    if (name(n).primDef) /* reduce      */
-                        (*name(n).primDef)(root);
+                    if (nameRec(n)->primDef) /* reduce      */
+                        (*nameRec(n)->primDef)(root);
                     else
-                        run(name(n).code, root);
+                        run(nameRec(n)->code, root);
                     numReductions++;
                     restoreProducer();
 
                     sp = root; /* continue... */
                     n = pop();
-                } else {                        /* CAF         */
-                    if (isNull(name(n).defn)) { /* build CAF   */
+                } else {                            /* CAF         */
+                    if (isNull(nameRec(n)->defn)) { /* build CAF   */
                         StackPtr root = sp;
                         push(n); /* save CAF    */
                         saveProducer(n);
-                        if (name(n).primDef)
-                            (*name(n).primDef)(sp);
+                        if (nameRec(n)->primDef)
+                            (*nameRec(n)->primDef)(sp);
                         else
-                            run(name(n).code, sp);
+                            run(nameRec(n)->code, sp);
                         numReductions++;
                         restoreProducer();
-                        name(n).defn = top();
+                        nameRec(n)->defn = top();
                         sp = root; /* drop CAF    */
                     }
-                    n = name(n).defn; /*already built*/
+                    n = nameRec(n)->defn; /*already built*/
                     if (sp > base)
                         fun(top()) = n;
                 }
 #if DEBUG_CODE
                 if (debugCode) {
                     Printf("%*sLeaving name(%d): %s\n", base, "",
-                           saveName - NAMEMIN, textToStr(name(saveName).text));
+                           saveName - NAMEMIN,
+                           textToStr(nameRec(saveName)->text));
                 }
 #endif
                 goto unw;

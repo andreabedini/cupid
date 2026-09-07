@@ -327,14 +327,15 @@ Tycon newTycon(Text t) /* add new tycon to tycon table    */
         errPrintf("Type constructor storage space exhausted");
         errFail();
     }
-    tycon(tyconHw).text = t; /* clear new tycon record          */
-    tycon(tyconHw).mod = currentModule;
-    tycon(tyconHw).kind = NIL;
-    tycon(tyconHw).what = NIL;
-    tycon(tyconHw).defn = NIL;
-    module(currentModule).tycons = cons(tyconHw, module(currentModule).tycons);
-    tycon(tyconHw).nextTyconHash = tyconHash[h];
-    tycon(tyconHw).clashes = NIL;
+    tyconRec(tyconHw)->text = t; /* clear new tycon record          */
+    tyconRec(tyconHw)->mod = currentModule;
+    tyconRec(tyconHw)->kind = NIL;
+    tyconRec(tyconHw)->what = NIL;
+    tyconRec(tyconHw)->defn = NIL;
+    moduleRec(currentModule)->tycons =
+        cons(tyconHw, moduleRec(currentModule)->tycons);
+    tyconRec(tyconHw)->nextTyconHash = tyconHash[h];
+    tyconRec(tyconHw)->clashes = NIL;
     tyconHash[h] = tyconHw;
 
     return tyconHw++;
@@ -344,18 +345,19 @@ Tycon findTycon(Text t) /* locate Tycon in tycon table     */
 {
     Tycon tc = tyconHash[tHash(t)];
 
-    while (nonNull(tc) && tycon(tc).text != t)
-        tc = tycon(tc).nextTyconHash;
+    while (nonNull(tc) && tyconRec(tc)->text != t)
+        tc = tyconRec(tc)->nextTyconHash;
     return tc;
 }
 
 Tycon addTycon(
     Tycon tc) /* Insert Tycon in tycon table - if no clash is caused */
 {
-    Tycon oldtc = findTycon(tycon(tc).text);
+    Tycon oldtc = findTycon(tyconRec(tc)->text);
     if (isNull(oldtc)) {
         hashTycon(tc);
-        module(currentModule).tycons = cons(tc, module(currentModule).tycons);
+        moduleRec(currentModule)->tycons =
+            cons(tc, moduleRec(currentModule)->tycons);
         return tc;
     } else
         return oldtc;
@@ -363,10 +365,10 @@ Tycon addTycon(
 
 static Void local hashTycon(Tycon tc) /* Insert Tycon into hash table    */
 {
-    Text t = tycon(tc).text;
+    Text t = tyconRec(tc)->text;
     Int h = tHash(t);
-    tycon(tc).nextTyconHash = tyconHash[h];
-    tycon(tc).clashes = NIL;
+    tyconRec(tc)->nextTyconHash = tyconHash[h];
+    tyconRec(tc)->clashes = NIL;
     tyconHash[h] = tc;
 }
 
@@ -389,15 +391,15 @@ Tycon findQualTycon(
             List es = NIL;
             ms = tl(ms);
             if (m == currentModule) {
-                es = module(m).tycons;
+                es = moduleRec(m)->tycons;
             } else {
                 es = getModuleImports(m);
             }
             for (; nonNull(es); es = tl(es)) {
                 Cell e = hd(es);
-                if (isTycon(e) && tycon(e).text == t)
+                if (isTycon(e) && tyconRec(e)->text == t)
                     return e;
-                if (isPair(e) && isTycon(fst(e)) && tycon(fst(e)).text == t)
+                if (isPair(e) && isTycon(fst(e)) && tyconRec(fst(e))->text == t)
                     return fst(e);
             }
         }
@@ -413,12 +415,12 @@ Tycon addPrimTycon(Text t, Kind kind, Int ar, Cell what,
                    Cell defn) /* add new primitive type constr   */
 {
     Tycon tc = newTycon(t);
-    tycon(tc).line = 0;
-    tycon(tc).kind = kind;
-    tycon(tc).what = what;
-    tycon(tc).defn = defn;
-    tycon(tc).arity = ar;
-    tycon(tc).mod = currentModule;
+    tyconRec(tc)->line = 0;
+    tyconRec(tc)->kind = kind;
+    tyconRec(tc)->what = what;
+    tyconRec(tc)->defn = defn;
+    tyconRec(tc)->arity = ar;
+    tyconRec(tc)->mod = currentModule;
 
     return tc;
 }
@@ -429,10 +431,10 @@ static List local insertTycon(Tycon tc,
 {
     Cell prev = NIL;
     Cell curr = ts;
-    String s = textToStr(tycon(tc).text);
+    String s = textToStr(tyconRec(tc)->text);
 
     while (nonNull(curr) &&
-           strCompare(s, textToStr(tycon(hd(curr)).text)) >= 0) {
+           strCompare(s, textToStr(tyconRec(hd(curr))->text)) >= 0) {
         if (hd(curr) == tc) /* just in case we get duplicates! */
             return ts;
         prev = curr;
@@ -451,8 +453,8 @@ List addTyconsMatching(String pat,
 {                               /* Null pattern matches every tycon*/
     Tycon tc;                   /* (Tycons with NIL kind excluded) */
     for (tc = TYCMIN; tc < tyconHw; ++tc)
-        if (!pat || stringMatch(pat, textToStr(tycon(tc).text)))
-            if (nonNull(tycon(tc).kind))
+        if (!pat || stringMatch(pat, textToStr(tyconRec(tc)->text)))
+            if (nonNull(tyconRec(tc)->kind))
                 ts = insertTycon(tc, ts);
     return ts;
 }
@@ -462,8 +464,8 @@ List addTyconsMatching(String pat,
  * local overrides of imported decls.
  */
 Void removeTycon(Tycon tc) {
-    List ls = module(currentModule).tycons;
-    List *prev = &(module(currentModule).tycons);
+    List ls = moduleRec(currentModule)->tycons;
+    List *prev = &(moduleRec(currentModule)->tycons);
 
     for (; nonNull(ls); ls = tl(ls)) {
         if (hd(ls) == tc) {
@@ -502,24 +504,25 @@ Name newName(Text t, Cell parent) /* Add new name to name table      */
         errPrintf("Name storage space exhausted");
         errFail();
     }
-    name(nameHw).text = t; /* clear new name record           */
-    name(nameHw).line = 0;
-    name(nameHw).syntax = (unsigned int)NO_SYNTAX;
-    name(nameHw).parent = parent;
-    name(nameHw).arity = 0;
-    name(nameHw).number = EXECNAME;
-    name(nameHw).defn = NIL;
-    name(nameHw).type = NIL;
-    name(nameHw).extFun = 0;
-    name(nameHw).foreignId = -1;
-    name(nameHw).foreignFlags = FFI_NOSAFETY | FFI_CCONV_UNKNOWN;
-    name(nameHw).primDef = 0;
-    name(nameHw).code = 0;
-    name(nameHw).mod = currentModule;
-    name(nameHw).clashes = NIL;
+    nameRec(nameHw)->text = t; /* clear new name record           */
+    nameRec(nameHw)->line = 0;
+    nameRec(nameHw)->syntax = (unsigned int)NO_SYNTAX;
+    nameRec(nameHw)->parent = parent;
+    nameRec(nameHw)->arity = 0;
+    nameRec(nameHw)->number = EXECNAME;
+    nameRec(nameHw)->defn = NIL;
+    nameRec(nameHw)->type = NIL;
+    nameRec(nameHw)->extFun = 0;
+    nameRec(nameHw)->foreignId = -1;
+    nameRec(nameHw)->foreignFlags = FFI_NOSAFETY | FFI_CCONV_UNKNOWN;
+    nameRec(nameHw)->primDef = 0;
+    nameRec(nameHw)->code = 0;
+    nameRec(nameHw)->mod = currentModule;
+    nameRec(nameHw)->clashes = NIL;
 
-    module(currentModule).names = cons(nameHw, module(currentModule).names);
-    name(nameHw).nextNameHash = nameHash[h];
+    moduleRec(currentModule)->names =
+        cons(nameHw, moduleRec(currentModule)->names);
+    nameRec(nameHw)->nextNameHash = nameHash[h];
     nameHash[h] = nameHw;
     return nameHw++;
 }
@@ -528,17 +531,18 @@ Name findName(Text t) /* Locate name in name table       */
 {
     Name n = nameHash[nHash(t)];
 
-    while (nonNull(n) && name(n).text != t)
-        n = name(n).nextNameHash;
+    while (nonNull(n) && nameRec(n)->text != t)
+        n = nameRec(n)->nextNameHash;
     return n;
 }
 
 Name addName(Name nm) /* Insert Name in name table - if  */
 {                     /* no clash is caused                */
-    Name oldnm = findName(name(nm).text);
+    Name oldnm = findName(nameRec(nm)->text);
     if (isNull(oldnm)) {
         hashName(nm);
-        module(currentModule).names = cons(nm, module(currentModule).names);
+        moduleRec(currentModule)->names =
+            cons(nm, moduleRec(currentModule)->names);
         return nm;
     } else
         return oldnm;
@@ -546,11 +550,11 @@ Name addName(Name nm) /* Insert Name in name table - if  */
 
 static Void local hashName(Name nm) /* Insert Name into hash table         */
 {
-    Text t = name(nm).text;
+    Text t = nameRec(nm)->text;
     Int h = nHash(t);
 
-    name(nm).nextNameHash = nameHash[h];
-    name(nm).clashes = NIL;
+    nameRec(nm)->nextNameHash = nameHash[h];
+    nameRec(nm)->clashes = NIL;
     nameHash[h] = nm;
 }
 
@@ -559,8 +563,8 @@ static Void local hashName(Name nm) /* Insert Name into hash table         */
  * local overrides of imported decls.
  */
 Void removeName(Name n) {
-    List ls = module(currentModule).names;
-    List *prev = &(module(currentModule).names);
+    List ls = moduleRec(currentModule)->names;
+    List *prev = &(moduleRec(currentModule)->names);
 
     for (; nonNull(ls); ls = tl(ls)) {
         if (hd(ls) == n) {
@@ -591,31 +595,31 @@ Name findQualName(Cell id) /* Locate (possibly qualified) name*/
             List es = NIL;
             ms = tl(ms);
             if (m == currentModule) {
-                es = module(m).names;
+                es = moduleRec(m)->names;
             } else {
                 es = getModuleImports(m);
             }
             for (; nonNull(es); es = tl(es)) {
                 Cell e = hd(es);
-                if (isName(e) && name(e).text == t)
+                if (isName(e) && nameRec(e)->text == t)
                     return e;
-                if (isTycon(e) && tycon(e).text == t)
+                if (isTycon(e) && tyconRec(e)->text == t)
                     return e;
                 else if (isPair(e)) {
                     List subentities = NIL;
                     Cell c = fst(e);
                     if (snd(e) == DOTDOT) {
-                        if (isTycon(c) && (tycon(c).what == DATATYPE ||
-                                           tycon(c).what == NEWTYPE)) {
-                            subentities = tycon(c).defn;
+                        if (isTycon(c) && (tyconRec(c)->what == DATATYPE ||
+                                           tyconRec(c)->what == NEWTYPE)) {
+                            subentities = tyconRec(c)->defn;
                         } else if (isClass(c))
-                            subentities = cclass(c).members;
+                            subentities = cclassRec(c)->members;
                     } else {
                         subentities = snd(e);
                     }
                     for (; nonNull(subentities);
                          subentities = tl(subentities)) {
-                        if (name(hd(subentities)).text == t)
+                        if (nameRec(hd(subentities))->text == t)
                             return hd(subentities);
                     }
                 }
@@ -655,7 +659,7 @@ List findQualNames(Cell id) /* Locate (possibly qualified) names */
                * what 'currentModule' imports from it.
                */
             if (m == currentModule) {
-                es = module(m).names;
+                es = moduleRec(m)->names;
                 fromHome = TRUE;
             } else {
                 es = getModuleImports(m);
@@ -664,8 +668,9 @@ List findQualNames(Cell id) /* Locate (possibly qualified) names */
             /* Chase down list looking for _unqual_ entity. */
             for (; nonNull(es); es = tl(es)) {
                 Cell e = hd(es);
-                if (isName(e) && name(e).text == t && !cellIsMember(e, res)) {
-                    if (fromHome && name(e).mod != currentModule) {
+                if (isName(e) && nameRec(e)->text == t &&
+                    !cellIsMember(e, res)) {
+                    if (fromHome && nameRec(e)->mod != currentModule) {
                         /* If we're processing local names, only interested in
                        * names that were actually declared there.
                        */
@@ -676,20 +681,20 @@ List findQualNames(Cell id) /* Locate (possibly qualified) names */
                     List subentities = NIL;
                     Cell c = fst(e);
                     if (DOTDOT == snd(e)) {
-                        if (isTycon(c) && (tycon(c).what == DATATYPE ||
-                                           tycon(c).what == NEWTYPE))
-                            subentities = tycon(c).defn;
+                        if (isTycon(c) && (tyconRec(c)->what == DATATYPE ||
+                                           tyconRec(c)->what == NEWTYPE))
+                            subentities = tyconRec(c)->defn;
                         else if (isClass(c))
-                            subentities = cclass(c).members;
+                            subentities = cclassRec(c)->members;
                     } else {
                         subentities = snd(e);
                     }
                     for (; nonNull(subentities);
                          subentities = tl(subentities)) {
-                        if (name(hd(subentities)).text == t &&
+                        if (nameRec(hd(subentities))->text == t &&
                             !cellIsMember(hd(subentities), res)) {
-                            if (fromHome &&
-                                name(hd(subentities)).mod != currentModule) {
+                            if (fromHome && nameRec(hd(subentities))->mod !=
+                                                currentModule) {
                                 continue;
                             }
                             res = cons(hd(subentities), res);
@@ -713,9 +718,9 @@ Name findQualFun(Text m, Text v) /* Locate name in name table       */
     if (isNull(mod)) {
         return NIL;
     }
-    for (ns = module(mod).names; nonNull(ns); ns = tl(ns)) {
+    for (ns = moduleRec(mod)->names; nonNull(ns); ns = tl(ns)) {
         Name n = hd(ns);
-        if (name(n).text == v) {
+        if (nameRec(n)->text == v) {
             return n;
         }
     }
@@ -815,10 +820,10 @@ Void addPrim(Int l, Name n, String s, Module mod,
 {
     struct primInfoDef *info_def;
     Bool lookInPrelude = TRUE;
-    name(n).line = l;
-    name(n).defn = NIL;
-    name(n).type = ty;
-    name(n).mod = mod;
+    nameRec(n)->line = l;
+    nameRec(n)->defn = NIL;
+    nameRec(n)->type = ty;
+    nameRec(n)->mod = mod;
 
     /*
      * (mini) sigh - the primitives for the Prelude'ish modules
@@ -846,7 +851,7 @@ Void addPrim(Int l, Name n, String s, Module mod,
                 Int i = 0;
                 for (; prims[i].ref; ++i)
                     if (strcmp(s, prims[i].ref) == 0) {
-                        name(n).arity = prims[i].arity;
+                        nameRec(n)->arity = prims[i].arity;
                         if (info_def->prim_oldIO && hasIOResultType(ty)) {
                             /* The primitive has IO type and its impl assumes the old
                         * IO rep which took a failure and success continuation. 
@@ -855,17 +860,17 @@ Void addPrim(Int l, Name n, String s, Module mod,
                         * with the new representation is simply a case of adjusting
                         * the arity.
                         */
-                            name(n).arity--;
+                            nameRec(n)->arity--;
                         }
-                        name(n).number = EXECNAME;
-                        name(n).primDef = prims[i].imp;
+                        nameRec(n)->number = EXECNAME;
+                        nameRec(n)->primDef = prims[i].imp;
                         return;
                     }
             }
         }
     } while (!lookInPrelude);
 
-    errHead(name(n).line);
+    errHead(nameRec(n)->line);
     errPrintf("Unknown primitive reference \"%s\"", s);
     errFail();
 }
@@ -874,10 +879,10 @@ Name addPrimCfun(Text t, Int arity, Int no,
                  Cell type) /* add primitive constructor func  */
 {
     Name n = newName(t, NIL);
-    name(n).arity = arity;
-    name(n).number = cfunNo(no);
-    name(n).type = type;
-    name(n).mod = currentModule;
+    nameRec(n)->arity = arity;
+    nameRec(n)->number = cfunNo(no);
+    nameRec(n)->type = type;
+    nameRec(n)->mod = currentModule;
 
     return n;
 }
@@ -886,7 +891,7 @@ Int sfunPos(Name s, Name c) /* Find position of field with     */
                             /* selector s in constructor c.    */
 {
     List cns;
-    cns = name(s).defn;
+    cns = nameRec(s)->defn;
     for (; nonNull(cns); cns = tl(cns))
         if (fst(hd(cns)) == c)
             return intOf(snd(hd(cns)));
@@ -900,10 +905,10 @@ static List local insertName(Name nm,
 {
     Cell prev = NIL;
     Cell curr = ns;
-    String s = textToStr(name(nm).text);
+    String s = textToStr(nameRec(nm)->text);
 
     while (nonNull(curr) &&
-           strCompare(s, textToStr(name(hd(curr)).text)) >= 0) {
+           strCompare(s, textToStr(nameRec(hd(curr))->text)) >= 0) {
         if (hd(curr) == nm) /* just in case we get duplicates! */
             return ns;
         prev = curr;
@@ -921,8 +926,8 @@ List addNamesMatching(String pat, List ns) /* Add names matching pattern pat  */
 {                                          /* Null pattern matches every name */
     Name nm;                               /* (Names with NIL type, or hidden */
     for (nm = NAMEMIN; nm < nameHw; ++nm)  /* or invented names are excluded) */
-        if (!inventedText(name(nm).text) && nonNull(name(nm).type)) {
-            String str = textToStr(name(nm).text);
+        if (!inventedText(nameRec(nm)->text) && nonNull(nameRec(nm)->type)) {
+            String str = textToStr(nameRec(nm)->text);
             if (str[0] != '_' && (!pat || stringMatch(pat, str)))
                 ns = insertName(nm, ns);
         }
@@ -1014,27 +1019,27 @@ Class newClass(Text t) /* add new class to class table     */
         errFail();
     }
 
-    cclass(classHw).text = t;
-    cclass(classHw).line = 0;
-    cclass(classHw).arity = 0;
-    cclass(classHw).tyvars = NIL;
-    cclass(classHw).kinds = NIL;
-    cclass(classHw).head = NIL;
-    cclass(classHw).fds = NIL;
-    cclass(classHw).xfds = NIL;
-    cclass(classHw).dcon = NIL;
-    cclass(classHw).supers = NIL;
-    cclass(classHw).numSupers = 0;
-    cclass(classHw).dsels = NIL;
-    cclass(classHw).members = NIL;
-    cclass(classHw).numMembers = 0;
-    cclass(classHw).defaults = NIL;
-    cclass(classHw).instances = NIL;
-    cclass(classHw).clashes = NIL;
+    cclassRec(classHw)->text = t;
+    cclassRec(classHw)->line = 0;
+    cclassRec(classHw)->arity = 0;
+    cclassRec(classHw)->tyvars = NIL;
+    cclassRec(classHw)->kinds = NIL;
+    cclassRec(classHw)->head = NIL;
+    cclassRec(classHw)->fds = NIL;
+    cclassRec(classHw)->xfds = NIL;
+    cclassRec(classHw)->dcon = NIL;
+    cclassRec(classHw)->supers = NIL;
+    cclassRec(classHw)->numSupers = 0;
+    cclassRec(classHw)->dsels = NIL;
+    cclassRec(classHw)->members = NIL;
+    cclassRec(classHw)->numMembers = 0;
+    cclassRec(classHw)->defaults = NIL;
+    cclassRec(classHw)->instances = NIL;
+    cclassRec(classHw)->clashes = NIL;
     classes = cons(classHw, classes);
-    cclass(classHw).mod = currentModule;
-    module(currentModule).classes =
-        cons(classHw, module(currentModule).classes);
+    cclassRec(classHw)->mod = currentModule;
+    moduleRec(currentModule)->classes =
+        cons(classHw, moduleRec(currentModule)->classes);
 
     return classHw++;
 }
@@ -1049,7 +1054,7 @@ Class findClass(Text t) /* look for named class in table    */
     List cs;
     for (cs = classes; nonNull(cs); cs = tl(cs)) {
         cl = hd(cs);
-        if (cclass(cl).text == t)
+        if (cclassRec(cl)->text == t)
             return cl;
     }
     return NIL;
@@ -1057,10 +1062,11 @@ Class findClass(Text t) /* look for named class in table    */
 
 Class addClass(Class c) /* Insert Class in class list      */
 {                       /*  - if no clash caused           */
-    Class oldc = findClass(cclass(c).text);
+    Class oldc = findClass(cclassRec(c)->text);
     if (isNull(oldc)) {
         classes = cons(c, classes);
-        module(currentModule).classes = cons(c, module(currentModule).classes);
+        moduleRec(currentModule)->classes =
+            cons(c, moduleRec(currentModule)->classes);
         return c;
     } else
         return oldc;
@@ -1080,15 +1086,16 @@ Class findQualClass(Cell c) /* Look for (possibly qualified)   */
             List es = NIL;
             ms = tl(ms);
             if (m == currentModule) {
-                es = module(m).classes;
+                es = moduleRec(m)->classes;
             } else {
                 es = getModuleImports(m);
             }
             for (; nonNull(es); es = tl(es)) {
                 Cell e = hd(es);
-                if (isClass(e) && cclass(e).text == t)
+                if (isClass(e) && cclassRec(e)->text == t)
                     return e;
-                if (isPair(e) && isClass(fst(e)) && cclass(fst(e)).text == t)
+                if (isPair(e) && isClass(fst(e)) &&
+                    cclassRec(fst(e))->text == t)
                     return fst(e);
             }
         }
@@ -1102,11 +1109,11 @@ Inst newInst() { /* Add new instance to table        */
         errPrintf("Instance storage space exhausted");
         errFail();
     }
-    inst(instHw).kinds = NIL;
-    inst(instHw).head = NIL;
-    inst(instHw).specifics = NIL;
-    inst(instHw).implements = NIL;
-    inst(instHw).builder = NIL;
+    instRec(instHw)->kinds = NIL;
+    instRec(instHw)->head = NIL;
+    instRec(instHw)->specifics = NIL;
+    instRec(instHw)->implements = NIL;
+    instRec(instHw)->builder = NIL;
 
     return instHw++;
 }
@@ -1120,7 +1127,7 @@ Inst findNextInst(Tycon tc, Inst in) /* look for next instance involving*/
                                      /* the type constructor tc         */
 {                                    /* starting after instance in      */
     while (++in < instHw) {
-        Cell pi = inst(in).head;
+        Cell pi = instRec(in)->head;
         for (; isAp(pi); pi = fun(pi))
             if (typeInvolves(arg(pi), tc))
                 return in;
@@ -1227,14 +1234,14 @@ Module newModule(Text t) /* add new module to module table  */
         errPrintf("Module storage space exhausted");
         errFail();
     }
-    module(moduleHw).text = t; /* clear new module record         */
-    module(moduleHw).tycons = NIL;
-    module(moduleHw).names = NIL;
-    module(moduleHw).classes = NIL;
-    module(moduleHw).exports = NIL;
-    module(moduleHw).modAliases = NIL;
-    module(moduleHw).modImports = NIL;
-    module(moduleHw).qualImports = NIL;
+    moduleRec(moduleHw)->text = t; /* clear new module record         */
+    moduleRec(moduleHw)->tycons = NIL;
+    moduleRec(moduleHw)->names = NIL;
+    moduleRec(moduleHw)->classes = NIL;
+    moduleRec(moduleHw)->exports = NIL;
+    moduleRec(moduleHw)->modAliases = NIL;
+    moduleRec(moduleHw)->modImports = NIL;
+    moduleRec(moduleHw)->qualImports = NIL;
     return moduleHw++;
 }
 
@@ -1242,7 +1249,7 @@ Module findModule(Text t) /* locate Module in module table  */
 {
     Module m;
     for (m = MODMIN; m < moduleHw; ++m) {
-        if (module(m).text == t)
+        if (moduleRec(m)->text == t)
             return m;
     }
     return NIL;
@@ -1267,12 +1274,12 @@ Module findModid(Cell c) /* Find module by name or filename  */
 Module findQualifier(Text t) /* locate Module in alias list */
 {
     Module ms;
-    for (ms = module(currentModule).modAliases; nonNull(ms); ms = tl(ms)) {
+    for (ms = moduleRec(currentModule)->modAliases; nonNull(ms); ms = tl(ms)) {
         if (textOf(fst(hd(ms))) == t) {
             return snd(hd(ms));
         }
     }
-    if (module(currentModule).text == t) {
+    if (moduleRec(currentModule)->text == t) {
         return currentModule;
     }
     return NIL;
@@ -1288,13 +1295,13 @@ List findQualifiers(Text t) /* locate Modules in alias list */
     List ms;
     List res = NIL;
 
-    for (ms = module(currentModule).modAliases; nonNull(ms); ms = tl(ms)) {
+    for (ms = moduleRec(currentModule)->modAliases; nonNull(ms); ms = tl(ms)) {
         if (textOf(fst(hd(ms))) == t && !cellIsMember(snd(hd(ms)), res)) {
             res = cons(snd(hd(ms)), res);
         }
     }
     /* Legal? "module Foo where { import Bar as Foo; ... }" */
-    if (module(currentModule).text == t) {
+    if (moduleRec(currentModule)->text == t) {
         res = cons(currentModule, res);
     }
     return res;
@@ -1303,8 +1310,8 @@ List findQualifiers(Text t) /* locate Modules in alias list */
 Text findModAlias(Text t) /* given a module name 't', locate its alias. */
 {
     List ms;
-    for (ms = module(currentModule).modAliases; nonNull(ms); ms = tl(ms)) {
-        if (module(snd(hd(ms))).text == t) {
+    for (ms = moduleRec(currentModule)->modAliases; nonNull(ms); ms = tl(ms)) {
+        if (moduleRec(snd(hd(ms)))->text == t) {
             return textOf(fst(hd(ms)));
         }
     }
@@ -1326,23 +1333,23 @@ Void setCurrModule(Module m) /* set lookup tables for current module */
            so we approximate.
         */
         if (currentModule != NIL) {
-            module(currentModule).modImports = NIL;
+            moduleRec(currentModule)->modImports = NIL;
         }
         currentModule = m; /* This is the only assignment to currentModule */
         for (i = 0; i < TYCONHSZ; ++i)
             tyconHash[i] = NIL;
-        mapProc(hashTycon, module(m).tycons);
+        mapProc(hashTycon, moduleRec(m)->tycons);
         for (i = 0; i < NAMEHSZ; ++i)
             nameHash[i] = NIL;
-        mapProc(hashName, module(m).names);
-        classes = module(m).classes;
+        mapProc(hashName, moduleRec(m)->names);
+        classes = moduleRec(m)->classes;
     }
 }
 
 List getModuleImports(
     Module m) /* In 'currentModule', look up imports from 'm'. */
 {
-    Module ms = module(currentModule).modImports;
+    Module ms = moduleRec(currentModule)->modImports;
 
     for (; nonNull(ms); ms = tl(ms)) {
         if (isPair(hd(ms)) && fst(hd(ms)) == m) {
@@ -1528,7 +1535,7 @@ Void dropScriptsFrom(Script sno)      /* Restore storage to state prior  */
         }
 
         for (i = CLASSMIN; i < classHw; i++) {
-            List ins = cclass(i).instances;
+            List ins = cclassRec(i)->instances;
             List is = NIL;
 
             while (nonNull(ins)) {
@@ -1539,7 +1546,7 @@ Void dropScriptsFrom(Script sno)      /* Restore storage to state prior  */
                 }
                 ins = temp;
             }
-            cclass(i).instances = rev(is);
+            cclassRec(i)->instances = rev(is);
         }
 
         i = sno;
@@ -2015,7 +2022,7 @@ Void garbageCollect() {              /* Run garbage collector ...       */
     if (profile) {
         sysCount = 0;
         for (i = NAMEMIN; i < nameHw; i++)
-            name(i).count = 0;
+            nameRec(i)->count = 0;
     }
 #endif
     freeList = NIL;
@@ -2028,7 +2035,7 @@ Void garbageCollect() {              /* Run garbage collector ...       */
         }
 #if PROFILING
         else if (nonNull(thd(-i)))
-            name(thd(-i)).count++;
+            nameRec(thd(-i))->count++;
         else
             sysCount++;
 #endif
@@ -2056,32 +2063,33 @@ Void garbageCollect() {              /* Run garbage collector ...       */
         for (i = NAMEMIN; i < nameHw; i++) {
             Name cc = i;
             /* Use of "while" instead of "if" is pure paranoia - ADR */
-            while (isName(name(cc).parent))
-                cc = name(cc).parent;
+            while (isName(nameRec(cc)->parent))
+                cc = nameRec(cc)->parent;
             if (i != cc) {
-                name(cc).count += name(i).count;
-                name(i).count = 0;
+                nameRec(cc)->count += nameRec(i)->count;
+                nameRec(i)->count = 0;
             }
         }
         for (i = NAMEMIN; i < nameHw; i++)
-            if (name(i).count > 0)
-                if (isPair(name(i).parent)) {
-                    Pair p = name(i).parent;
+            if (nameRec(i)->count > 0)
+                if (isPair(nameRec(i)->parent)) {
+                    Pair p = nameRec(i)->parent;
                     Cell f = fst(p);
                     fprintf(profile, "  ");
                     if (isClass(f))
-                        fprintf(profile, "%s", textToStr(cclass(f).text));
+                        fprintf(profile, "%s", textToStr(cclassRec(f)->text));
                     else {
                         fprintf(profile, "%s_",
-                                textToStr(cclass(inst(f).c).text));
+                                textToStr(cclassRec(instRec(f)->c)->text));
                         /* Will hp2ps accept the spaces produced by this? */
-                        printPred(profile, inst(f).head);
+                        printPred(profile, instRec(f)->head);
                     }
-                    fprintf(profile, "_%s %d\n", textToStr(name(snd(p)).text),
-                            name(i).count);
+                    fprintf(profile, "_%s %d\n",
+                            textToStr(nameRec(snd(p))->text),
+                            nameRec(i)->count);
                 } else {
-                    fprintf(profile, "  %s %d\n", textToStr(name(i).text),
-                            name(i).count);
+                    fprintf(profile, "  %s %d\n", textToStr(nameRec(i)->text),
+                            nameRec(i)->count);
                 }
         fprintf(profile, "END_SAMPLE %ld.00\n", numReductions);
     }
@@ -2224,7 +2232,7 @@ Void print(Cell c, Int depth) {
         case CLASS:
             Printf("class(%d)", c - CLASSMIN);
             if (CLASSMIN <= c && c < classHw)
-                Printf("=\"%s\"", textToStr(cclass(c).text));
+                Printf("=\"%s\"", textToStr(cclassRec(c)->text));
             break;
         case INSTANCE:
             Printf("instance(%d)", c - INSTMIN);
@@ -2232,12 +2240,12 @@ Void print(Cell c, Int depth) {
         case NAME:
             Printf("name(%d)", c - NAMEMIN);
             if (NAMEMIN <= c && c < nameHw)
-                Printf("=\"%s\"", textToStr(name(c).text));
+                Printf("=\"%s\"", textToStr(nameRec(c)->text));
             break;
         case TYCON:
             Printf("tycon(%d)", c - TYCMIN);
             if (TYCMIN <= c && c < tyconHw)
-                Printf("=\"%s\"", textToStr(tycon(c).text));
+                Printf("=\"%s\"", textToStr(tyconRec(c)->text));
             break;
         case MODULE:
             Printf("module(%d)", c - MODMIN);
@@ -2602,7 +2610,7 @@ Name nameIsMember(Text t, List ns) /* Test if name with text t is a   */
                                    /* member of list of names xs           */
 {
     for (; nonNull(ns); ns = tl(ns)) {
-        if (t == name(hd(ns)).text) {
+        if (t == nameRec(hd(ns))->text) {
             return hd(ns);
         }
     }
@@ -2614,25 +2622,25 @@ Name nameIsMember(Text t, List ns) /* Test if name with text t is a   */
 Name nameInIEList(Name nm, List ns) /* Test if Name is a member of */
                                     /* of import/export list xs.   */
 {
-    Text t = name(nm).text;
-    Bool isMethod = isClass(name(nm).parent);
-    Bool isDCon = isTycon(name(nm).parent) && !findTycon(name(nm).text);
+    Text t = nameRec(nm)->text;
+    Bool isMethod = isClass(nameRec(nm)->parent);
+    Bool isDCon = isTycon(nameRec(nm)->parent) && !findTycon(nameRec(nm)->text);
 
     for (; nonNull(ns); ns = tl(ns)) {
-        if (isName(hd(ns)) && t == name(hd(ns)).text) {
+        if (isName(hd(ns)) && t == nameRec(hd(ns))->text) {
             return hd(ns);
         }
         if ((isMethod && isPair(hd(ns)) && isClass(fst(hd(ns)))) ||
             (isDCon && isPair(hd(ns)) && isTycon(fst(hd(ns))) &&
-             (tycon(fst(hd(ns))).what != SYNONYM) &&
-             (tycon(fst(hd(ns))).what != RESTRICTSYN))) {
+             (tyconRec(fst(hd(ns)))->what != SYNONYM) &&
+             (tyconRec(fst(hd(ns)))->what != RESTRICTSYN))) {
             Name r;
             List subs = snd(hd(ns));
             if (subs == DOTDOT) {
                 if (isClass(fst(hd(ns)))) {
-                    subs = cclass(fst(hd(ns))).members;
+                    subs = cclassRec(fst(hd(ns)))->members;
                 } else if (isTycon(fst(hd(ns)))) {
-                    subs = tycon(fst(hd(ns))).defn;
+                    subs = tyconRec(fst(hd(ns)))->defn;
                 }
             }
             r = nameInIEList(nm, subs);
@@ -2647,10 +2655,10 @@ Tycon tyconInIEList(Text t, List ns) /* Test if Tycon with text t is a  */
                                      /* member of import/export list xs */
 {
     for (; nonNull(ns); ns = tl(ns)) {
-        if (isTycon(hd(ns)) && t == tycon(hd(ns)).text) {
+        if (isTycon(hd(ns)) && t == tyconRec(hd(ns))->text) {
             return hd(ns);
         } else if (isPair(hd(ns)) && isTycon(fst(hd(ns))) &&
-                   t == tycon(fst(hd(ns))).text) {
+                   t == tyconRec(fst(hd(ns)))->text) {
             return fst(hd(ns));
         }
     }
@@ -2661,11 +2669,11 @@ Class classInIEList(Text t, List ns) /* Test if Class with text t is a  */
                                      /* member of import/export list xs */
 {
     for (; nonNull(ns); ns = tl(ns)) {
-        if (isClass(hd(ns)) && t == cclass(hd(ns)).text) {
+        if (isClass(hd(ns)) && t == cclassRec(hd(ns))->text) {
             return hd(ns);
         }
         if (isPair(hd(ns)) && isClass(fst(hd(ns))) &&
-            t == cclass(fst(hd(ns))).text) {
+            t == cclassRec(fst(hd(ns)))->text) {
             return fst(hd(ns));
         }
     }
@@ -3193,56 +3201,56 @@ Void storage(Int what) {
     case MARK:
         start();
         for (i = NAMEMIN; i < nameHw; ++i) {
-            mark(name(i).parent);
-            mark(name(i).defn);
-            mark(name(i).type);
-            mark(name(i).clashes);
+            mark(nameRec(i)->parent);
+            mark(nameRec(i)->defn);
+            mark(nameRec(i)->type);
+            mark(nameRec(i)->clashes);
         }
         end("Names", nameHw - NAMEMIN);
         start();
         for (i = MODMIN; i < moduleHw; ++i) {
-            mark(module(i).tycons);
-            mark(module(i).names);
-            mark(module(i).classes);
-            mark(module(i).exports);
-            mark(module(i).modImports);
-            mark(module(i).modAliases);
-            mark(module(i).qualImports);
+            mark(moduleRec(i)->tycons);
+            mark(moduleRec(i)->names);
+            mark(moduleRec(i)->classes);
+            mark(moduleRec(i)->exports);
+            mark(moduleRec(i)->modImports);
+            mark(moduleRec(i)->modAliases);
+            mark(moduleRec(i)->qualImports);
         }
         end("Modules", moduleHw - MODMIN);
 
         start();
         for (i = TYCMIN; i < tyconHw; ++i) {
-            mark(tycon(i).defn);
-            mark(tycon(i).kind);
-            mark(tycon(i).what);
-            mark(tycon(i).clashes);
+            mark(tyconRec(i)->defn);
+            mark(tyconRec(i)->kind);
+            mark(tyconRec(i)->what);
+            mark(tyconRec(i)->clashes);
         }
         end("Type constructors", tyconHw - TYCMIN);
 
         start();
         for (i = CLASSMIN; i < classHw; ++i) {
-            mark(cclass(i).head);
-            mark(cclass(i).tyvars);
-            mark(cclass(i).kinds);
-            mark(cclass(i).fds);
-            mark(cclass(i).xfds);
-            mark(cclass(i).dsels);
-            mark(cclass(i).supers);
-            mark(cclass(i).members);
-            mark(cclass(i).defaults);
-            mark(cclass(i).instances);
-            mark(cclass(i).clashes);
+            mark(cclassRec(i)->head);
+            mark(cclassRec(i)->tyvars);
+            mark(cclassRec(i)->kinds);
+            mark(cclassRec(i)->fds);
+            mark(cclassRec(i)->xfds);
+            mark(cclassRec(i)->dsels);
+            mark(cclassRec(i)->supers);
+            mark(cclassRec(i)->members);
+            mark(cclassRec(i)->defaults);
+            mark(cclassRec(i)->instances);
+            mark(cclassRec(i)->clashes);
         }
         mark(classes);
         end("Classes", classHw - CLASSMIN);
 
         start();
         for (i = INSTMIN; i < instHw; ++i) {
-            mark(inst(i).head);
-            mark(inst(i).kinds);
-            mark(inst(i).specifics);
-            mark(inst(i).implements);
+            mark(instRec(i)->head);
+            mark(instRec(i)->kinds);
+            mark(instRec(i)->specifics);
+            mark(instRec(i)->implements);
         }
         end("Instances", instHw - INSTMIN);
 

@@ -1,5 +1,5 @@
 # Formatting for the Cuddles C sources.  Run over src/*.[ch] and src/prims/*.[ch];
-# src/parser.c and src/unitable.c are generated and are left alone.
+# src/parser.c, src/parser.h and src/unitable.c are generated and are left alone.
 BasedOnStyle: LLVM
 Language: Cpp
 

@@ -322,7 +322,7 @@ Void startModule(Cell nm) /* switch to a new module */
 
 Void setExportList(List exps) /* Add export list to current module */
 {
-    module(currentModule).exports = exps;
+    moduleRec(currentModule)->exports = exps;
 }
 
 static Void local checkQualImport(Pair i) /* Process qualified import         */
@@ -383,16 +383,17 @@ Void tyconDefn(Int line, Cell lhs, Cell rhs,
         errPrintf("Multiple declarations of type constructor \"%s\"",
                   textToStr(t));
         errFail();
-    } else if (nonNull(tc) && nonNull(tycon(tc).clashes)) {
-        List ls = tycon(tc).clashes;
+    } else if (nonNull(tc) && nonNull(tyconRec(tc)->clashes)) {
+        List ls = tyconRec(tc)->clashes;
         errHead(line);
         errPrintf("Ambiguous type constructor occurrence \"%s\"", textToStr(t));
         errPrintf("\n*** Could refer to: ");
-        errPrintf("%s.%s ", textToStr(module(tycon(tc).mod).text),
-                  textToStr(tycon(tc).text));
+        errPrintf("%s.%s ", textToStr(moduleRec(tyconRec(tc)->mod)->text),
+                  textToStr(tyconRec(tc)->text));
         for (; nonNull(ls); ls = tl(ls)) {
-            errPrintf("%s.%s ", textToStr(module(tycon(hd(ls)).mod).text),
-                      textToStr(tycon(hd(ls)).text));
+            errPrintf("%s.%s ",
+                      textToStr(moduleRec(tyconRec(hd(ls))->mod)->text),
+                      textToStr(tyconRec(hd(ls))->text));
         }
         errPrintf("\n");
         errFail();
@@ -404,14 +405,14 @@ Void tyconDefn(Int line, Cell lhs, Cell rhs,
     } else {
         Tycon nw = newTycon(t);
         tyconDefns = cons(nw, tyconDefns);
-        tycon(nw).line = line;
-        tycon(nw).arity = argCount;
-        tycon(nw).what = what;
+        tyconRec(nw)->line = line;
+        tyconRec(nw)->arity = argCount;
+        tyconRec(nw)->what = what;
         if (what == RESTRICTSYN) {
             typeInDefns = cons(pair(nw, snd(rhs)), typeInDefns);
             rhs = fst(rhs);
         }
-        tycon(nw).defn = pair(lhs, rhs);
+        tyconRec(nw)->defn = pair(lhs, rhs);
     }
 }
 
@@ -421,9 +422,9 @@ Void setTypeIns(List bs) /* set local synonyms for given           */
     for (; nonNull(cvs); cvs = tl(cvs)) {
         Tycon c = fst(hd(cvs));
         List vs = snd(hd(cvs));
-        for (tycon(c).what = RESTRICTSYN; nonNull(vs); vs = tl(vs)) {
+        for (tyconRec(c)->what = RESTRICTSYN; nonNull(vs); vs = tl(vs)) {
             if (nonNull(findBinding(textOf(hd(vs)), bs))) {
-                tycon(c).what = SYNONYM;
+                tyconRec(c)->what = SYNONYM;
                 break;
             }
         }
@@ -432,7 +433,7 @@ Void setTypeIns(List bs) /* set local synonyms for given           */
 
 Void clearTypeIns() { /* clear list of local synonyms      */
     for (; nonNull(typeInDefns); typeInDefns = tl(typeInDefns))
-        tycon(fst(hd(typeInDefns))).what = RESTRICTSYN;
+        tyconRec(fst(hd(typeInDefns)))->what = RESTRICTSYN;
 }
 
 /* --------------------------------------------------------------------------
@@ -463,9 +464,9 @@ static List tcDeps = NIL; /* list of dependent tycons/classes*/
 
 static Void local checkTyconDefn(Tycon d) /* validate type constructor defn  */
 {
-    Cell lhs = fst(tycon(d).defn);
-    Cell rhs = snd(tycon(d).defn);
-    Int line = tycon(d).line;
+    Cell lhs = fst(tyconRec(d)->defn);
+    Cell rhs = snd(tyconRec(d)->defn);
+    Int line = tyconRec(d)->line;
     List tyvars = getArgs(lhs);
     List temp;
     /* check for repeated tyvars on lhs*/
@@ -478,14 +479,14 @@ static Void local checkTyconDefn(Tycon d) /* validate type constructor defn  */
         }
 
     tcDeps = NIL; /* find dependents               */
-    switch (whatIs(tycon(d).what)) {
+    switch (whatIs(tyconRec(d)->what)) {
     case RESTRICTSYN:
     case SYNONYM:
         rhs = depTopType(line, tyvars, rhs);
         if (cellIsMember(d, tcDeps)) {
             errHead(line);
             errPrintf("Recursive type synonym \"%s\"",
-                      textToStr(tycon(d).text));
+                      textToStr(tyconRec(d)->text));
             errFail();
         }
         break;
@@ -501,8 +502,8 @@ static Void local checkTyconDefn(Tycon d) /* validate type constructor defn  */
         break;
     }
 
-    tycon(d).defn = rhs;
-    tycon(d).kind = tcDeps;
+    tyconRec(d)->defn = rhs;
+    tyconRec(d)->kind = tcDeps;
     tcDeps = NIL;
 }
 
@@ -510,7 +511,7 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
 /* Define constructor functions and*/
 /* do dependency analysis for data */
 { /* definitions (w or w/o deriving) */
-    Int line = tycon(t).line;
+    Int line = tyconRec(t)->line;
     List ctxt = NIL;
     Int conNo = 1;
     Type lhs = t;
@@ -520,8 +521,9 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
     List sels = NIL;
     Int i;
 
-    for (i = 0; i < tycon(t).arity; ++i) /* build representation for tycon  */
-        lhs = ap(lhs, mkOffset(i));      /* applied to full comp. of args   */
+    for (i = 0; i < tyconRec(t)->arity;
+         ++i)                       /* build representation for tycon  */
+        lhs = ap(lhs, mkOffset(i)); /* applied to full comp. of args   */
 
     if (isQualType(cs)) { /* allow for possible context    */
         ctxt = fst(snd(cs));
@@ -668,23 +670,25 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
         n = findName(textOf(con)); /* Allocate constructor fun name   */
         if (isNull(n)) {
             n = newName(textOf(con), NIL);
-        } else if (name(n).defn != PREDEFINED && name(n).mod == currentModule) {
+        } else if (nameRec(n)->defn != PREDEFINED &&
+                   nameRec(n)->mod == currentModule) {
             /* A local repeated definition */
-            duplicateError(line, name(n).mod, name(n).text, "data constructor");
-        } else if (name(n).defn != PREDEFINED) {
+            duplicateError(line, nameRec(n)->mod, nameRec(n)->text,
+                           "data constructor");
+        } else if (nameRec(n)->defn != PREDEFINED) {
             Name oldnm = n;
             removeName(n);
             n = newName(textOf(con), NIL);
-            name(n).defn = PREDEFINED;
-            name(n).clashes = cons(oldnm, name(n).clashes);
+            nameRec(n)->defn = PREDEFINED;
+            nameRec(n)->clashes = cons(oldnm, nameRec(n)->clashes);
         }
 
-        name(n).arity = arity; /* Save constructor fun details     */
-        name(n).line = line;
-        name(n).parent = t;
-        name(n).number = cfunNo(conNo++);
-        name(n).type = type;
-        if (tycon(t).what == NEWTYPE) {
+        nameRec(n)->arity = arity; /* Save constructor fun details     */
+        nameRec(n)->line = line;
+        nameRec(n)->parent = t;
+        nameRec(n)->number = cfunNo(conNo++);
+        nameRec(n)->type = type;
+        if (tyconRec(t)->what == NEWTYPE) {
             if (nonNull(lps)) {
                 errHead(line);
                 errPrintf(
@@ -703,7 +707,7 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
                     "Illegal strictness annotation for newtype constructor");
                 errFail();
             }
-            name(n).defn = nameId;
+            nameRec(n)->defn = nameId;
         } else {
             implementCfun(n, scs);
         }
@@ -727,8 +731,8 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
 
 static Int local userArity(Name c) /* Find arity for cfun, ignoring   */
 {                                  /* CDICTS parameters            */
-    Int a = name(c).arity;
-    Type t = name(c).type;
+    Int a = nameRec(c)->arity;
+    Type t = nameRec(c)->type;
     Int w;
     if (isPolyType(t)) {
         t = monotypeOf(t);
@@ -761,21 +765,22 @@ static List local addSels(Int line, Name c, List fs,
         if (nonNull(varIsMember(t, tl(fs)))) {
             errHead(line);
             errPrintf("Repeated field name \"%s\" for constructor \"%s\"",
-                      textToStr(t), textToStr(name(c).text));
+                      textToStr(t), textToStr(nameRec(c)->text));
             errFail();
         }
 
-        while (nonNull(ns) && t != name(hd(ns)).text) {
+        while (nonNull(ns) && t != nameRec(hd(ns))->text) {
             ns = tl(ns);
         }
 
         if (nonNull(ns)) {
-            name(hd(ns)).defn = cons(pair(c, mkInt(sn)), name(hd(ns)).defn);
+            nameRec(hd(ns))->defn =
+                cons(pair(c, mkInt(sn)), nameRec(hd(ns))->defn);
         } else {
             Name n;
             Name oldnm = findName(t);
             if (nonNull(oldnm)) {
-                if (name(oldnm).mod == currentModule) {
+                if (nameRec(oldnm)->mod == currentModule) {
                     errHead(line);
                     errPrintf("Multiple declarations for selector \"%s\"",
                               textToStr(t));
@@ -785,11 +790,11 @@ static List local addSels(Int line, Name c, List fs,
                 }
             }
             n = newName(t, c);
-            name(n).line = line;
-            name(n).number = SELNAME;
-            name(n).defn = singleton(pair(c, mkInt(sn)));
+            nameRec(n)->line = line;
+            nameRec(n)->number = SELNAME;
+            nameRec(n)->defn = singleton(pair(c, mkInt(sn)));
             if (nonNull(oldnm)) {
-                name(n).clashes = cons(oldnm, name(n).clashes);
+                nameRec(n)->clashes = cons(oldnm, nameRec(n)->clashes);
             }
             ss = cons(n, ss);
         }
@@ -822,7 +827,7 @@ checkSynonyms(List ts) /* Check for mutually recursive           */
     List syns = NIL;
     for (; nonNull(ts); ts = tl(ts)) { /* build list of all synonyms       */
         Tycon t = hd(ts);
-        switch (whatIs(tycon(t).what)) {
+        switch (whatIs(tyconRec(t)->what)) {
         case SYNONYM:
         case RESTRICTSYN:
             syns = cons(t, syns);
@@ -841,12 +846,13 @@ static List local visitSyn(List path, Tycon t,
                                       /* for cycles                        */
 {
     if (cellIsMember(t, path)) { /* every elt in path depends on t  */
-        errHead(tycon(t).line);
+        errHead(tyconRec(t)->line);
         errPrintf("Type synonyms \"%s\" and \"%s\" are mutually recursive",
-                  textToStr(tycon(t).text), textToStr(tycon(hd(path)).text));
+                  textToStr(tyconRec(t)->text),
+                  textToStr(tyconRec(hd(path))->text));
         errFail();
     } else {
-        List ds = tycon(t).kind;
+        List ds = tyconRec(t)->kind;
         List path1 = NIL;
         for (; nonNull(ds); ds = tl(ds)) {
             if (cellIsMember(hd(ds), syns)) {
@@ -857,7 +863,7 @@ static List local visitSyn(List path, Tycon t,
             }
         }
     }
-    tycon(t).defn = fullExpand(tycon(t).defn);
+    tyconRec(t)->defn = fullExpand(tyconRec(t)->defn);
     return removeCell(t, syns);
 }
 
@@ -877,30 +883,30 @@ static Type local fullerExpand(Type t) /* find full expansion of type exp */
         args = cons(arg(h), args);
     }
     t = applyToArgs(h, args);
-    if (isSynonym(h) && n >= tycon(h).arity) {
-        if (n == tycon(h).arity) {
-            t = instantiateSyn(tycon(h).defn, t);
+    if (isSynonym(h) && n >= tyconRec(h)->arity) {
+        if (n == tyconRec(h)->arity) {
+            t = instantiateSyn(tyconRec(h)->defn, t);
         } else {
             Type p = t;
-            while (--n > tycon(h).arity) {
+            while (--n > tyconRec(h)->arity) {
                 p = fun(p);
             }
-            fun(p) = instantiateSyn(tycon(h).defn, fun(p));
+            fun(p) = instantiateSyn(tyconRec(h)->defn, fun(p));
         }
         t = fullerExpand(t); /* chase synonym chains. */
-    } else if (isNewtype(h) && n == tycon(h).arity && h != typeIO) {
+    } else if (isNewtype(h) && n == tyconRec(h)->arity && h != typeIO) {
         if (n != 0) {
             /* Not supported because I don't understand the typechecker
              * well enough.  For those that grok the data structures, it
              * should be simple.
              */
-            errHead(name(h).line);
+            errHead(nameRec(h)->line);
             errPrintf("Use of polymorphic newtype '");
             errType(t);
             errPrintf("' not supported in foreign function declarations.");
             errFail();
         }
-        t = instantiateNewtype(hd(tycon(h).defn), t);
+        t = instantiateNewtype(hd(tyconRec(h)->defn), t);
         t = fullerExpand(t); /* chase chains of newtypes */
     }
     return t;
@@ -926,7 +932,7 @@ static Type local instantiateNewtype(Name c,
 { /* values for OFFSET type vars           */
     Type t = NIL;
     assert(isName(c));
-    t = name(c).type;
+    t = nameRec(c)->type;
     if (isPolyType(t)) {
         t = monotypeOf(t);
     }
@@ -949,15 +955,15 @@ Type fullExpand(Type t) /* find full expansion of type exp */
         args = cons(fullExpand(arg(h)), args);
     }
     t = applyToArgs(h, args);
-    if (isSynonym(h) && n >= tycon(h).arity) {
-        if (n == tycon(h).arity) {
-            t = instantiateSyn(tycon(h).defn, t);
+    if (isSynonym(h) && n >= tyconRec(h)->arity) {
+        if (n == tyconRec(h)->arity) {
+            t = instantiateSyn(tyconRec(h)->defn, t);
         } else {
             Type p = t;
-            while (--n > tycon(h).arity) {
+            while (--n > tyconRec(h)->arity) {
                 p = fun(p);
             }
-            fun(p) = instantiateSyn(tycon(h).defn, fun(p));
+            fun(p) = instantiateSyn(tyconRec(h)->defn, fun(p));
         }
     }
     return t;
@@ -1018,14 +1024,14 @@ Void classDefn(Int line, Cell head, List ms,
         errFail();
     } else {
         Class nw = newClass(ct);
-        cclass(nw).line = line;
-        cclass(nw).arity = arity;
-        cclass(nw).head = snd(head);
-        cclass(nw).supers = fst(head);
-        cclass(nw).members = ms;
-        cclass(nw).level = 0;
-        cclass(nw).fds = fds;
-        cclass(nw).xfds = NIL;
+        cclassRec(nw)->line = line;
+        cclassRec(nw)->arity = arity;
+        cclassRec(nw)->head = snd(head);
+        cclassRec(nw)->supers = fst(head);
+        cclassRec(nw)->members = ms;
+        cclassRec(nw)->level = 0;
+        cclassRec(nw)->fds = fds;
+        cclassRec(nw)->xfds = NIL;
         classDefns = cons(nw, classDefns);
     }
 }
@@ -1057,18 +1063,18 @@ Void classDefn(Int line, Cell head, List ms,
 static Void local checkClassDefn(Class c) /* validate class definition       */
 {
     List tyvars = NIL;
-    Cell temp = cclass(c).head;
+    Cell temp = cclassRec(c)->head;
     List fs = NIL;
     List ss = NIL;
 
     for (; isAp(temp); temp = fun(temp)) {
         if (!isVar(arg(temp))) {
-            errHead(cclass(c).line);
+            errHead(cclassRec(c)->line);
             errPrintf("Type variable required in class head");
             errFail();
         }
         if (nonNull(varIsMember(textOf(arg(temp)), tyvars))) {
-            errHead(cclass(c).line);
+            errHead(cclassRec(c)->line);
             errPrintf("Repeated type variable \"%s\" in class head",
                       textToStr(textOf(arg(temp))));
             errFail();
@@ -1076,14 +1082,14 @@ static Void local checkClassDefn(Class c) /* validate class definition       */
         tyvars = cons(arg(temp), tyvars);
     }
 
-    for (fs = cclass(c).fds; nonNull(fs); fs = tl(fs)) {
+    for (fs = cclassRec(c)->fds; nonNull(fs); fs = tl(fs)) {
         Pair fd = hd(fs);
         List vs = snd(fd);
 
         /* Check for trivial dependency
          */
         if (isNull(vs)) {
-            errHead(cclass(c).line);
+            errHead(cclassRec(c)->line);
             errPrintf("Functional dependency is trivial");
             errFail();
         }
@@ -1093,43 +1099,43 @@ static Void local checkClassDefn(Class c) /* validate class definition       */
          */
         for (vs = snd(fd); nonNull(vs); vs = tl(vs)) {
             if (varIsMember(textOf(hd(vs)), fst(fd))) {
-                errHead(cclass(c).line);
+                errHead(cclassRec(c)->line);
                 errPrintf("Trivial dependency for variable \"%s\"",
                           textToStr(textOf(hd(vs))));
                 errFail();
             }
             if (varIsMember(textOf(hd(vs)), tl(vs))) {
-                errHead(cclass(c).line);
+                errHead(cclassRec(c)->line);
                 errPrintf("Repeated variable \"%s\" in functional dependency",
                           textToStr(textOf(hd(vs))));
                 errFail();
             }
-            hd(vs) = depTypeVar(cclass(c).line, tyvars, textOf(hd(vs)));
+            hd(vs) = depTypeVar(cclassRec(c)->line, tyvars, textOf(hd(vs)));
         }
 
         /* Check for duplicated vars on left hand side:
          */
         for (vs = fst(fd); nonNull(vs); vs = tl(vs)) {
             if (varIsMember(textOf(hd(vs)), tl(vs))) {
-                errHead(cclass(c).line);
+                errHead(cclassRec(c)->line);
                 errPrintf("Repeated variable \"%s\" in functional dependency",
                           textToStr(textOf(hd(vs))));
                 errFail();
             }
-            hd(vs) = depTypeVar(cclass(c).line, tyvars, textOf(hd(vs)));
+            hd(vs) = depTypeVar(cclassRec(c)->line, tyvars, textOf(hd(vs)));
         }
     }
 
     /* add in the tyvars from the `supers' so that we don't
        prematurely complain about undefined tyvars */
-    tyvars = typeVarsIn(cclass(c).supers, NIL, NIL, tyvars);
-    cclass(c).tyvars = dupList(tyvars);
+    tyvars = typeVarsIn(cclassRec(c)->supers, NIL, NIL, tyvars);
+    cclassRec(c)->tyvars = dupList(tyvars);
 
-    if (cclass(c).arity == 0) {
-        cclass(c).head = c;
+    if (cclassRec(c)->arity == 0) {
+        cclassRec(c)->head = c;
     } else {
-        Int args = cclass(c).arity - 1;
-        for (temp = cclass(c).head; args > 0; temp = fun(temp), args--) {
+        Int args = cclassRec(c)->arity - 1;
+        for (temp = cclassRec(c)->head; args > 0; temp = fun(temp), args--) {
             arg(temp) = mkOffset(args);
         }
         arg(temp) = mkOffset(0);
@@ -1137,16 +1143,17 @@ static Void local checkClassDefn(Class c) /* validate class definition       */
     }
 
     tcDeps = NIL; /* find dependents               */
-    map2Over(depPredExp, cclass(c).line, tyvars, cclass(c).supers);
+    map2Over(depPredExp, cclassRec(c)->line, tyvars, cclassRec(c)->supers);
 
-    cclass(c).numSupers = length(cclass(c).supers);
-    cclass(c).defaults = extractBindings(cclass(c).members); /* defaults*/
-    ss = extractSigdecls(cclass(c).members);
-    fs = extractFixdecls(cclass(c).members);
-    cclass(c).members = pair(ss, fs);
+    cclassRec(c)->numSupers = length(cclassRec(c)->supers);
+    cclassRec(c)->defaults =
+        extractBindings(cclassRec(c)->members); /* defaults*/
+    ss = extractSigdecls(cclassRec(c)->members);
+    fs = extractFixdecls(cclassRec(c)->members);
+    cclassRec(c)->members = pair(ss, fs);
     map2Proc(checkMems, c, tyvars, ss);
 
-    cclass(c).kinds = tcDeps;
+    cclassRec(c)->kinds = tcDeps;
     tcDeps = NIL;
 }
 
@@ -1159,17 +1166,17 @@ static Void local checkClassDefn2(Class c) /* validate class definition, pt 2 */
                                            /* we've inherited fds             */
                                            /* and are in dependency order     */
     if (!isTycon(c)) {
-        List tvts = offsetTyvarsIn(cclass(c).head, NIL);
-        List tvps = offsetTyvarsIn(cclass(c).supers, NIL);
-        List fds = calcFunDeps(cclass(c).supers);
+        List tvts = offsetTyvarsIn(cclassRec(c)->head, NIL);
+        List tvps = offsetTyvarsIn(cclassRec(c)->supers, NIL);
+        List fds = calcFunDeps(cclassRec(c)->supers);
         tvts = oclose(fds, tvts);
         tvts = odiff(tvps, tvts);
 
         if (!isNull(tvts)) {
-            errHead(cclass(c).line);
-            errPrintf(
-                "Undefined type variable \"%s\"",
-                textToStr(textOf(nth(offsetOf(hd(tvts)), cclass(c).tyvars))));
+            errHead(cclassRec(c)->line);
+            errPrintf("Undefined type variable \"%s\"",
+                      textToStr(textOf(
+                          nth(offsetOf(hd(tvts)), cclassRec(c)->tyvars))));
             errFail();
         }
     }
@@ -1204,15 +1211,15 @@ static Void local checkClassDefn2(Class c) /* validate class definition, pt 2 */
  * special case of an inherited dependency.
  * ------------------------------------------------------------------------*/
 static List local inheritFundeps(Class c, Cell pi, Int o) {
-    Int alpha = newKindedVars(cclass(c).kinds);
-    List scs = cclass(c).supers;
+    Int alpha = newKindedVars(cclassRec(c)->kinds);
+    List scs = cclassRec(c)->supers;
     List xfds = NIL;
     Cell this = NIL;
     /* alloc additional vars for any vars in supers not in the head */
-    newKindvars(length(cclass(c).tyvars) - cclass(c).arity);
+    newKindvars(length(cclassRec(c)->tyvars) - cclassRec(c)->arity);
 
     /* better not fail ;-) */
-    if (!matchPred(pi, o, cclass(c).head, alpha)) {
+    if (!matchPred(pi, o, cclassRec(c)->head, alpha)) {
         /* If the qualified type is not valid, for instance by
          * having type variables occurring free in the context,
          * but not in the head -- we will end up here.
@@ -1233,8 +1240,8 @@ static List local inheritFundeps(Class c, Cell pi, Int o) {
             }
         }
     }
-    if (nonNull(cclass(c).fds)) {
-        List fds = NIL, fs = cclass(c).fds;
+    if (nonNull(cclassRec(c)->fds)) {
+        List fds = NIL, fs = cclassRec(c)->fds;
         for (; nonNull(fs); fs = tl(fs)) {
             fds =
                 cons(pair(otvars(this, fst(hd(fs))), otvars(this, snd(hd(fs)))),
@@ -1248,11 +1255,11 @@ static List local inheritFundeps(Class c, Cell pi, Int o) {
 static Void local extendFundeps(Class c) {
     Int alpha;
     emptySubstitution();
-    alpha = newKindedVars(cclass(c).kinds);
-    cclass(c).xfds = inheritFundeps(c, cclass(c).head, alpha);
+    alpha = newKindedVars(cclassRec(c)->kinds);
+    cclassRec(c)->xfds = inheritFundeps(c, cclassRec(c)->head, alpha);
 
     /* we can now check for ambiguity */
-    map1Proc(checkMems2, c, fst(cclass(c).members));
+    map1Proc(checkMems2, c, fst(cclassRec(c)->members));
 }
 
 static Cell local depPredExp(Int line, List tyvars, Cell pred) {
@@ -1272,17 +1279,18 @@ static Cell local depPredExp(Int line, List tyvars, Cell pred) {
             errPrintf("Undefined class \"%s\"", identToStr(h));
             errFail();
         }
-        if (!isQualIdent(h) && nonNull(cclass(c).clashes)) {
-            List ls = cclass(c).clashes;
+        if (!isQualIdent(h) && nonNull(cclassRec(c)->clashes)) {
+            List ls = cclassRec(c)->clashes;
             errHead(line);
             errPrintf("Ambiguous class occurrence \"%s\"",
-                      textToStr(cclass(c).text));
+                      textToStr(cclassRec(c)->text));
             errPrintf("\n*** Could refer to: ");
-            errPrintf("%s.%s ", textToStr(module(cclass(c).mod).text),
-                      textToStr(cclass(c).text));
+            errPrintf("%s.%s ", textToStr(moduleRec(cclassRec(c)->mod)->text),
+                      textToStr(cclassRec(c)->text));
             for (; nonNull(ls); ls = tl(ls)) {
-                errPrintf("%s.%s ", textToStr(module(cclass(hd(ls)).mod).text),
-                          textToStr(cclass(hd(ls)).text));
+                errPrintf("%s.%s ",
+                          textToStr(moduleRec(cclassRec(hd(ls))->mod)->text),
+                          textToStr(cclassRec(hd(ls))->text));
             }
             errPrintf("\n");
             errFail();
@@ -1292,10 +1300,10 @@ static Cell local depPredExp(Int line, List tyvars, Cell pred) {
         } else {
             fun(prev) = c;
         }
-        if (args != cclass(c).arity) {
+        if (args != cclassRec(c)->arity) {
             errHead(line);
             errPrintf("Wrong number of arguments for class \"%s\"",
-                      textToStr(cclass(c).text));
+                      textToStr(cclassRec(c)->text));
             errFail();
         }
         if (cellIsMember(c, classDefns) && !cellIsMember(c, tcDeps)) {
@@ -1331,7 +1339,8 @@ static Void local checkMems(Class c, List tyvars,
         t = ap(QUAL, pair(NIL, t));
     }
 
-    fst(snd(t)) = cons(cclass(c).head, fst(snd(t))); /* Add main predicate   */
+    fst(snd(t)) =
+        cons(cclassRec(c)->head, fst(snd(t))); /* Add main predicate   */
     snd(snd(t)) = depTopType(line, tyvars, snd(snd(t)));
 
     for (tvs = tyvars; nonNull(tvs);
@@ -1341,8 +1350,8 @@ static Void local checkMems(Class c, List tyvars,
     if (nonNull(sig)) {
         t = mkPolyType(sig, t);
     }
-    thd3(m) = t;                   /* Save type            */
-    take(cclass(c).arity, tyvars); /* Delete extra type vars  */
+    thd3(m) = t;                       /* Save type            */
+    take(cclassRec(c)->arity, tyvars); /* Delete extra type vars  */
 }
 
 static Void local checkMems2(Class c,
@@ -1359,15 +1368,15 @@ static Void local checkMems2(Class c,
 
 static Void local addMembers(Class c) /* Add definitions of member funs  */
 {                                     /* and other parts of class struct.*/
-    List ms = fst(cclass(c).members);
-    List fs = snd(cclass(c).members);
+    List ms = fst(cclassRec(c)->members);
+    List fs = snd(cclassRec(c)->members);
     List ns = NIL; /* List of names                */
     Int mno;       /* Member function number       */
 
-    for (mno = 0; mno < cclass(c).numSupers; mno++) {
+    for (mno = 0; mno < cclassRec(c)->numSupers; mno++) {
         ns = cons(newDSel(c, mno), ns);
     }
-    cclass(c).dsels = rev(ns); /* Save dictionary selectors        */
+    cclassRec(c)->dsels = rev(ns); /* Save dictionary selectors        */
 
     for (mno = 1, ns = NIL; nonNull(ms); ms = tl(ms)) {
         Int line = intOf(fst3(hd(ms)));
@@ -1377,43 +1386,44 @@ static Void local addMembers(Class c) /* Add definitions of member funs  */
             ns = cons(newMember(line, mno++, hd(vs), t, c), ns);
         }
     }
-    cclass(c).members = rev(ns); /* Save list of members                   */
-    cclass(c).numMembers = length(cclass(c).members);
+    cclassRec(c)->members =
+        rev(ns); /* Save list of members                   */
+    cclassRec(c)->numMembers = length(cclassRec(c)->members);
 
     for (; nonNull(fs); fs = tl(fs)) { /* fixity declarations              */
         Int line = intOf(fst3(hd(fs)));
         List ops = snd3(hd(fs));
         Syntax s = intOf(thd3(hd(fs)));
         for (; nonNull(ops); ops = tl(ops)) {
-            Name n = nameIsMember(textOf(hd(ops)), cclass(c).members);
+            Name n = nameIsMember(textOf(hd(ops)), cclassRec(c)->members);
             if (isNull(n)) {
                 missFixity(line, textOf(hd(ops)));
-            } else if (name(n).syntax != NO_SYNTAX) {
+            } else if (nameRec(n)->syntax != NO_SYNTAX) {
                 dupFixity(line, textOf(hd(ops)));
             }
-            name(n).syntax = s;
+            nameRec(n)->syntax = s;
         }
     }
 
     /*  Not actually needed just yet; for the time being, dictionary code will
     not be passed through the type checker.
 
-    cclass(c).dtycon   = addPrimTycon(generateText("Dict.%s",c),
+    cclassRec(c)->dtycon   = addPrimTycon(generateText("Dict.%s",c),
                                       NIL,
-                                      cclass(c).arity,
+                                      cclassRec(c)->arity,
                                       DATATYPE,
                                       NIL);
 */
 
-    mno = cclass(c).numSupers + cclass(c).numMembers;
-    cclass(c).dcon = addPrimCfun(generateText("Make.%s", c), mno, 0, NIL);
+    mno = cclassRec(c)->numSupers + cclassRec(c)->numMembers;
+    cclassRec(c)->dcon = addPrimCfun(generateText("Make.%s", c), mno, 0, NIL);
     if (mno == 1) { /* Single entry dicts use newtype  */
-        name(cclass(c).dcon).defn = nameId;
-        if (nonNull(cclass(c).members)) {
-            name(hd(cclass(c).members)).number = mfunNo(0);
+        nameRec(cclassRec(c)->dcon)->defn = nameId;
+        if (nonNull(cclassRec(c)->members)) {
+            nameRec(hd(cclassRec(c)->members))->number = mfunNo(0);
         }
     }
-    cclass(c).defaults = classBindings("class", c, cclass(c).defaults);
+    cclassRec(c)->defaults = classBindings("class", c, cclassRec(c)->defaults);
 }
 
 static Name local newMember(Int l, Int no, Cell v, Type t, Class parent)
@@ -1423,25 +1433,26 @@ static Name local newMember(Int l, Int no, Cell v, Type t, Class parent)
 
     if (isNull(m)) {
         m = newName(textOf(v), parent);
-    } else if (name(m).defn != PREDEFINED && name(m).mod == currentModule) {
+    } else if (nameRec(m)->defn != PREDEFINED &&
+               nameRec(m)->mod == currentModule) {
         errHead(l);
         errPrintf("Multiple declarations for member function \"%s\"",
-                  textToStr(name(m).text));
+                  textToStr(nameRec(m)->text));
         errFail();
-    } else if (name(m).defn != PREDEFINED) {
+    } else if (nameRec(m)->defn != PREDEFINED) {
         Name oldnm = m;
         removeName(m);
         m = newName(textOf(v), parent);
-        name(m).defn = PREDEFINED;
-        name(m).clashes = cons(oldnm, name(m).clashes);
-    } else if (name(m).parent == NIL) {
+        nameRec(m)->defn = PREDEFINED;
+        nameRec(m)->clashes = cons(oldnm, nameRec(m)->clashes);
+    } else if (nameRec(m)->parent == NIL) {
         /* (try) improving the parent info. */
-        name(m).parent = parent;
+        nameRec(m)->parent = parent;
     }
-    name(m).line = l;
-    name(m).arity = 1;
-    name(m).number = mfunNo(no);
-    name(m).type = t;
+    nameRec(m)->line = l;
+    nameRec(m)->arity = 1;
+    nameRec(m)->number = mfunNo(no);
+    nameRec(m)->type = t;
     return m;
 }
 
@@ -1452,9 +1463,9 @@ static Name local newDSel(Class c, Int no) /* Make definition for dict selectr*/
 
     sprintf(buf, "_sc%d_%s", no, "%s");
     s = newName(generateText(buf, c), c);
-    name(s).line = cclass(c).line;
-    name(s).arity = 1;
-    name(s).number = DFUNNAME;
+    nameRec(s)->line = cclassRec(c)->line;
+    nameRec(s)->arity = 1;
+    nameRec(s)->number = DFUNNAME;
     return s;
 }
 
@@ -1464,7 +1475,7 @@ static Text local generateText(String sk,
                                Class c) /* We need to generate names for   */
                                         /* certain objects corresponding   */
 {                                       /* to each class.                  */
-    String cname = textToStr(cclass(c).text);
+    String cname = textToStr(cclassRec(c)->text);
     char buffer[MAX_GEN + 1];
 
     if ((strlen(sk) + strlen(cname)) >= MAX_GEN) {
@@ -1478,23 +1489,23 @@ static Text local generateText(String sk,
 
 static Int local visitClass(Class c) /* visit class defn to check that  */
 {                                    /* class hierarchy is acyclic         */
-    if (cclass(c).level < 0) {       /* already visiting this class?       */
-        errHead(cclass(c).line);
+    if (cclassRec(c)->level < 0) {   /* already visiting this class?       */
+        errHead(cclassRec(c)->line);
         errPrintf("Superclass relation for \"%s\" is cyclic",
-                  textToStr(cclass(c).text));
+                  textToStr(cclassRec(c)->text));
         errFail();
-    } else if (cclass(c).level == 0) { /* visiting class for first time   */
-        List scs = cclass(c).supers;
+    } else if (cclassRec(c)->level == 0) { /* visiting class for first time   */
+        List scs = cclassRec(c)->supers;
         Int lev = 0;
-        cclass(c).level = (-1);
+        cclassRec(c)->level = (-1);
         for (; nonNull(scs); scs = tl(scs)) {
             Int l = visitClass(getHead(hd(scs)));
             if (l > lev)
                 lev = l;
         }
-        cclass(c).level = 1 + lev; /* level = 1 + max level of supers */
+        cclassRec(c)->level = 1 + lev; /* level = 1 + max level of supers */
     }
-    return cclass(c).level;
+    return cclassRec(c)->level;
 }
 
 /* --------------------------------------------------------------------------
@@ -1524,7 +1535,7 @@ static List local classBindings(String where, Class c, List bs)
         if (isNull(mnm = memberName(c, nm))) {
             errHead(rhsLine(snd(hd(body))));
             errPrintf("No member \"%s\" in class \"%s\"", textToStr(nm),
-                      textToStr(cclass(c).text));
+                      textToStr(cclassRec(c)->text));
             errFail();
         }
         snd(b) = body;
@@ -1537,9 +1548,9 @@ static Name local memberName(Class c,
                              Text t) /* return name of member function  */
                                      /* with name t in class c     */
 {                                    /* return NIL if not a member         */
-    List ms = cclass(c).members;
+    List ms = cclassRec(c)->members;
     for (; nonNull(ms); ms = tl(ms)) {
-        if (t == name(hd(ms)).text) {
+        if (t == nameRec(hd(ms))->text) {
             return hd(ms);
         }
     }
@@ -1806,7 +1817,7 @@ static Type local depTypeExp(Int line, List tyvars, Type type) {
             errFail();
         }
         if (whatIs(type) != QUALIDENT) {
-            checkTyconAmbig(line, tycon(tc).text, tc);
+            checkTyconAmbig(line, tyconRec(tc)->text, tc);
         }
         if (cellIsMember(tc, tyconDefns) && !cellIsMember(tc, tcDeps)) {
             tcDeps = cons(tc, tcDeps);
@@ -2016,7 +2027,7 @@ List calcFunDeps(List ps) {
         Cell pi = hd(ps);
         Cell c = getHead(pi);
         if (isClass(c)) {
-            List xfs = cclass(c).xfds;
+            List xfs = cclassRec(c)->xfds;
             for (; nonNull(xfs); xfs = tl(xfs)) {
                 List fs = snd(hd(xfs));
                 for (; nonNull(fs); fs = tl(fs)) {
@@ -2038,7 +2049,7 @@ List calcFunDepsPreds(List ps) {
         Cell c = getHead(pi);
         Int o = intOf(snd3(pi3));
         if (isClass(c)) {
-            List xfs = cclass(c).xfds;
+            List xfs = cclassRec(c)->xfds;
             for (; nonNull(xfs); xfs = tl(xfs)) {
                 List fs = snd(hd(xfs));
                 for (; nonNull(fs); fs = tl(fs)) {
@@ -2113,10 +2124,10 @@ static Void local kindConstr(Int line, Int alpha, Int m, Cell c)
         return;
 
     case TYCON:
-        if (isSynonym(h) && n < tycon(h).arity) {
+        if (isSynonym(h) && n < tyconRec(h)->arity) {
             errHead(line);
             errPrintf("Not enough arguments for type synonym \"%s\"",
-                      textToStr(tycon(h).text));
+                      textToStr(tyconRec(h)->text));
             errFail();
         }
         break;
@@ -2157,7 +2168,7 @@ static Kind local kindAtom(Int alpha,
     case OFFSET:
         return mkInt(alpha + offsetOf(c));
     case TYCON:
-        return tycon(c).kind;
+        return tyconRec(c)->kind;
     case INTCELL:
         return c;
     case VARIDCELL:
@@ -2182,7 +2193,7 @@ static Void local kindPred(Int l, Int alpha, Int m,
         static String predicate = "class constraint";
         Class c = getHead(pi);
         List as = getArgs(pi);
-        Kinds ks = cclass(c).kinds;
+        Kinds ks = cclassRec(c)->kinds;
 
         while (nonNull(ks)) {
             checkKind(l, alpha, m, hd(as), NIL, predicate, hd(ks), 0);
@@ -2240,23 +2251,23 @@ static Void local initTCKind(Cell c) /* build initial kind/arity for    c  */
 {
     if (isTycon(c)) {                  /* Initial kind of tycon is:        */
         Int beta = newKindvars(1);     /*    v1 -> ... -> vn -> vn+1       */
-        varKind(tycon(c).arity);       /* where n is the arity of c.       */
+        varKind(tyconRec(c)->arity);   /* where n is the arity of c.       */
         bindTv(beta, typeIs, typeOff); /* For data definitions, vn+1 == * */
-        switch (whatIs(tycon(c).what)) {
+        switch (whatIs(tyconRec(c)->what)) {
         case NEWTYPE:
         case DATATYPE:
-            bindTv(typeOff + tycon(c).arity, STAR, 0);
+            bindTv(typeOff + tyconRec(c)->arity, STAR, 0);
         default:
             break;
         }
-        tycon(c).kind = mkInt(beta);
+        tyconRec(c)->kind = mkInt(beta);
     } else {
-        Int n = cclass(c).arity;
+        Int n = cclassRec(c)->arity;
         Int beta = newKindvars(n);
-        cclass(c).kinds = NIL;
+        cclassRec(c)->kinds = NIL;
         while (n > 0) {
             n--;
-            cclass(c).kinds = pair(mkInt(beta + n), cclass(c).kinds);
+            cclassRec(c)->kinds = pair(mkInt(beta + n), cclassRec(c)->kinds);
         }
     }
 }
@@ -2266,32 +2277,33 @@ static Void local kindTC(Cell c) /* check each part of a tycon/class*/
     if (isTycon(c)) {
         static String cfun = "data constructor";
         static String tsyn = "synonym declaration";
-        Int line = tycon(c).line;
-        Int beta = tyvar(intOf(tycon(c).kind))->offs;
-        Int m = tycon(c).arity;
-        switch (whatIs(tycon(c).what)) {
+        Int line = tyconRec(c)->line;
+        Int beta = tyvar(intOf(tyconRec(c)->kind))->offs;
+        Int m = tyconRec(c)->arity;
+        switch (whatIs(tyconRec(c)->what)) {
         case NEWTYPE:
         case DATATYPE: {
-            List cs = tycon(c).defn;
+            List cs = tyconRec(c)->defn;
             if (isQualType(cs)) {
                 map3Proc(kindPred, line, beta, m, fst(snd(cs)));
-                tycon(c).defn = cs = snd(snd(cs));
+                tyconRec(c)->defn = cs = snd(snd(cs));
             }
             for (; hasCfun(cs); cs = tl(cs)) {
-                kindType(line, cfun, name(hd(cs)).type);
+                kindType(line, cfun, nameRec(hd(cs))->type);
             }
             break;
         }
 
         default:
-            checkKind(line, beta, m, tycon(c).defn, NIL, tsyn, aVar, beta + m);
+            checkKind(line, beta, m, tyconRec(c)->defn, NIL, tsyn, aVar,
+                      beta + m);
         }
     } else { /* scan type exprs in class defn to*/
-        List ms = fst(cclass(c).members);
-        Int m = cclass(c).arity; /* determine the class signature   */
-        Int beta = newKindvars(length(cclass(c).tyvars));
-        kindPred(cclass(c).line, beta, m, cclass(c).head);
-        map3Proc(kindPred, cclass(c).line, beta, m, cclass(c).supers);
+        List ms = fst(cclassRec(c)->members);
+        Int m = cclassRec(c)->arity; /* determine the class signature   */
+        Int beta = newKindvars(length(cclassRec(c)->tyvars));
+        kindPred(cclassRec(c)->line, beta, m, cclassRec(c)->head);
+        map3Proc(kindPred, cclassRec(c)->line, beta, m, cclassRec(c)->supers);
         for (; nonNull(ms); ms = tl(ms)) {
             Int line = intOf(fst3(hd(ms)));
             Type type = thd3(hd(ms));
@@ -2303,9 +2315,9 @@ static Void local kindTC(Cell c) /* check each part of a tycon/class*/
 static Void local genTC(Cell c) /* generalise kind inferred for    */
 {                               /* given tycon/class               */
     if (isTycon(c)) {
-        tycon(c).kind = copyKindvar(intOf(tycon(c).kind));
+        tyconRec(c)->kind = copyKindvar(intOf(tyconRec(c)->kind));
     } else {
-        Kinds ks = cclass(c).kinds;
+        Kinds ks = cclassRec(c)->kinds;
         for (; nonNull(ks); ks = tl(ks)) {
             hd(ks) = copyKindvar(intOf(hd(ks)));
         }
@@ -2329,10 +2341,10 @@ Void instDefn(Int line, Cell head,
                        /* inst header :: (context,Class)   */
 {                      /* instance members                 */
     Inst nw = newInst();
-    inst(nw).line = line;
-    inst(nw).specifics = fst(head);
-    inst(nw).head = snd(head);
-    inst(nw).implements = ms;
+    instRec(nw)->line = line;
+    instRec(nw)->specifics = fst(head);
+    instRec(nw)->head = snd(head);
+    instRec(nw)->implements = ms;
     instDefns = cons(nw, instDefns);
 }
 
@@ -2360,22 +2372,22 @@ Name nameListMonad = NIL;        /* builder function for List Monad */
 
 static Void local checkInstDefn(Inst in) /* Validate instance declaration   */
 {
-    Int line = inst(in).line;
-    List tyvars = typeVarsIn(inst(in).head, NIL, NIL, NIL);
+    Int line = instRec(in)->line;
+    List tyvars = typeVarsIn(instRec(in)->head, NIL, NIL, NIL);
     List tvps = NIL, tvts = NIL;
     List fds = NIL;
 
     /* add in the tyvars from the `specifics' so that we don't
        prematurely complain about undefined tyvars */
-    tyvars = typeVarsIn(inst(in).specifics, NIL, NIL, tyvars);
-    inst(in).head = depPredExp(line, tyvars, inst(in).head);
+    tyvars = typeVarsIn(instRec(in)->specifics, NIL, NIL, tyvars);
+    instRec(in)->head = depPredExp(line, tyvars, instRec(in)->head);
 
-    map2Over(depPredExp, line, tyvars, inst(in).specifics);
+    map2Over(depPredExp, line, tyvars, instRec(in)->specifics);
 
     /* OK, now we start over, and test for ambiguity */
-    tvts = offsetTyvarsIn(inst(in).head, NIL);
-    tvps = offsetTyvarsIn(inst(in).specifics, NIL);
-    fds = calcFunDeps(inst(in).specifics);
+    tvts = offsetTyvarsIn(instRec(in)->head, NIL);
+    tvps = offsetTyvarsIn(instRec(in)->specifics, NIL);
+    fds = calcFunDeps(instRec(in)->specifics);
     tvts = oclose(fds, tvts);
     tvts = odiff(tvps, tvts);
     if (!isNull(tvts)) {
@@ -2385,30 +2397,30 @@ static Void local checkInstDefn(Inst in) /* Validate instance declaration   */
         errFail();
     }
 
-    inst(in).numSpecifics = length(inst(in).specifics);
-    inst(in).c = getHead(inst(in).head);
-    if (!isClass(inst(in).c)) {
+    instRec(in)->numSpecifics = length(instRec(in)->specifics);
+    instRec(in)->c = getHead(instRec(in)->head);
+    if (!isClass(instRec(in)->c)) {
         errHead(line);
         errPrintf("Illegal predicate in instance declaration");
         errFail();
     }
 
     /* should this be over xfds? */
-    if (nonNull(cclass(inst(in).c).fds)) {
-        List fds = cclass(inst(in).c).fds;
+    if (nonNull(cclassRec(instRec(in)->c)->fds)) {
+        List fds = cclassRec(instRec(in)->c)->fds;
         for (; nonNull(fds); fds = tl(fds)) {
-            List as = otvars(inst(in).head, fst(hd(fds)));
-            List bs = otvars(inst(in).head, snd(hd(fds)));
-            List fs = calcFunDeps(inst(in).specifics);
+            List as = otvars(instRec(in)->head, fst(hd(fds)));
+            List bs = otvars(instRec(in)->head, snd(hd(fds)));
+            List fs = calcFunDeps(instRec(in)->specifics);
             as = oclose(fs, as);
             if (!osubset(bs, as)) {
-                errHead(inst(in).line);
+                errHead(instRec(in)->line);
                 errPrintf("Instance is more general than a dependency allows");
 
                 errPrintf("\n*** Instance         : ");
-                errPred(inst(in).head);
+                errPred(instRec(in)->head);
                 errPrintf("\n*** For class        : ");
-                errPred(cclass(inst(in).c).head);
+                errPred(cclassRec(instRec(in)->c)->head);
                 errPrintf("\n*** Under dependency : ");
                 errFD(hd(fds));
                 errPrintf("\n");
@@ -2420,64 +2432,67 @@ static Void local checkInstDefn(Inst in) /* Validate instance declaration   */
     kindInst(in, length(tyvars));
     insertInst(in);
 
-    if (nonNull(extractSigdecls(inst(in).implements))) {
+    if (nonNull(extractSigdecls(instRec(in)->implements))) {
         errHead(line);
         errPrintf(
             "Type signature declarations not permitted in instance declaration");
         errFail();
     }
-    if (nonNull(extractFixdecls(inst(in).implements))) {
+    if (nonNull(extractFixdecls(instRec(in)->implements))) {
         errHead(line);
         errPrintf("Fixity declarations not permitted in instance declaration");
         errFail();
     }
-    inst(in).implements = classBindings("instance", inst(in).c,
-                                        extractBindings(inst(in).implements));
-    inst(in).builder = newInstImp(in);
-    if (!preludeLoaded && isNull(nameListMonad) && isAp(inst(in).head) &&
-        fun(inst(in).head) == classMonad && arg(inst(in).head) == typeList) {
-        nameListMonad = inst(in).builder;
+    instRec(in)->implements = classBindings(
+        "instance", instRec(in)->c, extractBindings(instRec(in)->implements));
+    instRec(in)->builder = newInstImp(in);
+    if (!preludeLoaded && isNull(nameListMonad) && isAp(instRec(in)->head) &&
+        fun(instRec(in)->head) == classMonad &&
+        arg(instRec(in)->head) == typeList) {
+        nameListMonad = instRec(in)->builder;
     }
 }
 
 static Void local insertInst(Inst in) /* Insert instance into class        */
 {
-    Class c = inst(in).c;
-    List ins = cclass(c).instances;
+    Class c = instRec(in)->c;
+    List ins = cclassRec(c)->instances;
     List prev = NIL;
 
-    if (nonNull(cclass(c).fds)) { /* Check for conflicts with fds          */
-        List ins1 = cclass(c).instances;
+    if (nonNull(
+            cclassRec(c)->fds)) { /* Check for conflicts with fds          */
+        List ins1 = cclassRec(c)->instances;
         for (; nonNull(ins1); ins1 = tl(ins1)) {
-            List fds = cclass(c).fds;
+            List fds = cclassRec(c)->fds;
             substitution(RESET);
             for (; nonNull(fds); fds = tl(fds)) {
-                Int alpha = newKindedVars(inst(in).kinds);
-                Int beta = newKindedVars(inst(hd(ins1)).kinds);
+                Int alpha = newKindedVars(instRec(in)->kinds);
+                Int beta = newKindedVars(instRec(hd(ins1))->kinds);
                 List as = fst(hd(fds));
                 Bool same = TRUE;
                 for (; same && nonNull(as); as = tl(as)) {
                     Int n = offsetOf(hd(as));
-                    same &= unify(nthArg(n, inst(in).head), alpha,
-                                  nthArg(n, inst(hd(ins1)).head), beta);
+                    same &= unify(nthArg(n, instRec(in)->head), alpha,
+                                  nthArg(n, instRec(hd(ins1))->head), beta);
                 }
                 if (isNull(as) && same) {
                     for (as = snd(hd(fds)); same && nonNull(as); as = tl(as)) {
                         Int n = offsetOf(hd(as));
-                        same &= sameType(nthArg(n, inst(in).head), alpha,
-                                         nthArg(n, inst(hd(ins1)).head), beta);
+                        same &=
+                            sameType(nthArg(n, instRec(in)->head), alpha,
+                                     nthArg(n, instRec(hd(ins1))->head), beta);
                     }
                     if (!same) {
-                        errHead(inst(in).line);
+                        errHead(instRec(in)->line);
                         errPrintf(
                             "Instances are not consistent with dependencies");
 
                         errPrintf("\n*** This instance    : ");
-                        errPred(inst(in).head);
+                        errPred(instRec(in)->head);
                         errPrintf("\n*** Conflicts with   : ");
-                        errPred(inst(hd(ins1)).head);
+                        errPred(instRec(hd(ins1))->head);
                         errPrintf("\n*** For class        : ");
-                        errPred(cclass(c).head);
+                        errPred(cclassRec(c)->head);
                         errPrintf("\n*** Under dependency : ");
                         errFD(hd(fds));
                         errPrintf("\n");
@@ -2490,10 +2505,10 @@ static Void local insertInst(Inst in) /* Insert instance into class        */
 
     substitution(RESET);
     while (nonNull(ins)) { /* Look for overlap w/ other insts */
-        Int alpha = newKindedVars(inst(in).kinds);
-        Int beta = newKindedVars(inst(hd(ins)).kinds);
-        if (unifyPred(inst(in).head, alpha, inst(hd(ins)).head, beta)) {
-            Cell pi = copyPred(inst(in).head, alpha);
+        Int alpha = newKindedVars(instRec(in)->kinds);
+        Int beta = newKindedVars(instRec(hd(ins))->kinds);
+        if (unifyPred(instRec(in)->head, alpha, instRec(hd(ins))->head, beta)) {
+            Cell pi = copyPred(instRec(in)->head, alpha);
             if (allowOverlap || allowUnsafeOverlap) {
                 Bool bef = instCompare(in, hd(ins));
                 Bool aft = instCompare(hd(ins), in);
@@ -2506,14 +2521,14 @@ static Void local insertInst(Inst in) /* Insert instance into class        */
                     continue;
                 }
             }
-            errHead(inst(in).line);
+            errHead(instRec(in)->line);
             errPrintf("Overlapping instances for class \"%s\"",
-                      textToStr(cclass(c).text));
+                      textToStr(cclassRec(c)->text));
 
             errPrintf("\n*** This instance   : ");
-            errPred(inst(in).head);
+            errPred(instRec(in)->head);
             errPrintf("\n*** Overlaps with   : ");
-            errPred(inst(hd(ins)).head);
+            errPred(instRec(hd(ins))->head);
             errPrintf("\n*** Common instance : ");
             errPred(pi);
             errPrintf("\n");
@@ -2527,24 +2542,24 @@ static Void local insertInst(Inst in) /* Insert instance into class        */
     if (nonNull(prev)) { /* Insert instance at this point   */
         tl(prev) = cons(in, ins);
     } else {
-        cclass(c).instances = cons(in, ins);
+        cclassRec(c)->instances = cons(in, ins);
     }
 }
 
 static Bool local instCompare(Inst ia,
                               Inst ib) /* See if ia is an instance of ib  */
 {
-    Int alpha = newKindedVars(inst(ia).kinds);
-    Int beta = newKindedVars(inst(ib).kinds);
-    return matchPred(inst(ia).head, alpha, inst(ib).head, beta);
+    Int alpha = newKindedVars(instRec(ia)->kinds);
+    Int beta = newKindedVars(instRec(ib)->kinds);
+    return matchPred(instRec(ia)->head, alpha, instRec(ib)->head, beta);
 }
 
 static Name local newInstImp(Inst in) /* Make definition for inst builder*/
 {
     Name b = newName(inventText(), in);
-    name(b).line = inst(in).line;
-    name(b).arity = inst(in).numSpecifics;
-    name(b).number = DFUNNAME;
+    nameRec(b)->line = instRec(in)->line;
+    nameRec(b)->arity = instRec(in)->numSpecifics;
+    nameRec(b)->number = DFUNNAME;
     return b;
 }
 
@@ -2559,12 +2574,14 @@ static Void local kindInst(Inst in,
 
     emptySubstitution();
     beta = newKindvars(freedom);
-    kindPred(inst(in).line, beta, freedom, inst(in).head);
-    if (whatIs(inst(in).specifics) != DERIVE) {
-        map3Proc(kindPred, inst(in).line, beta, freedom, inst(in).specifics);
+    kindPred(instRec(in)->line, beta, freedom, instRec(in)->head);
+    if (whatIs(instRec(in)->specifics) != DERIVE) {
+        map3Proc(kindPred, instRec(in)->line, beta, freedom,
+                 instRec(in)->specifics);
     }
-    for (inst(in).kinds = NIL; 0 < freedom--;) {
-        inst(in).kinds = cons(copyKindvar(beta + freedom), inst(in).kinds);
+    for (instRec(in)->kinds = NIL; 0 < freedom--;) {
+        instRec(in)->kinds =
+            cons(copyKindvar(beta + freedom), instRec(in)->kinds);
     }
     emptySubstitution();
 }
@@ -2581,14 +2598,14 @@ static Void local checkDerive(Tycon t, List p, List ts,
                                        /* context p, component types ts   */
                                        /* and named class ct               */
 {
-    Int line = tycon(t).line;
+    Int line = tyconRec(t)->line;
     Class c = findQualClass(ct);
     if (isNull(c)) {
         errHead(line);
         errPrintf("Unknown class \"%s\" in derived instance", identToStr(ct));
         errFail();
     }
-    addDerInst(line, c, p, dupList(ts), t, tycon(t).arity);
+    addDerInst(line, c, p, dupList(ts), t, tyconRec(t)->arity);
 }
 
 static Void local addDerInst(Int line, Class c, List p, List cts, Type t,
@@ -2604,12 +2621,12 @@ static Void local addDerInst(Int line, Class c, List p, List cts, Type t,
     head = ap(c, head);
 
     in = newInst();
-    inst(in).c = c;
-    inst(in).line = line;
-    inst(in).head = head;
-    inst(in).specifics = ap(DERIVE, pair(dupList(p), cts));
-    inst(in).implements = NIL;
-    inst(in).kinds = mkInt(a);
+    instRec(in)->c = c;
+    instRec(in)->line = line;
+    instRec(in)->head = head;
+    instRec(in)->specifics = ap(DERIVE, pair(dupList(p), cts));
+    instRec(in)->implements = NIL;
+    instRec(in)->kinds = mkInt(a);
     derivedInsts = cons(in, derivedInsts);
 }
 
@@ -2681,25 +2698,25 @@ static Void local deriveContexts(List is) /* Calc contexts for derived insts */
 
 static Void local initDerInst(Inst in) /* Prepare instance for calculation*/
 {                                      /* of derived instance context      */
-    Cell spcs = inst(in).specifics;
-    Int beta = newKindedVars(inst(in).kinds);
+    Cell spcs = instRec(in)->specifics;
+    Int beta = newKindedVars(instRec(in)->kinds);
     if (whatIs(spcs) != DERIVE) {
         internal("initDerInst");
     }
     fst(snd(spcs)) = appendOnto(fst(snd(spcs)), singleton(NIL));
     for (spcs = snd(snd(spcs)); nonNull(spcs); spcs = tl(spcs)) {
-        hd(spcs) = ap2(inst(in).c, hd(spcs), mkInt(beta));
+        hd(spcs) = ap2(instRec(in)->c, hd(spcs), mkInt(beta));
     }
-    inst(in).numSpecifics = beta;
+    instRec(in)->numSpecifics = beta;
 }
 
 static Void local
 calcInstPreds(Inst in) /* Calculate next approximation           */
 {                      /* of the context for a derived           */
     List retain = NIL; /* instance                       */
-    List ps = snd(snd(inst(in).specifics));
-    List spcs = fst(snd(inst(in).specifics));
-    Int beta = inst(in).numSpecifics;
+    List ps = snd(snd(instRec(in)->specifics));
+    List spcs = fst(snd(instRec(in)->specifics));
+    Int beta = instRec(in)->numSpecifics;
     Int its = 1;
     Int factor = 1 + length(ps);
 
@@ -2708,8 +2725,8 @@ calcInstPreds(Inst in) /* Calculate next approximation           */
         ps = tl(ps);
 
         if (its++ >= factor * cutoff) {
-            Cell bpi = inst(in).head;
-            errHead(inst(in).line);
+            Cell bpi = instRec(in)->head;
+            errHead(instRec(in)->line);
             errPrintf("\n*** Cannot derive ");
             errPred(bpi);
             errPrintf(" after %d iterations.", its - 1);
@@ -2733,7 +2750,7 @@ calcInstPreds(Inst in) /* Calculate next approximation           */
             Int o = intOf(snd(p));
             Inst in1 = findInstFor(pi, o);
             if (nonNull(in1)) {
-                List qs = inst(in1).specifics;
+                List qs = instRec(in1)->specifics;
                 Int off = mkInt(typeOff);
                 if (whatIs(qs) == DERIVE) { /* Still being derived         */
                     for (qs = fst(snd(qs)); nonNull(hd(qs)); qs = tl(qs)) {
@@ -2751,9 +2768,9 @@ calcInstPreds(Inst in) /* Calculate next approximation           */
                     qi = fun(qi);
                 }
                 if (isAp(qi)) {
-                    Cell bpi = inst(in).head;
+                    Cell bpi = instRec(in)->head;
                     pi = copyPred(pi, o);
-                    errHead(inst(in).line);
+                    errHead(instRec(in)->line);
                     errPrintf("An instance of ");
                     errPred(pi);
                     errPrintf(" is required to derive ");
@@ -2766,7 +2783,7 @@ calcInstPreds(Inst in) /* Calculate next approximation           */
             }
         }
     }
-    snd(snd(inst(in).specifics)) = retain;
+    snd(snd(instRec(in)->specifics)) = retain;
 }
 
 static Void local maybeAddPred(Cell pi, Int o, Int beta, List ps)
@@ -2818,12 +2835,12 @@ static Cell local copyAdj(Cell c, Int o,
 
 static Void local tidyDerInst(Inst in) /* Tidy up results of derived inst */
 {                                      /* calculations                     */
-    Int o = inst(in).numSpecifics;
-    List ps = tl(rev(fst(snd(inst(in).specifics))));
+    Int o = instRec(in)->numSpecifics;
+    List ps = tl(rev(fst(snd(instRec(in)->specifics))));
     clearMarks();
-    copyPred(inst(in).head, o);
-    inst(in).specifics = simpleContext(ps, o);
-    inst(in).numSpecifics = length(inst(in).specifics);
+    copyPred(instRec(in)->head, o);
+    instRec(in)->specifics = simpleContext(ps, o);
+    instRec(in)->numSpecifics = length(instRec(in)->specifics);
 }
 
 /* --------------------------------------------------------------------------
@@ -2832,8 +2849,8 @@ static Void local tidyDerInst(Inst in) /* Tidy up results of derived inst */
 
 static Void local addDerivImp(Inst in) {
     List imp = NIL;
-    Type t = getHead(arg(inst(in).head));
-    Class c = inst(in).c;
+    Type t = getHead(arg(instRec(in)->head));
+    Class c = instRec(in)->c;
     if (c == classEq) {
         imp = deriveEq(t);
     } else if (c == classOrd) {
@@ -2849,16 +2866,17 @@ static Void local addDerivImp(Inst in) {
     } else if (c == classBounded) {
         imp = deriveBounded(t);
     } else {
-        errHead(inst(in).line);
+        errHead(instRec(in)->line);
         errPrintf("Cannot derive instances of class \"%s\"",
-                  textToStr(cclass(inst(in).c).text));
+                  textToStr(cclassRec(instRec(in)->c)->text));
         errFail();
     }
 
-    kindInst(in, intOf(inst(in).kinds));
+    kindInst(in, intOf(instRec(in)->kinds));
     insertInst(in);
-    inst(in).builder = newInstImp(in);
-    inst(in).implements = classBindings("derived instance", inst(in).c, imp);
+    instRec(in)->builder = newInstImp(in);
+    instRec(in)->implements =
+        classBindings("derived instance", instRec(in)->c, imp);
 }
 
 static List diVars = NIL; /* Acts as a cache of invented vars*/
@@ -2909,15 +2927,15 @@ static List local deriveEq(Type t) /* generate binding for derived == */
 {                                  /* for some TUPLE or DATATYPE t         */
     List alts = NIL;
     if (isTycon(t)) { /* deal with type constrs    */
-        List cs = tycon(t).defn;
+        List cs = tyconRec(t)->defn;
         for (; hasCfun(cs); cs = tl(cs)) {
-            alts = cons(
-                mkAltEq(tycon(t).line, makeDPats2(hd(cs), userArity(hd(cs)))),
-                alts);
+            alts = cons(mkAltEq(tyconRec(t)->line,
+                                makeDPats2(hd(cs), userArity(hd(cs)))),
+                        alts);
         }
-        if (cfunOf(hd(tycon(t).defn)) != 0) {
+        if (cfunOf(hd(tyconRec(t)->defn)) != 0) {
             alts = cons(pair(cons(WILDCARD, cons(WILDCARD, NIL)),
-                             pair(mkInt(tycon(t).line), nameFalse)),
+                             pair(mkInt(tyconRec(t)->line), nameFalse)),
                         alts);
         }
         alts = rev(alts);
@@ -2949,20 +2967,21 @@ static List local deriveOrd(Type t) /* make binding for derived compare*/
 {                                   /* for some TUPLE or DATATYPE t        */
     List alts = NIL;
     if (isEnumType(t)) { /* special case for enumerations   */
-        alts = mkVarAlts(tycon(t).line, nameConCmp);
+        alts = mkVarAlts(tyconRec(t)->line, nameConCmp);
     } else if (isTycon(t)) { /* deal with type constrs     */
-        List cs = tycon(t).defn;
+        List cs = tyconRec(t)->defn;
         for (; hasCfun(cs); cs = tl(cs)) {
-            alts = cons(
-                mkAltOrd(tycon(t).line, makeDPats2(hd(cs), userArity(hd(cs)))),
-                alts);
+            alts = cons(mkAltOrd(tyconRec(t)->line,
+                                 makeDPats2(hd(cs), userArity(hd(cs)))),
+                        alts);
         }
-        if (cfunOf(hd(tycon(t).defn)) != 0) {
+        if (cfunOf(hd(tyconRec(t)->defn)) != 0) {
             Cell u = inventVar();
             Cell w = inventVar();
-            alts = cons(pair(cons(u, singleton(w)),
-                             pair(mkInt(tycon(t).line), ap2(nameConCmp, u, w))),
-                        alts);
+            alts =
+                cons(pair(cons(u, singleton(w)), pair(mkInt(tyconRec(t)->line),
+                                                      ap2(nameConCmp, u, w))),
+                     alts);
         }
         alts = rev(alts);
     } else { /* special case for tuples    */
@@ -3018,7 +3037,7 @@ static List local makeDPats2(Cell h, Int n) /* generate pattern list       */
 static List local
 deriveEnum(Tycon t) /* Construct definition of enumeration         */
 {
-    Int l = tycon(t).line;
+    Int l = tyconRec(t)->line;
 
     if (!isEnumType(t)) {
         errHead(l);
@@ -3027,7 +3046,7 @@ deriveEnum(Tycon t) /* Construct definition of enumeration         */
     }
 
     return cons(
-        mkBind("toEnum", mkVarAlts(l, ap(nameEnToEn, hd(tycon(t).defn)))),
+        mkBind("toEnum", mkVarAlts(l, ap(nameEnToEn, hd(tyconRec(t)->defn)))),
         cons(mkBind("fromEnum", mkVarAlts(l, nameEnFrEn)),
              cons(mkBind("enumFrom", mkVarAlts(l, nameEnFrom)),
                   cons(mkBind("enumFromTo", mkVarAlts(l, nameEnFrTo)),
@@ -3039,18 +3058,19 @@ static List local deriveIx(Tycon t) /* Construct definition of indexing      */
 {
     if (isEnumType(t)) { /* Definitions for enumerations                   */
         return cons(
-            mkBind("range", mkVarAlts(tycon(t).line, nameEnRange)),
-            cons(mkBind("index", mkVarAlts(tycon(t).line, nameEnIndex)),
-                 cons(mkBind("inRange", mkVarAlts(tycon(t).line, nameEnInRng)),
+            mkBind("range", mkVarAlts(tyconRec(t)->line, nameEnRange)),
+            cons(mkBind("index", mkVarAlts(tyconRec(t)->line, nameEnIndex)),
+                 cons(mkBind("inRange",
+                             mkVarAlts(tyconRec(t)->line, nameEnInRng)),
                       NIL)));
     } else if (isTuple(t)) { /* Definitions for product types      */
         return mkIxBinds(0, t, tupleOf(t));
-    } else if (isTycon(t) && cfunOf(hd(tycon(t).defn)) == 0) {
-        return mkIxBinds(tycon(t).line, hd(tycon(t).defn),
-                         userArity(hd(tycon(t).defn)));
+    } else if (isTycon(t) && cfunOf(hd(tyconRec(t)->defn)) == 0) {
+        return mkIxBinds(tyconRec(t)->line, hd(tyconRec(t)->defn),
+                         userArity(hd(tyconRec(t)->defn)));
     }
 
-    errHead(tycon(t).line);
+    errHead(tyconRec(t)->line);
     errPrintf(
         "Can only derive instances of Ix for enumeration or product types");
     errFail();
@@ -3060,10 +3080,11 @@ static List local deriveIx(Tycon t) /* Construct definition of indexing      */
 static Bool local
 isEnumType(Tycon t) /* Determine whether t is an enumeration   */
 {                   /* type (i.e. all constructors arity == 0) */
-    if (isTycon(t) && (tycon(t).what == DATATYPE || tycon(t).what == NEWTYPE)) {
-        List cs = tycon(t).defn;
+    if (isTycon(t) &&
+        (tyconRec(t)->what == DATATYPE || tyconRec(t)->what == NEWTYPE)) {
+        List cs = tyconRec(t)->defn;
         for (; hasCfun(cs); cs = tl(cs)) {
-            if (name(hd(cs)).arity != 0) {
+            if (nameRec(hd(cs))->arity != 0) {
                 return FALSE;
             }
         }
@@ -3172,10 +3193,10 @@ deriveShow(Tycon t) /* Construct definition of text conversion */
 {
     List alts = NIL;
     if (isTycon(t)) { /* deal with type constrs    */
-        List cs = tycon(t).defn;
+        List cs = tyconRec(t)->defn;
         for (; hasCfun(cs); cs = tl(cs)) {
-            alts =
-                cons(mkAltShow(tycon(t).line, hd(cs), userArity(hd(cs))), alts);
+            alts = cons(mkAltShow(tyconRec(t)->line, hd(cs), userArity(hd(cs))),
+                        alts);
         }
         alts = rev(alts);
     } else { /* special case for tuples    */
@@ -3264,14 +3285,14 @@ static Cell local showsPrecRhs(Cell d, Cell pat,
                 }
             }
         }
-        rhs = ap2(nameComp, ap(nameApp, mkStr(name(h).text)),
+        rhs = ap2(nameComp, ap(nameApp, mkStr(nameRec(h)->text)),
                   ap(showsSP, ap(showsOB, rhs)));
         return rhs;
     } else if (a == 0) {
         /* To display a nullary constructor:
          *    showsPrec d Foo = showString "Foo"
          */
-        return ap(nameApp, mkStr(name(h).text));
+        return ap(nameApp, mkStr(nameRec(h)->text));
     } else {
         Syntax s = syntaxOf(h);
         if (a == 2 && assocOf(s) != APPLIC) {
@@ -3287,14 +3308,15 @@ static Cell local showsPrecRhs(Cell d, Cell pat,
                  1); /* how it was in Haskell from Day 1 until 11/4/2002:  (assocOf(s)==LEFT_ASS)  ? p : (p+1); */
             Int rp = (p + 1); /* ditto:  (assocOf(s)==RIGHT_ASS) ? p : (p+1); */
             Cell rhs = ap(showsSP, ap2(nameShowsPrec, mkInt(rp), arg(pat)));
-            if (defaultSyntax(name(h).text) == APPLIC) {
+            if (defaultSyntax(nameRec(h)->text) == APPLIC) {
                 rhs = ap(showsBQ,
                          ap2(nameComp,
-                             ap(nameApp, mkStr(fixLitText(name(h).text))),
+                             ap(nameApp, mkStr(fixLitText(nameRec(h)->text))),
                              ap(showsBQ, rhs)));
             } else {
-                rhs = ap2(nameComp,
-                          ap(nameApp, mkStr(fixLitText(name(h).text))), rhs);
+                rhs =
+                    ap2(nameComp,
+                        ap(nameApp, mkStr(fixLitText(nameRec(h)->text))), rhs);
             }
 
             rhs = ap2(nameComp, ap2(nameShowsPrec, mkInt(lp), arg(fun(pat))),
@@ -3313,7 +3335,7 @@ static Cell local showsPrecRhs(Cell d, Cell pat,
                 rhs = ap(showsSP, ap2(nameComp,
                                       ap(showsN(APP_PREC + 1), arg(pat)), rhs));
             }
-            rhs = ap2(nameComp, ap(nameApp, mkStr(name(h).text)), rhs);
+            rhs = ap2(nameComp, ap(nameApp, mkStr(nameRec(h)->text)), rhs);
             rhs = ap2(nameShowParen, ap2(nameGt, d, mkInt(APP_PREC)), rhs);
             return rhs;
         }
@@ -3361,7 +3383,7 @@ deriveRead(Cell t) /* construct definition of text reader          */
     Int line = 0;
 
     if (isTycon(t)) {
-        List cs = tycon(t).defn;
+        List cs = tyconRec(t)->defn;
         List exps = NIL;
         for (; hasCfun(cs); cs = tl(cs)) {
             exps = cons(mkReadCon(hd(cs), d, r), exps);
@@ -3371,7 +3393,7 @@ deriveRead(Cell t) /* construct definition of text reader          */
         for (exps = tl(exps); nonNull(exps); exps = tl(exps)) {
             exp = ap2(nameApp, hd(exps), exp);
         }
-        line = tycon(t).line;
+        line = tyconRec(t)->line;
     } else { /* Tuples */
         exp = ap(mkReadTuple(t), r);
     }
@@ -3429,7 +3451,7 @@ static Cell local mkReadCon(Name con, Cell d,
 static Cell local mkReadPrefix(Cell con) /* readsPrec for prefix constructor */
 {
     Int arity = userArity(con);
-    Cell cn = mkStr(name(con).text);
+    Cell cn = mkStr(nameRec(con)->text);
     Cell r = inventVar();
     Cell prev_s = inventVar();
     Cell exp = con;
@@ -3471,7 +3493,7 @@ static Cell local mkReadInfix(Cell con) {
         (p +
          1); /* how it was in Haskell from Day 1 until 11/4/2002: assocOf(s)==LEFT_ASS  ? p : (p+1); */
     Int rp = (p + 1); /* ditto: assocOf(s)==RIGHT_ASS ? p : (p+1); */
-    Cell cn = mkStr(name(con).text);
+    Cell cn = mkStr(nameRec(con)->text);
     Cell r = inventVar();
     Cell s0 = inventVar();
     Cell s1 = inventVar();
@@ -3552,7 +3574,7 @@ static Cell local mkReadTuple(Cell tup) /* readsPrec for n-tuple */
 static Cell local mkReadRecord(Cell con,
                                List fs) /* readsPrec for record constructor */
 {
-    Cell cn = mkStr(name(con).text);
+    Cell cn = mkStr(nameRec(con)->text);
     Cell lb = mkStr(findText("{"));
     Cell rb = mkStr(findText("}"));
     Cell co = mkStr(findText(","));
@@ -3601,22 +3623,23 @@ static List local
 deriveBounded(Tycon t) /* construct definition of bounds           */
 {
     if (isEnumType(t)) {
-        Cell last = tycon(t).defn;
+        Cell last = tyconRec(t)->defn;
         Cell first = hd(last);
         while (hasCfun(tl(last))) {
             last = tl(last);
         }
         return cons(
-            mkBind("minBound", mkVarAlts(tycon(t).line, first)),
-            cons(mkBind("maxBound", mkVarAlts(tycon(t).line, hd(last))), NIL));
+            mkBind("minBound", mkVarAlts(tyconRec(t)->line, first)),
+            cons(mkBind("maxBound", mkVarAlts(tyconRec(t)->line, hd(last))),
+                 NIL));
     } else if (isTuple(t)) { /* Definitions for product types      */
         return mkBndBinds(0, t, tupleOf(t));
-    } else if (isTycon(t) && cfunOf(hd(tycon(t).defn)) == 0) {
-        return mkBndBinds(tycon(t).line, hd(tycon(t).defn),
-                          userArity(hd(tycon(t).defn)));
+    } else if (isTycon(t) && cfunOf(hd(tyconRec(t)->defn)) == 0) {
+        return mkBndBinds(tyconRec(t)->line, hd(tyconRec(t)->defn),
+                          userArity(hd(tyconRec(t)->defn)));
     }
 
-    errHead(tycon(t).line);
+    errHead(tyconRec(t)->line);
     errPrintf(
         "Can only derive instances of Bounded for enumeration and product types");
     errFail();
@@ -3722,8 +3745,8 @@ static Name local addNewPrim(Int l, Text vn, String s,
 
     if (isNull(n)) {
         n = newName(vn, NIL);
-    } else if (name(n).defn != PREDEFINED) {
-        duplicateError(l, name(n).mod, vn, "primitive");
+    } else if (nameRec(n)->defn != PREDEFINED) {
+        duplicateError(l, nameRec(n)->mod, vn, "primitive");
     }
 
     addPrim(l, n, s, currentModule, t);
@@ -3780,7 +3803,7 @@ Void foreignImport(Cell l, Cell callconv, Cell safety, Cell ext, Cell intName,
 
     if (isNull(n)) {
         n = newName(t, NIL);
-    } else if (name(n).defn != PREDEFINED) {
+    } else if (nameRec(n)->defn != PREDEFINED) {
         errHead(line);
         errPrintf("Redeclaration of foreign \"%s\"", textToStr(t));
         errFail();
@@ -3805,11 +3828,11 @@ Void foreignImport(Cell l, Cell callconv, Cell safety, Cell ext, Cell intName,
                   textToStr(textOf(safety)));
         errFail();
     }
-    name(n).line = line;
-    name(n).type = type;
-    name(n).extFun = textOf(ext);
-    name(n).foreignId = foreignCount++;
-    name(n).foreignFlags = sfty | cconv;
+    nameRec(n)->line = line;
+    nameRec(n)->type = type;
+    nameRec(n)->extFun = textOf(ext);
+    nameRec(n)->foreignId = foreignCount++;
+    nameRec(n)->foreignFlags = sfty | cconv;
     foreignImports = cons(n, foreignImports);
 }
 
@@ -3854,12 +3877,12 @@ Void foreignExport(Cell l, Cell v, Cell callconv, Cell ext, Cell intName,
         errFail();
     }
 
-    name(n).line = line;
-    name(n).type = type;
-    name(n).extFun = textOf(ext);
-    name(n).defn = intName;
-    name(n).foreignId = foreignCount++;
-    name(n).foreignFlags = FFI_NOSAFETY | cconv;
+    nameRec(n)->line = line;
+    nameRec(n)->type = type;
+    nameRec(n)->extFun = textOf(ext);
+    nameRec(n)->defn = intName;
+    nameRec(n)->foreignId = foreignCount++;
+    nameRec(n)->foreignFlags = FFI_NOSAFETY | cconv;
     foreignExports = cons(n, foreignExports);
 }
 
@@ -3913,8 +3936,8 @@ static String matchFname(String s) {
 
 static Void local checkForeignImport(Name p) /* Check foreign import          */
 {
-    Int line = name(p).line;
-    String ext = textToStr(name(p).extFun);
+    Int line = nameRec(p)->line;
+    String ext = textToStr(nameRec(p)->extFun);
     String e = 0;
     Type t = NIL;
     List argTys = NIL;
@@ -3922,10 +3945,10 @@ static Void local checkForeignImport(Name p) /* Check foreign import          */
     Bool generate_stub = generate_ffi;
 
     emptySubstitution();
-    name(p).type = checkSigType(name(p).line, "foreign import declaration", p,
-                                name(p).type);
+    nameRec(p)->type = checkSigType(
+        nameRec(p)->line, "foreign import declaration", p, nameRec(p)->type);
 
-    t = name(p).type;
+    t = nameRec(p)->type;
     if (isPolyType(t)) {
         t = monotypeOf(t);
     }
@@ -3972,10 +3995,10 @@ static Void local checkForeignImport(Name p) /* Check foreign import          */
         }
 
         if (generate_stub) {
-            name(p).arity = 1 + length(argTys) + (isIO ? IOArity : 0);
-            name(p).extFun = inventText();
-            implementForeignImportDynamic(line, name(p).foreignId,
-                                          name(p).extFun, argTys, isIO, t);
+            nameRec(p)->arity = 1 + length(argTys) + (isIO ? IOArity : 0);
+            nameRec(p)->extFun = inventText();
+            implementForeignImportDynamic(line, nameRec(p)->foreignId,
+                                          nameRec(p)->extFun, argTys, isIO, t);
         }
 
     } else if ((e = matchToken("wrapper", ext))) { /* thunk builder */
@@ -4016,10 +4039,10 @@ static Void local checkForeignImport(Name p) /* Check foreign import          */
         t = fullerExpand(t);
 
         if (generate_stub) {
-            name(p).arity = 1 + IOArity;
-            name(p).extFun = inventText();
-            implementForeignImportWrapper(line, name(p).foreignId,
-                                          name(p).extFun, argTys, isIO, t);
+            nameRec(p)->arity = 1 + IOArity;
+            nameRec(p)->extFun = inventText();
+            implementForeignImportWrapper(line, nameRec(p)->foreignId,
+                                          nameRec(p)->extFun, argTys, isIO, t);
         }
 
     } else {
@@ -4064,7 +4087,7 @@ static Void local checkForeignImport(Name p) /* Check foreign import          */
             cid = subText(ext, e - ext);
             ext = skipSpaces(e);
         } else {
-            cid = name(p).text;
+            cid = nameRec(p)->text;
         }
 
         if (*ext != '\0')
@@ -4078,10 +4101,10 @@ static Void local checkForeignImport(Name p) /* Check foreign import          */
                 goto labelerr;
             }
             if (generate_stub) {
-                name(p).arity = 0;
-                implementForeignImportLabel(line, name(p).foreignId, fn, cid,
-                                            name(p).text, t);
-                name(p).extFun = cid;
+                nameRec(p)->arity = 0;
+                implementForeignImportLabel(line, nameRec(p)->foreignId, fn,
+                                            cid, nameRec(p)->text, t);
+                nameRec(p)->extFun = cid;
             }
         } else {
             Bool isIO = FALSE;
@@ -4092,10 +4115,10 @@ static Void local checkForeignImport(Name p) /* Check foreign import          */
             }
 
             if (generate_stub) {
-                name(p).arity = length(argTys) + (isIO ? IOArity : 0);
-                implementForeignImport(line, p, name(p).foreignId, fn, cid,
+                nameRec(p)->arity = length(argTys) + (isIO ? IOArity : 0);
+                implementForeignImport(line, p, nameRec(p)->foreignId, fn, cid,
                                        isStatic, -1, argTys, isIO, t);
-                name(p).extFun = cid;
+                nameRec(p)->extFun = cid;
             }
         }
     }
@@ -4127,16 +4150,16 @@ labelerr:
 
 static Void local checkForeignExport(Name p) /* Check foreign export      */
 {
-    Int line = name(p).line;
-    Text ext = name(p).extFun;
+    Int line = nameRec(p)->line;
+    Text ext = nameRec(p)->extFun;
     Type t;
     List argTys = NIL;
     Bool isIO = FALSE;
 
     emptySubstitution();
-    name(p).type =
-        checkSigType(line, "foreign export declaration", p, name(p).type);
-    t = name(p).type;
+    nameRec(p)->type =
+        checkSigType(line, "foreign export declaration", p, nameRec(p)->type);
+    t = nameRec(p)->type;
     t = fullerExpand(t);
 
     while (getHead(t) == typeArrow && argCount == 2) {
@@ -4153,15 +4176,16 @@ static Void local checkForeignExport(Name p) /* Check foreign export      */
     }
 
     if (generate_ffi) {
-        name(p).arity = length(argTys) + (isIO ? IOArity : 0);
-        implementForeignExport(line, name(p).foreignId, ext, argTys, isIO, t);
+        nameRec(p)->arity = length(argTys) + (isIO ? IOArity : 0);
+        implementForeignExport(line, nameRec(p)->foreignId, ext, argTys, isIO,
+                               t);
     }
 }
 
 static Void local linkForeign(Name p) /* Link an ffi-generated primitive */
 {
-    addPrim(name(p).line, p, textToStr(name(p).text), name(p).mod,
-            name(p).type);
+    addPrim(nameRec(p)->line, p, textToStr(nameRec(p)->text), nameRec(p)->mod,
+            nameRec(p)->type);
 }
 
 /* --------------------------------------------------------------------------
@@ -4347,7 +4371,8 @@ static Void local checkIsCfun(Int line,
 {
     if (!isCfun(c)) {
         errHead(line);
-        errPrintf("\"%s\" is not a data constructor", textToStr(name(c).text));
+        errPrintf("\"%s\" is not a data constructor",
+                  textToStr(nameRec(c)->text));
         errFail();
     }
 }
@@ -4361,7 +4386,7 @@ static Void local checkCfunArgs(Int line, Cell c, Int args)
         errHead(line);
         errPrintf(
             "Constructor \"%s\" must have exactly %d argument%s in pattern",
-            textToStr(name(c).text), a, ((a == 1) ? "" : "s"));
+            textToStr(nameRec(c)->text), a, ((a == 1) ? "" : "s"));
         errFail();
     }
 }
@@ -4774,12 +4799,13 @@ static Void local addFixdecl(List bs, List ts, List cs, List ps,
             List ps1 = ps;
             for (; isNull(n) && nonNull(ts1); ts1 = tl(ts1)) { /* tycons  */
                 Tycon tc = hd(ts1);
-                if (tycon(tc).what == DATATYPE || tycon(tc).what == NEWTYPE) {
-                    n = nameIsMember(t, tycon(tc).defn);
+                if (tyconRec(tc)->what == DATATYPE ||
+                    tyconRec(tc)->what == NEWTYPE) {
+                    n = nameIsMember(t, tyconRec(tc)->defn);
                 }
             }
             for (; isNull(n) && nonNull(cs1); cs1 = tl(cs1)) { /* classes */
-                n = nameIsMember(t, cclass(hd(cs1)).members);
+                n = nameIsMember(t, cclassRec(hd(cs1))->members);
             }
             for (; isNull(n) && nonNull(ps1); ps1 = tl(ps1)) { /* prims   */
                 n = nameIsMember(t, hd(ps1));
@@ -4787,10 +4813,10 @@ static Void local addFixdecl(List bs, List ts, List cs, List ps,
 
             if (isNull(n)) {
                 missFixity(line, t);
-            } else if (name(n).syntax != NO_SYNTAX) {
+            } else if (nameRec(n)->syntax != NO_SYNTAX) {
                 dupFixity(line, t);
             }
-            name(n).syntax = intOf(sy);
+            nameRec(n)->syntax = intOf(sy);
         }
     }
 }
@@ -5231,8 +5257,8 @@ static Void local leaveScope() { /* Leave scope of last withinScope */
 
 static Void local dropNameClash(Cell v) {
     Name n = findName(textOf(v));
-    if (!isNull(n) && nonNull(name(n).clashes)) {
-        name(n).clashes = tl(name(n).clashes);
+    if (!isNull(n) && nonNull(nameRec(n)->clashes)) {
+        nameRec(n)->clashes = tl(nameRec(n)->clashes);
     }
 }
 
@@ -5241,11 +5267,11 @@ static Void local saveSyntax(Cell v,
                                       /* in corresponding Name     */
 {
     Name n = findName(textOf(v));
-    if (isNull(n) || name(n).syntax != NO_SYNTAX) {
+    if (isNull(n) || nameRec(n)->syntax != NO_SYNTAX) {
         internal("saveSyntax");
     }
     if (nonNull(sy)) {
-        name(n).syntax = intOf(sy);
+        nameRec(n)->syntax = intOf(sy);
     }
 }
 
@@ -5289,12 +5315,12 @@ static Void local depBinding(Cell b) /* find dependents of binding         */
 
 static Void local depDefaults(Class c) /* dependency analysis on defaults  */
 {                                      /* from class definition            */
-    depClassBindings(cclass(c).defaults);
+    depClassBindings(cclassRec(c)->defaults);
 }
 
 static Void local depInsts(Inst in) /* dependency analysis on instance  */
 {                                   /* bindings                         */
-    depClassBindings(inst(in).implements);
+    depClassBindings(instRec(in)->implements);
 }
 
 static Void local
@@ -5528,17 +5554,18 @@ static Void local depCaseAlt(Int line,
 
 static Void local checkNameAmbigName(Int line, Cell n, Bool isV) {
     String kind = (isV ? "variable" : "data constructor");
-    if (!isNull(n) && nonNull(name(n).clashes)) {
-        Text t = name(n).text;
-        List ls = name(n).clashes;
+    if (!isNull(n) && nonNull(nameRec(n)->clashes)) {
+        Text t = nameRec(n)->text;
+        List ls = nameRec(n)->clashes;
         errHead(line);
         errPrintf("Ambiguous %s occurrence \"%s\"", kind, textToStr(t));
         errPrintf("\n*** Could refer to: ");
-        errPrintf("%s.%s ", textToStr(module(name(n).mod).text),
-                  textToStr(name(n).text));
+        errPrintf("%s.%s ", textToStr(moduleRec(nameRec(n)->mod)->text),
+                  textToStr(nameRec(n)->text));
         for (; nonNull(ls); ls = tl(ls)) {
-            errPrintf("%s.%s ", textToStr(module(name(hd(ls)).mod).text),
-                      textToStr(name(hd(ls)).text));
+            errPrintf("%s.%s ",
+                      textToStr(moduleRec(nameRec(hd(ls))->mod)->text),
+                      textToStr(nameRec(hd(ls))->text));
         }
         errPrintf("\n");
         errFail();
@@ -5565,17 +5592,18 @@ static Cell local checkTyconAmbig(Int line, Text t, Cell e) {
         tc = findTycon(t);
     }
 
-    if (!isNull(tc) && nonNull(tycon(tc).clashes)) {
-        Text t = tycon(tc).text;
-        List ls = tycon(tc).clashes;
+    if (!isNull(tc) && nonNull(tyconRec(tc)->clashes)) {
+        Text t = tyconRec(tc)->text;
+        List ls = tyconRec(tc)->clashes;
         errHead(line);
         errPrintf("Ambiguous type constructor occurrence \"%s\"", textToStr(t));
         errPrintf("\n*** Could refer to: ");
-        errPrintf("%s.%s ", textToStr(module(tycon(tc).mod).text),
-                  textToStr(tycon(tc).text));
+        errPrintf("%s.%s ", textToStr(moduleRec(tyconRec(tc)->mod)->text),
+                  textToStr(tyconRec(tc)->text));
         for (; nonNull(ls); ls = tl(ls)) {
-            errPrintf("%s.%s ", textToStr(module(tycon(hd(ls)).mod).text),
-                      textToStr(tycon(hd(ls)).text));
+            errPrintf("%s.%s ",
+                      textToStr(moduleRec(tyconRec(hd(ls))->mod)->text),
+                      textToStr(tyconRec(hd(ls))->text));
         }
         errPrintf("\n");
         errFail();
@@ -5625,7 +5653,7 @@ static Cell local depVar(Int line, Cell e,
         checkNameAmbig(line, t, e);
     }
 
-    if (!moduleThisScript(name(n).mod)) {
+    if (!moduleThisScript(nameRec(n)->mod)) {
         return n;
     }
     /* Later phases of the system cannot cope if we resolve references
@@ -5653,15 +5681,16 @@ static Cell local depQVar(
                   identToStr(e));
         errPrintf("\n*** Could refer to: ");
         for (; nonNull(ls); ls = tl(ls)) {
-            errPrintf("%s.%s ", textToStr(module(name(hd(ls)).mod).text),
-                      textToStr(name(hd(ls)).text));
+            errPrintf("%s.%s ",
+                      textToStr(moduleRec(nameRec(hd(ls))->mod)->text),
+                      textToStr(nameRec(hd(ls))->text));
         }
         errPrintf("\n");
         errFail();
     }
 
     n = hd(ns);
-    if (name(n).mod != currentModule) {
+    if (nameRec(n)->mod != currentModule) {
         return n;
     }
     if (fst(e) == VARIDCELL) {
@@ -5682,14 +5711,15 @@ static Void local depConFlds(Int line, Cell e,
     } else {
         errHead(line);
         errPrintf("Constructor \"%s\" does not have selected fields in ",
-                  textToStr(name(c).text));
+                  textToStr(nameRec(c)->text));
         errExpr(e);
         errPrintf("\n");
         errFail();
     }
-    if (!isP && isPair(name(c).defn)) { /* Check that banged fields defined*/
-        List scs = fst(name(c).defn);   /* List of strict components       */
-        Type t = name(c).type;
+    if (!isP &&
+        isPair(nameRec(c)->defn)) {       /* Check that banged fields defined*/
+        List scs = fst(nameRec(c)->defn); /* List of strict components       */
+        Type t = nameRec(c)->type;
         Int a = userArity(c);
         List fs = snd(snd(e));
         List ss;
@@ -5708,7 +5738,7 @@ static Void local depConFlds(Int line, Cell e,
         while (isAp(t)) {
             t = fun(t);
         }
-        for (ss = tycon(t).defn; hasCfun(ss); ss = tl(ss)) {
+        for (ss = tyconRec(t)->defn; hasCfun(ss); ss = tl(ss)) {
         }
         /* Now we know the tycon t that c belongs to, and the corresponding
          * list of selectors for that type, ss.  Now we have to check that
@@ -5719,7 +5749,7 @@ static Void local depConFlds(Int line, Cell e,
             Int i = intOf(hd(scs));
             List ss1 = ss;
             for (; nonNull(ss1); ss1 = tl(ss1)) {
-                List cns = name(hd(ss1)).defn;
+                List cns = nameRec(hd(ss1))->defn;
                 for (; nonNull(cns); cns = tl(cns)) {
                     if (fst(hd(cns)) == c) {
                         break;
@@ -5796,8 +5826,8 @@ static List local depFields(Int l, Cell e, List fs,
             }
         }
 
-        if (isNull(ss)) {            /* for first named selector           */
-            List scs = name(s).defn; /* calculate list of constructors  */
+        if (isNull(ss)) { /* for first named selector           */
+            List scs = nameRec(s)->defn; /* calculate list of constructors  */
             for (; nonNull(scs); scs = tl(scs)) {
                 cs = cons(fst(hd(scs)), cs);
             }
@@ -5805,7 +5835,7 @@ static List local depFields(Int l, Cell e, List fs,
         } else {               /* for subsequent selectors         */
             List ds = cs;      /* intersect constructor lists      */
             for (cs = NIL; nonNull(ds);) {
-                List scs = name(s).defn;
+                List scs = nameRec(s)->defn;
                 while (nonNull(scs) && fst(hd(scs)) != hd(ds)) {
                     scs = tl(scs);
                 }
@@ -5822,7 +5852,7 @@ static List local depFields(Int l, Cell e, List fs,
             if (cellIsMember(s, ss)) { /* check for repeated uses          */
                 errHead(l);
                 errPrintf("Repeated field name \"%s\" in field list",
-                          textToStr(name(s).text));
+                          textToStr(nameRec(s)->text));
                 errFail();
             }
             ss = cons(s, ss);
@@ -5848,14 +5878,14 @@ static List local depFields(Int l, Cell e, List fs,
  * ------------------------------------------------------------------------*/
 
 static Cell local tcDepends(Cell c) {
-    return isTycon(c) ? tycon(c).kind : cclass(c).kinds;
+    return isTycon(c) ? tyconRec(c)->kind : cclassRec(c)->kinds;
 }
 
 static Void local tcSetDepends(Cell c, Cell v) {
     if (isTycon(c))
-        tycon(c).kind = v;
+        tyconRec(c)->kind = v;
     else
-        cclass(c).kinds = v;
+        cclassRec(c)->kinds = v;
 }
 
 static List local tcscc(List ts, List cs) /* scc for tycons and classes    */
@@ -5914,20 +5944,20 @@ Void checkDefns() { /* Top level static analysis           */
     setCurrModule(thisModule);
 
     /* Resolve module references */
-    mapProc(checkQualImport, module(thisModule).modAliases);
+    mapProc(checkQualImport, moduleRec(thisModule)->modAliases);
     mapProc(checkUnqualImport, unqualImports);
     /* Add "import Prelude" if there's no explicit import */
     if ((thisModule != modulePrelude && thisModule != moduleUserPrelude) &&
         isNull(cellAssoc(moduleUserPrelude, unqualImports)) &&
-        isNull(
-            cellRevAssoc(moduleUserPrelude, module(thisModule).modAliases))) {
+        isNull(cellRevAssoc(moduleUserPrelude,
+                            moduleRec(thisModule)->modAliases))) {
         addUnqualImport(moduleUserPrelude, mkCon(textUserPrelude), DOTDOT);
     }
     map1Proc(checkImportList, FALSE, unqualImports);
-    mapProc(checkQualImportList, module(thisModule).qualImports);
+    mapProc(checkQualImportList, moduleRec(thisModule)->qualImports);
 
     /* And,  finally, fix-up the effective import lists. */
-    fixupImportExports(module(currentModule).modImports);
+    fixupImportExports(moduleRec(currentModule)->modImports);
 
     /* Note: there's a lot of side-effecting going on here, so
        don't monkey about with the order of operations here unless
@@ -5981,8 +6011,8 @@ Void checkDefns() { /* Top level static analysis           */
         mapProc(checkForeignImport, foreignImports);
         mapProc(checkForeignExport, foreignExports);
         if (generate_ffi && need_stubs) {
-            foreignFooter(scriptFile, module(thisModule).text, foreignImports,
-                          foreignExports);
+            foreignFooter(scriptFile, moduleRec(thisModule)->text,
+                          foreignImports, foreignExports);
         }
         if (need_stubs && (generate_ffi || !generateFFI)) {
             needPrims(0, NULL);
@@ -6002,7 +6032,8 @@ Void checkDefns() { /* Top level static analysis           */
     /* export list.  Note that this has to happen before dependency        */
     /* analysis so that references to Prelude.foo will be resolved         */
     /* when compiling the prelude.                                         */
-    module(thisModule).exports = checkExports(module(thisModule).exports);
+    moduleRec(thisModule)->exports =
+        checkExports(moduleRec(thisModule)->exports);
 
     mapProc(checkTypeIn, typeInDefns); /* check restricted synonym defns  */
 
@@ -6063,18 +6094,19 @@ static Void local noPrevDef(Int line,
 
     if (isNull(n)) {
         n = newName(textOf(v), NIL);
-        name(n).defn = PREDEFINED;
-    } else if (name(n).defn != PREDEFINED && name(n).mod == currentModule) {
+        nameRec(n)->defn = PREDEFINED;
+    } else if (nameRec(n)->defn != PREDEFINED &&
+               nameRec(n)->mod == currentModule) {
         /* A local repeated definition */
-        duplicateError(line, name(n).mod, name(n).text, "variable");
-    } else if (name(n).defn != PREDEFINED) {
+        duplicateError(line, nameRec(n)->mod, nameRec(n)->text, "variable");
+    } else if (nameRec(n)->defn != PREDEFINED) {
         Name oldnm = n;
         removeName(n);
         n = newName(textOf(v), NIL);
-        name(n).defn = PREDEFINED;
-        name(n).clashes = cons(oldnm, name(n).clashes);
+        nameRec(n)->defn = PREDEFINED;
+        nameRec(n)->clashes = cons(oldnm, nameRec(n)->clashes);
     }
-    name(n).line = line;
+    nameRec(n)->line = line;
 }
 
 static Void local duplicateError(Int line, Module mod, Text t,
@@ -6099,10 +6131,10 @@ static Void local checkTypeIn(Pair cvs) /* Check that vars in restricted   */
 
     for (; nonNull(vs); vs = tl(vs)) {
         if (isNull(findName(textOf(hd(vs))))) {
-            errHead(tycon(c).line);
+            errHead(tyconRec(c)->line);
             errPrintf(
                 "No top level binding of \"%s\" for restricted synonym \"%s\"",
-                textToStr(textOf(hd(vs))), textToStr(tycon(c).text));
+                textToStr(textOf(hd(vs))), textToStr(tyconRec(c)->text));
             errFail();
         }
     }

@@ -341,11 +341,12 @@ static Void local find() {      /* edit file containing definition */
         setCurrModule(findEvalModule());
         startNewScript(0);
         if (nonNull(c = findTycon(t = findText(nm)))) {
-            if (startEdit(tycon(c).line, getScriptName(scriptThisTycon(c)))) {
+            if (startEdit(tyconRec(c)->line,
+                          getScriptName(scriptThisTycon(c)))) {
                 readScripts(1);
             }
         } else if (nonNull(c = findName(t))) {
-            if (startEdit(name(c).line, getScriptName(scriptThisName(c)))) {
+            if (startEdit(nameRec(c)->line, getScriptName(scriptThisName(c)))) {
                 readScripts(1);
             }
         } else {
@@ -508,21 +509,21 @@ static String local objToStr(Module m, Cell c) {
 
     switch (whatIs(c)) {
     case NAME:
-        if (m != name(c).mod)
-            qualifier = textToStr(module(name(c).mod).text);
-        unqual = textToStr(name(c).text);
+        if (m != nameRec(c)->mod)
+            qualifier = textToStr(moduleRec(nameRec(c)->mod)->text);
+        unqual = textToStr(nameRec(c)->text);
         break;
 
     case TYCON:
-        if (m != tycon(c).mod)
-            qualifier = textToStr(module(tycon(c).mod).text);
-        unqual = textToStr(tycon(c).text);
+        if (m != tyconRec(c)->mod)
+            qualifier = textToStr(moduleRec(tyconRec(c)->mod)->text);
+        unqual = textToStr(tyconRec(c)->text);
         break;
 
     case CLASS:
-        if (m != cclass(c).mod)
-            qualifier = textToStr(module(cclass(c).mod).text);
-        unqual = textToStr(cclass(c).text);
+        if (m != cclassRec(c)->mod)
+            qualifier = textToStr(moduleRec(cclassRec(c)->mod)->text);
+        unqual = textToStr(cclassRec(c)->text);
         break;
 
     default:
@@ -593,27 +594,27 @@ static Void local describe(Text t) /* describe an object              */
         Type t = tc;
         Int i;
         Inst in;
-        for (i = 0; i < tycon(tc).arity; ++i) {
+        for (i = 0; i < tyconRec(tc)->arity; ++i) {
             t = ap(t, mkOffset(i));
         }
         Printf("-- type constructor");
         if (kindExpert) {
             Printf(" with kind ");
-            printKind(stdout, tycon(tc).kind);
+            printKind(stdout, tyconRec(tc)->kind);
         }
         Putchar('\n');
-        switch (tycon(tc).what) {
+        switch (tyconRec(tc)->what) {
         case SYNONYM:
             Printf("type ");
             printType(stdout, t);
             Printf(" = ");
-            printType(stdout, tycon(tc).defn);
+            printType(stdout, tyconRec(tc)->defn);
             break;
 
         case NEWTYPE:
         case DATATYPE: {
-            List cs = tycon(tc).defn;
-            if (tycon(tc).what == DATATYPE) {
+            List cs = tyconRec(tc)->defn;
+            if (tyconRec(tc)->what == DATATYPE) {
                 Printf("data ");
             } else {
                 Printf("newtype ");
@@ -628,7 +629,7 @@ static Void local describe(Text t) /* describe an object              */
                 Putchar('\n');
                 printExp(stdout, hd(cs));
                 Printf(" :: ");
-                printType(stdout, name(hd(cs)).type);
+                printType(stdout, nameRec(hd(cs))->type);
             }
             if (nonNull(cs)) {
                 Printf("\n-- selectors:");
@@ -637,7 +638,7 @@ static Void local describe(Text t) /* describe an object              */
                 Putchar('\n');
                 printExp(stdout, hd(cs));
                 Printf(" :: ");
-                printType(stdout, name(hd(cs)).type);
+                printType(stdout, nameRec(hd(cs))->type);
             }
         } break;
 
@@ -659,8 +660,8 @@ static Void local describe(Text t) /* describe an object              */
     }
 
     if (nonNull(cl)) { /* as a class                      */
-        List ins = cclass(cl).instances;
-        Kinds ks = cclass(cl).kinds;
+        List ins = cclassRec(cl)->instances;
+        Kinds ks = cclassRec(cl)->kinds;
         if (nonNull(ks) && isNull(tl(ks)) && hd(ks) == STAR) {
             Printf("-- type class");
         } else {
@@ -671,15 +672,15 @@ static Void local describe(Text t) /* describe an object              */
             }
         }
         Putchar('\n');
-        mapProc(printSyntax, cclass(cl).members);
+        mapProc(printSyntax, cclassRec(cl)->members);
         Printf("class ");
-        if (nonNull(cclass(cl).supers)) {
-            printContext(stdout, cclass(cl).supers);
+        if (nonNull(cclassRec(cl)->supers)) {
+            printContext(stdout, cclassRec(cl)->supers);
             Printf(" => ");
         }
-        printPred(stdout, cclass(cl).head);
-        if (nonNull(cclass(cl).fds)) {
-            List fds = cclass(cl).fds;
+        printPred(stdout, cclassRec(cl)->head);
+        if (nonNull(cclassRec(cl)->fds)) {
+            List fds = cclassRec(cl)->fds;
             String pre = " | ";
             for (; nonNull(fds); fds = tl(fds)) {
                 Printf(pre);
@@ -687,11 +688,11 @@ static Void local describe(Text t) /* describe an object              */
                 pre = ", ";
             }
         }
-        if (nonNull(cclass(cl).members)) {
-            List ms = cclass(cl).members;
+        if (nonNull(cclassRec(cl)->members)) {
+            List ms = cclassRec(cl)->members;
             Printf(" where");
             do {
-                Type t = name(hd(ms)).type;
+                Type t = nameRec(hd(ms))->type;
                 if (isPolyType(t)) {
                     t = monotypeOf(t);
                 }
@@ -722,8 +723,8 @@ static Void local describe(Text t) /* describe an object              */
         printSyntax(nm);
         printExp(stdout, nm);
         Printf(" :: ");
-        if (nonNull(name(nm).type)) {
-            printType(stdout, name(nm).type);
+        if (nonNull(nameRec(nm)->type)) {
+            printType(stdout, nameRec(nm)->type);
         } else {
             Printf("<unknown type>");
         }
@@ -735,7 +736,7 @@ static Void local describe(Text t) /* describe an object              */
         } else if (isSfun(nm)) {
             Printf("  -- selector function");
         }
-        if (name(nm).primDef) {
+        if (nameRec(nm)->primDef) {
             Printf("   -- primitive");
         }
         Printf("\n\n");
@@ -748,7 +749,7 @@ static Void local describe(Text t) /* describe an object              */
 
 static Void local printSyntax(Name nm) {
     Syntax sy = syntaxOf(nm);
-    Text t = name(nm).text;
+    Text t = nameRec(nm)->text;
     String s = textToStr(t);
     if (sy != defaultSyntax(t)) {
         Printf("infix");
@@ -775,11 +776,11 @@ static Void local printSyntax(Name nm) {
 static Void local showInst(Inst in) /* Display instance decl header    */
 {
     Printf("instance ");
-    if (nonNull(inst(in).specifics)) {
-        printContext(stdout, inst(in).specifics);
+    if (nonNull(instRec(in)->specifics)) {
+        printContext(stdout, instRec(in)->specifics);
         Printf(" => ");
     }
-    printPred(stdout, inst(in).head);
+    printPred(stdout, instRec(in)->head);
     Putchar('\n');
 }
 
@@ -949,7 +950,7 @@ static Void local initInterpreter() {
     /* remove partially loaded scripts */
     /* not counting prelude as a script*/
 
-    promptForInput(textToStr(module(findEvalModule()).text));
+    promptForInput(textToStr(moduleRec(findEvalModule())->text));
 }
 
 Bool doCommand() /* read and execute a command      */

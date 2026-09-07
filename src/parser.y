@@ -112,11 +112,11 @@ start	  : EXPR exp wherePart		{inputExpr = letrec($3,$2); sp-=2;}
  * We use the 1.2 header because it breaks much less pre-module code.
  */
 topModule : startMain begin modBody end {
-					 setExportList(singleton(ap(MODULEENT,mkCon(module(currentModule).text))));
+					 setExportList(singleton(ap(MODULEENT,mkCon(moduleRec(currentModule)->text))));
 					 $$ = gcShadow(3,$3);
 					}
           | startMain '{' modBody '}'   {
-					 setExportList(singleton(ap(MODULEENT,mkCon(module(currentModule).text))));
+					 setExportList(singleton(ap(MODULEENT,mkCon(moduleRec(currentModule)->text))));
 					 $$ = gcShadow(4,$3);
 					}
 	  | TMODULE modname expspec WHERE '{' modBody end
@@ -1146,5 +1146,5 @@ static Cell local qualType(List ps, Type t)	/* qualify t by ps, if any  */
 
 static List local exportSelf(Void)		/* the module's own name   */
 {
-    return singleton(ap(MODULEENT,mkCon(module(currentModule).text)));
+    return singleton(ap(MODULEENT,mkCon(moduleRec(currentModule)->text)));
 }

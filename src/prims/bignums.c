@@ -80,7 +80,7 @@ static Void bignumControl(Int what) {
         registerRoots(bignumRoots);
 #define predef(nm, str)                                                        \
     nm = newName(findText(str), NIL);                                          \
-    name(nm).defn = PREDEFINED
+    nameRec(nm)->defn = PREDEFINED
         predef(nameIntToInteger, "primIntToInteger");
 #undef predef
     case RESET:

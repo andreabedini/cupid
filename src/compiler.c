@@ -124,10 +124,10 @@ static Cell local translate(Cell e) /* Translate expression:            */
         if (e == nameOtherwise)
             return nameTrue;
         if (isCfun(e)) {
-            if (isName(name(e).defn))
-                return name(e).defn;
-            if (isPair(name(e).defn))
-                return snd(name(e).defn);
+            if (isName(nameRec(e)->defn))
+                return nameRec(e)->defn;
+            if (isPair(nameRec(e)->defn))
+                return snd(nameRec(e)->defn);
         }
         return e;
 
@@ -436,9 +436,9 @@ static Cell local transConFlds(Name c,
                                List flds) /* Translate C{flds}               */
 {
     Cell e = c;
-    Int m = name(c).arity;
+    Int m = nameRec(c)->arity;
     Int i;
-    Text t = name(c).text;
+    Text t = nameRec(c)->text;
     Cell tStr = mkStr(t);
     Cell empty = ap(namePrimThrow, ap(nameRecConError, tStr));
 
@@ -475,7 +475,7 @@ static Cell local transUpdFlds(Cell e, List cs,
         Cell pat = c;
         Cell rhs = c;
         List as = args;
-        Int m = name(c).arity;
+        Int m = nameRec(c)->arity;
         Int i;
 
         for (i = m; i > 0; i--) { /* pat  = C a1 ... am              */
@@ -772,7 +772,7 @@ static List local remPat1(Cell pat, Cell expr, List lds)
 
     case CONFLDS: {
         Name h = fst(snd(pat));
-        Int m = name(h).arity;
+        Int m = nameRec(h)->arity;
         Cell p = h;
         List fs = snd(snd(pat));
         Int i = m;
@@ -800,7 +800,7 @@ static List local remPat1(Cell pat, Cell expr, List lds)
         }
 
         if (argCount == 1 && isCfun(c) /* for newtype */
-            && cfunOf(c) == 0 && name(c).defn == nameId)
+            && cfunOf(c) == 0 && nameRec(c)->defn == nameId)
             return remPat1(arg(pat), expr, lds);
 
         /* intentional fall-thru */
@@ -1241,7 +1241,7 @@ emptyMatch(Cell ma) /* Normalize and test to see if a given    */
 
         case AP:
             if (isName(fun(p)) && isCfun(fun(p)) && cfunOf(fun(p)) == 0 &&
-                name(fun(p)).defn == nameId) {
+                nameRec(fun(p))->defn == nameId) {
                 hd(maPats(ma)) = arg(p);
                 goto tidyHd;
             }
@@ -1303,7 +1303,7 @@ Int discrArity(Cell d) /* Find arity of discriminator      */
 {
     switch (whatIs(d)) {
     case NAME:
-        return name(d).arity;
+        return nameRec(d)->arity;
     case TUPLE:
         return tupleOf(d);
     case CHARCELL:
@@ -1473,7 +1473,7 @@ static Void local liftFundef(Int co, List tr,
         fst3(thd3(fd)),                        /* free variables */
         co + arity,                            /* current offset */
         lift(co + arity, tr, thd3(thd3(fd)))); /* lifted case    */
-    name(fst3(fd)).defn = NIL;
+    nameRec(fst3(fd))->defn = NIL;
 }
 
 /* Each element in a list of fundefs has the form: (v,a,(fvs,ffs,rhs))
@@ -1740,13 +1740,13 @@ static Void local compileGlobalFunction(Pair bind) {
     defs = altsMatch(1, arity, NIL, defs);
     newGlobalFunction(n, arity, NIL, arity,
                       lift(arity, NIL, match(arity, defs)));
-    name(n).defn = NIL;
+    nameRec(n)->defn = NIL;
 }
 
 static Void local
 compileGenFunction(Name n) /* Produce code for internally          */
 {                          /* generated function                   */
-    List defs = name(n).defn;
+    List defs = nameRec(n)->defn;
     Int arity = length(fst(hd(defs)));
 
     compiler(RESET);
@@ -1755,13 +1755,13 @@ compileGenFunction(Name n) /* Produce code for internally          */
     defs = altsMatch(1, arity, NIL, defs);
     newGlobalFunction(n, arity, NIL, arity,
                       lift(arity, NIL, match(arity, defs)));
-    name(n).defn = NIL;
+    nameRec(n)->defn = NIL;
 }
 
 static Name local
 compileSelFunction(Pair p)             /* Produce code for selector func  */
 {                                      /* Should be merged with genDefns, */
-    Name s = fst(p);                   /* but the name(_).defn field is   */
+    Name s = fst(p);                   /* but the nameRec(_)->defn field is   */
     List defs = snd(p);                /* already used for other purposes */
     Int arity = length(fst(hd(defs))); /* in selector functions.           */
 
@@ -1779,9 +1779,9 @@ static Void local newGlobalFunction(Name n, Int arity, List fvs, Int co,
     numExtraVars = length(extraVars);
     localOffset = co;
     localArity = arity;
-    name(n).arity = arity + numExtraVars;
+    nameRec(n)->arity = arity + numExtraVars;
     e = preComp(e);
-    name(n).code = codeGen(n, name(n).arity, e);
+    nameRec(n)->code = codeGen(n, nameRec(n)->arity, e);
 }
 
 /* --------------------------------------------------------------------------

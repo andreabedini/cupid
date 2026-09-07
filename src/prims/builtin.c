@@ -11,18 +11,14 @@
  * $Date: 2006/06/01 22:20:17 $
  * ------------------------------------------------------------------------*/
 
-/* We include math.h before prelude.h because SunOS 4's cpp incorrectly
- * reports an error if you use "name(n)" as a macro with arguments and
- * "name" as a normal identifier (with no arguments).  ADR
- */
 #include "prelude.h"
-#include <math.h>
 #include "storage.h"
 #include "connect.h"
 #include "errors.h"
 #include "machdep.h"
 #include "char.h"
 #include <ctype.h>
+#include <math.h>
 #include <stdint.h> /* intptr_t, for the StablePtr conversions */
 
 #if HAVE_IO_H
@@ -1353,10 +1349,11 @@ CAFChar(primMaxChar, MAXCHARVAL)
             c = snd(c);
             break;
         case NAME:
-            if (isCfun(c) || name(c).arity != 0 || isNull(name(c).defn)) {
+            if (isCfun(c) || nameRec(c)->arity != 0 ||
+                isNull(nameRec(c)->defn)) {
                 return c;
             }
-            c = name(c).defn;
+            c = nameRec(c)->defn;
             break;
         default:
             return c;
@@ -2105,11 +2102,11 @@ Void builtIn(Int what) {
         pFun(namePrimThrow, "_throw", "primThrowException");
         pFun(nameBlackHole, "_Gc Black Hole", "gcBhole");
         pFun(nameInd, "_indirect", "dictIndirect");
-        name(nameInd).number = DFUNNAME;
+        nameRec(nameInd)->number = DFUNNAME;
 #undef pFun
 #define predef(nm, str)                                                        \
     nm = newName(findText(str), NIL);                                          \
-    name(nm).defn = PREDEFINED
+    nameRec(nm)->defn = PREDEFINED
         predef(nameNegate, "negate");
         predef(nameFlip, "flip");
         predef(nameFrom, "enumFrom");

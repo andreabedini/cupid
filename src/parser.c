@@ -2501,7 +2501,7 @@ yyreduce:
   case 6: /* topModule: startMain begin modBody end  */
 #line 114 "parser.y"
                                         {
-					 setExportList(singleton(ap(MODULEENT,mkCon(module(currentModule).text))));
+					 setExportList(singleton(ap(MODULEENT,mkCon(moduleRec(currentModule)->text))));
 					 yyval = gcShadow(3,yyvsp[-1]);
 					}
 #line 2508 "parser.c"
@@ -2510,7 +2510,7 @@ yyreduce:
   case 7: /* topModule: startMain '{' modBody '}'  */
 #line 118 "parser.y"
                                         {
-					 setExportList(singleton(ap(MODULEENT,mkCon(module(currentModule).text))));
+					 setExportList(singleton(ap(MODULEENT,mkCon(moduleRec(currentModule)->text))));
 					 yyval = gcShadow(4,yyvsp[-1]);
 					}
 #line 2517 "parser.c"
@@ -5733,5 +5733,5 @@ static Cell local qualType(List ps, Type t)	/* qualify t by ps, if any  */
 
 static List local exportSelf(Void)		/* the module's own name   */
 {
-    return singleton(ap(MODULEENT,mkCon(module(currentModule).text)));
+    return singleton(ap(MODULEENT,mkCon(moduleRec(currentModule)->text)));
 }

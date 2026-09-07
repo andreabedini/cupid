@@ -150,7 +150,7 @@ static Void local printer(Name pr, Int d) /* Main part: primPrint/primNPrint */
     case NAME: {
         Syntax sy = syntaxOf(whnfHead);
 
-        if (!isCfun(whnfHead) || name(whnfHead).arity > whnfArgs)
+        if (!isCfun(whnfHead) || nameRec(whnfHead)->arity > whnfArgs)
             pr = nameNPrint;
 
         /* don't print dictionary arguments */
@@ -167,9 +167,9 @@ static Void local printer(Name pr, Int d) /* Main part: primPrint/primNPrint */
                 else
                     break;
             }
-            if (w == NAME && isNull(name(h).type) &&
-                (whatIs(name(h).parent) == INSTANCE || isDfun(h) ||
-                 strncmp(textToStr(name(h).text), "Make.", 5) == 0))
+            if (w == NAME && isNull(nameRec(h)->type) &&
+                (whatIs(nameRec(h)->parent) == INSTANCE || isDfun(h) ||
+                 strncmp(textToStr(nameRec(h)->text), "Make.", 5) == 0))
                 used++;
             else
                 break;
@@ -471,7 +471,7 @@ primFun(primNSPrint) { /* print string without eval        */
 static Void local
 outName(Name nm) /* output nm using parent field if possible */
 {
-    Cell p = name(nm).parent;
+    Cell p = nameRec(nm)->parent;
     switch (whatIs(p)) {
 
     case NAME:
@@ -481,12 +481,12 @@ outName(Name nm) /* output nm using parent field if possible */
     default:
         break;
     }
-    outStr(textToStr(name(nm).text));
+    outStr(textToStr(nameRec(nm)->text));
 }
 
 static Void local outVar(Name nm) /* output nm as function symbol          */
 {
-    String s = textToStr(name(nm).text);
+    String s = textToStr(nameRec(nm)->text);
     if ((isascii(*s) && isalpha(*s)) || *s == '_' || *s == '[' || *s == '(')
         outName(nm);
     else {
@@ -498,7 +498,7 @@ static Void local outVar(Name nm) /* output nm as function symbol          */
 
 static Void local outOp(Name nm) /* output nm as operator symbol           */
 {
-    String s = textToStr(name(nm).text);
+    String s = textToStr(nameRec(nm)->text);
     if (isascii(s[0]) && isalpha(s[0])) {
         outCh('`');
         outName(nm);

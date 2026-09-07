@@ -39,7 +39,7 @@ static Void local internalControl(Int what) {
     case INSTALL:
 #define predef(nm, str)                                                        \
     nm = newName(findText(str), NIL);                                          \
-    name(nm).defn = PREDEFINED
+    nameRec(nm)->defn = PREDEFINED
         setCurrModule(modulePrelude);
         predef(nameLeft, "Left");
         predef(nameRight, "Right");
@@ -323,7 +323,7 @@ primFun(primNameString) { /* Get string of a name             */
     Text t;               /*  :: Name -> String              */
     Name nm;
     IntArg(nm, 1);
-    t = name(nm).text;
+    t = nameRec(nm)->text;
     if (0 <= t && t < NUM_TEXT) {
         /* ToDo: replace updateRoot(mkStr(..)) with updapRoot(STRCELL,..) */
         updateRoot(mkStr(t));
@@ -356,7 +356,7 @@ primFun(primNameInfo) { /* Get arity and fixity of a Name   */
         assoc = 'N';
         break;
     }
-    updapRoot(ap(ap(mkTuple(3), mkInt(name(nm).arity)), mkInt(precOf(syn))),
+    updapRoot(ap(ap(mkTuple(3), mkInt(nameRec(nm)->arity)), mkInt(precOf(syn))),
               mkChar(assoc));
 }
 
@@ -373,7 +373,7 @@ primFun(primNameEq) { /* Compare names                    */
 primFun(primNameCode) { /* Obtain address of first bytecode */
     Name nm;            /*  :: Name -> Addr                 */
     IntArg(nm, 1);
-    IntResult(name(nm).code);
+    IntResult(nameRec(nm)->code);
 }
 
 #endif /* BYTECODE_PRIMS */

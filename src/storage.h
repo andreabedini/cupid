@@ -463,8 +463,6 @@ static inline Cell mkOffset(Int o) {
 
 #define MODMIN (OFFMIN + NUM_OFFSETS)
 
-#define module(n) tabModule[(n) - MODMIN]
-
 /* Under Haskell 1.3, the list of qualified imports is always a subset
  * of the list of unqualified imports.  For simplicity and flexibility,
  * we do not attempt to exploit this fact - when a module is imported
@@ -523,7 +521,6 @@ extern List getModuleImports(Module);
  * ------------------------------------------------------------------------*/
 
 #define TYCMIN (MODMIN + NUM_MODULE)
-#define tycon(n) tabTycon[(n) - TYCMIN]
 
 struct strTycon {
     Text text;
@@ -554,7 +551,6 @@ extern Tycon addPrimTycon(Text, Kind, Int, Cell, Cell);
  * ------------------------------------------------------------------------*/
 
 #define NAMEMIN (TYCMIN + NUM_TYCON)
-#define name(n) tabName[(n) - NAMEMIN]
 
 struct strName {
     Text text;
@@ -615,7 +611,6 @@ extern Bool setOldDLLFlag(Bool);
  * ------------------------------------------------------------------------*/
 
 #define INSTMIN (NAMEMIN + NUM_NAME) /* instances                          */
-#define inst(in) tabInst[(in) - INSTMIN]
 
 struct strInst {
     Class c; /* class C                    */
@@ -633,7 +628,6 @@ struct strInst {
  */
 
 #define CLASSMIN (INSTMIN + NUM_INSTS)
-#define cclass(n) tabClass[(n) - CLASSMIN]
 
 struct strClass {
     Text text;      /* Name of class               */
@@ -819,6 +813,59 @@ CUDDLES_inline Bool isShortChar(Cell c) {
 CUDDLES_inline Bool isSmall(Cell c) {
     return INTMIN <= c;
 }
+
+/* --------------------------------------------------------------------------
+ * The record behind a Module, Tycon, Name, Inst or Class.
+ *
+ * A handle stays a Cell in the range its table occupies.  These turn one
+ * into a pointer to its record, so that a field of it is an lvalue, which
+ * is what kept the accessors macros until now.  Under -Dtag-checks each
+ * one first checks that the cell really is a handle into that table; the
+ * macros indexed whatever they were given.  The tables are fixed arrays,
+ * so a record does not move and the pointer stays good.
+ * ------------------------------------------------------------------------*/
+
+#include "tagcheck.h"
+
+CUDDLES_inline struct strModule *moduleRec(Module m) {
+#if CHECK_TAGS
+    if (!isModule(m))
+        tagError("module", __func__, m);
+#endif
+    return tabModule + (m - MODMIN);
+}
+
+CUDDLES_inline struct strTycon *tyconRec(Tycon t) {
+#if CHECK_TAGS
+    if (!isTycon(t))
+        tagError("tycon", __func__, t);
+#endif
+    return tabTycon + (t - TYCMIN);
+}
+
+CUDDLES_inline struct strName *nameRec(Name n) {
+#if CHECK_TAGS
+    if (!isName(n))
+        tagError("name", __func__, n);
+#endif
+    return tabName + (n - NAMEMIN);
+}
+
+CUDDLES_inline struct strInst *instRec(Inst in) {
+#if CHECK_TAGS
+    if (!isInst(in))
+        tagError("instance", __func__, in);
+#endif
+    return tabInst + (in - INSTMIN);
+}
+
+CUDDLES_inline struct strClass *cclassRec(Class c) {
+#if CHECK_TAGS
+    if (!isClass(c))
+        tagError("class", __func__, c);
+#endif
+    return tabClass + (c - CLASSMIN);
+}
 CUDDLES_inline Cell mkDigit(Int c) {
     return (Cell)(c + INTMIN);
 }
@@ -827,10 +874,10 @@ CUDDLES_inline Int digitOf(Cell c) {
 }
 
 CUDDLES_inline Bool isSynonym(Cell h) {
-    return isTycon(h) && tycon(h).what == SYNONYM;
+    return isTycon(h) && tyconRec(h)->what == SYNONYM;
 }
 CUDDLES_inline Bool isNewtype(Cell h) {
-    return isTycon(h) && tycon(h).what == NEWTYPE;
+    return isTycon(h) && tyconRec(h)->what == NEWTYPE;
 }
 
 CUDDLES_inline Bool isQualType(Cell t) {
@@ -847,25 +894,25 @@ CUDDLES_inline Type mkPolyType(Kinds ks, Type t) {
 }
 
 CUDDLES_inline Bool isSfun(Name n) {
-    return name(n).number == SELNAME;
+    return nameRec(n)->number == SELNAME;
 }
 CUDDLES_inline Bool isDfun(Name n) {
-    return name(n).number == DFUNNAME;
+    return nameRec(n)->number == DFUNNAME;
 }
 CUDDLES_inline Bool isCfun(Name n) {
-    return name(n).number >= CFUNNAME;
+    return nameRec(n)->number >= CFUNNAME;
 }
 CUDDLES_inline Int cfunOf(Name n) {
-    return name(n).number - CFUNNAME;
+    return nameRec(n)->number - CFUNNAME;
 }
 CUDDLES_inline Int cfunNo(Int i) {
     return i + CFUNNAME;
 }
 CUDDLES_inline Bool isMfun(Name n) {
-    return name(n).number < 0;
+    return nameRec(n)->number < 0;
 }
 CUDDLES_inline Int mfunOf(Name n) {
-    return (-1) - name(n).number;
+    return (-1) - nameRec(n)->number;
 }
 CUDDLES_inline Int mfunNo(Int i) {
     return (-1) - i;

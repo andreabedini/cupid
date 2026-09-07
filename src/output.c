@@ -146,8 +146,8 @@ static Void local put(Int d, Cell e) /* print expression e in context of */
         break;
 
     case NAME:
-        putModule(name(e).mod);
-        unlexVar(name(e).text);
+        putModule(nameRec(e)->mod);
+        unlexVar(nameRec(e)->text);
         break;
 
     case VARIDCELL:
@@ -331,10 +331,10 @@ static Void local putFlds(Cell exp,
         else {
             Cell f = fst(v);
             Cell e = snd(v);
-            Text t = isName(f)  ? name(f).text
+            Text t = isName(f)  ? nameRec(f)->text
                      : isVar(f) ? textOf(f)
                                 : inventText();
-            Text s = isName(e)  ? name(e).text
+            Text s = isName(e)  ? nameRec(e)->text
                      : isVar(e) ? textOf(e)
                                 : inventText();
 
@@ -440,7 +440,7 @@ static Void local putAp(Int d, Cell e) /* print application (args>=1)     */
             put(d, arg(e));
             return;
         }
-        t = name(h).text;
+        t = nameRec(h)->text;
         sy = syntaxOf(h);
         break;
 
@@ -705,8 +705,8 @@ static Void local putPred(Cell pi, Int fr) /* Output predicate             */
         putChr(' ');
         putType(arg(pi), ALWAYS, fr);
     } else if (isClass(pi)) {
-        putModule(cclass(pi).mod);
-        putStr(textToStr(cclass(pi).text));
+        putModule(cclassRec(pi)->mod);
+        putStr(textToStr(cclassRec(pi)->text));
     } else if (isCon(pi)) {
         putStr(textToStr(textOf(pi)));
     } else
@@ -718,8 +718,8 @@ static Void local putType(Cell t, Int prec,
 {
     switch (whatIs(t)) {
     case TYCON:
-        putModule(tycon(t).mod);
-        putStr(textToStr(tycon(t).text));
+        putModule(tyconRec(t)->mod);
+        putStr(textToStr(tyconRec(t)->text));
         break;
 
     case TUPLE: {
@@ -926,7 +926,7 @@ static Void local putModule(Module m) /* print module qualifier        */
 {
     if (useQualifiedNames &&
         !isPrelude(m)) { /* leave out "Prelude." qualifiers, too noisy. */
-        putStr(textToStr(module(m).text));
+        putStr(textToStr(moduleRec(m)->text));
         putChr('.');
     }
 }

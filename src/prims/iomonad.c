@@ -91,7 +91,7 @@ static Void iomonadControl(Int what) {
 #undef pFun
 #define predef(nm, str)                                                        \
     nm = newName(findText(str), NIL);                                          \
-    name(nm).defn = PREDEFINED
+    nameRec(nm)->defn = PREDEFINED
         predef(nameIORun, "cuddlesIORun");
         predef(nameIOBind, "primbindIO");
         predef(namePutStr, "putStr");

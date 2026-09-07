@@ -136,18 +136,18 @@ Void foreignFooter(String fn, Text mn, List is, List es) {
     fprintf(out, "static struct cuddles_primitive cuddles_primTable[] = {\n");
     for (xs = is; nonNull(xs); xs = tl(xs)) {
         Name n = hd(xs);
-        fprintf(out, "    {\"%s\", ", textToStr(name(n).text));
-        fprintf(out, "%d, ", name(n).arity);
-        fprintf(out, "cuddlesprim_%s_%d},\n", textToStr(name(n).extFun),
-                name(n).foreignId);
+        fprintf(out, "    {\"%s\", ", textToStr(nameRec(n)->text));
+        fprintf(out, "%d, ", nameRec(n)->arity);
+        fprintf(out, "cuddlesprim_%s_%d},\n", textToStr(nameRec(n)->extFun),
+                nameRec(n)->foreignId);
     }
     for (xs = es; nonNull(xs); xs = tl(xs)) {
         Name n = hd(xs);
-        Text ext = name(n).extFun;
+        Text ext = nameRec(n)->extFun;
         Bool dynamic = inventedText(ext);
         if (dynamic) {
-            fprintf(out, "    {\"%s\", 3, ", textToStr(name(n).text));
-            fprintf(out, "cuddlesprim_%s},\n", textToStr(name(n).extFun));
+            fprintf(out, "    {\"%s\", 3, ", textToStr(nameRec(n)->text));
+            fprintf(out, "cuddlesprim_%s},\n", textToStr(nameRec(n)->extFun));
         }
     }
     fprintf(out, "};\n");
@@ -167,13 +167,13 @@ Void foreignFooter(String fn, Text mn, List is, List es) {
 
     for (xs = es; nonNull(xs); xs = tl(xs)) {
         Name n = hd(xs);
-        Text ext = name(n).extFun;
+        Text ext = nameRec(n)->extFun;
         Bool dynamic = inventedText(ext);
         if (!dynamic) {
             fprintf(out, "        cuddles_stable_for_%s = ", textToStr(ext));
             fprintf(out, "cuddles->lookupName(");
-            fprintf(out, "\"%s\"", textToStr(module(name(n).mod).text));
-            fprintf(out, ", \"%s\"", textToStr(name(n).text));
+            fprintf(out, "\"%s\"", textToStr(moduleRec(nameRec(n)->mod)->text));
+            fprintf(out, ", \"%s\"", textToStr(nameRec(n)->text));
             fprintf(out, ");\n");
         }
     }

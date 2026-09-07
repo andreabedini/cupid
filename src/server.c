@@ -423,7 +423,7 @@ static Void LookupName(String m,
         setError(errbuf);
         return;
     }
-    d = getTypeableDict(name(n).type);
+    d = getTypeableDict(nameRec(n)->type);
     if (isNull(d)) {
         setError("lookupName: can't create Typeable instance");
         return;

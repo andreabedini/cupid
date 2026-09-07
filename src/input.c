@@ -1719,9 +1719,9 @@ Syntax defaultSyntax(Text t) /* Find default syntax of var named*/
 
 Syntax syntaxOf(Name n) /* Find syntax for name            */
 {
-    if (name(n).syntax == NO_SYNTAX) /* Return default if no syntax set */
-        return defaultSyntax(name(n).text);
-    return name(n).syntax;
+    if (nameRec(n)->syntax == NO_SYNTAX) /* Return default if no syntax set */
+        return defaultSyntax(nameRec(n)->text);
+    return nameRec(n)->syntax;
 }
 
 /* --------------------------------------------------------------------------

@@ -352,12 +352,12 @@ Cell getDerefHead(Type t, Int o) /* get value at head of type exp.  */
  * ------------------------------------------------------------------------*/
 
 Void expandSyn(Tycon h, Int ar, Type *at,
-               Int *ao)   /* Expand type synonym with:     */
-                          /* head h                        */
-                          /* ar args (NB. ar>=tycon(h).arity)*/
-                          /* original expression (*at,*ao)   */
-{                         /* expansion returned in (*at,*ao) */
-    ar -= tycon(h).arity; /* calculate surplus arguments           */
+               Int *ao)       /* Expand type synonym with:     */
+                              /* head h                        */
+                              /* ar args (NB. ar>=tyconRec(h)->arity)*/
+                              /* original expression (*at,*ao)   */
+{                             /* expansion returned in (*at,*ao) */
+    ar -= tyconRec(h)->arity; /* calculate surplus arguments           */
     if (ar == 0)
         expandSyn1(h, at, ao);
     else {               /* if there are more args than the */
@@ -379,16 +379,16 @@ Void expandSyn(Tycon h, Int ar, Type *at,
 
 static Void local expandSyn1(Tycon h, Type *at,
                              Int *ao) /* Expand type synonym with:         */
-                                      /* head h, tycon(h).arity args,      */
-                                      /* original expression (*at,*ao)   */
-{                                     /* expansion returned in (*at,*ao) */
-    Int n = tycon(h).arity;
+/* head h, tyconRec(h)->arity args,      */
+/* original expression (*at,*ao)   */
+{ /* expansion returned in (*at,*ao) */
+    Int n = tyconRec(h)->arity;
     Type t = *at;
     Int o = *ao;
     Tyvar *tyv;
 
-    *at = tycon(h).defn;
-    *ao = newKindedVars(tycon(h).kind);
+    *at = tyconRec(h)->defn;
+    *ao = newKindedVars(tyconRec(h)->kind);
     for (; 0 < n--; t = fun(t)) {
         tyv = deRef(&t, &o);
         if (tyv || !isAp(t))
@@ -836,7 +836,7 @@ Kind getKind(Cell c, Int o) /* Find kind of constr during type */
     case VAROPCELL:
         return tyvar(findBtyvsInt(textOf(c)))->kind;
     case TYCON:
-        return tycon(c).kind;
+        return tyconRec(c)->kind;
     default:
         break;
     }
@@ -995,7 +995,7 @@ un:
             return varToVarBind(tyv1, tyv2); /* t1, t2 variables    */
         else {
             Cell h2 = getDerefHead(t2, o2); /* t1 variable, t2 not */
-            if (isSynonym(h2) && argCount >= tycon(h2).arity) {
+            if (isSynonym(h2) && argCount >= tyconRec(h2)->arity) {
                 expandSyn(h2, argCount, &t2, &o2); /* may grow (and re-   */
                 tyv1 = deRef(&t1, &o1);            /* alloc) tyvars, so   */
                 tyv2 = deRef(&t2, &o2);            /* re-derive tyv1 too  */
@@ -1005,7 +1005,7 @@ un:
         }
     else if (tyv2) {
         Cell h1 = getDerefHead(t1, o1); /* t2 variable, t1 not */
-        if (isSynonym(h1) && argCount >= tycon(h1).arity) {
+        if (isSynonym(h1) && argCount >= tyconRec(h1)->arity) {
             expandSyn(h1, argCount, &t1, &o1); /* may grow (and re-   */
             tyv1 = deRef(&t1, &o1);            /* alloc) tyvars, so   */
             tyv2 = deRef(&t2, &o2);            /* re-derive tyv2 too  */
@@ -1042,12 +1042,12 @@ un:
 
         /* Types do not match -- look for type synonyms to expand */
 
-        if (isSynonym(h1) && a1 >= tycon(h1).arity) {
+        if (isSynonym(h1) && a1 >= tyconRec(h1)->arity) {
             expandSyn(h1, a1, &t1, &o1);
             tyv1 = deRef(&t1, &o1);
             goto un;
         }
-        if (isSynonym(h2) && a2 >= tycon(h2).arity) {
+        if (isSynonym(h2) && a2 >= tyconRec(h2)->arity) {
             expandSyn(h2, a2, &t2, &o2);
             tyv2 = deRef(&t2, &o2);
             goto un;
@@ -1096,7 +1096,7 @@ static Void local expandSynFully(Type *at,
     for (;;) {
         h = getDerefHead(*at, *ao);
         a = argCount;
-        if (!isSynonym(h) || a < tycon(h).arity)
+        if (!isSynonym(h) || a < tyconRec(h)->arity)
             return;
         expandSyn(h, a, at, ao);
     }
@@ -1226,21 +1226,21 @@ Inst findInstFor(Cell pi, Int o) /* Find matching instance for pred */
     if (!isClass(c))
         return NIL;
 
-    for (ins = cclass(c).instances; nonNull(ins); ins = tl(ins)) {
+    for (ins = cclassRec(c)->instances; nonNull(ins); ins = tl(ins)) {
         Inst in = hd(ins);
-        Int beta = newKindedVars(inst(in).kinds);
-        if (matchPred(pi, o, inst(in).head, beta)) {
+        Int beta = newKindedVars(instRec(in)->kinds);
+        if (matchPred(pi, o, instRec(in)->head, beta)) {
             typeOff = beta;
             return in;
         } else {
             numTyvars = beta;
             if (allowOverlap && !allowUnsafeOverlap) {
-                Int alpha = newKindedVars(inst(in).kinds);
+                Int alpha = newKindedVars(instRec(in)->kinds);
                 if (isNull(kspi)) {
                     kspi = copyNoMark(pi, o);
                 }
                 beta = newKindedVars(fst(kspi));
-                if (matchPred(inst(in).head, alpha, snd(kspi), beta)) {
+                if (matchPred(instRec(in)->head, alpha, snd(kspi), beta)) {
                     numTyvars = alpha;
                     return NIL;
                 }
@@ -1267,7 +1267,7 @@ Void improve(Int line, List sps, List ps) /* Improve a list of predicates    */
             Cell pi = fst3(hd(ps1));
             Int o = intOf(snd3(hd(ps1)));
             Cell c = getHead(pi);
-            if (isClass(c) && nonNull(cclass(c).xfds)) {
+            if (isClass(c) && nonNull(cclassRec(c)->xfds)) {
                 improved |= improveAgainst(line, sps, pi, o);
                 improved |= instImprove(line, c, pi, o);
                 improved |= improveAgainst(line, tl(ps1), pi, o);
@@ -1283,7 +1283,7 @@ Void improve1(Int line, List sps, Cell pi,
     Cell c = getHead(pi);
     do {
         improved = FALSE;
-        if (isClass(c) && nonNull(cclass(c).xfds)) {
+        if (isClass(c) && nonNull(cclassRec(c)->xfds)) {
             improved |= improveAgainst(line, sps, pi, o);
             improved |= instImprove(line, c, pi, o);
         }
@@ -1314,11 +1314,12 @@ Bool improveAgainst(Int line, List ps, Cell pi, Int o) {
 
 Bool instImprove(Int line, Class c, Cell pi, Int o) {
     Bool improved = FALSE;
-    List ins = cclass(c).instances;
+    List ins = cclassRec(c)->instances;
     for (; nonNull(ins); ins = tl(ins)) {
         Cell in = hd(ins);
-        Int alpha = newKindedVars(inst(in).kinds);
-        improved |= pairImprove(line, c, pi, o, inst(in).head, alpha, alpha);
+        Int alpha = newKindedVars(instRec(in)->kinds);
+        improved |=
+            pairImprove(line, c, pi, o, instRec(in)->head, alpha, alpha);
     }
     return improved;
 }
@@ -1328,7 +1329,7 @@ Bool pairImprove(Int line, Class c, Cell pi1, Int o1, Cell pi2, Int o2,
                             /* (pi1,o1) against (pi2,o2) */
 {
     Bool improved = FALSE;
-    List xfds = cclass(c).xfds;
+    List xfds = cclassRec(c)->xfds;
     for (; nonNull(xfds); xfds = tl(xfds)) {
         Cell xfd = hd(xfds);
         Cell hs = fst(xfd);
@@ -1336,7 +1337,7 @@ Bool pairImprove(Int line, Class c, Cell pi1, Int o1, Cell pi2, Int o2,
         for (; nonNull(hs); hs = tl(hs)) {
             Cell h = hd(hs);
             Class d = getHead(h);
-            alpha = newKindedVars(cclass(d).kinds);
+            alpha = newKindedVars(cclassRec(d)->kinds);
             if (matchPred(pi2, o2, h, alpha))
                 break;
             numTyvars = alpha;
@@ -1371,7 +1372,7 @@ Bool pairImprove(Int line, Class c, Cell pi1, Int o1, Cell pi2, Int o2,
                         errPrintf("\n*** And constraint   : ");
                         errPred(copyPred(pi2, o2));
                         errPrintf("\n*** For class        : ");
-                        errPred(cclass(c).head);
+                        errPred(cclassRec(c)->head);
                         errPrintf("\n*** Break dependency : ");
                         errFD(hd(fds));
                         errPrintf("\n");

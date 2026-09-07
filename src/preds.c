@@ -200,12 +200,13 @@ static Cell local scFind(Cell e, Cell pi1, Int o1, Cell pi, Int o,
     if (samePred(pi1, o1, pi, o))
         return e;
 
-    if (isClass(h1) && (!isClass(h) || cclass(h).level < cclass(h1).level)) {
-        Int beta = newKindedVars(cclass(h1).kinds);
-        List scs = cclass(h1).supers;
-        List dsels = cclass(h1).dsels;
+    if (isClass(h1) &&
+        (!isClass(h) || cclassRec(h)->level < cclassRec(h1)->level)) {
+        Int beta = newKindedVars(cclassRec(h1)->kinds);
+        List scs = cclassRec(h1)->supers;
+        List dsels = cclassRec(h1)->dsels;
         List ps = NIL;
-        if (!matchPred(pi1, o1, cclass(h1).head, beta))
+        if (!matchPred(pi1, o1, cclassRec(h1)->head, beta))
             internal("scFind");
 
         for (; nonNull(scs); scs = tl(scs), dsels = tl(dsels))
@@ -364,8 +365,8 @@ Cell inEntail(List ps, Cell pi, Int o,
     in = findInstFor(pi, o); /* Class predicates                   */
     if (nonNull(in)) {
         Int beta = typeOff;
-        Cell e = inst(in).builder;
-        List es = inst(in).specifics;
+        Cell e = instRec(in)->builder;
+        List es = instRec(in)->specifics;
         List fs = NIL;
         for (; nonNull(es); es = tl(es))
             fs = cons(triple(hd(es), mkInt(beta), NIL), fs);
@@ -378,11 +379,11 @@ Cell inEntail(List ps, Cell pi, Int o,
             fputs("try ", stdout);
             printContext(stdout, copyPreds(fs));
             fputs(" => ", stdout);
-            printPred(stdout, copyPred(inst(in).head, beta));
+            printPred(stdout, copyPred(instRec(in)->head, beta));
             fputc('\n', stdout);
         }
 #endif
-        for (es = inst(in).specifics; nonNull(es); es = tl(es)) {
+        for (es = instRec(in)->specifics; nonNull(es); es = tl(es)) {
             Cell ev;
             improve1(0, ps, hd(es), beta);
             ev = entail(ps, hd(es), beta, d);
@@ -523,7 +524,7 @@ static Bool local anyGenerics(Type t,
 {
     Type h = getDerefHead(t, o); /* This code is careful to expand  */
     Int a = argCount;            /* synonyms; mark* & copy* do not. */
-    if (isSynonym(h) && a >= tycon(h).arity) {
+    if (isSynonym(h) && a >= tyconRec(h)->arity) {
         expandSyn(h, a, &t, &o);
         return anyGenerics(t, o);
     } else {
@@ -584,8 +585,8 @@ List elimPredsUsing(List ps, List sps) /* Try to discharge or defer preds,*/
         } else { /* Try to split generics and fixed */
             Inst in;
             if (numFixedVars > 0 && nonNull(in = findInstFor(pi, o))) {
-                List qs = inst(in).specifics;
-                for (ev = inst(in).builder; nonNull(qs); qs = tl(qs))
+                List qs = instRec(in)->specifics;
+                for (ev = instRec(in)->builder; nonNull(qs); qs = tl(qs))
                     ev = ap(ev, assumeEvid(hd(qs), typeOff));
                 overEvid(thd3(hd(p)), ev);
             } else { /* No worthwhile progress possible */
@@ -608,8 +609,8 @@ Void reducePreds() {         /* Context reduce predicates: uggh!*/
         in = findInstFor(pi, o);
         preds = tl(preds);
         if (nonNull(in)) {
-            List qs = inst(in).specifics;
-            Cell ev = inst(in).builder;
+            List qs = instRec(in)->specifics;
+            Cell ev = instRec(in)->builder;
             for (; nonNull(qs); qs = tl(qs))
                 ev = ap(ev, assumeEvid(hd(qs), typeOff));
             overEvid(thd3(hd(p)), ev);
