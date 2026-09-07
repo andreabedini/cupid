@@ -1,0 +1,8 @@
+# Revisions to skip when running git blame.  Use with:
+#   git blame --ignore-revs-file .git-blame-ignore-revs
+# or, once and for all:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub reads this file by name without being configured.
+
+# Format the C sources with clang-format
+63a64c573a6eac4b54c2bc71b60617412d4aa46e
