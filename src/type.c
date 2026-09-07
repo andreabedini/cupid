@@ -140,8 +140,8 @@ static Void   local enterPendingBtyvs (Void);
 static Void   local leavePendingBtyvs (Void);
 static Cell   local patBtyvs	      (Cell);
 static Void   local doneBtyvs	      (Int);
-static Void   local enterSkolVars     (Void);
-static Void   local leaveSkolVars     (Int,Type,Int,Int);
+static Void   local enterScope        (Void);
+static Void   local leaveScope        (Int,Type,Int,Int);
 
 static Void   local typeError         (Int,Cell,Cell,String,Type,Int);
 static Void   local reportTypeError   (Int,Cell,Cell,String,Type,Type);
@@ -245,10 +245,19 @@ static Cell  predMonad;			/* Monad (mkOffset(0))		   */
 static List defnBounds;			/*::[[(Var,Type)]] possibly ovrlded*/
 static List varsBounds;			/*::[[(Var,Type)]] not overloaded  */
 static List depends;			/*::[?[Var]] dependents/NODEPENDS  */
-static List skolVars;			/*::[[Var]] skolem vars		   */
-static List localEvs;			/*::[[(Pred,offset,ev)]]	   */
-static List savedPs;			/*::[[(Pred,offset,ev)]]	   */
 static Cell dummyVar;			/* Used to put extra tvars into	ass*/
+
+typedef struct {
+    List skolems;		/* [(tyvar,pat)] skolems bound here	   */
+    List givens;		/* [(Pred,offset,ev)] local evidence	   */
+    List savedPreds;		/* the enclosing scope's predicates	   */
+} TcScope;
+
+static TcScope *scopes    = 0;		/* the open scopes, innermost last */
+static Int      numScopes = 0;
+static Int      maxScopes = 0;
+
+#define scope()   (scopes+numScopes-1)	/* the innermost open scope	   */
 
 #define saveVarsAss()     List saveAssump = hd(varsBounds)
 #define restoreVarsAss()  hd(varsBounds)  = saveAssump
@@ -259,9 +268,7 @@ static Void local emptyAssumption() {  	/* set empty type assumption	   */
     defnBounds = NIL;
     varsBounds = NIL;
     depends    = NIL;
-    skolVars   = NIL;
-    localEvs   = NIL;
-    savedPs    = NIL;
+    numScopes  = 0;
 }
 
 static Void local enterBindings() {    /* Add new level to assumption sets */
@@ -463,20 +470,50 @@ static Void local doneBtyvs(Int l)
     }
 }
 
-static Void local enterSkolVars() {
-    skolVars = cons(NIL,skolVars);
-    localEvs = cons(NIL,localEvs);
-    savedPs  = cons(preds,savedPs);
-    preds    = NIL;
+/* --------------------------------------------------------------------------
+ * Scopes:
+ *
+ * A scope is opened for each construct that can bind skolem constants and
+ * bring local evidence into being: a lambda, a case or function
+ * alternative, a generator, a let, and each top-level binding group.
+ * While it is open, the predicates the type checker collects belong to it.
+ * On leaving, those that the local evidence discharges are discharged, the
+ * rest are handed back to the enclosing scope, and the skolems must not
+ * have escaped into the result type or the assumptions.
+ *
+ * Bound type variables (btyvars, in subst.c) and the assumption levels
+ * above have nestings of their own that do not always coincide with this
+ * one, so they are kept apart.
+ * ------------------------------------------------------------------------*/
+
+static Void local enterScope() {
+    TcScope *sc;
+    if (numScopes==maxScopes) {
+	Int      more = maxScopes ? 2*maxScopes : 64;
+	TcScope *grown = realloc(scopes,more*sizeof(TcScope));
+	if (!grown) {
+	    ERRMSG(0) "Cannot allocate type checker scopes"
+	    EEND;
+	}
+	scopes    = grown;
+	maxScopes = more;
+    }
+    sc             = scopes+numScopes++;
+    sc->skolems    = NIL;
+    sc->givens     = NIL;
+    sc->savedPreds = preds;
+    preds          = NIL;
 }
 
-static Void local leaveSkolVars(Int l, Type t, Int o, Int m)
+static Void local leaveScope(Int l, Type t, Int o, Int m)
 {
-    if (nonNull(hd(localEvs))) {	/* Check for local predicates	   */
-	List sks = hd(skolVars);
+    TcScope *sc = scope();
+
+    if (nonNull(sc->givens)) {		/* Check for local predicates	   */
+	List sks = sc->skolems;
 	List sps = NIL;
 	if (isNull(sks)) {
-	    internal("leaveSkolVars");
+	    internal("leaveScope");
 	}
 	markAllVars();			/* Mark all variables in current   */
 	do {				/* substitution, then unmark sks.  */
@@ -484,11 +521,11 @@ static Void local leaveSkolVars(Int l, Type t, Int o, Int m)
 	    sks = tl(sks);
 	} while (nonNull(sks));
 	normPreds(l);
-	sps   = elimPredsUsing(hd(localEvs),sps);
+	sps   = elimPredsUsing(sc->givens,sps);
 	preds = revOnto(preds,sps);
     }
 
-    if (nonNull(hd(skolVars))) {	/* Check that Skolem vars do not   */
+    if (nonNull(sc->skolems)) {		/* Check that Skolem vars do not   */
 	List vs;			/* escape their scope		   */
 	Int  i = 0;
 
@@ -497,7 +534,7 @@ static Void local leaveSkolVars(Int l, Type t, Int o, Int m)
 	    markTyvar(o+i);
 	markType(t,o);
 
-	for (vs=hd(skolVars); nonNull(vs); vs=tl(vs)) {
+	for (vs=sc->skolems; nonNull(vs); vs=tl(vs)) {
 	    Int vn = intOf(fst(hd(vs)));
 	    if (tyvar(vn)->offs == FIXED_TYVAR) {
 		Cell tv = copyTyvar(vn);
@@ -517,7 +554,7 @@ static Void local leaveSkolVars(Int l, Type t, Int o, Int m)
 	mapProc(markAssumList,varsBounds);
 	mapProc(markPred,preds);
 
-	for (vs=hd(skolVars); nonNull(vs); vs=tl(vs)) {
+	for (vs=sc->skolems; nonNull(vs); vs=tl(vs)) {
 	    Int vn = intOf(fst(hd(vs)));
 	    if (tyvar(vn)->offs == FIXED_TYVAR) {
 		ERRMSG(l)
@@ -528,10 +565,8 @@ static Void local leaveSkolVars(Int l, Type t, Int o, Int m)
 	    }
 	}
     }
-    localEvs = tl(localEvs);
-    skolVars = tl(skolVars);
-    preds    = revOnto(preds,hd(savedPs));
-    savedPs  = tl(savedPs);
+    preds = revOnto(preds,sc->savedPreds);
+    numScopes--;
 }
 
 /* --------------------------------------------------------------------------
@@ -684,11 +719,11 @@ static Cell local typeExpr(Int l, Cell e)   /* Determine type of expr/pattern  *
 			  break;
 
 	case LETREC	: enterBindings();
-			  enterSkolVars();
+			  enterScope();
 			  mapProc(typeBindings,fst(snd(e)));
 			  spTypeExpr(l,snd(snd(e)));
 			  leaveBindings();
-			  leaveSkolVars(l,typeIs,typeOff,0);
+			  leaveScope(l,typeIs,typeOff,0);
 			  break;
 
 	case FINLIST	: {   Int  beta = newTyvars(1);
@@ -812,7 +847,7 @@ static Cell local typeAp(Int l, Cell e)		/* Type check application, which   */
 	if (tcMode==EXPRESSION) {
 	    preds = revOnto(evs,preds);
 	} else {
-	    hd(localEvs) = revOnto(evs,hd(localEvs));
+	    scope()->givens = revOnto(evs,scope()->givens);
 	}
     }
 
@@ -825,7 +860,7 @@ static Cell local typeAp(Int l, Cell e)		/* Type check application, which   */
 	    Int alpha = typeOff + typeFree;
 	    for (; n>0; n--) {
 		bindTv(alpha-n,SKOLEM,0);
-		hd(skolVars) = cons(pair(mkInt(alpha-n),e),hd(skolVars));
+		scope()->skolems = cons(pair(mkInt(alpha-n),e),scope()->skolems);
 	    }
 	}
     }
@@ -999,7 +1034,7 @@ static Void local typeAlt(String wh, Cell e, Cell a, Type t, Int o, Int m)	/* Ty
     Bool added = FALSE;
 
     saveVarsAss();
-    enterSkolVars();
+    enterScope();
     if (whatIs(t)==RANK2) {
 	if (n<(nr2=intOf(fst(snd(t))))) {
 	    ERRMSG(l) "Definition requires at least %d parameters on lhs",
@@ -1063,7 +1098,7 @@ static Void local typeAlt(String wh, Cell e, Cell a, Type t, Int o, Int m)	/* Ty
 
     restoreVarsAss();
     doneBtyvs(l);
-    leaveSkolVars(l,origt,o,m);
+    leaveScope(l,origt,o,m);
 }
 
 static Int local funcType(Int n)		/*return skeleton for function type*/
@@ -1083,7 +1118,7 @@ static Void local typeCase(Int l, Int beta, Cell c)   /* type check case: pat ->
     static String caseExpr = "case expression";
 
     saveVarsAss();
-    enterSkolVars();
+    enterScope();
     fst(c) = typeFreshPat(l,patBtyvs(fst(c)));
     shouldBe(l,fst(c),NIL,casePat,aVar,beta);
     snd(c) = typeRhs(snd(c));
@@ -1091,7 +1126,7 @@ static Void local typeCase(Int l, Int beta, Cell c)   /* type check case: pat ->
 
     restoreVarsAss();
     doneBtyvs(l);
-    leaveSkolVars(l,typeIs,typeOff,0);
+    leaveScope(l,typeIs,typeOff,0);
 }
 
 static Void local typeComp(Int l, Type m, Cell e, List qs)	/* type check comprehension	   */
@@ -1112,25 +1147,25 @@ static Void local typeComp(Int l, Type m, Cell e, List qs)	/* type check compreh
 			    break;
 
 	    case QWHERE   : enterBindings();
-			    enterSkolVars();
+			    enterScope();
 			    mapProc(typeBindings,snd(q));
 			    typeComp(l,m,e,qs1);
 			    leaveBindings();
-			    leaveSkolVars(l,typeIs,typeOff,0);
+			    leaveScope(l,typeIs,typeOff,0);
 			    break;
 
 	    case FROMQUAL : {   Int beta = newTyvars(1);
 				saveVarsAss();
 				enterPendingBtyvs();
 				spCheck(l,snd(snd(q)),NIL,genQual,m,beta);
-				enterSkolVars();
+				enterScope();
 				fst(snd(q))
 				    = typeFreshPat(l,patBtyvs(fst(snd(q))));
 				shouldBe(l,fst(snd(q)),NIL,genQual,aVar,beta);
 				typeComp(l,m,e,qs1);
 				restoreVarsAss();
 			        leavePendingBtyvs();
-				leaveSkolVars(l,typeIs,typeOff,0);
+				leaveScope(l,typeIs,typeOff,0);
 			    }
 			    break;
 
@@ -1987,11 +2022,11 @@ static Cell local typeRhs(Cell e)	       /* check type of rhs of definition  */
 		       break;
 
 	case LETREC  : enterBindings();
-		       enterSkolVars();
+		       enterScope();
 		       mapProc(typeBindings,fst(snd(e)));
 		       snd(snd(e)) = typeRhs(snd(snd(e)));
 		       leaveBindings();
-		       leaveSkolVars(rhsLine(snd(snd(e))),typeIs,typeOff,0);
+		       leaveScope(rhsLine(snd(snd(e))),typeIs,typeOff,0);
 		       break;
 
 	case RSIGN   : fst(snd(e)) = typeRhs(fst(snd(e)));
@@ -2191,7 +2226,7 @@ Void typeCheckDefns() { 	       /* Type check top level bindings    */
 
     typeChecker(RESET);
     emptySubstitution();
-    enterSkolVars();
+    enterScope();
     enterBindings();
     setGoal("Type checking",t);
 
@@ -2244,12 +2279,12 @@ static Void local typeDefnGroup(List bs)	/* type check group of value defns */
 	EEND;
     }
 
-    if (nonNull(hd(skolVars))) {
+    if (nonNull(scope()->skolems)) {
 	Cell b = hd(bs);
 	Name n = findName(isVar(fst(b)) ? textOf(fst(b)) : textOf(hd(fst(b))));
 	Int  l = nonNull(n) ? name(n).line : 0;
-	leaveSkolVars(l,typeUnit,0,0);
-	enterSkolVars();
+	leaveScope(l,typeUnit,0,0);
+	enterScope();
     }
 
     for (as=hd(varsBounds); nonNull(as); as=tl(as)) {
@@ -2386,9 +2421,13 @@ Void typeChecker(Int what)
 		       mark(varsBounds);
 		       mark(depends);
 		       mark(pendingBtyvs);
-		       mark(skolVars);
-		       mark(localEvs);
-		       mark(savedPs);
+		       {   Int i = 0;
+			   for (; i<numScopes; i++) {
+			       mark(scopes[i].skolems);
+			       mark(scopes[i].givens);
+			       mark(scopes[i].savedPreds);
+			   }
+		       }
 		       mark(dummyVar);
 		       mark(preds);
 		       mark(stdDefaults);
