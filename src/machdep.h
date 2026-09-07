@@ -11,11 +11,11 @@
 #define __MACHDEP_H__
 #include "prelude.h"
 
-# include <time.h>
+#include <time.h>
 
 #if USE_REGISTRY
 # if HAVE_WINDOWS_H
-#include <windows.h>
+#  include <windows.h>
 # endif
 #endif
 
@@ -24,9 +24,11 @@
  * ------------------------------------------------------------------------*/
 
 typedef time_t Time;
-CUDDLES_inline Bool timeChanged(Time now, Time thn) { return now!=thn; }
+CUDDLES_inline Bool timeChanged(Time now, Time thn) {
+    return now != thn;
+}
 
-extern Void getFileInfo (String, Time *, Long *);
+extern Void getFileInfo(String, Time *, Long *);
 
 /* --------------------------------------------------------------------------
  * Prototypes for registry reading
@@ -34,40 +36,39 @@ extern Void getFileInfo (String, Time *, Long *);
 
 #if USE_REGISTRY
 
-
-extern String readRegString       (HKEY, String, String, String);
-extern Bool   writeRegString      (String,String);
-extern String readRegChildStrings (HKEY, String, String, String);
+extern String readRegString(HKEY, String, String, String);
+extern Bool writeRegString(String, String);
+extern String readRegChildStrings(HKEY, String, String, String);
 #endif /* USE_REGISTRY */
 
 /* --------------------------------------------------------------------------
  * Search for script files on the CUDDLES path:
  * ------------------------------------------------------------------------*/
 
-extern String RealPath  (String);
-extern String substPath (String,String);
-extern String uniqPath  (String);
+extern String RealPath(String);
+extern String substPath(String, String);
+extern String uniqPath(String);
 #ifndef CUDDLES_SERVER
-extern Bool startEdit   (Int,String);
+extern Bool startEdit(Int, String);
 #endif
 
-extern  Int    shellEsc		(String,Bool,Bool);
-extern  Int    shellQuote		(String,String);
-extern  Int    getTerminalWidth (Void);
-extern  Void   normalTerminal	(Void);
-extern  Bool   getEchoTerminal	(Int);
-extern  Void   setEchoTerminal	(Int,Bool);
-extern  Bool   getBuffTerminal	(Int);
-extern  Void   setBuffTerminal	(Int,Bool);
-extern  Void   gcStarted	(Void);
-extern  Void   gcScanning	(Void);
-extern  Void   gcRecovered	(Int);
-extern  Void   gcCStack		(Void);
-extern  Void   needPrims        (Int,void*); 
+extern Int shellEsc(String, Bool, Bool);
+extern Int shellQuote(String, String);
+extern Int getTerminalWidth(Void);
+extern Void normalTerminal(Void);
+extern Bool getEchoTerminal(Int);
+extern Void setEchoTerminal(Int, Bool);
+extern Bool getBuffTerminal(Int);
+extern Void setBuffTerminal(Int, Bool);
+extern Void gcStarted(Void);
+extern Void gcScanning(Void);
+extern Void gcRecovered(Int);
+extern Void gcCStack(Void);
+extern Void needPrims(Int, void *);
 
-extern  String fromEnv		(String,String);
-extern  Bool   initSystem       (Void);
+extern String fromEnv(String, String);
+extern Bool initSystem(Void);
 
-extern	String dirname		(String);
+extern String dirname(String);
 
 #endif /* __MACHDEP_H__ */

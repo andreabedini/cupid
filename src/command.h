@@ -20,31 +20,30 @@ struct cmd {
     Command cmdCode;
 };
 
-extern Command readCommand (struct cmd *, Char, Char);
+extern Command readCommand(struct cmd *, Char, Char);
 
-#define EDIT    0
-#define FIND    1
-#define LOAD    2
-#define ALSO    3
-#define RELOAD  4
-#define EVAL    5
-#define TYPEOF  6
-#define HELP    7
-#define NAMES   8
-#define BADCMD  9
-#define SET     10
-#define QUIT    11
-#define SYSTEM  12
-#define CHGDIR  13
-#define INFO    14
+#define EDIT 0
+#define FIND 1
+#define LOAD 2
+#define ALSO 3
+#define RELOAD 4
+#define EVAL 5
+#define TYPEOF 6
+#define HELP 7
+#define NAMES 8
+#define BADCMD 9
+#define SET 10
+#define QUIT 11
+#define SYSTEM 12
+#define CHGDIR 13
+#define INFO 14
 #define COLLECT 15
 #define SETMODULE 16
-#define BROWSE  17
-#define XPLAIN  18
-#define PNTVER  19
-#define NOCMD   20
-#define MAIN    22
-
+#define BROWSE 17
+#define XPLAIN 18
+#define PNTVER 19
+#define NOCMD 20
+#define MAIN 22
 
 /*-------------------------------------------------------------------------*/
 

@@ -1,19 +1,19 @@
 /*
  * String utilities needed throughout the Cuddles codebase.
- */ 
+ */
 #ifndef __STRUTIL_H__
 #define __STRUTIL_H__
 
 /* string copy operator, allocates new via malloc() */
-extern String strCopy (String);
+extern String strCopy(String);
 
 /* substring copy operator, allocates new via malloc() */
-extern String strnCopy (String, Int);
+extern String strnCopy(String, Int);
 
 /* Given a string containing a possibly qualified name,
  * split it up into a module and a name portion.
  */
-extern Void splitQualString (String, String*, String*);
+extern Void splitQualString(String, String *, String *);
 
 /*
  * Auto-expandable string builder objects:
@@ -28,14 +28,14 @@ typedef struct StringBuilder StringBuilder;
  * is set to INITIAL_BUILDER_SIZE..
  *
  */
-extern StringBuilder* newStringBuilder   (unsigned int sz);
+extern StringBuilder *newStringBuilder(unsigned int sz);
 
 /*
  * Function: freeStringBuilder(builder)
  *
  * Free up a StringBuilder object.
  */
-extern void           freeStringBuilder  (StringBuilder* b);
+extern void freeStringBuilder(StringBuilder *b);
 
 /*
  * Function: appendString(builder, str)
@@ -45,7 +45,7 @@ extern void           freeStringBuilder  (StringBuilder* b);
  *
  * Returns TRUE if successful.
  */
-extern Bool           appendString       (StringBuilder* b,  char* str);
+extern Bool appendString(StringBuilder *b, char *str);
 
 /*
  * Function: toString(builder)
@@ -56,6 +56,6 @@ extern Bool           appendString       (StringBuilder* b,  char* str);
  *
  * 
  */
-extern char*          toString           (StringBuilder* b);
+extern char *toString(StringBuilder *b);
 
 #endif /* __STRUTIL_H__ */

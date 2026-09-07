@@ -22,31 +22,31 @@
 #include "server.h"
 
 #if defined(_MSC_VER) && !defined(_MANAGED)
-#include <windows.h>
+# include <windows.h>
 #endif
 
-extern int  main      (int, char**);
-static void check     (void);
-static void loadCuddles  (int, char**);
+extern int main(int, char **);
+static void check(void);
+static void loadCuddles(int, char **);
 
-static CuddlesServerAPI* cuddles = 0;
+static CuddlesServerAPI *cuddles = 0;
 
 static void check() {
-    char* err = cuddles->clearError();
+    char *err = cuddles->clearError();
     if (err) {
-	fprintf(stderr,"runcuddles: %s\n",err);
-	fflush(stderr);
-	exit(1);
+        fprintf(stderr, "runcuddles: %s\n", err);
+        fflush(stderr);
+        exit(1);
     }
 }
 
-static void loadCuddles(int argc, char* argv[])
-{
-    cuddles = initCuddlesServer(argc,argv);
+static void loadCuddles(int argc, char *argv[]) {
+    cuddles = initCuddlesServer(argc, argv);
     if (NULL == cuddles) {
-	fprintf(stderr,"runcuddles: Unable to initialise Cuddles (%s)\n", lastError);
-	fflush(stderr);
-	exit(1);
+        fprintf(stderr, "runcuddles: Unable to initialise Cuddles (%s)\n",
+                lastError);
+        fflush(stderr);
+        exit(1);
     }
     cuddles->setOutputEnable(0);
     check();
@@ -56,18 +56,17 @@ static void loadCuddles(int argc, char* argv[])
  * main
  * ------------------------------------------------------------------------*/
 
-int main(int argc, char* argv[])
-{
-    int    exitCode = 0;
-    char** cuddles_argv;
-    int    cuddles_argc;
-    char*  progname;
+int main(int argc, char *argv[]) {
+    int exitCode = 0;
+    char **cuddles_argv;
+    int cuddles_argc;
+    char *progname;
 
     progname = argv ? argv[0] : "runcuddles";
     if (!initSystem()) {
-      fprintf(stderr,"%s: failed to initialize, exiting\n", progname);
-      fflush(stderr);
-      exit(1);
+        fprintf(stderr, "%s: failed to initialize, exiting\n", progname);
+        fflush(stderr);
+        exit(1);
     }
 
 #if defined(FFI_COMPILER)
@@ -76,61 +75,61 @@ int main(int argc, char* argv[])
 
     /* skip over any option flags before the program name */
     {
-	int i = 1; /* ignore first arg - name of this program */
-	while (i < argc 
-	       && argv[i] /* paranoia */
-	       && (argv[i][0] == '+' || argv[i][0] == '-')
-	       ) {
-	    ++i;
-	}
-	cuddles_argv = argv;
-	cuddles_argc = i;
+        int i = 1;                 /* ignore first arg - name of this program */
+        while (i < argc && argv[i] /* paranoia */
+               && (argv[i][0] == '+' || argv[i][0] == '-')) {
+            ++i;
+        }
+        cuddles_argv = argv;
+        cuddles_argc = i;
 
-	argv += i;
-	argc -= i;
+        argv += i;
+        argc -= i;
     }
 
     if (argc < 1) {
-	fprintf(stderr,"%s: missing file argument\n",progname);
-	fflush(stderr);
-	exit(1);
+        fprintf(stderr, "%s: missing file argument\n", progname);
+        fflush(stderr);
+        exit(1);
     }
 
 #if defined(_MSC_VER) && !defined(_MANAGED)
     __try {
 #endif
 
-    loadCuddles(cuddles_argc, cuddles_argv);
+        loadCuddles(cuddles_argc, cuddles_argv);
 
 #if defined(FFI_COMPILER)
-    /* all arguments following the module name are passed to the C compiler */
-    {
-	int i;
-	for (i=1; i<argc; ++i)
-	    ffiSetFlags(argv[i]);
-    }
+        /* all arguments following the module name are passed to the C compiler */
+        {
+            int i;
+            for (i = 1; i < argc; ++i)
+                ffiSetFlags(argv[i]);
+        }
 
-    cuddles->loadFile(argv[0]);
-    check();
+        cuddles->loadFile(argv[0]);
+        check();
 #else
     /* all arguments following the module name are available via getArgs */
     cuddles->loadFile(argv[0]);
     check();
 
-    cuddles->setCuddlesArgs(argc,argv);
-    cuddles->pushHVal(cuddles->compileExpr("Main","main >> return () :: IO ()"));
+    cuddles->setCuddlesArgs(argc, argv);
+    cuddles->pushHVal(cuddles->compileExpr("Main", "main >> return () :: IO ()"));
     exitCode = cuddles->doIO();
     check();
 #endif
 
 #if defined(_MSC_VER) && !defined(_MANAGED)
-    } __except ( ((GetExceptionCode() == EXCEPTION_STACK_OVERFLOW) ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH) ) {
-      fatal("C stack overflow");
+    } __except (((GetExceptionCode() == EXCEPTION_STACK_OVERFLOW)
+                     ? EXCEPTION_EXECUTE_HANDLER
+                     : EXCEPTION_CONTINUE_SEARCH)) {
+        fatal("C stack overflow");
     }
 #endif
 
     shutdownCuddlesServer(cuddles);
-    
+
     exit(exitCode);
-    return 0;/*NOTUSED*/
+    return 0; /*NOTUSED*/
 }

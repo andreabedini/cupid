@@ -32,49 +32,45 @@
 #include "prelude.h"
 #include "timer.h"
 
-long userElapsed = 0, systElapsed = 0;	/* microseconds, or clock ticks	   */
+long userElapsed = 0, systElapsed = 0; /* microseconds, or clock ticks     */
 
 #if HAVE_SYS_TIME_H && HAVE_SYS_RESOURCE_H
-#include <sys/time.h>
-#include <sys/resource.h>
+# include <sys/time.h>
+# include <sys/resource.h>
 
-void updateTimers(void)
-{
+void updateTimers(void) {
     static long lastUser = 0;
     static long lastSyst = 0;
     long curr;
     struct rusage ruse;
 
-    getrusage(RUSAGE_SELF,&ruse);
-    curr        = ruse.ru_utime.tv_sec*1000000L + ruse.ru_utime.tv_usec;
+    getrusage(RUSAGE_SELF, &ruse);
+    curr = ruse.ru_utime.tv_sec * 1000000L + ruse.ru_utime.tv_usec;
     userElapsed = curr - lastUser;
-    lastUser    = curr;
-    curr        = ruse.ru_stime.tv_sec*1000000L + ruse.ru_stime.tv_usec;
+    lastUser = curr;
+    curr = ruse.ru_stime.tv_sec * 1000000L + ruse.ru_stime.tv_usec;
     systElapsed = curr - lastSyst;
-    lastSyst    = curr;
+    lastSyst = curr;
 }
 
-long millisecs(long t)
-{
-    return (t+500)/1000;
+long millisecs(long t) {
+    return (t + 500) / 1000;
 }
 
 #else
-#include <time.h>
+# include <time.h>
 
-void updateTimers(void)
-{
+void updateTimers(void) {
     static clock_t lastUser = 0;
     clock_t curr;
 
-    curr        = clock();
+    curr = clock();
     userElapsed = (long)(curr - lastUser);
-    lastUser    = curr;
+    lastUser = curr;
 }
 
-long millisecs(long t)
-{
-    return (t * 1000)/CLOCKS_PER_SEC;
+long millisecs(long t) {
+    return (t * 1000) / CLOCKS_PER_SEC;
 }
 #endif
 

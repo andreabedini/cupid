@@ -6,9 +6,9 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-extern long userElapsed, systElapsed;	/* time used since the previous	   */
-					/* updateTimers()		   */
-extern void updateTimers (void);
-extern long millisecs    (long);	/* convert either to milliseconds  */
+extern long userElapsed, systElapsed; /* time used since the previous      */
+                                      /* updateTimers()            */
+extern void updateTimers(void);
+extern long millisecs(long); /* convert either to milliseconds  */
 
 #endif /* TIMER_H */

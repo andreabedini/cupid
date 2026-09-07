@@ -26,57 +26,56 @@
  * require making the module table expandable.)
  */
 struct strScript {
-    String fileName;			/* Script file name                */
-    String realName;			/* Full path to canonical name     */
-    String directory;			/* Directory module was found in   */
-    Time lastChange;			/* Time of last change to script   */
-    Bool postponed;			/* Indicates postponed load        */
-    Bool chased;			/* Added by import chasing?        */
+    String fileName;  /* Script file name                */
+    String realName;  /* Full path to canonical name     */
+    String directory; /* Directory module was found in   */
+    Time lastChange;  /* Time of last change to script   */
+    Bool postponed;   /* Indicates postponed load        */
+    Bool chased;      /* Added by import chasing?        */
 };
 
 static struct strScript scriptTable[NUM_SCRIPTS];
 
-static Int    numScripts;               /* Number of scripts loaded        */
-static Int    namesUpto;                /* Number of script names set      */
-static Int    scriptsStable;            /* Number of (Prelude) scripts     */
-                                        /* considered 'stable'             */
-                                        /* (=> won't be nuked when clearing */
-                                        /* the script stack / reloading.)   */
+static Int numScripts;    /* Number of scripts loaded        */
+static Int namesUpto;     /* Number of script names set      */
+static Int scriptsStable; /* Number of (Prelude) scripts     */
+                          /* considered 'stable'             */
+                          /* (=> won't be nuked when clearing */
+                          /* the script stack / reloading.)   */
 
-static Bool   needsImports;             /* set to TRUE if imports required */
-       String scriptFile;               /* Name of current script (if any) */
+static Bool needsImports; /* set to TRUE if imports required */
+String scriptFile;        /* Name of current script (if any) */
 
 /* --------------------------------------------------------------------------
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
-static Bool local addScript     (String,Long);
-static Void local freeScript    (Int);
+static Bool local addScript(String, Long);
+static Void local freeScript(Int);
 
 /* --------------------------------------------------------------------------
  * Initialising / freeing script stacks:
  * ------------------------------------------------------------------------*/
 Void initScripts() {
-  scriptFile    = 0;
-  numScripts    = 0;
-  namesUpto     = 0;
-  scriptsStable = 0;
+    scriptFile = 0;
+    numScripts = 0;
+    namesUpto = 0;
+    scriptsStable = 0;
 }
 
 Void stopScripts() {
-  int i;
+    int i;
 
-  for (i=0; i < numScripts ; i++)
-    freeScript(i);
+    for (i = 0; i < numScripts; i++)
+        freeScript(i);
 }
 
-static Void local freeScript(Int i)
-{
-  if (scriptTable[i].fileName)
-    free(scriptTable[i].fileName);
-  if (scriptTable[i].realName)
-    free(scriptTable[i].realName);
-  if (scriptTable[i].directory)
-    free(scriptTable[i].directory);
+static Void local freeScript(Int i) {
+    if (scriptTable[i].fileName)
+        free(scriptTable[i].fileName);
+    if (scriptTable[i].realName)
+        free(scriptTable[i].realName);
+    if (scriptTable[i].directory)
+        free(scriptTable[i].directory);
 }
 
 /* We record the number of scripts that loading the Prelude
@@ -85,152 +84,163 @@ static Void local freeScript(Int i)
  * ones are scratched.
  */
 Void setScriptStableMark() {
-  scriptsStable = namesUpto;
+    scriptsStable = namesUpto;
 }
 
-String getScriptName(Script s)  /* access the script name at index 's' */
+String getScriptName(Script s) /* access the script name at index 's' */
 {
-  if ( s >=0 && s <= numScripts ) {
-    return scriptTable[s].fileName;
-  } else {
-    errHead(0); errPrintf("getScriptName: Illegal script index %d (max: %d)", s, numScripts);
-    errFail();
-  }
-  return NULL;
+    if (s >= 0 && s <= numScripts) {
+        return scriptTable[s].fileName;
+    } else {
+        errHead(0);
+        errPrintf("getScriptName: Illegal script index %d (max: %d)", s,
+                  numScripts);
+        errFail();
+    }
+    return NULL;
 }
 
-String getScriptRealName(Script s)  /* access the path of script at index 's' */
+String getScriptRealName(Script s) /* access the path of script at index 's' */
 {
-  if ( s >=0 && s <= numScripts ) {
-    return scriptTable[s].realName;
-  } else {
-    errHead(0); errPrintf("getScriptRealName: Illegal script index %d (max: %d)", s, numScripts);
-    errFail();
-  }
-  return NULL;
+    if (s >= 0 && s <= numScripts) {
+        return scriptTable[s].realName;
+    } else {
+        errHead(0);
+        errPrintf("getScriptRealName: Illegal script index %d (max: %d)", s,
+                  numScripts);
+        errFail();
+    }
+    return NULL;
 }
 
 Int getScriptHwMark() { /* return number of on the stack, loaded or not. */
-  return namesUpto;
+    return namesUpto;
 }
 
 Int numLoadedScripts() { /* return number of currently loaded scripts */
-  return numScripts;
+    return numScripts;
 }
-
 
 /* --------------------------------------------------------------------------
  * Loading script files:
  * ------------------------------------------------------------------------*/
 
-Void addScriptName(String s, Bool sch)  /* Add script to list of scripts   */
-                           /* to be read in ...               */
-{              /* TRUE => requires pathname search*/
-    if (namesUpto>=NUM_SCRIPTS) {
-	errHead(0); errPrintf("Too many module files (maximum of %d allowed)",
-		  NUM_SCRIPTS);
-	errFail();
-	return;
+Void addScriptName(String s, Bool sch) /* Add script to list of scripts   */
+                                       /* to be read in ...               */
+{                                      /* TRUE => requires pathname search*/
+    if (namesUpto >= NUM_SCRIPTS) {
+        errHead(0);
+        errPrintf("Too many module files (maximum of %d allowed)", NUM_SCRIPTS);
+        errFail();
+        return;
     }
     if (sch) {
-	if (isModuleId(s)) {
-	    String location = findMPathname(s);
-	    if (!location) {
-		errHead(0); errPrintf("Can't find module \"%s\"", s);
-		errFail();
-	    }
-	    scriptTable[namesUpto].fileName  = strCopy(location);
-	    scriptTable[namesUpto].directory = NULL;
-	} else {
-	    scriptTable[namesUpto].fileName  = strCopy(findPathname(s));
-	    scriptTable[namesUpto].directory = dirname(scriptTable[namesUpto].fileName);
-	}
+        if (isModuleId(s)) {
+            String location = findMPathname(s);
+            if (!location) {
+                errHead(0);
+                errPrintf("Can't find module \"%s\"", s);
+                errFail();
+            }
+            scriptTable[namesUpto].fileName = strCopy(location);
+            scriptTable[namesUpto].directory = NULL;
+        } else {
+            scriptTable[namesUpto].fileName = strCopy(findPathname(s));
+            scriptTable[namesUpto].directory =
+                dirname(scriptTable[namesUpto].fileName);
+        }
     } else {
-	scriptTable[namesUpto].fileName  = strCopy(s);
-	scriptTable[namesUpto].directory = NULL;
+        scriptTable[namesUpto].fileName = strCopy(s);
+        scriptTable[namesUpto].directory = NULL;
     }
-    scriptTable[namesUpto].realName   = strCopy(RealPath(scriptTable[namesUpto].fileName));
-    scriptTable[namesUpto].chased     = !sch;
+    scriptTable[namesUpto].realName =
+        strCopy(RealPath(scriptTable[namesUpto].fileName));
+    scriptTable[namesUpto].chased = !sch;
     namesUpto++;
 }
 
-static Bool local addScript(String fname, Long len)  /* read single script file */
-                                        /* name of script file     */
-{                           /* length of script file   */
+static Bool local addScript(String fname,
+                            Long len) /* read single script file */
+                                      /* name of script file     */
+{                                     /* length of script file   */
 
     if (!quiet) {
-	Printf("Reading file \"%s\":\n",fname);  FlushStdout();
+        Printf("Reading file \"%s\":\n", fname);
+        FlushStdout();
     }
-    setLastEdit(fname,0);
+    setLastEdit(fname, 0);
 
     needsImports = FALSE;
     scriptFile = 0;
-    if (!parseScript(fname,len)) {   /* process script file */
-	/* file or parse error, drop the script */ 
-	forgetAScript(numScripts);
-	errFail();
+    if (!parseScript(fname, len)) { /* process script file */
+        /* file or parse error, drop the script */
+        forgetAScript(numScripts);
+        errFail();
     }
-    if (needsImports) return FALSE;
+    if (needsImports)
+        return FALSE;
     checkDefns();
     typeCheckDefns();
     compileDefns();
-    scriptFile    = 0;
+    scriptFile = 0;
     preludeLoaded = TRUE;
     return TRUE;
 }
 
-Bool chase(List imps)                 /* Process list of import requests */
+Bool chase(List imps) /* Process list of import requests */
 {
-    Int    origPos = numScripts; /* keep track of original position */
+    Int origPos = numScripts; /* keep track of original position */
     String origDir = scriptTable[origPos].directory;
-    for (; nonNull(imps); imps=tl(imps)) {
-	String modname = textToStr(textOf(hd(imps)));
-	String iname = NULL;
-	String rname;
-	Bool   inOrigDir = FALSE;
-	Int    i     = 0;
+    for (; nonNull(imps); imps = tl(imps)) {
+        String modname = textToStr(textOf(hd(imps)));
+        String iname = NULL;
+        String rname;
+        Bool inOrigDir = FALSE;
+        Int i = 0;
 
-	if (origDir) {
-	    iname = findMInDir(origDir,modname);
-	    if (iname)
-		inOrigDir = TRUE;
-	}
-	if (iname == NULL)
-	    iname = findMPathname(modname);
-	if (iname == NULL) {
-	    errHead(0); errPrintf("Can't find imported module \"%s\"", modname);
-	    errFail();
-	}
+        if (origDir) {
+            iname = findMInDir(origDir, modname);
+            if (iname)
+                inOrigDir = TRUE;
+        }
+        if (iname == NULL)
+            iname = findMPathname(modname);
+        if (iname == NULL) {
+            errHead(0);
+            errPrintf("Can't find imported module \"%s\"", modname);
+            errFail();
+        }
 
-	rname = RealPath(iname);
-	for (; i<namesUpto; i++)
-	    if (filenamecmp(scriptTable[i].realName,rname)==0)
-		break;
-	if (i>=origPos) {           /* Neither loaded or queued        */
-	    struct strScript tmpScript;
+        rname = RealPath(iname);
+        for (; i < namesUpto; i++)
+            if (filenamecmp(scriptTable[i].realName, rname) == 0)
+                break;
+        if (i >= origPos) { /* Neither loaded or queued        */
+            struct strScript tmpScript;
 
-	    scriptTable[origPos].postponed = TRUE;
-	    needsImports           = TRUE;
+            scriptTable[origPos].postponed = TRUE;
+            needsImports = TRUE;
 
-	    if (i>=namesUpto) {     /* Name not found (i==namesUpto)   */
-		addScriptName(iname,FALSE);
-		if (inOrigDir)
-		    scriptTable[i].directory = strCopy(origDir);
-	    } else if (scriptTable[i].postponed) {/* imported by itself? */
-		errHead(0); errPrintf(
-		  "Recursive import dependency between \"%s\" and \"%s\"",
-		  scriptTable[origPos].fileName, iname);
-		errFail();
-	    }
-	    /* Right rotate section of tables between numScripts and i so
-	     * that i ends up with other imports in front of orig. script
-	     */
-	    tmpScript = scriptTable[i];
-	    for (; i>numScripts; i--)
-		scriptTable[i] = scriptTable[i-1];
-	    scriptTable[numScripts] = tmpScript;
-	    origPos++;
-	}
+            if (i >= namesUpto) { /* Name not found (i==namesUpto)   */
+                addScriptName(iname, FALSE);
+                if (inOrigDir)
+                    scriptTable[i].directory = strCopy(origDir);
+            } else if (scriptTable[i].postponed) { /* imported by itself? */
+                errHead(0);
+                errPrintf(
+                    "Recursive import dependency between \"%s\" and \"%s\"",
+                    scriptTable[origPos].fileName, iname);
+                errFail();
+            }
+            /* Right rotate section of tables between numScripts and i so
+             * that i ends up with other imports in front of orig. script
+             */
+            tmpScript = scriptTable[i];
+            for (; i > numScripts; i--)
+                scriptTable[i] = scriptTable[i - 1];
+            scriptTable[numScripts] = tmpScript;
+            origPos++;
+        }
     }
     return needsImports;
 }
@@ -238,17 +248,14 @@ Bool chase(List imps)                 /* Process list of import requests */
 /* --------------------------------------------------------------------------
  * Adding scripts found in an argument vector:
  * ------------------------------------------------------------------------*/
-Void addScriptsFromArgs(Int argc, String argv[])
-{
+Void addScriptsFromArgs(Int argc, String argv[]) {
     Int i;
 
-    for (i=1; i<argc; ++i) {
-      if (argv[i] && argv[i][0] && !isOption(argv[i])) {
-	    addScriptName(argv[i],TRUE);
-      }
+    for (i = 1; i < argc; ++i) {
+        if (argv[i] && argv[i][0] && !isOption(argv[i])) {
+            addScriptName(argv[i], TRUE);
+        }
     }
-
-
 }
 
 /* --------------------------------------------------------------------------
@@ -257,94 +264,95 @@ Void addScriptsFromArgs(Int argc, String argv[])
 Void forgetScriptsFrom(Script scno) /* remove scripts from system     */
 {
     Script i;
-    for (i=scno; i<namesUpto; ++i)
-	freeScript(i);
-    dropScriptsFrom(scno-1); /* don't count prelude as script  */
+    for (i = scno; i < namesUpto; ++i)
+        freeScript(i);
+    dropScriptsFrom(scno - 1); /* don't count prelude as script  */
     namesUpto = scno;
-    if (numScripts>namesUpto)
-	numScripts = scno;
+    if (numScripts > namesUpto)
+        numScripts = scno;
 }
 
 Void forgetAllScripts() {
-  /* Drop all but the stable scripts; i.e., the
+    /* Drop all but the stable scripts; i.e., the
    * Prelude and (possibly) its implementation module(s).
    */
-  forgetScriptsFrom( scriptsStable ); 
+    forgetScriptsFrom(scriptsStable);
 }
 
 Void forgetAScript(Script scno) /* remove a script from system */
 {
     Script i;
-    
+
     if (scno > namesUpto)
-	return;
+        return;
 
     freeScript(scno);
 
-    for (i=scno+1; i < namesUpto; i++)
-	scriptTable[i-1] = scriptTable[i];
+    for (i = scno + 1; i < namesUpto; i++)
+        scriptTable[i - 1] = scriptTable[i];
     dropAScript(scno);
     namesUpto--;
 }
 
-Void readScripts(Int n)        /* Reread current list of scripts, */
-{                   /* loading everything after and    */
-    Time timeStamp;        /* including the first script which*/
-    Long fileSize;         /* has been either changed or added*/
+Void readScripts(Int n) /* Reread current list of scripts, */
+{                       /* loading everything after and    */
+    Time timeStamp;     /* including the first script which*/
+    Long fileSize;      /* has been either changed or added*/
 
-
-    for (; n<numScripts; n++) {         /* Scan previously loaded scripts  */
-	getFileInfo(scriptTable[n].fileName, &timeStamp, &fileSize);
-	if (timeChanged(timeStamp,scriptTable[n].lastChange)) {
-	    dropScriptsFrom(n-1);
-	    numScripts = n;
-	    break;
-	}
+    for (; n < numScripts; n++) { /* Scan previously loaded scripts  */
+        getFileInfo(scriptTable[n].fileName, &timeStamp, &fileSize);
+        if (timeChanged(timeStamp, scriptTable[n].lastChange)) {
+            dropScriptsFrom(n - 1);
+            numScripts = n;
+            break;
+        }
     }
-    for (; n<NUM_SCRIPTS; n++)          /* No scripts have been postponed  */
-	scriptTable[n].postponed = FALSE;       /* at this stage                   */
+    for (; n < NUM_SCRIPTS; n++)          /* No scripts have been postponed  */
+        scriptTable[n].postponed = FALSE; /* at this stage                   */
 
-
-    while (numScripts<namesUpto) {      /* Process any remaining scripts   */
-	getFileInfo(scriptTable[numScripts].fileName, &timeStamp, &fileSize);
-	scriptTable[numScripts].lastChange = timeStamp;
-	if (numScripts>0)               /* no new script for prelude       */
-	    startNewScript(scriptTable[numScripts].fileName);
+    while (numScripts < namesUpto) { /* Process any remaining scripts   */
+        getFileInfo(scriptTable[numScripts].fileName, &timeStamp, &fileSize);
+        scriptTable[numScripts].lastChange = timeStamp;
+        if (numScripts > 0) /* no new script for prelude       */
+            startNewScript(scriptTable[numScripts].fileName);
         generate_ffi = generateFFI && !scriptTable[numScripts].chased;
-	if (addScript(scriptTable[numScripts].fileName,fileSize))
-	    numScripts++;
-	else
-	    dropScriptsFrom(numScripts-1);
+        if (addScript(scriptTable[numScripts].fileName, fileSize))
+            numScripts++;
+        else
+            dropScriptsFrom(numScripts - 1);
     }
 
     if (listScripts)
-	whatScripts();
-    if (numScripts<=1)
-	setLastEdit((String)0, 0);
+        whatScripts();
+    if (numScripts <= 1)
+        setLastEdit((String)0, 0);
 }
 
-Void whatScripts() {       /* list scripts in current session */
+Void whatScripts() { /* list scripts in current session */
     int i;
     Printf("\nCuddles session for:");
-    for (i=0; i<numScripts; ++i) {
-	Printf("\n%s",scriptTable[i].fileName);
+    for (i = 0; i < numScripts; ++i) {
+        Printf("\n%s", scriptTable[i].fileName);
     }
     Putchar('\n');
 }
 
-Void script(Int what)
-{
+Void script(Int what) {
 
-  /* not much to it..will be more when/if the local tables
+    /* not much to it..will be more when/if the local tables
    * become resizable.
    */
-  switch(what) {
-  case RESET:   return;
-  case MARK:    return;
-  case INSTALL: return;
-  case EXIT:    stopScripts();
-                return;
-  case BREAK:   return;
-  }
+    switch (what) {
+    case RESET:
+        return;
+    case MARK:
+        return;
+    case INSTALL:
+        return;
+    case EXIT:
+        stopScripts();
+        return;
+    case BREAK:
+        return;
+    }
 }
-  

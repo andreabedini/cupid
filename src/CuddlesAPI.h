@@ -13,53 +13,52 @@
 #ifndef __CUDDLESAPI_H__
 #define __CUDDLESAPI_H__
 
-
-#ifdef __cplusplus 
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef int HVal;     /* Haskell values are represented by stable pointers */
+typedef int HVal; /* Haskell values are represented by stable pointers */
 
 typedef struct _CuddlesServerAPI {
-    char* (*clearError     ) (void);
-    void  (*setCuddlesArgs    ) (int, char**);
-    int   (*getNumScripts  ) (void);
-    void  (*reset          ) (int);
-    void  (*setOutputEnable) (unsigned);
-    void  (*changeDir      ) (char*);
-    void  (*loadProject    ) (char*);
-    void  (*loadFile       ) (char*);
-    void  (*loadFromBuffer ) (char*);
-    void  (*setOptions     ) (char*);
-    char* (*getOptions     ) (void);
-    HVal  (*compileExpr    ) (char*,char*);
-    void  (*garbageCollect ) (void);
+    char *(*clearError)(void);
+    void (*setCuddlesArgs)(int, char **);
+    int (*getNumScripts)(void);
+    void (*reset)(int);
+    void (*setOutputEnable)(unsigned);
+    void (*changeDir)(char *);
+    void (*loadProject)(char *);
+    void (*loadFile)(char *);
+    void (*loadFromBuffer)(char *);
+    void (*setOptions)(char *);
+    char *(*getOptions)(void);
+    HVal (*compileExpr)(char *, char *);
+    void (*garbageCollect)(void);
 
-    void  (*lookupName     ) (char*,char*); /* push values onto stack*/
+    void (*lookupName)(char *, char *); /* push values onto stack*/
 
-    void  (*mkInt          ) (int);
-    void  (*mkAddr         ) (void*);
-    void  (*mkString       ) (char*);
+    void (*mkInt)(int);
+    void (*mkAddr)(void *);
+    void (*mkString)(char *);
 
-    void  (*apply          ) (void);      /* manipulate top of stack */
+    void (*apply)(void); /* manipulate top of stack */
 
-    int   (*evalInt        ) (void);      /* evaluate top of stack   */
-    void* (*evalAddr       ) (void);
-    char* (*evalString     ) (void);
+    int (*evalInt)(void); /* evaluate top of stack   */
+    void *(*evalAddr)(void);
+    char *(*evalString)(void);
 
-    int   (*doIO           ) (void);
-    int   (*doIO_Int       ) (int*);
-    int   (*doIO_Addr      ) (void**);
+    int (*doIO)(void);
+    int (*doIO_Int)(int *);
+    int (*doIO_Addr)(void **);
 
-    HVal  (*popHVal        ) (void);      /* pop stack               */
-    void  (*pushHVal       ) (HVal);      /* push back onto stack    */
-    void  (*freeHVal       ) (HVal); 
+    HVal (*popHVal)(void);  /* pop stack               */
+    void (*pushHVal)(HVal); /* push back onto stack    */
+    void (*freeHVal)(HVal);
 } CuddlesServerAPI;
 
-DLLEXPORT(CuddlesServerAPI*) initCuddlesServer (Int, String[]);
-DLLEXPORT(Void) shutdownCuddlesServer (CuddlesServerAPI*);
+DLLEXPORT(CuddlesServerAPI *) initCuddlesServer(Int, String[]);
+DLLEXPORT(Void) shutdownCuddlesServer(CuddlesServerAPI *);
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 };
 #endif
 

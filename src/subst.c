@@ -21,47 +21,47 @@
 #include "subst.h"
 #include "tagcheck.h"
 
-static Int numTyvars;			/* no. type vars currently in use  */
+static Int numTyvars; /* no. type vars currently in use  */
 static Int maxTyvars = 0;
-static Int nextGeneric;			/* number of generics found so far */
+static Int nextGeneric; /* number of generics found so far */
 
-Tyvar  *tyvars = 0;			/* storage for type variables	   */
-Int    typeOff;				/* offset of result type 	   */
-Type   typeIs;				/* skeleton of result type	   */
-Int    typeFree;			/* freedom in instantiated type	   */
-List   predsAre;			/* list of predicates in type	   */
-List   genericVars;			/* list of generic vars		   */
-List   btyvars = NIL;			/* explicitly scoped type vars	   */
+Tyvar *tyvars = 0;  /* storage for type variables          */
+Int typeOff;        /* offset of result type       */
+Type typeIs;        /* skeleton of result type     */
+Int typeFree;       /* freedom in instantiated type        */
+List predsAre;      /* list of predicates in type          */
+List genericVars;   /* list of generic vars                */
+List btyvars = NIL; /* explicitly scoped type vars         */
 
 /* --------------------------------------------------------------------------
  * local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local expandSubst		(Int);
-static Int  local findBtyvsInt		(Text);
-static Type local makeTupleType		(Int);
-static Kind local makeSimpleKind	(Int);
-static Kind local makeVarKind		(Int);
-static Void local expandSyn1		(Tycon, Type *, Int *);
-static List local listTyvar		(Int,List);
-static List local listTyvars		(Type,Int,List);
-static Cell local dupTyvar		(Int,List);
-static Cell local dupTyvars		(Cell,Int,List);
-static Pair local copyNoMark		(Cell,Int);
-static Type local dropRank1Body		(Type,Int,Int);
-static Type local liftRank1Body		(Type,Int);
+static Void local expandSubst(Int);
+static Int local findBtyvsInt(Text);
+static Type local makeTupleType(Int);
+static Kind local makeSimpleKind(Int);
+static Kind local makeVarKind(Int);
+static Void local expandSyn1(Tycon, Type *, Int *);
+static List local listTyvar(Int, List);
+static List local listTyvars(Type, Int, List);
+static Cell local dupTyvar(Int, List);
+static Cell local dupTyvars(Cell, Int, List);
+static Pair local copyNoMark(Cell, Int);
+static Type local dropRank1Body(Type, Int, Int);
+static Type local liftRank1Body(Type, Int);
 
-static Bool local matchTypeAbove	(Type,Int,Type,Int,Int);
-static Bool local varToVarBind		(Tyvar *,Tyvar *);
-static Bool local varToTypeBind		(Tyvar *,Type,Int);
-static Void local expandSynFully	(Type *, Int *);
+static Bool local matchTypeAbove(Type, Int, Type, Int, Int);
+static Bool local varToVarBind(Tyvar *, Tyvar *);
+static Bool local varToTypeBind(Tyvar *, Type, Int);
+static Void local expandSynFully(Type *, Int *);
 
-static Bool local improveAgainst	(Int,List,Cell,Int);
-static Bool local instImprove		(Int,Class,Cell,Int);
-static Bool local pairImprove		(Int,Class,Cell,Int,Cell,Int,Int);
+static Bool local improveAgainst(Int, List, Cell, Int);
+static Bool local instImprove(Int, Class, Cell, Int);
+static Bool local pairImprove(Int, Class, Cell, Int, Cell, Int, Int);
 
-static Bool local kvarToVarBind		(Tyvar *,Tyvar *);
-static Bool local kvarToTypeBind	(Tyvar *,Type,Int);
+static Bool local kvarToVarBind(Tyvar *, Tyvar *);
+static Bool local kvarToTypeBind(Tyvar *, Type, Int);
 
 /* --------------------------------------------------------------------------
  * The substitution, types, and kinds:
@@ -78,134 +78,138 @@ static Bool local kvarToTypeBind	(Tyvar *,Type,Int);
  * generally, expressions built from such constructors) have kinds.
  * The syntax of kinds in the current implementation is very simple:
  *
- *	  kind ::= STAR		-- the kind of types
- *		|  kind => kind -- constructors
- *		|  variables	-- either INTCELL or OFFSET
+ *        kind ::= STAR         -- the kind of types
+ *              |  kind => kind -- constructors
+ *              |  variables    -- either INTCELL or OFFSET
  *
  * For various reasons, this implementation uses structure sharing, instead
  * of a copying approach.  In principal, this is fast and avoids the need to
- * build new type expressions.	Unfortunately, this implementation will not
+ * build new type expressions.  Unfortunately, this implementation will not
  * be able to handle *very* large expressions.
  *
  * The substitution is represented by an array of type variables each of
  * which is a triple:
- *	bound	a (skeletal) type expression, or NIL if the variable
- *		is not bound, or SKOLEM for a Skolem constant (i.e., an
- *		uninstantiable variable).
- *	offs	offset of skeleton in bound.  If isNull(bound), then offs is
- *		used to indicate whether that variable is generic (i.e. free
- *		in the current assumption set) or fixed (i.e. bound in the
- *		current assumption set).  Generic variables are assigned
- *		offset numbers whilst copying type expressions (t,o) to
- *		obtain their most general form.
- *	kind	kind of value bound to type variable (`type variable' is
- *		rather inaccurate -- `constructor variable' would be better).
+ *      bound   a (skeletal) type expression, or NIL if the variable
+ *              is not bound, or SKOLEM for a Skolem constant (i.e., an
+ *              uninstantiable variable).
+ *      offs    offset of skeleton in bound.  If isNull(bound), then offs is
+ *              used to indicate whether that variable is generic (i.e. free
+ *              in the current assumption set) or fixed (i.e. bound in the
+ *              current assumption set).  Generic variables are assigned
+ *              offset numbers whilst copying type expressions (t,o) to
+ *              obtain their most general form.
+ *      kind    kind of value bound to type variable (`type variable' is
+ *              rather inaccurate -- `constructor variable' would be better).
  * ------------------------------------------------------------------------*/
 
-Void emptySubstitution() {		/* clear current substitution	   */
-    numTyvars   = 0;
+Void emptySubstitution() { /* clear current substitution           */
+    numTyvars = 0;
     /* If the table has grown larger than NUM_TYVARS, free 'tyvars'.
      * If not, keep it around as it's bound to get used again.
      */
     if (maxTyvars > NUM_TYVARS) {
-	maxTyvars = 0;
-	if (tyvars) {
-	    free(tyvars);
-	    tyvars = 0;
-	}
+        maxTyvars = 0;
+        if (tyvars) {
+            free(tyvars);
+            tyvars = 0;
+        }
     }
     nextGeneric = 0;
     genericVars = NIL;
-    typeIs      = NIL;
-    predsAre    = NIL;
-    btyvars     = NIL;
+    typeIs = NIL;
+    predsAre = NIL;
+    btyvars = NIL;
 }
 
-static Void local expandSubst(Int n)	/* add further n type variables to */
-{				/* current substituion		   */
-    if (numTyvars+n>maxTyvars) {	/* need to expand substitution	   */
-	Int   newMax = maxTyvars+NUM_TYVARS;
-	Tyvar *newTvs;
-	Int   i;
+static Void local expandSubst(Int n) /* add further n type variables to */
+{                                    /* current substituion                */
+    if (numTyvars + n > maxTyvars) { /* need to expand substitution        */
+        Int newMax = maxTyvars + NUM_TYVARS;
+        Tyvar *newTvs;
+        Int i;
 
-	if (numTyvars+n>newMax) {	/* safety precaution		   */
-	    errHead(0); errPrintf("Substitution expanding too quickly");
-	    errFail();
-	}
+        if (numTyvars + n > newMax) { /* safety precaution                 */
+            errHead(0);
+            errPrintf("Substitution expanding too quickly");
+            errFail();
+        }
 
-	/* It would be better to realloc() here, but that isn't portable
-	 * enough for calloc()ed arrays.  The following code could cause
-	 * a space leak if an interrupt occurs while we're copying the
-	 * array ... we won't worry about this for the time being because
-	 * we don't expect to have to go through this process much (if at
-	 * all) in normal use of the type checker.
-	 */
+        /* It would be better to realloc() here, but that isn't portable
+         * enough for calloc()ed arrays.  The following code could cause
+         * a space leak if an interrupt occurs while we're copying the
+         * array ... we won't worry about this for the time being because
+         * we don't expect to have to go through this process much (if at
+         * all) in normal use of the type checker.
+         */
 
-	newTvs = (Tyvar *)calloc(newMax,sizeof(Tyvar));
-	if (!newTvs) {
-	    errHead(0); errPrintf("Too many variables (%d) in type checker", newMax);
-	    errFail();
-	}
-	for (i=0; i<numTyvars;++i) {		/* copy substitution	   */
-	    newTvs[i].offs  = tyvars[i].offs;
-	    newTvs[i].bound = tyvars[i].bound;
-	    newTvs[i].kind  = tyvars[i].kind;
-	}
-	maxTyvars = 0;				/* protection from SIGINT? */
-	if (tyvars) free(tyvars);
-	tyvars    = newTvs;
-	maxTyvars = newMax;
+        newTvs = (Tyvar *)calloc(newMax, sizeof(Tyvar));
+        if (!newTvs) {
+            errHead(0);
+            errPrintf("Too many variables (%d) in type checker", newMax);
+            errFail();
+        }
+        for (i = 0; i < numTyvars; ++i) { /* copy substitution     */
+            newTvs[i].offs = tyvars[i].offs;
+            newTvs[i].bound = tyvars[i].bound;
+            newTvs[i].kind = tyvars[i].kind;
+        }
+        maxTyvars = 0; /* protection from SIGINT? */
+        if (tyvars)
+            free(tyvars);
+        tyvars = newTvs;
+        maxTyvars = newMax;
     }
 }
 
-Int newTyvars(Int n)		        /* allocate new type variables	   */
-{				/* all of kind STAR		   */
+Int newTyvars(Int n) /* allocate new type variables        */
+{                    /* all of kind STAR                   */
     Int beta = numTyvars;
 
     expandSubst(n);
-    for (numTyvars+=n; n>0; n--) {
-	tyvars[numTyvars-n].offs  = UNUSED_GENERIC;
-	tyvars[numTyvars-n].bound = NIL;
-	tyvars[numTyvars-n].kind  = STAR;
+    for (numTyvars += n; n > 0; n--) {
+        tyvars[numTyvars - n].offs = UNUSED_GENERIC;
+        tyvars[numTyvars - n].bound = NIL;
+        tyvars[numTyvars - n].kind = STAR;
     }
     return beta;
 }
 
-Int newKindedVars(Kind k)			/* allocate new variables with	   */
-{				/* specified kinds		   */
+Int newKindedVars(Kind k) /* allocate new variables with           */
+{                         /* specified kinds               */
     assertKinds(k);
-    Int beta = numTyvars;		/* if k = k0 -> k1 -> ... -> kn	   */
-    for (; isPair(k); k=snd(k)) {	/* then allocate n vars with kinds */
-	expandSubst(1);			/* k0, k1, ..., k(n-1)		   */
-	tyvars[numTyvars].offs  = UNUSED_GENERIC;
-	tyvars[numTyvars].bound = NIL;
-	tyvars[numTyvars].kind  = fst(k);
-	numTyvars++;
+    Int beta = numTyvars;           /* if k = k0 -> k1 -> ... -> kn        */
+    for (; isPair(k); k = snd(k)) { /* then allocate n vars with kinds */
+        expandSubst(1);             /* k0, k1, ..., k(n-1)                 */
+        tyvars[numTyvars].offs = UNUSED_GENERIC;
+        tyvars[numTyvars].bound = NIL;
+        tyvars[numTyvars].kind = fst(k);
+        numTyvars++;
     }
     return beta;
 }
 
-Void instantiate(Type type)			/* instantiate type, if nonNull	   */
+Void instantiate(Type type) /* instantiate type, if nonNull        */
 {
-    if (nonNull(type)) assertType(type);
+    if (nonNull(type))
+        assertType(type);
     predsAre = NIL;
-    typeIs   = type;
+    typeIs = type;
     typeFree = 0;
 
-    if (nonNull(typeIs)) {	       /* instantiate type expression ?    */
+    if (nonNull(typeIs)) { /* instantiate type expression ?    */
 
-	if (isPolyType(typeIs)) {      /* Polymorphic type scheme ?	   */
-	    Kinds ks = polySigOf(typeIs);
-	    typeOff  = newKindedVars(ks);
-	    typeIs   = monotypeOf(typeIs);
-	    for (; isAp(ks); ks=arg(ks))
-		typeFree++;
-	}
+        if (isPolyType(typeIs)) { /* Polymorphic type scheme ?     */
+            Kinds ks = polySigOf(typeIs);
+            typeOff = newKindedVars(ks);
+            typeIs = monotypeOf(typeIs);
+            for (; isAp(ks); ks = arg(ks))
+                typeFree++;
+        }
 
-	if (isQualType(typeIs)) {    /* Qualified type?			   */
-	    predsAre = fst(snd(typeIs));
-	    typeIs   = snd(snd(typeIs));
-	}
+        if (isQualType(typeIs)) { /* Qualified type?                       */
+            predsAre = fst(snd(typeIs));
+            typeIs = snd(snd(typeIs));
+        }
     }
 }
 
@@ -213,53 +217,58 @@ Void instantiate(Type type)			/* instantiate type, if nonNull	   */
  * Bound type variables:
  * ------------------------------------------------------------------------*/
 
-Pair findBtyvs(Text t)			/* Look for bound tyvar		   */
+Pair findBtyvs(Text t) /* Look for bound tyvar             */
 {
     List bts = btyvars;
-    for (; nonNull(bts); bts=tl(bts)) {
-	List bts1 = hd(bts);
-	for (; nonNull(bts1); bts1=tl(bts1))
-	    if (t==textOf(fst(hd(bts1))))
-		return hd(bts1);
+    for (; nonNull(bts); bts = tl(bts)) {
+        List bts1 = hd(bts);
+        for (; nonNull(bts1); bts1 = tl(bts1))
+            if (t == textOf(fst(hd(bts1))))
+                return hd(bts1);
     }
     return NIL;
 }
 
-static Int local findBtyvsInt(Text t)	/* Look for bound type variable    */
-{				/* expecting to find an integer	   */
+static Int local findBtyvsInt(Text t) /* Look for bound type variable    */
+{                                     /* expecting to find an integer      */
     Pair p = findBtyvs(t);
     if (isNull(p))
-	internal("findBtyvsInt");
+        internal("findBtyvsInt");
     return intOf(snd(p));
 }
 
-Void markBtyvs() {			/* Mark explicitly scoped vars	   */
+Void markBtyvs() { /* Mark explicitly scoped vars          */
     List bts = btyvars;
-    for (; nonNull(bts); bts=tl(bts)) {
-	List bts1 = hd(bts);
-	for (; nonNull(bts1); bts1=tl(bts1))
-	    markTyvar(intOf(snd(hd(bts1))));
+    for (; nonNull(bts); bts = tl(bts)) {
+        List bts1 = hd(bts);
+        for (; nonNull(bts1); bts1 = tl(bts1))
+            markTyvar(intOf(snd(hd(bts1))));
     }
 }
 
-Type localizeBtyvs(Type t)			/* Localize type to eliminate refs */
-{				/* to explicitly scoped vars	   */
+Type localizeBtyvs(Type t) /* Localize type to eliminate refs */
+{                          /* to explicitly scoped vars    */
     switch (whatIs(t)) {
-	case RANK2    :
-	case POLYTYPE : snd(snd(t)) = localizeBtyvs(snd(snd(t)));
-			break;
+    case RANK2:
+    case POLYTYPE:
+        snd(snd(t)) = localizeBtyvs(snd(snd(t)));
+        break;
 
-	case QUAL     : fst(snd(t)) = localizeBtyvs(fst(snd(t)));
-			snd(snd(t)) = localizeBtyvs(snd(snd(t)));
-			break;
+    case QUAL:
+        fst(snd(t)) = localizeBtyvs(fst(snd(t)));
+        snd(snd(t)) = localizeBtyvs(snd(snd(t)));
+        break;
 
-	case AP       : fst(t) = localizeBtyvs(fst(t));
-			snd(t) = localizeBtyvs(snd(t));
-			break;
+    case AP:
+        fst(t) = localizeBtyvs(fst(t));
+        snd(t) = localizeBtyvs(snd(t));
+        break;
 
-	case VARIDCELL:
-	case VAROPCELL: return mkInt(findBtyvsInt(textOf(t)));
-	default       : break;
+    case VARIDCELL:
+    case VAROPCELL:
+        return mkInt(findBtyvsInt(textOf(t)));
+    default:
+        break;
     }
     return t;
 }
@@ -268,65 +277,72 @@ Type localizeBtyvs(Type t)			/* Localize type to eliminate refs */
  * Dereference or bind types in subsitution:
  * ------------------------------------------------------------------------*/
 
-Tyvar *getTypeVar(Type t, Int o)			/* get number of type variable	   */
-            /* represented by (t,o) [if any].  */
+Tyvar *getTypeVar(Type t, Int o) /* get number of type variable    */
+                                 /* represented by (t,o) [if any].  */
 {
     switch (whatIs1(t)) {
-	case INTCELL   : return tyvar(intOf(t));
-	case OFFSET    : return tyvar(o+offsetOf(t));
-	case VARIDCELL :
-	case VAROPCELL : return tyvar(findBtyvsInt(textOf(t)));
-	default        : break;
+    case INTCELL:
+        return tyvar(intOf(t));
+    case OFFSET:
+        return tyvar(o + offsetOf(t));
+    case VARIDCELL:
+    case VAROPCELL:
+        return tyvar(findBtyvsInt(textOf(t)));
+    default:
+        break;
     }
     return ((Tyvar *)0);
 }
 
-Void tyvarType(Int vn)		       	/* load type held in type variable */
-{			       	/* vn into (typeIs,typeOff)	   */
+Void tyvarType(Int vn) /* load type held in type variable */
+{                      /* vn into (typeIs,typeOff)         */
     Tyvar *tyv;
 
-    while ((tyv=tyvar(vn)), isBound(tyv))
-	switch(whatIs(tyv->bound)) {
-	    case INTCELL   : vn = intOf(tyv->bound);
-			     break;
+    while ((tyv = tyvar(vn)), isBound(tyv))
+        switch (whatIs(tyv->bound)) {
+        case INTCELL:
+            vn = intOf(tyv->bound);
+            break;
 
-	    case OFFSET    : vn = offsetOf(tyv->bound)+(tyv->offs);
-			     break;
+        case OFFSET:
+            vn = offsetOf(tyv->bound) + (tyv->offs);
+            break;
 
-	    case VARIDCELL :
-	    case VAROPCELL : vn = findBtyvsInt(textOf(tyv->bound));
-			     break;
+        case VARIDCELL:
+        case VAROPCELL:
+            vn = findBtyvsInt(textOf(tyv->bound));
+            break;
 
-	    default	   : typeIs  = tyv->bound;
-			     typeOff = tyv->offs;
-			     return;
-	}
-    typeIs  = aVar;
+        default:
+            typeIs = tyv->bound;
+            typeOff = tyv->offs;
+            return;
+        }
+    typeIs = aVar;
     typeOff = vn;
 }
 
-Void bindTv(Int vn, Type t, Int o)			/* set type variable vn to (t,o)   */
+Void bindTv(Int vn, Type t, Int o) /* set type variable vn to (t,o)   */
 {
     Tyvar *tyv = tyvar(vn);
     tyv->bound = t;
-    tyv->offs  = o;
+    tyv->offs = o;
 }
 
-Cell getDerefHead(Type t, Int o)			/* get value at head of type exp.  */
+Cell getDerefHead(Type t, Int o) /* get value at head of type exp.  */
 {
     Tyvar *tyv;
     argCount = 0;
     for (;;) {
-	while (isAp(t)) {
-	    argCount++;
-	    t = fun(t);
-	}
-	if ((tyv=getTypeVar(t,o)) && isBound(tyv)) {
-	    t = tyv->bound;
-	    o = tyv->offs;
-	}
-	else
-	    break;
+        while (isAp(t)) {
+            argCount++;
+            t = fun(t);
+        }
+        if ((tyv = getTypeVar(t, o)) && isBound(tyv)) {
+            t = tyv->bound;
+            o = tyv->offs;
+        } else
+            break;
     }
     return t;
 }
@@ -335,47 +351,49 @@ Cell getDerefHead(Type t, Int o)			/* get value at head of type exp.  */
  * Expand type synonyms:
  * ------------------------------------------------------------------------*/
 
-Void expandSyn(Tycon h, Int ar, Type*at, Int*ao)		/* Expand type synonym with:	   */
-            /* head h			   */
-             /* ar args (NB. ar>=tycon(h).arity)*/
-              /* original expression (*at,*ao)   */
-{				/* expansion returned in (*at,*ao) */
-    ar -= tycon(h).arity;		/* calculate surplus arguments	   */
-    if (ar==0)
-	expandSyn1(h,at,ao);
-    else {				/* if there are more args than the */
-	Type t    = *at;		/* arity, we have to do a little   */
-	Int  o    = *ao;		/* bit of work to isolate args that*/
-	Type args = NIL;		/* will not be changed by expansion*/
-	Int  i;
-	while (ar-- > 0) {		/* find part to expand, and the	   */
-	    args = cons(arg(t),args);	/* unused arguments		   */
-	    t    = fun(t);
-	    deRef(&t,&o);
-	}
-	expandSyn1(h,&t,&o);		/* do the expansion		   */
-	bindTv((i=newTyvars(1)),t,o);	/* and embed the results back in   */
-	tyvar(i)->kind = getKind(t,o);	/* (*at, *ao) as required	   */
-	*at = applyToArgs(mkInt(i),args);
+Void expandSyn(Tycon h, Int ar, Type *at,
+               Int *ao)   /* Expand type synonym with:     */
+                          /* head h                        */
+                          /* ar args (NB. ar>=tycon(h).arity)*/
+                          /* original expression (*at,*ao)   */
+{                         /* expansion returned in (*at,*ao) */
+    ar -= tycon(h).arity; /* calculate surplus arguments           */
+    if (ar == 0)
+        expandSyn1(h, at, ao);
+    else {               /* if there are more args than the */
+        Type t = *at;    /* arity, we have to do a little   */
+        Int o = *ao;     /* bit of work to isolate args that*/
+        Type args = NIL; /* will not be changed by expansion*/
+        Int i;
+        while (ar-- > 0) {             /* find part to expand, and the     */
+            args = cons(arg(t), args); /* unused arguments                 */
+            t = fun(t);
+            deRef(&t, &o);
+        }
+        expandSyn1(h, &t, &o);            /* do the expansion              */
+        bindTv((i = newTyvars(1)), t, o); /* and embed the results back in   */
+        tyvar(i)->kind = getKind(t, o);   /* (*at, *ao) as required        */
+        *at = applyToArgs(mkInt(i), args);
     }
 }
 
-static Void local expandSyn1(Tycon h, Type*at, Int*ao)	/* Expand type synonym with:	   */
-            /* head h, tycon(h).arity args,	   */
-              /* original expression (*at,*ao)   */
-{				/* expansion returned in (*at,*ao) */
-    Int   n = tycon(h).arity;
-    Type  t = *at;
-    Int   o = *ao;
+static Void local expandSyn1(Tycon h, Type *at,
+                             Int *ao) /* Expand type synonym with:         */
+                                      /* head h, tycon(h).arity args,      */
+                                      /* original expression (*at,*ao)   */
+{                                     /* expansion returned in (*at,*ao) */
+    Int n = tycon(h).arity;
+    Type t = *at;
+    Int o = *ao;
     Tyvar *tyv;
 
     *at = tycon(h).defn;
     *ao = newKindedVars(tycon(h).kind);
-    for (; 0<n--; t=fun(t)) {
-	tyv = deRef(&t,&o);
-	if (tyv || !isAp(t))
-	    internal("expandSyn1");
-	bindTv(*ao+n,arg(t),o);
+    for (; 0 < n--; t = fun(t)) {
+        tyv = deRef(&t, &o);
+        if (tyv || !isAp(t))
+            internal("expandSyn1");
+        bindTv(*ao + n, arg(t), o);
     }
 }
 
@@ -383,188 +401,210 @@ static Void local expandSyn1(Tycon h, Type*at, Int*ao)	/* Expand type synonym wi
  * Marking fixed variables in type expressions:
  * ------------------------------------------------------------------------*/
 
-Void clearMarks() {		       	/* Set all unbound type vars to	   */
-    Int i;			       	/* unused generic variables	   */
-    for (i=0; i<numTyvars; ++i)
-	if (!isBound(tyvar(i)))
-	    tyvar(i)->offs = UNUSED_GENERIC;
+Void clearMarks() { /* Set all unbound type vars to        */
+    Int i;          /* unused generic variables    */
+    for (i = 0; i < numTyvars; ++i)
+        if (!isBound(tyvar(i)))
+            tyvar(i)->offs = UNUSED_GENERIC;
     genericVars = NIL;
     nextGeneric = 0;
 }
 
-Void markAllVars() {		       	/* Set all unbound type vars to	   */
-    Int i;			       	/* be fixed vars		   */
-    for (i=0; i<numTyvars; ++i)
-	if (!isBound(tyvar(i)))
-	    tyvar(i)->offs = FIXED_TYVAR;
+Void markAllVars() { /* Set all unbound type vars to       */
+    Int i;           /* be fixed vars              */
+    for (i = 0; i < numTyvars; ++i)
+        if (!isBound(tyvar(i)))
+            tyvar(i)->offs = FIXED_TYVAR;
     genericVars = NIL;
     nextGeneric = 0;
 }
 
-Void resetGenerics() {			/* Reset all generic vars to unused*/
+Void resetGenerics() { /* Reset all generic vars to unused*/
     Int i;
-    for (i=0; i<numTyvars; ++i)
-	if (!isBound(tyvar(i)) && tyvar(i)->offs>=GENERIC)
-	    tyvar(i)->offs = UNUSED_GENERIC;
+    for (i = 0; i < numTyvars; ++i)
+        if (!isBound(tyvar(i)) && tyvar(i)->offs >= GENERIC)
+            tyvar(i)->offs = UNUSED_GENERIC;
     genericVars = NIL;
     nextGeneric = 0;
 }
 
-Void markTyvar(Int vn)	        	/* mark fixed vars in type bound to*/
-{			       	/* given type variable		   */
+Void markTyvar(Int vn) /* mark fixed vars in type bound to*/
+{                      /* given type variable              */
     Tyvar *tyv = tyvar(vn);
 
     if (isBound(tyv))
-	markType(tyv->bound, tyv->offs);
+        markType(tyv->bound, tyv->offs);
     else
-	(tyv->offs) = FIXED_TYVAR;
+        (tyv->offs) = FIXED_TYVAR;
 }
 
-Void markType(Type t, Int o)	        	/* mark fixed vars in type (t,o)   */
+Void markType(Type t, Int o) /* mark fixed vars in type (t,o)   */
 {
     stackCheck();
     switch (whatIs(t)) {
-	case POLYTYPE  :
-	case QUAL      :
-	case TYCON     :
-	case TUPLE     : return;
+    case POLYTYPE:
+    case QUAL:
+    case TYCON:
+    case TUPLE:
+        return;
 
-	case AP        : markType(fst(t),o);
-			 markType(snd(t),o);
-			 return;
+    case AP:
+        markType(fst(t), o);
+        markType(snd(t), o);
+        return;
 
-	case OFFSET    : markTyvar(o+offsetOf(t));
-			 return;
+    case OFFSET:
+        markTyvar(o + offsetOf(t));
+        return;
 
-	case INTCELL   : markTyvar(intOf(t));
-			 return;
+    case INTCELL:
+        markTyvar(intOf(t));
+        return;
 
-	case VARIDCELL :
-	case VAROPCELL : markTyvar(findBtyvsInt(textOf(t)));
-			 return;
+    case VARIDCELL:
+    case VAROPCELL:
+        markTyvar(findBtyvsInt(textOf(t)));
+        return;
 
-	case RANK2     : markType(snd(snd(t)),o);
-			 return;
+    case RANK2:
+        markType(snd(snd(t)), o);
+        return;
 
-	default        : internal("markType");
+    default:
+        internal("markType");
     }
 }
 
-Void markPred(Cell pi)			/* Marked fixed type vars in pi	   */
+Void markPred(Cell pi) /* Marked fixed type vars in pi     */
 {
     Cell cl = fst3(pi);
-    Int  o  = intOf(snd3(pi));
+    Int o = intOf(snd3(pi));
 
-    for (; isAp(cl); cl=fun(cl))
-	markType(arg(cl),o);
+    for (; isAp(cl); cl = fun(cl))
+        markType(arg(cl), o);
 }
 
 /* --------------------------------------------------------------------------
  * Copy type expression from substitution to make a single type expression:
  * ------------------------------------------------------------------------*/
 
-Type copyTyvar(Int vn)	        	/* calculate most general form of  */
-{			       	/* type bound to given type var	   */
+Type copyTyvar(Int vn) /* calculate most general form of  */
+{                      /* type bound to given type var     */
     Tyvar *tyv = tyvar(vn);
 
-    if ((tyv->bound)==SKOLEM) {
-	return mkInt(vn);
+    if ((tyv->bound) == SKOLEM) {
+        return mkInt(vn);
     } else if (tyv->bound) {
-	return copyType(tyv->bound,tyv->offs);
+        return copyType(tyv->bound, tyv->offs);
     }
 
     switch (tyv->offs) {
-	case FIXED_TYVAR    : return mkInt(vn);
+    case FIXED_TYVAR:
+        return mkInt(vn);
 
-	case UNUSED_GENERIC : (tyv->offs) = GENERIC + nextGeneric++;
-			      if (nextGeneric>=NUM_OFFSETS) {
-				  errHead(0); errPrintf(
-				      "Too many quantified type variables");
-				  errFail();
-			      }
-			      genericVars = cons(mkInt(vn),genericVars);
+    case UNUSED_GENERIC:
+        (tyv->offs) = GENERIC + nextGeneric++;
+        if (nextGeneric >= NUM_OFFSETS) {
+            errHead(0);
+            errPrintf("Too many quantified type variables");
+            errFail();
+        }
+        genericVars = cons(mkInt(vn), genericVars);
 
-	default 	    : return mkOffset(tyv->offs - GENERIC);
+    default:
+        return mkOffset(tyv->offs - GENERIC);
     }
 }
 
-Type copyType(Type t, Int o)	        	/* calculate most general form of  */
-                   /* type expression (t,o) 	   */
+Type copyType(Type t, Int o) /* calculate most general form of  */
+                             /* type expression (t,o)      */
 {
     assertType(t);
     stackCheck();
     switch (whatIs(t)) {
-	case AP        : {   Type l = copyType(fst(t),o);/* ensure correct */
-			     Type r = copyType(snd(t),o);/* eval. order    */
-			     return ap(l,r);
-			 }
-	case OFFSET    : return copyTyvar(o+offsetOf(t));
-	case INTCELL   : return copyTyvar(intOf(t));
-	case VARIDCELL :
-	case VAROPCELL : return copyTyvar(findBtyvsInt(textOf(t)));
-	default        : break;
+    case AP: {
+        Type l = copyType(fst(t), o); /* ensure correct */
+        Type r = copyType(snd(t), o); /* eval. order    */
+        return ap(l, r);
+    }
+    case OFFSET:
+        return copyTyvar(o + offsetOf(t));
+    case INTCELL:
+        return copyTyvar(intOf(t));
+    case VARIDCELL:
+    case VAROPCELL:
+        return copyTyvar(findBtyvsInt(textOf(t)));
+    default:
+        break;
     }
 
     return t;
 }
 
-Cell copyPred(Cell pi, Int o)			/* Copy single predicate (or part  */
-            /* thereof) ...			   */
+Cell copyPred(Cell pi, Int o) /* Copy single predicate (or part  */
+                              /* thereof) ...                      */
 {
     if (isAp(pi)) {
-	Cell temp = copyPred(fun(pi),o);/* to ensure correct order of eval.*/
-	return ap(temp,copyType(arg(pi),o));
-    }
-    else
-	return pi;
+        Cell temp = copyPred(fun(pi), o); /* to ensure correct order of eval.*/
+        return ap(temp, copyType(arg(pi), o));
+    } else
+        return pi;
 }
 
-Type zonkTyvar(Int vn)	/* flatten type by chasing all references	   */
-{		/* and collapsing OFFSETS to absolute indexes	   */
+Type zonkTyvar(Int vn) /* flatten type by chasing all references           */
+{                      /* and collapsing OFFSETS to absolute indexes       */
     Tyvar *tyv = tyvar(vn);
 
     if (tyv->bound)
-	return zonkType(tyv->bound,tyv->offs);
+        return zonkType(tyv->bound, tyv->offs);
     else
-	return mkInt(vn);
+        return mkInt(vn);
 }
 
-Type zonkType(Type t, Int o)	/* flatten type by chasing all references	   */
-          /* and collapsing OFFSETS to absolute indexes	   */
+Type zonkType(Type t, Int o) /* flatten type by chasing all references     */
+/* and collapsing OFFSETS to absolute indexes         */
 {
     stackCheck();
     switch (whatIs(t)) {
-	case AP        : {   Type l = zonkType(fst(t),o);/* ensure correct */
-			     Type r = zonkType(snd(t),o);/* eval. order    */
-			     return ap(l,r);
-			 }
-	case OFFSET    : return zonkTyvar(o+offsetOf(t));
-	case INTCELL   : return zonkTyvar(intOf(t));
-	default        : break;
+    case AP: {
+        Type l = zonkType(fst(t), o); /* ensure correct */
+        Type r = zonkType(snd(t), o); /* eval. order    */
+        return ap(l, r);
+    }
+    case OFFSET:
+        return zonkTyvar(o + offsetOf(t));
+    case INTCELL:
+        return zonkTyvar(intOf(t));
+    default:
+        break;
     }
 
     return t;
 }
 
-Kind copyKindvar(Int vn)			/* build kind attatched to variable*/
+Kind copyKindvar(Int vn) /* build kind attatched to variable*/
 {
     Tyvar *tyv = tyvar(vn);
     if (tyv->bound)
-	return copyKind(tyv->bound,tyv->offs);
-    return STAR;			/* any unbound variable defaults to*/
-}					/* the kind of all types	   */
+        return copyKind(tyv->bound, tyv->offs);
+    return STAR; /* any unbound variable defaults to*/
+} /* the kind of all types         */
 
-Kind copyKind(Kind k, Int o)	        	/* build kind expression from	   */
-                   /* given skeleton		   */
+Kind copyKind(Kind k, Int o) /* build kind expression from         */
+                             /* given skeleton             */
 {
     switch (whatIs(k)) {
-	case AP      : {   Kind l = copyKind(fst(k),o);  /* ensure correct */
-			   Kind r = copyKind(snd(k),o);  /* eval. order    */
-			   return ap(l,r);
-		       }
-	case OFFSET  : return copyKindvar(o+offsetOf(k));
-	case INTCELL : return copyKindvar(intOf(k));
-	default      : break;
+    case AP: {
+        Kind l = copyKind(fst(k), o); /* ensure correct */
+        Kind r = copyKind(snd(k), o); /* eval. order    */
+        return ap(l, r);
+    }
+    case OFFSET:
+        return copyKindvar(o + offsetOf(k));
+    case INTCELL:
+        return copyKindvar(intOf(k));
+    default:
+        break;
     }
     return k;
 }
@@ -573,67 +613,70 @@ Kind copyKind(Kind k, Int o)	        	/* build kind expression from	   */
  * Copy type expression from substitution without marking:
  * ------------------------------------------------------------------------*/
 
-static List local listTyvar(Int vn, List ns)
-{
+static List local listTyvar(Int vn, List ns) {
     Tyvar *tyv = tyvar(vn);
 
     if (isBound(tyv)) {
-	return listTyvars(tyv->bound,tyv->offs,ns);
-    } else if (!intIsMember(vn,ns)) {
-	ns = cons(mkInt(vn),ns);
+        return listTyvars(tyv->bound, tyv->offs, ns);
+    } else if (!intIsMember(vn, ns)) {
+        ns = cons(mkInt(vn), ns);
     }
     return ns;
 }
 
-static List local listTyvars(Cell t, Int o, List ns)
-{
+static List local listTyvars(Cell t, Int o, List ns) {
     switch (whatIs(t)) {
-	case AP        : return listTyvars(fst(t),o,
-				 listTyvars(snd(t),o,
-				  ns));
-	case OFFSET    : return listTyvar(o+offsetOf(t),ns);
-	case INTCELL   : return listTyvar(intOf(t),ns);
-	default        : break;
+    case AP:
+        return listTyvars(fst(t), o, listTyvars(snd(t), o, ns));
+    case OFFSET:
+        return listTyvar(o + offsetOf(t), ns);
+    case INTCELL:
+        return listTyvar(intOf(t), ns);
+    default:
+        break;
     }
     return ns;
 }
 
-static Cell local dupTyvar(Int vn, List ns)
-{
+static Cell local dupTyvar(Int vn, List ns) {
     Tyvar *tyv = tyvar(vn);
 
     if (isBound(tyv)) {
-	return dupTyvars(tyv->bound,tyv->offs,ns);
+        return dupTyvars(tyv->bound, tyv->offs, ns);
     } else {
-	Int i = 0;
-	for (; nonNull(ns) && vn!=intOf(hd(ns)); ns=tl(ns)) {
-	    i++;
-	}
-	return mkOffset(i);
+        Int i = 0;
+        for (; nonNull(ns) && vn != intOf(hd(ns)); ns = tl(ns)) {
+            i++;
+        }
+        return mkOffset(i);
     }
 }
 
-static Cell local dupTyvars(Cell t, Int o, List ns)
-{
+static Cell local dupTyvars(Cell t, Int o, List ns) {
     switch (whatIs(t)) {
-	case AP        : {   Type l = dupTyvars(fst(t),o,ns);
-			     Type r = dupTyvars(snd(t),o,ns);
-			     return ap(l,r);
-			 }
-	case OFFSET    : return dupTyvar(o+offsetOf(t),ns);
-	case INTCELL   : return dupTyvar(intOf(t),ns);
-	default        : break;
+    case AP: {
+        Type l = dupTyvars(fst(t), o, ns);
+        Type r = dupTyvars(snd(t), o, ns);
+        return ap(l, r);
+    }
+    case OFFSET:
+        return dupTyvar(o + offsetOf(t), ns);
+    case INTCELL:
+        return dupTyvar(intOf(t), ns);
+    default:
+        break;
     }
     return t;
 }
 
-static Cell local copyNoMark(Cell t, Int o)	/* Copy a type or predicate without*/
-            /* changing marks		   */
+static Cell local copyNoMark(Cell t,
+                             Int o) /* Copy a type or predicate without*/
+                                    /* changing marks              */
 {
-    List ns     = listTyvars(t,o,NIL);
-    Cell result = pair(ns,dupTyvars(t,o,ns));
-    for (; nonNull(ns); ns=tl(ns)) {
-	hd(ns) = tyvar(intOf(hd(ns)))->kind;
+    List ns = listTyvars(t, o, NIL);
+    Cell result = pair(ns, dupTyvars(t, o, ns));
+    for (; nonNull(ns); ns = tl(ns)) {
+        hd(ns) = tyvar(intOf(hd(ns)))->kind;
     }
     return result;
 }
@@ -642,126 +685,127 @@ static Cell local copyNoMark(Cell t, Int o)	/* Copy a type or predicate without*
  * Droping and lifting of type schemes that appear in rank 2 position:
  * ------------------------------------------------------------------------*/
 
-Type dropRank2(Type t, Int alpha, Int n)		/* Drop a (potentially) rank2 type */
+Type dropRank2(Type t, Int alpha, Int n) /* Drop a (potentially) rank2 type */
 {
-    if (whatIs(t)==RANK2) {
-	Cell r  = fst(snd(t));
-	Int  i  = intOf(r);
-	Type as = NIL;
-	for (t=snd(snd(t)); i>0; i--) {
-	    Type a = arg(fun(t));
-	    if (isPolyType(a))
-		a = dropRank1(a,alpha,n);
-	    as = fn(a,as);
-	    t  = arg(t);
-	}
-	t = ap(RANK2,pair(r,revOnto(as,t)));
+    if (whatIs(t) == RANK2) {
+        Cell r = fst(snd(t));
+        Int i = intOf(r);
+        Type as = NIL;
+        for (t = snd(snd(t)); i > 0; i--) {
+            Type a = arg(fun(t));
+            if (isPolyType(a))
+                a = dropRank1(a, alpha, n);
+            as = fn(a, as);
+            t = arg(t);
+        }
+        t = ap(RANK2, pair(r, revOnto(as, t)));
     }
     return t;
 }
 
-Type dropRank1(Type t, Int alpha, Int n)		/* Copy rank1 argument type t to   */
-            /* make a rank1 type scheme	   */
+Type dropRank1(Type t, Int alpha, Int n) /* Copy rank1 argument type t to   */
+                                         /* make a rank1 type scheme       */
 {
-    if (n>0 && isPolyType(t))
-	t = mkPolyType(polySigOf(t),dropRank1Body(monotypeOf(t),alpha,n));
+    if (n > 0 && isPolyType(t))
+        t = mkPolyType(polySigOf(t), dropRank1Body(monotypeOf(t), alpha, n));
     return t;
 }
 
-static Type local dropRank1Body(Type t, Int alpha, Int n)
-{
+static Type local dropRank1Body(Type t, Int alpha, Int n) {
     switch (whatIs(t)) {
-	case OFFSET   : {   Int m = offsetOf(t);
-			    return (m>=n) ? mkOffset(m-n) : mkInt(alpha+m);
-			}
+    case OFFSET: {
+        Int m = offsetOf(t);
+        return (m >= n) ? mkOffset(m - n) : mkInt(alpha + m);
+    }
 
-	case POLYTYPE : return mkPolyType(polySigOf(t),
-					  dropRank1Body(monotypeOf(t),alpha,n));
+    case POLYTYPE:
+        return mkPolyType(polySigOf(t), dropRank1Body(monotypeOf(t), alpha, n));
 
-	case QUAL     : return ap(QUAL,dropRank1Body(snd(t),alpha,n));
+    case QUAL:
+        return ap(QUAL, dropRank1Body(snd(t), alpha, n));
 
-	case RANK2    : return ap(RANK2,pair(fst(snd(t)),
-					     dropRank1Body(snd(snd(t)),
-							   alpha,
-							   n)));
+    case RANK2:
+        return ap(RANK2,
+                  pair(fst(snd(t)), dropRank1Body(snd(snd(t)), alpha, n)));
 
-	case AP       : return ap(dropRank1Body(fun(t),alpha,n),
-				  dropRank1Body(arg(t),alpha,n));
+    case AP:
+        return ap(dropRank1Body(fun(t), alpha, n),
+                  dropRank1Body(arg(t), alpha, n));
 
-	default       : return t;
+    default:
+        return t;
     }
 }
 
-Void liftRank2Args(List as, Int alpha, Int m)
-{
+Void liftRank2Args(List as, Int alpha, Int m) {
     Int i = 0;
-    for (; i<m; i++)
-	copyTyvar(alpha+i);
-    for (m=nextGeneric; nonNull(as); as=tl(as)) {
-	Type ta = arg(fun(as));
-	ta      = isPolyType(ta) ? liftRank1Body(ta,m) : copyType(ta,alpha);
-	arg(fun(as))
-		= ta;
+    for (; i < m; i++)
+        copyTyvar(alpha + i);
+    for (m = nextGeneric; nonNull(as); as = tl(as)) {
+        Type ta = arg(fun(as));
+        ta = isPolyType(ta) ? liftRank1Body(ta, m) : copyType(ta, alpha);
+        arg(fun(as)) = ta;
     }
 }
 
-Type liftRank2(Type t, Int alpha, Int m)
-{
-    if (whatIs(t)==RANK2) {
-	Cell r  = fst(snd(t));
-	Int  i  = 0;
-	Type as = NIL;
-	for (; i<m; i++)
-	    copyTyvar(alpha+i);
-	m = nextGeneric;
-	t = snd(snd(t));
-	for (i=intOf(r); i>0; i--) {
-	    Type a = arg(fun(t));
-	    a      = isPolyType(a) ? liftRank1Body(a,m) : copyType(a,alpha);
-	    as     = fn(a,as);
-	    t      = arg(t);
-	}
-	t = ap(RANK2,pair(r,revOnto(as,copyType(t,alpha))));
-    }
-    else
-	t = copyType(t,alpha);
+Type liftRank2(Type t, Int alpha, Int m) {
+    if (whatIs(t) == RANK2) {
+        Cell r = fst(snd(t));
+        Int i = 0;
+        Type as = NIL;
+        for (; i < m; i++)
+            copyTyvar(alpha + i);
+        m = nextGeneric;
+        t = snd(snd(t));
+        for (i = intOf(r); i > 0; i--) {
+            Type a = arg(fun(t));
+            a = isPolyType(a) ? liftRank1Body(a, m) : copyType(a, alpha);
+            as = fn(a, as);
+            t = arg(t);
+        }
+        t = ap(RANK2, pair(r, revOnto(as, copyType(t, alpha))));
+    } else
+        t = copyType(t, alpha);
     return t;
 }
 
-Type liftRank1(Type t, Int alpha, Int m)
-{
-    if (m>0 && isPolyType(t)) {
-	Int i = 0;
-	resetGenerics();
-	for (; i<m; i++)
-	    copyTyvar(alpha+i);
-	t = liftRank1Body(t,nextGeneric);
+Type liftRank1(Type t, Int alpha, Int m) {
+    if (m > 0 && isPolyType(t)) {
+        Int i = 0;
+        resetGenerics();
+        for (; i < m; i++)
+            copyTyvar(alpha + i);
+        t = liftRank1Body(t, nextGeneric);
     }
     return t;
 }
 
-static Type local liftRank1Body(Type t, Int n)
-{
+static Type local liftRank1Body(Type t, Int n) {
     switch (whatIs(t)) {
-	case OFFSET    : return mkOffset(n+offsetOf(t));
+    case OFFSET:
+        return mkOffset(n + offsetOf(t));
 
-	case INTCELL   : return copyTyvar(intOf(t));
+    case INTCELL:
+        return copyTyvar(intOf(t));
 
-	case VARIDCELL :
-	case VAROPCELL : return copyTyvar(findBtyvsInt(textOf(t)));
+    case VARIDCELL:
+    case VAROPCELL:
+        return copyTyvar(findBtyvsInt(textOf(t)));
 
-	case POLYTYPE  : return mkPolyType(polySigOf(t),
-					   liftRank1Body(monotypeOf(t),n));
+    case POLYTYPE:
+        return mkPolyType(polySigOf(t), liftRank1Body(monotypeOf(t), n));
 
-	case QUAL      : return ap(QUAL,liftRank1Body(snd(t),n));
+    case QUAL:
+        return ap(QUAL, liftRank1Body(snd(t), n));
 
-	case RANK2     : return ap(RANK2,pair(fst(snd(t)),
-					      liftRank1Body(snd(snd(t)),n)));
+    case RANK2:
+        return ap(RANK2, pair(fst(snd(t)), liftRank1Body(snd(snd(t)), n)));
 
-	case AP        : return ap(liftRank1Body(fun(t),n),
-				   liftRank1Body(arg(t),n));
+    case AP:
+        return ap(liftRank1Body(fun(t), n), liftRank1Body(arg(t), n));
 
-	default        : return t;
+    default:
+        return t;
     }
 }
 
@@ -769,65 +813,73 @@ static Type local liftRank1Body(Type t, Int n)
  * Support for `kind preserving substitutions' from unification:
  * ------------------------------------------------------------------------*/
 
-Bool eqKind(Kind k1, Kind k2)			/* check that two (mono)kinds are  */
-{				/* equal			   */
-    return k1==k2
-	   || (isPair(k1) && isPair(k2)
-	      && eqKind(fst(k1),fst(k2))
-	      && eqKind(snd(k1),snd(k2)));
+Bool eqKind(Kind k1, Kind k2) /* check that two (mono)kinds are  */
+{                             /* equal                     */
+    return k1 == k2 || (isPair(k1) && isPair(k2) && eqKind(fst(k1), fst(k2)) &&
+                        eqKind(snd(k1), snd(k2)));
 }
 
-Kind getKind(Cell c, Int o)			/* Find kind of constr during type */
-            /* checking process		   */
+Kind getKind(Cell c, Int o) /* Find kind of constr during type */
+                            /* checking process            */
 {
     assertType(c);
-    if (isAp(c))					/* application	   */
-	return snd(getKind(fst(c),o));
+    if (isAp(c)) /* application    */
+        return snd(getKind(fst(c), o));
     switch (whatIs(c)) {
-	case TUPLE     : return simpleKind(tupleOf(c));	/*(,)::* -> * -> * */
-	case OFFSET    : return tyvar(o+offsetOf(c))->kind;
-	case INTCELL   : return tyvar(intOf(c))->kind;
-	case VARIDCELL :
-	case VAROPCELL : return tyvar(findBtyvsInt(textOf(c)))->kind;
-	case TYCON     : return tycon(c).kind;
-	default        : break;
+    case TUPLE:
+        return simpleKind(tupleOf(c)); /*(,)::* -> * -> * */
+    case OFFSET:
+        return tyvar(o + offsetOf(c))->kind;
+    case INTCELL:
+        return tyvar(intOf(c))->kind;
+    case VARIDCELL:
+    case VAROPCELL:
+        return tyvar(findBtyvsInt(textOf(c)))->kind;
+    case TYCON:
+        return tycon(c).kind;
+    default:
+        break;
     }
     internal("getKind");
-    return STAR;/* not reached */
+    return STAR; /* not reached */
 }
 
 /* --------------------------------------------------------------------------
  * Find generic variables in a type:
  * ------------------------------------------------------------------------*/
 
-Type genvarTyvar(Int vn, List vs)			/* calculate list of generic vars  */
-            /* thru variable vn, prepended to  */
-{				/* list vs			   */
+Type genvarTyvar(Int vn, List vs) /* calculate list of generic vars  */
+                                  /* thru variable vn, prepended to  */
+{                                 /* list vs                       */
     Tyvar *tyv = tyvar(vn);
 
     if (isBound(tyv))
-	return genvarType(tyv->bound,tyv->offs,vs);
+        return genvarType(tyv->bound, tyv->offs, vs);
     else if (tyv->offs == UNUSED_GENERIC) {
-	tyv->offs += GENERIC + nextGeneric++;
-	return cons(mkInt(vn),vs);
-    }
-    else if (tyv->offs>=GENERIC && !intIsMember(vn,vs))
-	return cons(mkInt(vn),vs);
+        tyv->offs += GENERIC + nextGeneric++;
+        return cons(mkInt(vn), vs);
+    } else if (tyv->offs >= GENERIC && !intIsMember(vn, vs))
+        return cons(mkInt(vn), vs);
     else
-	return vs;
+        return vs;
 }
 
-List genvarType(Type t, Int o, List vs)			/* calculate list of generic vars  */
-                   /* in type expression (t,o) 	   */
-            /* results are prepended to vs	   */
+List genvarType(Type t, Int o, List vs) /* calculate list of generic vars  */
+                                        /* in type expression (t,o)        */
+                                        /* results are prepended to vs     */
 {
     switch (whatIs(t)) {
-	case AP        : return genvarType(snd(t),o,genvarType(fst(t),o,vs));
-	case OFFSET    : return genvarTyvar(o+offsetOf(t),vs);
-	case INTCELL   : return genvarTyvar(intOf(t),vs);
-	case VARIDCELL :
-	case VAROPCELL : return genvarTyvar(findBtyvsInt(textOf(t)),vs);
-	default        : break;
+    case AP:
+        return genvarType(snd(t), o, genvarType(fst(t), o, vs));
+    case OFFSET:
+        return genvarTyvar(o + offsetOf(t), vs);
+    case INTCELL:
+        return genvarTyvar(intOf(t), vs);
+    case VARIDCELL:
+    case VAROPCELL:
+        return genvarTyvar(findBtyvsInt(textOf(t)), vs);
+    default:
+        break;
     }
     return vs;
 }
@@ -836,24 +888,24 @@ List genvarType(Type t, Int o, List vs)			/* calculate list of generic vars  */
  * Occurs check:
  * ------------------------------------------------------------------------*/
 
-Bool doesntOccurIn(Tyvar*lookFor, Type t, Int o)		/* Return TRUE if var lookFor	   */
-                          /* isn't referenced in (t,o)	   */
+Bool doesntOccurIn(Tyvar *lookFor, Type t,
+                   Int o) /* Return TRUE if var lookFor    */
+                          /* isn't referenced in (t,o)     */
 {
     Tyvar *tyv;
 
     stackCheck();
     for (;;) {
-	tyv = deRef(&t,&o);
-	if (tyv)			/* type variable		   */
-	    return tyv!=lookFor;
-	else if (isAp(t)) {		/* application			   */
-	    if (doesntOccurIn(lookFor,snd(t),o))
-		t = fst(t);
-	    else
-		return FALSE;
-	}
-	else                            /* no variable found		   */
-	    break;
+        tyv = deRef(&t, &o);
+        if (tyv) /* type variable                  */
+            return tyv != lookFor;
+        else if (isAp(t)) { /* application                         */
+            if (doesntOccurIn(lookFor, snd(t), o))
+                t = fst(t);
+            else
+                return FALSE;
+        } else /* no variable found                */
+            break;
     }
     return TRUE;
 }
@@ -862,203 +914,209 @@ Bool doesntOccurIn(Tyvar*lookFor, Type t, Int o)		/* Return TRUE if var lookFor	
  * Unification algorithm:
  * ------------------------------------------------------------------------*/
 
-char   *unifyFails   = 0;		/* Unification error message	   */
-static Int bindAbove = 0;		/* Used to restrict var binding	   */
+char *unifyFails = 0;     /* Unification error message     */
+static Int bindAbove = 0; /* Used to restrict var binding          */
 
-static Void local bindOnlyAbove(Int beta) { bindAbove = beta; }
-static Void local noBind        (Void)     { bindAbove = MAXPOSINT; }
-static Void local unrestrictBind(Void)     { bindAbove = 0; }
+static Void local bindOnlyAbove(Int beta) {
+    bindAbove = beta;
+}
+static Void local noBind(Void) {
+    bindAbove = MAXPOSINT;
+}
+static Void local unrestrictBind(Void) {
+    bindAbove = 0;
+}
 
-static Bool local varToVarBind(Tyvar*tyv1, Tyvar*tyv2)/* Make binding tyv1 := tyv2	   */
+static Bool local
+varToVarBind(Tyvar *tyv1, Tyvar *tyv2) /* Make binding tyv1 := tyv2        */
 {
-    if (tyv1!=tyv2) {			/* If vars are same, nothing to do!*/
+    if (tyv1 != tyv2) { /* If vars are same, nothing to do!*/
 
-	/* Check that either tyv1 or tyv2 is in allowed range for binding  */
-	/* and is not a Skolem constant, and swap vars if nec. so we can   */
-	/* bind to tyv1.						   */
+        /* Check that either tyv1 or tyv2 is in allowed range for binding  */
+        /* and is not a Skolem constant, and swap vars if nec. so we can   */
+        /* bind to tyv1.                                                   */
 
-	if (tyvNum(tyv1)<bindAbove || tyv1->bound==SKOLEM) {
-	    if (tyvNum(tyv2)<bindAbove || tyv2->bound==SKOLEM) {
-		unifyFails = "types do not match";
-		return FALSE;
-	    }
-	    else {
-		Tyvar *tyv = tyv1;
-		tyv1       = tyv2;
-		tyv2       = tyv;
-	    }
-	}
-	if (!eqKind(tyv1->kind,tyv2->kind)) {
-	    unifyFails = "constructor variable kinds do not match";
-	    return FALSE;
-	}
-	tyv1->bound = aVar;
-	tyv1->offs  = tyvNum(tyv2);
+        if (tyvNum(tyv1) < bindAbove || tyv1->bound == SKOLEM) {
+            if (tyvNum(tyv2) < bindAbove || tyv2->bound == SKOLEM) {
+                unifyFails = "types do not match";
+                return FALSE;
+            } else {
+                Tyvar *tyv = tyv1;
+                tyv1 = tyv2;
+                tyv2 = tyv;
+            }
+        }
+        if (!eqKind(tyv1->kind, tyv2->kind)) {
+            unifyFails = "constructor variable kinds do not match";
+            return FALSE;
+        }
+        tyv1->bound = aVar;
+        tyv1->offs = tyvNum(tyv2);
     }
     return TRUE;
 }
 
-static Bool local varToTypeBind(Tyvar*tyv, Type t, Int o)/* Make binding tyv := (t,o)	   */
-            /* guaranteed not to be a v'ble or */
-{				/* have synonym as outermost constr*/
-    if (tyvNum(tyv)<bindAbove) {	/* Check that tyv is in range	   */
-	unifyFails = "types do not match";
-	return FALSE;
-    }
-    else if (tyv->bound == SKOLEM) {	/* Check that it is not Skolemized */
-	unifyFails = "cannot instantiate Skolem constant";
-	return FALSE;
-    }
-    else if (!doesntOccurIn(tyv,t,o))	/* Carry out occurs check	   */
-	unifyFails = "unification would give infinite type";
-    else if (!eqKind(tyv->kind,getKind(t,o)))
-	unifyFails = "kinds do not match";
+static Bool local varToTypeBind(Tyvar *tyv, Type t,
+                                Int o) /* Make binding tyv := (t,o)        */
+                                       /* guaranteed not to be a v'ble or */
+{                                      /* have synonym as outermost constr*/
+    if (tyvNum(tyv) < bindAbove) {     /* Check that tyv is in range       */
+        unifyFails = "types do not match";
+        return FALSE;
+    } else if (tyv->bound == SKOLEM) { /* Check that it is not Skolemized */
+        unifyFails = "cannot instantiate Skolem constant";
+        return FALSE;
+    } else if (!doesntOccurIn(tyv, t, o)) /* Carry out occurs check        */
+        unifyFails = "unification would give infinite type";
+    else if (!eqKind(tyv->kind, getKind(t, o)))
+        unifyFails = "kinds do not match";
     else {
-	tyv->bound = t;
-	tyv->offs  = o;
-	return TRUE;
+        tyv->bound = t;
+        tyv->offs = o;
+        return TRUE;
     }
     return FALSE;
 }
 
-Bool unify(Type t1, Int o1, Type t2, Int o2)			/* Main unification routine	   */
-               /* unify (t1,o1) with (t2,o2)	   */
+Bool unify(Type t1, Int o1, Type t2, Int o2) /* Main unification routine     */
+/* unify (t1,o1) with (t2,o2)           */
 {
     assertType(t1);
     assertType(t2);
     Tyvar *tyv1, *tyv2;
 
     stackCheck();
-    tyv1 = deRef(&t1,&o1);
-    tyv2 = deRef(&t2,&o2);
+    tyv1 = deRef(&t1, &o1);
+    tyv2 = deRef(&t2, &o2);
 
-un: if (tyv1)
-	if (tyv2)
-	    return varToVarBind(tyv1,tyv2);	    /* t1, t2 variables    */
-	else {
-	    Cell h2 = getDerefHead(t2,o2);	    /* t1 variable, t2 not */
-	    if (isSynonym(h2) && argCount>=tycon(h2).arity) {
-		expandSyn(h2,argCount,&t2,&o2);	    /* may grow (and re-   */
-		tyv1 = deRef(&t1,&o1);		    /* alloc) tyvars, so   */
-		tyv2 = deRef(&t2,&o2);		    /* re-derive tyv1 too  */
-		goto un;
-	    }
-	    return varToTypeBind(tyv1,t2,o2);
-	}
-    else
-	if (tyv2) {
-	    Cell h1 = getDerefHead(t1,o1);	    /* t2 variable, t1 not */
-	    if (isSynonym(h1) && argCount>=tycon(h1).arity) {
-		expandSyn(h1,argCount,&t1,&o1);	    /* may grow (and re-   */
-		tyv1 = deRef(&t1,&o1);		    /* alloc) tyvars, so   */
-		tyv2 = deRef(&t2,&o2);		    /* re-derive tyv2 too  */
-		goto un;
-	    }
-	    return varToTypeBind(tyv2,t1,o1);
-	}
-	else {					    /* t1, t2 not vars	   */
-	    Type h1 = getDerefHead(t1,o1);
-	    Int  a1 = argCount;
-	    Type h2 = getDerefHead(t2,o2);
-	    Int  a2 = argCount;
+un:
+    if (tyv1)
+        if (tyv2)
+            return varToVarBind(tyv1, tyv2); /* t1, t2 variables    */
+        else {
+            Cell h2 = getDerefHead(t2, o2); /* t1 variable, t2 not */
+            if (isSynonym(h2) && argCount >= tycon(h2).arity) {
+                expandSyn(h2, argCount, &t2, &o2); /* may grow (and re-   */
+                tyv1 = deRef(&t1, &o1);            /* alloc) tyvars, so   */
+                tyv2 = deRef(&t2, &o2);            /* re-derive tyv1 too  */
+                goto un;
+            }
+            return varToTypeBind(tyv1, t2, o2);
+        }
+    else if (tyv2) {
+        Cell h1 = getDerefHead(t1, o1); /* t2 variable, t1 not */
+        if (isSynonym(h1) && argCount >= tycon(h1).arity) {
+            expandSyn(h1, argCount, &t1, &o1); /* may grow (and re-   */
+            tyv1 = deRef(&t1, &o1);            /* alloc) tyvars, so   */
+            tyv2 = deRef(&t2, &o2);            /* re-derive tyv2 too  */
+            goto un;
+        }
+        return varToTypeBind(tyv2, t1, o1);
+    } else { /* t1, t2 not vars    */
+        Type h1 = getDerefHead(t1, o1);
+        Int a1 = argCount;
+        Type h2 = getDerefHead(t2, o2);
+        Int a2 = argCount;
 
-	    if (isOffset(h1) || isInt(h1)) h1=NIL;  /* represent var by NIL*/
-	    if (isOffset(h2) || isInt(h2)) h2=NIL;
+        if (isOffset(h1) || isInt(h1))
+            h1 = NIL; /* represent var by NIL*/
+        if (isOffset(h2) || isInt(h2))
+            h2 = NIL;
 
-	    if (nonNull(h1) && h1==h2) {/* Assuming well-formed types, both*/
-		if (a1!=a2) {		/* t1, t2 must have same no of args*/
-		    unifyFails = "incompatible constructors";
-		    return FALSE;
-		}
-		while (isAp(t1)) {
-		    if (!unify(arg(t1),o1,arg(t2),o2))
-			return FALSE;
-		    t1 = fun(t1);
-		    tyv1 = deRef(&t1,&o1);
-		    t2 = fun(t2);
-		    tyv2 = deRef(&t2,&o2);
-		}
-		unifyFails = 0;
-		return TRUE;
-	    }
+        if (nonNull(h1) && h1 == h2) { /* Assuming well-formed types, both*/
+            if (a1 != a2) {            /* t1, t2 must have same no of args*/
+                unifyFails = "incompatible constructors";
+                return FALSE;
+            }
+            while (isAp(t1)) {
+                if (!unify(arg(t1), o1, arg(t2), o2))
+                    return FALSE;
+                t1 = fun(t1);
+                tyv1 = deRef(&t1, &o1);
+                t2 = fun(t2);
+                tyv2 = deRef(&t2, &o2);
+            }
+            unifyFails = 0;
+            return TRUE;
+        }
 
-	    /* Types do not match -- look for type synonyms to expand */
+        /* Types do not match -- look for type synonyms to expand */
 
-	    if (isSynonym(h1) && a1>=tycon(h1).arity) {
-		expandSyn(h1,a1,&t1,&o1);
-		tyv1 = deRef(&t1,&o1);
-		goto un;
-	    }
-	    if (isSynonym(h2) && a2>=tycon(h2).arity) {
-		expandSyn(h2,a2,&t2,&o2);
-		tyv2 = deRef(&t2,&o2);
-		goto un;
-	    }
+        if (isSynonym(h1) && a1 >= tycon(h1).arity) {
+            expandSyn(h1, a1, &t1, &o1);
+            tyv1 = deRef(&t1, &o1);
+            goto un;
+        }
+        if (isSynonym(h2) && a2 >= tycon(h2).arity) {
+            expandSyn(h2, a2, &t2, &o2);
+            tyv2 = deRef(&t2, &o2);
+            goto un;
+        }
 
-	    if ((isNull(h1) && a1<=a2) ||       /* last attempt -- maybe   */
-		(isNull(h2) && a2<=a1))	{	/* one head is a variable? */
-		for (;;) {
-		    tyv1 = deRef(&t1,&o1);
-		    tyv2 = deRef(&t2,&o2);
+        if ((isNull(h1) && a1 <= a2) || /* last attempt -- maybe   */
+            (isNull(h2) && a2 <= a1)) { /* one head is a variable? */
+            for (;;) {
+                tyv1 = deRef(&t1, &o1);
+                tyv2 = deRef(&t2, &o2);
 
-		    if (tyv1)				/* unify heads!	   */
-			if (tyv2)
-			    return varToVarBind(tyv1,tyv2);
-			else
-			    return varToTypeBind(tyv1,t2,o2);
-		    else if (tyv2)
-			return varToTypeBind(tyv2,t1,o1);
+                if (tyv1) /* unify heads!          */
+                    if (tyv2)
+                        return varToVarBind(tyv1, tyv2);
+                    else
+                        return varToTypeBind(tyv1, t2, o2);
+                else if (tyv2)
+                    return varToTypeBind(tyv2, t1, o1);
 
-		    /* at this point, neither t1 nor t2 is a variable. In  */
-		    /* addition, they must both be APs unless one of the   */
-		    /* head variables has been bound during unification of */
-		    /* the arguments.					   */
+                /* at this point, neither t1 nor t2 is a variable. In  */
+                /* addition, they must both be APs unless one of the   */
+                /* head variables has been bound during unification of */
+                /* the arguments.                                          */
 
-		    if (!isAp(t1) || !isAp(t2)) {	/* might not be APs*/
-			unifyFails = 0;
-			return t1==t2;
-		    }
-		    if (!unify(arg(t1),o1,arg(t2),o2))	/* o/w must be APs */
-			return FALSE;
-		    t1 = fun(t1);
-		    t2 = fun(t2);
-		}
-	    }
-	}
+                if (!isAp(t1) || !isAp(t2)) { /* might not be APs*/
+                    unifyFails = 0;
+                    return t1 == t2;
+                }
+                if (!unify(arg(t1), o1, arg(t2), o2)) /* o/w must be APs */
+                    return FALSE;
+                t1 = fun(t1);
+                t2 = fun(t2);
+            }
+        }
+    }
     unifyFails = 0;
     return FALSE;
 }
 
-
-static Void local expandSynFully(Type*at, Int*ao)	/* repeatedly expand synonyms	   */
-              /* original expression (*at,*ao)   */
-{				/* expansion returned in (*at,*ao) */
+static Void local expandSynFully(Type *at,
+                                 Int *ao) /* repeatedly expand synonyms    */
+                                          /* original expression (*at,*ao)   */
+{                                         /* expansion returned in (*at,*ao) */
     Type h;
-    Int  a;
+    Int a;
     for (;;) {
-	h = getDerefHead(*at,*ao);
-	a = argCount;
-	if (! isSynonym(h) || a<tycon(h).arity)
-	    return;
-	expandSyn(h,a,at,ao);
+        h = getDerefHead(*at, *ao);
+        a = argCount;
+        if (!isSynonym(h) || a < tycon(h).arity)
+            return;
+        expandSyn(h, a, at, ao);
     }
 }
 
-Type getProgType(List ks, Type type)		/* Extract t, if type is of the    */
-            /* form IO t, otherwise return     */
-{				/* NULL cell			   */
+Type getProgType(List ks, Type type) /* Extract t, if type is of the    */
+                                     /* form IO t, otherwise return     */
+{                                    /* NULL cell                          */
     Bool result;
-    Int  alpha;
-    Int  beta;
+    Int alpha;
+    Int beta;
     if (isPolyOrQualType(type))
-	return 0; /* ZZ what's the correct name for the empty Cell? */
-		  /* see below as well... */
+        return 0; /* ZZ what's the correct name for the empty Cell? */
+    /* see below as well... */
     emptySubstitution();
-    alpha  = newKindedVars(ks);
-    expandSynFully(&type,&alpha);
-    beta   = newTyvars(1);
+    alpha = newKindedVars(ks);
+    expandSynFully(&type, &alpha);
+    beta = newTyvars(1);
     bindOnlyAbove(beta);
-    result = unify(type,alpha,typeProgIO,beta);
+    result = unify(type, alpha, typeProgIO, beta);
     unrestrictBind();
     emptySubstitution();
     return result ? arg(type) : 0;
@@ -1110,144 +1168,143 @@ Type getProgType(List ks, Type type)		/* Extract t, if type is of the    */
  * for technical background.  Watch this space for implementation news!
  * ------------------------------------------------------------------------*/
 
-Bool samePred(Cell pi1, Int o1, Cell pi, Int o)		/* Test to see if predicates are   */
-             /* the same, with no binding of	   */
-            /* the variables in either one.	   */
-            /* Assumes preds are kind correct  */
-{				/* with the same class.		   */
+Bool samePred(Cell pi1, Int o1, Cell pi,
+              Int o) /* Test to see if predicates are   */
+                     /* the same, with no binding of       */
+                     /* the variables in either one.       */
+                     /* Assumes preds are kind correct  */
+{                    /* with the same class.               */
     Bool result;
     noBind();
-    result = unifyPred(pi1,o1,pi,o);
+    result = unifyPred(pi1, o1, pi, o);
     unrestrictBind();
     return result;
 }
 
-Bool matchPred(Cell pi1, Int o1, Cell pi, Int o)		/* One way match predicate (pi1,o1)*/
-             /* against (pi,o), allowing only   */
-            /* vars in 2nd pred to be bound.   */
-            /* Assumes preds are kind correct  */
-{				/* with the same class and that no */
+Bool matchPred(Cell pi1, Int o1, Cell pi,
+               Int o) /* One way match predicate (pi1,o1)*/
+                      /* against (pi,o), allowing only   */
+                      /* vars in 2nd pred to be bound.   */
+                      /* Assumes preds are kind correct  */
+{                     /* with the same class and that no */
     assertPred(pi1);
     assertPred(pi);
-    Bool result;			/* vars have been alloc'd since o. */
+    Bool result; /* vars have been alloc'd since o. */
     bindOnlyAbove(o);
-    result = unifyPred(pi1,o1,pi,o);
+    result = unifyPred(pi1, o1, pi, o);
     unrestrictBind();
     return result;
 }
 
-Bool unifyPred(Cell pi1, Int o1, Cell pi, Int o)		/* Unify two predicates		   */
-             /* Assumes preds are kind correct  */
-            /* with the same class.		   */
+Bool unifyPred(Cell pi1, Int o1, Cell pi,
+               Int o) /* Unify two predicates              */
+                      /* Assumes preds are kind correct  */
+                      /* with the same class.              */
 {
     assertPred(pi1);
     assertPred(pi);
-  for (; isAp(pi1); pi1=fun(pi1), pi=fun(pi)) {
-	if (!isAp(pi) || !unify(arg(pi1),o1,arg(pi),o))
-	    return FALSE;
-  }
-  /* pi1 has exhausted its argument chain, we also need to check that
+    for (; isAp(pi1); pi1 = fun(pi1), pi = fun(pi)) {
+        if (!isAp(pi) || !unify(arg(pi1), o1, arg(pi), o))
+            return FALSE;
+    }
+    /* pi1 has exhausted its argument chain, we also need to check that
      pi has no remaining arguments.  However, under this condition,
      the pi1 == pi will always return FALSE, giving the desired
      result. */
 
-	return pi1==pi;
+    return pi1 == pi;
 }
 
-
-Inst findInstFor(Cell pi, Int o)			/* Find matching instance for pred */
-             /* (pi,o), or otherwise NIL.  If a */
-{				/* match is found, then tyvars from*/
+Inst findInstFor(Cell pi, Int o) /* Find matching instance for pred */
+                                 /* (pi,o), or otherwise NIL.  If a */
+{                                /* match is found, then tyvars from*/
     assertPred(pi);
-    Class c = getHead(pi);		/* typeOff have been initialized to*/
-    List  ins;				/* allow direct use of specifics.  */
-    Cell  kspi = NIL;
+    Class c = getHead(pi); /* typeOff have been initialized to*/
+    List ins;              /* allow direct use of specifics.  */
+    Cell kspi = NIL;
 
     if (!isClass(c))
-	return NIL;
+        return NIL;
 
-    for (ins=cclass(c).instances; nonNull(ins); ins=tl(ins)) {
-	Inst in   = hd(ins);
-	Int  beta = newKindedVars(inst(in).kinds);
-	if (matchPred(pi,o,inst(in).head,beta)) {
-	    typeOff = beta;
-	    return in;
-	}
-	else {
-	    numTyvars = beta;
-	    if (allowOverlap && !allowUnsafeOverlap) {
-		Int alpha = newKindedVars(inst(in).kinds);
-		if (isNull(kspi)) {
-		    kspi = copyNoMark(pi,o);
-		}
-		beta = newKindedVars(fst(kspi));
-		if (matchPred(inst(in).head,alpha,snd(kspi),beta)) {
-		    numTyvars = alpha;
-		    return NIL;
-		}
-		numTyvars = alpha;
-	    }
-	}
+    for (ins = cclass(c).instances; nonNull(ins); ins = tl(ins)) {
+        Inst in = hd(ins);
+        Int beta = newKindedVars(inst(in).kinds);
+        if (matchPred(pi, o, inst(in).head, beta)) {
+            typeOff = beta;
+            return in;
+        } else {
+            numTyvars = beta;
+            if (allowOverlap && !allowUnsafeOverlap) {
+                Int alpha = newKindedVars(inst(in).kinds);
+                if (isNull(kspi)) {
+                    kspi = copyNoMark(pi, o);
+                }
+                beta = newKindedVars(fst(kspi));
+                if (matchPred(inst(in).head, alpha, snd(kspi), beta)) {
+                    numTyvars = alpha;
+                    return NIL;
+                }
+                numTyvars = alpha;
+            }
+        }
     }
     unrestrictBind();
 
-
     return NIL;
 }
-
 
 /* --------------------------------------------------------------------------
  * Improvement:
  * ------------------------------------------------------------------------*/
 
-Void improve(Int line, List sps, List ps)		/* Improve a list of predicates    */
+Void improve(Int line, List sps, List ps) /* Improve a list of predicates    */
 {
     Bool improved;
     List ps1;
     do {
-	improved = FALSE;
-	for (ps1=ps; nonNull(ps1); ps1=tl(ps1)) {
-	    Cell pi = fst3(hd(ps1));
-	    Int  o  = intOf(snd3(hd(ps1)));
-	    Cell c  = getHead(pi);
-	    if (isClass(c) && nonNull(cclass(c).xfds)) {
-		improved |= improveAgainst(line,sps,pi,o);
-		improved |= instImprove(line,c,pi,o);
-		improved |= improveAgainst(line,tl(ps1),pi,o);
-	    }
-	}
+        improved = FALSE;
+        for (ps1 = ps; nonNull(ps1); ps1 = tl(ps1)) {
+            Cell pi = fst3(hd(ps1));
+            Int o = intOf(snd3(hd(ps1)));
+            Cell c = getHead(pi);
+            if (isClass(c) && nonNull(cclass(c).xfds)) {
+                improved |= improveAgainst(line, sps, pi, o);
+                improved |= instImprove(line, c, pi, o);
+                improved |= improveAgainst(line, tl(ps1), pi, o);
+            }
+        }
     } while (improved);
 }
 
-Void improve1(Int line, List sps, Cell pi, Int o)		/* Improve a single predicate	   */
+Void improve1(Int line, List sps, Cell pi,
+              Int o) /* Improve a single predicate         */
 {
     Bool improved;
-    Cell c  = getHead(pi);
+    Cell c = getHead(pi);
     do {
-	improved = FALSE;
-	if (isClass(c) && nonNull(cclass(c).xfds)) {
-	    improved |= improveAgainst(line,sps,pi,o);
-	    improved |= instImprove(line,c,pi,o);
-	}
+        improved = FALSE;
+        if (isClass(c) && nonNull(cclass(c).xfds)) {
+            improved |= improveAgainst(line, sps, pi, o);
+            improved |= instImprove(line, c, pi, o);
+        }
     } while (improved);
 }
 
-Bool improveAgainst(Int line, List ps, Cell pi, Int o)
-{
+Bool improveAgainst(Int line, List ps, Cell pi, Int o) {
     Bool improved = FALSE;
     Cell h = getHead(pi);
-    for (; nonNull(ps); ps=tl(ps)) {
-	Cell pr = hd(ps);
-	Cell pi1 = fst3(pr);
-	Int o1 = intOf(snd3(pr));
-	Cell h1 = getHead(pi1);
-	/* it would be nice to optimize for the common case
-	   where h == h1 */
-	if (isClass(h) && isClass(h1)) {
-	    improved |= pairImprove(line,h,pi,o,pi1,o1,numTyvars);
-	    if (h != h1)
-		improved |= pairImprove(line,h1,pi1,o1,pi,o,numTyvars);
-	}
+    for (; nonNull(ps); ps = tl(ps)) {
+        Cell pr = hd(ps);
+        Cell pi1 = fst3(pr);
+        Int o1 = intOf(snd3(pr));
+        Cell h1 = getHead(pi1);
+        /* it would be nice to optimize for the common case
+           where h == h1 */
+        if (isClass(h) && isClass(h1)) {
+            improved |= pairImprove(line, h, pi, o, pi1, o1, numTyvars);
+            if (h != h1)
+                improved |= pairImprove(line, h1, pi1, o1, pi, o, numTyvars);
+        }
     }
     return improved;
 }
@@ -1255,75 +1312,75 @@ Bool improveAgainst(Int line, List ps, Cell pi, Int o)
 /* should emulate findInsts behavior of shorting out if the
    predicate would match a more general signature... */
 
-Bool instImprove(Int line, Class c, Cell pi, Int o)
-{
+Bool instImprove(Int line, Class c, Cell pi, Int o) {
     Bool improved = FALSE;
-    List ins      = cclass(c).instances;
-    for (; nonNull(ins); ins=tl(ins)) {
-	Cell in   = hd(ins);
-	Int alpha = newKindedVars(inst(in).kinds);
-	improved |= pairImprove(line,c,pi,o,inst(in).head,alpha,alpha);
+    List ins = cclass(c).instances;
+    for (; nonNull(ins); ins = tl(ins)) {
+        Cell in = hd(ins);
+        Int alpha = newKindedVars(inst(in).kinds);
+        improved |= pairImprove(line, c, pi, o, inst(in).head, alpha, alpha);
     }
     return improved;
 }
 
-
-Bool pairImprove(Int line, Class c, Cell pi1, Int o1, Cell pi2, Int o2, Int above)	/* Look for improvement of   */
-                /* (pi1,o1) against (pi2,o2) */
+Bool pairImprove(Int line, Class c, Cell pi1, Int o1, Cell pi2, Int o2,
+                 Int above) /* Look for improvement of   */
+                            /* (pi1,o1) against (pi2,o2) */
 {
     Bool improved = FALSE;
-    List xfds     = cclass(c).xfds;
-    for (; nonNull(xfds); xfds=tl(xfds)) {
-	Cell xfd  = hd(xfds);
-	Cell hs   = fst(xfd);
-	Int alpha = (-1);
-	for (; nonNull(hs); hs=tl(hs)) {
-	    Cell h  = hd(hs);
-	    Class d = getHead(h);
-	    alpha = newKindedVars(cclass(d).kinds);
-	    if (matchPred(pi2,o2,h,alpha))
-		break;
-	    numTyvars = alpha;
-	}
-	if (nonNull(hs)) {
-	    List fds = snd(xfd);
-	    for (; nonNull(fds); fds=tl(fds)) {
-		List as   = fst(hd(fds));
-		Bool same = TRUE;
-		for (; same && nonNull(as); as=tl(as)) {
-		    Int n = offsetOf(hd(as));
-		    same &= matchTypeAbove(nthArg(n,pi1),o1,
-					   mkOffset(n),alpha,above);
-		}
-		if (isNull(as) && same) {
-		    for (as=snd(hd(fds)); same && nonNull(as); as=tl(as)) {
-			Int  n    = offsetOf(hd(as));
-			Type t1   = nthArg(n,pi1);
-			Type t2   = mkOffset(n);
-			if (!matchTypeAbove(t1,o1,t2,alpha,above)) {
-			    same &= unify(t1,o1,t2,alpha);
-			    improved = TRUE;
-			}
-		    }
-		    if (!same) {
-			errHead(line); errPrintf(
-			  "Constraints are not consistent with functional dependency");
+    List xfds = cclass(c).xfds;
+    for (; nonNull(xfds); xfds = tl(xfds)) {
+        Cell xfd = hd(xfds);
+        Cell hs = fst(xfd);
+        Int alpha = (-1);
+        for (; nonNull(hs); hs = tl(hs)) {
+            Cell h = hd(hs);
+            Class d = getHead(h);
+            alpha = newKindedVars(cclass(d).kinds);
+            if (matchPred(pi2, o2, h, alpha))
+                break;
+            numTyvars = alpha;
+        }
+        if (nonNull(hs)) {
+            List fds = snd(xfd);
+            for (; nonNull(fds); fds = tl(fds)) {
+                List as = fst(hd(fds));
+                Bool same = TRUE;
+                for (; same && nonNull(as); as = tl(as)) {
+                    Int n = offsetOf(hd(as));
+                    same &= matchTypeAbove(nthArg(n, pi1), o1, mkOffset(n),
+                                           alpha, above);
+                }
+                if (isNull(as) && same) {
+                    for (as = snd(hd(fds)); same && nonNull(as); as = tl(as)) {
+                        Int n = offsetOf(hd(as));
+                        Type t1 = nthArg(n, pi1);
+                        Type t2 = mkOffset(n);
+                        if (!matchTypeAbove(t1, o1, t2, alpha, above)) {
+                            same &= unify(t1, o1, t2, alpha);
+                            improved = TRUE;
+                        }
+                    }
+                    if (!same) {
+                        errHead(line);
+                        errPrintf(
+                            "Constraints are not consistent with functional dependency");
 
-			errPrintf("\n*** Constraint       : ");
- errPred(copyPred(pi1,o1));
-			errPrintf("\n*** And constraint   : ");
- errPred(copyPred(pi2,o2));
-			errPrintf("\n*** For class        : ");
- errPred(cclass(c).head);
-			errPrintf("\n*** Break dependency : ");
- errFD(hd(fds));
-			errPrintf("\n");
-			errFail();
-		    }
-		}
-	    }
-	    numTyvars = alpha;
-	}
+                        errPrintf("\n*** Constraint       : ");
+                        errPred(copyPred(pi1, o1));
+                        errPrintf("\n*** And constraint   : ");
+                        errPred(copyPred(pi2, o2));
+                        errPrintf("\n*** For class        : ");
+                        errPred(cclass(c).head);
+                        errPrintf("\n*** Break dependency : ");
+                        errFD(hd(fds));
+                        errPrintf("\n");
+                        errFail();
+                    }
+                }
+            }
+            numTyvars = alpha;
+        }
     }
     return improved;
 }
@@ -1332,127 +1389,124 @@ Bool pairImprove(Int line, Class c, Cell pi1, Int o1, Cell pi2, Int o2, Int abov
  * Compare type schemes:
  * ------------------------------------------------------------------------*/
 
-Bool sameSchemes(Type s, Type s1)			/* Test to see whether two type    */
-            /* schemes are the same		   */
+Bool sameSchemes(Type s, Type s1) /* Test to see whether two type    */
+                                  /* schemes are the same                  */
 {
-    Int  o   = 0;
-    Int  m   = 0;
-    Int  nr2 = 0;
-    Bool b   = isPolyType(s);		/* Check quantifiers are the same  */
-    Bool b1  = isPolyType(s1);
+    Int o = 0;
+    Int m = 0;
+    Int nr2 = 0;
+    Bool b = isPolyType(s); /* Check quantifiers are the same  */
+    Bool b1 = isPolyType(s1);
     if (b || b1) {
-	if (b && b1 && eqKind(polySigOf(s),polySigOf(s1))) {
-	    Kind k = polySigOf(s);
-	    s      = monotypeOf(s);
-	    s1     = monotypeOf(s1);
-	    o      = newKindedVars(k);
-	    for (; isAp(k); k=arg(k))
-		m++;
-	}
-	else
-	    return FALSE;
+        if (b && b1 && eqKind(polySigOf(s), polySigOf(s1))) {
+            Kind k = polySigOf(s);
+            s = monotypeOf(s);
+            s1 = monotypeOf(s1);
+            o = newKindedVars(k);
+            for (; isAp(k); k = arg(k))
+                m++;
+        } else
+            return FALSE;
     }
 
-    b  = (whatIs(s)==QUAL);		/* Check that contexts are the same*/
-    b1 = (whatIs(s1)==QUAL);
+    b = (whatIs(s) == QUAL); /* Check that contexts are the same*/
+    b1 = (whatIs(s1) == QUAL);
     if (b || b1) {
-	if (b && b1) {
-	    List ps  = fst(snd(s));
-	    List ps1 = fst(snd(s1));
-	    noBind();
-	    while (nonNull(ps) && nonNull(ps1)) {
-		Cell pi  = hd(ps);
-		Cell pi1 = hd(ps1);
-		if (getHead(pi)!=getHead(pi1)
-			|| !unifyPred(pi,o,pi1,o))
-		    break;
-		ps  = tl(ps);
-		ps1 = tl(ps1);
-	    }
-	    unrestrictBind();
-	    if (nonNull(ps) || nonNull(ps1))
-		return FALSE;
-	    s  = snd(snd(s));
-	    s1 = snd(snd(s1));
-	}
-	else
-	    return FALSE;
+        if (b && b1) {
+            List ps = fst(snd(s));
+            List ps1 = fst(snd(s1));
+            noBind();
+            while (nonNull(ps) && nonNull(ps1)) {
+                Cell pi = hd(ps);
+                Cell pi1 = hd(ps1);
+                if (getHead(pi) != getHead(pi1) || !unifyPred(pi, o, pi1, o))
+                    break;
+                ps = tl(ps);
+                ps1 = tl(ps1);
+            }
+            unrestrictBind();
+            if (nonNull(ps) || nonNull(ps1))
+                return FALSE;
+            s = snd(snd(s));
+            s1 = snd(snd(s1));
+        } else
+            return FALSE;
     }
 
-    b  = (whatIs(s)==RANK2);		/* Check any rank 2 annotations	   */
-    b1 = (whatIs(s1)==RANK2);
+    b = (whatIs(s) == RANK2); /* Check any rank 2 annotations      */
+    b1 = (whatIs(s1) == RANK2);
     if (b || b1) {
-	if (b && b1 && intOf(fst(snd(s)))==intOf(fst(snd(s1)))) {
-	    nr2 = intOf(fst(snd(s)));
-	    s   = snd(snd(s));
-	    s1  = snd(snd(s1));
-	}
-	else
-	    return FALSE;
+        if (b && b1 && intOf(fst(snd(s))) == intOf(fst(snd(s1)))) {
+            nr2 = intOf(fst(snd(s)));
+            s = snd(snd(s));
+            s1 = snd(snd(s1));
+        } else
+            return FALSE;
     }
 
-    for (; nr2>0; nr2--) {		/* Deal with rank 2 arguments	   */
-	Type t  = arg(fun(s));
-	Type t1 = arg(fun(s1));
-	b       = isPolyOrQualType(t);
-	b1      = isPolyOrQualType(t1);
-	if (b || b1) {
-	    if (b && b1) {
-		t  = dropRank1(t,o,m);
-		t1 = dropRank1(t1,o,m);
-		if (!sameSchemes(t,t1))
-		    return FALSE;
-	    }
-	    else
-		return FALSE;
-	}
-	else {
-	    if (!sameType(t,o,t1,o)) {
-		return FALSE;
-	    }
-	}
-	s  = arg(s);
-	s1 = arg(s1);
+    for (; nr2 > 0; nr2--) { /* Deal with rank 2 arguments         */
+        Type t = arg(fun(s));
+        Type t1 = arg(fun(s1));
+        b = isPolyOrQualType(t);
+        b1 = isPolyOrQualType(t1);
+        if (b || b1) {
+            if (b && b1) {
+                t = dropRank1(t, o, m);
+                t1 = dropRank1(t1, o, m);
+                if (!sameSchemes(t, t1))
+                    return FALSE;
+            } else
+                return FALSE;
+        } else {
+            if (!sameType(t, o, t1, o)) {
+                return FALSE;
+            }
+        }
+        s = arg(s);
+        s1 = arg(s1);
     }
 
-    return sameType(s,o,s1,o);		/* Ensure body types are the same  */
+    return sameType(s, o, s1, o); /* Ensure body types are the same  */
 }
 
-Bool sameType(Type t1, Int o1, Cell t, Int o)		/* Test to see if types are	   */
-            /* the same, with no binding of	   */
-            /* the variables in either one.	   */
-            /* Assumes types are kind correct  */
-{				/* with the same kind.		   */
+Bool sameType(Type t1, Int o1, Cell t,
+              Int o) /* Test to see if types are           */
+                     /* the same, with no binding of       */
+                     /* the variables in either one.       */
+                     /* Assumes types are kind correct  */
+{                    /* with the same kind.                */
     assertType(t1);
     assertType(t);
     Bool result;
     noBind();
-    result = unify(t1,o1,t,o);
+    result = unify(t1, o1, t, o);
     unrestrictBind();
     return result;
 }
 
-Bool matchType(Type t1, Int o1, Type t, Int o)		/* One way match type (t1,o1)	   */
-            /* against (t,o), allowing only	   */
-            /* vars in 2nd type to be bound.   */
-            /* Assumes types are kind correct  */
-{				/* and that no vars have been	   */
-    Bool result;			/* alloc'd since o.		   */
+Bool matchType(Type t1, Int o1, Type t,
+               Int o) /* One way match type (t1,o1)        */
+                      /* against (t,o), allowing only      */
+                      /* vars in 2nd type to be bound.   */
+                      /* Assumes types are kind correct  */
+{                     /* and that no vars have been        */
+    Bool result;      /* alloc'd since o.                  */
     bindOnlyAbove(o);
-    result = unify(t1,o1,t,o);
+    result = unify(t1, o1, t, o);
     unrestrictBind();
     return result;
 }
 
-static Bool local matchTypeAbove(Type t1, Int o1, Type t, Int o, Int a)	/* match, allowing only vars */
-            /* allocated since `a' to be bound   */
-            /* this is deeply hacky, since it    */
-            /* relies on careful use of the	     */
-            /* substitution stack		     */
+static Bool local matchTypeAbove(Type t1, Int o1, Type t, Int o,
+                                 Int a) /* match, allowing only vars */
+                                        /* allocated since `a' to be bound   */
+                                        /* this is deeply hacky, since it    */
+                                        /* relies on careful use of the      */
+                                        /* substitution stack                */
 {
     Bool result;
     bindOnlyAbove(a);
-    result = unify(t1,o1,t,o);
+    result = unify(t1, o1, t, o);
     unrestrictBind();
     return result;
 }
@@ -1461,53 +1515,55 @@ static Bool local matchTypeAbove(Type t1, Int o1, Type t, Int o, Int a)	/* match
  * Unify kind expressions:
  * ------------------------------------------------------------------------*/
 
-static Bool local kvarToVarBind(Tyvar*tyv1, Tyvar*tyv2)/* Make binding tyv1 := tyv2	   */
-{			  /* for kind variable bindings	   */
-    if (tyv1!=tyv2) {
-	tyv1->bound = aVar;
-	tyv1->offs  = tyvNum(tyv2);
+static Bool local
+kvarToVarBind(Tyvar *tyv1, Tyvar *tyv2) /* Make binding tyv1 := tyv2       */
+{                                       /* for kind variable bindings      */
+    if (tyv1 != tyv2) {
+        tyv1->bound = aVar;
+        tyv1->offs = tyvNum(tyv2);
     }
     return TRUE;
 }
 
-static Bool local kvarToTypeBind(Tyvar*tyv, Type t, Int o)/* Make binding tyv := (t,o)	   */
-               /* for kind variable bindings	   */
-            /* guaranteed not to be a v'ble or */
-{				/* have synonym as outermost constr*/
-    if (doesntOccurIn(tyv,t,o)) {
-	tyv->bound = t;
-	tyv->offs  = o;
-	return TRUE;
+static Bool local kvarToTypeBind(Tyvar *tyv, Type t,
+                                 Int o) /* Make binding tyv := (t,o)       */
+                                        /* for kind variable bindings      */
+                                        /* guaranteed not to be a v'ble or */
+{                                       /* have synonym as outermost constr*/
+    if (doesntOccurIn(tyv, t, o)) {
+        tyv->bound = t;
+        tyv->offs = o;
+        return TRUE;
     }
     unifyFails = "unification would give infinite kind";
     return FALSE;
 }
 
-Bool kunify(Kind k1, Int o1, Kind k2, Int o2)		/* Unify kind expr (k1,o1) with	   */
-               /* (k2,o2)			   */
+Bool kunify(Kind k1, Int o1, Kind k2,
+            Int o2) /* Unify kind expr (k1,o1) with        */
+                    /* (k2,o2)                     */
 {
     assertKind(k1);
     assertKind(k2);
     Tyvar *kyv1, *kyv2;
 
-    kyv1 = deRef(&k1,&o1);
-    kyv2 = deRef(&k2,&o2);
+    kyv1 = deRef(&k1, &o1);
+    kyv2 = deRef(&k2, &o2);
 
     if (kyv1)
-	if (kyv2)
-	    return kvarToVarBind(kyv1,kyv2);	    /* k1, k2 variables    */
-	else
-	    return kvarToTypeBind(kyv1,k2,o2);	    /* k1 variable, k2 not */
-    else
-	if (kyv2)
-	    return kvarToTypeBind(kyv2,k1,o1);	    /* k2 variable, k1 not */
-	else {
-	    if (k1==STAR && k2==STAR)		    /* k1, k2 not vars	   */
-		return TRUE;
-	    else if (isAp(k1) && isAp(k2))
-		return kunify(fst(k1),o1,fst(k2),o2) &&
-		       kunify(snd(k1),o1,snd(k2),o2);
-	}
+        if (kyv2)
+            return kvarToVarBind(kyv1, kyv2); /* k1, k2 variables    */
+        else
+            return kvarToTypeBind(kyv1, k2, o2); /* k1 variable, k2 not */
+    else if (kyv2)
+        return kvarToTypeBind(kyv2, k1, o1); /* k2 variable, k1 not */
+    else {
+        if (k1 == STAR && k2 == STAR) /* k1, k2 not vars           */
+            return TRUE;
+        else if (isAp(k1) && isAp(k2))
+            return kunify(fst(k1), o1, fst(k2), o2) &&
+                   kunify(snd(k1), o1, snd(k2), o2);
+    }
     unifyFails = 0;
     return FALSE;
 }
@@ -1521,34 +1577,34 @@ Bool kunify(Kind k1, Int o1, Kind k2, Int o2)		/* Unify kind expr (k1,o1) with	 
 #define MAXTUPCON 10
 static Type tupleConTypes[MAXTUPCON];
 
-Void typeTuple(Cell e)		       /* find type for tuple constr, using*/
-{			       /* tupleConTypes to cache previously*/
-    Int n   = tupleOf(e);	       /* calculated tuple constr. types.  */
+Void typeTuple(Cell e)  /* find type for tuple constr, using*/
+{                       /* tupleConTypes to cache previously*/
+    Int n = tupleOf(e); /* calculated tuple constr. types.  */
     typeOff = newTyvars(n);
-    if (n>=MAXTUPCON)
-	 typeIs = makeTupleType(n);
+    if (n >= MAXTUPCON)
+        typeIs = makeTupleType(n);
     else if (tupleConTypes[n])
-	 typeIs = tupleConTypes[n];
+        typeIs = tupleConTypes[n];
     else
-	 typeIs = tupleConTypes[n] = makeTupleType(n);
+        typeIs = tupleConTypes[n] = makeTupleType(n);
 }
 
-static Type local makeTupleType(Int n)     /* construct type for tuple constr. */
-{			       /* t1 -> ... -> tn -> (t1,...,tn)   */
+static Type local makeTupleType(Int n) /* construct type for tuple constr. */
+{                                      /* t1 -> ... -> tn -> (t1,...,tn)   */
     Type h = mkTuple(n);
-    Int  i;
+    Int i;
 
-    for (i=0; i<n; ++i)
-	h = ap(h,mkOffset(i));
-    while (0<n--)
-	h = fn(mkOffset(n),h);
+    for (i = 0; i < n; ++i)
+        h = ap(h, mkOffset(i));
+    while (0 < n--)
+        h = fn(mkOffset(n), h);
     return h;
 }
 
 /* --------------------------------------------------------------------------
  * Two forms of kind expression are used quite frequently:
- *	*  -> *  -> ... -> *  -> *	for kinds of ->, [], ->, (,) etc...
- *	v1 -> v2 -> ... -> vn -> vn+1	skeletons for constructor kinds
+ *      *  -> *  -> ... -> *  -> *      for kinds of ->, [], ->, (,) etc...
+ *      v1 -> v2 -> ... -> vn -> vn+1   skeletons for constructor kinds
  * Expressions of these forms are produced by the following functions which
  * use a cache to avoid repeated construction of commonly used values.
  * A similar approach is used to store the types of tuple constructors in the
@@ -1556,46 +1612,46 @@ static Type local makeTupleType(Int n)     /* construct type for tuple constr. *
  * ------------------------------------------------------------------------*/
 
 #define MAXKINDFUN 10
-static  Kind simpleKindCache[MAXKINDFUN];
-static  Kind varKindCache[MAXKINDFUN];
+static Kind simpleKindCache[MAXKINDFUN];
+static Kind varKindCache[MAXKINDFUN];
 
-static Kind local makeSimpleKind(Int n)	/* construct * -> ... -> * (n args)*/
+static Kind local makeSimpleKind(Int n) /* construct * -> ... -> * (n args)*/
 {
     Kind k = STAR;
     while (n-- > 0)
-	k = ap(STAR,k);
+        k = ap(STAR, k);
     return k;
 }
 
-Kind simpleKind(Int n)			/* return (possibly cached) simple */
-{				/* function kind		   */
-    if (n>=MAXKINDFUN)
-	return makeSimpleKind(n);
+Kind simpleKind(Int n) /* return (possibly cached) simple */
+{                      /* function kind            */
+    if (n >= MAXKINDFUN)
+        return makeSimpleKind(n);
     else if (nonNull(simpleKindCache[n]))
-	return simpleKindCache[n];
-    else if (n==0)
-	return simpleKindCache[0] = STAR;
+        return simpleKindCache[n];
+    else if (n == 0)
+        return simpleKindCache[0] = STAR;
     else
-	return simpleKindCache[n] = ap(STAR,simpleKind(n-1));
+        return simpleKindCache[n] = ap(STAR, simpleKind(n - 1));
 }
 
-static Kind local makeVarKind(Int n)	/* construct v0 -> .. -> vn	   */
+static Kind local makeVarKind(Int n) /* construct v0 -> .. -> vn           */
 {
     Kind k = mkOffset(n);
     while (n-- > 0)
-	k = ap(mkOffset(n),k);
+        k = ap(mkOffset(n), k);
     return k;
 }
 
-Void varKind(Int n)				/* return (possibly cached) var	   */
-{				/* function kind		   */
-    typeOff = newKindvars(n+1);
-    if (n>=MAXKINDFUN)
-	typeIs = makeVarKind(n);
+Void varKind(Int n) /* return (possibly cached) var        */
+{                   /* function kind               */
+    typeOff = newKindvars(n + 1);
+    if (n >= MAXKINDFUN)
+        typeIs = makeVarKind(n);
     else if (nonNull(varKindCache[n]))
-	typeIs = varKindCache[n];
+        typeIs = varKindCache[n];
     else
-	typeIs = varKindCache[n] = makeVarKind(n);
+        typeIs = varKindCache[n] = makeVarKind(n);
 }
 
 /* --------------------------------------------------------------------------
@@ -1605,42 +1661,47 @@ Void varKind(Int n)				/* return (possibly cached) var	   */
 /* The statics that hold cells: registered as roots at INSTALL and marked
  * by the collector on every collection */
 static Cell *const substRoots[] = {
-    &btyvars, &typeIs, &predsAre, &genericVars,
+    &btyvars,
+    &typeIs,
+    &predsAre,
+    &genericVars,
 };
 
-Void substitution(Int what)
-{
-    Int  i;
+Void substitution(Int what) {
+    Int i;
 
     switch (what) {
-	case RESET   : emptySubstitution();
-		       unrestrictBind();
-		       btyvars = NIL;
-		       break;
+    case RESET:
+        emptySubstitution();
+        unrestrictBind();
+        btyvars = NIL;
+        break;
 
-	case MARK    : for (i=0; i<MAXTUPCON; ++i)
-			   mark(tupleConTypes[i]);
-		       for (i=0; i<MAXKINDFUN; ++i) {
-			   mark(simpleKindCache[i]);
-			   mark(varKindCache[i]);
-		       }
-		       for (i=0; i<numTyvars; ++i)
-			   mark(tyvars[i].bound);
-		       break;
+    case MARK:
+        for (i = 0; i < MAXTUPCON; ++i)
+            mark(tupleConTypes[i]);
+        for (i = 0; i < MAXKINDFUN; ++i) {
+            mark(simpleKindCache[i]);
+            mark(varKindCache[i]);
+        }
+        for (i = 0; i < numTyvars; ++i)
+            mark(tyvars[i].bound);
+        break;
 
-	case INSTALL : registerRoots(substRoots);
-		       substitution(RESET);
-		       for (i=0; i<MAXTUPCON; ++i)
-			   tupleConTypes[i] = NIL;
-		       for (i=0; i<MAXKINDFUN; ++i) {
-			   simpleKindCache[i] = NIL;
-			   varKindCache[i]    = NIL;
-		       }
-		       break;
+    case INSTALL:
+        registerRoots(substRoots);
+        substitution(RESET);
+        for (i = 0; i < MAXTUPCON; ++i)
+            tupleConTypes[i] = NIL;
+        for (i = 0; i < MAXKINDFUN; ++i) {
+            simpleKindCache[i] = NIL;
+            varKindCache[i] = NIL;
+        }
+        break;
 
-       case EXIT     : 
-	               free(tyvars);
-	               break;
+    case EXIT:
+        free(tyvars);
+        break;
     }
 }
 

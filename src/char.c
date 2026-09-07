@@ -22,19 +22,19 @@
  * ------------------------------------------------------------------------*/
 
 /* properties for an character not covered by the table */
-static const struct CharProperties null_properties = { GENCAT_Cn, 0, 0, 0 };
+static const struct CharProperties null_properties = {GENCAT_Cn, 0, 0, 0};
 
 /* --------------------------------------------------------------------------
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local initConsCharTable	(Void);
-static Void local markConsCharTable	(Void);
-static Void local freeConsCharTable	(Void);
-static const struct CharProperties * local get_properties (Char);
+static Void local initConsCharTable(Void);
+static Void local markConsCharTable(Void);
+static Void local freeConsCharTable(Void);
+static const struct CharProperties *local get_properties(Char);
 #if CHAR_ENCODING_UTF8
-static Int  local utfseqlen		(Int);
-static Int  local utfcodelen		(Char);
+static Int local utfseqlen(Int);
+static Int local utfcodelen(Char);
 #endif
 
 /* --------------------------------------------------------------------------
@@ -47,49 +47,61 @@ static Int  local utfcodelen		(Char);
  * because ASCII is just a subset of the Latin-1 character set.
  * ------------------------------------------------------------------------*/
 
-Bool		charTabBuilt;
-unsigned char   charTable[NUM_LAT1_CHARS];
+Bool charTabBuilt;
+unsigned char charTable[NUM_LAT1_CHARS];
 
-Void initCharTab() {			/* Initialize char decode table    */
-#define setRange(x,f,t) {Int i=f;   while (i<=t) charTable[i++] |=x;}
-#define setChar(x,c)	charTable[c] |= (x)
-#define setChars(x,s)   {char *p=s; while (*p)   charTable[(Int)*p++]|=x;}
-#define setCopy(x,c)    {Int i;                         \
-			 for (i=0; i<NUM_LAT1_CHARS; ++i)    \
-			     if (isIn(i,c))             \
-				 charTable[i]|=x;          \
-			}
+Void initCharTab() { /* Initialize char decode table    */
+#define setRange(x, f, t)                                                      \
+    {                                                                          \
+        Int i = f;                                                             \
+        while (i <= t)                                                         \
+            charTable[i++] |= x;                                               \
+    }
+#define setChar(x, c) charTable[c] |= (x)
+#define setChars(x, s)                                                         \
+    {                                                                          \
+        char *p = s;                                                           \
+        while (*p)                                                             \
+            charTable[(Int) * p++] |= x;                                       \
+    }
+#define setCopy(x, c)                                                          \
+    {                                                                          \
+        Int i;                                                                 \
+        for (i = 0; i < NUM_LAT1_CHARS; ++i)                                   \
+            if (isIn(i, c))                                                    \
+                charTable[i] |= x;                                             \
+    }
 
-    setRange(DIGIT,     '0','9');	/* ASCII decimal digits		   */
+    setRange(DIGIT, '0', '9'); /* ASCII decimal digits             */
 
-    setRange(SMALL,     'a','z');	/* ASCII lower case letters	   */
-    setChar (SMALL,     170);		/* Feminine ordinal indicator      */
-    setChar (SMALL,     181);		/* Micro sign                      */
-    setChar (SMALL,     186);		/* Masculine ordinal indicator     */
-    setRange(SMALL,     223,246);	/* Latin-1 lower case letters	   */
-    setRange(SMALL,     248,255);	/* (omits division symbol, 247)	   */
-    setChar (SMALL,     '_');
+    setRange(SMALL, 'a', 'z'); /* ASCII lower case letters         */
+    setChar(SMALL, 170);       /* Feminine ordinal indicator      */
+    setChar(SMALL, 181);       /* Micro sign                      */
+    setChar(SMALL, 186);       /* Masculine ordinal indicator     */
+    setRange(SMALL, 223, 246); /* Latin-1 lower case letters       */
+    setRange(SMALL, 248, 255); /* (omits division symbol, 247)     */
+    setChar(SMALL, '_');
 
-    setRange(LARGE,     'A','Z');	/* ASCII upper case letters	   */
-    setRange(LARGE,     192,214);	/* Latin-1 upper case letters	   */
-    setRange(LARGE,     216,222);	/* (omits multiplication, 215)	   */
+    setRange(LARGE, 'A', 'Z'); /* ASCII upper case letters         */
+    setRange(LARGE, 192, 214); /* Latin-1 upper case letters       */
+    setRange(LARGE, 216, 222); /* (omits multiplication, 215)      */
 
-    setRange(SYMBOL,    161,191);	/* Symbol characters + ':'	   */
-    setRange(SYMBOL,    215,215);
-    setChar (SYMBOL,    247);
-    setChars(SYMBOL,    ":!#$%&*+./<=>?@\\^|-~");
+    setRange(SYMBOL, 161, 191); /* Symbol characters + ':'         */
+    setRange(SYMBOL, 215, 215);
+    setChar(SYMBOL, 247);
+    setChars(SYMBOL, ":!#$%&*+./<=>?@\\^|-~");
 
-    setChar (IDAFTER,   '\'');		/* Characters in identifier	   */
-    setCopy (IDAFTER,   (DIGIT|SMALL|LARGE));
+    setChar(IDAFTER, '\''); /* Characters in identifier    */
+    setCopy(IDAFTER, (DIGIT | SMALL | LARGE));
 
-    setChar (SPACE,     ' ');		/* ASCII space character	   */
-    setChar (SPACE,     160);		/* Latin-1 non breaking space	   */
-    setRange(SPACE,     9,13);		/* special whitespace: \t\n\v\f\r  */
+    setChar(SPACE, ' ');    /* ASCII space character       */
+    setChar(SPACE, 160);    /* Latin-1 non breaking space          */
+    setRange(SPACE, 9, 13); /* special whitespace: \t\n\v\f\r  */
 
-    setRange(PRINT,     32,126);
-    setRange(PRINT,     160,172);
-    setRange(PRINT,     174,255);	/* (omits soft hyphen)             */
-    
+    setRange(PRINT, 32, 126);
+    setRange(PRINT, 160, 172);
+    setRange(PRINT, 174, 255); /* (omits soft hyphen)             */
+
 #undef setRange
 #undef setChar
 #undef setChars
@@ -102,31 +114,31 @@ Void initCharTab() {			/* Initialize char decode table    */
  * Char primitives.
  * ------------------------------------------------------------------------*/
 
-#define	UPPER_MASK	((1<<GENCAT_Lu)|(1<<GENCAT_Lt))
+#define UPPER_MASK ((1 << GENCAT_Lu) | (1 << GENCAT_Lt))
 
 Bool isLower(Char c) {
-    return isLatin1(c) ? isLowerLat1(c) :
-	    get_properties(c)->category==GENCAT_Ll;
+    return isLatin1(c) ? isLowerLat1(c)
+                       : get_properties(c)->category == GENCAT_Ll;
 }
 
 Bool isUpper(Char c) {
-    return isLatin1(c) ? isUpperLat1(c) :
-	    ((1<<get_properties(c)->category)&UPPER_MASK)!=0;
+    return isLatin1(c) ? isUpperLat1(c)
+                       : ((1 << get_properties(c)->category) & UPPER_MASK) != 0;
 }
 
 Bool isAlpha(Char c) {
-    return isLatin1(c) ? isAlphaLat1(c) :
-	    (get_properties(c)->category<=GENCAT_Lo);
+    return isLatin1(c) ? isAlphaLat1(c)
+                       : (get_properties(c)->category <= GENCAT_Lo);
 }
 
 Bool isAlphaNum(Char c) {
-    return isLatin1(c) ? isAlphaNumLat1(c) :
-	    get_properties(c)->category<=GENCAT_No;
+    return isLatin1(c) ? isAlphaNumLat1(c)
+                       : get_properties(c)->category <= GENCAT_No;
 }
 
 Bool isPrint(Char c) {
-    return isLatin1(c) ? isPrintLat1(c) :
-	    get_properties(c)->category<=GENCAT_Zs;
+    return isLatin1(c) ? isPrintLat1(c)
+                       : get_properties(c)->category <= GENCAT_Zs;
 }
 
 Char toUpper(Char c) {
@@ -146,23 +158,24 @@ Int uni_gencat(Char c) {
 }
 
 /* binary search of the properties table */
-static const struct CharProperties * local get_properties(Char c) {
+static const struct CharProperties *local get_properties(Char c) {
     Int lo, hi, mid;
     lo = 0;
-    hi = unicode_block_count-1;
-    while (lo!=hi) {
-	/* i <= lo => unicode_blocks[i].blk_start <= c */
-	/* i >  hi => unicode_blocks[i].blk_start >  c */
-	mid = (lo+hi+1)/2;	/* lo < mid <= hi */
-	if (unicode_blocks[mid].blk_start<=c)
-	    lo = mid;
-	else
-	    hi = mid-1;
+    hi = unicode_block_count - 1;
+    while (lo != hi) {
+        /* i <= lo => unicode_blocks[i].blk_start <= c */
+        /* i >  hi => unicode_blocks[i].blk_start >  c */
+        mid = (lo + hi + 1) / 2; /* lo < mid <= hi */
+        if (unicode_blocks[mid].blk_start <= c)
+            lo = mid;
+        else
+            hi = mid - 1;
     }
     /* i <= lo => unicode_blocks[i].blk_start <= c */
     /* i >  lo => unicode_blocks[i].blk_start >  c */
-    return c<unicode_blocks[lo].blk_start+unicode_blocks[lo].blk_length ?
-		unicode_blocks[lo].blk_properties : &null_properties;
+    return c < unicode_blocks[lo].blk_start + unicode_blocks[lo].blk_length
+               ? unicode_blocks[lo].blk_properties
+               : &null_properties;
 }
 
 /* --------------------------------------------------------------------------
@@ -174,7 +187,7 @@ int fputc_mb(Char c, FILE *f) {
     char buf[MAX_CHAR_ENCODING];
     String s = buf;
     addc_mb(c, &s);
-    return fwrite(buf, s-buf, 1, f)==1 ? c : EOF;
+    return fwrite(buf, s - buf, 1, f) == 1 ? c : EOF;
 }
 #endif /* CHAR_ENCODING */
 
@@ -192,15 +205,15 @@ Bool charIsRepresentable(Char c) {
     wchar_t wc;
     mbstate_t st;
     if (c == '\0')
-	return TRUE;
+        return TRUE;
     memset(&st, 0, sizeof(st));
     n = wcrtomb(buf, c, &st);
     if (n == (size_t)(-1))
-	errno = 0;
+        errno = 0;
     else {
-	memset(&st, 0, sizeof(st));
-	if (mbrtowc(&wc, buf, n, &st) == n)
-	    return wc==c;
+        memset(&st, 0, sizeof(st));
+        if (mbrtowc(&wc, buf, n, &st) == n)
+            return wc == c;
     }
     return FALSE;
 }
@@ -214,33 +227,33 @@ int fgetc_mb(FILE *f) {
     wchar_t wc;
     mbstate_t st;
     for (;;) {
-	int c = fgetc(f);
-	if (c == EOF)
-	    return n == 0 ? EOF : BAD_CHAR;
-	buf[n++] = c;
-	memset(&st, 0, sizeof(st));
-	size = mbrtowc(&wc, buf, n, &st);
-	switch (size) {
-	case (size_t)(-1):			/* decoding error */
-	    errno = 0;
-	    return BAD_CHAR;
-	case (size_t)(-2):			/* incomplete sequence */
-	    if (n == MAX_CHAR_ENCODING)
-		return BAD_CHAR;
-	    break;
-	case 0:					/* null character */
-	    return 0;
-	default:				/* successful decoding */
-	    if (size < n)
-		/* If the encoding uses lookahead, we have to read extra
-		 * bytes to detect the end of an encoding.  If it's
-		 * just one byte (size == n-1) we can push it back onto
-		 * the input.  This won't work for encodings that need
-		 * more than 1 byte of lookahead, but I don't think
-		 * there are any. */
-		ungetc(c, f);
-	    return wc;
-	}
+        int c = fgetc(f);
+        if (c == EOF)
+            return n == 0 ? EOF : BAD_CHAR;
+        buf[n++] = c;
+        memset(&st, 0, sizeof(st));
+        size = mbrtowc(&wc, buf, n, &st);
+        switch (size) {
+        case (size_t)(-1): /* decoding error */
+            errno = 0;
+            return BAD_CHAR;
+        case (size_t)(-2): /* incomplete sequence */
+            if (n == MAX_CHAR_ENCODING)
+                return BAD_CHAR;
+            break;
+        case 0: /* null character */
+            return 0;
+        default: /* successful decoding */
+            if (size < n)
+                /* If the encoding uses lookahead, we have to read extra
+                 * bytes to detect the end of an encoding.  If it's
+                 * just one byte (size == n-1) we can push it back onto
+                 * the input.  This won't work for encodings that need
+                 * more than 1 byte of lookahead, but I don't think
+                 * there are any. */
+                ungetc(c, f);
+            return wc;
+        }
     }
 }
 
@@ -250,11 +263,11 @@ Void addc_mb(Char c, String *sp) {
     mbstate_t st;
     memset(&st, 0, sizeof(st));
     size = wcrtomb(*sp, c, &st);
-    if (size == (size_t)-1) {			/* encoding error */
-	*(*sp)++ = '?';
-	errno = 0;
+    if (size == (size_t)-1) { /* encoding error */
+        *(*sp)++ = '?';
+        errno = 0;
     } else
-	*sp += size;
+        *sp += size;
 }
 
 /* Get a Char from a multi-byte encoded string, moving the pointer. */
@@ -265,18 +278,18 @@ Char extc_mb(String *sp) {
     memset(&st, 0, sizeof(st));
     size = mbrtowc(&c, *sp, MAX_CHAR_ENCODING, &st);
     switch (size) {
-    case (size_t)(-1):				/* decoding error */
-	errno = 0;
-	/* fall through to ... */
-    case (size_t)(-2):				/* incomplete sequence */
-	c = BAD_CHAR;
-	(*sp)++;
-	break;
-    case 0:					/* string starts with \0 */
-	(*sp)++;
-	break;
-    default:					/* successful decoding */
-	*sp += size;
+    case (size_t)(-1): /* decoding error */
+        errno = 0;
+        /* fall through to ... */
+    case (size_t)(-2): /* incomplete sequence */
+        c = BAD_CHAR;
+        (*sp)++;
+        break;
+    case 0: /* string starts with \0 */
+        (*sp)++;
+        break;
+    default: /* successful decoding */
+        *sp += size;
     }
     return c;
 }
@@ -300,9 +313,9 @@ Char extc_mb(String *sp) {
  * UCS 0, only the shortest encoding is legal.
  */
 
-#define UTFhead(b)	(((b)&0xC0)==0xC0) /* head of a multibyte sequence */
-#define UTFtail(b)	(((b)&0xC0)==0x80) /* tail of a multibyte sequence */
-#define UTFmask(n)	((0xFF00>>(n))&0xFF) /* length bits of a head byte */
+# define UTFhead(b) (((b) & 0xC0) == 0xC0)   /* head of a multibyte sequence */
+# define UTFtail(b) (((b) & 0xC0) == 0x80)   /* tail of a multibyte sequence */
+# define UTFmask(n) ((0xFF00 >> (n)) & 0xFF) /* length bits of a head byte */
 
 /* Note also that since ASCII, head and tail chars are disjoint in UTF-8,
  * it is possible to resynchronize a stream after a coding error, but we
@@ -314,68 +327,70 @@ int fgetc_mb(FILE *f) {
     Int b;
     Char c;
     Int size, i;
-    if ((b = fgetc(f))==EOF)
-	return EOF;
-    if (b<0x80)				/* ASCII character */
-	return b;
+    if ((b = fgetc(f)) == EOF)
+        return EOF;
+    if (b < 0x80) /* ASCII character */
+        return b;
     if (!UTFhead(b))
-	return BAD_CHAR;
+        return BAD_CHAR;
     size = utfseqlen(b);
-    c = b&~UTFmask(size);
-    for (i=1 ; i<size; i++) {
-	if ((b = fgetc(f))==EOF)
-	    return BAD_CHAR;
-	if (!UTFtail(b)) {
-	    /* try to recover */
-	    while (!UTFhead(b) && (b = fgetc(f))!=EOF)
-		;
-	    ungetc(b, f);
-	    return BAD_CHAR;
-	}
-	c = (c<<6) | (b&0x3F);
+    c = b & ~UTFmask(size);
+    for (i = 1; i < size; i++) {
+        if ((b = fgetc(f)) == EOF)
+            return BAD_CHAR;
+        if (!UTFtail(b)) {
+            /* try to recover */
+            while (!UTFhead(b) && (b = fgetc(f)) != EOF)
+                ;
+            ungetc(b, f);
+            return BAD_CHAR;
+        }
+        c = (c << 6) | (b & 0x3F);
     }
-    if (utfcodelen(c)!=size)		/* non-shortest form encoding */
-	return BAD_CHAR;
-    if (c>MAXCHARVAL || (c>=0xD800 && c<=0xDFFF)) /* out of range or surrogate */
-	return BAD_CHAR;
+    if (utfcodelen(c) != size) /* non-shortest form encoding */
+        return BAD_CHAR;
+    if (c > MAXCHARVAL ||
+        (c >= 0xD800 && c <= 0xDFFF)) /* out of range or surrogate */
+        return BAD_CHAR;
     return c;
 }
 
 Void addc_mb(Char c, String *sp) {
-    if (c<0x80)
-	*(*sp)++ = c;
+    if (c < 0x80)
+        *(*sp)++ = c;
     else {
-	int i;
-	int noct = utfcodelen(c);
-	int cn = c;
-	for (i=noct-1; i>=0; i--) {
-	    (*sp)[i] = (cn%64)|((i==0)?UTFmask(noct):0x80);
-	    cn /= 64;
-	}
-	*sp += noct;
+        int i;
+        int noct = utfcodelen(c);
+        int cn = c;
+        for (i = noct - 1; i >= 0; i--) {
+            (*sp)[i] = (cn % 64) | ((i == 0) ? UTFmask(noct) : 0x80);
+            cn /= 64;
+        }
+        *sp += noct;
     }
 }
 
 Char extc_mb(String *sp) {
     Char c = *(unsigned char *)*sp;
-    if (c<0x80)
-	(*sp)++;
+    if (c < 0x80)
+        (*sp)++;
     else if (!UTFhead(c))
-	c = BAD_CHAR;
+        c = BAD_CHAR;
     else {
-        int i, size = utfseqlen(c);	/* how many octets to expect */
-	c &= ~UTFmask(size);
-	for (i=1; i<size; i++) {
-	    Int b = (*sp)[i];
-	    if (!UTFtail(b))
-		return BAD_CHAR;
-	    c = (c<<6) | (b&0x3F);
-	}
-	*sp += size;
-	if (utfcodelen(c)!=size)	/* non-shortest form encoding */
-	    return BAD_CHAR;
-	if (c>MAXCHARVAL || (c>=0xD800 && c<=0xDFFF)) /* out of range or surrogate */
-	    return BAD_CHAR;
+        int i, size = utfseqlen(c); /* how many octets to expect */
+        c &= ~UTFmask(size);
+        for (i = 1; i < size; i++) {
+            Int b = (*sp)[i];
+            if (!UTFtail(b))
+                return BAD_CHAR;
+            c = (c << 6) | (b & 0x3F);
+        }
+        *sp += size;
+        if (utfcodelen(c) != size) /* non-shortest form encoding */
+            return BAD_CHAR;
+        if (c > MAXCHARVAL ||
+            (c >= 0xD800 && c <= 0xDFFF)) /* out of range or surrogate */
+            return BAD_CHAR;
     }
     return c;
 }
@@ -383,20 +398,21 @@ Char extc_mb(String *sp) {
 /* length of a UTF-8 sequence with first byte b */
 static Int local utfseqlen(Int b) {
     Int n;
-    if (b<0x80)
-	return 1;
-    for (n=MAX_CHAR_ENCODING; (b&UTFmask(n))!=UTFmask(n); n--)
-	;
+    if (b < 0x80)
+        return 1;
+    for (n = MAX_CHAR_ENCODING; (b & UTFmask(n)) != UTFmask(n); n--)
+        ;
     return n;
 }
 
 /* length of the shortest UTF-8 sequence encoding the Char c */
 static Int local utfcodelen(Char c) {
-    return c<0x80 ? 1 :
-	   c<0x800 ? 2 :
-	   c<0x10000 ? 3 :
-	   c<0x200000 ? 4 :
-	   c<0x4000000 ? 5 : 6;
+    return c < 0x80        ? 1
+           : c < 0x800     ? 2
+           : c < 0x10000   ? 3
+           : c < 0x200000  ? 4
+           : c < 0x4000000 ? 5
+                           : 6;
 }
 
 #endif /* CHAR_ENCODING_UTF8 */
@@ -414,10 +430,10 @@ static Int local utfcodelen(Char c) {
  * be allocated on demand.
  * ------------------------------------------------------------------------*/
 
-#define	AllocArray(ty,n)	((ty *)malloc((n)*sizeof(ty)))
+#define AllocArray(ty, n) ((ty *)malloc((n) * sizeof(ty)))
 
-#define NUM_LEVEL3 256		/* size of subarrays at the bottom level */
-#define NUM_LEVEL2 256		/* size of subarrays at the middle level */
+#define NUM_LEVEL3 256 /* size of subarrays at the bottom level */
+#define NUM_LEVEL2 256 /* size of subarrays at the middle level */
 #define NUM_LEVEL1 (MAXCHARVAL / (NUM_LEVEL3 * NUM_LEVEL2) + 1)
 
 /* To speed up a common case (i.e. ASCII), a small initial subset of
@@ -426,12 +442,12 @@ static Int local utfcodelen(Char c) {
  */
 
 /* Number of char conses to pre-build: must be <= NUM_LEVEL3 */
-#define	NUM_PRE_BUILT 128
+#define NUM_PRE_BUILT 128
 
 /* indices at each level */
 #define IDX1(c) ((c) / (NUM_LEVEL3 * NUM_LEVEL2))
 #define IDX2(c) ((c) / NUM_LEVEL3 % NUM_LEVEL2)
-#define IDX3(c) ((c) % NUM_LEVEL3 )
+#define IDX3(c) ((c) % NUM_LEVEL3)
 
 /* statically allocated parts of the table */
 static Cell **consCharTable[NUM_LEVEL1];
@@ -443,92 +459,96 @@ static void local initConsCharTable() {
 
     consCharTable[0] = consCharTable_0;
     consCharTable_0[0] = consCharTable_0_0;
-    for (c=0; c<NUM_PRE_BUILT; c++)
-	consCharTable_0_0[c] = ap(nameCons,mkChar(c));
+    for (c = 0; c < NUM_PRE_BUILT; c++)
+        consCharTable_0_0[c] = ap(nameCons, mkChar(c));
 }
 
 /* --------------------------------------------------------------------------
  * Get a character cons: follow the three-level lookup table.
  * If a level does not exist, allocate it.
  * ------------------------------------------------------------------------*/
-Cell consChar(Char c)                /* return application (:) c */
+Cell consChar(Char c) /* return application (:) c */
 {
     Int i, j, k;
     Cell **consCharTable_i;
     Cell *consCharTable_i_j;
 
-    if (c<NUM_PRE_BUILT)	/* short cut for a common case */
-	return consCharTable_0_0[c];
+    if (c < NUM_PRE_BUILT) /* short cut for a common case */
+        return consCharTable_0_0[c];
 
     i = IDX1(c);
     consCharTable_i = consCharTable[i];
-    if (consCharTable_i==NULL) {	/* level 2 entry */
-	consCharTable_i = consCharTable[i] = AllocArray(Cell *, NUM_LEVEL2);
-	if (consCharTable_i==NULL) {
-	    errHead(0); errPrintf("Cannot allocate char cons table");
-	    errFail();
-	}
-	for (j=0; j<NUM_LEVEL2; j++)
-	    consCharTable_i[j] = NULL;
+    if (consCharTable_i == NULL) { /* level 2 entry */
+        consCharTable_i = consCharTable[i] = AllocArray(Cell *, NUM_LEVEL2);
+        if (consCharTable_i == NULL) {
+            errHead(0);
+            errPrintf("Cannot allocate char cons table");
+            errFail();
+        }
+        for (j = 0; j < NUM_LEVEL2; j++)
+            consCharTable_i[j] = NULL;
     }
 
     j = IDX2(c);
     consCharTable_i_j = consCharTable_i[j];
-    if (consCharTable_i_j==NULL) {	/* level 3 entry */
-	consCharTable_i_j = consCharTable_i[j] = AllocArray(Cell, NUM_LEVEL3);
-	if (consCharTable_i_j==NULL) {
-	    errHead(0); errPrintf("Cannot allocate char cons table");
-	    errFail();
-	}
-	for (k=0; k<NUM_LEVEL3; k++)
-	    consCharTable_i_j[k] = NIL;
+    if (consCharTable_i_j == NULL) { /* level 3 entry */
+        consCharTable_i_j = consCharTable_i[j] = AllocArray(Cell, NUM_LEVEL3);
+        if (consCharTable_i_j == NULL) {
+            errHead(0);
+            errPrintf("Cannot allocate char cons table");
+            errFail();
+        }
+        for (k = 0; k < NUM_LEVEL3; k++)
+            consCharTable_i_j[k] = NIL;
     }
 
     k = IDX3(c);
     if (isNull(consCharTable_i_j[k]))
-	consCharTable_i_j[k] = ap(nameCons,mkChar(c));
+        consCharTable_i_j[k] = ap(nameCons, mkChar(c));
     return consCharTable_i_j[k];
 }
 
 static void local markConsCharTable() {
     int i, j, k;
 
-    for (i=0; i<NUM_LEVEL1; i++)
-	if (consCharTable[i]!=NULL)
-	    for (j=0; j<NUM_LEVEL2; j++)
-		if (consCharTable[i][j]!=NULL)
-		    for (k=0; k<NUM_LEVEL3; k++)
-			mark(consCharTable[i][j][k]);
+    for (i = 0; i < NUM_LEVEL1; i++)
+        if (consCharTable[i] != NULL)
+            for (j = 0; j < NUM_LEVEL2; j++)
+                if (consCharTable[i][j] != NULL)
+                    for (k = 0; k < NUM_LEVEL3; k++)
+                        mark(consCharTable[i][j][k]);
 }
 
 static void local freeConsCharTable() {
     int i, j;
 
-    if (consCharTable[0]) {	/* only if the table has been initialized */
-	for (j=1; j<NUM_LEVEL2; j++)
-	    if (consCharTable[0][j]!=NULL)
-		free(consCharTable[0][j]);
-	for (i=1; i<NUM_LEVEL1; i++)
-	    if (consCharTable[i]!=NULL) {
-		for (j=0; j<NUM_LEVEL2; j++)
-		    if (consCharTable[i][j]!=NULL)
-			free(consCharTable[i][j]);
-		free(consCharTable[i]);
-	    }
+    if (consCharTable[0]) { /* only if the table has been initialized */
+        for (j = 1; j < NUM_LEVEL2; j++)
+            if (consCharTable[0][j] != NULL)
+                free(consCharTable[0][j]);
+        for (i = 1; i < NUM_LEVEL1; i++)
+            if (consCharTable[i] != NULL) {
+                for (j = 0; j < NUM_LEVEL2; j++)
+                    if (consCharTable[i][j] != NULL)
+                        free(consCharTable[i][j]);
+                free(consCharTable[i]);
+            }
     }
 }
 
-Void charOps(Int what)
-{
+Void charOps(Int what) {
     switch (what) {
-	case INSTALL : initCharTab();
-		       initConsCharTable();
-		       break;
+    case INSTALL:
+        initCharTab();
+        initConsCharTable();
+        break;
 
-	case MARK    : markConsCharTable();
-		       break;
+    case MARK:
+        markConsCharTable();
+        break;
 
-	case EXIT    : freeConsCharTable();
-		       break;
+    case EXIT:
+        freeConsCharTable();
+        break;
     }
 }

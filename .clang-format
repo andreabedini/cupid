@@ -1,0 +1,29 @@
+# Formatting for the Cuddles C sources.  Run over src/*.[ch] and src/prims/*.[ch];
+# src/parser.c and src/unitable.c are generated and are left alone.
+BasedOnStyle: LLVM
+Language: Cpp
+
+IndentWidth: 4
+TabWidth: 8
+UseTab: Never
+ColumnLimit: 80
+
+# The sources nest preprocessor directives to show #if depth; keep that.
+IndentPPDirectives: AfterHash
+PPIndentWidth: 1
+
+# Keep the column of trailing comments, which carry a lot of the commentary.
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 0
+ReflowComments: false
+
+# Never split a string literal: error messages stay greppable.
+BreakStringLiterals: false
+
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+BreakBeforeBraces: Attach
+PointerAlignment: Right
+SortIncludes: Never

@@ -22,30 +22,30 @@
  * different names defined to be synonyms for the same types.
  * ------------------------------------------------------------------------*/
 
-typedef Int	     Text;			 /* text string 	   */
-typedef Unsigned     Syntax;			 /* syntax (assoc,preced)  */
-typedef Int	     Addr;			 /* address of code	   */
-typedef Int	     Cell;			 /* general cell value	   */
-typedef Cell	     *Heap;			 /* storage of heap	   */
-typedef Cell	     Pair;			 /* pair cell		   */
-typedef Int	     StackPtr;			 /* stack pointer	   */
-typedef Cell	     Offset;			 /* offset/generic variable*/
-typedef Int	     Script;			 /* script file number	   */
-typedef Int	     Module;			 /* module 	           */
-typedef Cell	     Tycon;			 /* type constructor	   */
-typedef Cell	     Type;			 /* type expression	   */
-typedef Cell	     Kind;			 /* kind expression	   */
-typedef Cell	     Kinds;			 /* list of kinds	   */
-typedef Cell	     Constr;			 /* constructor expression */
-typedef Cell	     Name;			 /* named value 	   */
-typedef Void	     (*Prim) (StackPtr);	 /* primitive function	   */
-typedef Cell	     Class;			 /* type class		   */
-typedef Cell	     Inst;			 /* instance of type class */
-typedef Cell	     Triple;			 /* triple of cell values  */
-typedef Cell	     List;			 /* list of cells	   */
-typedef Cell	     Bignum;			 /* bignum integer	   */
-typedef FloatImpType Float;			 /* implementation of Float*/
-typedef DoubleImpType Double;			 /* implementation of Double*/
+typedef Int Text;               /* text string     */
+typedef Unsigned Syntax;        /* syntax (assoc,preced)  */
+typedef Int Addr;               /* address of code         */
+typedef Int Cell;               /* general cell value      */
+typedef Cell *Heap;             /* storage of heap         */
+typedef Cell Pair;              /* pair cell               */
+typedef Int StackPtr;           /* stack pointer           */
+typedef Cell Offset;            /* offset/generic variable*/
+typedef Int Script;             /* script file number      */
+typedef Int Module;             /* module                  */
+typedef Cell Tycon;             /* type constructor        */
+typedef Cell Type;              /* type expression         */
+typedef Cell Kind;              /* kind expression         */
+typedef Cell Kinds;             /* list of kinds           */
+typedef Cell Constr;            /* constructor expression */
+typedef Cell Name;              /* named value     */
+typedef Void (*Prim)(StackPtr); /* primitive function      */
+typedef Cell Class;             /* type class              */
+typedef Cell Inst;              /* instance of type class */
+typedef Cell Triple;            /* triple of cell values  */
+typedef Cell List;              /* list of cells           */
+typedef Cell Bignum;            /* bignum integer          */
+typedef FloatImpType Float;     /* implementation of Float*/
+typedef DoubleImpType Double;   /* implementation of Double*/
 
 /* --------------------------------------------------------------------------
  * Text storage:
@@ -53,80 +53,85 @@ typedef DoubleImpType Double;			 /* implementation of Double*/
  * names, string literals, character constants etc...
  * ------------------------------------------------------------------------*/
 
-extern	String	     textToStr		(Text);
-extern	Text	     findText		(String);
-extern	Text         inventText		(Void);
-extern  Text	     inventDictText	(Void);
-extern  Bool	     inventedText	(Text);
-extern	String	     identToStr		(Cell);
-extern	Text	     fixLitText	 	(Text);
-extern	Text	     concatText		(String,String);
-extern  Text         subText            (String,Int);
+extern String textToStr(Text);
+extern Text findText(String);
+extern Text inventText(Void);
+extern Text inventDictText(Void);
+extern Bool inventedText(Text);
+extern String identToStr(Cell);
+extern Text fixLitText(Text);
+extern Text concatText(String, String);
+extern Text subText(String, Int);
 
 /* --------------------------------------------------------------------------
  * Specification of syntax (i.e. default written form of application)
  * ------------------------------------------------------------------------*/
 
-#define MIN_PREC  0		       /* weakest binding operator	   */
-#define MAX_PREC  9		       /* strongest binding operator	   */
-#define FUN_PREC  (MAX_PREC+2)	       /* binding of function symbols	   */
-#define DEF_PREC  MAX_PREC
-#define APPLIC	  0	 	       /* written applicatively 	   */
-#define LEFT_ASS  1	 	       /* left associative infix	   */
-#define RIGHT_ASS 2	 	       /* right associative infix	   */
-#define NON_ASS   3	 	       /* non associative infix 	   */
-#define DEF_ASS   LEFT_ASS
+#define MIN_PREC 0              /* weakest binding operator        */
+#define MAX_PREC 9              /* strongest binding operator      */
+#define FUN_PREC (MAX_PREC + 2) /* binding of function symbols     */
+#define DEF_PREC MAX_PREC
+#define APPLIC 0    /* written applicatively       */
+#define LEFT_ASS 1  /* left associative infix      */
+#define RIGHT_ASS 2 /* right associative infix     */
+#define NON_ASS 3   /* non associative infix       */
+#define DEF_ASS LEFT_ASS
 
-#define UMINUS_PREC  6			/* Change these settings at your   */
-#define UMINUS_ASSOC LEFT_ASS		/* own risk; they may not work!	   */
+#define UMINUS_PREC 6         /* Change these settings at your   */
+#define UMINUS_ASSOC LEFT_ASS /* own risk; they may not work!      */
 
-CUDDLES_inline Syntax assocOf (Syntax x)        { return x&NON_ASS; }
-CUDDLES_inline Int    precOf  (Syntax x)        { return (Int)(x>>2); }
-CUDDLES_inline Syntax mkSyntax(Syntax a, Int p) { return a|((Syntax)p<<2); }
-#define DEF_OPSYNTAX	mkSyntax(DEF_ASS,DEF_PREC)
-#define NO_SYNTAX	((Syntax)(-1))
+CUDDLES_inline Syntax assocOf(Syntax x) {
+    return x & NON_ASS;
+}
+CUDDLES_inline Int precOf(Syntax x) {
+    return (Int)(x >> 2);
+}
+CUDDLES_inline Syntax mkSyntax(Syntax a, Int p) {
+    return a | ((Syntax)p << 2);
+}
+#define DEF_OPSYNTAX mkSyntax(DEF_ASS, DEF_PREC)
+#define NO_SYNTAX ((Syntax)(-1))
 
-#define FFI_NOSAFETY   0
-#define FFI_SAFE       1
-#define FFI_UNSAFE     2
+#define FFI_NOSAFETY 0
+#define FFI_SAFE 1
+#define FFI_UNSAFE 2
 #define FFI_THREADSAFE 4
 
 /* Note: cconv flags are combined with the above safety flags,
  * so need to be disjoint.
  */
-#define FFI_CCONV_UNKNOWN  0
-#define FFI_CCONV_CCALL    8
+#define FFI_CCONV_UNKNOWN 0
+#define FFI_CCONV_CCALL 8
 #define FFI_CCONV_STDCALL 16
 
-#define FFI_TYPE_UNIT      0
-#define FFI_TYPE_CHAR      1
-#define FFI_TYPE_INT       2
-#define FFI_TYPE_INT8      3
-#define FFI_TYPE_INT16     4
-#define FFI_TYPE_INT32     5
-#define FFI_TYPE_INT64     6
-#define FFI_TYPE_WORD8     7
-#define FFI_TYPE_WORD16    8
-#define FFI_TYPE_WORD32    9
-#define FFI_TYPE_WORD64   10
-#define FFI_TYPE_FLOAT    11
-#define FFI_TYPE_DOUBLE   12
-#define FFI_TYPE_BOOL     13
-#define FFI_TYPE_ADDR     14
-#define FFI_TYPE_PTR      15
-#define FFI_TYPE_FUNPTR   16
-#define FFI_TYPE_FOREIGN  17
-#define FFI_TYPE_STABLE   18
-
+#define FFI_TYPE_UNIT 0
+#define FFI_TYPE_CHAR 1
+#define FFI_TYPE_INT 2
+#define FFI_TYPE_INT8 3
+#define FFI_TYPE_INT16 4
+#define FFI_TYPE_INT32 5
+#define FFI_TYPE_INT64 6
+#define FFI_TYPE_WORD8 7
+#define FFI_TYPE_WORD16 8
+#define FFI_TYPE_WORD32 9
+#define FFI_TYPE_WORD64 10
+#define FFI_TYPE_FLOAT 11
+#define FFI_TYPE_DOUBLE 12
+#define FFI_TYPE_BOOL 13
+#define FFI_TYPE_ADDR 14
+#define FFI_TYPE_PTR 15
+#define FFI_TYPE_FUNPTR 16
+#define FFI_TYPE_FOREIGN 17
+#define FFI_TYPE_STABLE 18
 
 /* --------------------------------------------------------------------------
  * Primitive functions:
  * ------------------------------------------------------------------------*/
 
-struct primitive {		        /* entry in table of primitives	   */
-    String ref;				/* primitive reference string	   */
-    Int	   arity;			/* primitive function arity	   */
-    Prim   imp;				/* primitive implementation	   */
+struct primitive { /* entry in table of primitives         */
+    String ref;    /* primitive reference string           */
+    Int arity;     /* primitive function arity     */
+    Prim imp;      /* primitive implementation     */
 };
 
 /* Modules that define new primitive functions must register a control
@@ -140,71 +145,77 @@ struct primitive {		        /* entry in table of primitives	   */
  */
 
 struct primInfo {
-    Void              (*controlFun) (Int);
-    struct primitive  *primFuns;
-    struct primInfo   *nextPrimInfo;
+    Void (*controlFun)(Int);
+    struct primitive *primFuns;
+    struct primInfo *nextPrimInfo;
 };
 
-extern  Void registerPrims (struct primInfo*);
-extern  Void controlFuns   (Int); /* Call all control functions in   */
-					/* prim list.                      */
-extern  struct primInfoDef* setPrimInfoDll (void*);
+extern Void registerPrims(struct primInfo *);
+extern Void controlFuns(Int); /* Call all control functions in   */
+                              /* prim list.                      */
+extern struct primInfoDef *setPrimInfoDll(void *);
 
 /* --------------------------------------------------------------------------
  * Program code storage: for holding compiled function defns etc...
  * ------------------------------------------------------------------------*/
 
-extern	Addr	     getMem	(Int);
-extern  Void	     nextInstr	(Addr);
+extern Addr getMem(Int);
+extern Void nextInstr(Addr);
 
 /* --------------------------------------------------------------------------
  * Heap storage:
  * Provides a garbage collectable heap for storage of expressions etc.
  * ------------------------------------------------------------------------*/
 
-#define heapAlloc(s) (Heap)(farCalloc(s,sizeof(Cell)))
-extern  Int          heapSize;
-extern  Heap	     heapFst, heapSnd;
-CUDDLES_inline Bool   heapBuilt(Void) { return heapFst!=0; }
-extern   Heap        heapTopFst;
-extern   Heap        heapTopSnd;
-extern   Bool        consGC;		/* Set to FALSE to turn off gc from*/
-					/* C stack; use with extreme care! */
-extern   Int	     cellsRecovered;	/* cells recovered by last gc	   */
+#define heapAlloc(s) (Heap)(farCalloc(s, sizeof(Cell)))
+extern Int heapSize;
+extern Heap heapFst, heapSnd;
+CUDDLES_inline Bool heapBuilt(Void) {
+    return heapFst != 0;
+}
+extern Heap heapTopFst;
+extern Heap heapTopSnd;
+extern Bool consGC;        /* Set to FALSE to turn off gc from*/
+                           /* C stack; use with extreme care! */
+extern Int cellsRecovered; /* cells recovered by last gc           */
 
-#define fst(c)	     heapTopFst[c]
-#define snd(c)	     heapTopSnd[c]
+#define fst(c) heapTopFst[c]
+#define snd(c) heapTopSnd[c]
 #if PROFILING
-extern   Heap	     heapThd, heapTopThd;
-#define thd(c)	     heapTopThd[c]
-extern   Name	     producer;
-extern   Bool        profiling;
-extern   Int 	     profInterval;
-extern   Void	     profilerLog     (String);
+extern Heap heapThd, heapTopThd;
+# define thd(c) heapTopThd[c]
+extern Name producer;
+extern Bool profiling;
+extern Int profInterval;
+extern Void profilerLog(String);
 #endif
 
-extern	Pair	     pair	     (Cell,Cell);
-extern  Void         garbageCollect  (Void);
+extern Pair pair(Cell, Cell);
+extern Void garbageCollect(Void);
 
-extern  Void	     overwrite	     (Pair,Pair);
-extern  Cell	     markExpr	     (Cell);
-extern  Void	     markWithoutMove (Cell);
+extern Void overwrite(Pair, Pair);
+extern Cell markExpr(Cell);
+extern Void markWithoutMove(Cell);
 
-#define mark(v)      v=markExpr(v)
+#define mark(v) v = markExpr(v)
 
 /* A static that holds a cell is a root.  A module lists the addresses of
  * its roots in a table and registers it once, at INSTALL; the collector
  * then marks them on every collection.  MARK cases remain only for data
  * a flat table cannot describe: the symbol tables, the substitution, the
  * type checker's scope stack. */
-extern  Void	     gcRegisterRoots (Cell *const *,Int);
-#define registerRoots(t) gcRegisterRoots((t),(Int)(sizeof(t)/sizeof((t)[0])))
+extern Void gcRegisterRoots(Cell *const *, Int);
+#define registerRoots(t) gcRegisterRoots((t), (Int)(sizeof(t) / sizeof((t)[0])))
 
-CUDDLES_inline Bool isPair   (Cell c) { return c<0; }
-CUDDLES_inline Bool isGenPair(Cell c) { return c<0 && -heapSize<=c; }
+CUDDLES_inline Bool isPair(Cell c) {
+    return c < 0;
+}
+CUDDLES_inline Bool isGenPair(Cell c) {
+    return c < 0 && -heapSize <= c;
+}
 
-extern unsigned char whatCode[];	/* whatIs code of each atom; see   */
-					/* whatIs below the tag definitions*/
+extern unsigned char whatCode[]; /* whatIs code of each atom; see   */
+                                 /* whatIs below the tag definitions*/
 
 /* --------------------------------------------------------------------------
  * Box cell tags are used as the fst element of a pair to indicate that
@@ -213,181 +224,181 @@ extern unsigned char whatCode[];	/* whatIs code of each atom; see   */
  * and string text etc.
  * ------------------------------------------------------------------------*/
 
-#define TAGMIN	     1		  /* Box and constructor cell tag values   */
-#define BCSTAG	     30 	  /* Box=TAGMIN..BCSTAG-1		   */
-#define TAG_MASK     (~0x7f)	  /* This masks 0..SPECMIN-1		   */
+#define TAGMIN 1         /* Box and constructor cell tag values   */
+#define BCSTAG 30        /* Box=TAGMIN..BCSTAG-1                   */
+#define TAG_MASK (~0x7f) /* This masks 0..SPECMIN-1                */
 
 /* Every tag and special value, so that whatIs() has a type the compiler can
  * check switches against.  The numeric values are load-bearing: isTag,
  * isBoxTag, isConTag and the whatCode table are defined by these ranges. */
 typedef enum CellTag {
-    INDIRECT    = 1,	  /* Indirection node:	      snd :: Cell  */
-    INDIRECT1   = 2,	  /* Temporary indirection:   snd :: Cell  */
-    FREECELL    = 3,	  /* Free list cell:	      snd :: Cell  */
-    VARIDCELL   = 4,	  /* Identifier variable:     snd :: Text  */
-    VAROPCELL   = 5,	  /* Operator variable:       snd :: Text  */
-    DICTVAR     = 6,	  /* Dictionary variable:     snd :: Text  */
-    CONIDCELL   = 7,	  /* Identifier constructor:  snd :: Text  */
-    CONOPCELL   = 8,	  /* Operator constructor:    snd :: Text  */
-    STRCELL     = 9,	  /* String literal:	      snd :: Text  */
-    INTCELL     = 10,	  /* Int literal:	      snd :: Int   */
-    HANDCELL    = 12,	  /* IO monad Handle:	      snd :: Int   */
-    WEAKCELL    = 13,	  /* WeakPtr Cell:	      snd::(Cell,List)*/
-    WEAKFIN     = 14,	  /* Weak pointer with fin:   snd::(k,(v,f))*/
-    FLOATCELL   = 15,	  /* Floating pt number:      snd :: Float */
-    MPCELL      = 17,	  /* Malloc Ptr Cell:         snd :: Int   */
+    INDIRECT = 1,   /* Indirection node:              snd :: Cell  */
+    INDIRECT1 = 2,  /* Temporary indirection:   snd :: Cell  */
+    FREECELL = 3,   /* Free list cell:        snd :: Cell  */
+    VARIDCELL = 4,  /* Identifier variable:     snd :: Text  */
+    VAROPCELL = 5,  /* Operator variable:       snd :: Text  */
+    DICTVAR = 6,    /* Dictionary variable:     snd :: Text  */
+    CONIDCELL = 7,  /* Identifier constructor:  snd :: Text  */
+    CONOPCELL = 8,  /* Operator constructor:    snd :: Text  */
+    STRCELL = 9,    /* String literal:        snd :: Text  */
+    INTCELL = 10,   /* Int literal:           snd :: Int   */
+    HANDCELL = 12,  /* IO monad Handle:       snd :: Int   */
+    WEAKCELL = 13,  /* WeakPtr Cell:          snd::(Cell,List)*/
+    WEAKFIN = 14,   /* Weak pointer with fin:   snd::(k,(v,f))*/
+    FLOATCELL = 15, /* Floating pt number:      snd :: Float */
+    MPCELL = 17,    /* Malloc Ptr Cell:         snd :: Int   */
 #if SIZEOF_INTP == SIZEOF_INT
-    PTRCELL     = 18,	  /* C Heap Pointer:          snd ::Pointer*/
+    PTRCELL = 18, /* C Heap Pointer:          snd ::Pointer*/
 #endif
-/* CHARCELL is the whatIs code for chars; if UNICODE_CHARS is set, it
+    /* CHARCELL is the whatIs code for chars; if UNICODE_CHARS is set, it
  * is also used for box cells representing character values greater than
  * or equal to NUM_SMALL_CHARS, in the same way as INTCELL.
  */
-    CHARCELL    = 22,	  /* Char literal:	      snd :: Char  */
+    CHARCELL = 22, /* Char literal:           snd :: Char  */
 
     /* Constructor cell tags (BCSTAG..SPECMIN-1): the fst of a pair that
      * describes a syntactic construct; see the note above isAp. */
 
-    LETREC      = 30,	  /* LETREC	snd :: ([Decl],Exp)	   */
-    COND        = 31,	  /* COND	snd :: (Exp,Exp,Exp)	   */
-    LAMBDA      = 32,	  /* LAMBDA	snd :: Alt		   */
-    FINLIST     = 33,	  /* FINLIST	snd :: [Exp]		   */
-    DOCOMP      = 34,	  /* DOCOMP	snd :: (Exp,[Qual])	   */
+    LETREC = 30,  /* LETREC     snd :: ([Decl],Exp)        */
+    COND = 31,    /* COND       snd :: (Exp,Exp,Exp)       */
+    LAMBDA = 32,  /* LAMBDA     snd :: Alt                 */
+    FINLIST = 33, /* FINLIST    snd :: [Exp]               */
+    DOCOMP = 34,  /* DOCOMP     snd :: (Exp,[Qual])        */
 
-    BANG        = 35,	  /* BANG	snd :: Type		   */
-    COMP        = 36,	  /* COMP	snd :: (Exp,[Qual])	   */
-    ASPAT       = 37,	  /* ASPAT	snd :: (Var,Exp)	   */
-    ESIGN       = 38,	  /* ESIGN	snd :: (Exp,Type)	   */
-    RSIGN       = 39,	  /* RSIGN	snd :: (Rhs,Type)	   */
-    CASE        = 40,	  /* CASE	snd :: (Exp,[Alt])	   */
-    NUMCASE     = 41,	  /* NUMCASE	snd :: (Exp,Disc,Rhs)	   */
-    FATBAR      = 42,	  /* FATBAR	snd :: (Exp,Exp)	   */
-    LAZYPAT     = 43,	  /* LAZYPAT	snd :: Exp		   */
-    DERIVE      = 45,	  /* DERIVE	snd :: Cell		   */
+    BANG = 35,    /* BANG       snd :: Type                */
+    COMP = 36,    /* COMP       snd :: (Exp,[Qual])        */
+    ASPAT = 37,   /* ASPAT      snd :: (Var,Exp)           */
+    ESIGN = 38,   /* ESIGN      snd :: (Exp,Type)          */
+    RSIGN = 39,   /* RSIGN      snd :: (Rhs,Type)          */
+    CASE = 40,    /* CASE       snd :: (Exp,[Alt])         */
+    NUMCASE = 41, /* NUMCASE    snd :: (Exp,Disc,Rhs)      */
+    FATBAR = 42,  /* FATBAR     snd :: (Exp,Exp)           */
+    LAZYPAT = 43, /* LAZYPAT    snd :: Exp                 */
+    DERIVE = 45,  /* DERIVE     snd :: Cell                */
 
-    POSNUM      = 47,	  /* POSNUM	snd :: [Int]		   */
-    NEGNUM      = 48,	  /* NEGNUM	snd :: [Int]		   */
+    POSNUM = 47, /* POSNUM      snd :: [Int]               */
+    NEGNUM = 48, /* NEGNUM      snd :: [Int]               */
 
-    BOOLQUAL    = 49,	  /* BOOLQUAL	snd :: Exp		   */
-    QWHERE      = 50,	  /* QWHERE	snd :: [Decl]		   */
-    FROMQUAL    = 51,	  /* FROMQUAL	snd :: (Exp,Exp)	   */
-    DOQUAL      = 52,	  /* DOQUAL	snd :: Exp		   */
-    MONADCOMP   = 53,	  /* MONADCOMP	snd :: ((m,m0),(Exp,[Qual])*/
+    BOOLQUAL = 49,  /* BOOLQUAL snd :: Exp                 */
+    QWHERE = 50,    /* QWHERE   snd :: [Decl]              */
+    FROMQUAL = 51,  /* FROMQUAL snd :: (Exp,Exp)           */
+    DOQUAL = 52,    /* DOQUAL   snd :: Exp                 */
+    MONADCOMP = 53, /* MONADCOMP        snd :: ((m,m0),(Exp,[Qual])*/
 
-    GUARDED     = 54,	  /* GUARDED	snd :: [guarded exprs]	   */
+    GUARDED = 54, /* GUARDED    snd :: [guarded exprs]     */
 
-    ARRAY       = 55,	  /* Array	snd :: (Bounds,[Values])   */
-    MUTVAR      = 56,	  /* Mutvar	snd :: Cell		   */
-    CUDDLESOBJECT= 57,	  /* CUDDLESOBJECT	snd :: Cell	           */
+    ARRAY = 55,        /* Array snd :: (Bounds,[Values])   */
+    MUTVAR = 56,       /* Mutvar        snd :: Cell                */
+    CUDDLESOBJECT = 57, /* CUDDLESOBJECT  snd :: Cell                */
 
-    STABLENAME  = 58,	  /* Stable Nm  snd :: Cell		   */
+    STABLENAME = 58, /* Stable Nm  snd :: Cell             */
 
-    POLYTYPE    = 60,	  /* POLYTYPE	snd :: (Kind,Type)	   */
-    QUAL        = 61,	  /* QUAL	snd :: ([Classes],Type)	   */
-    RANK2       = 62,	  /* RANK2	snd :: (Int,Type)	   */
-    EXIST       = 63,	  /* EXIST	snd :: (Int,Type)	   */
-    POLYREC     = 64,	  /* POLYREC	snd :: (Int,Type)	   */
-    BIGLAM      = 65,	  /* BIGLAM	snd :: (vars,patterns)	   */
-    CDICTS      = 66,	  /* CDICTS	snd :: ([Pred],Type)	   */
+    POLYTYPE = 60, /* POLYTYPE  snd :: (Kind,Type)         */
+    QUAL = 61,     /* QUAL      snd :: ([Classes],Type)    */
+    RANK2 = 62,    /* RANK2     snd :: (Int,Type)          */
+    EXIST = 63,    /* EXIST     snd :: (Int,Type)          */
+    POLYREC = 64,  /* POLYREC   snd :: (Int,Type)          */
+    BIGLAM = 65,   /* BIGLAM    snd :: (vars,patterns)     */
+    CDICTS = 66,   /* CDICTS    snd :: ([Pred],Type)       */
 
-    LABC        = 70,	  /* LABC	snd :: (con,[(Vars,Type)]) */
-    CONFLDS     = 71,	  /* CONFLDS	snd :: (con,[Field])	   */
-    UPDFLDS     = 72,	  /* UPDFLDS	snd :: (Exp,[con],[Field]) */
-    IMPDEPS     = 78,	  /* IMPDEPS	snd :: [Binding]	   */
+    LABC = 70,    /* LABC       snd :: (con,[(Vars,Type)]) */
+    CONFLDS = 71, /* CONFLDS    snd :: (con,[Field])       */
+    UPDFLDS = 72, /* UPDFLDS    snd :: (Exp,[con],[Field]) */
+    IMPDEPS = 78, /* IMPDEPS    snd :: [Binding]           */
 
-    QUALIDENT   = 80,	  /* Qualified identifier  snd :: (Id,Id)  */
-    HIDDEN      = 81,	  /* hiding import list    snd :: [Entity] */
-    MODULEENT   = 82,	  /* module in export list snd :: con      */
+    QUALIDENT = 80, /* Qualified identifier  snd :: (Id,Id)  */
+    HIDDEN = 81,    /* hiding import list    snd :: [Entity] */
+    MODULEENT = 82, /* module in export list snd :: con      */
 
-    INFIX       = 90,	  /* INFIX	snd :: (see tidyInfix)	   */
-    ONLY        = 91,	  /* ONLY	snd :: Exp		   */
-    NEG         = 92,	  /* NEG	snd :: Exp		   */
+    INFIX = 90, /* INFIX        snd :: (see tidyInfix)     */
+    ONLY = 91,  /* ONLY snd :: Exp                 */
+    NEG = 92,   /* NEG  snd :: Exp                 */
 
-    DOUBLECELL  = 97,	  /* DOUBLECELL snd :: (Int,Int)	   */
-    I64CELL     = 98,	  /* Int/Word64 snd :: (Int,Int)           */
+    DOUBLECELL = 97, /* DOUBLECELL snd :: (Int,Int)        */
+    I64CELL = 98,    /* Int/Word64 snd :: (Int,Int)           */
 
 #if SIZEOF_INTP != SIZEOF_INT
-    PTRCELL     = 99,	  /* C Heap Pointer snd :: (Int,Int)       */
+    PTRCELL = 99, /* C Heap Pointer snd :: (Int,Int)       */
 #endif
 
     /* Special cell values (SPECMIN..TUPMIN-1): atoms that are also their own
      * whatIs codes. */
 
-    NONE        = 129,	  /* Dummy stub				   */
-    STAR        = 130,	  /* Representing the kind of types	   */
-    WILDCARD    = 132,	  /* Wildcard pattern			   */
+    NONE = 129,     /* Dummy stub                                  */
+    STAR = 130,     /* Representing the kind of types      */
+    WILDCARD = 132, /* Wildcard pattern                    */
 
-    SKOLEM      = 133,	  /* Skolem constant			   */
+    SKOLEM = 133, /* Skolem constant                       */
 
-    DOTDOT      = 134,	  /* ".." in import/export list            */
+    DOTDOT = 134, /* ".." in import/export list            */
 
-    ZERONUM     = 136,	  /* The zero bignum (see POSNUM, NEGNUM)  */
+    ZERONUM = 136, /* The zero bignum (see POSNUM, NEGNUM)  */
 
-    NAME        = 138,	  /* whatIs code for isName		   */
-    TYCON       = 139,	  /* whatIs code for isTycon		   */
-    CLASS       = 140,	  /* whatIs code for isClass		   */
-    MODULE      = 141,	  /* whatIs code for isModule              */
-    INSTANCE    = 142,	  /* whatIs code for isInst                */
-    TUPLE       = 143,	  /* whatIs code for tuple constructor	   */
-    OFFSET      = 144,	  /* whatis code for offset		   */
-    AP          = 145,	  /* whatIs code for application node	   */
+    NAME = 138,     /* whatIs code for isName              */
+    TYCON = 139,    /* whatIs code for isTycon             */
+    CLASS = 140,    /* whatIs code for isClass             */
+    MODULE = 141,   /* whatIs code for isModule              */
+    INSTANCE = 142, /* whatIs code for isInst                */
+    TUPLE = 143,    /* whatIs code for tuple constructor           */
+    OFFSET = 144,   /* whatis code for offset              */
+    AP = 145,       /* whatIs code for application node    */
 
-    SIGDECL     = 148,	  /* Signature declaration		   */
-    FIXDECL     = 149,	  /* Fixity declaration			   */
-    FUNBIND     = 150,	  /* Function binding			   */
-    PATBIND     = 151,	  /* Pattern binding			   */
+    SIGDECL = 148, /* Signature declaration                */
+    FIXDECL = 149, /* Fixity declaration                           */
+    FUNBIND = 150, /* Function binding                     */
+    PATBIND = 151, /* Pattern binding                      */
 
-    DATATYPE    = 158,	  /* Datatype type constructor		   */
-    NEWTYPE     = 159,	  /* Newtype type constructor		   */
-    SYNONYM     = 160,	  /* Synonym type constructor		   */
-    RESTRICTSYN = 161,	  /* Synonym with restricted scope	   */
+    DATATYPE = 158,    /* Datatype type constructor                */
+    NEWTYPE = 159,     /* Newtype type constructor                 */
+    SYNONYM = 160,     /* Synonym type constructor                 */
+    RESTRICTSYN = 161, /* Synonym with restricted scope    */
 
-    NODEPENDS   = 163,	  /* Stop calculation of deps in type check*/
-    PREDEFINED  = 164,	  /* Predefined name, not yet filled       */
+    NODEPENDS = 163,  /* Stop calculation of deps in type check*/
+    PREDEFINED = 164, /* Predefined name, not yet filled       */
 } CellTag;
 
+extern Bool isVar(Cell);
+extern Bool isCon(Cell);
+extern Bool isQVar(Cell);
+extern Bool isQCon(Cell);
+extern Bool isQualIdent(Cell);
+extern Bool isIdent(Cell);
 
-extern	Bool		isVar       (Cell);
-extern	Bool		isCon       (Cell);
-extern	Bool		isQVar      (Cell);
-extern	Bool		isQCon      (Cell);
-extern	Bool		isQualIdent (Cell);
-extern	Bool		isIdent     (Cell);
+extern Cell mkFloat(FloatPro);
+extern FloatPro floatOf(Cell);
+extern String floatToString(FloatPro);
 
-extern	Cell	        mkFloat		(FloatPro);
-extern  FloatPro	floatOf		(Cell);
-extern  String		floatToString   (FloatPro);
+extern Cell mkDouble(DoublePro);
+extern DoublePro doubleOf(Cell);
+extern String doubleToString(DoublePro);
+extern DoublePro stringToDouble(String);
+extern Cell part1Double(DoublePro);
+extern Cell part2Double(DoublePro);
+extern DoublePro doubleFromParts(Cell, Cell);
 
-extern	Cell	        mkDouble	(DoublePro);
-extern  DoublePro	doubleOf	(Cell);
-extern  String		doubleToString  (DoublePro);
-extern  DoublePro	stringToDouble  (String);
-extern  Cell		part1Double	(DoublePro);
-extern  Cell		part2Double	(DoublePro);
-extern  DoublePro	doubleFromParts	(Cell,Cell);
-
-extern  Cell            mkPtr           (Pointer);
-extern  Pointer         ptrOf           (Cell);
+extern Cell mkPtr(Pointer);
+extern Pointer ptrOf(Cell);
 
 /* --------------------------------------------------------------------------
  * Resizeable table struct type.
  * ------------------------------------------------------------------------*/
 typedef struct strDynTable {
-  /* "data" holds "maxIdx*eltSize" bytes.
+    /* "data" holds "maxIdx*eltSize" bytes.
    * "maxIdx" may not grow beyond "hWater", unless "hWater" is 0,
    * in which case "maxIdx" does not have an upper bound.
    */
-  unsigned long maxIdx;
-  unsigned long hWater;
-  unsigned long eltSize;
-  const char*   tabName;
-  void*         data;
+    unsigned long maxIdx;
+    unsigned long hWater;
+    unsigned long eltSize;
+    const char *tabName;
+    void *data;
 } DynTable;
 
-#define IdxDynTable(eltTy,tab,idx)  (((eltTy *)(tab->data))[idx])
-extern DynTable* allocDynTable (unsigned long,unsigned long,unsigned long,const char*);
-extern void freeDynTable       (DynTable*);
-extern void growDynTable       (DynTable*);
+#define IdxDynTable(eltTy, tab, idx) (((eltTy *)(tab->data))[idx])
+extern DynTable *allocDynTable(unsigned long, unsigned long, unsigned long,
+                               const char *);
+extern void freeDynTable(DynTable *);
+extern void growDynTable(DynTable *);
 
 /* --------------------------------------------------------------------------
  * Constructor cell tags are used as the fst element of a pair to indicate
@@ -398,63 +409,59 @@ extern void growDynTable       (DynTable*);
  * element is a special cell will be treated as an application node.
  * ------------------------------------------------------------------------*/
 
-
 /* --------------------------------------------------------------------------
  * Special cell values:
  * ------------------------------------------------------------------------*/
 
-#define SPECMIN      129	  /* must be out of TAG_MASK range         */
-
+#define SPECMIN 129 /* must be out of TAG_MASK range         */
 
 /* --------------------------------------------------------------------------
  * Tuple data/type constructors:
  * ------------------------------------------------------------------------*/
 
-#define TUPMIN	     201
+#define TUPMIN 201
 /* mkTuple(n) is called with an unchecked component count wherever a tuple
  * literal or type is built (including the parser's tuple grammar rule, one
  * comma at a time); an n at or beyond NUM_TUPLES would alias the OFFSET
  * range below and confuse anything that later looks at the cell's tag, so
  * tooManyTupleComponents (machine.c) reports a clean error instead.
  */
-extern  Void	     tooManyTupleComponents (Void);
-static inline Cell   mkTuple(Int n) {
-    if (n>=NUM_TUPLES)
-	tooManyTupleComponents();
-    return TUPMIN+n;
+extern Void tooManyTupleComponents(Void);
+static inline Cell mkTuple(Int n) {
+    if (n >= NUM_TUPLES)
+        tooManyTupleComponents();
+    return TUPMIN + n;
 }
-
 
 /* --------------------------------------------------------------------------
  * Offsets: (generic types/stack offsets)
  * ------------------------------------------------------------------------*/
 
-#define OFFMIN	     (TUPMIN+NUM_TUPLES)
+#define OFFMIN (TUPMIN + NUM_TUPLES)
 /* mkOffset(o), similarly, is called with an unchecked offset wherever the
  * compiler hands out a stack/generic-type offset; an o at or beyond
  * NUM_OFFSETS would alias the MODMIN range, so tooManyOffsets (machine.c)
  * reports a clean error instead of letting the aliased cell corrupt later
  * processing (as "INTERNAL ERROR: lift").
  */
-extern  Void	     tooManyOffsets (Void);
-static inline Cell   mkOffset(Int o) {
-    if (o>=NUM_OFFSETS)
-	tooManyOffsets();
-    return OFFMIN+o;
+extern Void tooManyOffsets(Void);
+static inline Cell mkOffset(Int o) {
+    if (o >= NUM_OFFSETS)
+        tooManyOffsets();
+    return OFFMIN + o;
 }
 
 /* --------------------------------------------------------------------------
  * Observations
  * ------------------------------------------------------------------------*/
 
-
 /* --------------------------------------------------------------------------
  * Modules:
  * ------------------------------------------------------------------------*/
 
-#define MODMIN        (OFFMIN+NUM_OFFSETS)
+#define MODMIN (OFFMIN + NUM_OFFSETS)
 
-#define module(n)     tabModule[(n)-MODMIN]
+#define module(n) tabModule[(n) - MODMIN]
 
 /* Under Haskell 1.3, the list of qualified imports is always a subset
  * of the list of unqualified imports.  For simplicity and flexibility,
@@ -467,22 +474,22 @@ static inline Cell   mkOffset(Int o) {
  * Tycons, Names and Classes (after static analysis).
  */
 struct strModule {
-    Text  text;
+    Text text;
     /* Lists of top level objects (local defns + imports)                       */
     /* Invariant: a name/tycons only appears once (i.e., no dups) in this list. */
-    List  tycons;
-    List  names;
-    List  classes;
-    List  exports; /* [ Entity | (Entity, NIL|DOTDOT|[Entity]) ] */
+    List tycons;
+    List names;
+    List classes;
+    List exports; /* [ Entity | (Entity, NIL|DOTDOT|[Entity]) ] */
     /* (alias,modName) list of local aliases. Used both during compilation and when
      * evaluating an expression in the context of the current module.
      */
-    List  modAliases;
+    List modAliases;
     /* List of qualified imports.  Used both during compilation and when
      * evaluating an expression in the context of the current module.
      */
-   List  qualImports; /* [ (modName{-Text-},[Entity]) ] */
-                      /* NOTE: static.c:checkQualImport() modifies 'modName' to a Module */
+    List qualImports; /* [ (modName{-Text-},[Entity]) ] */
+    /* NOTE: static.c:checkQualImport() modifies 'modName' to a Module */
 
     /* For each module imported, record the names that was
      * effectively imported, taking into consideration
@@ -496,78 +503,76 @@ struct strModule {
      * of a module that's only imported once, but constrained by
      * a 'hiding'.
      */
-    List  modImports; /* :: [ (modName{-Module-},(Bool,[Entity])) ] */
+    List modImports; /* :: [ (modName{-Module-},(Bool,[Entity])) ] */
 };
 
-
-extern Module currentModule;           /* Module currently being processed */
+extern Module currentModule; /* Module currently being processed */
 extern struct strModule DECTABLE(tabModule);
 
-extern Bool   isValidModule (Module);
-extern Module newModule	    (Text);
-extern Module findModule    (Text);
-extern Module findModid     (Cell);
-extern Void   setCurrModule (Module);
-extern List   getModuleImports (Module);
-
+extern Bool isValidModule(Module);
+extern Module newModule(Text);
+extern Module findModule(Text);
+extern Module findModid(Cell);
+extern Void setCurrModule(Module);
+extern List getModuleImports(Module);
 
 /* --------------------------------------------------------------------------
  * Type constructor names:
  * ------------------------------------------------------------------------*/
 
-#define TYCMIN	     (MODMIN+NUM_MODULE)
-#define tycon(n)     tabTycon[(n)-TYCMIN]
+#define TYCMIN (MODMIN + NUM_MODULE)
+#define tycon(n) tabTycon[(n) - TYCMIN]
 
 struct strTycon {
-    Text  text;
-    Int   line;
-    Module mod;                         /* module that defines it          */
-    Int   arity;
-    Kind  kind;				/* kind (includes arity) of Tycon  */
-    Cell  what;				/* DATATYPE/SYNONYM/RESTRICTSYN... */
-    Cell  defn;
+    Text text;
+    Int line;
+    Module mod; /* module that defines it          */
+    Int arity;
+    Kind kind; /* kind (includes arity) of Tycon  */
+    Cell what; /* DATATYPE/SYNONYM/RESTRICTSYN... */
+    Cell defn;
     Tycon nextTyconHash;
     List clashes;
 };
 
 extern struct strTycon DECTABLE(tabTycon);
 
-extern Tycon newTycon	  (Text);
-extern Tycon findTycon	  (Text);
-extern Tycon addTycon	  (Tycon);
-extern Void  removeTycon  (Tycon);
-extern Tycon findQualTycon (Cell);
-extern Tycon addPrimTycon (Text,Kind,Int,Cell,Cell);
+extern Tycon newTycon(Text);
+extern Tycon findTycon(Text);
+extern Tycon addTycon(Tycon);
+extern Void removeTycon(Tycon);
+extern Tycon findQualTycon(Cell);
+extern Tycon addPrimTycon(Text, Kind, Int, Cell, Cell);
 
-#define polySigOf(t)	fst(snd(t))
-#define monotypeOf(t)	snd(snd(t))
+#define polySigOf(t) fst(snd(t))
+#define monotypeOf(t) snd(snd(t))
 
 /* --------------------------------------------------------------------------
  * Globally defined name values:
  * ------------------------------------------------------------------------*/
 
-#define NAMEMIN      (TYCMIN+NUM_TYCON)
-#define name(n)      tabName[(n)-NAMEMIN]
+#define NAMEMIN (TYCMIN + NUM_TYCON)
+#define name(n) tabName[(n) - NAMEMIN]
 
 struct strName {
     Text text;
-    Int  line;
-    Module mod;                         /* module that defines it          */
+    Int line;
+    Module mod; /* module that defines it          */
     Syntax syntax;
-    Cell parent;                        /* enclosing object                */
-					/* :: Class | Instance | Name | NIL*/
-    Int  arity;
-    Int  number;
+    Cell parent; /* enclosing object                */
+                 /* :: Class | Instance | Name | NIL*/
+    Int arity;
+    Int number;
     Cell type;
     Cell defn;
     Addr code;
-    Text extFun;                        /* for foreign import/export       */
-    Int  foreignId;                     /* per module identifier           */
-    Int  foreignFlags;                  /* encoding safety + calling conv  */
+    Text extFun;      /* for foreign import/export       */
+    Int foreignId;    /* per module identifier           */
+    Int foreignFlags; /* encoding safety + calling conv  */
     Prim primDef;
     Name nextNameHash;
 #if PROFILING
-    Int  count;
+    Int count;
 #endif
     List clashes;
 };
@@ -576,103 +581,100 @@ extern struct strName DECTABLE(tabName);
 
 /* The number field in a name is used to distinguish various kinds of name:
  *   mfunNo(i) = code for member function, offset i
- *		 members that are sole elements of dict use mfunNo(0)
- *		 members of dicts with more than one elem use mfunNo(n), n>=1
+ *               members that are sole elements of dict use mfunNo(0)
+ *               members of dicts with more than one elem use mfunNo(n), n>=1
  *   EXECNAME  = code for executable name (bytecodes or primitive)
  *   SELNAME   = code for selector function
  *   DFUNNAME  = code for dictionary builder or selector
  *   cfunNo(i) = code for data constructor
- *		 datatypes with only one constructor uses cfunNo(0)
- *		 datatypes with multiple constructors use cfunNo(n), n>=1
+ *               datatypes with only one constructor uses cfunNo(0)
+ *               datatypes with multiple constructors use cfunNo(n), n>=1
  */
 
-#define EXECNAME	0
-#define SELNAME		1
-#define DFUNNAME	2
-#define CFUNNAME	3
+#define EXECNAME 0
+#define SELNAME 1
+#define DFUNNAME 2
+#define CFUNNAME 3
 
-
-
-
-extern Name   newName	    (Text,Cell);
-extern Name   findName	    (Text);
-extern Name   addName	    (Name);
-extern Void   removeName    (Name);
-extern Name   findQualName  (Cell);
-extern List   findQualNames (Cell);
-extern Name   findQualFun   (Text,Text);
-extern Void   addPrim	    (Int,Name,String,Module,Type);
-extern Name   addPrimCfun   (Text,Int,Int,Cell);
-extern Int    sfunPos	    (Name,Name);
-extern Bool   setOldDLLFlag (Bool);
+extern Name newName(Text, Cell);
+extern Name findName(Text);
+extern Name addName(Name);
+extern Void removeName(Name);
+extern Name findQualName(Cell);
+extern List findQualNames(Cell);
+extern Name findQualFun(Text, Text);
+extern Void addPrim(Int, Name, String, Module, Type);
+extern Name addPrimCfun(Text, Int, Int, Cell);
+extern Int sfunPos(Name, Name);
+extern Bool setOldDLLFlag(Bool);
 
 /* --------------------------------------------------------------------------
  * Type class values:
  * ------------------------------------------------------------------------*/
 
-#define INSTMIN      (NAMEMIN+NUM_NAME)	/* instances			   */
-#define inst(in)     tabInst[(in)-INSTMIN]
+#define INSTMIN (NAMEMIN + NUM_NAME) /* instances                          */
+#define inst(in) tabInst[(in) - INSTMIN]
 
 struct strInst {
-    Class c;				/* class C			   */
-    Int   line;
-    Kinds kinds;			/* Kinds of variables in head	   */
-    Cell  head;				/* :: Pred			   */
-    List  specifics;			/* :: [Pred]			   */
-    Int   numSpecifics;			/* length(specifics)		   */
-    List  implements;
-    Name  builder;			/* Dictionary constructor function */
+    Class c; /* class C                    */
+    Int line;
+    Kinds kinds;      /* Kinds of variables in head        */
+    Cell head;        /* :: Pred                           */
+    List specifics;   /* :: [Pred]                         */
+    Int numSpecifics; /* length(specifics)                 */
+    List implements;
+    Name builder; /* Dictionary constructor function */
 };
 
 /* a predicate (an element :: Pred) is an application of a Class to one or
  * more type expressions
  */
 
-#define CLASSMIN     (INSTMIN+NUM_INSTS)
-#define cclass(n)    tabClass[(n)-CLASSMIN]
+#define CLASSMIN (INSTMIN + NUM_INSTS)
+#define cclass(n) tabClass[(n) - CLASSMIN]
 
 struct strClass {
-    Text   text;			/* Name of class		   */
-    Int    line;			/* Line where declaration begins   */
-    Module mod;				/* module that declares it         */
-    Int    level;			/* Level in class hierarchy	   */
-    Int    arity;			/* Number of arguments		   */
-    List   tyvars;			/* Names of tyvars		   */
-    Kinds  kinds;			/* Kinds of constructors in class  */
-    Cell   head;			/* Head of class		   */
-    List   fds;				/* Functional Dependencies	   */
-    List   xfds;			/* Xpanded Functional Dependencies */
-    Name   dcon;			/* Dictionary constructor function */
-    List   supers;			/* :: [Pred]			   */
-    Int    numSupers;			/* length(supers)		   */
-    List   dsels;			/* Superclass dictionary selectors */
-    List   members;			/* :: [Name]			   */
-    Int    numMembers;			/* length(members)		   */
-    List   defaults;			/* :: [Name]			   */
-    List   instances;			/* :: [Inst]			   */
-    List   clashes;                     /* Conflicting classes/tycons      */
+    Text text;      /* Name of class               */
+    Int line;       /* Line where declaration begins   */
+    Module mod;     /* module that declares it         */
+    Int level;      /* Level in class hierarchy    */
+    Int arity;      /* Number of arguments                 */
+    List tyvars;    /* Names of tyvars             */
+    Kinds kinds;    /* Kinds of constructors in class  */
+    Cell head;      /* Head of class               */
+    List fds;       /* Functional Dependencies     */
+    List xfds;      /* Xpanded Functional Dependencies */
+    Name dcon;      /* Dictionary constructor function */
+    List supers;    /* :: [Pred]                           */
+    Int numSupers;  /* length(supers)              */
+    List dsels;     /* Superclass dictionary selectors */
+    List members;   /* :: [Name]                           */
+    Int numMembers; /* length(members)             */
+    List defaults;  /* :: [Name]                           */
+    List instances; /* :: [Inst]                           */
+    List clashes;   /* Conflicting classes/tycons      */
 };
 
-extern struct strClass    DYNDECTABLE(tabClass);
-extern struct strInst     DYNDECTABLE(tabInst);
+extern struct strClass DYNDECTABLE(tabClass);
+extern struct strInst DYNDECTABLE(tabInst);
 
-extern Class  newClass	     (Text);
-extern Class  classMax	     (Void);
-extern Class  findClass	     (Text);
-extern Class  addClass	     (Class);
-extern Class  findQualClass  (Cell);
-extern Inst   newInst	     (Void);
-extern Inst   findFirstInst  (Tycon);
-extern Inst   findNextInst   (Tycon,Inst);
-extern Module findQualifier  (Text);
-extern List   findQualifiers (Text);
-extern Text   findModAlias   (Text);
+extern Class newClass(Text);
+extern Class classMax(Void);
+extern Class findClass(Text);
+extern Class addClass(Class);
+extern Class findQualClass(Cell);
+extern Inst newInst(Void);
+extern Inst findFirstInst(Tycon);
+extern Inst findNextInst(Tycon, Inst);
+extern Module findQualifier(Text);
+extern List findQualifiers(Text);
+extern Text findModAlias(Text);
 
 /* --------------------------------------------------------------------------
  * Character values:
  * ------------------------------------------------------------------------*/
 
-#define CHARMIN      (CLASSMIN+NUM_CLASSES)
+#define CHARMIN (CLASSMIN + NUM_CLASSES)
 
 /* --------------------------------------------------------------------------
  * Unicode Characters: NUM_SHORT_CHARS is the number of one-cell characters.
@@ -681,60 +683,61 @@ extern Text   findModAlias   (Text);
  * as integers, with predicate, selector and constructor functions.
  * ------------------------------------------------------------------------*/
 
-#define	NUM_SHORT_CHARS	1280	/* number of one-cell characters           */
-				/* (Latin, Greek and Cyrillic)             */
+#define NUM_SHORT_CHARS 1280 /* number of one-cell characters           */
+/* (Latin, Greek and Cyrillic)             */
 
-
-extern	Bool isChar    (Cell);
-extern	Int  charOf    (Cell);
-extern	Cell mkChar    (Int);
+extern Bool isChar(Cell);
+extern Int charOf(Cell);
+extern Cell mkChar(Int);
 
 /* --------------------------------------------------------------------------
  * Small Integer values:
  * ------------------------------------------------------------------------*/
 
-#define INTMIN	     (CHARMIN+NUM_SHORT_CHARS)
+#define INTMIN (CHARMIN + NUM_SHORT_CHARS)
 
 /* All ints out of the range defined below are boxed, so we want the biggest
  * INTMAX possible. But the bigger INTMAX is, the bigger the whatIs array.
  * We strike a balance by choosing an integer range of 4096.
  */
 
-#define INTMAX	     (INTMIN+4096)
-#define N_WHATCODE   (INTMAX+1)			 /* size of whatCode array */
+#define INTMAX (INTMIN + 4096)
+#define N_WHATCODE (INTMAX + 1) /* size of whatCode array */
 
-#define INTZERO      (INTMIN/2 + INTMAX/2)
-#define MINSMALLINT  (INTMIN - INTZERO)
-#define MAXSMALLINT  (INTMAX - INTZERO)
+#define INTZERO (INTMIN / 2 + INTMAX / 2)
+#define MINSMALLINT (INTMIN - INTZERO)
+#define MAXSMALLINT (INTMAX - INTZERO)
 
-extern	Bool isInt    (Cell);
-extern	Int  intOf    (Cell);
-extern	Cell mkInt    (Int);
-extern  Bool isBignum (Cell);
+extern Bool isInt(Cell);
+extern Int intOf(Cell);
+extern Cell mkInt(Int);
+extern Bool isBignum(Cell);
 
 /* --------------------------------------------------------------------------
  * Implementation of triples:
  * ------------------------------------------------------------------------*/
 
-#define fst3(c)      fst(c)
-#define snd3(c)      fst(snd(c))
-#define thd3(c)      snd(snd(c))
+#define fst3(c) fst(c)
+#define snd3(c) fst(snd(c))
+#define thd3(c) snd(snd(c))
 
 /* --------------------------------------------------------------------------
  * Implementation of lists:
  * ------------------------------------------------------------------------*/
 
-#define NIL	     0
-#define hd(c)	     fst(c)
-#define tl(c)	     snd(c)
+#define NIL 0
+#define hd(c) fst(c)
+#define tl(c) snd(c)
 
-extern	Int	     length	   (List);
-extern	List	     appendOnto    (List,List);	/* destructive	   */
-extern	List	     dupOnto       (List,List);
-extern  List	     dupList	   (List);
-extern  List	     dupUpto	   (List,Cell);
-extern	List	     revOnto	   (List, List);	/* destructive	   */
-CUDDLES_inline List rev(List xs) { return revOnto(xs,NIL); }	/* non-destructive */
+extern Int length(List);
+extern List appendOnto(List, List); /* destructive         */
+extern List dupOnto(List, List);
+extern List dupList(List);
+extern List dupUpto(List, Cell);
+extern List revOnto(List, List); /* destructive    */
+CUDDLES_inline List rev(List xs) {
+    return revOnto(xs, NIL);
+} /* non-destructive */
 
 /* --------------------------------------------------------------------------
  * Predicates, projections and constructors on cells.  These were macros;
@@ -743,153 +746,284 @@ CUDDLES_inline List rev(List xs) { return revOnto(xs,NIL); }	/* non-destructive 
  * because they are assigned through.
  * ------------------------------------------------------------------------*/
 
-CUDDLES_inline Bool isTag    (Cell c) { return TAGMIN<=c && c<SPECMIN; }
-CUDDLES_inline Bool isBoxTag (Cell c) { return TAGMIN<=c && c<BCSTAG;  }
-CUDDLES_inline Bool isConTag (Cell c) { return BCSTAG<=c && c<SPECMIN; }
-CUDDLES_inline Bool isTag1   (Cell c) { return (c & TAG_MASK)==0; }	/* NIL too */
+CUDDLES_inline Bool isTag(Cell c) {
+    return TAGMIN <= c && c < SPECMIN;
+}
+CUDDLES_inline Bool isBoxTag(Cell c) {
+    return TAGMIN <= c && c < BCSTAG;
+}
+CUDDLES_inline Bool isConTag(Cell c) {
+    return BCSTAG <= c && c < SPECMIN;
+}
+CUDDLES_inline Bool isTag1(Cell c) {
+    return (c & TAG_MASK) == 0;
+} /* NIL too */
 
-CUDDLES_inline CellTag whatIs(Cell c)
-{
+CUDDLES_inline CellTag whatIs(Cell c) {
     return (CellTag)(isPair(c) ? (isTag(fst(c)) ? fst(c) : AP) : whatCode[c]);
 }
-CUDDLES_inline CellTag whatIs1(Cell c)	/* faster; NIL if fst(c) is NIL	   */
+CUDDLES_inline CellTag whatIs1(Cell c) /* faster; NIL if fst(c) is NIL      */
 {
     return (CellTag)(isPair(c) ? (isTag1(fst(c)) ? fst(c) : AP) : whatCode[c]);
 }
-CUDDLES_inline Bool isAp  (Cell c) { return isPair(c) && !isTag(fst(c));  }
-CUDDLES_inline Bool isAp1 (Cell c) { return isPair(c) && !isTag1(fst(c)); }
-
-CUDDLES_inline Cell ap (Cell f, Cell x) { return pair(f,x); }
-
-CUDDLES_inline Bool isNull  (Cell c) { return c==NIL; }
-CUDDLES_inline Bool nonNull (Cell c) { return c!=NIL; }
-
-CUDDLES_inline Bool isTuple  (Cell c) { return TUPMIN<=c && c<OFFMIN; }
-CUDDLES_inline Int  tupleOf  (Cell c) { return (Int)(c-TUPMIN); }
-CUDDLES_inline Bool isOffset (Cell c) { return OFFMIN<=c && c<MODMIN; }
-CUDDLES_inline Int  offsetOf (Cell c) { return c-OFFMIN; }
-CUDDLES_inline Bool isModule (Cell c) { return MODMIN<=c && c<TYCMIN; }
-CUDDLES_inline Bool isTycon  (Cell c) { return TYCMIN<=c && c<NAMEMIN; }
-CUDDLES_inline Bool isName   (Cell c) { return NAMEMIN<=c && c<INSTMIN; }
-CUDDLES_inline Bool isInst   (Cell c) { return INSTMIN<=c && c<CLASSMIN; }
-CUDDLES_inline Bool isClass  (Cell c) { return CLASSMIN<=c && c<CHARMIN; }
-CUDDLES_inline Bool isShortChar(Cell c) { return CHARMIN<=c && c<INTMIN; }
-CUDDLES_inline Bool isSmall  (Cell c) { return INTMIN<=c; }
-CUDDLES_inline Cell mkDigit  (Int c)  { return (Cell)(c+INTMIN); }
-CUDDLES_inline Int  digitOf  (Cell c) { return (Int)(c-INTMIN); }
-
-CUDDLES_inline Bool isSynonym (Cell h) { return isTycon(h) && tycon(h).what==SYNONYM; }
-CUDDLES_inline Bool isNewtype (Cell h) { return isTycon(h) && tycon(h).what==NEWTYPE; }
-
-CUDDLES_inline Bool isQualType (Cell t) { return isPair(t) && fst(t)==QUAL; }
-CUDDLES_inline Bool isPolyType (Cell t) { return isPair(t) && fst(t)==POLYTYPE; }
-CUDDLES_inline Bool isPolyOrQualType(Cell t)
-{
-    return isPair(t) && (fst(t)==POLYTYPE || fst(t)==QUAL);
+CUDDLES_inline Bool isAp(Cell c) {
+    return isPair(c) && !isTag(fst(c));
 }
-CUDDLES_inline Type mkPolyType(Kinds ks, Type t) { return pair(POLYTYPE,pair(ks,t)); }
+CUDDLES_inline Bool isAp1(Cell c) {
+    return isPair(c) && !isTag1(fst(c));
+}
 
-CUDDLES_inline Bool isSfun  (Name n) { return name(n).number==SELNAME; }
-CUDDLES_inline Bool isDfun  (Name n) { return name(n).number==DFUNNAME; }
-CUDDLES_inline Bool isCfun  (Name n) { return name(n).number>=CFUNNAME; }
-CUDDLES_inline Int  cfunOf  (Name n) { return name(n).number-CFUNNAME; }
-CUDDLES_inline Int  cfunNo  (Int i)  { return i+CFUNNAME; }
-CUDDLES_inline Bool isMfun  (Name n) { return name(n).number<0; }
-CUDDLES_inline Int  mfunOf  (Name n) { return (-1)-name(n).number; }
-CUDDLES_inline Int  mfunNo  (Int i)  { return (-1)-i; }
-CUDDLES_inline Bool hasCfun (List cs) { return nonNull(cs) && isCfun(hd(cs)); }
+CUDDLES_inline Cell ap(Cell f, Cell x) {
+    return pair(f, x);
+}
 
-CUDDLES_inline Text textOf   (Cell c) { return (Text)snd(c); }	/* c :: (VAR|CON)(ID|OP) */
-CUDDLES_inline Text qmodOf   (Cell c) { return textOf(fst(snd(c))); }	/* c :: QUALIDENT */
-CUDDLES_inline Text qtextOf  (Cell c) { return textOf(snd(snd(c))); }
-CUDDLES_inline Int  intValOf (Cell c) { return (Int)snd(c); }
-CUDDLES_inline Cell mkVar    (Text t) { return ap(VARIDCELL,t); }
-CUDDLES_inline Cell mkVarop  (Text t) { return ap(VAROPCELL,t); }
-CUDDLES_inline Cell mkCon    (Text t) { return ap(CONIDCELL,t); }
-CUDDLES_inline Cell mkConop  (Text t) { return ap(CONOPCELL,t); }
-CUDDLES_inline Cell mkQId    (Text m, Cell c) { return ap(QUALIDENT,pair(mkCon(m),c)); }
-CUDDLES_inline Cell mkQVar   (Text m, Text t) { return mkQId(m,mkVar(t)); }
-CUDDLES_inline Cell mkQCon   (Text m, Text t) { return mkQId(m,mkCon(t)); }
-CUDDLES_inline Cell mkQVarOp (Text m, Text t) { return mkQId(m,mkVarop(t)); }
-CUDDLES_inline Cell mkQConOp (Text m, Text t) { return mkQId(m,mkConop(t)); }
-CUDDLES_inline Text mkNestedQual(Cell c) { return findText(identToStr(c)); }	/* fragile... */
-CUDDLES_inline Cell inventVar    (Void) { return mkVar(inventText()); }
-CUDDLES_inline Cell mkDictVar    (Text t) { return ap(DICTVAR,t); }
-CUDDLES_inline Cell inventDictVar(Void) { return mkDictVar(inventDictText()); }
-CUDDLES_inline Cell mkStr    (Text t) { return ap(STRCELL,t); }
-CUDDLES_inline Bool isFloat  (Cell c) { return isPair(c) && fst(c)==FLOATCELL; }
-CUDDLES_inline Bool isDouble (Cell c) { return isPair(c) && fst(c)==DOUBLECELL; }
-CUDDLES_inline Bool isPtr    (Cell c) { return isPair(c) && fst(c)==PTRCELL; }
+CUDDLES_inline Bool isNull(Cell c) {
+    return c == NIL;
+}
+CUDDLES_inline Bool nonNull(Cell c) {
+    return c != NIL;
+}
 
-CUDDLES_inline Cell triple    (Cell x, Cell y, Cell z) { return pair(x,pair(y,z)); }
-CUDDLES_inline List cons      (Cell x, List xs) { return pair(x,xs); }
-CUDDLES_inline List singleton (Cell x) { return cons(x,NIL); }
-CUDDLES_inline Cell ap2 (Cell f, Cell x, Cell y) { return ap(ap(f,x),y); }
-CUDDLES_inline Cell ap3 (Cell f, Cell x, Cell y, Cell z) { return ap(ap(ap(f,x),y),z); }
+CUDDLES_inline Bool isTuple(Cell c) {
+    return TUPMIN <= c && c < OFFMIN;
+}
+CUDDLES_inline Int tupleOf(Cell c) {
+    return (Int)(c - TUPMIN);
+}
+CUDDLES_inline Bool isOffset(Cell c) {
+    return OFFMIN <= c && c < MODMIN;
+}
+CUDDLES_inline Int offsetOf(Cell c) {
+    return c - OFFMIN;
+}
+CUDDLES_inline Bool isModule(Cell c) {
+    return MODMIN <= c && c < TYCMIN;
+}
+CUDDLES_inline Bool isTycon(Cell c) {
+    return TYCMIN <= c && c < NAMEMIN;
+}
+CUDDLES_inline Bool isName(Cell c) {
+    return NAMEMIN <= c && c < INSTMIN;
+}
+CUDDLES_inline Bool isInst(Cell c) {
+    return INSTMIN <= c && c < CLASSMIN;
+}
+CUDDLES_inline Bool isClass(Cell c) {
+    return CLASSMIN <= c && c < CHARMIN;
+}
+CUDDLES_inline Bool isShortChar(Cell c) {
+    return CHARMIN <= c && c < INTMIN;
+}
+CUDDLES_inline Bool isSmall(Cell c) {
+    return INTMIN <= c;
+}
+CUDDLES_inline Cell mkDigit(Int c) {
+    return (Cell)(c + INTMIN);
+}
+CUDDLES_inline Int digitOf(Cell c) {
+    return (Int)(c - INTMIN);
+}
 
-CUDDLES_inline Bool IS_STANDARD_HANDLE(Int h) { return h<=2; }
-extern	Cell	     cellIsMember  (Cell,List);
-extern  Cell         cellAssoc     (Cell,List);
-extern  Cell         cellRevAssoc  (Cell,List);
-extern	List	     concat	   (List);
-extern	List	     intersect	   (List,List);
-extern	Cell	     varIsMember   (Text,List);
-extern	Name	     nameIsMember  (Text,List);
-extern	Name	     nameInIEList  (Name,List);
-extern	Tycon	     tyconInIEList (Text,List);
-extern	Class	     classInIEList (Text,List);
-extern  Cell	     intIsMember   (Int,List);
-extern	List	     replicate	   (Int,Cell);
-extern	List	     diffList	   (List,List);	/* destructive	   */
-extern  List         deleteCell    (List,Cell);	/* non-destructive */
-extern  List	     take	   (Int,List);	/* destructive	   */
-extern  List	     splitAt	   (Int,List);	/* non-destructive */
-extern  Cell	     nth	   (Int,List);
-extern  List	     removeCell	   (Cell,List);	/* destructive	   */
-extern  List         nubList       (List);        /* non-destructive */
+CUDDLES_inline Bool isSynonym(Cell h) {
+    return isTycon(h) && tycon(h).what == SYNONYM;
+}
+CUDDLES_inline Bool isNewtype(Cell h) {
+    return isTycon(h) && tycon(h).what == NEWTYPE;
+}
+
+CUDDLES_inline Bool isQualType(Cell t) {
+    return isPair(t) && fst(t) == QUAL;
+}
+CUDDLES_inline Bool isPolyType(Cell t) {
+    return isPair(t) && fst(t) == POLYTYPE;
+}
+CUDDLES_inline Bool isPolyOrQualType(Cell t) {
+    return isPair(t) && (fst(t) == POLYTYPE || fst(t) == QUAL);
+}
+CUDDLES_inline Type mkPolyType(Kinds ks, Type t) {
+    return pair(POLYTYPE, pair(ks, t));
+}
+
+CUDDLES_inline Bool isSfun(Name n) {
+    return name(n).number == SELNAME;
+}
+CUDDLES_inline Bool isDfun(Name n) {
+    return name(n).number == DFUNNAME;
+}
+CUDDLES_inline Bool isCfun(Name n) {
+    return name(n).number >= CFUNNAME;
+}
+CUDDLES_inline Int cfunOf(Name n) {
+    return name(n).number - CFUNNAME;
+}
+CUDDLES_inline Int cfunNo(Int i) {
+    return i + CFUNNAME;
+}
+CUDDLES_inline Bool isMfun(Name n) {
+    return name(n).number < 0;
+}
+CUDDLES_inline Int mfunOf(Name n) {
+    return (-1) - name(n).number;
+}
+CUDDLES_inline Int mfunNo(Int i) {
+    return (-1) - i;
+}
+CUDDLES_inline Bool hasCfun(List cs) {
+    return nonNull(cs) && isCfun(hd(cs));
+}
+
+CUDDLES_inline Text textOf(Cell c) {
+    return (Text)snd(c);
+} /* c :: (VAR|CON)(ID|OP) */
+CUDDLES_inline Text qmodOf(Cell c) {
+    return textOf(fst(snd(c)));
+} /* c :: QUALIDENT */
+CUDDLES_inline Text qtextOf(Cell c) {
+    return textOf(snd(snd(c)));
+}
+CUDDLES_inline Int intValOf(Cell c) {
+    return (Int)snd(c);
+}
+CUDDLES_inline Cell mkVar(Text t) {
+    return ap(VARIDCELL, t);
+}
+CUDDLES_inline Cell mkVarop(Text t) {
+    return ap(VAROPCELL, t);
+}
+CUDDLES_inline Cell mkCon(Text t) {
+    return ap(CONIDCELL, t);
+}
+CUDDLES_inline Cell mkConop(Text t) {
+    return ap(CONOPCELL, t);
+}
+CUDDLES_inline Cell mkQId(Text m, Cell c) {
+    return ap(QUALIDENT, pair(mkCon(m), c));
+}
+CUDDLES_inline Cell mkQVar(Text m, Text t) {
+    return mkQId(m, mkVar(t));
+}
+CUDDLES_inline Cell mkQCon(Text m, Text t) {
+    return mkQId(m, mkCon(t));
+}
+CUDDLES_inline Cell mkQVarOp(Text m, Text t) {
+    return mkQId(m, mkVarop(t));
+}
+CUDDLES_inline Cell mkQConOp(Text m, Text t) {
+    return mkQId(m, mkConop(t));
+}
+CUDDLES_inline Text mkNestedQual(Cell c) {
+    return findText(identToStr(c));
+} /* fragile... */
+CUDDLES_inline Cell inventVar(Void) {
+    return mkVar(inventText());
+}
+CUDDLES_inline Cell mkDictVar(Text t) {
+    return ap(DICTVAR, t);
+}
+CUDDLES_inline Cell inventDictVar(Void) {
+    return mkDictVar(inventDictText());
+}
+CUDDLES_inline Cell mkStr(Text t) {
+    return ap(STRCELL, t);
+}
+CUDDLES_inline Bool isFloat(Cell c) {
+    return isPair(c) && fst(c) == FLOATCELL;
+}
+CUDDLES_inline Bool isDouble(Cell c) {
+    return isPair(c) && fst(c) == DOUBLECELL;
+}
+CUDDLES_inline Bool isPtr(Cell c) {
+    return isPair(c) && fst(c) == PTRCELL;
+}
+
+CUDDLES_inline Cell triple(Cell x, Cell y, Cell z) {
+    return pair(x, pair(y, z));
+}
+CUDDLES_inline List cons(Cell x, List xs) {
+    return pair(x, xs);
+}
+CUDDLES_inline List singleton(Cell x) {
+    return cons(x, NIL);
+}
+CUDDLES_inline Cell ap2(Cell f, Cell x, Cell y) {
+    return ap(ap(f, x), y);
+}
+CUDDLES_inline Cell ap3(Cell f, Cell x, Cell y, Cell z) {
+    return ap(ap(ap(f, x), y), z);
+}
+
+CUDDLES_inline Bool IS_STANDARD_HANDLE(Int h) {
+    return h <= 2;
+}
+extern Cell cellIsMember(Cell, List);
+extern Cell cellAssoc(Cell, List);
+extern Cell cellRevAssoc(Cell, List);
+extern List concat(List);
+extern List intersect(List, List);
+extern Cell varIsMember(Text, List);
+extern Name nameIsMember(Text, List);
+extern Name nameInIEList(Name, List);
+extern Tycon tyconInIEList(Text, List);
+extern Class classInIEList(Text, List);
+extern Cell intIsMember(Int, List);
+extern List replicate(Int, Cell);
+extern List diffList(List, List);   /* destructive         */
+extern List deleteCell(List, Cell); /* non-destructive */
+extern List take(Int, List);        /* destructive         */
+extern List splitAt(Int, List);     /* non-destructive */
+extern Cell nth(Int, List);
+extern List removeCell(Cell, List); /* destructive         */
+extern List nubList(List);          /* non-destructive */
 
 /* The following macros provide `inline expansion' of some common ways of
  * traversing, using and modifying lists:
  *
  * N.B. We use the names _f, _a, _xs, Zs, in an attempt to avoid clashes
- *	with identifiers used elsewhere.
+ *      with identifiers used elsewhere.
  */
 
-#define mapBasic(_init,_step)		{List Zs=(_init);\
-					 for(;nonNull(Zs);Zs=tl(Zs))  \
-					 _step;}
-#define mapModify(_init,_step)		mapBasic(_init,hd(Zs)=_step)
+#define mapBasic(_init, _step)                                                 \
+    {                                                                          \
+        List Zs = (_init);                                                     \
+        for (; nonNull(Zs); Zs = tl(Zs))                                       \
+            _step;                                                             \
+    }
+#define mapModify(_init, _step) mapBasic(_init, hd(Zs) = _step)
 
-#define mapProc(_f,_xs)			mapBasic(_xs,_f(hd(Zs)))
-#define map1Proc(_f,_a,_xs)		mapBasic(_xs,_f(_a,hd(Zs)))
-#define map2Proc(_f,_a,_b,_xs)		mapBasic(_xs,_f(_a,_b,hd(Zs)))
-#define map3Proc(_f,_a,_b,_c,_xs)	mapBasic(_xs,_f(_a,_b,_c,hd(Zs)))
-#define map4Proc(_f,_a,_b,_c,_d,_xs)	mapBasic(_xs,_f(_a,_b,_c,_d,hd(Zs)))
+#define mapProc(_f, _xs) mapBasic(_xs, _f(hd(Zs)))
+#define map1Proc(_f, _a, _xs) mapBasic(_xs, _f(_a, hd(Zs)))
+#define map2Proc(_f, _a, _b, _xs) mapBasic(_xs, _f(_a, _b, hd(Zs)))
+#define map3Proc(_f, _a, _b, _c, _xs) mapBasic(_xs, _f(_a, _b, _c, hd(Zs)))
+#define map4Proc(_f, _a, _b, _c, _d, _xs)                                      \
+    mapBasic(_xs, _f(_a, _b, _c, _d, hd(Zs)))
 
-#define mapOver(_f,_xs)			mapModify(_xs,_f(hd(Zs)))
-#define map1Over(_f,_a,_xs)		mapModify(_xs,_f(_a,hd(Zs)))
-#define map2Over(_f,_a,_b,_xs)		mapModify(_xs,_f(_a,_b,hd(Zs)))
-#define map3Over(_f,_a,_b,_c,_xs)	mapModify(_xs,_f(_a,_b,_c,hd(Zs)))
-#define map4Over(_f,_a,_b,_c,_d,_xs)	mapModify(_xs,_f(_a,_b,_c,_d,hd(Zs)))
+#define mapOver(_f, _xs) mapModify(_xs, _f(hd(Zs)))
+#define map1Over(_f, _a, _xs) mapModify(_xs, _f(_a, hd(Zs)))
+#define map2Over(_f, _a, _b, _xs) mapModify(_xs, _f(_a, _b, hd(Zs)))
+#define map3Over(_f, _a, _b, _c, _xs) mapModify(_xs, _f(_a, _b, _c, hd(Zs)))
+#define map4Over(_f, _a, _b, _c, _d, _xs)                                      \
+    mapModify(_xs, _f(_a, _b, _c, _d, hd(Zs)))
 
 /* This is just what you want for functions with accumulating parameters */
-#define mapAccum(_f,_acc,_xs) 	        mapBasic(_xs,_acc=_f(_acc,hd(Zs)))
-#define map1Accum(_f,_acc,_a,_xs)	mapBasic(_xs,_acc=_f(_acc,_a,hd(Zs)))
-#define map2Accum(_f,_acc,_a,_b,_xs)	mapBasic(_xs,_acc=_f(_acc,_a,_b,hd(Zs)))
-#define map3Accum(_f,_acc,_a,_b,_c,_xs) mapBasic(_xs,_acc=_f(_acc,_a,_b,_c,hd(Zs)))
+#define mapAccum(_f, _acc, _xs) mapBasic(_xs, _acc = _f(_acc, hd(Zs)))
+#define map1Accum(_f, _acc, _a, _xs) mapBasic(_xs, _acc = _f(_acc, _a, hd(Zs)))
+#define map2Accum(_f, _acc, _a, _b, _xs)                                       \
+    mapBasic(_xs, _acc = _f(_acc, _a, _b, hd(Zs)))
+#define map3Accum(_f, _acc, _a, _b, _c, _xs)                                   \
+    mapBasic(_xs, _acc = _f(_acc, _a, _b, _c, hd(Zs)))
 
 /* --------------------------------------------------------------------------
  * Implementation of function application nodes:
  * ------------------------------------------------------------------------*/
 
-#define fun(c)	     fst(c)
-#define arg(c)	     snd(c)
-extern	Cell	     getHead	 (Cell);
-extern	List	     getArgs	 (Cell);
-extern	Int	     argCount;
-extern  Cell         nthArg	 (Int,Cell);
-extern  Int	     numArgs	 (Cell);
-extern  Cell	     applyToArgs (Cell,List);
+#define fun(c) fst(c)
+#define arg(c) snd(c)
+extern Cell getHead(Cell);
+extern List getArgs(Cell);
+extern Int argCount;
+extern Cell nthArg(Int, Cell);
+extern Int numArgs(Cell);
+extern Cell applyToArgs(Cell, List);
 
 /* --------------------------------------------------------------------------
  * Stack implementation:
@@ -898,24 +1032,43 @@ extern  Cell	     applyToArgs (Cell,List);
  *     For example, "push(1+pop());" doesn't increment TOS.
  * ------------------------------------------------------------------------*/
 
-extern  Cell DECTABLE(cellStack);
-extern	StackPtr sp;
+extern Cell DECTABLE(cellStack);
+extern StackPtr sp;
 
-#define stack(p)     cellStack[p]		/* lvalues: assigned through	   */
-#define top()	     stack(sp)
-#define pushed(n)    stack(sp-(n))
-extern  Void	     cuddlesStackOverflow (Void);
+#define stack(p) cellStack[p] /* lvalues: assigned through         */
+#define top() stack(sp)
+#define pushed(n) stack(sp - (n))
+extern Void cuddlesStackOverflow(Void);
 
-CUDDLES_inline Void clearStack(Void) { sp = -1; }
-CUDDLES_inline Bool stackEmpty(Void) { return sp==-1; }
-CUDDLES_inline Void chkStack  (Int n)  { if (sp>=NUM_STACK-n) cuddlesStackOverflow(); }
-CUDDLES_inline Void onto      (Cell c) { stack(++sp) = c; }	/* push, unchecked */
-CUDDLES_inline Void push      (Cell c) { chkStack(1); onto(c); }
-CUDDLES_inline Cell pop       (Void)   { return stack(sp--); }
-CUDDLES_inline Void drop      (Void)   { sp--; }
-CUDDLES_inline Void topfun    (Cell f) { top() = ap(f,top()); }
-CUDDLES_inline Void toparg    (Cell x) { top() = ap(top(),x); }
-
+CUDDLES_inline Void clearStack(Void) {
+    sp = -1;
+}
+CUDDLES_inline Bool stackEmpty(Void) {
+    return sp == -1;
+}
+CUDDLES_inline Void chkStack(Int n) {
+    if (sp >= NUM_STACK - n)
+        cuddlesStackOverflow();
+}
+CUDDLES_inline Void onto(Cell c) {
+    stack(++sp) = c;
+} /* push, unchecked */
+CUDDLES_inline Void push(Cell c) {
+    chkStack(1);
+    onto(c);
+}
+CUDDLES_inline Cell pop(Void) {
+    return stack(sp--);
+}
+CUDDLES_inline Void drop(Void) {
+    sp--;
+}
+CUDDLES_inline Void topfun(Cell f) {
+    top() = ap(f, top());
+}
+CUDDLES_inline Void toparg(Cell x) {
+    top() = ap(top(), x);
+}
 
 /* STACK_CHECK compares the address of a local variable against a limit
  * derived from CStackBase (machdep.c) and the process's stack rlimit, so
@@ -926,13 +1079,13 @@ CUDDLES_inline Void toparg    (Cell x) { top() = ap(top(),x); }
  * limit starts out as the highest address, so the first check always
  * takes the slow path, cStackCheck (machine.c), which computes it.
  */
-extern  char *cStackLimit;
-extern  Void  cStackCheck	 (Void);
-CUDDLES_inline Void stackCheck(Void)	/* call at the top of a recursive  */
-{					/* function; inlined, so the probe */
-    char cStackProbe;			/* is in the caller's frame	   */
+extern char *cStackLimit;
+extern Void cStackCheck(Void);
+CUDDLES_inline Void stackCheck(Void) /* call at the top of a recursive  */
+{                                   /* function; inlined, so the probe */
+    char cStackProbe;               /* is in the caller's frame    */
     if (&cStackProbe <= cStackLimit)
-	cStackCheck();
+        cStackCheck();
 }
 
 /* --------------------------------------------------------------------------
@@ -940,91 +1093,92 @@ CUDDLES_inline Void stackCheck(Void)	/* call at the top of a recursive  */
  * The implementation of script file storage is hidden.
  * ------------------------------------------------------------------------*/
 
-extern Script	   startNewScript   (String);
-extern Bool        moduleThisScript (Module);
-extern Module      moduleOfScript   (Script);
-extern Bool        isPreludeScript  (Void);
-extern Module      lastModule       (Void);
-extern Script	   scriptThisFile   (Text);
-extern Script	   scriptThisName   (Name);
-extern Script	   scriptThisTycon  (Tycon);
-extern Script	   scriptThisInst   (Inst);
-extern Script	   scriptThisClass  (Class);
-extern String      fileOfModule     (Module);
-extern Void	   dropAScript      (Script);
-extern Void	   dropScriptsFrom  (Script);
-extern Void        setScriptPrims   (void*);
+extern Script startNewScript(String);
+extern Bool moduleThisScript(Module);
+extern Module moduleOfScript(Script);
+extern Bool isPreludeScript(Void);
+extern Module lastModule(Void);
+extern Script scriptThisFile(Text);
+extern Script scriptThisName(Name);
+extern Script scriptThisTycon(Tycon);
+extern Script scriptThisInst(Inst);
+extern Script scriptThisClass(Class);
+extern String fileOfModule(Module);
+extern Void dropAScript(Script);
+extern Void dropScriptsFrom(Script);
+extern Void setScriptPrims(void *);
 
 /* --------------------------------------------------------------------------
  * I/O Handles:
  * ------------------------------------------------------------------------*/
 
-#define HSTDIN		0	/* Numbers for standard handles		   */
-#define HSTDOUT		1
-#define HSTDERR		2
+#define HSTDIN 0 /* Numbers for standard handles                   */
+#define HSTDOUT 1
+#define HSTDERR 2
 
-struct strHandle {		/* Handle description and status flags	   */
-    Cell  hcell;		/* Heap representation of handle (or NIL)  */
-    FILE  *hfp;			/* Corresponding file pointer		   */
-    Int   hmode;		/* Current mode: see below		   */
-    Int   hbufMode;             /* Buffering mode.                         */
-    Int   hbufSize;             /* < 0 => not yet known.                   */
-    Int   hRWState;		/* State of a READWRITE handle (see below) */
+struct strHandle { /* Handle description and status flags          */
+    Cell hcell;    /* Heap representation of handle (or NIL)  */
+    FILE *hfp;     /* Corresponding file pointer                   */
+    Int hmode;     /* Current mode: see below              */
+    Int hbufMode;  /* Buffering mode.                         */
+    Int hbufSize;  /* < 0 => not yet known.                   */
+    Int hRWState;  /* State of a READWRITE handle (see below) */
 #if CHAR_ENCODING
-    Bool  hBinaryMode;		/* TRUE => Handle opened in binary mode    */
-    Char  hLookAhead;		/* Char read by hLookAhead (or <0 if none) */
-    				/* This is only used in text mode.         */
+    Bool hBinaryMode; /* TRUE => Handle opened in binary mode    */
+    Char hLookAhead;  /* Char read by hLookAhead (or <0 if none) */
+                      /* This is only used in text mode.         */
 #endif
 };
 
-#define HCLOSED		0000	/* no I/O permitted			   */
-#define HSEMICLOSED     0001	/* semiclosed reads only		   */
-#define HREAD		0002	/* set to enable reads from handle 	   */
-#define HWRITE		0004	/* set to enable writes to handle	   */
-#define HAPPEND		0010	/* opened in append mode		   */
-#define HREADWRITE      0020    /* set to enable both reading and writing  */
+#define HCLOSED 0000     /* no I/O permitted                       */
+#define HSEMICLOSED 0001 /* semiclosed reads only                  */
+#define HREAD 0002       /* set to enable reads from handle        */
+#define HWRITE 0004      /* set to enable writes to handle         */
+#define HAPPEND 0010     /* opened in append mode                  */
+#define HREADWRITE 0020  /* set to enable both reading and writing  */
 
-#define HUNKNOWN_BUFFERING (-1) /* the buffering mode of a handle is lazily
-				   determined. */
+#define HUNKNOWN_BUFFERING                                                     \
+    (-1) /* the buffering mode of a handle is lazily
+                                   determined. */
 
-#define HANDLE_NOTBUFFERED    1
-#define HANDLE_LINEBUFFERED   2
-#define HANDLE_BLOCKBUFFERED  3
+#define HANDLE_NOTBUFFERED 1
+#define HANDLE_LINEBUFFERED 2
+#define HANDLE_BLOCKBUFFERED 3
 
-#define RW_NEUTRAL            0 /* r/w stream was just opened/at EOF/seeked */
-#define RW_READING            1 /* last operation on r/w stream was reading */
-#define RW_WRITING            2 /* last operation on r/w stream was writing */
+#define RW_NEUTRAL 0 /* r/w stream was just opened/at EOF/seeked */
+#define RW_READING 1 /* last operation on r/w stream was reading */
+#define RW_WRITING 2 /* last operation on r/w stream was writing */
 
-#define	NO_HANDLE          (-1)
+#define NO_HANDLE (-1)
 
-extern unsigned long     num_handles;
-extern DynTable*         dynTabHandles;
-extern struct strHandle* handles;
+extern unsigned long num_handles;
+extern DynTable *dynTabHandles;
+extern struct strHandle *handles;
 
 /* --------------------------------------------------------------------------
  * Malloc Pointers
  * ------------------------------------------------------------------------*/
 
-struct strMallocPtr {		/* Malloc Ptr description                  */
-    Cell mpcell;		/* Back pointer to MPCELL                  */
-    Void *ptr;			/* Pointer into C world                    */
-    Int  refCount;              /* Reference count                         */
-    Cell finalizers;		/* List of finalizer functions             */
-    				/* or (finalizer, envptr) pairs		   */
+struct strMallocPtr { /* Malloc Ptr description                  */
+    Cell mpcell;      /* Back pointer to MPCELL                  */
+    Void *ptr;        /* Pointer into C world                    */
+    Int refCount;     /* Reference count                         */
+    Cell finalizers;  /* List of finalizer functions             */
+                      /* or (finalizer, envptr) pairs              */
 };
 
-typedef Void (*CFinalizer)       (Pointer);
-typedef Void (*CFinalizerEnv)    (Pointer, Pointer);
+typedef Void (*CFinalizer)(Pointer);
+typedef Void (*CFinalizerEnv)(Pointer, Pointer);
 
-extern struct strMallocPtr       mallocPtrs[];
-extern Cell   newMallocPtr       (Void *);
-extern Cell   mkMallocPtr        (Void *, CFinalizer);
-extern Void   freeMallocPtr      (Cell);
-extern Void   incMallocPtrRefCnt (Int, Int);
+extern struct strMallocPtr mallocPtrs[];
+extern Cell newMallocPtr(Void *);
+extern Cell mkMallocPtr(Void *, CFinalizer);
+extern Void freeMallocPtr(Cell);
+extern Void incMallocPtrRefCnt(Int, Int);
 
-extern Int    mallocPtr_hw;
+extern Int mallocPtr_hw;
 
-#define mpOf(c)	   snd(c)
+#define mpOf(c) snd(c)
 #define derefMP(c) (mallocPtrs[(Int)mpOf(c)].ptr)
 
 /* --------------------------------------------------------------------------
@@ -1043,34 +1197,31 @@ extern List liveWeakPtrs;
 
 #include "HsFFI.h"
 
-extern Int              part1Int64      (HsInt64);
-extern Int              part2Int64      (HsInt64);
-extern HsInt64          int64FromParts  (Int,Int);
+extern Int part1Int64(HsInt64);
+extern Int part2Int64(HsInt64);
+extern HsInt64 int64FromParts(Int, Int);
 
 /* --------------------------------------------------------------------------
  * Stable pointers
  * ------------------------------------------------------------------------*/
 
-extern  Int         mkStablePtr    (Cell);
-extern  Cell        derefStablePtr (Int);
-extern  Void        freeStablePtr  (Int);
+extern Int mkStablePtr(Cell);
+extern Cell derefStablePtr(Int);
+extern Void freeStablePtr(Int);
 
 /* --------------------------------------------------------------------------
  * Misc:
  * ------------------------------------------------------------------------*/
 
-extern  Void   setLastExpr       (Cell);
-extern  Cell   getLastExpr       (Void);
-extern  List   addTyconsMatching (String,List);
-extern  List   addNamesMatching  (String,List);
+extern Void setLastExpr(Cell);
+extern Cell getLastExpr(Void);
+extern List addTyconsMatching(String, List);
+extern List addNamesMatching(String, List);
 
 /*-------------------------------------------------------------------------*/
 
 /* whatIs1 is faster than whatIs, but it will return NIL if fst(c) is NIL
  * Used with care in the right places it gains us speed.
  */
-
-
-
 
 #endif /* __STORAGE_H__ */

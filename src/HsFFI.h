@@ -1,19 +1,19 @@
 #ifndef __HSFFI_H__
 #define __HSFFI_H__
 
-typedef unsigned char      cuddles_uint8_t;
-typedef unsigned short     cuddles_uint16_t;
-typedef unsigned int       cuddles_uint32_t;
-typedef signed   char      cuddles_int8_t;
-typedef signed   short     cuddles_int16_t;
-typedef signed   int       cuddles_int32_t;
-# ifdef _MSC_VER
-typedef unsigned __int64   cuddles_uint64_t;
-typedef          __int64   cuddles_int64_t;
-# else
+typedef unsigned char cuddles_uint8_t;
+typedef unsigned short cuddles_uint16_t;
+typedef unsigned int cuddles_uint32_t;
+typedef signed char cuddles_int8_t;
+typedef signed short cuddles_int16_t;
+typedef signed int cuddles_int32_t;
+#ifdef _MSC_VER
+typedef unsigned __int64 cuddles_uint64_t;
+typedef __int64 cuddles_int64_t;
+#else
 typedef unsigned long long cuddles_uint64_t;
-typedef signed   long long cuddles_int64_t;
-# endif
+typedef signed long long cuddles_int64_t;
+#endif
 
 /* 
  * The test on __PRELUDE_H__ (the include guard of prelude.h) is a crude
@@ -23,117 +23,117 @@ typedef signed   long long cuddles_int64_t;
 
 #ifdef __PRELUDE_H__ /* #included into Cuddles */
 
-typedef Int            HsInt;        
-typedef Int8           HsInt8;         
-typedef Int16          HsInt16;        
-typedef Int            HsInt32;        
-typedef unsigned int   HsWord;       
-typedef unsigned char  HsWord8;        
-typedef unsigned short HsWord16;       
-typedef unsigned int   HsWord32;       
+typedef Int HsInt;
+typedef Int8 HsInt8;
+typedef Int16 HsInt16;
+typedef Int HsInt32;
+typedef unsigned int HsWord;
+typedef unsigned char HsWord8;
+typedef unsigned short HsWord16;
+typedef unsigned int HsWord32;
 
 #else /* #included into user-provided C code */
 
-typedef int            HsInt;        
-typedef cuddles_int8_t    HsInt8;         
-typedef cuddles_int16_t   HsInt16;        
-typedef cuddles_int32_t   HsInt32;        
-typedef unsigned int   HsWord;       
-typedef cuddles_uint8_t   HsWord8;        
-typedef cuddles_uint16_t  HsWord16;       
-typedef cuddles_uint32_t  HsWord32;       
+typedef int HsInt;
+typedef cuddles_int8_t HsInt8;
+typedef cuddles_int16_t HsInt16;
+typedef cuddles_int32_t HsInt32;
+typedef unsigned int HsWord;
+typedef cuddles_uint8_t HsWord8;
+typedef cuddles_uint16_t HsWord16;
+typedef cuddles_uint32_t HsWord32;
 
-#endif   
+#endif
 
 /* 
  * Here we deviate from the FFI specification:
  * If we make them both float, then there's no way to pass a double
  * to C which means we can't call common C functions like sin.
- */           
-typedef float          HsFloat;      
-typedef double         HsDouble;     
+ */
+typedef float HsFloat;
+typedef double HsDouble;
 
-typedef cuddles_int64_t   HsInt64;        
-typedef cuddles_uint64_t  HsWord64;       
-typedef int            HsChar;
-typedef int            HsBool;         
-typedef void*          HsAddr;       
-typedef void*          HsPtr;          
-typedef void           (*HsFunPtr)(void);
-typedef void*          HsForeignPtr;   
-typedef void*          HsStablePtr;  
-                       
-#define HS_CHAR_MIN             0
-#define HS_CHAR_MAX             0x10FFFF
-#define HS_BOOL_FALSE           0
-#define HS_BOOL_TRUE            1
-#define HS_BOOL_MIN             HS_BOOL_FALSE
-#define HS_BOOL_MAX             HS_BOOL_TRUE
-#define HS_INT_MIN              __INT32_MIN
-#define HS_INT_MAX              __INT32_MAX
-#define HS_INT8_MIN             __INT8_MIN
-#define HS_INT8_MAX             __INT8_MAX
-#define HS_INT16_MIN            __INT16_MIN
-#define HS_INT16_MAX            __INT16_MAX
-#define HS_INT32_MIN            __INT32_MIN
-#define HS_INT32_MAX            __INT32_MAX
-#define HS_INT64_MIN            __INT64_MIN
-#define HS_INT64_MAX            __INT64_MAX
-#define HS_WORD8_MAX            __UINT8_MAX
-#define HS_WORD16_MAX           __UINT16_MAX
-#define HS_WORD32_MAX           __UINT32_MAX
-#define HS_WORD64_MAX           __UINT64_MAX
+typedef cuddles_int64_t HsInt64;
+typedef cuddles_uint64_t HsWord64;
+typedef int HsChar;
+typedef int HsBool;
+typedef void *HsAddr;
+typedef void *HsPtr;
+typedef void (*HsFunPtr)(void);
+typedef void *HsForeignPtr;
+typedef void *HsStablePtr;
+
+#define HS_CHAR_MIN 0
+#define HS_CHAR_MAX 0x10FFFF
+#define HS_BOOL_FALSE 0
+#define HS_BOOL_TRUE 1
+#define HS_BOOL_MIN HS_BOOL_FALSE
+#define HS_BOOL_MAX HS_BOOL_TRUE
+#define HS_INT_MIN __INT32_MIN
+#define HS_INT_MAX __INT32_MAX
+#define HS_INT8_MIN __INT8_MIN
+#define HS_INT8_MAX __INT8_MAX
+#define HS_INT16_MIN __INT16_MIN
+#define HS_INT16_MAX __INT16_MAX
+#define HS_INT32_MIN __INT32_MIN
+#define HS_INT32_MAX __INT32_MAX
+#define HS_INT64_MIN __INT64_MIN
+#define HS_INT64_MAX __INT64_MAX
+#define HS_WORD8_MAX __UINT8_MAX
+#define HS_WORD16_MAX __UINT16_MAX
+#define HS_WORD32_MAX __UINT32_MAX
+#define HS_WORD64_MAX __UINT64_MAX
 
 #ifndef __PRELUDE_H__
 
-#include <float.h>
+# include <float.h>
 
-#define HS_FLOAT_RADIX         FLT_RADIX
-#define HS_FLOAT_ROUNDS        FLT_ROUNDS
-#define HS_FLOAT_EPSILON       FLT_EPSILON
-#define HS_FLOAT_DIG           FLT_DIG
-#define HS_FLOAT_MANT_DIG      FLT_MANT_DIG
-#define HS_FLOAT_MIN           FLT_MIN
-#define HS_FLOAT_MIN_EXP       FLT_MIN_EXP
-#define HS_FLOAT_MIN_10_EXP    FLT_MIN_10_EXP
-#define HS_FLOAT_MAX           FLT_MAX
-#define HS_FLOAT_MAX_EXP       FLT_MAX_EXP
-#define HS_FLOAT_MAX_10_EXP    FLT_MAX_10_EXP
+# define HS_FLOAT_RADIX FLT_RADIX
+# define HS_FLOAT_ROUNDS FLT_ROUNDS
+# define HS_FLOAT_EPSILON FLT_EPSILON
+# define HS_FLOAT_DIG FLT_DIG
+# define HS_FLOAT_MANT_DIG FLT_MANT_DIG
+# define HS_FLOAT_MIN FLT_MIN
+# define HS_FLOAT_MIN_EXP FLT_MIN_EXP
+# define HS_FLOAT_MIN_10_EXP FLT_MIN_10_EXP
+# define HS_FLOAT_MAX FLT_MAX
+# define HS_FLOAT_MAX_EXP FLT_MAX_EXP
+# define HS_FLOAT_MAX_10_EXP FLT_MAX_10_EXP
 
-#define HS_DOUBLE_RADIX         DBL_RADIX
-#define HS_DOUBLE_ROUNDS        DBL_ROUNDS
-#define HS_DOUBLE_EPSILON       DBL_EPSILON
-#define HS_DOUBLE_DIG           DBL_DIG
-#define HS_DOUBLE_MANT_DIG      DBL_MANT_DIG
-#define HS_DOUBLE_MIN           DBL_MIN
-#define HS_DOUBLE_MIN_EXP       DBL_MIN_EXP
-#define HS_DOUBLE_MIN_10_EXP    DBL_MIN_10_EXP
-#define HS_DOUBLE_MAX           DBL_MAX
-#define HS_DOUBLE_MAX_EXP       DBL_MAX_EXP
-#define HS_DOUBLE_MAX_10_EXP    DBL_MAX_10_EXP
+# define HS_DOUBLE_RADIX DBL_RADIX
+# define HS_DOUBLE_ROUNDS DBL_ROUNDS
+# define HS_DOUBLE_EPSILON DBL_EPSILON
+# define HS_DOUBLE_DIG DBL_DIG
+# define HS_DOUBLE_MANT_DIG DBL_MANT_DIG
+# define HS_DOUBLE_MIN DBL_MIN
+# define HS_DOUBLE_MIN_EXP DBL_MIN_EXP
+# define HS_DOUBLE_MIN_10_EXP DBL_MIN_10_EXP
+# define HS_DOUBLE_MAX DBL_MAX
+# define HS_DOUBLE_MAX_EXP DBL_MAX_EXP
+# define HS_DOUBLE_MAX_10_EXP DBL_MAX_10_EXP
 
 #endif /* included into user code */
 
-typedef int            CuddlesStackPtr;
-typedef void*          CuddlesForeign;   
-typedef int            CuddlesStablePtr;  
+typedef int CuddlesStackPtr;
+typedef void *CuddlesForeign;
+typedef int CuddlesStablePtr;
 
-typedef void (*CuddlesPrim) (CuddlesStackPtr); /* primitive function	   */
+typedef void (*CuddlesPrim)(CuddlesStackPtr); /* primitive function          */
 
 #ifndef __PRELUDE_H__
-struct cuddles_primitive {		         /* table of primitives		   */
-    char*  ref;				 /* primitive reference string	   */
-    int	   arity;			 /* primitive function arity	   */
-    CuddlesPrim imp;		         /* primitive implementation	   */
+struct cuddles_primitive { /* table of primitives                   */
+    char *ref;            /* primitive reference string    */
+    int arity;            /* primitive function arity      */
+    CuddlesPrim imp;       /* primitive implementation      */
 };
 
 struct cuddles_primInfo {
-    void                  (*controlFun)(int);
+    void (*controlFun)(int);
     struct cuddles_primitive *primFuns;
-    struct cuddles_primInfo  *nextPrimInfo;
+    struct cuddles_primInfo *nextPrimInfo;
 };
 #else
-#define cuddles_primInfo primInfo
+# define cuddles_primInfo primInfo
 #endif
 
 /* API Version number */
@@ -141,68 +141,68 @@ struct cuddles_primInfo {
 
 typedef struct {
 
-  /* evaluate next argument */
-  HsBool         (*getBool)        (void);
-  HsInt          (*getInt)         (void);
-  HsWord         (*getWord)        (void);
-  HsAddr    	 (*getAddr)        (void);
-  HsFloat        (*getFloat)       (void);
-  HsDouble       (*getDouble)      (void);
-  HsChar         (*getChar)        (void);
-  CuddlesForeign    (*getForeign)     (void);
-  HsStablePtr    (*getStablePtr4)  (void);
-  HsInt8         (*getInt8)        (void);
-  HsInt16        (*getInt16)       (void);
-  HsInt32        (*getInt32)       (void);
-  HsInt64        (*getInt64)       (void);
-  HsWord8        (*getWord8)       (void);
-  HsWord16       (*getWord16)      (void);
-  HsWord32       (*getWord32)      (void);
-  HsWord64       (*getWord64)      (void);
-  HsPtr          (*getPtr)         (void);
-  HsFunPtr       (*getFunPtr)      (void);
-  HsForeignPtr   (*getForeignPtr)  (void);
+    /* evaluate next argument */
+    HsBool (*getBool)(void);
+    HsInt (*getInt)(void);
+    HsWord (*getWord)(void);
+    HsAddr (*getAddr)(void);
+    HsFloat (*getFloat)(void);
+    HsDouble (*getDouble)(void);
+    HsChar (*getChar)(void);
+    CuddlesForeign (*getForeign)(void);
+    HsStablePtr (*getStablePtr4)(void);
+    HsInt8 (*getInt8)(void);
+    HsInt16 (*getInt16)(void);
+    HsInt32 (*getInt32)(void);
+    HsInt64 (*getInt64)(void);
+    HsWord8 (*getWord8)(void);
+    HsWord16 (*getWord16)(void);
+    HsWord32 (*getWord32)(void);
+    HsWord64 (*getWord64)(void);
+    HsPtr (*getPtr)(void);
+    HsFunPtr (*getFunPtr)(void);
+    HsForeignPtr (*getForeignPtr)(void);
 
-  /* push result   */
-  void           (*putBool)        (HsBool);
-  void           (*putInt)         (HsInt);
-  void      	 (*putWord)        (HsWord);
-  void      	 (*putAddr)        (HsAddr);
-  void           (*putFloat)       (HsFloat);
-  void           (*putDouble)      (HsDouble);
-  void           (*putChar)        (HsChar);
-  void      	 (*putForeign)     (CuddlesForeign, void (*)(CuddlesForeign));
-  void           (*putInt8)        (HsInt8);
-  void           (*putInt16)       (HsInt16);
-  void           (*putInt32)       (HsInt32);
-  void           (*putInt64)       (HsInt64);
-  void           (*putWord8)       (HsWord8);
-  void           (*putWord16)      (HsWord16);
-  void           (*putWord32)      (HsWord32);
-  void           (*putWord64)      (HsWord64);
-  void           (*putPtr)         (HsPtr);
-  void           (*putFunPtr)      (HsFunPtr);
-  void           (*putForeignPtr)  (HsForeignPtr);
-  void           (*putStablePtr4)  (HsStablePtr);
+    /* push result   */
+    void (*putBool)(HsBool);
+    void (*putInt)(HsInt);
+    void (*putWord)(HsWord);
+    void (*putAddr)(HsAddr);
+    void (*putFloat)(HsFloat);
+    void (*putDouble)(HsDouble);
+    void (*putChar)(HsChar);
+    void (*putForeign)(CuddlesForeign, void (*)(CuddlesForeign));
+    void (*putInt8)(HsInt8);
+    void (*putInt16)(HsInt16);
+    void (*putInt32)(HsInt32);
+    void (*putInt64)(HsInt64);
+    void (*putWord8)(HsWord8);
+    void (*putWord16)(HsWord16);
+    void (*putWord32)(HsWord32);
+    void (*putWord64)(HsWord64);
+    void (*putPtr)(HsPtr);
+    void (*putFunPtr)(HsFunPtr);
+    void (*putForeignPtr)(HsForeignPtr);
+    void (*putStablePtr4)(HsStablePtr);
 
-  /* return in IO monad or Id monad */
-  void      	 (*returnIO)       (CuddlesStackPtr, int);
-  int      	 (*runIO)          (int);
-  void           (*returnId)       (CuddlesStackPtr, int);
-  int            (*runId)          (int);
+    /* return in IO monad or Id monad */
+    void (*returnIO)(CuddlesStackPtr, int);
+    int (*runIO)(int);
+    void (*returnId)(CuddlesStackPtr, int);
+    int (*runId)(int);
 
-  /* register the prim table */	    			 
-  void      	 (*registerPrims)  (struct cuddles_primInfo*);
-			   
-  CuddlesStablePtr  (*lookupName)     (char*, char*);
-  void           (*ap)             (int);
-  void           (*getUnit)        (void);
-  void*          (*mkThunk)        (HsFunPtr, CuddlesStablePtr);
-  void           (*freeThunk)      (void*);
+    /* register the prim table */
+    void (*registerPrims)(struct cuddles_primInfo *);
 
-  CuddlesStablePtr  (*makeStablePtr4) (void);
-  void           (*derefStablePtr4)(CuddlesStablePtr);
-  void      	 (*freeStablePtr4) (HsStablePtr);
+    CuddlesStablePtr (*lookupName)(char *, char *);
+    void (*ap)(int);
+    void (*getUnit)(void);
+    void *(*mkThunk)(HsFunPtr, CuddlesStablePtr);
+    void (*freeThunk)(void *);
+
+    CuddlesStablePtr (*makeStablePtr4)(void);
+    void (*derefStablePtr4)(CuddlesStablePtr);
+    void (*freeStablePtr4)(HsStablePtr);
 } CuddlesAPI5;
 
 /* Note: the change in going from version 4 to 5 is that
@@ -212,9 +212,9 @@ typedef struct {
    tidied up.
 */
 
-extern  CuddlesAPI5* cuddlesAPI5     (void);
-typedef void (*InitModuleFun5) (CuddlesAPI5*);
-typedef int  (*APIVersionFun)  (void);
+extern CuddlesAPI5 *cuddlesAPI5(void);
+typedef void (*InitModuleFun5)(CuddlesAPI5 *);
+typedef int (*APIVersionFun)(void);
 
 /* To ensure backward compatibility, CuddlesAPI4 is also supported:
  * (due to the CuddlesAPI4 vtbl being an extension of CuddlesAPI3's and
@@ -222,86 +222,86 @@ typedef int  (*APIVersionFun)  (void);
  */
 typedef struct {
 
-  /* evaluate next argument */
-  HsInt          (*getInt)         (void);
-  HsWord         (*getWord)        (void);
-  HsAddr    	 (*getAddr)        (void);
-  HsFloat        (*getFloat)       (void);
-  HsDouble       (*getDouble)      (void);
-  char           (*getChar)        (void);
-  CuddlesForeign    (*getForeign)     (void);
-  CuddlesStablePtr  (*getStablePtr)   (void); /* deprecated */
+    /* evaluate next argument */
+    HsInt (*getInt)(void);
+    HsWord (*getWord)(void);
+    HsAddr (*getAddr)(void);
+    HsFloat (*getFloat)(void);
+    HsDouble (*getDouble)(void);
+    char (*getChar)(void);
+    CuddlesForeign (*getForeign)(void);
+    CuddlesStablePtr (*getStablePtr)(void); /* deprecated */
 
-  /* push part of result   */
-  void           (*putInt)         (HsInt);
-  void      	 (*putWord)        (HsWord);
-  void      	 (*putAddr)        (HsAddr);
-  void           (*putFloat)       (HsFloat);
-  void           (*putDouble)      (HsDouble);
-  void           (*putChar)        (char);
-  void      	 (*putForeign)     (CuddlesForeign, void (*)(CuddlesForeign));
-  void           (*putStablePtr)   (CuddlesStablePtr); /* deprecated */
+    /* push part of result   */
+    void (*putInt)(HsInt);
+    void (*putWord)(HsWord);
+    void (*putAddr)(HsAddr);
+    void (*putFloat)(HsFloat);
+    void (*putDouble)(HsDouble);
+    void (*putChar)(char);
+    void (*putForeign)(CuddlesForeign, void (*)(CuddlesForeign));
+    void (*putStablePtr)(CuddlesStablePtr); /* deprecated */
 
-  /* return n values in IO monad or Id monad */
-  void      	 (*returnIO)       (CuddlesStackPtr, int);
-  void      	 (*returnId)       (CuddlesStackPtr, int);
-  int      	 (*runIO)          (int);
+    /* return n values in IO monad or Id monad */
+    void (*returnIO)(CuddlesStackPtr, int);
+    void (*returnId)(CuddlesStackPtr, int);
+    int (*runIO)(int);
 
-  /* free a stable pointer */	    			 
-  void      	 (*freeStablePtr)  (CuddlesStablePtr); /* deprecated */
+    /* free a stable pointer */
+    void (*freeStablePtr)(CuddlesStablePtr); /* deprecated */
 
-  /* register the prim table */	    			 
-  void      	 (*registerPrims)  (struct cuddles_primInfo*);
-			   
-  /* garbage collect */
-  void		 (*garbageCollect) (void);
+    /* register the prim table */
+    void (*registerPrims)(struct cuddles_primInfo *);
 
-  /* API3 additions follow */
-  CuddlesStablePtr  (*lookupName)     (char*, char*);
-  void           (*ap)             (int);
-  void           (*getUnit)        (void);
-  void*          (*mkThunk)        (HsFunPtr, CuddlesStablePtr);
-  void           (*freeThunk)      (void*);
-  HsBool         (*getBool)        (void);
-  void           (*putBool)        (HsBool);
+    /* garbage collect */
+    void (*garbageCollect)(void);
 
-  /* API4 additions follow */
-  HsInt8         (*getInt8)        (void);
-  HsInt16        (*getInt16)       (void);
-  HsInt32        (*getInt32)       (void);
-  HsInt64        (*getInt64)       (void);
-  HsWord8        (*getWord8)       (void);
-  HsWord16       (*getWord16)      (void);
-  HsWord32       (*getWord32)      (void);
-  HsWord64       (*getWord64)      (void);
-  HsPtr          (*getPtr)         (void);
-  HsFunPtr       (*getFunPtr)      (void);
-  HsForeignPtr   (*getForeignPtr)  (void);
+    /* API3 additions follow */
+    CuddlesStablePtr (*lookupName)(char *, char *);
+    void (*ap)(int);
+    void (*getUnit)(void);
+    void *(*mkThunk)(HsFunPtr, CuddlesStablePtr);
+    void (*freeThunk)(void *);
+    HsBool (*getBool)(void);
+    void (*putBool)(HsBool);
 
-  void           (*putInt8)        (HsInt8);
-  void           (*putInt16)       (HsInt16);
-  void           (*putInt32)       (HsInt32);
-  void           (*putInt64)       (HsInt64);
-  void           (*putWord8)       (HsWord8);
-  void           (*putWord16)      (HsWord16);
-  void           (*putWord32)      (HsWord32);
-  void           (*putWord64)      (HsWord64);
-  void           (*putPtr)         (HsPtr);
-  void           (*putFunPtr)      (HsFunPtr);
-  void           (*putForeignPtr)  (HsForeignPtr);
+    /* API4 additions follow */
+    HsInt8 (*getInt8)(void);
+    HsInt16 (*getInt16)(void);
+    HsInt32 (*getInt32)(void);
+    HsInt64 (*getInt64)(void);
+    HsWord8 (*getWord8)(void);
+    HsWord16 (*getWord16)(void);
+    HsWord32 (*getWord32)(void);
+    HsWord64 (*getWord64)(void);
+    HsPtr (*getPtr)(void);
+    HsFunPtr (*getFunPtr)(void);
+    HsForeignPtr (*getForeignPtr)(void);
 
-  CuddlesStablePtr  (*makeStablePtr4) (void);
-  void           (*derefStablePtr4)(CuddlesStablePtr);
+    void (*putInt8)(HsInt8);
+    void (*putInt16)(HsInt16);
+    void (*putInt32)(HsInt32);
+    void (*putInt64)(HsInt64);
+    void (*putWord8)(HsWord8);
+    void (*putWord16)(HsWord16);
+    void (*putWord32)(HsWord32);
+    void (*putWord64)(HsWord64);
+    void (*putPtr)(HsPtr);
+    void (*putFunPtr)(HsFunPtr);
+    void (*putForeignPtr)(HsForeignPtr);
 
-  void           (*putStablePtr4)  (HsStablePtr);
-  HsStablePtr    (*getStablePtr4)  (void);
-  void      	 (*freeStablePtr4) (HsStablePtr);
+    CuddlesStablePtr (*makeStablePtr4)(void);
+    void (*derefStablePtr4)(CuddlesStablePtr);
 
-  int      	 (*runId)          (int);
+    void (*putStablePtr4)(HsStablePtr);
+    HsStablePtr (*getStablePtr4)(void);
+    void (*freeStablePtr4)(HsStablePtr);
+
+    int (*runId)(int);
 } CuddlesAPI4;
 
-extern  CuddlesAPI4* cuddlesAPI4     (void);
-typedef void (*InitModuleFun4) (CuddlesAPI4*);
+extern CuddlesAPI4 *cuddlesAPI4(void);
+typedef void (*InitModuleFun4)(CuddlesAPI4 *);
 
 extern void hs_perform_gc(void);
 extern void hs_free_stable_ptr(HsStablePtr sp);
@@ -309,10 +309,10 @@ extern void hs_free_fun_ptr(HsFunPtr fp);
 
 /* Copied verbatim from prelude.h */
 
-#if   defined(_WIN32) /* Microsoft Windows */
+#if defined(_WIN32) /* Microsoft Windows */
 # define DLLIMPORT(rty) __declspec(dllimport) rty
 # define DLLEXPORT(rty) __declspec(dllexport) rty
-#else 
+#else
 # define DLLIMPORT(rty) rty
 # define DLLEXPORT(rty) rty
 #endif /* Don't need to declare DLL exports */

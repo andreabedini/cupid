@@ -30,8 +30,8 @@
 
 /* Header files needed to compile the IO primitives */
 
-# include <sys/types.h>
-# include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #if HAVE_UNISTD_H
 # include <unistd.h>
@@ -49,7 +49,7 @@
 # include <sys/resource.h>
 #endif
 
-# include <errno.h>
+#include <errno.h>
 
 #if HAVE_SYS_TIMEB_H
 # include <sys/timeb.h>
@@ -67,39 +67,38 @@
 # include <direct.h>
 #endif
 
-# include <fcntl.h>
-
+#include <fcntl.h>
 
 #include "builtin.h"
 
-Name nameNegate,  nameFlip;             /* primitives reqd for parsing     */
-Name nameFrom,    nameFromThen;
-Name nameFromTo,  nameFromThenTo;
-Name nameFatbar,  nameFail;             /* primitives reqd for translation */
-Name nameIf,      nameSel;
-Name nameId,      nameOtherwise;
-Name nameConCmp,  nameEnRange;          /* primitives used for deriv inst  */
+Name nameNegate, nameFlip; /* primitives reqd for parsing     */
+Name nameFrom, nameFromThen;
+Name nameFromTo, nameFromThenTo;
+Name nameFatbar, nameFail; /* primitives reqd for translation */
+Name nameIf, nameSel;
+Name nameId, nameOtherwise;
+Name nameConCmp, nameEnRange; /* primitives used for deriv inst  */
 Name nameEnIndex, nameEnInRng;
-Name nameEnToEn,  nameEnFrEn;
-Name nameEnFrom,  nameEnFrTh;
+Name nameEnToEn, nameEnFrEn;
+Name nameEnFrom, nameEnFrTh;
 Name nameEnFrTo;
-Name nameBlackHole;                     /* for GC-detected black hole      */
-Name nameInd;				/* for dict indirection		   */
-Name namePrint,   nameNPrint;           /* primitives for printing         */
+Name nameBlackHole;         /* for GC-detected black hole      */
+Name nameInd;               /* for dict indirection                */
+Name namePrint, nameNPrint; /* primitives for printing         */
 
-Name nameFst,     nameSnd;              /* 2-tuple selector functions      */
-Name nameAnd,     nameOr;               /* built-in logical connectives    */
-Name namePrimThrow;                     /* throw primitive function        */
-Name nameComp;                          /* function composition            */
-Name nameApp;                           /* list append                     */
-Name nameShowField;                     /* display single field            */
-Name nameShowParen;                     /* wrap with parens                */
-Name nameReadField;                     /* read single field               */
-Name nameReadParen;                     /* unwrap from parens              */
-Name nameLex;                           /* lexer                           */
-Name nameRangeSize;                     /* calculate size of index range   */
-Name nameCompAux;                       /* auxiliary function for compares */
-Name namePmInt,   namePmFlt;            /* primitives for pattern matching */
+Name nameFst, nameSnd;     /* 2-tuple selector functions      */
+Name nameAnd, nameOr;      /* built-in logical connectives    */
+Name namePrimThrow;        /* throw primitive function        */
+Name nameComp;             /* function composition            */
+Name nameApp;              /* list append                     */
+Name nameShowField;        /* display single field            */
+Name nameShowParen;        /* wrap with parens                */
+Name nameReadField;        /* read single field               */
+Name nameReadParen;        /* unwrap from parens              */
+Name nameLex;              /* lexer                           */
+Name nameRangeSize;        /* calculate size of index range   */
+Name nameCompAux;          /* auxiliary function for compares */
+Name namePmInt, namePmFlt; /* primitives for pattern matching */
 Name nameReturnIO;
 Name namePmInteger;
 
@@ -175,10 +174,10 @@ PROTO_PRIM(primPlusWord);
 PROTO_PRIM(primMinusWord);
 PROTO_PRIM(primNegateWord);
 PROTO_PRIM(primMulWord);
-PROTO_PRIM(primQuotWord);      /* also used, unsigned division being     */
-				/* truncating either way, for primDivWord */
-PROTO_PRIM(primRemWord);       /* also used, for the same reason, for    */
-				/* primModWord                            */
+PROTO_PRIM(primQuotWord); /* also used, unsigned division being     */
+/* truncating either way, for primDivWord */
+PROTO_PRIM(primRemWord); /* also used, for the same reason, for    */
+/* primModWord                            */
 PROTO_PRIM(primQrmWord);
 
 PROTO_PRIM(primAndWord);
@@ -199,8 +198,8 @@ PROTO_PRIM(primI16toI);
 PROTO_PRIM(primI32toI);
 
 PROTO_PRIM(primI32toI64);
-PROTO_PRIM(primI64toI32);      /* also used, the two representations     */
-				/* being identical, for primW64toW32      */
+PROTO_PRIM(primI64toI32); /* also used, the two representations     */
+/* being identical, for primW64toW32      */
 
 PROTO_PRIM(primWtoW8);
 PROTO_PRIM(primWtoW16);
@@ -294,200 +293,193 @@ PROTO_PRIM(primToLower);
 PROTO_PRIM(primToTitle);
 PROTO_PRIM(primUniGenCat);
 
-
-
 PROTO_PRIM(primUnsafePtrEq);
 PROTO_PRIM(primUnsafePtrToInt);
-
 
 /* --------------------------------------------------------------------------
  * Table of primitive/built-in values:
  * ------------------------------------------------------------------------*/
 
 static struct primitive builtinPrimTable[] = {
-  {"fatbar",            2, primFatbar},
-  {"fail",              0, primFail},
-  {"catchError",        1, primCatchError},
-  {"primThrowException",1, primThrowException},
-  {"primCatchException",1, primCatchException},
-  {"gcBhole",           0, primBlackHole},
-  {"dictIndirect",      1, primIndirect},
-  {"sel",               3, primSel},
-  {"if",                3, primIf},
-  {"conCmp",            2, primConCmp},
-  {"enRange",           1, primEnRange},
-  {"enIndex",           2, primEnIndex},
-  {"enInRng",           2, primEnInRng},
-  {"enToEn",            2, primEnToEn},
-  {"enFrEn",            1, primEnFrEn},
-  {"enFrom",            1, primEnFrom},
-  {"enFrTh",            2, primEnFrTh},
-  {"enFrTo",            2, primEnFrTo},
+    {"fatbar", 2, primFatbar},
+    {"fail", 0, primFail},
+    {"catchError", 1, primCatchError},
+    {"primThrowException", 1, primThrowException},
+    {"primCatchException", 1, primCatchException},
+    {"gcBhole", 0, primBlackHole},
+    {"dictIndirect", 1, primIndirect},
+    {"sel", 3, primSel},
+    {"if", 3, primIf},
+    {"conCmp", 2, primConCmp},
+    {"enRange", 1, primEnRange},
+    {"enIndex", 2, primEnIndex},
+    {"enInRng", 2, primEnInRng},
+    {"enToEn", 2, primEnToEn},
+    {"enFrEn", 1, primEnFrEn},
+    {"enFrom", 1, primEnFrom},
+    {"enFrTh", 2, primEnFrTh},
+    {"enFrTo", 2, primEnFrTo},
 
-  {"primMinInt",        0, primMinInt},
-  {"primMaxInt",        0, primMaxInt},
-  {"primPlusInt",       2, primPlusInt},
-  {"primMinusInt",      2, primMinusInt},
-  {"primMulInt",        2, primMulInt},
-  {"primDivInt",        2, primDivInt},
-  {"primQuotInt",       2, primQuotInt},
-  {"primModInt",        2, primModInt},
-  {"primRemInt",        2, primRemInt},
-  {"primNegInt",        1, primNegInt},
-  {"primQrmInt",        2, primQrmInt},
+    {"primMinInt", 0, primMinInt},
+    {"primMaxInt", 0, primMaxInt},
+    {"primPlusInt", 2, primPlusInt},
+    {"primMinusInt", 2, primMinusInt},
+    {"primMulInt", 2, primMulInt},
+    {"primDivInt", 2, primDivInt},
+    {"primQuotInt", 2, primQuotInt},
+    {"primModInt", 2, primModInt},
+    {"primRemInt", 2, primRemInt},
+    {"primNegInt", 1, primNegInt},
+    {"primQrmInt", 2, primQrmInt},
 
-  {"primAndInt",        2, primAndInt},
-  {"primOrInt",         2, primOrInt},
-  {"primXorInt",        2, primXorInt},
-  {"primComplementInt", 1, primComplementInt},
-  {"primShiftInt",      2, primShiftInt},
-  {"primBitInt",        1, primBitInt},
-  {"primTestInt",       2, primTestInt},
+    {"primAndInt", 2, primAndInt},
+    {"primOrInt", 2, primOrInt},
+    {"primXorInt", 2, primXorInt},
+    {"primComplementInt", 1, primComplementInt},
+    {"primShiftInt", 2, primShiftInt},
+    {"primBitInt", 1, primBitInt},
+    {"primTestInt", 2, primTestInt},
 
-  {"primMaxWord",       0, primMaxWord},
-  {"primPlusWord",      2, primPlusWord},
-  {"primMinusWord",     2, primMinusWord},
-  {"primNegateWord",    1, primNegateWord},
-  {"primMulWord",       2, primMulWord},
-  {"primDivWord",       2, primQuotWord}, /* unsigned x/y truncates either way */
-  {"primQuotWord",      2, primQuotWord},
-  {"primModWord",       2, primRemWord},  /* unsigned x%y is the same either way */
-  {"primRemWord",       2, primRemWord},
-  {"primQrmWord",       2, primQrmWord},
+    {"primMaxWord", 0, primMaxWord},
+    {"primPlusWord", 2, primPlusWord},
+    {"primMinusWord", 2, primMinusWord},
+    {"primNegateWord", 1, primNegateWord},
+    {"primMulWord", 2, primMulWord},
+    {"primDivWord", 2, primQuotWord}, /* unsigned x/y truncates either way */
+    {"primQuotWord", 2, primQuotWord},
+    {"primModWord", 2, primRemWord}, /* unsigned x%y is the same either way */
+    {"primRemWord", 2, primRemWord},
+    {"primQrmWord", 2, primQrmWord},
 
-  {"primAndWord",       2, primAndWord},
-  {"primOrWord",        2, primOrWord},
-  {"primXorWord",       2, primXorWord},
-  {"primComplementWord",1, primComplementWord},
-  {"primShiftWord",     2, primShiftWord},
-  {"primRotateWord",    3, primRotateWord},
-  {"primBitWord",       1, primBitWord},
-  {"primTestWord",      2, primTestWord},
+    {"primAndWord", 2, primAndWord},
+    {"primOrWord", 2, primOrWord},
+    {"primXorWord", 2, primXorWord},
+    {"primComplementWord", 1, primComplementWord},
+    {"primShiftWord", 2, primShiftWord},
+    {"primRotateWord", 3, primRotateWord},
+    {"primBitWord", 1, primBitWord},
+    {"primTestWord", 2, primTestWord},
 
-  {"primIntToInt8",     1, primItoI8},
-  {"primIntToInt16",    1, primItoI16},
-  {"primIntToInt32",    1, primItoI32},
+    {"primIntToInt8", 1, primItoI8},
+    {"primIntToInt16", 1, primItoI16},
+    {"primIntToInt32", 1, primItoI32},
 
-  {"primInt8ToInt",     1, primI8toI},
-  {"primInt16ToInt",    1, primI16toI},
-  {"primInt32ToInt",    1, primI32toI},
+    {"primInt8ToInt", 1, primI8toI},
+    {"primInt16ToInt", 1, primI16toI},
+    {"primInt32ToInt", 1, primI32toI},
 
-  {"primInt32ToInt64",  2, primI32toI64},
-  {"primInt64ToInt32",  1, primI64toI32},
+    {"primInt32ToInt64", 2, primI32toI64},
+    {"primInt64ToInt32", 1, primI64toI32},
 
-  {"primWordToWord8",   1, primWtoW8},
-  {"primWordToWord16",  1, primWtoW16},
-  {"primWordToWord32",  1, primWtoW32},
+    {"primWordToWord8", 1, primWtoW8},
+    {"primWordToWord16", 1, primWtoW16},
+    {"primWordToWord32", 1, primWtoW32},
 
-  {"primWord8ToWord",   1, primW8toW},
-  {"primWord16ToWord",  1, primW16toW},
-  {"primWord32ToWord",  1, primW32toW},
+    {"primWord8ToWord", 1, primW8toW},
+    {"primWord16ToWord", 1, primW16toW},
+    {"primWord32ToWord", 1, primW32toW},
 
-  {"primWord32ToWord64",2, primW32toW64},
-  {"primWord64ToWord32",1, primI64toI32}, /* splitting a 64-bit pair cell */
-					   /* into 32-bit halves doesn't    */
-					   /* depend on signedness          */
+    {"primWord32ToWord64", 2, primW32toW64},
+    {"primWord64ToWord32", 1, primI64toI32}, /* splitting a 64-bit pair cell */
+                                             /* into 32-bit halves doesn't    */
+                                             /* depend on signedness          */
 
-  {"freeHaskellFunPtr", 1+IOArity, primFreeHFunPtr},
+    {"freeHaskellFunPtr", 1 + IOArity, primFreeHFunPtr},
 
+    {"primPlusFloat", 2, primPlusFloat},
+    {"primMinusFloat", 2, primMinusFloat},
+    {"primMulFloat", 2, primMulFloat},
+    {"primDivFloat", 2, primDivFloat},
+    {"primNegFloat", 1, primNegFloat},
 
-  {"primPlusFloat",     2, primPlusFloat},
-  {"primMinusFloat",    2, primMinusFloat},
-  {"primMulFloat",      2, primMulFloat},
-  {"primDivFloat",      2, primDivFloat},
-  {"primNegFloat",      1, primNegFloat},
+    {"primPlusDouble", 2, primPlusDouble},
+    {"primMinusDouble", 2, primMinusDouble},
+    {"primMulDouble", 2, primMulDouble},
+    {"primDivDouble", 2, primDivDouble},
+    {"primNegDouble", 1, primNegDouble},
 
-  {"primPlusDouble",    2, primPlusDouble},
-  {"primMinusDouble",   2, primMinusDouble},
-  {"primMulDouble",     2, primMulDouble},
-  {"primDivDouble",     2, primDivDouble},
-  {"primNegDouble",     1, primNegDouble},
+    {"primSinFloat", 1, primSinFloat},
+    {"primCosFloat", 1, primCosFloat},
+    {"primTanFloat", 1, primTanFloat},
+    {"primAsinFloat", 1, primAsinFloat},
+    {"primAcosFloat", 1, primAcosFloat},
+    {"primAtanFloat", 1, primAtanFloat},
+    {"primExpFloat", 1, primExpFloat},
+    {"primLogFloat", 1, primLogFloat},
+    {"primSqrtFloat", 1, primSqrtFloat},
+    {"primFloatToInt", 1, primFloatToInt},
+    {"primFloatDigits", 0, primFloatDigits},
+    {"primFloatMinExp", 0, primFloatMinExp},
+    {"primFloatMaxExp", 0, primFloatMaxExp},
+    {"primFloatDecode", 1, primFloatDecode},
+    {"primFloatEncode", 2, primFloatEncode},
 
-  {"primSinFloat",      1, primSinFloat},
-  {"primCosFloat",      1, primCosFloat},
-  {"primTanFloat",      1, primTanFloat},
-  {"primAsinFloat",     1, primAsinFloat},
-  {"primAcosFloat",     1, primAcosFloat},
-  {"primAtanFloat",     1, primAtanFloat},
-  {"primExpFloat",      1, primExpFloat},
-  {"primLogFloat",      1, primLogFloat},
-  {"primSqrtFloat",     1, primSqrtFloat},
-  {"primFloatToInt",    1, primFloatToInt},
-  {"primFloatDigits",   0, primFloatDigits},
-  {"primFloatMinExp",   0, primFloatMinExp},
-  {"primFloatMaxExp",   0, primFloatMaxExp},
-  {"primFloatDecode",   1, primFloatDecode},
-  {"primFloatEncode",   2, primFloatEncode},
+    {"primSinDouble", 1, primSinDouble},
+    {"primCosDouble", 1, primCosDouble},
+    {"primTanDouble", 1, primTanDouble},
+    {"primAsinDouble", 1, primAsinDouble},
+    {"primAcosDouble", 1, primAcosDouble},
+    {"primAtanDouble", 1, primAtanDouble},
+    {"primExpDouble", 1, primExpDouble},
+    {"primLogDouble", 1, primLogDouble},
+    {"primSqrtDouble", 1, primSqrtDouble},
+    {"primDoubleToInt", 1, primDoubleToInt},
+    {"primDoubleDigits", 0, primDoubleDigits},
+    {"primDoubleMinExp", 0, primDoubleMinExp},
+    {"primDoubleMaxExp", 0, primDoubleMaxExp},
+    {"primDoubleDecode", 1, primDoubleDecode},
+    {"primDoubleEncode", 2, primDoubleEncode},
 
-  {"primSinDouble",     1, primSinDouble},
-  {"primCosDouble",     1, primCosDouble},
-  {"primTanDouble",     1, primTanDouble},
-  {"primAsinDouble",    1, primAsinDouble},
-  {"primAcosDouble",    1, primAcosDouble},
-  {"primAtanDouble",    1, primAtanDouble},
-  {"primExpDouble",     1, primExpDouble},
-  {"primLogDouble",     1, primLogDouble},
-  {"primSqrtDouble",    1, primSqrtDouble},
-  {"primDoubleToInt",   1, primDoubleToInt},
-  {"primDoubleDigits",  0, primDoubleDigits},
-  {"primDoubleMinExp",  0, primDoubleMinExp},
-  {"primDoubleMaxExp",  0, primDoubleMaxExp},
-  {"primDoubleDecode",  1, primDoubleDecode},
-  {"primDoubleEncode",  2, primDoubleEncode},
+    {"primIntToChar", 1, primIntToChar},
+    {"primCharToInt", 1, primCharToInt},
+    {"primIntToWord", 1, primIntToWord},
+    {"primWordToInt", 1, primWordToInt},
+    {"primIntToFloat", 1, primIntToFloat},
+    {"primIntToDouble", 1, primIntToDouble},
+    {"primDoubleToFloat", 1, primDoubleToFloat},
+    {"primFloatToDouble", 1, primFloatToDouble},
 
-  {"primIntToChar",     1, primIntToChar},
-  {"primCharToInt",     1, primCharToInt},
-  {"primIntToWord",     1, primIntToWord},
-  {"primWordToInt",     1, primWordToInt},
-  {"primIntToFloat",    1, primIntToFloat},
-  {"primIntToDouble",   1, primIntToDouble},
-  {"primDoubleToFloat", 1, primDoubleToFloat},
-  {"primFloatToDouble", 1, primFloatToDouble},
+    {"primRationalToFloat", 1, primRationalToFloat},
+    {"primRationalToDouble", 1, primRationalToDouble},
 
-  {"primRationalToFloat",  1, primRationalToFloat},
-  {"primRationalToDouble", 1, primRationalToDouble},
+    {"nullPtr", 0, primNullPtr},
+    {"plusPtr", 2, primPlusPtr},
+    {"alignPtr", 2, primAlignPtr},
+    {"minusPtr", 2, primMinusPtr},
+    {"primEqPtr", 2, primEqPtr},
+    {"primCmpPtr", 2, primCmpPtr},
 
-  {"nullPtr",           0, primNullPtr},
-  {"plusPtr",           2, primPlusPtr},
-  {"alignPtr",          2, primAlignPtr},
-  {"minusPtr",          2, primMinusPtr},
-  {"primEqPtr",         2, primEqPtr},
-  {"primCmpPtr",        2, primCmpPtr},
+    {"primEqInt", 2, primEqInt},
+    {"primCmpInt", 2, primCmpInt},
+    {"primEqWord", 2, primEqWord},
+    {"primCmpWord", 2, primCmpWord},
+    {"primEqChar", 2, primEqChar},
+    {"primCmpChar", 2, primCmpChar},
+    {"primEqFloat", 2, primEqFloat},
+    {"primCmpFloat", 2, primCmpFloat},
+    {"primEqDouble", 2, primEqDouble},
+    {"primCmpDouble", 2, primCmpDouble},
 
-  {"primEqInt",         2, primEqInt},
-  {"primCmpInt",        2, primCmpInt},
-  {"primEqWord",        2, primEqWord},
-  {"primCmpWord",       2, primCmpWord},
-  {"primEqChar",        2, primEqChar},
-  {"primCmpChar",       2, primCmpChar},
-  {"primEqFloat",       2, primEqFloat},
-  {"primCmpFloat",      2, primCmpFloat},
-  {"primEqDouble",      2, primEqDouble},
-  {"primCmpDouble",     2, primCmpDouble},
+    {"primUnsafeCoerce", 1, primDummyCvt}, /* breaks the type system */
 
-  {"primUnsafeCoerce",  1, primDummyCvt},       /* breaks the type system */
+    {"strict", 2, primStrict},
+    {"seq", 2, primSeq},
 
-  {"strict",            2, primStrict},
-  {"seq",               2, primSeq},
+    {"primMaxChar", 0, primMaxChar},
+    {"isUpper", 1, primIsUpper},
+    {"isLower", 1, primIsLower},
+    {"isAlpha", 1, primIsAlpha},
+    {"isAlphaNum", 1, primIsAlphaNum},
+    {"isPrint", 1, primIsPrint},
+    {"toUpper", 1, primToUpper},
+    {"toLower", 1, primToLower},
+    {"toTitle", 1, primToTitle},
+    {"primUniGenCat", 1, primUniGenCat},
 
-  {"primMaxChar",	0, primMaxChar},
-  {"isUpper",		1, primIsUpper},
-  {"isLower",		1, primIsLower},
-  {"isAlpha",		1, primIsAlpha},
-  {"isAlphaNum",	1, primIsAlphaNum},
-  {"isPrint",		1, primIsPrint},
-  {"toUpper",		1, primToUpper},
-  {"toLower",		1, primToLower},
-  {"toTitle",		1, primToTitle},
-  {"primUniGenCat",	1, primUniGenCat},
+    {"unsafePtrEq", 2, primUnsafePtrEq},       /* breaks the semantics  */
+    {"unsafePtrToInt", 1, primUnsafePtrToInt}, /* breaks the semantics  */
 
-
-
-  {"unsafePtrEq",       2, primUnsafePtrEq},    /* breaks the semantics  */
-  {"unsafePtrToInt",    1, primUnsafePtrToInt}, /* breaks the semantics  */
-
-  {0,                   0, 0}
-};
+    {0, 0, 0}};
 
 /* --------------------------------------------------------------------------
  * Primitive functions:
@@ -557,18 +549,18 @@ static struct primitive builtinPrimTable[] = {
  * that the original implementations are correct...)
  * ------------------------------------------------------------------------*/
 
-primFun(primFatbar) {                   /* Fatbar primitive                */
+primFun(primFatbar) { /* Fatbar primitive                */
     Cell temp = evalWithNoError(primArg(2));
     if (nonNull(temp))
-	if (temp==nameFail)             /* _FAIL [] r = r                  */
-	    updateRoot(primArg(1));
-	else
-	    throwException(temp);
+        if (temp == nameFail) /* _FAIL [] r = r                  */
+            updateRoot(primArg(1));
+        else
+            throwException(temp);
     else
-	updateRoot(primArg(2));         /* l     [] r = l  -- otherwise    */
+        updateRoot(primArg(2)); /* l     [] r = l  -- otherwise    */
 }
 
-primFun(primFail) {                     /* Failure primitive               */
+primFun(primFail) { /* Failure primitive               */
     throwException(nameFail);
 }
 
@@ -580,18 +572,18 @@ primFun(primIndirect) {
     throwException(nameNonTermination);
 }
 
-primFun(primCatchError) {               /* Error catching  primitive       */
+primFun(primCatchError) { /* Error catching  primitive       */
     Cell err = NIL;
-    err = evalWithNoError(primArg(1));  /*  :: a -> Maybe a                */
+    err = evalWithNoError(primArg(1)); /*  :: a -> Maybe a                */
     if (isNull(err)) {
-	updapRoot(nameJust, primArg(1));
+        updapRoot(nameJust, primArg(1));
     } else {
-	updateRoot(nameNothing);
+        updateRoot(nameNothing);
     }
 }
 
-primFun(primThrowException) {           /* Failure primitive               */
-    throwException(primArg(1));         /*  :: Exception -> a              */
+primFun(primThrowException) {   /* Failure primitive               */
+    throwException(primArg(1)); /*  :: Exception -> a              */
 }
 
 /* This function ought to be in the IO monad to preserve referential       */
@@ -599,109 +591,109 @@ primFun(primThrowException) {           /* Failure primitive               */
 /* of the IO monad so we provide it in unsafe form here and make it safe   */
 /* in the Prelude.                                                         */
 
-primFun(primCatchException) {	       /* Error catching primitive         */
-    Cell err = NIL;                    /*  :: a -> Either Exception a      */
-    err = evalWithNoError(primArg(1)); 
+primFun(primCatchException) { /* Error catching primitive         */
+    Cell err = NIL;           /*  :: a -> Either Exception a      */
+    err = evalWithNoError(primArg(1));
     if (isNull(err)) {
-	updapRoot(nameRight, primArg(1));
+        updapRoot(nameRight, primArg(1));
     } else {
-	updapRoot(nameLeft, err);
+        updapRoot(nameLeft, err);
     }
 }
 
-primFun(primSel) {                      /* Component selection             */
-    eval(primArg(2));                   /* _sel c e n  return nth component*/
-    if (whnfHead==primArg(3))           /* in expr e, built with cfun c    */
-	updateRoot(pushed(intOf(primArg(1))-1));
+primFun(primSel) {              /* Component selection             */
+    eval(primArg(2));           /* _sel c e n  return nth component*/
+    if (whnfHead == primArg(3)) /* in expr e, built with cfun c    */
+        updateRoot(pushed(intOf(primArg(1)) - 1));
     else
-	internal("primSel");
+        internal("primSel");
 }
 
-primFun(primIf) {                       /* Conditional primitive           */
+primFun(primIf) { /* Conditional primitive           */
     eval(primArg(3));
     checkBool();
-    if (whnfHead==nameTrue)
-	updateRoot(primArg(2));
+    if (whnfHead == nameTrue)
+        updateRoot(primArg(2));
     else
-	updateRoot(primArg(1));
+        updateRoot(primArg(1));
 }
 
-primFun(primStrict) {                   /* Strict application primitive    */
-    eval(primArg(1));                   /* evaluate 2nd argument           */
-    updapRoot(primArg(2),primArg(1));   /* and apply 1st argument to result*/
+primFun(primStrict) {                  /* Strict application primitive    */
+    eval(primArg(1));                  /* evaluate 2nd argument           */
+    updapRoot(primArg(2), primArg(1)); /* and apply 1st argument to result*/
 }
 
-primFun(primSeq) {                      /* Strict sequencing primitive     */
-    eval(primArg(2));                   /* evaluate 1st argument           */
-    updateRoot(primArg(1));             /* and return the first            */
+primFun(primSeq) {          /* Strict sequencing primitive     */
+    eval(primArg(2));       /* evaluate 1st argument           */
+    updateRoot(primArg(1)); /* and return the first            */
 }
 
-primFun(primConCmp) {                   /* compare constructors            */
-    Int l,r;                            /*  :: a -> a -> Ordering          */
-    ConArg(l,2);
-    ConArg(r,1);
-    updateRoot(l<r ? nameLT : (l>r ? nameGT : nameEQ));
+primFun(primConCmp) { /* compare constructors            */
+    Int l, r;         /*  :: a -> a -> Ordering          */
+    ConArg(l, 2);
+    ConArg(r, 1);
+    updateRoot(l < r ? nameLT : (l > r ? nameGT : nameEQ));
 }
 
-primFun(primEnRange) {                  /* derived range for enum type     */
-    eval(primArg(1));                   /* :: (a,a) -> [a]                 */
-    updapRoot(ap(nameEnFrTo,primArg(3)),primArg(2));
+primFun(primEnRange) { /* derived range for enum type     */
+    eval(primArg(1));  /* :: (a,a) -> [a]                 */
+    updapRoot(ap(nameEnFrTo, primArg(3)), primArg(2));
 }
 
-primFun(primEnIndex) {                  /* derived index for enum type     */
-    Int l,h,ix;                         /*  :: (a,a) -> a -> Int           */
+primFun(primEnIndex) { /* derived index for enum type     */
+    Int l, h, ix;      /*  :: (a,a) -> a -> Int           */
     eval(primArg(2));
-    ConArg(l,4);                        /* evaluate lower bound            */
-    ConArg(h,3);                        /* evaluate upper bound            */
-    ConArg(ix,1);                       /* evaluate index                  */
-    if (l<=ix && ix<=h) {
-	IntResult(ix-l);
+    ConArg(l, 4);  /* evaluate lower bound            */
+    ConArg(h, 3);  /* evaluate upper bound            */
+    ConArg(ix, 1); /* evaluate index                  */
+    if (l <= ix && ix <= h) {
+        IntResult(ix - l);
     } else {
-	throwException(ap(nameErrorCall,
-		 mkStr(findText("Ix.index: Index out of range."))));
+        throwException(ap(nameErrorCall,
+                          mkStr(findText("Ix.index: Index out of range."))));
     }
 }
 
-primFun(primEnInRng) {                  /* derived inRange for enum type   */
-    Int l,h,ix;                         /*  :: (a,a) -> a -> Bool          */
+primFun(primEnInRng) { /* derived inRange for enum type   */
+    Int l, h, ix;      /*  :: (a,a) -> a -> Bool          */
     eval(primArg(2));
-    ConArg(l,4);                        /* evaluate lower bound            */
-    ConArg(h,3);                        /* evaluate upper bound            */
-    ConArg(ix,1);                       /* evaluate index                  */
-    BoolResult(l<=ix && ix<=h);
+    ConArg(l, 4);  /* evaluate lower bound            */
+    ConArg(h, 3);  /* evaluate upper bound            */
+    ConArg(ix, 1); /* evaluate index                  */
+    BoolResult(l <= ix && ix <= h);
 }
 
-primFun(primEnToEn) {                   /* derived toEnum for enum type    */
-    Name n;                             /* :: a -> Int -> a                */
-    Int  i;
+primFun(primEnToEn) { /* derived toEnum for enum type    */
+    Name n;           /* :: a -> Int -> a                */
+    Int i;
     eval(primArg(2));
     checkCon();
     n = whnfHead;
-    IntArg(i,1);
-    if (nonNull(n = cfunByNum(n,i)))
-	updateRoot(n);
+    IntArg(i, 1);
+    if (nonNull(n = cfunByNum(n, i)))
+        updateRoot(n);
     else
-	throwException(ap(nameErrorCall,
-		mkStr(findText("toEnum: out of range"))));
+        throwException(
+            ap(nameErrorCall, mkStr(findText("toEnum: out of range"))));
 }
 
-primFun(primEnFrEn) {                   /* derived fromEnum for enum type  */
-    Int i;                              /* :: a -> Int                     */
-    ConArg(i,1);
-    IntResult(i==0 ? 0 : (i-1));
+primFun(primEnFrEn) { /* derived fromEnum for enum type  */
+    Int i;            /* :: a -> Int                     */
+    ConArg(i, 1);
+    IntResult(i == 0 ? 0 : (i - 1));
 }
 
-primFun(primEnFrom) {                   /* derived enumFrom for enum type  */
-    Name cfs;                           /* :: a -> [a]                     */
+primFun(primEnFrom) { /* derived enumFrom for enum type  */
+    Name cfs;         /* :: a -> [a]                     */
     eval(primArg(1));
     checkCon();
     cfs = succCfun(whnfHead);
-    push(isNull(cfs) ? nameNil : ap(nameEnFrom,cfs));
-    updapRoot(ap(nameCons,whnfHead),top());
+    push(isNull(cfs) ? nameNil : ap(nameEnFrom, cfs));
+    updapRoot(ap(nameCons, whnfHead), top());
 }
 
-primFun(primEnFrTo) {                   /* derived enumFromTo for enum type*/
-    Name l,r;                           /* :: a -> a -> [a]                */
+primFun(primEnFrTo) { /* derived enumFromTo for enum type*/
+    Name l, r;        /* :: a -> a -> [a]                */
     eval(primArg(2));
     checkCon();
     l = whnfHead;
@@ -709,36 +701,32 @@ primFun(primEnFrTo) {                   /* derived enumFromTo for enum type*/
     checkCon();
     r = whnfHead;
     if (cfunOf(l) < cfunOf(r)) {
-	push(ap(nameEnFrTo,succCfun(l)));
-	updapRoot(ap(nameCons,l),ap(top(),whnfHead));
-    }
-    else if (l==r) {
-	updapRoot(ap(nameCons,l),nameNil);
+        push(ap(nameEnFrTo, succCfun(l)));
+        updapRoot(ap(nameCons, l), ap(top(), whnfHead));
+    } else if (l == r) {
+        updapRoot(ap(nameCons, l), nameNil);
     } else {
-	updateRoot(nameNil);
+        updateRoot(nameNil);
     }
 }
 
-primFun(primEnFrTh) {                   /* derived enumFromThen for enum ty*/
-    Name f,n;                           /* :: a -> a -> [a]                */
-    eval(primArg(2));   
+primFun(primEnFrTh) { /* derived enumFromThen for enum ty*/
+    Name f, n;        /* :: a -> a -> [a]                */
+    eval(primArg(2));
     checkCon();
     f = whnfHead;
     eval(primArg(1));
     checkCon();
-    n = nextCfun(f,whnfHead);
+    n = nextCfun(f, whnfHead);
     if (isNull(n)) {
-	push(ap(nameCons,whnfHead));
-	toparg(nameNil);
+        push(ap(nameCons, whnfHead));
+        toparg(nameNil);
+    } else {
+        push(ap(nameEnFrTh, whnfHead));
+        toparg(n);
     }
-    else {
-	push(ap(nameEnFrTh,whnfHead));
-	toparg(n);
-    }
-    updapRoot(ap(nameCons,f),top());
+    updapRoot(ap(nameCons, f), top());
 }
-
-
 
 /* --------------------------------------------------------------------------
  * Integer arithmetic primitives:
@@ -749,125 +737,133 @@ primFun(primEnFrTh) {                   /* derived enumFromThen for enum ty*/
  * arithmetic in Unsigned, which wraps modulo 2^bitsize by definition, and
  * convert the bit pattern back, instead of letting +, -, * and negate
  * overflow signed int directly.                                          */
-static Int local wrapAdd(Int x, Int y) { return (Int)((Unsigned)x + (Unsigned)y); }
-static Int local wrapSub(Int x, Int y) { return (Int)((Unsigned)x - (Unsigned)y); }
-static Int local wrapMul(Int x, Int y) { return (Int)((Unsigned)x * (Unsigned)y); }
-static Int local wrapNeg(Int x)        { return (Int)(0u - (Unsigned)x); }
-
-CAFInt(primMinInt,MINNEGINT)           /* minimum integer CAF              */
-CAFInt(primMaxInt,MAXPOSINT)           /* maximum integer CAF              */
-IntInt2Int(primPlusInt,wrapAdd(x,y))   /* Integer addition primitive       */
-IntInt2Int(primMinusInt,wrapSub(x,y))  /* Integer subtraction primitive    */
-IntInt2Int(primMulInt,wrapMul(x,y))    /* Integer multiplication primitive */
-Int2Int(primNegInt,wrapNeg(x))         /* Integer negation primitive       */
-
-/* quot and rem satisfy:                                                   */
-/*     (x `quot` y)*y + (x `rem` y) == x                                   */
-/* which is exactly the property described in K&R 2:                       */
-/*     (a/b)*b + a%b == a                                                  */
-/*                                                                          */
-/* minBound `quot` (-1) and minBound `quotRem` (-1) overflow (the true     */
-/* quotient, maxBound+1, isn't representable), so raise the same           */
-/* "arithmetic overflow" error used for Integer.  minBound `rem` (-1) is   */
-/* always 0 and doesn't overflow.                                          */
-
-primFun(primQuotInt) {                 /* Integer division primitive       */
-    Int x, y;                          /* truncated towards zero           */
-    IntArg(x,2);
-    IntArg(y,1);
-    if (y==0)
-	throwException(ap(nameArithException, nameDivideByZero));
-    if (x==MINNEGINT && y==-1)
-	throwException(ap(nameArithException, nameOverflow));
-    IntResult(x/y);
+static Int local wrapAdd(Int x, Int y) {
+    return (Int)((Unsigned)x + (Unsigned)y);
+}
+static Int local wrapSub(Int x, Int y) {
+    return (Int)((Unsigned)x - (Unsigned)y);
+}
+static Int local wrapMul(Int x, Int y) {
+    return (Int)((Unsigned)x * (Unsigned)y);
+}
+static Int local wrapNeg(Int x) {
+    return (Int)(0u - (Unsigned)x);
 }
 
-primFun(primRemInt) {                  /* Integer remainder primitive      */
+CAFInt(primMinInt, MINNEGINT)     /* minimum integer CAF              */
+    CAFInt(primMaxInt, MAXPOSINT) /* maximum integer CAF              */
+    IntInt2Int(primPlusInt,
+               wrapAdd(x, y)) /* Integer addition primitive       */
+    IntInt2Int(primMinusInt,
+               wrapSub(x, y))             /* Integer subtraction primitive    */
+    IntInt2Int(primMulInt, wrapMul(x, y)) /* Integer multiplication primitive */
+    Int2Int(primNegInt, wrapNeg(x))       /* Integer negation primitive       */
+
+    /* quot and rem satisfy:                                                   */
+    /*     (x `quot` y)*y + (x `rem` y) == x                                   */
+    /* which is exactly the property described in K&R 2:                       */
+    /*     (a/b)*b + a%b == a                                                  */
+    /*                                                                          */
+    /* minBound `quot` (-1) and minBound `quotRem` (-1) overflow (the true     */
+    /* quotient, maxBound+1, isn't representable), so raise the same           */
+    /* "arithmetic overflow" error used for Integer.  minBound `rem` (-1) is   */
+    /* always 0 and doesn't overflow.                                          */
+
+    primFun(primQuotInt) { /* Integer division primitive       */
+    Int x, y;              /* truncated towards zero           */
+    IntArg(x, 2);
+    IntArg(y, 1);
+    if (y == 0)
+        throwException(ap(nameArithException, nameDivideByZero));
+    if (x == MINNEGINT && y == -1)
+        throwException(ap(nameArithException, nameOverflow));
+    IntResult(x / y);
+}
+
+primFun(primRemInt) { /* Integer remainder primitive      */
     Int x, y;
-    IntArg(x,2);
-    IntArg(y,1);
-    if (y==0)
-	throwException(ap(nameArithException, nameDivideByZero));
-    IntResult((x==MINNEGINT && y==-1) ? 0 : x%y);
+    IntArg(x, 2);
+    IntArg(y, 1);
+    if (y == 0)
+        throwException(ap(nameArithException, nameDivideByZero));
+    IntResult((x == MINNEGINT && y == -1) ? 0 : x % y);
 }
 
-primFun(primQrmInt) {                  /* Integer quotient and remainder   */
-    Int x, y;                          /* truncated towards zero           */
-    IntArg(x,2);
-    IntArg(y,1);
-    if (y==0)
-	throwException(ap(nameArithException, nameDivideByZero));
-    if (x==MINNEGINT && y==-1)
-	throwException(ap(nameArithException, nameOverflow));
-    IntIntResult(x/y,x%y);
+primFun(primQrmInt) { /* Integer quotient and remainder   */
+    Int x, y;         /* truncated towards zero           */
+    IntArg(x, 2);
+    IntArg(y, 1);
+    if (y == 0)
+        throwException(ap(nameArithException, nameDivideByZero));
+    if (x == MINNEGINT && y == -1)
+        throwException(ap(nameArithException, nameOverflow));
+    IntIntResult(x / y, x % y);
 }
 
-primFun(primDivInt) {                  /* Integer division primitive       */
-    Int x,y,r;                         /* truncated towards -ve infinity   */
-    IntArg(x,2);
-    IntArg(y,1);
-    if (y==0)
-	throwException(ap(nameArithException, nameDivideByZero));
-    if (x==MINNEGINT && y==-1)
-	throwException(ap(nameArithException, nameOverflow));
-    r = x%y;
-    x = x/y;
-    if ((y<0 && r>0) || (y>0 && r<0))
-	x--;
+primFun(primDivInt) { /* Integer division primitive       */
+    Int x, y, r;      /* truncated towards -ve infinity   */
+    IntArg(x, 2);
+    IntArg(y, 1);
+    if (y == 0)
+        throwException(ap(nameArithException, nameDivideByZero));
+    if (x == MINNEGINT && y == -1)
+        throwException(ap(nameArithException, nameOverflow));
+    r = x % y;
+    x = x / y;
+    if ((y < 0 && r > 0) || (y > 0 && r < 0))
+        x--;
     IntResult(x);
 }
 
-primFun(primModInt) {                  /* Integer modulo primitive         */
-    Int x,y,r;
-    IntArg(x,2);
-    IntArg(y,1);
-    if (y==0)
-	throwException(ap(nameArithException, nameDivideByZero));
-    if (x==MINNEGINT && y==-1) {
-	IntResult(0);
+primFun(primModInt) { /* Integer modulo primitive         */
+    Int x, y, r;
+    IntArg(x, 2);
+    IntArg(y, 1);
+    if (y == 0)
+        throwException(ap(nameArithException, nameDivideByZero));
+    if (x == MINNEGINT && y == -1) {
+        IntResult(0);
     } else {
-	r = x%y;                       /* "... the modulo having the sign  */
-	if ((r<0 && y>0) ||             /*              of the divisor ..." */
-	    (r>0 && y<0)) {             /* See definition on p.91 of Haskell*/
-	    IntResult(r+y);             /* report... (Haskell 1.1?)         */
-	} else {
-	    IntResult(r);
-	}
+        r = x % y;              /* "... the modulo having the sign  */
+        if ((r < 0 && y > 0) || /*              of the divisor ..." */
+            (r > 0 && y < 0)) { /* See definition on p.91 of Haskell*/
+            IntResult(r + y);   /* report... (Haskell 1.1?)         */
+        } else {
+            IntResult(r);
+        }
     }
 }
 
-IntInt2Int(primAndInt,x&y)
-IntInt2Int(primOrInt, x|y)
-IntInt2Int(primXorInt,(x&~y) | (~x&y))
-Int2Int(primComplementInt,~x)
+IntInt2Int(primAndInt, x &y) IntInt2Int(primOrInt, x | y)
+    IntInt2Int(primXorInt, (x & ~y) | (~x & y)) Int2Int(primComplementInt, ~x)
 
-primFun(primBitInt) {                  /* Data.Bits.bit :: Int -> Int      */
+        primFun(primBitInt) { /* Data.Bits.bit :: Int -> Int      */
     Int x;
-    IntArg(x,1);
+    IntArg(x, 1);
     /* 1<<x is undefined for x<0 or x>=bitsize(Int); Haskell's bit gives 0 */
-    if (x < 0 || x >= (Int)(sizeof(Int)*8)) {
-	IntResult(0);
+    if (x < 0 || x >= (Int)(sizeof(Int) * 8)) {
+        IntResult(0);
     } else {
-	IntResult((Int)((Unsigned)1 << x));
+        IntResult((Int)((Unsigned)1 << x));
     }
 }
 
-IntInt2Bool(primTestInt,(x >> y) & 1)
+IntInt2Bool(primTestInt, (x >> y) & 1)
 
-primFun(primShiftInt) {
-    Int x,y;
-    IntArg(x,2);
-    IntArg(y,1);
+    primFun(primShiftInt) {
+    Int x, y;
+    IntArg(x, 2);
+    IntArg(y, 1);
     if (y >= 0) {
-	/* << isn't defined for y larger than the Int size, and left-      */
-	/* shifting a negative Int is undefined behaviour in C; do it in   */
-	/* Unsigned instead, which wraps the way Haskell's shiftL does.    */
-	IntResult(y >= (Int)(sizeof(x)*8) ? 0 : (Int)((Unsigned)x << y));
+        /* << isn't defined for y larger than the Int size, and left-      */
+        /* shifting a negative Int is undefined behaviour in C; do it in   */
+        /* Unsigned instead, which wraps the way Haskell's shiftL does.    */
+        IntResult(y >= (Int)(sizeof(x) * 8) ? 0 : (Int)((Unsigned)x << y));
     } else {
-	y = -y;
-	/* arithmetic right shift of a negative Int by >= the Int size     */
-	/* gives -1, not 0 (unlike the unsigned case in primShiftWord)     */
-	IntResult(y >= (Int)(sizeof(x)*8) ? (x<0 ? -1 : 0) : x >> y);
+        y = -y;
+        /* arithmetic right shift of a negative Int by >= the Int size     */
+        /* gives -1, not 0 (unlike the unsigned case in primShiftWord)     */
+        IntResult(y >= (Int)(sizeof(x) * 8) ? (x < 0 ? -1 : 0) : x >> y);
     }
 }
 
@@ -875,143 +871,141 @@ primFun(primShiftInt) {
  * Unsigned arithmetic primitives:
  * ------------------------------------------------------------------------*/
 
-CAFWord(primMaxWord,MAXCUDDLESWORD)       /* maximum integer CAF              */
-WordWord2Word(primPlusWord,x+y)        /* Word addition primitive          */
-WordWord2Word(primMinusWord,x-y)       /* Word subtraction primitive       */
-Word2Word(primNegateWord,-(Int)x)      /* Word negation (modulo MAXWORD)   */
-WordWord2Word(primMulWord,x*y)         /* Word multiplication primitive    */
-WordWord2WordNonZero(primQuotWord,x/y) /* Word division primitive; also    */
-				       /* primDivWord, since unsigned x/y  */
-				       /* truncates the same way either way*/
-WordWord2WordNonZero(primRemWord,x%y)  /* Word remainder primitive; also   */
-				       /* primModWord, for the same reason */
+CAFWord(primMaxWord, MAXCUDDLESWORD)     /* maximum integer CAF              */
+    WordWord2Word(primPlusWord, x + y)  /* Word addition primitive          */
+    WordWord2Word(primMinusWord, x - y) /* Word subtraction primitive       */
+    Word2Word(primNegateWord, -(Int)x)  /* Word negation (modulo MAXWORD)   */
+    WordWord2Word(primMulWord, x *y)    /* Word multiplication primitive    */
+    WordWord2WordNonZero(primQuotWord,
+                         x / y) /* Word division primitive; also    */
+                                /* primDivWord, since unsigned x/y  */
+                                /* truncates the same way either way*/
+    WordWord2WordNonZero(primRemWord,
+                         x % y) /* Word remainder primitive; also   */
+                                /* primModWord, for the same reason */
 
-/* quot and rem satisfy:                                                   */
-/*     (x `quot` y)*y + (x `rem` y) == x                                   */
-/* which is exactly the property described in K&R 2:                       */
-/*     (a/b)*b + a%b == a                                                  */
+    /* quot and rem satisfy:                                                   */
+    /*     (x `quot` y)*y + (x `rem` y) == x                                   */
+    /* which is exactly the property described in K&R 2:                       */
+    /*     (a/b)*b + a%b == a                                                  */
 
-primFun(primQrmWord) {                 /* Integer quotient and remainder   */
-    Unsigned x, y;                     /* truncated towards zero           */
-    WordArg(x,2);
-    WordArg(y,1);
-    if (y==0)
-	throwException(ap(nameArithException, nameDivideByZero));
-    WordWordResult(x/y,x%y);
+    primFun(primQrmWord) { /* Integer quotient and remainder   */
+    Unsigned x, y;         /* truncated towards zero           */
+    WordArg(x, 2);
+    WordArg(y, 1);
+    if (y == 0)
+        throwException(ap(nameArithException, nameDivideByZero));
+    WordWordResult(x / y, x % y);
 }
 
-WordWord2Word(primAndWord,x&y)  
-WordWord2Word(primOrWord, x|y)  
-WordWord2Word(primXorWord,(x&~y) | (~x&y))   
-Word2Word(primComplementWord,~x)
-Int2Word(primBitWord, 1<<x)
-WordInt2Bool(primTestWord,(x >> y) & 1)
+WordWord2Word(primAndWord, x &y) WordWord2Word(primOrWord, x | y)
+    WordWord2Word(primXorWord, (x & ~y) | (~x & y))
+        Word2Word(primComplementWord, ~x) Int2Word(primBitWord, 1 << x)
+            WordInt2Bool(primTestWord, (x >> y) & 1)
 
-primFun(primShiftWord) {
-    Unsigned x;         
-    Int      y;
-    WordArg(x,2);
-    IntArg(y,1);
+                primFun(primShiftWord) {
+    Unsigned x;
+    Int y;
+    WordArg(x, 2);
+    IntArg(y, 1);
     if (y >= 0) {
-	/* << isn't defined for y larger than word size */
-	WordResult(y >= (Int)(sizeof(x) * 8)  ? 0 : x << y);
+        /* << isn't defined for y larger than word size */
+        WordResult(y >= (Int)(sizeof(x) * 8) ? 0 : x << y);
     } else {
         y = -y;
-	WordResult(y >= (Int)(sizeof(x) * 8) ? 0 : x >> y);
+        WordResult(y >= (Int)(sizeof(x) * 8) ? 0 : x >> y);
     }
 }
 
 primFun(primRotateWord) {
-    Unsigned x;         
-    Int      y, z;
-    WordArg(x,2);
-    IntArg(y,1);
-    IntArg(z,3);
+    Unsigned x;
+    Int y, z;
+    WordArg(x, 2);
+    IntArg(y, 1);
+    IntArg(z, 3);
     y = y % z;
     if (y >= 0) {
-	WordResult((x << y) | (x >> (z - y)));
+        WordResult((x << y) | (x >> (z - y)));
     } else {
-	WordResult((x >> (-y)) | (x << (z + y)));
+        WordResult((x >> (-y)) | (x << (z + y)));
     }
 }
 
-Int2Int(primItoI8,  x&0xff)
-Int2Int(primItoI16, x&0xffff)
-Int2Int(primItoI32, x&0xffffffff)
+Int2Int(primItoI8, x & 0xff) Int2Int(primItoI16, x & 0xffff)
+    Int2Int(primItoI32, x & 0xffffffff)
 
-Int2Int(primI8toI,  (Int8)x)        /* casts used to cause sign extension */
-Int2Int(primI16toI, (Int16)x)       /* casts used to cause sign extension */
-Int2Int(primI32toI, x)
+        Int2Int(primI8toI, (Int8)x) /* casts used to cause sign extension */
+    Int2Int(primI16toI, (Int16)x)   /* casts used to cause sign extension */
+    Int2Int(primI32toI, x)
 
-Word2Word(primWtoW8,  x&0xff)
-Word2Word(primWtoW16, x&0xffff)
-Word2Word(primWtoW32, x&0xffffffff)
+        Word2Word(primWtoW8, x & 0xff) Word2Word(
+            primWtoW16, x & 0xffff) Word2Word(primWtoW32, x & 0xffffffff)
 
-Word2Word(primW8toW,  x)
-Word2Word(primW16toW, x)
-Word2Word(primW32toW, x)
+            Word2Word(primW8toW, x) Word2Word(primW16toW,
+                                              x) Word2Word(primW32toW, x)
 
-primFun(primI64toI32) { /* also used for primW64toW32: splitting a 64-bit */
-    Cell x, y;           /* pair cell into 32-bit halves doesn't depend   */
-    eval(primArg(1));    /* on signedness                                 */
+                primFun(
+                    primI64toI32) { /* also used for primW64toW32: splitting a 64-bit */
+    Cell x, y;        /* pair cell into 32-bit halves doesn't depend   */
+    eval(primArg(1)); /* on signedness                                 */
     x = fst(snd(whnfHead));
     y = snd(snd(whnfHead));
-    updapRoot(ap(mkTuple(2),x),y);
+    updapRoot(ap(mkTuple(2), x), y);
 }
 
 primFun(primI32toI64) {
     Int x, y;
-    IntArg(x,2);
-    IntArg(y,1);
-    updateRoot(pair(I64CELL,pair(mkInt(x),mkInt(y))));
+    IntArg(x, 2);
+    IntArg(y, 1);
+    updateRoot(pair(I64CELL, pair(mkInt(x), mkInt(y))));
 }
 
 primFun(primW32toW64) {
     Unsigned x, y;
-    WordArg(x,2);
-    WordArg(y,1);
-    updateRoot(pair(I64CELL,pair(mkInt(x),mkInt(y))));
+    WordArg(x, 2);
+    WordArg(y, 1);
+    updateRoot(pair(I64CELL, pair(mkInt(x), mkInt(y))));
 }
 
 /* --------------------------------------------------------------------------
  * Coercion primitives:
  * ------------------------------------------------------------------------*/
 
-Char2Int(primCharToInt,x)              /* Character to integer primitive   */
+Char2Int(primCharToInt, x) /* Character to integer primitive   */
 
-primFun(primIntToChar) {               /* Integer to character primitive   */
+    primFun(primIntToChar) { /* Integer to character primitive   */
     Int i;
-    IntArg(i,1);
-    if (i<0  || i>MAXCHARVAL)
-	throwException(ap(nameErrorCall, mkStr(findText("chr: out of range"))));
+    IntArg(i, 1);
+    if (i < 0 || i > MAXCHARVAL)
+        throwException(ap(nameErrorCall, mkStr(findText("chr: out of range"))));
     CharResult(i);
 }
 
-primFun(primWordToInt) {               /* Word to integer primitive        */
+primFun(primWordToInt) { /* Word to integer primitive        */
     Unsigned x;
-    WordArg(x,1);
+    WordArg(x, 1);
     IntResult(x);
 }
 
-primFun(primIntToWord) {               /* Integer to word primitive        */
+primFun(primIntToWord) { /* Integer to word primitive        */
     Int i;
-    IntArg(i,1);
+    IntArg(i, 1);
     WordResult(i);
 }
 
-primFun(primIntToFloat) {              /* Integer to Float primitive       */
+primFun(primIntToFloat) { /* Integer to Float primitive       */
     Int i;
-    IntArg(i,1);
+    IntArg(i, 1);
     FloatResult((Float)i);
 }
 
-primFun(primIntToDouble) {             /* Integer to Double primitive      */
+primFun(primIntToDouble) { /* Integer to Double primitive      */
     Int i;
-    IntArg(i,1);
+    IntArg(i, 1);
     DoubleResult((Double)i);
 }
 
-primFun(primDummyCvt) {                /* dummy (identity) conversion      */
+primFun(primDummyCvt) { /* dummy (identity) conversion      */
     updateRoot(primArg(1));
 }
 
@@ -1019,53 +1013,53 @@ primFun(primRationalToFloat) {
     /* Optimisation: we try to short-circuit trivial conversions */
     Cell x = followInd(primArg(1));
     if (isAp(x)) {
-	Cell f = followInd(fun(x));
-	Cell a = arg(x);
-	if (f == nameFloatToRational) {
-	    updateRoot(a);
-	    return;
-	} else if (f == nameDoubleToRational) {
-	    updapRoot(nameDoubleToFloat,a);
-	    return;
-	} else if (isAp(f)) {
-	    Cell g = followInd(fun(f));
-	    if (g == nameDoubleToRatio) {
-		/* ignore the dict - it must be right */
-		updapRoot(nameDoubleToFloat,a);
-		return;
-	    } else if (g == nameIntToRatio) {
-		updapRoot(nameIntToFloat,a);
-		return;
-	    }
-	}
+        Cell f = followInd(fun(x));
+        Cell a = arg(x);
+        if (f == nameFloatToRational) {
+            updateRoot(a);
+            return;
+        } else if (f == nameDoubleToRational) {
+            updapRoot(nameDoubleToFloat, a);
+            return;
+        } else if (isAp(f)) {
+            Cell g = followInd(fun(f));
+            if (g == nameDoubleToRatio) {
+                /* ignore the dict - it must be right */
+                updapRoot(nameDoubleToFloat, a);
+                return;
+            } else if (g == nameIntToRatio) {
+                updapRoot(nameIntToFloat, a);
+                return;
+            }
+        }
     }
-    updapRoot(nameRationalToFloat,primArg(1));
+    updapRoot(nameRationalToFloat, primArg(1));
 }
 
 primFun(primRationalToDouble) {
     /* Optimisation: we try to short-circuit trivial conversions */
     Cell x = followInd(primArg(1));
     if (isAp(x)) {
-	Cell f = followInd(fun(x));
-	Cell a = arg(x);
-	if (f == nameFloatToRational) {
-	    updapRoot(nameFloatToDouble,a);
-	    return;
-	} else if (f == nameDoubleToRational) {
-	    updateRoot(a);
-	    return;
-	} else if (isAp(f)) {
-	    Cell g = followInd(fun(f));
-	    if (g == nameDoubleToRatio) {
-		updateRoot(a); /* ignore the dict - it must be right */
-		return;
-	    } else if (g == nameIntToRatio) {
-		updapRoot(nameIntToDouble,a);
-		return;
-	    }
-	}
+        Cell f = followInd(fun(x));
+        Cell a = arg(x);
+        if (f == nameFloatToRational) {
+            updapRoot(nameFloatToDouble, a);
+            return;
+        } else if (f == nameDoubleToRational) {
+            updateRoot(a);
+            return;
+        } else if (isAp(f)) {
+            Cell g = followInd(fun(f));
+            if (g == nameDoubleToRatio) {
+                updateRoot(a); /* ignore the dict - it must be right */
+                return;
+            } else if (g == nameIntToRatio) {
+                updapRoot(nameIntToDouble, a);
+                return;
+            }
+        }
     }
-    updapRoot(nameRationalToDouble,primArg(1));
+    updapRoot(nameRationalToDouble, primArg(1));
 }
 
 /* --------------------------------------------------------------------------
@@ -1074,189 +1068,197 @@ primFun(primRationalToDouble) {
 
 primFun(primFloatToDouble) {
     Float f;
-    FloatArg(f,1);
+    FloatArg(f, 1);
     DoubleResult((Double)f);
-} 
+}
 
 primFun(primDoubleToFloat) {
     Double f;
-    DoubleArg(f,1);
+    DoubleArg(f, 1);
     FloatResult((Float)f);
-} 
+}
 
-FloatFloat2Float(primPlusFloat,x+y)    /* Float addition primitive         */
-FloatFloat2Float(primMinusFloat,x-y)   /* Float subtraction primitive      */
-FloatFloat2Float(primMulFloat,x*y)     /* Float multiplication primitive   */
-Float2Float(primNegFloat,-x)           /* Float negation primitive         */
-FloatFloat2Float(primDivFloat,x/y)     /* Float division primitive       */
+FloatFloat2Float(primPlusFloat, x + y) /* Float addition primitive         */
+    FloatFloat2Float(primMinusFloat,
+                     x - y)               /* Float subtraction primitive      */
+    FloatFloat2Float(primMulFloat, x *y)  /* Float multiplication primitive   */
+    Float2Float(primNegFloat, -x)         /* Float negation primitive         */
+    FloatFloat2Float(primDivFloat, x / y) /* Float division primitive       */
 
-DoubleDouble2Double(primPlusDouble,x+y) /* Double addition primitive        */
-DoubleDouble2Double(primMinusDouble,x-y)/* Double subtraction primitive    */
-DoubleDouble2Double(primMulDouble,x*y)  /* Double multiplication primitive  */
-Double2Double(primNegDouble,-x)         /* Double negation primitive        */
-DoubleDouble2Double(primDivDouble,x/y)  /* Double division primitive  */
+    DoubleDouble2Double(primPlusDouble,
+                        x + y) /* Double addition primitive        */
+    DoubleDouble2Double(primMinusDouble,
+                        x - y) /* Double subtraction primitive    */
+    DoubleDouble2Double(primMulDouble,
+                        x *y)        /* Double multiplication primitive  */
+    Double2Double(primNegDouble, -x) /* Double negation primitive        */
+    DoubleDouble2Double(primDivDouble, x / y) /* Double division primitive  */
 
-Float2Float(primSinFloat,sin(x))       /* Float sin (trig) primitive       */
-Float2Float(primCosFloat,cos(x))       /* Float cos (trig) primitive       */
-Float2Float(primTanFloat,tan(x))       /* Float tan (trig) primitive       */
-Float2Float(primAsinFloat,asin(x))     /* Float arc sin (trig) primitive   */
-Float2Float(primAcosFloat,acos(x))     /* Float arc cos (trig) primitive   */
-Float2Float(primAtanFloat,atan(x))     /* Float arc tan (trig) primitive   */
-				       /*               (trig) primitive   */
-Float2Float(primExpFloat,exp(x))       /* Float exponential primitive      */
-Float2FloatPre(primLogFloat,log(x),x>0)/* Float logarithm primitive        */
-Float2FloatPre(primSqrtFloat,sqrt(x),x>=0) /* Float square root primitive  */
+    Float2Float(primSinFloat, sin(x))   /* Float sin (trig) primitive       */
+    Float2Float(primCosFloat, cos(x))   /* Float cos (trig) primitive       */
+    Float2Float(primTanFloat, tan(x))   /* Float tan (trig) primitive       */
+    Float2Float(primAsinFloat, asin(x)) /* Float arc sin (trig) primitive   */
+    Float2Float(primAcosFloat, acos(x)) /* Float arc cos (trig) primitive   */
+    Float2Float(primAtanFloat, atan(x)) /* Float arc tan (trig) primitive   */
+                                        /*               (trig) primitive   */
+    Float2Float(primExpFloat, exp(x))   /* Float exponential primitive      */
+    Float2FloatPre(primLogFloat, log(x),
+                   x > 0) /* Float logarithm primitive        */
+    Float2FloatPre(primSqrtFloat, sqrt(x),
+                   x >= 0) /* Float square root primitive  */
 
-Double2Double(primSinDouble,sin(x))    /* Double sin (trig) primitive      */
-Double2Double(primCosDouble,cos(x))    /* Double cos (trig) primitive      */
-Double2Double(primTanDouble,tan(x))    /* Double tan (trig) primitive      */
-Double2Double(primAsinDouble,asin(x))  /* Double arc sin (trig) primitive  */
-Double2Double(primAcosDouble,acos(x))  /* Double arc cos (trig) primitive  */
-Double2Double(primAtanDouble,atan(x))  /* Double arc tan (trig) primitive  */
-Double2Double(primExpDouble,exp(x))    /* Double exponential primitive     */
-Double2DoublePre(primLogDouble,log(x),x>0)/* Double logarithm primitive    */
-Double2DoublePre(primSqrtDouble,sqrt(x),x>=0) /* Double square root primitive */
+    Double2Double(primSinDouble, sin(x)) /* Double sin (trig) primitive      */
+    Double2Double(primCosDouble, cos(x)) /* Double cos (trig) primitive      */
+    Double2Double(primTanDouble, tan(x)) /* Double tan (trig) primitive      */
+    Double2Double(primAsinDouble,
+                  asin(x)) /* Double arc sin (trig) primitive  */
+    Double2Double(primAcosDouble,
+                  acos(x)) /* Double arc cos (trig) primitive  */
+    Double2Double(primAtanDouble,
+                  atan(x))               /* Double arc tan (trig) primitive  */
+    Double2Double(primExpDouble, exp(x)) /* Double exponential primitive     */
+    Double2DoublePre(primLogDouble, log(x),
+                     x > 0) /* Double logarithm primitive    */
+    Double2DoublePre(primSqrtDouble, sqrt(x),
+                     x >= 0) /* Double square root primitive */
 
-/* Not used in Cuddles prelude, rounds towards zero */
-Float2Int(primFloatToInt,(Int) x)      /* Adhoc Float --> Int conversion   */
-Double2Int(primDoubleToInt,(Int) x)    /* Adhoc Double --> Int conversion  */
+    /* Not used in Cuddles prelude, rounds towards zero */
+    Float2Int(primFloatToInt, (Int)x)   /* Adhoc Float --> Int conversion   */
+    Double2Int(primDoubleToInt, (Int)x) /* Adhoc Double --> Int conversion  */
 
+    CAFInt(primFloatDigits,
+           CUDDLES_FLT_MANT_DIG) /* Float sig. digits primitive    */
+                                /* again, courtesy K&R2             */
 
-CAFInt(primFloatDigits,CUDDLES_FLT_MANT_DIG)/* Float sig. digits primitive    */
-				       /* again, courtesy K&R2             */
+    CAFInt(primFloatMinExp,
+           CUDDLES_FLT_MIN_EXP) /* Float min exponent primitive    */
+    CAFInt(primFloatMaxExp,
+           CUDDLES_FLT_MAX_EXP) /* Float max exponent primitive    */
 
-CAFInt(primFloatMinExp,CUDDLES_FLT_MIN_EXP)/* Float min exponent primitive    */
-CAFInt(primFloatMaxExp,CUDDLES_FLT_MAX_EXP)/* Float max exponent primitive    */
+    CAFInt(primDoubleDigits,
+           CUDDLES_DBL_MANT_DIG) /* Double sig. digits primitive  */
+                                /* again, courtesy K&R2             */
 
-CAFInt(primDoubleDigits,CUDDLES_DBL_MANT_DIG)/* Double sig. digits primitive  */
-				       /* again, courtesy K&R2             */
+    CAFInt(primDoubleMinExp,
+           CUDDLES_DBL_MIN_EXP) /* Double min exponent primitive  */
+    CAFInt(primDoubleMaxExp,
+           CUDDLES_DBL_MAX_EXP) /* Double max exponent primitive  */
 
-CAFInt(primDoubleMinExp,CUDDLES_DBL_MIN_EXP)/* Double min exponent primitive  */
-CAFInt(primDoubleMaxExp,CUDDLES_DBL_MAX_EXP)/* Double max exponent primitive  */
-
-/* ToDo: GHC stole its decode code from Lennart - maybe we should too?     */
-primFun(primFloatDecode) {             /* Float decode primitive           */
-    double f;                          /*  :: Float -> (Integer,Int)       */
-    Int    n;                          /* another gruesome hack            */
-    FloatArg(f,1);
-    f  = frexp((double)(f),&n);        /* 0.5   <= f < 1                   */
-    f  = ldexp(f,CUDDLES_FLT_MANT_DIG);   /* 2^m-1 <= f < 2^m, m=CUDDLES_FLT_MANT_DIG*/
+    /* ToDo: GHC stole its decode code from Lennart - maybe we should too?     */
+    primFun(primFloatDecode) { /* Float decode primitive           */
+    double f;                  /*  :: Float -> (Integer,Int)       */
+    Int n;                     /* another gruesome hack            */
+    FloatArg(f, 1);
+    f = frexp((double)(f), &n); /* 0.5   <= f < 1                   */
+    f = ldexp(f,
+              CUDDLES_FLT_MANT_DIG); /* 2^m-1 <= f < 2^m, m=CUDDLES_FLT_MANT_DIG*/
     n -= CUDDLES_FLT_MANT_DIG;
     push(bigDouble(f));
-    updapRoot(ap(mkTuple(2),top()),mkInt(n));
+    updapRoot(ap(mkTuple(2), top()), mkInt(n));
 }
 
-primFun(primFloatEncode) {             /* Float encode primitive           */
-    Int n;                             /*  :: Integer -> Int -> Float      */
-    Float f;                           /* Ugly hack, don't use Cuddles for    */
-    IntArg(n,1);                       /* numerical work                   */
-    eval(primArg(2));                  /* get integer                      */
-    f = (Float)bigToDouble(whnfHead);  /* and turn it into a float         */
-    updateRoot(mkFloat(ldexp(f,n)));
+primFun(primFloatEncode) {            /* Float encode primitive           */
+    Int n;                            /*  :: Integer -> Int -> Float      */
+    Float f;                          /* Ugly hack, don't use Cuddles for    */
+    IntArg(n, 1);                     /* numerical work                   */
+    eval(primArg(2));                 /* get integer                      */
+    f = (Float)bigToDouble(whnfHead); /* and turn it into a float         */
+    updateRoot(mkFloat(ldexp(f, n)));
 }
 
 /* ToDo: GHC stole its decode code from Lennart - maybe we should too?     */
-primFun(primDoubleDecode) {            /* Double decode primitive           */
-    double f;                          /*  :: Double -> (Integer,Int)       */
-    Int    n;                          /* another gruesome hack            */
-    DoubleArg(f,1);
-    f  = frexp((double)(f),&n);        /* 0.5   <= f < 1                   */
-    f  = ldexp(f,CUDDLES_DBL_MANT_DIG);   /* 2^m-1 <= f < 2^m, m=CUDDLES_DBL_MANT_DIG*/
+primFun(primDoubleDecode) { /* Double decode primitive           */
+    double f;               /*  :: Double -> (Integer,Int)       */
+    Int n;                  /* another gruesome hack            */
+    DoubleArg(f, 1);
+    f = frexp((double)(f), &n); /* 0.5   <= f < 1                   */
+    f = ldexp(f,
+              CUDDLES_DBL_MANT_DIG); /* 2^m-1 <= f < 2^m, m=CUDDLES_DBL_MANT_DIG*/
     n -= CUDDLES_DBL_MANT_DIG;
     push(bigDouble(f));
-    updapRoot(ap(mkTuple(2),top()),mkInt(n));
+    updapRoot(ap(mkTuple(2), top()), mkInt(n));
 }
 
 primFun(primDoubleEncode) {            /* Double encode primitive          */
     Int n;                             /*  :: Integer -> Int -> Double     */
     Double f;                          /* Ugly hack, don't use Cuddles for    */
-    IntArg(n,1);                       /* numerical work                   */
+    IntArg(n, 1);                      /* numerical work                   */
     eval(primArg(2));                  /* get integer                      */
     f = (Double)bigToDouble(whnfHead); /* and turn it into a double        */
-    DoubleResult(ldexp(f,n));
+    DoubleResult(ldexp(f, n));
 }
-
 
 /* --------------------------------------------------------------------------
  * Ptr primitives:
  * ------------------------------------------------------------------------*/
 
-CAFPtr(primNullPtr,0)                  /* Null pointer                     */
-PtrInt2Ptr(primPlusPtr,(char*)x+y)     /* Pointer arithmetic               */
-primFun(primAlignPtr) {                /* Aligning the pointer             */
+CAFPtr(primNullPtr, 0) /* Null pointer                     */
+    PtrInt2Ptr(primPlusPtr,
+               (char *)x + y) /* Pointer arithmetic               */
+    primFun(primAlignPtr) {   /* Aligning the pointer             */
     Pointer x;
-    Int     y;
-    PtrArg(x,2);
-    IntArg(y,1);
+    Int y;
+    PtrArg(x, 2);
+    IntArg(y, 1);
     if (y <= 0)
-	throwException(ap(nameArithException, nameDivideByZero));
-    PtrResult((char*)x+(int)((y - (long)x%y)%y));
+        throwException(ap(nameArithException, nameDivideByZero));
+    PtrResult((char *)x + (int)((y - (long)x % y) % y));
 }
-PtrPtr2Int(primMinusPtr,(char*)x-(char*)y) /* Pointer arithmetic           */
-PtrPtr2Bool(primEqPtr,x==y)            /* Pointer equality primitive       */
+PtrPtr2Int(primMinusPtr,
+           (char *)x - (char *)y)  /* Pointer arithmetic           */
+    PtrPtr2Bool(primEqPtr, x == y) /* Pointer equality primitive       */
 
-primFun(primCmpPtr) {                  /* Pointer compare primitive        */
+    primFun(primCmpPtr) { /* Pointer compare primitive        */
     Pointer x, y;
-    PtrArg(x,2);
-    PtrArg(y,1);
-    updateRoot( x<y ? nameLT :
-	      ( x>y ? nameGT : 
-		      nameEQ ));
+    PtrArg(x, 2);
+    PtrArg(y, 1);
+    updateRoot(x < y ? nameLT : (x > y ? nameGT : nameEQ));
 }
 
 /* --------------------------------------------------------------------------
  * Comparison primitives:
  * ------------------------------------------------------------------------*/
 
-IntInt2Bool(primEqInt,x==y)            /* Integer equality primitive       */
-WordWord2Bool(primEqWord,x==y)         /* Natural equality primitive       */
-CharChar2Bool(primEqChar,x==y)         /* Character equality primitive     */
-FloatFloat2Bool(primEqFloat, x==y)     /* Float equality primitive         */
-DoubleDouble2Bool(primEqDouble, x==y)  /* Double equality primitive        */
+IntInt2Bool(primEqInt, x == y)           /* Integer equality primitive       */
+    WordWord2Bool(primEqWord, x == y)    /* Natural equality primitive       */
+    CharChar2Bool(primEqChar, x == y)    /* Character equality primitive     */
+    FloatFloat2Bool(primEqFloat, x == y) /* Float equality primitive         */
+    DoubleDouble2Bool(primEqDouble,
+                      x == y) /* Double equality primitive        */
 
-primFun(primCmpInt) {                  /* Integer compare primitive        */
+    primFun(primCmpInt) { /* Integer compare primitive        */
     Int x, y;
-    IntArg(x,2);
-    IntArg(y,1);
-    updateRoot( x<y ? nameLT :
-	      ( x>y ? nameGT : 
-		      nameEQ ));
+    IntArg(x, 2);
+    IntArg(y, 1);
+    updateRoot(x < y ? nameLT : (x > y ? nameGT : nameEQ));
 }
 
-primFun(primCmpWord) {                 /* Natural compare primitive        */
+primFun(primCmpWord) { /* Natural compare primitive        */
     Unsigned x, y;
-    WordArg(x,2);
-    WordArg(y,1);
-    updateRoot( x<y ? nameLT :
-	      ( x>y ? nameGT : 
-		      nameEQ ));
+    WordArg(x, 2);
+    WordArg(y, 1);
+    updateRoot(x < y ? nameLT : (x > y ? nameGT : nameEQ));
 }
 
-primFun(primCmpChar) {                 /* Character compare primitive      */
+primFun(primCmpChar) { /* Character compare primitive      */
     Char x, y;
-    CharArg(x,2);
-    CharArg(y,1);
-    updateRoot( x<y ? nameLT :
-	      ( x>y ? nameGT : 
-		      nameEQ ));
+    CharArg(x, 2);
+    CharArg(y, 1);
+    updateRoot(x < y ? nameLT : (x > y ? nameGT : nameEQ));
 }
 
-primFun(primCmpFloat) {                /* Float compare primitive          */
+primFun(primCmpFloat) { /* Float compare primitive          */
     Float x, y;
-    FloatArg(x,2);
-    FloatArg(y,1);
-    updateRoot( x<y ? nameLT :
-	      ( x>y ? nameGT : 
-		      nameEQ ));
+    FloatArg(x, 2);
+    FloatArg(y, 1);
+    updateRoot(x < y ? nameLT : (x > y ? nameGT : nameEQ));
 }
 
-primFun(primCmpDouble) {               /* Double compare primitive         */
+primFun(primCmpDouble) { /* Double compare primitive         */
     Double x, y;
-    DoubleArg(x,2);
-    DoubleArg(y,1);
-    updateRoot( x<y ? nameLT :
-	      ( x>y ? nameGT : 
-		      nameEQ ));
+    DoubleArg(x, 2);
+    DoubleArg(y, 1);
+    updateRoot(x < y ? nameLT : (x > y ? nameGT : nameEQ));
 }
 
 /* --------------------------------------------------------------------------
@@ -1269,53 +1271,51 @@ primFun(primCmpDouble) {               /* Double compare primitive         */
 # define MAX_STRING FILENAME_MAX
 #endif
 
-String evalName(Cell es)                     /* evaluate es :: [Char] and save  */
-{                              /* in char array... return ptr to  */
-    static char buffer[MAX_STRING+1];   /* string or 0, if error occurs    */
-    char	*bp = buffer;
-    StackPtr    saveSp = sp;
+String evalName(Cell es)                /* evaluate es :: [Char] and save  */
+{                                       /* in char array... return ptr to  */
+    static char buffer[MAX_STRING + 1]; /* string or 0, if error occurs    */
+    char *bp = buffer;
+    StackPtr saveSp = sp;
 
     eval(es);
-    while (whnfHead==nameCons && bp<=buffer+MAX_STRING-MAX_CHAR_ENCODING) {
-	eval(pop());
-	AddChar(charOf(whnfHead), bp);
-	eval(pop());
+    while (whnfHead == nameCons &&
+           bp <= buffer + MAX_STRING - MAX_CHAR_ENCODING) {
+        eval(pop());
+        AddChar(charOf(whnfHead), bp);
+        eval(pop());
     }
-    if (whnfHead==nameNil) {
-	*bp = '\0';
-	return buffer;
+    if (whnfHead == nameNil) {
+        *bp = '\0';
+        return buffer;
     }
-    sp = saveSp;                        /* stack pointer must be the same  */
-    return 0;                           /* as it was on entry              */
+    sp = saveSp; /* stack pointer must be the same  */
+    return 0;    /* as it was on entry              */
 }
 
 /* --------------------------------------------------------------------------
  * Top-level printing mechanism:
  * ------------------------------------------------------------------------*/
 
-Void outputString(FILE*fp)                   /* Evaluate string on top of stack */
-{                             /* and print it on fp              */
+Void outputString(FILE *fp) /* Evaluate string on top of stack */
+{                           /* and print it on fp              */
     StackPtr origSp = sp;
     for (;;) {
-	Cell temp = evalWithNoError(pop());
-	if (nonNull(temp)) {
-	    sp = origSp;
-	    top()  = printException((top()=temp),nameNil);
-	}
-	else if (whnfHead==nameCons) {
-	    if (nonNull(temp=evalWithNoError(pop()))) {
-		sp = origSp;
-		onto(temp);
-		pushed(1) = printException(pushed(0),pushed(1));
-		drop();
-	    }
-	    else {
-		FPutChar(charOf(whnfHead),fp);
-		fflush(fp);
-	    }
-	}
-	else
-	    return;
+        Cell temp = evalWithNoError(pop());
+        if (nonNull(temp)) {
+            sp = origSp;
+            top() = printException((top() = temp), nameNil);
+        } else if (whnfHead == nameCons) {
+            if (nonNull(temp = evalWithNoError(pop()))) {
+                sp = origSp;
+                onto(temp);
+                pushed(1) = printException(pushed(0), pushed(1));
+                drop();
+            } else {
+                FPutChar(charOf(whnfHead), fp);
+                fflush(fp);
+            }
+        } else
+            return;
     }
 }
 
@@ -1323,48 +1323,47 @@ Void outputString(FILE*fp)                   /* Evaluate string on top of stack 
  * Char primitives:
  * ------------------------------------------------------------------------*/
 
-CAFChar(primMaxChar,MAXCHARVAL)
+CAFChar(primMaxChar, MAXCHARVAL)
 
-Char2Bool(primIsUpper,isUpper(x))
-Char2Bool(primIsLower,isLower(x))
-Char2Bool(primIsAlpha,isAlpha(x))
-Char2Bool(primIsAlphaNum,isAlphaNum(x))
-Char2Bool(primIsPrint,isPrint(x))
+    Char2Bool(primIsUpper, isUpper(x)) Char2Bool(primIsLower, isLower(x))
+        Char2Bool(primIsAlpha, isAlpha(x))
+            Char2Bool(primIsAlphaNum, isAlphaNum(x))
+                Char2Bool(primIsPrint, isPrint(x))
 
-Char2Char(primToLower,toLower(x))
-Char2Char(primToUpper,toUpper(x))
-Char2Char(primToTitle,toTitle(x))
+                    Char2Char(primToLower, toLower(x))
+                        Char2Char(primToUpper, toUpper(x))
+                            Char2Char(primToTitle, toTitle(x))
 
-Char2Int(primUniGenCat,uni_gencat(x))
+                                Char2Int(primUniGenCat, uni_gencat(x))
 
-/* --------------------------------------------------------------------------
+    /* --------------------------------------------------------------------------
  * Extensible records: (Gaster and Jones, 1996)
  * ------------------------------------------------------------------------*/
 
-
-/* --------------------------------------------------------------------------
+    /* --------------------------------------------------------------------------
  * Auxilliary functions
  * ------------------------------------------------------------------------*/
 
-Cell followInd(Cell c)    /* follow chain of indirections and CAFs */
+    Cell followInd(Cell c) /* follow chain of indirections and CAFs */
 {
     do {
-	switch (whatIs(c)) {
-	case INDIRECT : c = snd(c);
-		break;
-	case NAME     : if (isCfun(c)
-		|| name(c).arity != 0 
-		|| isNull(name(c).defn)) {
-		return c;
-		}
-		c = name(c).defn;
-		break;
-	default       : return c;
-    }
-    allowBreak();
+        switch (whatIs(c)) {
+        case INDIRECT:
+            c = snd(c);
+            break;
+        case NAME:
+            if (isCfun(c) || name(c).arity != 0 || isNull(name(c).defn)) {
+                return c;
+            }
+            c = name(c).defn;
+            break;
+        default:
+            return c;
+        }
+        allowBreak();
     } while (1);
 }
-		   
+
 /* --------------------------------------------------------------------------
  * Pointer equality
  * ------------------------------------------------------------------------*/
@@ -1388,10 +1387,10 @@ Cell followInd(Cell c)    /* follow chain of indirections and CAFs */
  *                 return a
  */
 
-primFun(primUnsafePtrEq) {		 /* Unsafe pointer equality test     */
+primFun(primUnsafePtrEq) { /* Unsafe pointer equality test     */
     Cell x = followInd(primArg(2));
     Cell y = followInd(primArg(1));
-    updateRoot( (x==y) ? nameTrue : nameFalse );
+    updateRoot((x == y) ? nameTrue : nameFalse);
 }
 
 /* Companion function for use when debugging uses of unsafePtrEq.
@@ -1411,132 +1410,237 @@ primFun(primUnsafePtrToInt) {
  * table cuddlesAPI4).
  *-------------------------------------------------------------------------*/
 
-static void           getUnit        (void);
-static HsInt          getInt         (void);
-static HsWord         getWord        (void);
-static HsAddr         getAddr        (void);
-static char           getChar4       (void);
-static HsChar         getChar        (void);
-static CuddlesForeign    getForeign     (void);
-static HsBool         getBool        (void);
-static HsInt8         getInt8        (void);
-static HsInt16        getInt16       (void);
-static HsInt32        getInt32       (void);
-static HsInt64        getInt64       (void);
-static HsWord8        getWord8       (void);
-static HsWord16       getWord16      (void);
-static HsWord32       getWord32      (void);
-static HsWord64       getWord64      (void);
-static HsPtr          getPtr         (void);
-static HsFunPtr       getFunPtr      (void);
-static HsForeignPtr   getForeignPtr  (void);	      
-static HsStablePtr    getStablePtr4  (void);
-static HsFloat        getFloat       (void);
-static HsDouble       getDouble      (void);
+static void getUnit(void);
+static HsInt getInt(void);
+static HsWord getWord(void);
+static HsAddr getAddr(void);
+static char getChar4(void);
+static HsChar getChar(void);
+static CuddlesForeign getForeign(void);
+static HsBool getBool(void);
+static HsInt8 getInt8(void);
+static HsInt16 getInt16(void);
+static HsInt32 getInt32(void);
+static HsInt64 getInt64(void);
+static HsWord8 getWord8(void);
+static HsWord16 getWord16(void);
+static HsWord32 getWord32(void);
+static HsWord64 getWord64(void);
+static HsPtr getPtr(void);
+static HsFunPtr getFunPtr(void);
+static HsForeignPtr getForeignPtr(void);
+static HsStablePtr getStablePtr4(void);
+static HsFloat getFloat(void);
+static HsDouble getDouble(void);
 
-static CuddlesStablePtr  getStablePtr   (void);
+static CuddlesStablePtr getStablePtr(void);
 
-static void           putInt         (HsInt);
-static void           putWord        (HsWord);
-static void           putAddr        (HsAddr);
-static void           putChar4       (char);
-static void           putChar        (HsChar);
-static void           putForeign     (CuddlesForeign, void (*)(void *));
-static void           putStablePtr4  (HsStablePtr);
-static void           putBool        (HsBool);
-static void           putInt8        (HsInt8);
-static void           putInt16       (HsInt16);
-static void           putInt32       (HsInt32);
-static void           putInt64       (HsInt64);
-static void           putWord8       (HsWord8);
-static void           putWord16      (HsWord16);
-static void           putWord32      (HsWord32);
-static void           putWord64      (HsWord64);
-static void           putPtr         (HsPtr);
-static void           putFunPtr      (HsFunPtr);
-static void           putForeignPtr  (HsForeignPtr);
-static void           putFloat       (HsFloat);
-static void           putDouble      (HsDouble);
+static void putInt(HsInt);
+static void putWord(HsWord);
+static void putAddr(HsAddr);
+static void putChar4(char);
+static void putChar(HsChar);
+static void putForeign(CuddlesForeign, void (*)(void *));
+static void putStablePtr4(HsStablePtr);
+static void putBool(HsBool);
+static void putInt8(HsInt8);
+static void putInt16(HsInt16);
+static void putInt32(HsInt32);
+static void putInt64(HsInt64);
+static void putWord8(HsWord8);
+static void putWord16(HsWord16);
+static void putWord32(HsWord32);
+static void putWord64(HsWord64);
+static void putPtr(HsPtr);
+static void putFunPtr(HsFunPtr);
+static void putForeignPtr(HsForeignPtr);
+static void putFloat(HsFloat);
+static void putDouble(HsDouble);
 
-static void           freeStablePtr4 (HsStablePtr);
+static void freeStablePtr4(HsStablePtr);
 
-	      
-static void           returnIO       (CuddlesStackPtr, int);
-static void           returnId       (CuddlesStackPtr, int);
-static int            runIO          (int);
-static void           apMany         (int);
+static void returnIO(CuddlesStackPtr, int);
+static void returnId(CuddlesStackPtr, int);
+static int runIO(int);
+static void apMany(int);
 
-static void           getUnit()      { eval(pop()); }
-static HsInt          getInt()       { eval(pop()); checkInt();   return whnfInt; }
-static HsWord         getWord()      { eval(pop()); checkWord();  return (unsigned int) whnfInt; }
-static HsAddr         getAddr()      { eval(pop()); checkPtr();   return ptrOf(whnfHead); }
-static char           getChar4()     { eval(pop()); checkChar();  return charOf(whnfHead); }
-static HsChar         getChar()      { eval(pop()); checkChar();  return charOf(whnfHead); }
-static CuddlesForeign    getForeign()   { eval(pop()); return derefMP(whnfHead); }
-static HsBool         getBool()      { eval(pop()); checkBool();  return (whnfHead == nameTrue); }
-static HsInt8         getInt8()      { eval(pop()); checkInt();   return whnfInt; } 
-static HsInt16        getInt16()     { eval(pop()); checkInt();   return whnfInt; }
-static HsInt32        getInt32()     { eval(pop()); checkInt();   return whnfInt; }
-static HsInt64        getInt64()     { eval(pop()); return int64FromParts(intOf(fst(snd(whnfHead))), intOf(snd(snd(whnfHead)))); }
-static HsWord8        getWord8()     { eval(pop()); checkWord();  return (unsigned int) whnfInt; } 
-static HsWord16       getWord16()    { eval(pop()); checkWord();  return (unsigned int) whnfInt; } 
-static HsWord32       getWord32()    { eval(pop()); checkWord();  return (unsigned int) whnfInt; } 
-static HsWord64       getWord64()    { eval(pop()); return int64FromParts(intOf(fst(snd(whnfHead))), intOf(snd(snd(whnfHead)))); }
-static HsPtr          getPtr()       { eval(pop()); checkPtr();   return ptrOf(whnfHead); }
-static HsFunPtr       getFunPtr()    { eval(pop()); checkPtr();   return (HsFunPtr)ptrOf(whnfHead); }
+static void getUnit() {
+    eval(pop());
+}
+static HsInt getInt() {
+    eval(pop());
+    checkInt();
+    return whnfInt;
+}
+static HsWord getWord() {
+    eval(pop());
+    checkWord();
+    return (unsigned int)whnfInt;
+}
+static HsAddr getAddr() {
+    eval(pop());
+    checkPtr();
+    return ptrOf(whnfHead);
+}
+static char getChar4() {
+    eval(pop());
+    checkChar();
+    return charOf(whnfHead);
+}
+static HsChar getChar() {
+    eval(pop());
+    checkChar();
+    return charOf(whnfHead);
+}
+static CuddlesForeign getForeign() {
+    eval(pop());
+    return derefMP(whnfHead);
+}
+static HsBool getBool() {
+    eval(pop());
+    checkBool();
+    return (whnfHead == nameTrue);
+}
+static HsInt8 getInt8() {
+    eval(pop());
+    checkInt();
+    return whnfInt;
+}
+static HsInt16 getInt16() {
+    eval(pop());
+    checkInt();
+    return whnfInt;
+}
+static HsInt32 getInt32() {
+    eval(pop());
+    checkInt();
+    return whnfInt;
+}
+static HsInt64 getInt64() {
+    eval(pop());
+    return int64FromParts(intOf(fst(snd(whnfHead))), intOf(snd(snd(whnfHead))));
+}
+static HsWord8 getWord8() {
+    eval(pop());
+    checkWord();
+    return (unsigned int)whnfInt;
+}
+static HsWord16 getWord16() {
+    eval(pop());
+    checkWord();
+    return (unsigned int)whnfInt;
+}
+static HsWord32 getWord32() {
+    eval(pop());
+    checkWord();
+    return (unsigned int)whnfInt;
+}
+static HsWord64 getWord64() {
+    eval(pop());
+    return int64FromParts(intOf(fst(snd(whnfHead))), intOf(snd(snd(whnfHead))));
+}
+static HsPtr getPtr() {
+    eval(pop());
+    checkPtr();
+    return ptrOf(whnfHead);
+}
+static HsFunPtr getFunPtr() {
+    eval(pop());
+    checkPtr();
+    return (HsFunPtr)ptrOf(whnfHead);
+}
 
-static HsForeignPtr   getForeignPtr() {
-    errHead(0); errPrintf("getForeignPtr: not implemented in Cuddles");
+static HsForeignPtr getForeignPtr() {
+    errHead(0);
+    errPrintf("getForeignPtr: not implemented in Cuddles");
     errFail();
     return 0;
 }
 
-static CuddlesStablePtr  getStablePtr() { 
+static CuddlesStablePtr getStablePtr() {
     Cell c = mkStablePtr(pop());
     if (isNull(c)) {
-	errHead(0); errPrintf("Stable pointer table full");
-	errFail();
+        errHead(0);
+        errPrintf("Stable pointer table full");
+        errFail();
     }
     return c;
 }
 
-static CuddlesStablePtr  lookupName (String, String);
-static CuddlesStablePtr  lookupName(String q, String n)
-{
+static CuddlesStablePtr lookupName(String, String);
+static CuddlesStablePtr lookupName(String q, String n) {
     Name nm = findQualFun(findText(q), findText(n));
     Cell c;
-    
+
     if (isNull(nm)) {
-	errHead(0); errPrintf("Can't find qualified name '%s.%s'", q, n);
-	errFail();
+        errHead(0);
+        errPrintf("Can't find qualified name '%s.%s'", q, n);
+        errFail();
     }
     c = mkStablePtr(nm);
     if (isNull(c)) {
-	errHead(0); errPrintf("Stable pointer table full");
-	errFail();
+        errHead(0);
+        errPrintf("Stable pointer table full");
+        errFail();
     }
     return c;
 }
 
-static void putInt (HsInt  x) { push(mkInt(x)); }
-static void putWord(HsWord x) { push(mkInt((int)x)); }
-static void putAddr(HsAddr x) { push(mkPtr(x)); }
-static void putChar4(char x) { push(mkChar(x)); }
-static void putChar(HsChar x) { push(mkChar(x)); }
-static void putForeign(CuddlesForeign x, void (*f)(CuddlesForeign)) { push(mkMallocPtr(x,f)); }
-static void putStablePtr   (CuddlesStablePtr x) { push(derefStablePtr(x)); }
-static void putBool        (HsBool x)        { push(x?nameTrue:nameFalse); }
-                                            
-static void putInt8 (HsInt8  x) { push(mkInt(x)); }
-static void putInt16(HsInt16 x) { push(mkInt(x)); }
-static void putInt32(HsInt32 x) { push(mkInt(x)); }
-static void putInt64(HsInt64 x) { push(pair(I64CELL,pair(mkInt(part1Int64(x)),mkInt(part2Int64(x))))); }
-static void putWord8 (HsWord8  x) { push(mkInt((int)x)); }
-static void putWord16(HsWord16 x) { push(mkInt((int)x)); }
-static void putWord32(HsWord32 x) { push(mkInt((int)x)); }
-static void putWord64(HsWord64 x) { push(pair(I64CELL,pair(mkInt(part1Int64(x)),mkInt(part2Int64(x))))); }
-static void putPtr   (HsPtr    x) { push(mkPtr(x)); }
-static void putFunPtr(HsFunPtr x) { push(mkPtr((Pointer)x)); }
+static void putInt(HsInt x) {
+    push(mkInt(x));
+}
+static void putWord(HsWord x) {
+    push(mkInt((int)x));
+}
+static void putAddr(HsAddr x) {
+    push(mkPtr(x));
+}
+static void putChar4(char x) {
+    push(mkChar(x));
+}
+static void putChar(HsChar x) {
+    push(mkChar(x));
+}
+static void putForeign(CuddlesForeign x, void (*f)(CuddlesForeign)) {
+    push(mkMallocPtr(x, f));
+}
+static void putStablePtr(CuddlesStablePtr x) {
+    push(derefStablePtr(x));
+}
+static void putBool(HsBool x) {
+    push(x ? nameTrue : nameFalse);
+}
+
+static void putInt8(HsInt8 x) {
+    push(mkInt(x));
+}
+static void putInt16(HsInt16 x) {
+    push(mkInt(x));
+}
+static void putInt32(HsInt32 x) {
+    push(mkInt(x));
+}
+static void putInt64(HsInt64 x) {
+    push(pair(I64CELL, pair(mkInt(part1Int64(x)), mkInt(part2Int64(x)))));
+}
+static void putWord8(HsWord8 x) {
+    push(mkInt((int)x));
+}
+static void putWord16(HsWord16 x) {
+    push(mkInt((int)x));
+}
+static void putWord32(HsWord32 x) {
+    push(mkInt((int)x));
+}
+static void putWord64(HsWord64 x) {
+    push(pair(I64CELL, pair(mkInt(part1Int64(x)), mkInt(part2Int64(x)))));
+}
+static void putPtr(HsPtr x) {
+    push(mkPtr(x));
+}
+static void putFunPtr(HsFunPtr x) {
+    push(mkPtr((Pointer)x));
+}
 
 /* A StablePtr is represented in Haskell as mkInt(sp), the stable-pointer
  * table index returned by mkStablePtr/newStablePtr (see primMakeSP and the
@@ -1544,7 +1648,7 @@ static void putFunPtr(HsFunPtr x) { push(mkPtr((Pointer)x)); }
  * must be boxed with mkInt() on the way out, and evaluated (it may still
  * be an unevaluated thunk) and unboxed with checkInt()/whnfInt on the way
  * in, exactly like every other get()/put() pair here.                    */
-static void putStablePtr4(HsStablePtr   x) {
+static void putStablePtr4(HsStablePtr x) {
     push(mkInt((CuddlesStablePtr)x));
 }
 
@@ -1555,22 +1659,32 @@ static HsStablePtr getStablePtr4(void) {
 }
 
 static Void freeStablePtr4(HsStablePtr x) {
-    if (x) freeStablePtr((CuddlesStablePtr)x);
+    if (x)
+        freeStablePtr((CuddlesStablePtr)x);
 }
 
-static HsFloat        getFloat()     { eval(pop()); checkFloat(); return whnfFloat; }
-static HsDouble       getDouble()    { eval(pop()); checkDouble(); return whnfDouble; }
+static HsFloat getFloat() {
+    eval(pop());
+    checkFloat();
+    return whnfFloat;
+}
+static HsDouble getDouble() {
+    eval(pop());
+    checkDouble();
+    return whnfDouble;
+}
 
 static void putFloat(HsFloat x) {
-  push(mkFloat(x));
+    push(mkFloat(x));
 }
 
 static void putDouble(HsDouble x) {
-  push(mkDouble(x));
+    push(mkDouble(x));
 }
 
 static void putForeignPtr(HsForeignPtr x) {
-    errHead(0); errPrintf("putForeignPtr: not implemented in Cuddles");
+    errHead(0);
+    errPrintf("putForeignPtr: not implemented in Cuddles");
     errFail();
 }
 
@@ -1578,16 +1692,16 @@ static void returnIO(CuddlesStackPtr root, int n) /* return in IO monad */
 {
     /* There should be n return values on the top of the stack */
     if (n == 0) {
-	push(nameUnit);
+        push(nameUnit);
     } else if (n == 1) {
-       /* do nothing */
+        /* do nothing */
     } else {
-    int i;
-    push(mkTuple(n));
-    for(i=0; i<n; ++i) {
-	pushed(1) = ap(pushed(0),pushed(1));
-	drop();
-    }
+        int i;
+        push(mkTuple(n));
+        for (i = 0; i < n; ++i) {
+            pushed(1) = ap(pushed(0), pushed(1));
+            drop();
+        }
     }
     IOReturn(top());
 }
@@ -1596,16 +1710,16 @@ static void returnId(CuddlesStackPtr root, int n) /* return in identity monad */
 {
     /* There should be n return values on the top of the stack */
     if (n == 0) {
-	push(nameUnit);
+        push(nameUnit);
     } else if (n == 1) {
         /* do nothing, already there. */
     } else {
-	int i;
-	push(mkTuple(n));
-	for(i=0; i<n; ++i) {
-	    pushed(1) = ap(pushed(0),pushed(1));
-	    drop();
-	}
+        int i;
+        push(mkTuple(n));
+        for (i = 0; i < n; ++i) {
+            pushed(1) = ap(pushed(0), pushed(1));
+            drop();
+        }
     }
     /*
      * Note: have to be a bit careful when returning, since we could
@@ -1621,61 +1735,60 @@ static void returnId(CuddlesStackPtr root, int n) /* return in identity monad */
      * 
      *  [6/01 --sof]
      */
-    if ( isPair(stack(root))
-	 ) {
-      updateRoot(top());
+    if (isPair(stack(root))) {
+        updateRoot(top());
     }
 }
 
-static int runIO(int n)
-{
+static int runIO(int n) {
     /* stack = argn : ... : arg1 : fun : rest */
-    StackPtr old_sp   = sp - n - 1;
-    Cell     temp     = NIL;
+    StackPtr old_sp = sp - n - 1;
+    Cell temp = NIL;
     Int i;
     /* build application node */
-    for(i=n-1; i >= 0; --i) {
-	pushed(n) = ap(pushed(n), pushed(i));
+    for (i = n - 1; i >= 0; --i) {
+        pushed(n) = ap(pushed(n), pushed(i));
     }
     sp -= n;
 
     /* evaluate it - should have type IO a */
-    temp = evalWithNoError(ap(nameIORun,pop()));
+    temp = evalWithNoError(ap(nameIORun, pop()));
     if (nonNull(temp)) {
-	errHead(0); errPrintf("runIO: uncaught error");
-	errFail();
+        errHead(0);
+        errPrintf("runIO: uncaught error");
+        errFail();
     }
-    if (sp != old_sp+1) {
-	errHead(0); errPrintf("runIO: unbalanced stack (%d)", sp-old_sp);
-	errFail();
+    if (sp != old_sp + 1) {
+        errHead(0);
+        errPrintf("runIO: unbalanced stack (%d)", sp - old_sp);
+        errFail();
     }
     if (whnfHead == nameRight) {
-	return 0;
+        return 0;
     } else if (whnfHead != nameLeft) { /* Called "exit" */
-	errHead(0); errPrintf("runIO: bad return value");
-	errFail();
+        errHead(0);
+        errPrintf("runIO: bad return value");
+        errFail();
     }
     return 1;
-}    
+}
 
-static void apMany(int n)
-{
+static void apMany(int n) {
     /* stack = argn : ... : arg1 : fun : rest */
     Int i;
     /* build application node */
-    for(i=n-1; i >= 0; --i) {
-	pushed(n) = ap(pushed(n), pushed(i));
+    for (i = n - 1; i >= 0; --i) {
+        pushed(n) = ap(pushed(n), pushed(i));
     }
     sp -= n;
     /* stack = ap(...(ap(fun,arg1),...),argn) : rest */
 }
 
-static int runId (int);
+static int runId(int);
 
-static int runId(int n)
-{
+static int runId(int n) {
     apMany(n);
-    top() = ap(nameReturnIO,top());
+    top() = ap(nameReturnIO, top());
     return runIO(0);
 }
 
@@ -1710,9 +1823,9 @@ static int runId(int n)
  */
 
 struct thunk_data {
-    struct thunk_data* next;
-    struct thunk_data* prev;
-    CuddlesStablePtr      stable;
+    struct thunk_data *next;
+    struct thunk_data *prev;
+    CuddlesStablePtr stable;
     /* Machine-code generation for the adjustor thunk itself (the i386,
      * PowerPC and SPARC cases GHC's Adjustor.c has) is gone: none of
      * those architectures are supported, and mkThunk
@@ -1721,16 +1834,16 @@ struct thunk_data {
      * keeps freeHaskellFunctionPtr's "&thunk->code" pointer arithmetic
      * well defined for the caller-supplied pointers it is handed.
      */
-    char               code[1];
+    char code[1];
 };
 
-static void* mkThunk      (void (*)(void), CuddlesStablePtr);
-static void freeThunkAux  (struct thunk_data*);
-static void freeAllThunks (void);
+static void *mkThunk(void (*)(void), CuddlesStablePtr);
+static void freeThunkAux(struct thunk_data *);
+static void freeAllThunks(void);
 
-static struct thunk_data* foreignThunks = 0;
+static struct thunk_data *foreignThunks = 0;
 
-static void* mkThunk(void (*app)(void), CuddlesStablePtr s) {
+static void *mkThunk(void (*app)(void), CuddlesStablePtr s) {
     /* Every architecture we still support needs machine code written
      * into the thunk to trampoline into Haskell (see the comment above
      * struct thunk_data), and none of the ones that had it (i386,
@@ -1738,20 +1851,21 @@ static void* mkThunk(void (*app)(void), CuddlesStablePtr s) {
      * in particular before allocating a thunk_data and linking it into
      * foreignThunks, which the earlier code did first and
      * left there, half-initialised, once this error longjmp'd out. */
-    errHead(0); errPrintf("Foreign import wrapper is not supported on this architecture");
+    errHead(0);
+    errPrintf("Foreign import wrapper is not supported on this architecture");
     errFail();
     return 0; /*NOTREACHED*/
 }
 
-static void freeThunkAux(struct thunk_data* thunk) {
+static void freeThunkAux(struct thunk_data *thunk) {
     freeStablePtr(thunk->stable);
     if (thunk->prev) {
         assert(foreignThunks != thunk);
         thunk->prev->next = thunk->next;
-    } else {        
+    } else {
         assert(foreignThunks == thunk);
         foreignThunks = thunk->next;
-    }        
+    }
     if (thunk->next) {
         thunk->next->prev = thunk->prev;
     }
@@ -1768,182 +1882,181 @@ static void freeAllThunks(void) {
  * [A useful debugging mode would not deallocate the thunk but would
  *  overwrite the thunk with code which prints an error message.]
  */
-static void freeHaskellFunctionPtr(void* t) {
-    struct thunk_data* thunk = (struct thunk_data*)((char*)t - (char*)&((struct thunk_data*)0)->code);
+static void freeHaskellFunctionPtr(void *t) {
+    struct thunk_data *thunk =
+        (struct thunk_data *)((char *)t -
+                              (char *)&((struct thunk_data *)0)->code);
     freeThunkAux(thunk);
 }
 
-primFun(primFreeHFunPtr) {		/*  :: FunPtr a -> IO ()           */
+primFun(primFreeHFunPtr) { /*  :: FunPtr a -> IO ()           */
     Pointer x;
-    PtrArg(x,1+IOArity);
+    PtrArg(x, 1 + IOArity);
     freeHaskellFunctionPtr(x);
     IOReturn(nameUnit);
 }
 
-CuddlesAPI4* cuddlesAPI4() { /* build virtual function table */
+CuddlesAPI4 *cuddlesAPI4() { /* build virtual function table */
     static CuddlesAPI4 api;
     static Bool initialised = FALSE;
 
     if (!initialised) {
 
         /* evaluate next argument */
-      	api.getInt        = getInt;
-	api.getWord       = getWord;
-	api.getAddr       = getAddr;
-	api.getFloat      = getFloat;
-	api.getDouble     = getDouble;
-	api.getChar       = getChar4;
-	api.getForeign    = getForeign;
-	api.getStablePtr  = getStablePtr;
+        api.getInt = getInt;
+        api.getWord = getWord;
+        api.getAddr = getAddr;
+        api.getFloat = getFloat;
+        api.getDouble = getDouble;
+        api.getChar = getChar4;
+        api.getForeign = getForeign;
+        api.getStablePtr = getStablePtr;
 
-	/* push part of result   */
-	api.putInt        = putInt;
-	api.putWord       = putWord;
-	api.putAddr       = putAddr;
-	api.putFloat      = putFloat;
-	api.putDouble     = putDouble;
-	api.putChar       = putChar4;
-	api.putForeign    = putForeign;
-	api.putStablePtr  = putStablePtr;
+        /* push part of result   */
+        api.putInt = putInt;
+        api.putWord = putWord;
+        api.putAddr = putAddr;
+        api.putFloat = putFloat;
+        api.putDouble = putDouble;
+        api.putChar = putChar4;
+        api.putForeign = putForeign;
+        api.putStablePtr = putStablePtr;
 
-	/* return n values in IO monad or Id monad */
-	api.returnIO      = returnIO;
-        api.returnId      = returnId;
-	api.runIO         = runIO;
+        /* return n values in IO monad or Id monad */
+        api.returnIO = returnIO;
+        api.returnId = returnId;
+        api.runIO = runIO;
 
-	/* free a stable pointer */	    			 
-	api.freeStablePtr = freeStablePtr;
+        /* free a stable pointer */
+        api.freeStablePtr = freeStablePtr;
 
-	/* register the prim table */	    			 
-	api.registerPrims = registerPrims;
+        /* register the prim table */
+        api.registerPrims = registerPrims;
 
-	/* garbage collect */
-	api.garbageCollect = garbageCollect;
+        /* garbage collect */
+        api.garbageCollect = garbageCollect;
 
-	/* API3 additions follow */
-        api.lookupName    = lookupName;
-        api.ap            = apMany;
-        api.getUnit       = getUnit;
-        api.mkThunk       = mkThunk;
-        api.freeThunk     = freeHaskellFunctionPtr;
-	api.getBool       = getBool;
-	api.putBool       = putBool;
+        /* API3 additions follow */
+        api.lookupName = lookupName;
+        api.ap = apMany;
+        api.getUnit = getUnit;
+        api.mkThunk = mkThunk;
+        api.freeThunk = freeHaskellFunctionPtr;
+        api.getBool = getBool;
+        api.putBool = putBool;
 
-	/* API4 additions follow */
-        api.getInt8       = getInt8;
-        api.getInt16      = getInt16;
-        api.getInt32      = getInt32;
-        api.getInt64      = getInt64;
-        api.getWord8      = getWord8;
-        api.getWord16     = getWord16;
-        api.getWord32     = getWord32;
-        api.getWord64     = getWord64;
-        api.getPtr        = getPtr;
-        api.getFunPtr     = getFunPtr;
+        /* API4 additions follow */
+        api.getInt8 = getInt8;
+        api.getInt16 = getInt16;
+        api.getInt32 = getInt32;
+        api.getInt64 = getInt64;
+        api.getWord8 = getWord8;
+        api.getWord16 = getWord16;
+        api.getWord32 = getWord32;
+        api.getWord64 = getWord64;
+        api.getPtr = getPtr;
+        api.getFunPtr = getFunPtr;
         api.getForeignPtr = getForeignPtr;
 
-        api.putInt8       = putInt8;
-        api.putInt16      = putInt16;
-        api.putInt32      = putInt32;
-        api.putInt64      = putInt64;
-        api.putWord8      = putWord8;
-        api.putWord16     = putWord16;
-        api.putWord32     = putWord32;
-        api.putWord64     = putWord64;
-        api.putPtr        = putPtr;
-        api.putFunPtr     = putFunPtr;
+        api.putInt8 = putInt8;
+        api.putInt16 = putInt16;
+        api.putInt32 = putInt32;
+        api.putInt64 = putInt64;
+        api.putWord8 = putWord8;
+        api.putWord16 = putWord16;
+        api.putWord32 = putWord32;
+        api.putWord64 = putWord64;
+        api.putPtr = putPtr;
+        api.putFunPtr = putFunPtr;
         api.putForeignPtr = putForeignPtr;
 
-	api.makeStablePtr4 = getStablePtr;
-	api.derefStablePtr4= putStablePtr;
+        api.makeStablePtr4 = getStablePtr;
+        api.derefStablePtr4 = putStablePtr;
 
-	api.putStablePtr4 = putStablePtr4;
-	api.getStablePtr4 = getStablePtr4;
-	api.freeStablePtr4 = freeStablePtr4;
-			  
-        api.runId         = runId;
+        api.putStablePtr4 = putStablePtr4;
+        api.getStablePtr4 = getStablePtr4;
+        api.freeStablePtr4 = freeStablePtr4;
+
+        api.runId = runId;
     }
     return &api;
 }
 
-CuddlesAPI5* cuddlesAPI5() { /* build virtual function table */
+CuddlesAPI5 *cuddlesAPI5() { /* build virtual function table */
     static CuddlesAPI5 api;
     static Bool initialised = FALSE;
     if (!initialised) {
-	api.getBool       = getBool;
-      	api.getInt        = getInt;
-	api.getWord       = getWord;
-	api.getAddr       = getAddr;
-	api.getFloat      = getFloat;
-	api.getDouble     = getDouble;
-	api.getChar       = getChar;
-	api.getForeign    = getForeign;
-        api.getInt8       = getInt8;
-        api.getInt16      = getInt16;
-        api.getInt32      = getInt32;
-        api.getInt64      = getInt64;
-        api.getWord8      = getWord8;
-        api.getWord16     = getWord16;
-        api.getWord32     = getWord32;
-        api.getWord64     = getWord64;
-        api.getPtr        = getPtr;
-        api.getFunPtr     = getFunPtr;
+        api.getBool = getBool;
+        api.getInt = getInt;
+        api.getWord = getWord;
+        api.getAddr = getAddr;
+        api.getFloat = getFloat;
+        api.getDouble = getDouble;
+        api.getChar = getChar;
+        api.getForeign = getForeign;
+        api.getInt8 = getInt8;
+        api.getInt16 = getInt16;
+        api.getInt32 = getInt32;
+        api.getInt64 = getInt64;
+        api.getWord8 = getWord8;
+        api.getWord16 = getWord16;
+        api.getWord32 = getWord32;
+        api.getWord64 = getWord64;
+        api.getPtr = getPtr;
+        api.getFunPtr = getFunPtr;
         api.getForeignPtr = getForeignPtr;
-	api.getStablePtr4 = getStablePtr4;
+        api.getStablePtr4 = getStablePtr4;
 
-	api.putBool       = putBool;
-	api.putInt        = putInt;
-	api.putWord       = putWord;
-	api.putAddr       = putAddr;
-	api.putFloat      = putFloat;
-	api.putDouble     = putDouble;
-	api.putChar       = putChar;
-	api.putForeign    = putForeign;
-        api.putInt8       = putInt8;
-        api.putInt16      = putInt16;
-        api.putInt32      = putInt32;
-        api.putInt64      = putInt64;
-        api.putWord8      = putWord8;
-        api.putWord16     = putWord16;
-        api.putWord32     = putWord32;
-        api.putWord64     = putWord64;
-        api.putPtr        = putPtr;
-        api.putFunPtr     = putFunPtr;
+        api.putBool = putBool;
+        api.putInt = putInt;
+        api.putWord = putWord;
+        api.putAddr = putAddr;
+        api.putFloat = putFloat;
+        api.putDouble = putDouble;
+        api.putChar = putChar;
+        api.putForeign = putForeign;
+        api.putInt8 = putInt8;
+        api.putInt16 = putInt16;
+        api.putInt32 = putInt32;
+        api.putInt64 = putInt64;
+        api.putWord8 = putWord8;
+        api.putWord16 = putWord16;
+        api.putWord32 = putWord32;
+        api.putWord64 = putWord64;
+        api.putPtr = putPtr;
+        api.putFunPtr = putFunPtr;
         api.putForeignPtr = putForeignPtr;
-	api.putStablePtr4 = putStablePtr4;
-			  
-	api.returnIO      = returnIO;
-	api.runIO         = runIO;
-        api.returnId      = returnId;
-        api.runId         = runId;
+        api.putStablePtr4 = putStablePtr4;
 
-	api.registerPrims = registerPrims;
+        api.returnIO = returnIO;
+        api.runIO = runIO;
+        api.returnId = returnId;
+        api.runId = runId;
 
-        api.lookupName    = lookupName;
-        api.ap            = apMany;
-        api.getUnit       = getUnit;
-        api.mkThunk       = mkThunk;
-        api.freeThunk     = freeHaskellFunctionPtr;
+        api.registerPrims = registerPrims;
 
-	api.makeStablePtr4 = getStablePtr;
-	api.derefStablePtr4= putStablePtr;
-	api.freeStablePtr4 = freeStablePtr4;
+        api.lookupName = lookupName;
+        api.ap = apMany;
+        api.getUnit = getUnit;
+        api.mkThunk = mkThunk;
+        api.freeThunk = freeHaskellFunctionPtr;
+
+        api.makeStablePtr4 = getStablePtr;
+        api.derefStablePtr4 = putStablePtr;
+        api.freeStablePtr4 = freeStablePtr4;
     }
     return &api;
 }
 
-void hs_perform_gc(void)
-{
+void hs_perform_gc(void) {
     garbageCollect();
 }
 
-void hs_free_stable_ptr(HsStablePtr sp)
-{
+void hs_free_stable_ptr(HsStablePtr sp) {
     freeStablePtr4(sp);
 }
 
-void hs_free_fun_ptr(HsFunPtr fp)
-{
+void hs_free_fun_ptr(HsFunPtr fp) {
     freeHaskellFunctionPtr((void *)fp);
 }
 
@@ -1952,91 +2065,92 @@ void hs_free_fun_ptr(HsFunPtr fp)
  * ------------------------------------------------------------------------*/
 
 /* Dummy entry */
-static Void builtinControl (Int);
-static Void builtinControl(Int what)
-{
+static Void builtinControl(Int);
+static Void builtinControl(Int what) {
 }
-static struct primInfo builtinPrims = { builtinControl, builtinPrimTable, 0 };
+static struct primInfo builtinPrims = {builtinControl, builtinPrimTable, 0};
 
-Void builtIn(Int what)
-{
+Void builtIn(Int what) {
     switch (what) {
-	case INSTALL :
-		       registerPrims(&builtinPrims);
-		       registerPrims(&printerPrims);
-		       registerPrims(&arrayPrims);
-		       registerPrims(&bignumPrims);
-		       registerPrims(&iomonadPrims);
-		       registerPrims(&timePrims);
-		       registerPrims(&dirPrims);
+    case INSTALL:
+        registerPrims(&builtinPrims);
+        registerPrims(&printerPrims);
+        registerPrims(&arrayPrims);
+        registerPrims(&bignumPrims);
+        registerPrims(&iomonadPrims);
+        registerPrims(&timePrims);
+        registerPrims(&dirPrims);
 #if INTERNAL_PRIMS
-		       registerPrims(&internalPrims);
+        registerPrims(&internalPrims);
 #endif
-		       setCurrModule(modulePrelude);
-#define pFun(n,s,t)    addPrim(0,n=newName(findText(s),NIL),t,modulePrelude,NIL)
-		       pFun(nameFatbar,    "_FATBAR",  "fatbar");
-		       pFun(nameFail,      "_FAIL",    "fail");
-		       pFun(nameIf,        "_IF",      "if");
-		       pFun(nameSel,       "_SEL",     "sel");
+        setCurrModule(modulePrelude);
+#define pFun(n, s, t)                                                          \
+    addPrim(0, n = newName(findText(s), NIL), t, modulePrelude, NIL)
+        pFun(nameFatbar, "_FATBAR", "fatbar");
+        pFun(nameFail, "_FAIL", "fail");
+        pFun(nameIf, "_IF", "if");
+        pFun(nameSel, "_SEL", "sel");
 
-		       pFun(nameConCmp,    "_concmp",  "conCmp");
-		       pFun(nameEnRange,   "_range",   "enRange");
-		       pFun(nameEnIndex,   "_index",   "enIndex");
-		       pFun(nameEnInRng,   "_inRange", "enInRng");
-		       pFun(nameEnToEn,    "_toEnum",  "enToEn");
-		       pFun(nameEnFrEn,    "_frEnum",  "enFrEn");
-		       pFun(nameEnFrom,    "_from",    "enFrom");
-		       pFun(nameEnFrTo,    "_fromTo",  "enFrTo");
-		       pFun(nameEnFrTh,    "_fromThen","enFrTh");
+        pFun(nameConCmp, "_concmp", "conCmp");
+        pFun(nameEnRange, "_range", "enRange");
+        pFun(nameEnIndex, "_index", "enIndex");
+        pFun(nameEnInRng, "_inRange", "enInRng");
+        pFun(nameEnToEn, "_toEnum", "enToEn");
+        pFun(nameEnFrEn, "_frEnum", "enFrEn");
+        pFun(nameEnFrom, "_from", "enFrom");
+        pFun(nameEnFrTo, "_fromTo", "enFrTo");
+        pFun(nameEnFrTh, "_fromThen", "enFrTh");
 
-		       pFun(namePrimThrow, "_throw",    "primThrowException");
-		       pFun(nameBlackHole, "_Gc Black Hole",    "gcBhole");
-		       pFun(nameInd,	   "_indirect", "dictIndirect");
-		       name(nameInd).number = DFUNNAME;
+        pFun(namePrimThrow, "_throw", "primThrowException");
+        pFun(nameBlackHole, "_Gc Black Hole", "gcBhole");
+        pFun(nameInd, "_indirect", "dictIndirect");
+        name(nameInd).number = DFUNNAME;
 #undef pFun
-#define predef(nm,str) nm=newName(findText(str),NIL); name(nm).defn=PREDEFINED
-		       predef(nameNegate,       "negate");
-		       predef(nameFlip,         "flip");
-		       predef(nameFrom,         "enumFrom");
-		       predef(nameFromThen,     "enumFromThen");
-		       predef(nameFromTo,       "enumFromTo");
-		       predef(nameFromThenTo,   "enumFromThenTo");
-		       predef(nameFst,		"fst");
-		       predef(nameSnd,		"snd");
-		       predef(nameAnd,          "&&");
-		       predef(nameOr,           "||");
-		       predef(nameId,           "id");
-		       predef(nameOtherwise,    "otherwise");
-		       predef(nameComp,         ".");
-		       predef(nameApp,          "++");
-		       predef(nameShowField,    "showField");
-		       predef(nameShowParen,    "showParen");
-		       predef(nameReadField,    "readField");
-		       predef(nameReadParen,    "readParen");
-		       predef(nameLex,          "lex");
-		       predef(nameRangeSize,    "rangeSize");
-		       predef(nameCompAux,      "primCompAux");
-		       predef(namePmInt,        "primPmInt");
-		       predef(namePmInteger,    "primPmInteger");
-		       predef(namePmFlt,        "primPmFlt");
-		       predef(nameReturnIO,     "primretIO");
-		       predef(nameRationalToDouble, "rationalToDouble");
-		       predef(nameRationalToFloat,  "rationalToFloat");
-		       predef(nameFloatToRational,  "floatToRational");
-		       predef(nameDoubleToRational, "doubleToRational");
-		       predef(nameDoubleToRatio,    "doubleToRatio");
-		       predef(nameIntToRatio,       "intToRatio");
-		       predef(nameIntToFloat,       "primIntToFloat");
-		       predef(nameIntToDouble,      "primIntToDouble");
-		       predef(nameDoubleToFloat,    "primDoubleToFloat");
-		       predef(nameFloatToDouble,    "primFloatToDouble");
-#undef  predef
-		       break;
+#define predef(nm, str)                                                        \
+    nm = newName(findText(str), NIL);                                          \
+    name(nm).defn = PREDEFINED
+        predef(nameNegate, "negate");
+        predef(nameFlip, "flip");
+        predef(nameFrom, "enumFrom");
+        predef(nameFromThen, "enumFromThen");
+        predef(nameFromTo, "enumFromTo");
+        predef(nameFromThenTo, "enumFromThenTo");
+        predef(nameFst, "fst");
+        predef(nameSnd, "snd");
+        predef(nameAnd, "&&");
+        predef(nameOr, "||");
+        predef(nameId, "id");
+        predef(nameOtherwise, "otherwise");
+        predef(nameComp, ".");
+        predef(nameApp, "++");
+        predef(nameShowField, "showField");
+        predef(nameShowParen, "showParen");
+        predef(nameReadField, "readField");
+        predef(nameReadParen, "readParen");
+        predef(nameLex, "lex");
+        predef(nameRangeSize, "rangeSize");
+        predef(nameCompAux, "primCompAux");
+        predef(namePmInt, "primPmInt");
+        predef(namePmInteger, "primPmInteger");
+        predef(namePmFlt, "primPmFlt");
+        predef(nameReturnIO, "primretIO");
+        predef(nameRationalToDouble, "rationalToDouble");
+        predef(nameRationalToFloat, "rationalToFloat");
+        predef(nameFloatToRational, "floatToRational");
+        predef(nameDoubleToRational, "doubleToRational");
+        predef(nameDoubleToRatio, "doubleToRatio");
+        predef(nameIntToRatio, "intToRatio");
+        predef(nameIntToFloat, "primIntToFloat");
+        predef(nameIntToDouble, "primIntToDouble");
+        predef(nameDoubleToFloat, "primDoubleToFloat");
+        predef(nameFloatToDouble, "primFloatToDouble");
+#undef predef
+        break;
 
-        case RESET   : freeAllThunks();
-                       break;
+    case RESET:
+        freeAllThunks();
+        break;
     }
 }
 
 /*-------------------------------------------------------------------------*/
-

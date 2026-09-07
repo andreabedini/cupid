@@ -72,7 +72,7 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 #endif
 
 #if defined(_WIN32)
-#define STDCALL_SUPPORTED 1
+# define STDCALL_SUPPORTED 1
 #endif
 
 /*---------------------------------------------------------------------------
@@ -85,11 +85,11 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  * Most users should leave them alone!
  *
  *   HASKELL_ARRAYS to include support for Haskell array primitives.
- *   IO_MONAD	    to include the IO monad primitives and support.
+ *   IO_MONAD       to include the IO monad primitives and support.
  *   IO_HANDLES     to include the IO file operations.
- *   IO_REFS	    Ref type for IO_MONAD, and simple operations.
- *   FLUSHEVERY	    to force a fflush after every char in putStr/hPutStr.
- *   BIGNUMS	    to include support for Integer bignums.
+ *   IO_REFS        Ref type for IO_MONAD, and simple operations.
+ *   FLUSHEVERY     to force a fflush after every char in putStr/hPutStr.
+ *   BIGNUMS        to include support for Integer bignums.
  *   GC_STABLEPTRS  to include support for safely passing Haskell
  *                  pointers over to C
  *                  (only required if you use callbacks in the foreign
@@ -113,28 +113,28 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  *   FAST_WHATIS1   to use whatIs1(), a faster version of whatIs(), for speed
  *-------------------------------------------------------------------------*/
 
-#define HASKELL_ARRAYS	 1
-#define IO_MONAD	 1
-#define IO_HANDLES       1
-#define IO_REFS		 1 /* Experimental IO Ref type			   */
-#define FLUSHEVERY	 1
-#define BIGNUMS		 1 /* Experimental bignum implementation           */
-#define GC_STABLEPTRS    1 /* May be required by external libraries        */
-#define GC_MALLOCPTRS    1 /* May be required by external libraries        */
-#define GC_WEAKPTRS      1
-#define STABLE_NAMES     1
-#define REDIRECT_OUTPUT  1
-#define WORD_OPS         1
-#define ADDR_OPS         1
-#define PROVIDE_INT64    1
-                                 /* (as opposed to dynamically growable ones)  */
+#define HASKELL_ARRAYS 1
+#define IO_MONAD 1
+#define IO_HANDLES 1
+#define IO_REFS 1 /* Experimental IO Ref type                      */
+#define FLUSHEVERY 1
+#define BIGNUMS 1       /* Experimental bignum implementation           */
+#define GC_STABLEPTRS 1 /* May be required by external libraries        */
+#define GC_MALLOCPTRS 1 /* May be required by external libraries        */
+#define GC_WEAKPTRS 1
+#define STABLE_NAMES 1
+#define REDIRECT_OUTPUT 1
+#define WORD_OPS 1
+#define ADDR_OPS 1
+#define PROVIDE_INT64 1
+/* (as opposed to dynamically growable ones)  */
 
-#define UNICODE_CHARS    1 /* Char is Unicode (ISO-10646) */
+#define UNICODE_CHARS 1 /* Char is Unicode (ISO-10646) */
 
 #define SHORT_CIRCUIT_COERCIONS 1
 
-#define FAST_WHATIS      1
-#define FAST_WHATIS1     1	 /* can only use if FAST_WHATIS is 1 */
+#define FAST_WHATIS 1
+#define FAST_WHATIS1 1 /* can only use if FAST_WHATIS is 1 */
 
 /*---------------------------------------------------------------------------
  * Platform-dependent settings:
@@ -152,35 +152,35 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  * old accessor macros.  They must inline even in the files built without
  * optimisation (see src/meson.build), so the attribute is not optional. */
 #if defined(__GNUC__) || defined(__clang__)
-#define CUDDLES_inline static inline __attribute__((always_inline))
+# define CUDDLES_inline static inline __attribute__((always_inline))
 #elif defined(_MSC_VER)
-#define CUDDLES_inline static __forceinline
+# define CUDDLES_inline static __forceinline
 #else
-#define CUDDLES_inline static inline
+# define CUDDLES_inline static inline
 #endif
 
 /* CUDDLES_printf(f,a): the function takes a printf format as parameter f
  * and its arguments from parameter a on, so the compiler checks them */
 #if defined(__GNUC__) || defined(__clang__)
-#define CUDDLES_printf(f,a) __attribute__((format(printf,f,a)))
+# define CUDDLES_printf(f, a) __attribute__((format(printf, f, a)))
 #else
-#define CUDDLES_printf(f,a)
+# define CUDDLES_printf(f, a)
 #endif
 
 /* local = prefix for locally defined functions */
 #define local
 
-#ifdef __GNUC__     /* Avoid spurious warnings                             */
-#if __GNUC__ > 2 || __GNUC__ == 2 && __GNUC_MINOR__ >= 7
-#define CUDDLES_noreturn  __attribute__ ((noreturn))
-#define CUDDLES_unused    __attribute__ ((unused))
+#ifdef __GNUC__ /* Avoid spurious warnings                             */
+# if __GNUC__ > 2 || __GNUC__ == 2 && __GNUC_MINOR__ >= 7
+#  define CUDDLES_noreturn __attribute__((noreturn))
+#  define CUDDLES_unused __attribute__((unused))
+# else
+#  define CUDDLES_noreturn
+#  define CUDDLES_unused
+# endif
 #else
-#define CUDDLES_noreturn  
-#define CUDDLES_unused
-#endif
-#else
-#define CUDDLES_noreturn  
-#define CUDDLES_unused
+# define CUDDLES_noreturn
+# define CUDDLES_unused
 #endif
 
 /*---------------------------------------------------------------------------
@@ -190,7 +190,7 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 #if defined(_WIN32) /* Microsoft Windows */
 # define DLLIMPORT(rty) __declspec(dllimport) rty
 # define DLLEXPORT(rty) __declspec(dllexport) rty
-#else 
+#else
 # define DLLIMPORT(rty) rty
 # define DLLEXPORT(rty) rty
 #endif /* Don't need to declare DLL exports */
@@ -204,7 +204,7 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 
 #include <ctype.h>
 #ifndef isascii
-#define  isascii(c)	(((unsigned)(c))<128)
+# define isascii(c) (((unsigned)(c)) < 128)
 #endif
 
 /*---------------------------------------------------------------------------
@@ -221,20 +221,20 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  *-------------------------------------------------------------------------*/
 
 #if !HAVE_POPEN && HAVE__POPEN
-#define popen(x,y) _popen(x,y)
+# define popen(x, y) _popen(x, y)
 #endif
 #if !HAVE_PCLOSE && HAVE__PCLOSE
-#define pclose(x) _pclose(x)
+# define pclose(x) _pclose(x)
 #endif
 
 /*---------------------------------------------------------------------------
  * Interrupting execution (signals, allowBreak):
  *-------------------------------------------------------------------------*/
 
-#define sigProto(nm)	void nm (int)
-#define sigRaise(nm)	nm(1)
-#define sigHandler(nm)	void nm(int sig_arg)
-#define sigResume	return
+#define sigProto(nm) void nm(int)
+#define sigRaise(nm) nm(1)
+#define sigHandler(nm) void nm(int sig_arg)
+#define sigResume return
 
 /* allowBreak: call to allow user to interrupt computation
  * ctrlbrk:    set control break handler
@@ -252,28 +252,31 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  * async-signal-safe.
  */
 
+#if IS_WINDOWS
 
-# if IS_WINDOWS
+# define ctrlbrk(bh)                                                           \
+     do {                                                                      \
+         signal(SIGINT, bh);                                                   \
+         signal(SIGBREAK, bh);                                                 \
+     } while (0)
 
-#  define ctrlbrk(bh)	do { signal(SIGINT,bh); signal(SIGBREAK,bh); } while (0)
+#else /* Unix */
 
-# else /* Unix */
-
-#  include <signal.h>
-   /* SA_RESTART is deliberately left off: a blocking read() at the
+# include <signal.h>
+/* SA_RESTART is deliberately left off: a blocking read() at the
     * prompt must return EINTR on Ctrl-C rather than silently resume,
     * so that the prompt can be redrawn instead of hanging.
     */
-#  define ctrlbrk(bh)	do { \
-			  struct sigaction cuddles_sigbrk_sa; \
-			  cuddles_sigbrk_sa.sa_handler = (bh); \
-			  sigemptyset(&cuddles_sigbrk_sa.sa_mask); \
-			  cuddles_sigbrk_sa.sa_flags = 0; \
-			  sigaction(SIGINT, &cuddles_sigbrk_sa, NULL); \
-			} while (0)
+# define ctrlbrk(bh)                                                           \
+     do {                                                                      \
+         struct sigaction cuddles_sigbrk_sa;                                    \
+         cuddles_sigbrk_sa.sa_handler = (bh);                                   \
+         sigemptyset(&cuddles_sigbrk_sa.sa_mask);                               \
+         cuddles_sigbrk_sa.sa_flags = 0;                                        \
+         sigaction(SIGINT, &cuddles_sigbrk_sa, NULL);                           \
+     } while (0)
 
-# endif
-
+#endif
 
 #ifndef SIGBREAK /* Sigh, not defined in cygwin32 beta release 16 */
 # define SIGBREAK 21
@@ -285,47 +288,46 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 
 /* Can we fit floats into ints? */
 
-#define FloatImpType	   float
-#define FloatPro	   double  /* type to use in prototypes		   */
-				   /* strictly ansi (i.e. gcc) conforming  */
-				   /* but breaks data hiding :-(	   */
-#define FloatFMT	   "%.7g"
+#define FloatImpType float
+#define FloatPro double /* type to use in prototypes               */
+                        /* strictly ansi (i.e. gcc) conforming  */
+                        /* but breaks data hiding :-(      */
+#define FloatFMT "%.7g"
 
-#define DoubleImpType	   double
-#define DoublePro	   double
-#define DoubleFMT          "%.15g"
+#define DoubleImpType double
+#define DoublePro double
+#define DoubleFMT "%.15g"
 
 #include <float.h>
 
-# define CUDDLES_FLT_RADIX    FLT_RADIX
-# define CUDDLES_FLT_MANT_DIG FLT_MANT_DIG
-# define CUDDLES_FLT_MIN_EXP  FLT_MIN_EXP
-# define CUDDLES_FLT_MAX_EXP  FLT_MAX_EXP
+#define CUDDLES_FLT_RADIX FLT_RADIX
+#define CUDDLES_FLT_MANT_DIG FLT_MANT_DIG
+#define CUDDLES_FLT_MIN_EXP FLT_MIN_EXP
+#define CUDDLES_FLT_MAX_EXP FLT_MAX_EXP
 
-# define CUDDLES_DBL_MANT_DIG DBL_MANT_DIG
-# define CUDDLES_DBL_MIN_EXP  DBL_MIN_EXP
-# define CUDDLES_DBL_MAX_EXP  DBL_MAX_EXP
+#define CUDDLES_DBL_MANT_DIG DBL_MANT_DIG
+#define CUDDLES_DBL_MIN_EXP DBL_MIN_EXP
+#define CUDDLES_DBL_MAX_EXP DBL_MAX_EXP
 
 /*---------------------------------------------------------------------------
  * Memory allocation
  *-------------------------------------------------------------------------*/
 
 #if HAVE_VALLOC
-# define farCalloc(n,s)	(Void *)valloc(((size_t)(n))*((size_t)(s)))
+# define farCalloc(n, s) (Void *)valloc(((size_t)(n)) * ((size_t)(s)))
 #else
-# define farCalloc(n,s)	(Void *)calloc(((unsigned)n),((unsigned)s))
+# define farCalloc(n, s) (Void *)calloc(((unsigned)n), ((unsigned)s))
 #endif
 
 /* bison-generated parsers like to have alloca - so try to define it */
 
 #if HAVE_ALLOCA_H
-#include <alloca.h>
+# include <alloca.h>
 #else
 # if HAVE__ALLOCA && !defined(__SYMBIAN32__)
 #  include <malloc.h>
 # endif
 #endif
-
 
 /*---------------------------------------------------------------------------
  * Assertions
@@ -368,23 +370,23 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  *-------------------------------------------------------------------------*/
 
 #if !HAVE_UNISTD_H && !_MSC_VER
-extern int 	chdir 	   (const char*);
+extern int chdir(const char *);
 #endif
 
 #if HAVE_DIRECT_H
-#include <direct.h>
+# include <direct.h>
 #endif
 
-#ifndef FILENAME_MAX	   /* should already be defined in an ANSI compiler*/
+#ifndef FILENAME_MAX /* should already be defined in an ANSI compiler*/
 # define FILENAME_MAX 256
-#elif   FILENAME_MAX < 256
-# undef  FILENAME_MAX
+#elif FILENAME_MAX < 256
+# undef FILENAME_MAX
 # define FILENAME_MAX 256
-#elif   FILENAME_MAX > 8192
-	/* Systems with no limit on path length (e.g. the Hurd), will have */
-	/* FILENAME_MAX impossibly large.  Ideally we should dynamically   */
-	/* allocate/grow these buffers and not use FILENAME_MAX at all.    */
-# undef  FILENAME_MAX
+#elif FILENAME_MAX > 8192
+/* Systems with no limit on path length (e.g. the Hurd), will have */
+/* FILENAME_MAX impossibly large.  Ideally we should dynamically   */
+/* allocate/grow these buffers and not use FILENAME_MAX at all.    */
+# undef FILENAME_MAX
 # define FILENAME_MAX 8192
 #endif
 
@@ -394,24 +396,24 @@ extern int 	chdir 	   (const char*);
 
 #if CASE_INSENSITIVE_FILENAMES
 # if HAVE_STRCASECMP
-#  define filenamecmp(s1,s2) strcasecmp(s1,s2)
+#  define filenamecmp(s1, s2) strcasecmp(s1, s2)
 # elif HAVE__STRICMP
-#  define filenamecmp(s1,s2) _stricmp(s1,s2)
+#  define filenamecmp(s1, s2) _stricmp(s1, s2)
 # elif HAVE_STRICMP
-#  define filenamecmp(s1,s2) stricmp(s1,s2)
+#  define filenamecmp(s1, s2) stricmp(s1, s2)
 # elif HAVE_STRCMPI
-#  define filenamecmp(s1,s2) strcmpi(s1,s2)
+#  define filenamecmp(s1, s2) strcmpi(s1, s2)
 # endif
 #else
-# define filenamecmp(s1,s2) strcmp(s1,s2)
+# define filenamecmp(s1, s2) strcmp(s1, s2)
 #endif
 
 /*---------------------------------------------------------------------------
  * Optimisations:
  *-------------------------------------------------------------------------*/
 
-#ifdef  __GNUC__			/* look for GCC 2.x extensions	   */
-#if     __GNUC__ >= 2 && !defined(NeXT)	/* NeXT cc lies and says it's 2.x  */
+#ifdef __GNUC__                      /* look for GCC 2.x extensions         */
+# if __GNUC__ >= 2 && !defined(NeXT) /* NeXT cc lies and says it's 2.x  */
 
 /* WARNING: if you use the following optimisations to assign registers for
  * particular global variables, you should be very careful to make sure that
@@ -421,100 +423,103 @@ extern int 	chdir 	   (const char*);
  * eval, print loop
  */
 
-#endif
+# endif
 #endif /* defined(__GNUC__) */
 
 /*---------------------------------------------------------------------------
  * General settings:
  *-------------------------------------------------------------------------*/
 
-#define Void     void   /* older compilers object to: typedef void Void;   */
-#if !defined(_XLIB_H_)  /* clashes with similar declaration in Xlib.h      */
+#define Void void      /* older compilers object to: typedef void Void;   */
+#if !defined(_XLIB_H_) /* clashes with similar declaration in Xlib.h      */
 typedef unsigned Bool;
 #endif
-#define TRUE     1
-#define FALSE    0
+#define TRUE 1
+#define FALSE 0
 #ifndef _XtIntrinsic_h
-typedef char    *String;
+typedef char *String;
 #endif
-typedef int      Int;
+typedef int Int;
 typedef signed char Int8;
-typedef short    Int16;
-typedef long     Long;
-typedef int      Char;
+typedef short Int16;
+typedef long Long;
+typedef int Char;
 typedef unsigned Unsigned;
-typedef void*    Pointer;
+typedef void *Pointer;
 
-#define doNothing() do { } while (0) /* Null statement */
+#define doNothing()                                                            \
+    do {                                                                       \
+    } while (0) /* Null statement */
 
 #ifndef STD_PRELUDE
-#define STD_PRELUDE	      "Prelude"
-#define STD_PRELUDE_CUDDLES      "Cuddles.Prelude"
-#define STD_EMPTY_MODULE      "Cuddles"
+# define STD_PRELUDE "Prelude"
+# define STD_PRELUDE_CUDDLES "Cuddles.Prelude"
+# define STD_EMPTY_MODULE "Cuddles"
 #endif
 
-#define NUM_HANDLES	   40
-#define NUM_TUPLES         100
-#define NUM_OFFSETS        1024
-#define NUM_LAT1_CHARS     256
+#define NUM_HANDLES 40
+#define NUM_TUPLES 100
+#define NUM_OFFSETS 1024
+#define NUM_LAT1_CHARS 256
 
 #if PROFILING
-#define DEF_PROFINTDIV	   10		/* hpsize/this cells between samples*/
+# define DEF_PROFINTDIV 10 /* hpsize/this cells between samples*/
 #endif
 
-#define NUM_SCRIPTS        800
-#define NUM_FIXUPS         1000
-#define NUM_TYCON          2000
-#define NUM_NAME           32000
-#define NUM_CLASSES        1000
-#define NUM_INSTS          4000
-#define NUM_TEXT           320000
-#define NUM_TEXTH	   10
-#define NUM_TYVARS         8000
-#define NUM_STACK          160000
-#define NUM_ADDRS          1280000
-#define MINIMUMHEAP	   19000
-#define MAXIMUMHEAP	   0
-#define DEFAULTHEAP        1000000
-#define MAXPOSINT          0x7fffffff
-#define MAXCUDDLESWORD        0xffffffffU
-#define NUM_STABLEPTRS	   10000
-#define NUM_MALLOCPTRS	   10000
-#define NUM_DTUPLES	   5
+#define NUM_SCRIPTS 800
+#define NUM_FIXUPS 1000
+#define NUM_TYCON 2000
+#define NUM_NAME 32000
+#define NUM_CLASSES 1000
+#define NUM_INSTS 4000
+#define NUM_TEXT 320000
+#define NUM_TEXTH 10
+#define NUM_TYVARS 8000
+#define NUM_STACK 160000
+#define NUM_ADDRS 1280000
+#define MINIMUMHEAP 19000
+#define MAXIMUMHEAP 0
+#define DEFAULTHEAP 1000000
+#define MAXPOSINT 0x7fffffff
+#define MAXCUDDLESWORD 0xffffffffU
+#define NUM_STABLEPTRS 10000
+#define NUM_MALLOCPTRS 10000
+#define NUM_DTUPLES 5
 
 /* Some infinite computations generate an infinite depth of alternations
  * between eval() and run().  If they don't use the Cuddles stack or heap,
  * they will overrun the C stack, crashing the interpreter.  To protect
  * against this, we place a limit on the depth of recursion of eval().
  */
-#define MAX_EVAL_DEPTH	   16384
+#define MAX_EVAL_DEPTH 16384
 
 /* Representation of Integer: requires BIGBASE == 10^BIGEXP */
-#define BIGBASE		   10000
-#define BIGEXP		   4
+#define BIGBASE 10000
+#define BIGEXP 4
 
-#define MINNEGINT          (-MAXPOSINT-1)
+#define MINNEGINT (-MAXPOSINT - 1)
 
-#define NUM_MODULE         NUM_SCRIPTS
+#define NUM_MODULE NUM_SCRIPTS
 
+#define DECTABLE(tab) tab[]
+#define DYNDECTABLE(tab) *tab
+#define DEFTABLE(tab, sz) tab[sz]
 
-#define DECTABLE(tab)	   tab[]
-#define DYNDECTABLE(tab)   *tab
-#define DEFTABLE(tab,sz)   tab[sz]
+#define minRecovery 1000
+#define bitsPerWord 32
+#define wordShift 5
+#define wordMask 31
 
-#define minRecovery	   1000
-#define bitsPerWord	   32
-#define wordShift	   5
-#define wordMask	   31
-
-CUDDLES_inline Int bitArraySize(Int n) { return n/bitsPerWord + 1; }
-CUDDLES_inline Int placeInSet(Int n)	/* n is a (negative) pair cell	   */
-{
-    return (-n-1)>>wordShift;
+CUDDLES_inline Int bitArraySize(Int n) {
+    return n / bitsPerWord + 1;
 }
-CUDDLES_inline unsigned maskInSet(Int n)	/* unsigned: the shift can reach   */
-{					/* bit 31			   */
-    return 1u<<((-n-1)&wordMask);
+CUDDLES_inline Int placeInSet(Int n) /* n is a (negative) pair cell         */
+{
+    return (-n - 1) >> wordShift;
+}
+CUDDLES_inline unsigned maskInSet(Int n) /* unsigned: the shift can reach   */
+{                                       /* bit 31                          */
+    return 1u << ((-n - 1) & wordMask);
 }
 
 /*-------------------------------------------------------------------------*/

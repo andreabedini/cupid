@@ -16,15 +16,15 @@
  * extended/delegated versions of the server API (cf. the server
  * interface provided by the .NET extensions.)
  */
-extern Void   setError        (String);
-extern Void   startEval       (Void);
-extern Bool   safeEval        (Cell);
-extern String ClearError      (Void);
-extern Cell   getTypeableDict (Type);
-extern char*  lastError;
+extern Void setError(String);
+extern Void startEval(Void);
+extern Bool safeEval(Cell);
+extern String ClearError(Void);
+extern Cell getTypeableDict(Type);
+extern char *lastError;
 
 /* Get the API method table from the currently running interpreter.
  * => the interpreter / server is assumed to have already been initialized.
  */
-extern CuddlesServerAPI* getCuddlesAPI (Void);
+extern CuddlesServerAPI *getCuddlesAPI(Void);
 /* ------------------------------------------------------------------------*/

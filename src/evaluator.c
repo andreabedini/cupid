@@ -21,7 +21,7 @@
 #include "timer.h"
 
 #if HAVE_WINDOWS_H
-#include <windows.h>
+# include <windows.h>
 #endif
 
 /* --------------------------------------------------------------------------
@@ -31,64 +31,76 @@
  *       of the UI used.
  *
  * ------------------------------------------------------------------------*/
-Int    hpSize            = DEFAULTHEAP; /* Desired heap size               */
-String cuddlesPath		 = 0;		/* String for file search path     */
-String cuddlesSuffixes	 = 0;		/* Source filename suffixes        */
+Int hpSize = DEFAULTHEAP;  /* Desired heap size               */
+String cuddlesPath = 0;     /* String for file search path     */
+String cuddlesSuffixes = 0; /* Source filename suffixes        */
 
 /* --------------------------------------------------------------------------
  * Evaluator initialization:
  * ------------------------------------------------------------------------*/
-Void startEvaluator(Void)
-{
+Void startEvaluator(Void) {
     initScripts();
 
-    cuddlesPath      = uniqPath(strCopy(CUDDLESPATH));
-    cuddlesSuffixes  = strCopy(CUDDLESSUFFIXES);
+    cuddlesPath = uniqPath(strCopy(CUDDLESPATH));
+    cuddlesSuffixes = strCopy(CUDDLESSUFFIXES);
 }
 
 /* --------------------------------------------------------------------------
  * Shutdown evaluator.
  * ------------------------------------------------------------------------*/
 Void stopEvaluator() {
-  /* Let go of dynamic storage */  
-    if (cuddlesPath)     { free(cuddlesPath); cuddlesPath=0; }
-    if (cuddlesSuffixes) { free(cuddlesSuffixes); cuddlesSuffixes=0; }
-    if (prompt)       { free(prompt);    prompt=0; }
-    if (repeatStr)    { free(repeatStr); repeatStr=0; }
+    /* Let go of dynamic storage */
+    if (cuddlesPath) {
+        free(cuddlesPath);
+        cuddlesPath = 0;
+    }
+    if (cuddlesSuffixes) {
+        free(cuddlesSuffixes);
+        cuddlesSuffixes = 0;
+    }
+    if (prompt) {
+        free(prompt);
+        prompt = 0;
+    }
+    if (repeatStr) {
+        free(repeatStr);
+        repeatStr = 0;
+    }
 }
 
-Void evaluator(Module m)
-{        /* evaluate expr and print value    */
-    Type  type, bd, t;
-    Kinds ks   = NIL;
-    Cell  temp = NIL;
+Void evaluator(Module m) { /* evaluate expr and print value    */
+    Type type, bd, t;
+    Kinds ks = NIL;
+    Cell temp = NIL;
 
     setCurrModule(m);
     scriptFile = 0;
-    startNewScript(0);                 /* Enables recovery of storage      */
-				       /* allocated during evaluation      */
+    startNewScript(0); /* Enables recovery of storage      */
+                       /* allocated during evaluation      */
     parseExp();
     checkExp();
     defaultDefns = evalDefaults;
-    type         = typeCheckExp(TRUE);
+    type = typeCheckExp(TRUE);
     if (isPolyType(type)) {
-	ks = polySigOf(type);
-	bd = monotypeOf(type);
-    }
-    else
-	bd = type;
+        ks = polySigOf(type);
+        bd = monotypeOf(type);
+    } else
+        bd = type;
 
-    if (whatIs(bd)==QUAL) {
-	errHead(0); errPrintf("Unresolved overloading");
-	errPrintf("\n*** Type       : "); errType(type);
-	errPrintf("\n*** Expression : "); errExpr(inputExpr);
-	errPrintf("\n");
-	errFail();
+    if (whatIs(bd) == QUAL) {
+        errHead(0);
+        errPrintf("Unresolved overloading");
+        errPrintf("\n*** Type       : ");
+        errType(type);
+        errPrintf("\n*** Expression : ");
+        errExpr(inputExpr);
+        errPrintf("\n");
+        errFail();
     }
-  
+
 #if PROFILING
     if (profiling)
-	profilerLog("profile.hp");
+        profilerLog("profile.hp");
     numReductions = 0;
     garbageCollect();
 #endif
@@ -96,76 +108,80 @@ Void evaluator(Module m)
 #if WANT_TIMER
     updateTimers();
 #endif
-    if ((t = getProgType(ks,type)) != 0) {
+    if ((t = getProgType(ks, type)) != 0) {
         if (displayIO) {
             Cell printer = namePrint;
             if (useShow) {
-                Cell d = resolvePred(ks,ap(classShow,t));
+                Cell d = resolvePred(ks, ap(classShow, t));
                 if (isNull(d)) {
                     printing = FALSE;
-                    errHead(0); errPrintf("Cannot find \"show\" function for IO result:");
-                    errPrintf("\n*** Expression : "); errExpr(inputExpr);
-                    errPrintf("\n*** Of type    : "); errType(type);
+                    errHead(0);
+                    errPrintf("Cannot find \"show\" function for IO result:");
+                    errPrintf("\n*** Expression : ");
+                    errExpr(inputExpr);
+                    errPrintf("\n*** Of type    : ");
+                    errType(type);
                     errPrintf("\n");
                     errFail();
                 }
-                printer = ap(nameShowsPrec,d);
+                printer = ap(nameShowsPrec, d);
             }
-            printer = ap(ap(nameFlip,ap(printer,mkInt(MIN_PREC))),nameNil);
-            printer = ap(ap(nameComp,namePutStr),printer);
-            inputExpr = ap(ap(nameIOBind,inputExpr),printer);
-	}
+            printer = ap(ap(nameFlip, ap(printer, mkInt(MIN_PREC))), nameNil);
+            printer = ap(ap(nameComp, namePutStr), printer);
+            inputExpr = ap(ap(nameIOBind, inputExpr), printer);
+        }
+    } else {
+        Cell printer = namePrint;
+        if (useShow) {
+            Cell d = resolvePred(ks, ap(classShow, bd));
+            if (isNull(d)) {
+                printing = FALSE;
+                errHead(0);
+                errPrintf("Cannot find \"show\" function for:");
+                errPrintf("\n*** Expression : ");
+                errExpr(inputExpr);
+                errPrintf("\n*** Of type    : ");
+                errType(type);
+                errPrintf("\n");
+                errFail();
+            }
+            printer = ap(nameShowsPrec, d);
+        }
+        inputExpr = ap(ap(ap(printer, mkInt(MIN_PREC)), inputExpr), nameNil);
+        inputExpr = ap(namePutStr, inputExpr);
     }
-    else
-    {   Cell printer = namePrint;
-	if (useShow) {
-	    Cell d = resolvePred(ks,ap(classShow,bd));
-	    if (isNull(d)) {
-		printing = FALSE;
-		errHead(0); errPrintf("Cannot find \"show\" function for:");
-		errPrintf("\n*** Expression : "); errExpr(inputExpr);
-		errPrintf("\n*** Of type    : "); errType(type);
-		errPrintf("\n");
-		errFail();
-	    }
-	    printer = ap(nameShowsPrec,d);
-	}
-	inputExpr = ap(ap(ap(printer,mkInt(MIN_PREC)),inputExpr),nameNil);
-	inputExpr = ap(namePutStr,inputExpr);
-    }
-    inputExpr = ap(nameIORun,inputExpr);
-    compileExp();                       
+    inputExpr = ap(nameIORun, inputExpr);
+    compileExp();
     clearStack();
-    run(inputCode,sp);  /* Build graph for redex */
+    run(inputCode, sp); /* Build graph for redex */
 #if DEBUG_CODE
     if (debugCode) {
-	Printf("evaluator() builds: ");
-	printExp(stdout,top());
-	Putchar('\n');
+        Printf("evaluator() builds: ");
+        printExp(stdout, top());
+        Putchar('\n');
     }
 #endif
-    numCells      = 0;
+    numCells = 0;
     numReductions = 0;
-    numGcs        = 0;
-    printing      = TRUE;
+    numGcs = 0;
+    printing = TRUE;
     consGC = FALSE;
     if (nonNull(type) && addType) {
-	onto(NIL);
-	pushed(0) = pushed(1);
-	pushed(1) = type;
-	if (nonNull(temp = evalWithNoError(pop()))) {
-	    abandon("Program execution",temp);
-	}
-	drop();
-	if (whnfHead == nameRight) {
-	    Printf(" :: ");
-	    printType(stdout,pop());
-	}
-    }
-    else {
-	if (nonNull(temp = evalWithNoError(pop()))) {
-	    abandon("Program execution",temp);
-	}
+        onto(NIL);
+        pushed(0) = pushed(1);
+        pushed(1) = type;
+        if (nonNull(temp = evalWithNoError(pop()))) {
+            abandon("Program execution", temp);
+        }
+        drop();
+        if (whnfHead == nameRight) {
+            Printf(" :: ");
+            printType(stdout, pop());
+        }
+    } else {
+        if (nonNull(temp = evalWithNoError(pop()))) {
+            abandon("Program execution", temp);
+        }
     }
     stopAnyPrinting();
 }
@@ -173,25 +189,25 @@ Void evaluator(Module m)
 /* --------------------------------------------------------------------------
  * Read in prelude module(s):
  * ------------------------------------------------------------------------*/
-Void loadPrelude() {  /* load in the Prelude module(s). */
+Void loadPrelude() { /* load in the Prelude module(s). */
     String prelLocation;
-    Bool   listFlg;
+    Bool listFlg;
 
     if (!cuddlesPath)
-	fatal("Cuddles search path not defined");
+        fatal("Cuddles search path not defined");
 
-    if (!( prelLocation = findMPathname(STD_PRELUDE_CUDDLES)) ) {
-	Printf("%s not found on current path: \"%s\"\n",
-	       STD_PRELUDE_CUDDLES, cuddlesPath);
-	fatal("Unable to load prelude implementation");
+    if (!(prelLocation = findMPathname(STD_PRELUDE_CUDDLES))) {
+        Printf("%s not found on current path: \"%s\"\n", STD_PRELUDE_CUDDLES,
+               cuddlesPath);
+        fatal("Unable to load prelude implementation");
     }
     addScriptName(prelLocation, FALSE);
-    
+
     /* add the H98 Prelude module to the stack */
-    if (!( prelLocation = findMPathname(STD_PRELUDE)) ) {
-	Printf("%s not found on current path: \"%s\"\n",
-	       STD_PRELUDE, cuddlesPath);
-	fatal("Unable to load prelude");
+    if (!(prelLocation = findMPathname(STD_PRELUDE))) {
+        Printf("%s not found on current path: \"%s\"\n", STD_PRELUDE,
+               cuddlesPath);
+        fatal("Unable to load prelude");
     }
     addScriptName(prelLocation, FALSE);
 
@@ -208,10 +224,10 @@ Void loadPrelude() {  /* load in the Prelude module(s). */
  * Send message to each component of system:
  * ------------------------------------------------------------------------*/
 
-Void everybody(Int what)            /* send command `what' to each component of*/
-{                     /* system to respond as appropriate ...    */
-    machdep(what);              /* The order of calling each component is  */
-    storage(what);              /* important for the INSTALL command       */
+Void everybody(Int what) /* send command `what' to each component of*/
+{                        /* system to respond as appropriate ...    */
+    machdep(what);       /* The order of calling each component is  */
+    storage(what);       /* important for the INSTALL command       */
     substitution(what);
     sccControl(what);
     input(what);

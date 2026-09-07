@@ -27,9 +27,9 @@
 
 #include <setjmp.h>
 
-static Void   setCuddlesAPI   (Void);
-static Bool   SetModule    (String);
-static Bool   linkDynamic     (Void);
+static Void setCuddlesAPI(Void);
+static Bool SetModule(String);
+static Bool linkDynamic(Void);
 
 /* --------------------------------------------------------------------------
  * Dynamic linking
@@ -43,66 +43,66 @@ static Bool   linkDynamic     (Void);
  *    functions and variables that we need to access.
  * ------------------------------------------------------------------------*/
 
-static Int    GetNumScripts   (Void);
-static Void   Reset           (Int);
-static Void   SetOutputEnable (Bool);
-static Void   ChangeDir       (String);
-static Void   LoadProject     (String);
-static Void   LoadFile        (String);
-static Void   LoadStringF     (String);
-static Void   SetOptions      (String);
-static String GetOptions      (Void);
-static HVal   CompileExpr     (String, String);
-static Void   GarbageCollect  (void);
-static Void   LookupName      (String, String);
-static Void   MkInt           (Int);
-static Void   MkAddr          (void*);
-static Void   MkString        (String);
-static Void   Apply           (Void);
-static Int    EvalInt         (Void);
-static void*  EvalAddr        (void);
-static String EvalString      (Void);
-static Int    DoIO            (Void);
-static Int    DoIO_Int        (int*);
-static Int    DoIO_Addr       (void**);
-static HVal   PopHVal         (Void);
-static Void   PushHVal        (HVal);
-static Void   FreeHVal        (HVal);
+static Int GetNumScripts(Void);
+static Void Reset(Int);
+static Void SetOutputEnable(Bool);
+static Void ChangeDir(String);
+static Void LoadProject(String);
+static Void LoadFile(String);
+static Void LoadStringF(String);
+static Void SetOptions(String);
+static String GetOptions(Void);
+static HVal CompileExpr(String, String);
+static Void GarbageCollect(void);
+static Void LookupName(String, String);
+static Void MkInt(Int);
+static Void MkAddr(void *);
+static Void MkString(String);
+static Void Apply(Void);
+static Int EvalInt(Void);
+static void *EvalAddr(void);
+static String EvalString(Void);
+static Int DoIO(Void);
+static Int DoIO_Int(int *);
+static Int DoIO_Addr(void **);
+static HVal PopHVal(Void);
+static Void PushHVal(HVal);
+static Void FreeHVal(HVal);
 
-static CuddlesServerAPI cuddles;             /* virtual function table            */
+static CuddlesServerAPI cuddles; /* virtual function table            */
 
-static Void setCuddlesAPI() {       /* initialise virtual function table */
+static Void setCuddlesAPI() { /* initialise virtual function table */
     static Bool api_inited = FALSE;
     if (!api_inited) {
-      api_inited = TRUE;
+        api_inited = TRUE;
 
-      cuddles.clearError      = ClearError;
-      cuddles.setCuddlesArgs     = setCuddlesArgs;
-      cuddles.getNumScripts   = GetNumScripts;
-      cuddles.reset           = Reset;
-      cuddles.setOutputEnable = SetOutputEnable;
-      cuddles.changeDir       = ChangeDir;
-      cuddles.loadProject     = LoadProject;
-      cuddles.loadFile        = LoadFile;
-      cuddles.loadFromBuffer  = LoadStringF;
-      cuddles.setOptions      = SetOptions;
-      cuddles.getOptions      = GetOptions;
-      cuddles.compileExpr     = CompileExpr;
-      cuddles.garbageCollect  = GarbageCollect;
-      cuddles.lookupName      = LookupName;
-      cuddles.mkInt           = MkInt;
-      cuddles.mkAddr          = MkAddr;
-      cuddles.mkString        = MkString;
-      cuddles.apply           = Apply;
-      cuddles.evalInt         = EvalInt;
-      cuddles.evalAddr        = EvalAddr;
-      cuddles.evalString      = EvalString;
-      cuddles.doIO            = DoIO;
-      cuddles.doIO_Int        = DoIO_Int;
-      cuddles.doIO_Addr       = DoIO_Addr;
-      cuddles.popHVal         = PopHVal;
-      cuddles.pushHVal        = PushHVal;
-      cuddles.freeHVal        = FreeHVal;
+        cuddles.clearError = ClearError;
+        cuddles.setCuddlesArgs = setCuddlesArgs;
+        cuddles.getNumScripts = GetNumScripts;
+        cuddles.reset = Reset;
+        cuddles.setOutputEnable = SetOutputEnable;
+        cuddles.changeDir = ChangeDir;
+        cuddles.loadProject = LoadProject;
+        cuddles.loadFile = LoadFile;
+        cuddles.loadFromBuffer = LoadStringF;
+        cuddles.setOptions = SetOptions;
+        cuddles.getOptions = GetOptions;
+        cuddles.compileExpr = CompileExpr;
+        cuddles.garbageCollect = GarbageCollect;
+        cuddles.lookupName = LookupName;
+        cuddles.mkInt = MkInt;
+        cuddles.mkAddr = MkAddr;
+        cuddles.mkString = MkString;
+        cuddles.apply = Apply;
+        cuddles.evalInt = EvalInt;
+        cuddles.evalAddr = EvalAddr;
+        cuddles.evalString = EvalString;
+        cuddles.doIO = DoIO;
+        cuddles.doIO_Int = DoIO_Int;
+        cuddles.doIO_Addr = DoIO_Addr;
+        cuddles.popHVal = PopHVal;
+        cuddles.pushHVal = PushHVal;
+        cuddles.freeHVal = FreeHVal;
     }
 }
 
@@ -115,37 +115,36 @@ static Void setCuddlesAPI() {       /* initialise virtual function table */
 
 #define ErrorBufferSize 10000
 
-static char  serverErrMsg[ErrorBufferSize];   /* Buffer for error messages */
-char* lastError = NULL;
+static char serverErrMsg[ErrorBufferSize]; /* Buffer for error messages */
+char *lastError = NULL;
 
-String ClearError()
-{
+String ClearError() {
     String err = lastError;
-    lastError  = NULL;
+    lastError = NULL;
     ClearOutputBuffer();
 
-    if (err && (numLoadedScripts() > 0)) 
-    {
-        everybody(RESET);        
-        dropScriptsFrom(numLoadedScripts()-1);  /* remove partially loaded scripts */
+    if (err && (numLoadedScripts() > 0)) {
+        everybody(RESET);
+        dropScriptsFrom(numLoadedScripts() -
+                        1); /* remove partially loaded scripts */
     }
     return err;
 }
 
-Void setError(String s)            /* Format an error message        */
+Void setError(String s) /* Format an error message        */
 {
-    Int    n = 0;
+    Int n = 0;
     String err = ClearOutputBuffer();
 
     if (NULL == err) {
-	n = snprintf(serverErrMsg, ErrorBufferSize, "%s\n", s);
+        n = snprintf(serverErrMsg, ErrorBufferSize, "%s\n", s);
     } else {
-	n = snprintf(serverErrMsg, ErrorBufferSize, "%s\n%s\n", s, err);
+        n = snprintf(serverErrMsg, ErrorBufferSize, "%s\n%s\n", s, err);
     }
     if (0 <= n && n <= ErrorBufferSize) {
-	lastError = serverErrMsg;
+        lastError = serverErrMsg;
     } else {
-	lastError = "error buffer overflowed\n";
+        lastError = "error buffer overflowed\n";
     }
 }
 
@@ -167,19 +166,22 @@ Void setError(String s)            /* Format an error message        */
  * can be used on some compilers (Mac?) that have limits on the size of
  * macro arguments.
  */
-#define BEGIN_PROTECT \
-  if (NULL == lastError) { \
-      Cell dummy; \
-      CStackBase = &dummy;              /* Save stack base for use in gc  */ \
-      consGC = TRUE;                    /* conservative GC is the default */ \
-      if (!setjmp(catch_error)) {
-#define END_PROTECT \
-      } else { \
-	setError("Error occurred"); \
-	normalTerminal(); \
-      }	\
-  }
-#define protect(s)	BEGIN_PROTECT s; END_PROTECT
+#define BEGIN_PROTECT                                                          \
+    if (NULL == lastError) {                                                   \
+        Cell dummy;                                                            \
+        CStackBase = &dummy; /* Save stack base for use in gc  */              \
+        consGC = TRUE;       /* conservative GC is the default */              \
+        if (!setjmp(catch_error)) {
+#define END_PROTECT                                                            \
+    }                                                                          \
+    else {                                                                     \
+        setError("Error occurred");                                            \
+        normalTerminal();                                                      \
+    }                                                                          \
+    }
+#define protect(s)                                                             \
+    BEGIN_PROTECT s;                                                           \
+    END_PROTECT
 
 /* --------------------------------------------------------------------------
  * Initialisation
@@ -192,66 +194,70 @@ Void setError(String s)            /* Format an error message        */
 
 */
 
-DLLEXPORT(CuddlesServerAPI*) initCuddlesServer(Int argc, String argv[]) /*server initialisation*/
+DLLEXPORT(CuddlesServerAPI *)
+initCuddlesServer(Int argc, String argv[]) /*server initialisation*/
 {
 
     static Bool is_initialized = FALSE;
 
     if (!is_initialized) {
-      is_initialized = TRUE;
-      setCuddlesAPI();
-      
-      BEGIN_PROTECT			/* Too much text for protect()	   */
-      Int i;
+        is_initialized = TRUE;
+        setCuddlesAPI();
 
-      startEvaluator();
+        BEGIN_PROTECT /* Too much text for protect()       */
+            Int i;
 
-      if (argc == -1) {
-	readOptions(argv[0],FALSE);
-      } else {
-	readOptionSettings();
-	for (i=1; i<argc && (argv[i][0]=='+' || argv[i][0]=='-'); ++i) {
-	  if (!processOption(argv[i])) {
-	    setError("Unrecognised option");
-	    return NULL;
-	  }
-	}
-      }
-      EnableOutput(FALSE);
-      loadPrelude();
+        startEvaluator();
 
-      addScriptName("Cuddles.Dynamic",TRUE);
+        if (argc == -1) {
+            readOptions(argv[0], FALSE);
+        } else {
+            readOptionSettings();
+            for (i = 1; i < argc && (argv[i][0] == '+' || argv[i][0] == '-');
+                 ++i) {
+                if (!processOption(argv[i])) {
+                    setError("Unrecognised option");
+                    return NULL;
+                }
+            }
+        }
+        EnableOutput(FALSE);
+        loadPrelude();
 
-      readScripts(0);
-      everybody(RESET);
-      if (!linkDynamic()) {
-	setError("module Cuddles.Dynamic doesn't define the expected functions");
-	return NULL;
-      }
-      END_PROTECT
-   }
-   return &cuddles;  /* error must have occurred */
+        addScriptName("Cuddles.Dynamic", TRUE);
+
+        readScripts(0);
+        everybody(RESET);
+        if (!linkDynamic()) {
+            setError(
+                "module Cuddles.Dynamic doesn't define the expected functions");
+            return NULL;
+        }
+        END_PROTECT
+    }
+    return &cuddles; /* error must have occurred */
 }
 
 /* Just give me the method table; initialisation is assumed to already have taken
  * place. Used when external code needs to callback into Haskell.
  */
-CuddlesServerAPI* getCuddlesAPI() {
-  setCuddlesAPI();
-  return &cuddles;
+CuddlesServerAPI *getCuddlesAPI() {
+    setCuddlesAPI();
+    return &cuddles;
 }
 
 /* --------------------------------------------------------------------------
  * Shutting down:
  * ------------------------------------------------------------------------*/
-DLLEXPORT(Void) shutdownCuddlesServer(CuddlesServerAPI* hserv) /* server shutdown */
+DLLEXPORT(Void)
+shutdownCuddlesServer(CuddlesServerAPI *hserv) /* server shutdown */
 {
-  /* The 'hserv' argument isn't actually used */
-  clearStack();
-  stopAnyPrinting();
-  everybody(EXIT);
-  stopEvaluator();
-  return;
+    /* The 'hserv' argument isn't actually used */
+    clearStack();
+    stopAnyPrinting();
+    everybody(EXIT);
+    stopEvaluator();
+    return;
 }
 
 /* --------------------------------------------------------------------------
@@ -268,32 +274,28 @@ DLLEXPORT(Void) shutdownCuddlesServer(CuddlesServerAPI* hserv) /* server shutdow
  *            Lambada, and mod_haskell. By defining NO_DYNAMIC_TYPES,
  *            you may turn this feature off.
  * ------------------------------------------------------------------------*/
-static Name  nameRunDyn;
-static Name  nameDynApp;
-static Name  nameToDyn;
-static Name  nameCoerceDynamic;
+static Name nameRunDyn;
+static Name nameDynApp;
+static Name nameToDyn;
+static Name nameCoerceDynamic;
 static Class classTypeable;
 
-static Bool linkDynamic()
-{
-    nameRunDyn        = findName(findText("runDyn"));
-    nameDynApp        = findName(findText("dynApp"));
-    nameToDyn         = findName(findText("toDyn"));
+static Bool linkDynamic() {
+    nameRunDyn = findName(findText("runDyn"));
+    nameDynApp = findName(findText("dynApp"));
+    nameToDyn = findName(findText("toDyn"));
     nameCoerceDynamic = findName(findText("coerceDynamic"));
-    classTypeable     = findClass(findText("Typeable"));
+    classTypeable = findClass(findText("Typeable"));
 
-    return (   nonNull(nameRunDyn        )
-	    && nonNull(nameDynApp        )
-	    && nonNull(nameToDyn         )
-	    && nonNull(nameCoerceDynamic )
-	    && nonNull(classTypeable     ));
+    return (nonNull(nameRunDyn) && nonNull(nameDynApp) && nonNull(nameToDyn) &&
+            nonNull(nameCoerceDynamic) && nonNull(classTypeable));
 }
 
 /* --------------------------------------------------------------------------
  * Miscellaneous:
  * ------------------------------------------------------------------------*/
 
-static Int GetNumScripts()      /* Get number of scripts in system  */
+static Int GetNumScripts() /* Get number of scripts in system  */
 {
     protect(return numLoadedScripts());
     return 0;
@@ -301,113 +303,101 @@ static Int GetNumScripts()      /* Get number of scripts in system  */
 
 static Void Reset(Int scripts) /* Restore number of scripts to old level */
 {
-    protect(
-	ClearOutputBuffer();
-	forgetScriptsFrom(scripts);
-	everybody(RESET);
-	);
+    protect(ClearOutputBuffer(); forgetScriptsFrom(scripts); everybody(RESET););
 }
 
-static Void SetOutputEnable(Bool f)    /* enable/disable compiler output  */
+static Void SetOutputEnable(Bool f) /* enable/disable compiler output  */
 {
     protect(EnableOutput(f));
 }
 
-static Void ChangeDir(String s)          /* change current directory        */
+static Void ChangeDir(String s) /* change current directory        */
 {
-    protect(
-	if (chdir(s)) {
-	    setError("changeDir: invalid directory");
-	    return;
-	}
-	);
+    protect(if (chdir(s)) {
+        setError("changeDir: invalid directory");
+        return;
+    });
 }
 
-static Void LoadProject(String fn)       /* load a project into the system  */
+static Void LoadProject(String fn) /* load a project into the system  */
 {
     protect(setError("loadProject: not implemented"));
 }
 
-static Void LoadFile(String fn)          /* load a module (from a file) into the system   */
+static Void
+LoadFile(String fn) /* load a module (from a file) into the system   */
 {
-    protect(
-	addScriptName(fn,TRUE);
-	readScripts(numLoadedScripts());
-	everybody(RESET);
-	);
+    protect(addScriptName(fn, TRUE); readScripts(numLoadedScripts());
+            everybody(RESET););
 }
 
-static Void LoadStringF(String mod)      /* load a module (from a string) into the system   */
+static Void
+LoadStringF(String mod) /* load a module (from a string) into the system   */
 {
-    protect(
-	addScriptName(mod,TRUE);
-	readScripts(numLoadedScripts());
-	everybody(RESET);
-	);
+    protect(addScriptName(mod, TRUE); readScripts(numLoadedScripts());
+            everybody(RESET););
 }
 
-static Void SetOptions(String opt)
-{
-  protect(readOptions2(opt));
+static Void SetOptions(String opt) {
+    protect(readOptions2(opt));
 }
 
 static String GetOptions() {
-  return strCopy(optionsToStr());
+    return strCopy(optionsToStr());
 }
 
-static Bool SetModule(String m)
-{
-    Module mod   = findModule(findText(m));
+static Bool SetModule(String m) {
+    Module mod = findModule(findText(m));
     if (isNull(mod)) {
-	return FALSE;
+        return FALSE;
     }
     setCurrModule(mod);
     return TRUE;
 }
 
-static HVal CompileExpr(String m, String e)    /* compile expression e wrt module m */
+static HVal CompileExpr(String m,
+                        String e) /* compile expression e wrt module m */
 {
     BEGIN_PROTECT
-	Type type = NIL;
-	Cell d    = NIL;
-	HVal r    = 0;
+    Type type = NIL;
+    Cell d = NIL;
+    HVal r = 0;
 
-	if (!SetModule(m)) {
-	    char errmsg[256];
-	    snprintf(errmsg, 255, "can't find \"%s\" module", m);
-	    setError(errmsg);
-	    return 0;
-	}
-	scriptFile = 0;
-	stringInput(e);                /* Put expression into input buffer */
-				
-	startNewScript(0);             /* Enables recovery of storage      */
-				       /* allocated during evaluation      */
-	parseExp();
-	checkExp();
-	defaultDefns = evalDefaults;
-	type         = typeCheckExp(TRUE);
-	d = getTypeableDict(type);
-	if (isNull(d)) {
-	    setError("compileExpr: can't create Typeable instance");
-	    return 0;
-	}
-	inputExpr = ap(ap(nameToDyn,d),inputExpr);
-	compileExp();
-	run(inputCode,sp);  /* Build graph for redex */
+    if (!SetModule(m)) {
+        char errmsg[256];
+        snprintf(errmsg, 255, "can't find \"%s\" module", m);
+        setError(errmsg);
+        return 0;
+    }
+    scriptFile = 0;
+    stringInput(e); /* Put expression into input buffer */
 
-	r = mkStablePtr(pop());
-	if (0 == r) {
-	    setError("compileExpr: no free stable pointers");
-	    return 0;
-	}
-	return r;
+    startNewScript(0); /* Enables recovery of storage      */
+                       /* allocated during evaluation      */
+    parseExp();
+    checkExp();
+    defaultDefns = evalDefaults;
+    type = typeCheckExp(TRUE);
+    d = getTypeableDict(type);
+    if (isNull(d)) {
+        setError("compileExpr: can't create Typeable instance");
+        return 0;
+    }
+    inputExpr = ap(ap(nameToDyn, d), inputExpr);
+    compileExp();
+    run(inputCode, sp); /* Build graph for redex */
+
+    r = mkStablePtr(pop());
+    if (0 == r) {
+        setError("compileExpr: no free stable pointers");
+        return 0;
+    }
+    return r;
     END_PROTECT
     return 0;
 }
 
-static Void GarbageCollect()
-{
+static Void GarbageCollect() {
     protect(garbageCollect());
 }
 
@@ -415,62 +405,63 @@ static Void GarbageCollect()
  * Building expressions on the stack
  * ------------------------------------------------------------------------*/
 
-static Void LookupName(String m, String v) /*Push value of qualified name onto stack*/
+static Void LookupName(String m,
+                       String v) /*Push value of qualified name onto stack*/
 {
     BEGIN_PROTECT
-	Name   n;
-	Cell   d;
-        char   errbuf[256];
+    Name n;
+    Cell d;
+    char errbuf[256];
 
-	if (!SetModule(m)) {
-	    snprintf(errbuf, 255, "lookupName: invalid module '%s'", m);
-	    setError(errbuf);
-	    return;
-	}
-	if (isNull(n = findName(findText(v)))) {
-            snprintf( errbuf, 255, "lookupName: invalid name '%s.%s'", m, v );
-	    setError(errbuf);
-	    return;
-	}
-	d = getTypeableDict(name(n).type);
-	if (isNull(d)) {
-	    setError("lookupName: can't create Typeable instance");
-	    return;
-	}
-	push(ap(ap(nameToDyn,d),n));
+    if (!SetModule(m)) {
+        snprintf(errbuf, 255, "lookupName: invalid module '%s'", m);
+        setError(errbuf);
+        return;
+    }
+    if (isNull(n = findName(findText(v)))) {
+        snprintf(errbuf, 255, "lookupName: invalid name '%s.%s'", m, v);
+        setError(errbuf);
+        return;
+    }
+    d = getTypeableDict(name(n).type);
+    if (isNull(d)) {
+        setError("lookupName: can't create Typeable instance");
+        return;
+    }
+    push(ap(ap(nameToDyn, d), n));
     END_PROTECT
 }
 
-static Void MkInt(Int i)              /* Push an Int onto the stack      */
+static Void MkInt(Int i) /* Push an Int onto the stack      */
 {
     /* getTypeableDict() must run inside protect() too, not just the push:
      * it can itself raise a Cuddles error, and outside protect() that would
      * longjmp to whatever catch_error happens to hold from some earlier,
      * unrelated call.                                                  */
     protect(Cell d = getTypeableDict(typeInt);
-	    push(ap(ap(nameToDyn,d),mkInt(i))));
+            push(ap(ap(nameToDyn, d), mkInt(i))));
 }
 
-static Void MkAddr(void* a)              /* Push an Addr onto the stack      */
+static Void MkAddr(void *a) /* Push an Addr onto the stack      */
 {
     protect(Cell d = getTypeableDict(typeAddr);
-	    push(ap(ap(nameToDyn,d),mkPtr(a))));
+            push(ap(ap(nameToDyn, d), mkPtr(a))));
 }
 
-static Void MkString(String s)           /* Push a String onto the stack    */
+static Void MkString(String s) /* Push a String onto the stack    */
 {
     BEGIN_PROTECT
-	pushString(s);
-	topfun(ap(nameToDyn,getTypeableDict(typeString)));
+    pushString(s);
+    topfun(ap(nameToDyn, getTypeableDict(typeString)));
     END_PROTECT
 }
 
-static Void Apply()              /* Apply stack[sp-1] to stack[sp]   */
+static Void Apply() /* Apply stack[sp-1] to stack[sp]   */
 {
     BEGIN_PROTECT
-	Cell x = pop();
-	Cell f = pop();
-	push(ap(ap(nameDynApp,f),x));
+    Cell x = pop();
+    Cell f = pop();
+    push(ap(ap(nameDynApp, f), x));
     END_PROTECT
 }
 
@@ -478,171 +469,177 @@ static Void Apply()              /* Apply stack[sp-1] to stack[sp]   */
  * Evaluate top of stack
  * ------------------------------------------------------------------------*/
 
-Void startEval()
-{
-    numCells      = 0;
+Void startEval() {
+    numCells = 0;
     numReductions = 0;
-    numGcs        = 0;
-    printing      = TRUE;
+    numGcs = 0;
+    printing = TRUE;
     consGC = FALSE;
 }
 
-static void evalError(Cell e)
-{
+static void evalError(Cell e) {
 #define MAXLEN 255
-  char message[MAXLEN] = ""; /* "error called: "; */
-  int  len;
-  len = strlen(message);
+    char message[MAXLEN] = ""; /* "error called: "; */
+    int len;
+    len = strlen(message);
 
-  if (!isAp(e) || fun(e) != nameErrorCall) {
-    setError("program error");
-    return;
-  }
-  push( arg(e) );
+    if (!isAp(e) || fun(e) != nameErrorCall) {
+        setError("program error");
+        return;
+    }
+    push(arg(e));
 
-  while(1) {
-    if (nonNull(evalWithNoError(pop())))  break; /* error in error ! */
-    
-    if (whnfHead!=nameCons) break;  /* end of string */
-    if (nonNull(evalWithNoError(pop())))  break; /* error in error ! */
+    while (1) {
+        if (nonNull(evalWithNoError(pop())))
+            break; /* error in error ! */
 
-    message[len] = charOf(whnfHead);
-    len++;
-    if (len >= MAXLEN-1)    break;      /* leave room for the '\0' below   */
-  }
+        if (whnfHead != nameCons)
+            break; /* end of string */
+        if (nonNull(evalWithNoError(pop())))
+            break; /* error in error ! */
 
-  message[len] = '\0';
-  setError(message);
+        message[len] = charOf(whnfHead);
+        len++;
+        if (len >= MAXLEN - 1)
+            break; /* leave room for the '\0' below   */
+    }
+
+    message[len] = '\0';
+    setError(message);
 }
 
-static Bool tryEval(Cell c)
-{
+static Bool tryEval(Cell c) {
     Cell temp = evalWithNoError(c);
-    if (nonNull(temp))
-    {
+    if (nonNull(temp)) {
         evalError(temp);
         return FALSE;
+    } else
+        return TRUE;
+}
+
+Bool safeEval(Cell c) {
+    Bool ok;
+    startEval();
+    ok = tryEval(c);
+    normalTerminal();
+    return ok;
+}
+
+static Int EvalInt() /* Evaluate a cell (:: Int)         */
+{
+    Cell d;
+    BEGIN_PROTECT
+    startEval();
+    d = getTypeableDict(typeInt);
+    safeEval(ap(ap(nameCoerceDynamic, d), pop()));
+    normalTerminal();
+    return whnfInt;
+    END_PROTECT
+    return 0;
+}
+
+static void *EvalAddr() /* Evaluate a cell (:: Addr)         */
+{
+    Cell d;
+    BEGIN_PROTECT
+    startEval();
+    d = getTypeableDict(typeAddr);
+    safeEval(ap(ap(nameCoerceDynamic, d), pop()));
+    normalTerminal();
+    return ptrOf(whnfHead);
+    END_PROTECT
+    return 0;
+}
+
+static String EvalString() /* Evaluate a cell (:: String)      */
+{
+    Cell d;
+    BEGIN_PROTECT
+    Int len = 0;
+    String s;
+    Bool ok;
+    StackPtr oldsp = sp;
+
+    startEval();
+
+    /* Evaluate spine of list onto stack */
+    d = getTypeableDict(typeString);
+    ok = tryEval(ap(ap(nameCoerceDynamic, d), pop()));
+    if (!ok) {
+        sp = oldsp - 1;
+        return NULL;
     }
-    else return TRUE;
-}
 
+    while (whnfHead == nameCons && whnfArgs == 2) {
+        Cell e = pop();
+        Cell es = pop();
+        len++;
+        push(e);
+        ok = tryEval(es);
+        if (!ok) {
+            sp = oldsp - 1;
+            return NULL;
+        }
+    }
+    normalTerminal();
 
-Bool safeEval(Cell c)
-{
-        Bool ok;
-        startEval();
-        ok = tryEval(c);
-        normalTerminal();
-        return ok;
-}
+    if (whnfHead != nameNil) {
+        setError("evalString: nil expected");
+        return NULL;
+    }
+    if (sp != oldsp - 1 + len) {
+        setError("evalString: unbalanced stack1");
+        return NULL;
+    }
 
-
-static Int EvalInt()            /* Evaluate a cell (:: Int)         */
-{
-    Cell d;
-    BEGIN_PROTECT
-	startEval();
-        d = getTypeableDict(typeInt);
-	safeEval(ap(ap(nameCoerceDynamic,d),pop()));
-	normalTerminal();
-	return whnfInt;
-    END_PROTECT
-    return 0;
-}
-
-static void* EvalAddr()          /* Evaluate a cell (:: Addr)         */
-{
-    Cell d;
-    BEGIN_PROTECT
-	startEval();
-        d = getTypeableDict(typeAddr);
-	safeEval(ap(ap(nameCoerceDynamic,d),pop()));
-	normalTerminal();
-	return ptrOf(whnfHead);
-    END_PROTECT
-    return 0;
-}
-
-static String EvalString()      /* Evaluate a cell (:: String)      */
-{
-    Cell d;
-    BEGIN_PROTECT
-	Int      len = 0;
-	String   s;
-	Bool     ok;
-	StackPtr oldsp = sp;
-
-	startEval();
-
-	/* Evaluate spine of list onto stack */
-        d = getTypeableDict(typeString);
-	ok = tryEval(ap(ap(nameCoerceDynamic,d),pop()));
-        if (!ok) { sp = oldsp-1; return NULL; }
-
-	while (whnfHead==nameCons && whnfArgs==2) {
-	    Cell e  = pop();
-	    Cell es = pop();
-	    len++;
-	    push(e);
-	    ok = tryEval(es);
-            if (!ok) { sp = oldsp-1; return NULL; }
-	}
-	normalTerminal();
-
-	if (whnfHead != nameNil) {
-	    setError("evalString: nil expected");
-	    return NULL;
-	}
-	if (sp != oldsp-1+len) {
-	    setError("evalString: unbalanced stack1");
-	    return NULL;
-	}
-
-	/* Pull characters off stack into array */
-	if (!(s = malloc(len+1))) {
-	    setError("Malloc failed in mkString");
-	    return NULL;
-	}
-	s[len] = '\0';
-	while (--len >= 0) {
-	   ok = tryEval(pop());
-	   if (!ok) { sp  = oldsp; free(s); return NULL; }
-	   s[len] = charOf(whnfHead);
-	}
-	if (sp+1 != oldsp) {
-	    setError("evalString: unbalanced stack2");
-	    return NULL;
-	}
-	return s;
+    /* Pull characters off stack into array */
+    if (!(s = malloc(len + 1))) {
+        setError("Malloc failed in mkString");
+        return NULL;
+    }
+    s[len] = '\0';
+    while (--len >= 0) {
+        ok = tryEval(pop());
+        if (!ok) {
+            sp = oldsp;
+            free(s);
+            return NULL;
+        }
+        s[len] = charOf(whnfHead);
+    }
+    if (sp + 1 != oldsp) {
+        setError("evalString: unbalanced stack2");
+        return NULL;
+    }
+    return s;
     END_PROTECT
     return NULL;
 }
 
-static Int DoIO()        /* Evaluate a cell (:: IO ()) return exit status */
+static Int DoIO() /* Evaluate a cell (:: IO ()) return exit status */
 {
     BEGIN_PROTECT
-	Int exitCode = 0;
-        Bool ok;
-	StackPtr oldsp = sp;
-	startEval();
-	ok = safeEval(ap(nameIORun,ap(nameRunDyn, pop())));
-        if (!ok)
-        {
-            sp = oldsp-1;   
-            exitCode = 1;
-        } else if (whnfHead == nameLeft) { /* Left exitCode -> return exitCode */
-	    safeEval(pop());
-	    exitCode = whnfInt;
-	} else {                    /* Right void    -> return 0        */
-	    drop();
-	    exitCode = 0; /* implicit exit code is 0 */
-	}
-	normalTerminal();
-	if (sp != oldsp-1) {
-	    setError("doIO: unbalanced stack");
-	    return 1;
-	}
-	return exitCode;
+    Int exitCode = 0;
+    Bool ok;
+    StackPtr oldsp = sp;
+    startEval();
+    ok = safeEval(ap(nameIORun, ap(nameRunDyn, pop())));
+    if (!ok) {
+        sp = oldsp - 1;
+        exitCode = 1;
+    } else if (whnfHead == nameLeft) { /* Left exitCode -> return exitCode */
+        safeEval(pop());
+        exitCode = whnfInt;
+    } else { /* Right void    -> return 0        */
+        drop();
+        exitCode = 0; /* implicit exit code is 0 */
+    }
+    normalTerminal();
+    if (sp != oldsp - 1) {
+        setError("doIO: unbalanced stack");
+        return 1;
+    }
+    return exitCode;
     END_PROTECT
     return -1; /* error code */
 }
@@ -650,36 +647,34 @@ static Int DoIO()        /* Evaluate a cell (:: IO ()) return exit status */
 /* 
  * Evaluate a cell (:: IO Int) return exit status
  */
-static Int DoIO_Int(int* phval)
-{
+static Int DoIO_Int(int *phval) {
     BEGIN_PROTECT
-        Int exitCode = 0;
-        Bool ok = TRUE;
-        StackPtr oldsp = sp;
-        startEval();
-        ok = safeEval(ap(nameIORun,ap(nameRunDyn,pop())));
-        if (!ok)
-        {
-            sp = oldsp-1;   
-            exitCode = 1;
-        } else if (whnfHead == nameLeft) { 
+    Int exitCode = 0;
+    Bool ok = TRUE;
+    StackPtr oldsp = sp;
+    startEval();
+    ok = safeEval(ap(nameIORun, ap(nameRunDyn, pop())));
+    if (!ok) {
+        sp = oldsp - 1;
+        exitCode = 1;
+    } else if (whnfHead == nameLeft) {
+        safeEval(pop());
+        exitCode = whnfInt;
+    } else {
+        if (phval) {
             safeEval(pop());
-            exitCode = whnfInt;
-        } else {   
-	    if (phval) {
-	      safeEval(pop());
-	      *phval = whnfInt;
-	    } else {
-	      drop();
-	    }
-            exitCode = 0; 
+            *phval = whnfInt;
+        } else {
+            drop();
         }
-        normalTerminal();
-        if (sp != oldsp-1) {
-            setError("doIO: unbalanced stack");
-            return 1;
-        }
-        return exitCode;
+        exitCode = 0;
+    }
+    normalTerminal();
+    if (sp != oldsp - 1) {
+        setError("doIO: unbalanced stack");
+        return 1;
+    }
+    return exitCode;
     END_PROTECT;
     return -1; /* error code */
 }
@@ -687,36 +682,34 @@ static Int DoIO_Int(int* phval)
 /* 
  * Evaluate a cell (:: IO Addr) return exit status
  */
-static Int DoIO_Addr(void** phval)
-{
+static Int DoIO_Addr(void **phval) {
     BEGIN_PROTECT
-        Int exitCode = 0;
-        Bool ok;
-        StackPtr oldsp = sp;
-        startEval();
-        ok = safeEval(ap(nameIORun,ap(nameRunDyn,pop())));
-        if (!ok)
-        {
-            sp = oldsp-1;   
-            exitCode = 1;
-	} else if (whnfHead == nameLeft) { 
+    Int exitCode = 0;
+    Bool ok;
+    StackPtr oldsp = sp;
+    startEval();
+    ok = safeEval(ap(nameIORun, ap(nameRunDyn, pop())));
+    if (!ok) {
+        sp = oldsp - 1;
+        exitCode = 1;
+    } else if (whnfHead == nameLeft) {
+        safeEval(pop());
+        exitCode = whnfInt;
+    } else {
+        if (phval) {
             safeEval(pop());
-            exitCode = whnfInt;
-        } else {   
-	    if (phval) {
-	      safeEval(pop());
-	      *phval = (void*)ptrOf(whnfHead);
-	    } else {
-	      drop();
-	    }
-            exitCode = 0; 
+            *phval = (void *)ptrOf(whnfHead);
+        } else {
+            drop();
         }
-        normalTerminal();
-        if (sp != oldsp-1) {
-            setError("doIO: unbalanced stack");
-            return 1;
-        }
-        return exitCode;
+        exitCode = 0;
+    }
+    normalTerminal();
+    if (sp != oldsp - 1) {
+        setError("doIO: unbalanced stack");
+        return 1;
+    }
+    return exitCode;
     END_PROTECT;
     return -1; /* error code */
 }
@@ -728,31 +721,24 @@ static Int DoIO_Addr(void** phval)
  * which must be explicitly freed.
  * ------------------------------------------------------------------------*/
 
-static HVal PopHVal()           /* Get a value off the stack         */
+static HVal PopHVal() /* Get a value off the stack         */
 {
-    protect(
-	HVal r = mkStablePtr(pop());
-	if (0 == r) {
-	    setError("popHVal: no free stable pointers");
-	    return 0;
-	}
-	return r;
-	);
+    protect(HVal r = mkStablePtr(pop()); if (0 == r) {
+        setError("popHVal: no free stable pointers");
+        return 0;
+    } return r;);
     return 0;
 }
 
-static Void PushHVal(HVal hval)      /* Put a value back on the stack     */
+static Void PushHVal(HVal hval) /* Put a value back on the stack     */
 {
-    protect(
-	if (hval == 0) {
-	    setError("pushHVal: invalid HVal");
-	    return;
-	}
-	push(derefStablePtr(hval))
-	);
+    protect(if (hval == 0) {
+        setError("pushHVal: invalid HVal");
+        return;
+    } push(derefStablePtr(hval)));
 }
 
-static Void FreeHVal(HVal hval)      /* Free a Haskell value              */
+static Void FreeHVal(HVal hval) /* Free a Haskell value              */
 {
     protect(freeStablePtr(hval));
 }
@@ -761,21 +747,23 @@ static Void FreeHVal(HVal hval)      /* Free a Haskell value              */
  * ------------------------------------------------------------------------*/
 
 Cell getTypeableDict(Type t) /* Find a Typeable dictionary for instance t, */
-{              /* or NIL if none found                       */
+{                            /* or NIL if none found                       */
     Class c = classTypeable;
     Kinds ks = NIL;
     if (isPolyType(t)) {
-	ks = polySigOf(t);
-	t  = monotypeOf(t);
+        ks = polySigOf(t);
+        t = monotypeOf(t);
     }
     switch (whatIs(t)) {
-	case QUAL  :
-	case RANK2 :
-	case EXIST :
-	case CDICTS: return NIL;
-	default    : break;
+    case QUAL:
+    case RANK2:
+    case EXIST:
+    case CDICTS:
+        return NIL;
+    default:
+        break;
     }
-    return provePred(ks,NIL,ap(c,t));
+    return provePred(ks, NIL, ap(c, t));
 }
 
 /* ----------------------------------------------------------------------- */

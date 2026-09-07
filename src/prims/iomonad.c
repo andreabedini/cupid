@@ -40,32 +40,31 @@
 # include <windows.h>
 #endif
 
- 
-Name nameIORun;			        /* run IO code                     */
-Name nameIOBind;		        /* bind IO code                    */
-Name namePutStr;		        /* Prelude.putStr                  */
+Name nameIORun;  /* run IO code                     */
+Name nameIOBind; /* bind IO code                    */
+Name namePutStr; /* Prelude.putStr                  */
 
-static Name namePass;			/* auxiliary:: \f b a -> f a b     */
-static Name nameHreader;	        /* auxiliary function		   */
-static Cell cuddlesProgName;		/* value of getProgName            */
-static Cell cuddlesArgs;			/* value of getArgs                */
+static Name namePass;       /* auxiliary:: \f b a -> f a b     */
+static Name nameHreader;    /* auxiliary function                  */
+static Cell cuddlesProgName; /* value of getProgName            */
+static Cell cuddlesArgs;     /* value of getArgs                */
 
-static String local toIOErrorDescr (int,Bool);
-static Name   local toIOError      (int);
-static Int    local newHandle      (Cell *,String);
-static String local modeString     (Int,Bool);
-static Cell   local openHandle     (StackPtr,Cell *,Int,Bool,String);
-static Cell   local openFdHandle   (StackPtr,Int,Int,Bool,String);
-static Char   local hGetChar       (Int,String);
-static Void   local hPutChar       (Char,Int,String);
-static Void   local setRWState     (Int,Int);
-static Void   local checkOpen      (Int,String);
-static Void   local checkReadable  (Int,String);
-static Void   local checkWritable  (Int,String);
+static String local toIOErrorDescr(int, Bool);
+static Name local toIOError(int);
+static Int local newHandle(Cell *, String);
+static String local modeString(Int, Bool);
+static Cell local openHandle(StackPtr, Cell *, Int, Bool, String);
+static Cell local openFdHandle(StackPtr, Int, Int, Bool, String);
+static Char local hGetChar(Int, String);
+static Void local hPutChar(Char, Int, String);
+static Void local setRWState(Int, Int);
+static Void local checkOpen(Int, String);
+static Void local checkReadable(Int, String);
+static Void local checkWritable(Int, String);
 
-#  define MAX_HANDLES num_handles
+#define MAX_HANDLES num_handles
 
-extern Void local pushString       (String);
+extern Void local pushString(String);
 
 /* --------------------------------------------------------------------------
  * IO monad control:
@@ -74,26 +73,29 @@ extern Void local pushString       (String);
 /* The statics that hold cells: registered as roots at INSTALL and marked
  * by the collector on every collection */
 static Cell *const iomonadRoots[] = {
-    &cuddlesProgName, &cuddlesArgs,
+    &cuddlesProgName,
+    &cuddlesArgs,
 };
 
-static Void iomonadControl (Int);
-static Void iomonadControl(Int what)
-{
+static Void iomonadControl(Int);
+static Void iomonadControl(Int what) {
     switch (what) {
-	case INSTALL : registerRoots(iomonadRoots);
-		       setCurrModule(modulePrelude);
-#define pFun(n,s,t)    addPrim(0,n=newName(findText(s),NIL),t,modulePrelude,NIL)
-		       pFun(namePass,	 "_pass",    "passIO");
-		       pFun(nameHreader, "_hreader", "hreader");
+    case INSTALL:
+        registerRoots(iomonadRoots);
+        setCurrModule(modulePrelude);
+#define pFun(n, s, t)                                                          \
+    addPrim(0, n = newName(findText(s), NIL), t, modulePrelude, NIL)
+        pFun(namePass, "_pass", "passIO");
+        pFun(nameHreader, "_hreader", "hreader");
 #undef pFun
-#define predef(nm,str) nm=newName(findText(str),NIL); name(nm).defn=PREDEFINED
-		       predef(nameIORun,    "cuddlesIORun");
-		       predef(nameIOBind,   "primbindIO");
-		       predef(namePutStr,   "putStr");
+#define predef(nm, str)                                                        \
+    nm = newName(findText(str), NIL);                                          \
+    name(nm).defn = PREDEFINED
+        predef(nameIORun, "cuddlesIORun");
+        predef(nameIOBind, "primbindIO");
+        predef(namePutStr, "putStr");
 #undef predef
-		       break;
-
+        break;
     }
 }
 
@@ -111,8 +113,8 @@ PROTO_PRIM(primGetArgs);
 PROTO_PRIM(primSetProgName);
 PROTO_PRIM(primSetArgs);
 
-static Void local fopenPrim   (StackPtr,Bool,String);
-static int local getIOMode    (Cell);
+static Void local fopenPrim(StackPtr, Bool, String);
+static int local getIOMode(Cell);
 
 PROTO_PRIM(primHGetChar);
 PROTO_PRIM(primHPutChar);
@@ -188,209 +190,195 @@ PROTO_PRIM(primDerefSN);
 PROTO_PRIM(primHashSN);
 PROTO_PRIM(primEqSN);
 
-
-
 static struct primitive iomonadPrimTable[] = {
-  {"primretIO",		1+IOArity, primReturnIO},
-  {"primbindIO",	2+IOArity, primBindIO},
-  {"passIO",		2+IOArity, primPass},
+    {"primretIO", 1 + IOArity, primReturnIO},
+    {"primbindIO", 2 + IOArity, primBindIO},
+    {"passIO", 2 + IOArity, primPass},
 
-  {"primGC",	        0+IOArity, primGC},
-  {"getEnv",	        1+IOArity, primGetEnv},
-  {"primSystem",	1+IOArity, primSystem},
-  {"getRandomSeed",	0+IOArity, primGetRandomSeed},
+    {"primGC", 0 + IOArity, primGC},
+    {"getEnv", 1 + IOArity, primGetEnv},
+    {"primSystem", 1 + IOArity, primSystem},
+    {"getRandomSeed", 0 + IOArity, primGetRandomSeed},
 
-  {"primGetProgName",   0+IOArity, primGetProgName},
-  {"primGetArgs",       0+IOArity, primGetArgs},
-  {"primSetProgName",   1+IOArity, primSetProgName},
-  {"primSetArgs",       1+IOArity, primSetArgs},
+    {"primGetProgName", 0 + IOArity, primGetProgName},
+    {"primGetArgs", 0 + IOArity, primGetArgs},
+    {"primSetProgName", 1 + IOArity, primSetProgName},
+    {"primSetArgs", 1 + IOArity, primSetArgs},
 
-  {"hGetChar",		1+IOArity, primHGetChar},
-  {"hPutChar",		2+IOArity, primHPutChar},
-  {"hPutStr",		2+IOArity, primHPutStr},
-  {"hreader",		1, primHreader},
-  {"hGetContents",	1+IOArity, primHContents},
-  {"openFile",          2+IOArity, primOpenFile},
-  {"openBinaryFile",    2+IOArity, primOpenBinaryFile},
-  {"openFd",            4+IOArity, primOpenFd},
-  {"handleToFd",	1+IOArity, primHandleToFd},
-  {"stdin",		0, primStdin},
-  {"stdout",		0, primStdout},
-  {"stderr",		0, primStderr},
-  {"hIsEOF",		1+IOArity, primHIsEOF},
-  {"hFlush",		1+IOArity, primHFlush},
-  {"hClose",		1+IOArity, primHClose},
-  {"hGetPosnPrim",	1+IOArity, primHGetPosn},
-  {"hSetPosnPrim",	2+IOArity, primHSetPosn},
-  {"hSetBuff",          3+IOArity, primHSetBuffering},
-  {"hGetBuff",          1+IOArity, primHGetBuffering},
-  {"hSeekPrim",         3+IOArity, primHSeek},
-  {"hLookAhead",        1+IOArity, primHLookAhead},
-  {"hIsOpen",		1+IOArity, primHIsOpen},
-  {"hIsClosed",		1+IOArity, primHIsClosed},
-  {"hIsReadable",	1+IOArity, primHIsReadable},
-  {"hIsWritable",	1+IOArity, primHIsWritable},
-  {"hIsSeekable",       1+IOArity, primHIsSeekable},
-  {"hFileSize",         1+IOArity, primHFileSize},
-  {"hWaitForInput",     2+IOArity, primHWaitForInput},
-  {"primEqHandle",	2, primEqHandle},
-  {"primGetHandleNumber", 1, primGetHandleNumber},
-  {"hSetBinaryMode",	2+IOArity, primHSetBinaryMode},
-  {"hPutBuf",		3+IOArity, primHPutBuf},
-  {"hGetBuf",		3+IOArity, primHGetBuf},
-  {"hIsTerminalDevice",	1+IOArity, primHIsTerminalDevice},
-  {"hGetEcho",		1+IOArity, primHGetEcho},
-  {"hSetEcho",		2+IOArity, primHSetEcho},
+    {"hGetChar", 1 + IOArity, primHGetChar},
+    {"hPutChar", 2 + IOArity, primHPutChar},
+    {"hPutStr", 2 + IOArity, primHPutStr},
+    {"hreader", 1, primHreader},
+    {"hGetContents", 1 + IOArity, primHContents},
+    {"openFile", 2 + IOArity, primOpenFile},
+    {"openBinaryFile", 2 + IOArity, primOpenBinaryFile},
+    {"openFd", 4 + IOArity, primOpenFd},
+    {"handleToFd", 1 + IOArity, primHandleToFd},
+    {"stdin", 0, primStdin},
+    {"stdout", 0, primStdout},
+    {"stderr", 0, primStderr},
+    {"hIsEOF", 1 + IOArity, primHIsEOF},
+    {"hFlush", 1 + IOArity, primHFlush},
+    {"hClose", 1 + IOArity, primHClose},
+    {"hGetPosnPrim", 1 + IOArity, primHGetPosn},
+    {"hSetPosnPrim", 2 + IOArity, primHSetPosn},
+    {"hSetBuff", 3 + IOArity, primHSetBuffering},
+    {"hGetBuff", 1 + IOArity, primHGetBuffering},
+    {"hSeekPrim", 3 + IOArity, primHSeek},
+    {"hLookAhead", 1 + IOArity, primHLookAhead},
+    {"hIsOpen", 1 + IOArity, primHIsOpen},
+    {"hIsClosed", 1 + IOArity, primHIsClosed},
+    {"hIsReadable", 1 + IOArity, primHIsReadable},
+    {"hIsWritable", 1 + IOArity, primHIsWritable},
+    {"hIsSeekable", 1 + IOArity, primHIsSeekable},
+    {"hFileSize", 1 + IOArity, primHFileSize},
+    {"hWaitForInput", 2 + IOArity, primHWaitForInput},
+    {"primEqHandle", 2, primEqHandle},
+    {"primGetHandleNumber", 1, primGetHandleNumber},
+    {"hSetBinaryMode", 2 + IOArity, primHSetBinaryMode},
+    {"hPutBuf", 3 + IOArity, primHPutBuf},
+    {"hGetBuf", 3 + IOArity, primHGetBuf},
+    {"hIsTerminalDevice", 1 + IOArity, primHIsTerminalDevice},
+    {"hGetEcho", 1 + IOArity, primHGetEcho},
+    {"hSetEcho", 2 + IOArity, primHSetEcho},
 
-  {"newRef",            1+IOArity, primNewRef},
-  {"getRef",		1+IOArity, primDerefRef},
-  {"setRef",		2+IOArity, primAssignRef},
-  {"eqRef",		2, primEqRef},
+    {"newRef", 1 + IOArity, primNewRef},
+    {"getRef", 1 + IOArity, primDerefRef},
+    {"setRef", 2 + IOArity, primAssignRef},
+    {"eqRef", 2, primEqRef},
 
-  {"makeStablePtr",	1+IOArity, primMakeSP},
-  {"deRefStablePtr",	1+IOArity, primDerefSP},
-  {"freeStablePtr",	1+IOArity, primFreeSP},
-  {"castStablePtrToPtr",1, primCastSPToP},
-  {"castPtrToStablePtr",1, primCastPToSP},
+    {"makeStablePtr", 1 + IOArity, primMakeSP},
+    {"deRefStablePtr", 1 + IOArity, primDerefSP},
+    {"freeStablePtr", 1 + IOArity, primFreeSP},
+    {"castStablePtrToPtr", 1, primCastSPToP},
+    {"castPtrToStablePtr", 1, primCastPToSP},
 
-  {"writeForeignObj",	2+IOArity, primWriteFP},
-  {"eqForeignObj",	2, primEqFP},
+    {"writeForeignObj", 2 + IOArity, primWriteFP},
+    {"eqForeignObj", 2, primEqFP},
 
-  {"newForeignPtr_",	1+IOArity, primNewFP},
-  {"addForeignPtrFinalizer", 2+IOArity, primAddFPF},
-  {"addForeignPtrFinalizerEnv", 3+IOArity, primAddFPFEnv},
-  {"touchForeignPtr",	1+IOArity, primTouchFP},
-  {"unsafeForeignPtrToPtr", 1, primFPToP},
+    {"newForeignPtr_", 1 + IOArity, primNewFP},
+    {"addForeignPtrFinalizer", 2 + IOArity, primAddFPF},
+    {"addForeignPtrFinalizerEnv", 3 + IOArity, primAddFPFEnv},
+    {"touchForeignPtr", 1 + IOArity, primTouchFP},
+    {"unsafeForeignPtrToPtr", 1, primFPToP},
 
-  {"weakPtrEq",		2, primWeakPtrEq},
-  {"mkWeak",		3+IOArity, primMkWeak},
-  {"deRefWeak",		1+IOArity, primDeRefWeak},
-  {"replaceFinalizer",	2+IOArity, primReplaceFinalizer},
-  {"finalize",		1+IOArity, primFinalize},
-  {"runFinalizer",	0+IOArity, primRunFinalizer},
-  {"finalizerWaiting",	0+IOArity, primFinalizerWaiting},
+    {"weakPtrEq", 2, primWeakPtrEq},
+    {"mkWeak", 3 + IOArity, primMkWeak},
+    {"deRefWeak", 1 + IOArity, primDeRefWeak},
+    {"replaceFinalizer", 2 + IOArity, primReplaceFinalizer},
+    {"finalize", 1 + IOArity, primFinalize},
+    {"runFinalizer", 0 + IOArity, primRunFinalizer},
+    {"finalizerWaiting", 0 + IOArity, primFinalizerWaiting},
 
-  {"makeStableName",	1+IOArity, primMakeSN},
-  {"deRefStableName",	1, primDerefSN},
-  {"hashStableName",	1, primHashSN},
-  {"eqStableName",	2, primEqSN},
-  
+    {"makeStableName", 1 + IOArity, primMakeSN},
+    {"deRefStableName", 1, primDerefSN},
+    {"hashStableName", 1, primHashSN},
+    {"eqStableName", 2, primEqSN},
 
-  {"IOEql",              2+IOArity, primIOEql},
-  {"IOHash",             1+IOArity, primIOHash},
+    {"IOEql", 2 + IOArity, primIOEql},
+    {"IOHash", 1 + IOArity, primIOHash},
 
-  {0,			0, 0}
-};
+    {0, 0, 0}};
 
-struct primInfo iomonadPrims = { iomonadControl, iomonadPrimTable, 0 };
+struct primInfo iomonadPrims = {iomonadControl, iomonadPrimTable, 0};
 
 /* --------------------------------------------------------------------------
  * The monad combinators:
  * ------------------------------------------------------------------------*/
 
-primFun(primReturnIO) {			/* IO monad unit		   */
+primFun(primReturnIO) { /* IO monad unit                   */
     IOReturn(IOArg(1));
 }
 
-primFun(primBindIO) {			/* IO monad bind		   */
-    push(ap(namePass,primArg(2)));	/* bind 3 2 1 = 3 (pass 2 1)       */
+primFun(primBindIO) {               /* IO monad bind               */
+    push(ap(namePass, primArg(2))); /* bind 3 2 1 = 3 (pass 2 1)       */
     toparg(primArg(1));
-    updapRoot(primArg(3),top());
+    updapRoot(primArg(3), top());
 }
 
-primFun(primPass) {			/* Auxiliary function		   */
-    push(ap(primArg(3),primArg(1)));	/* pass 3 2 1 = 3 1 2		   */
-    updapRoot(top(),primArg(2));
+primFun(primPass) {                   /* Auxiliary function                */
+    push(ap(primArg(3), primArg(1))); /* pass 3 2 1 = 3 1 2                */
+    updapRoot(top(), primArg(2));
 }
 
 /* --------------------------------------------------------------------------
  * Handle operations:
  * ------------------------------------------------------------------------*/
 
-
-static
-Int local newHandle(Cell*sCell, String loc) /* return a free Handle or throw an IOError */
+static Int local newHandle(
+    Cell *sCell, String loc) /* return a free Handle or throw an IOError */
 {
     Int i;
 
-    for (i=0; i<(Int)MAX_HANDLES && nonNull(handles[i].hcell); ++i)
-	;                                       /* Search for unused handle*/
-    if (i>=(Int)MAX_HANDLES) {                  /* If at first we don't    */
-	garbageCollect();                       /* succeed, garbage collect*/
-	for (i=0; i<(Int)MAX_HANDLES && nonNull(handles[i].hcell); ++i)
-	    ;                                   /* and try again ...       */
-	if (i >= (Int)MAX_HANDLES) {
-	    Int j;
-	    growDynTable(dynTabHandles);
-	    handles = (struct strHandle*)(dynTabHandles->data);
-	    num_handles = dynTabHandles->maxIdx;
-	    /* Nil out the new entries in the table */
-	    for (j=i; j < (Int)num_handles; j++) {
-		handles[j].hcell = NIL;
-	    }
-	}
+    for (i = 0; i < (Int)MAX_HANDLES && nonNull(handles[i].hcell); ++i)
+        ;                        /* Search for unused handle*/
+    if (i >= (Int)MAX_HANDLES) { /* If at first we don't    */
+        garbageCollect();        /* succeed, garbage collect*/
+        for (i = 0; i < (Int)MAX_HANDLES && nonNull(handles[i].hcell); ++i)
+            ; /* and try again ...       */
+        if (i >= (Int)MAX_HANDLES) {
+            Int j;
+            growDynTable(dynTabHandles);
+            handles = (struct strHandle *)(dynTabHandles->data);
+            num_handles = dynTabHandles->maxIdx;
+            /* Nil out the new entries in the table */
+            for (j = i; j < (Int)num_handles; j++) {
+                handles[j].hcell = NIL;
+            }
+        }
     }
 
-    if (i>=(Int)MAX_HANDLES) {                  /* ... before we give up   */
-	IOFail(mkIOError(NULL,
-			 nameIllegal,
-			 loc,
-			 "too many handles open",
-			 sCell));
+    if (i >= (Int)MAX_HANDLES) { /* ... before we give up   */
+        IOFail(
+            mkIOError(NULL, nameIllegal, loc, "too many handles open", sCell));
     }
 
     return i;
 }
 
-static
-String local modeString(Int hmode, Bool binary) /* return mode string for f(d)open */
+static String local
+modeString(Int hmode, Bool binary) /* return mode string for f(d)open */
 {
     if (binary) {
-	return (hmode&HAPPEND)    ? "ab"  :
-	       (hmode&HWRITE)     ? "wb"  :
-	       (hmode&HREADWRITE) ? "rb+" :
-	       (hmode&HREAD)      ? "rb"  : (String)0;
+        return (hmode & HAPPEND)      ? "ab"
+               : (hmode & HWRITE)     ? "wb"
+               : (hmode & HREADWRITE) ? "rb+"
+               : (hmode & HREAD)      ? "rb"
+                                      : (String)0;
     } else {
-	return (hmode&HAPPEND)    ? "a"   :
-	       (hmode&HWRITE)     ? "w"   :
-	       (hmode&HREADWRITE) ? "r+"  :
-	       (hmode&HREAD)      ? "r"   : (String)0;
+        return (hmode & HAPPEND)      ? "a"
+               : (hmode & HWRITE)     ? "w"
+               : (hmode & HREADWRITE) ? "r+"
+               : (hmode & HREAD)      ? "r"
+                                      : (String)0;
     }
 }
 
-static
-Cell local openHandle(StackPtr root, Cell*sCell, Int hmode, Bool binary, String loc) /* open handle to file named s in  */
-                                                   /* the specified hmode  */
+static Cell local openHandle(StackPtr root, Cell *sCell, Int hmode, Bool binary,
+                             String loc) /* open handle to file named s in  */
+                                         /* the specified hmode  */
 {
     Int i;
     String s = evalName(*sCell);
-    String stmode = modeString(hmode,binary);
+    String stmode = modeString(hmode, binary);
 
     /* openHandle() either returns a Handle or throws an IOError. */
 
-    if (!s) {				/* check for valid name		   */
-	IOFail(mkIOError(NULL,
-			 nameIllegal,
-			 loc,
-			 "illegal file name",
-			 NULL));
+    if (!s) { /* check for valid name              */
+        IOFail(mkIOError(NULL, nameIllegal, loc, "illegal file name", NULL));
     }
 
-    i = newHandle(sCell,loc);
+    i = newHandle(sCell, loc);
 
     if (!stmode) {
-	IOFail(mkIOError(NULL,
-			 nameIllegal,
-			 loc,
-			 "illegal mode",
-			 NULL));
+        IOFail(mkIOError(NULL, nameIllegal, loc, "illegal mode", NULL));
     }
     /* prepare to open file    */
-    handles[i].hfp = fopen(s,stmode);
-    if (hmode==HREADWRITE && handles[i].hfp==NULL) /* try to create it */
-	handles[i].hfp = fopen(s, binary ? "wb+" : "w+");
+    handles[i].hfp = fopen(s, stmode);
+    if (hmode == HREADWRITE && handles[i].hfp == NULL) /* try to create it */
+        handles[i].hfp = fopen(s, binary ? "wb+" : "w+");
     if (!handles[i].hfp)
-	throwErrno(loc, TRUE, NO_HANDLE, sCell);
+        throwErrno(loc, TRUE, NO_HANDLE, sCell);
 
     handles[i].hmode = hmode;
     handles[i].hbufMode = HUNKNOWN_BUFFERING;
@@ -400,27 +388,23 @@ Cell local openHandle(StackPtr root, Cell*sCell, Int hmode, Bool binary, String 
     handles[i].hBinaryMode = binary;
     handles[i].hLookAhead = -1;
 #endif
-    return (handles[i].hcell = ap(HANDCELL,i));
+    return (handles[i].hcell = ap(HANDCELL, i));
 }
 
-static
-Cell local openFdHandle(StackPtr root, Int fd, Int hmode, Bool binary, String loc) /* open handle to file desc fd in  */
-                 /* the specified hmode  */
+static Cell local openFdHandle(StackPtr root, Int fd, Int hmode, Bool binary,
+                               String loc) /* open handle to file desc fd in  */
+                                           /* the specified hmode  */
 {
-    Int i = newHandle(NIL,loc);
-    String stmode = modeString(hmode,binary);
+    Int i = newHandle(NIL, loc);
+    String stmode = modeString(hmode, binary);
 
     /* openFdHandle() either returns a Handle or throws an IOError. */
 
     if (!stmode) {
-	IOFail(mkIOError(NULL,
-			 nameIllegal,
-			 loc,
-			 "illegal mode",
-			 NULL));
+        IOFail(mkIOError(NULL, nameIllegal, loc, "illegal mode", NULL));
     }
-    if (!(handles[i].hfp=fdopen(fd,stmode)))
-	throwErrno(loc, TRUE, NO_HANDLE, NULL);
+    if (!(handles[i].hfp = fdopen(fd, stmode)))
+        throwErrno(loc, TRUE, NO_HANDLE, NULL);
 
     handles[i].hmode = hmode;
     handles[i].hbufMode = HANDLE_NOTBUFFERED;
@@ -430,32 +414,31 @@ Cell local openFdHandle(StackPtr root, Int fd, Int hmode, Bool binary, String lo
     handles[i].hBinaryMode = binary;
     handles[i].hLookAhead = -1;
 #endif
-    return (handles[i].hcell = ap(HANDCELL,i));
+    return (handles[i].hcell = ap(HANDCELL, i));
 }
 
 static Char local hGetChar(Int h, String fname) {
     Int c;
 #if CHAR_ENCODING
-    if (handles[h].hLookAhead>=0) {
-	c = handles[h].hLookAhead;
-	handles[h].hLookAhead = -1;
+    if (handles[h].hLookAhead >= 0) {
+        c = handles[h].hLookAhead;
+        handles[h].hLookAhead = -1;
     } else if (handles[h].hBinaryMode) {
-	c = getc(handles[h].hfp);
+        c = getc(handles[h].hfp);
     } else {
-	c = FGetChar(handles[h].hfp);
+        c = FGetChar(handles[h].hfp);
     }
 #else /* !CHAR_ENCODING */
     c = FGetChar(handles[h].hfp);
 #endif
-    if (c==EOF && !feof(handles[h].hfp))
-	throwErrno(fname, TRUE, h, NULL);
+    if (c == EOF && !feof(handles[h].hfp))
+        throwErrno(fname, TRUE, h, NULL);
 #if CHAR_ENCODING
-    else if (c==BAD_CHAR) {
-	IOFail(mkIOError(&handles[h].hcell,
-			 nameProtocolError,
-			 fname,
-			 "input contains non-character data - use binary I/O for binary data",
-			 NULL));
+    else if (c == BAD_CHAR) {
+        IOFail(mkIOError(
+            &handles[h].hcell, nameProtocolError, fname,
+            "input contains non-character data - use binary I/O for binary data",
+            NULL));
     }
 #endif /* CHAR_ENCODING */
     return c;
@@ -464,90 +447,78 @@ static Char local hGetChar(Int h, String fname) {
 static Void local hPutChar(Char c, Int h, String fname) {
     Int retval;
 #if CHAR_ENCODING
-    retval = handles[h].hBinaryMode ? putc(c, handles[h].hfp) :
-				      FPutChar(c, handles[h].hfp);
+    retval = handles[h].hBinaryMode ? putc(c, handles[h].hfp)
+                                    : FPutChar(c, handles[h].hfp);
 #else
     retval = FPutChar(c, handles[h].hfp);
 #endif
     if (retval == EOF)
-	throwErrno(fname, TRUE, h, NULL);
+        throwErrno(fname, TRUE, h, NULL);
     if (h <= 2) { /* Only flush the standard handles */
-	fflush(handles[h].hfp);
+        fflush(handles[h].hfp);
     }
 }
 
 /* If the stream is read-write, set the state, otherwise do nothing */
 static Void local setRWState(Int h, Int newState) {
-    if (handles[h].hmode&HREADWRITE) {
-	/* ANSI C requires repositioning between writes and reads */
-	if (newState==RW_READING) {
-	    if (handles[h].hRWState==RW_WRITING) {
-		fflush(handles[h].hfp);
-		fseek(handles[h].hfp, 0L, SEEK_CUR);
-	    }
-	} else if (newState==RW_WRITING) {
-	    if (handles[h].hRWState==RW_READING)
-		fseek(handles[h].hfp, 0L, SEEK_CUR);
-	}
-	handles[h].hRWState = newState;
+    if (handles[h].hmode & HREADWRITE) {
+        /* ANSI C requires repositioning between writes and reads */
+        if (newState == RW_READING) {
+            if (handles[h].hRWState == RW_WRITING) {
+                fflush(handles[h].hfp);
+                fseek(handles[h].hfp, 0L, SEEK_CUR);
+            }
+        } else if (newState == RW_WRITING) {
+            if (handles[h].hRWState == RW_READING)
+                fseek(handles[h].hfp, 0L, SEEK_CUR);
+        }
+        handles[h].hRWState = newState;
     }
 }
 
 /* ensure that the handle is neither closed nor semi-closed */
 static Void local checkOpen(Int h, String fname) {
     Int mode = handles[h].hmode;
-    if (mode==HCLOSED)
-	IOFail(mkIOError(&handles[h].hcell,
-			 nameIllegal,
-		         fname,
-			 "handle is closed",
-			 NULL));
-    if (mode==HSEMICLOSED)
-	IOFail(mkIOError(&handles[h].hcell,
-			 nameIllegal,
-		         fname,
-			 "handle is semi-closed",
-			 NULL));
+    if (mode == HCLOSED)
+        IOFail(mkIOError(&handles[h].hcell, nameIllegal, fname,
+                         "handle is closed", NULL));
+    if (mode == HSEMICLOSED)
+        IOFail(mkIOError(&handles[h].hcell, nameIllegal, fname,
+                         "handle is semi-closed", NULL));
 }
 
 /* ensure that the handle is readable */
 static Void local checkReadable(Int h, String fname) {
     checkOpen(h, fname);
-    if (!(handles[h].hmode&(HREAD|HREADWRITE)))
-	IOFail(mkIOError(&handles[h].hcell,
-			 nameIllegal,
-			 fname,
-			 "handle is not readable",
-			 NULL));
+    if (!(handles[h].hmode & (HREAD | HREADWRITE)))
+        IOFail(mkIOError(&handles[h].hcell, nameIllegal, fname,
+                         "handle is not readable", NULL));
 }
 
 /* ensure that the handle is writable */
 static Void local checkWritable(Int h, String fname) {
     checkOpen(h, fname);
-    if (!(handles[h].hmode&(HWRITE|HAPPEND|HREADWRITE)))
-	IOFail(mkIOError(&handles[h].hcell,
-			 nameIllegal,
-			 fname,
-			 "handle is not writeable",
-			 NULL));
+    if (!(handles[h].hmode & (HWRITE | HAPPEND | HREADWRITE)))
+        IOFail(mkIOError(&handles[h].hcell, nameIllegal, fname,
+                         "handle is not writeable", NULL));
 }
 
 /* --------------------------------------------------------------------------
  * Building strings:
  * ------------------------------------------------------------------------*/
 
-Void pushString(String s)       /* push pointer to string onto stack */
+Void pushString(String s) /* push pointer to string onto stack */
 {
     if (*s == '\0')
-	push(nameNil);
+        push(nameNil);
     else {
-	Cell l = ap(consChar(ExtractChar(s)),NIL);
-	push(l);
-	while (*s) {
-	    snd(l) = ap(consChar(ExtractChar(s)),NIL);
-	    l = snd(l);
-	}
-	snd(l) = nameNil;
+        Cell l = ap(consChar(ExtractChar(s)), NIL);
+        push(l);
+        while (*s) {
+            snd(l) = ap(consChar(ExtractChar(s)), NIL);
+            l = snd(l);
+        }
+        snd(l) = nameNil;
     }
 }
 
@@ -555,81 +526,76 @@ Void pushString(String s)       /* push pointer to string onto stack */
  * IOError for explanation of what the the individual arguments
  * do.
  */
-  
-Cell
-mkIOError(Cell   *mbH,	/* a Handle or NULL */
-	  Name   kind,	/* an IOErrorType */
-	  String loc,
-	  String desc,
-	  Cell   *mbF)	/* a FilePath or NULL */
+
+Cell mkIOError(Cell *mbH,                          /* a Handle or NULL */
+               Name kind,                          /* an IOErrorType */
+               String loc, String desc, Cell *mbF) /* a FilePath or NULL */
 {
     Cell str;
     push(nameIOError);
-    toparg(mbH==NULL ? nameNothing : ap(nameJust,*mbH));
+    toparg(mbH == NULL ? nameNothing : ap(nameJust, *mbH));
     toparg(kind);
-    pushString(loc); str = pop(); toparg(str);
-    pushString(desc); str = pop(); toparg(str);
-    toparg(mbF==NULL ? nameNothing : ap(nameJust,*mbF));
+    pushString(loc);
+    str = pop();
+    toparg(str);
+    pushString(desc);
+    str = pop();
+    toparg(str);
+    toparg(mbF == NULL ? nameNothing : ap(nameJust, *mbF));
     return pop();
 }
-
 
 /* --------------------------------------------------------------------------
  * IO Errors (more defined for file ops)
  * ------------------------------------------------------------------------*/
 
-Void throwErrno(String fname, Bool isFile, Int h, Cell *mbF)
-{
+Void throwErrno(String fname, Bool isFile, Int h, Cell *mbF) {
     IOFail(mkIOError(h == NO_HANDLE ? NULL : &handles[h].hcell,
-		     toIOError(errno),
-		     fname,
-		     toIOErrorDescr(errno, isFile),
-		     mbF));
+                     toIOError(errno), fname, toIOErrorDescr(errno, isFile),
+                     mbF));
 }
 
 /*
  * Map a libc error code to an IOError
  */
-static Name local toIOError(int errc)
-{
-    switch(errc) {
+static Name local toIOError(int errc) {
+    switch (errc) {
 
     case EEXIST:
-	return nameAlreadyExists;
+        return nameAlreadyExists;
     case ENOENT:
     case ENOTDIR:
-	return nameDoesNotExist;
+        return nameDoesNotExist;
     case EPERM:
     case EACCES:
-	return namePermDenied;
+        return namePermDenied;
     case ENOSPC:
     case EFBIG:
-	return nameIsFull;
+        return nameIsFull;
     default:
-	return nameIllegal;
+        return nameIllegal;
     }
 }
 
 /*
  * Map a libc error code to an IOError descriptive string
  */
-static String local toIOErrorDescr(int errc, Bool isFile)
-{
-    switch(errc) {
+static String local toIOErrorDescr(int errc, Bool isFile) {
+    switch (errc) {
 
     case EEXIST:
-	return (isFile ? "file already exists" : "directory already exists");
+        return (isFile ? "file already exists" : "directory already exists");
     case ENOENT:
     case ENOTDIR:
-	return (isFile ? "file does not exist" : "directory does not exist");
+        return (isFile ? "file does not exist" : "directory does not exist");
     case EPERM:
     case EACCES:
-	return ""; /* No need to replicate the info conveyed by the IOErrorKind */
+        return ""; /* No need to replicate the info conveyed by the IOErrorKind */
     case ENOSPC:
     case EFBIG:
-	return "device is full";
+        return "device is full";
     default:
-	return "";
+        return "";
     }
 }
 
@@ -637,34 +603,27 @@ static String local toIOErrorDescr(int errc, Bool isFile)
  * Misc.
  * ------------------------------------------------------------------------*/
 
-primFun(primGC) {			/* force a GC right now            */
+primFun(primGC) { /* force a GC right now            */
     garbageCollect();
     IOReturn(nameUnit);
 }
 
 #include <time.h>
 
-primFun(primGetRandomSeed) {		/* generate a random seed          */
+primFun(primGetRandomSeed) { /* generate a random seed          */
     IOReturn(bigInt(clock()));
 }
 
-				     
-primFun(primGetEnv) {                 /* primGetEnv :: String -> IO String */
-    String s = evalName(IOArg(1));    /* Eval name	                   */
+primFun(primGetEnv) {              /* primGetEnv :: String -> IO String */
+    String s = evalName(IOArg(1)); /* Eval name                    */
     String r;
-    if (!s) {			      /* check for valid name		   */
-	IOFail(mkIOError(NULL,
-			 nameIllegal,
-		         "System.getEnv",
-			 "illegal environment variable name",
-			 &IOArg(1)));
+    if (!s) { /* check for valid name              */
+        IOFail(mkIOError(NULL, nameIllegal, "System.getEnv",
+                         "illegal environment variable name", &IOArg(1)));
     }
-    if ((r = getenv(s))==0) {    
-	IOFail(mkIOError(NULL,
-			 nameDoesNotExist,
-		         "System.getEnv",
-			 "environment variable not found",
-			 &IOArg(1)));
+    if ((r = getenv(s)) == 0) {
+        IOFail(mkIOError(NULL, nameDoesNotExist, "System.getEnv",
+                         "environment variable not found", &IOArg(1)));
     }
     pushString(r);
     IOReturn(pop());
@@ -679,49 +638,45 @@ primFun(primGetEnv) {                 /* primGetEnv :: String -> IO String */
 # define WEXITSTATUS(stat_val) (stat_val)
 #endif
 
-primFun(primSystem) {                   /* primSystem :: String -> IO Int  */
-    String s = evalName(IOArg(1));	/* Eval name	                   */
+primFun(primSystem) {              /* primSystem :: String -> IO Int  */
+    String s = evalName(IOArg(1)); /* Eval name                    */
     Int r;
-    if (!s) {				/* check for valid string          */
-	IOFail(mkIOError(NULL,
-			 nameIllegal,
-		         "System.system",
-			 "illegal system command string",
-			 &IOArg(1)));
+    if (!s) { /* check for valid string          */
+        IOFail(mkIOError(NULL, nameIllegal, "System.system",
+                         "illegal system command string", &IOArg(1)));
     }
-    r = shellEsc(s, TRUE/*synchronous*/, TRUE/*use shell*/);
+    r = shellEsc(s, TRUE /*synchronous*/, TRUE /*use shell*/);
     IOReturn(mkInt(WEXITSTATUS(r)));
 }
 
-Void setCuddlesArgs(Int argc, String argv[])
-{
+Void setCuddlesArgs(Int argc, String argv[]) {
     int i;
     Cell str;
 
     cuddlesArgs = nameNil;
     pushString(argv[0]);
     cuddlesProgName = pop();
-    for (i=argc-1; i>0; i--) {
-	pushString(argv[i]);
-	str = pop();
-	cuddlesArgs = ap2(nameCons, str, cuddlesArgs);
+    for (i = argc - 1; i > 0; i--) {
+        pushString(argv[i]);
+        str = pop();
+        cuddlesArgs = ap2(nameCons, str, cuddlesArgs);
     }
 }
 
-primFun(primGetProgName) {              /* primGetProgName :: IO String    */
+primFun(primGetProgName) { /* primGetProgName :: IO String    */
     IOReturn(cuddlesProgName);
 }
 
-primFun(primGetArgs) {                  /* primGetArgs :: IO [String]      */
+primFun(primGetArgs) { /* primGetArgs :: IO [String]      */
     IOReturn(cuddlesArgs);
 }
 
-primFun(primSetProgName) {              /* primSetProgName :: String -> IO () */
+primFun(primSetProgName) { /* primSetProgName :: String -> IO () */
     cuddlesProgName = IOArg(1);
     IOReturn(nameUnit);
 }
 
-primFun(primSetArgs) {                  /* primSetArgs :: [String] -> IO () */
+primFun(primSetArgs) { /* primSetArgs :: [String] -> IO () */
     cuddlesArgs = IOArg(1);
     IOReturn(nameUnit);
 }
@@ -730,31 +685,27 @@ primFun(primSetArgs) {                  /* primSetArgs :: [String] -> IO () */
  * File IO
  * ------------------------------------------------------------------------*/
 
-
-primFun(primHGetChar) {			/* Read character from handle	   */
+primFun(primHGetChar) { /* Read character from handle      */
     Int h;
     Int c;
-    HandleArg(h,1+IOArity);
+    HandleArg(h, 1 + IOArity);
 
     checkReadable(h, "IO.hGetChar");
     setRWState(h, RW_READING);
     c = hGetChar(h, "IO.hGetChar");
-    if (c==EOF) {
-	setRWState(h, RW_NEUTRAL);
-	IOFail(mkIOError(&handles[h].hcell,
-			 nameEOFErr,
-			 "IO.hGetChar",
-			 "end of file",
-			 NULL));
+    if (c == EOF) {
+        setRWState(h, RW_NEUTRAL);
+        IOFail(mkIOError(&handles[h].hcell, nameEOFErr, "IO.hGetChar",
+                         "end of file", NULL));
     }
     IOReturn(mkChar(c));
 }
 
-primFun(primHPutChar) {			/* print character on handle	   */
+primFun(primHPutChar) { /* print character on handle       */
     Char c = 0;
-    Int  h;
-    HandleArg(h,2+IOArity);
-    CharArg(c,1+IOArity);
+    Int h;
+    HandleArg(h, 2 + IOArity);
+    CharArg(c, 1 + IOArity);
 
     checkWritable(h, "IO.hPutChar");
     setRWState(h, RW_WRITING);
@@ -762,261 +713,255 @@ primFun(primHPutChar) {			/* print character on handle	   */
     IOReturn(nameUnit);
 }
 
-primFun(primHPutStr) {			/* print string on handle	   */
+primFun(primHPutStr) { /* print string on handle           */
     Int h;
-    HandleArg(h,2+IOArity);
-    push(primArg(1+IOArity));
-    primArg(1+IOArity) = NIL;
+    HandleArg(h, 2 + IOArity);
+    push(primArg(1 + IOArity));
+    primArg(1 + IOArity) = NIL;
 
     checkWritable(h, "IO.hPutStr");
     setRWState(h, RW_WRITING);
     blackHoleRoot();
     eval(pop());
-    while (whnfHead==nameCons) {
-	eval(pop());
-	hPutChar(charOf(whnfHead),h,"IO.hPutStr");
-	eval(pop());
+    while (whnfHead == nameCons) {
+        eval(pop());
+        hPutChar(charOf(whnfHead), h, "IO.hPutStr");
+        eval(pop());
     }
     IOReturn(nameUnit);
 }
 
-primFun(primHreader) {			/* read String from a handle 	   */
-    Int h;                              /* Handle -> String                */
-    HandleArg(h,1);
-    if (handles[h].hmode&HSEMICLOSED) {	/* read requires semi-closed handle*/
-	Int c = hGetChar(h, "IO.getContents");
-	if (c!=EOF && c>=0 && c<=MAXCHARVAL) {
-	    updapRoot(consChar(c),ap(nameHreader,primArg(1)));
-	    return;
-	}
-	clearerr(handles[h].hfp);
+primFun(primHreader) { /* read String from a handle        */
+    Int h;             /* Handle -> String                */
+    HandleArg(h, 1);
+    if (handles[h].hmode & HSEMICLOSED) { /* read requires semi-closed handle*/
+        Int c = hGetChar(h, "IO.getContents");
+        if (c != EOF && c >= 0 && c <= MAXCHARVAL) {
+            updapRoot(consChar(c), ap(nameHreader, primArg(1)));
+            return;
+        }
+        clearerr(handles[h].hfp);
     }
     updateRoot(nameNil);
 }
 
-primFun(primHContents) {		/* hGetContents :: Handle -> IO Str*/
+primFun(primHContents) { /* hGetContents :: Handle -> IO Str*/
     Int h;
-    HandleArg(h,1+IOArity);
+    HandleArg(h, 1 + IOArity);
 
-    checkReadable(h, "IO.hGetContents");  /* must have readable handle     */
+    checkReadable(h, "IO.hGetContents"); /* must have readable handle     */
     setRWState(h, RW_READING);
-    handles[h].hmode = HSEMICLOSED; /* semi-close handle		   */
-    IOReturn(ap(nameHreader,IOArg(1)));
+    handles[h].hmode = HSEMICLOSED; /* semi-close handle                   */
+    IOReturn(ap(nameHreader, IOArg(1)));
 }
 
-static int local getIOMode(Cell mode)	/* From IOMode to internal form    */
+static int local getIOMode(Cell mode) /* From IOMode to internal form    */
 {
-    Int    m = HCLOSED;
+    Int m = HCLOSED;
 
-    eval(mode);				/* Eval IOMode			   */
+    eval(mode); /* Eval IOMode                     */
     if (isName(whnfHead) && isCfun(whnfHead))
-	switch (cfunOf(whnfHead)) {	/* we have to use numeric consts   */
-	    case 1 : m = HREAD;		/* here to avoid the need to put   */
-		     break;		/* IOMode in startup environment   */
-	    case 2 : m = HWRITE;
-		     break;
-	    case 3 : m = HAPPEND;
-		     break;
-	    case 4 : m = HREADWRITE;
-		     break;
-	}
+        switch (cfunOf(whnfHead)) { /* we have to use numeric consts   */
+        case 1:
+            m = HREAD; /* here to avoid the need to put   */
+            break;     /* IOMode in startup environment   */
+        case 2:
+            m = HWRITE;
+            break;
+        case 3:
+            m = HAPPEND;
+            break;
+        case 4:
+            m = HREADWRITE;
+            break;
+        }
     return m;
 }
 
-static Void local fopenPrim(StackPtr root, Bool binary, String loc)/* Auxiliary function for          */
-                                            /* opening a file                  */
+static Void local fopenPrim(StackPtr root, Bool binary,
+                            String loc) /* Auxiliary function for          */
+                                        /* opening a file                  */
 {
-    Int    m;
+    Int m;
 
     m = getIOMode(IOArg(1));
-    if (m==HCLOSED) {			/* Only accept legal modes	   */
-	IOFail(mkIOError(NULL,
-			 nameIllegal,
-			 loc,
-			 "unknown handle mode",
-			 &IOArg(2)));
+    if (m == HCLOSED) { /* Only accept legal modes         */
+        IOFail(mkIOError(NULL, nameIllegal, loc, "unknown handle mode",
+                         &IOArg(2)));
     }
-    IOReturn(openHandle(root,&IOArg(2),m,binary,loc));
+    IOReturn(openHandle(root, &IOArg(2), m, binary, loc));
 }
 
-primFun(primOpenFile) {			/* open handle to a text file	   */
-    fopenPrim(root,FALSE,"IO.openFile");
+primFun(primOpenFile) { /* open handle to a text file      */
+    fopenPrim(root, FALSE, "IO.openFile");
 }
 
-primFun(primOpenBinaryFile) {		/* open handle to a binary file	   */
-    fopenPrim(root,TRUE,"System.IO.openBinaryFile");
+primFun(primOpenBinaryFile) { /* open handle to a binary file      */
+    fopenPrim(root, TRUE, "System.IO.openBinaryFile");
 }
 
-primFun(primStdin) {			/* Standard input handle	   */
+primFun(primStdin) { /* Standard input handle      */
     push(handles[HSTDIN].hcell);
 }
 
-primFun(primStdout) {			/* Standard output handle	   */
+primFun(primStdout) { /* Standard output handle    */
     push(handles[HSTDOUT].hcell);
 }
 
-primFun(primStderr) {			/* Standard error handle	   */
+primFun(primStderr) { /* Standard error handle     */
     push(handles[HSTDERR].hcell);
 }
 
-primFun(primOpenFd) {			/* open handle to file descriptor. */
-    Int  m;                             /* :: Int{-Fd-} -> Bool -> IOMode -> Bool -> IO Handle */
-    Int  fd;
+primFun(primOpenFd) { /* open handle to file descriptor. */
+    Int m;            /* :: Int{-Fd-} -> Bool -> IOMode -> Bool -> IO Handle */
+    Int fd;
     Bool binary;
     Bool isSock;
 
-    IntArg(fd,4+IOArity);
-    BoolArg(isSock,3+IOArity);
-    BoolArg(binary,1+IOArity);
+    IntArg(fd, 4 + IOArity);
+    BoolArg(isSock, 3 + IOArity);
+    BoolArg(binary, 1 + IOArity);
 
     m = getIOMode(IOArg(2));
-    if (m==HCLOSED) {			/* Only accept legal modes	   */
-        IOFail(mkIOError(NULL,
-		         nameIllegal,
-		         "openFd",
-		         "unknown handle mode",
-		         NULL));
+    if (m == HCLOSED) { /* Only accept legal modes         */
+        IOFail(mkIOError(NULL, nameIllegal, "openFd", "unknown handle mode",
+                         NULL));
     }
 
 #if defined(_WIN32) && !cygwin32_HOST_OS
     if (isSock) {
-	/* fd is a SOCKET, convert it to an FD.
-	 * Note: _open_osfhandle() will fail under
-	 * Win9x. ToDo: better on those plats.
-	 */
-	fd = _open_osfhandle(fd,
-			     (m & HREAD      ? O_RDONLY : 0) |
-			     (m & HWRITE     ? O_WRONLY : 0) |
-			     (m & HREADWRITE ? O_RDWR : 0)   |
-			     (m & HAPPEND    ? O_APPEND : 0) |
-			     (binary ? O_BINARY : O_TEXT)
-			    );
+        /* fd is a SOCKET, convert it to an FD.
+         * Note: _open_osfhandle() will fail under
+         * Win9x. ToDo: better on those plats.
+         */
+        fd = _open_osfhandle(fd, (m & HREAD ? O_RDONLY : 0) |
+                                     (m & HWRITE ? O_WRONLY : 0) |
+                                     (m & HREADWRITE ? O_RDWR : 0) |
+                                     (m & HAPPEND ? O_APPEND : 0) |
+                                     (binary ? O_BINARY : O_TEXT));
     }
 #endif
 
-    IOReturn(openFdHandle(root,fd,m,binary,"openFd"));
+    IOReturn(openFdHandle(root, fd, m, binary, "openFd"));
 }
 
 /* Extract the file descriptor from a Handle, discarding the Handle */
 primFun(primHandleToFd) {
     Int h;
-    HandleArg(h,1+IOArity);
+    HandleArg(h, 1 + IOArity);
     if (IS_STANDARD_HANDLE(h)) {
-        IOFail(mkIOError(NULL,
-			 nameIllegal,
-		         "System.Posix.IO.handleToFd",
-		         "invalid handle",
-			 NULL));
+        IOFail(mkIOError(NULL, nameIllegal, "System.Posix.IO.handleToFd",
+                         "invalid handle", NULL));
     }
     checkOpen(h, "System.Posix.IO.handleToFd");
     {
         Int fd = dup(fileno(handles[h].hfp));
         fclose(handles[h].hfp);
-        handles[h].hfp   = 0;
+        handles[h].hfp = 0;
         handles[h].hmode = HCLOSED;
         IOReturn(mkInt(fd));
     }
 }
 
-primFun(primHIsEOF) {	/* Test for end of file on handle  */
-                        /* :: Handle -> IO Bool */
+primFun(primHIsEOF) { /* Test for end of file on handle  */
+                      /* :: Handle -> IO Bool */
     Int h;
-    FILE* fp;
+    FILE *fp;
     Bool isEOF;
-    HandleArg(h,1+IOArity);
+    HandleArg(h, 1 + IOArity);
     checkReadable(h, "IO.hIsEOF");
     fp = handles[h].hfp;
     isEOF = feof(fp);
     if (isEOF) { /* If the EOF flag is already signalled,
-		    peeking at the next char isn't likely
-		    to produce a different outcome! */
-	IOBoolResult(isEOF);
+                    peeking at the next char isn't likely
+                    to produce a different outcome! */
+        IOBoolResult(isEOF);
 #if CHAR_ENCODING
-    } else if (handles[h].hLookAhead>=0) {
-	IOReturn(nameFalse);
+    } else if (handles[h].hLookAhead >= 0) {
+        IOReturn(nameFalse);
 #endif
     } else {
-	Int c;
+        Int c;
 
-	setRWState(h, RW_READING);
-	c = fgetc(fp);
-	isEOF = feof(fp);
-	if (isEOF)
-	    setRWState(h, RW_NEUTRAL);
-	/* Put the char back and clear any flags. */
-	ungetc(c,fp);
-	clearerr(fp);
-	
-	IOBoolResult(isEOF);
+        setRWState(h, RW_READING);
+        c = fgetc(fp);
+        isEOF = feof(fp);
+        if (isEOF)
+            setRWState(h, RW_NEUTRAL);
+        /* Put the char back and clear any flags. */
+        ungetc(c, fp);
+        clearerr(fp);
+
+        IOBoolResult(isEOF);
     }
 }
 
-primFun(primHFlush) {			/* Flush handle			   */
+primFun(primHFlush) { /* Flush handle                      */
     Int h;
-    HandleArg(h,1+IOArity);
+    HandleArg(h, 1 + IOArity);
     checkWritable(h, "IO.hFlush");
     fflush(handles[h].hfp);
     IOReturn(nameUnit);
 }
 
-primFun(primHClose) {			/* Close handle                   */
+primFun(primHClose) { /* Close handle                   */
     Int h;
-    HandleArg(h,1+IOArity);
+    HandleArg(h, 1 + IOArity);
 
     /* Disallow closing any of the standard handles */
-    if (!IS_STANDARD_HANDLE(h) && handles[h].hmode!=HCLOSED) {
-	if (h>HSTDERR && handles[h].hfp)
-	    fclose(handles[h].hfp);
-	handles[h].hfp   = 0;
-	handles[h].hmode = HCLOSED;
+    if (!IS_STANDARD_HANDLE(h) && handles[h].hmode != HCLOSED) {
+        if (h > HSTDERR && handles[h].hfp)
+            fclose(handles[h].hfp);
+        handles[h].hfp = 0;
+        handles[h].hmode = HCLOSED;
     }
     /* closing an already closed handle is the identity
        (i.e., not an error.) */
     IOReturn(nameUnit);
 }
 
-primFun(primHGetPosn) {			/* Get file position               */
+primFun(primHGetPosn) { /* Get file position               */
     Int h;
     long pos;
-    HandleArg(h,1+IOArity);
+    HandleArg(h, 1 + IOArity);
     checkOpen(h, "IO.hGetPosn");
     pos = ftell(handles[h].hfp);
     IOReturn(mkInt((Int)pos));
 }
 
-primFun(primHSetPosn) {			/* Set file position               */
-    long   pos = 0;
-    Int    h;
-    HandleArg(h,2+IOArity);
-    IntArg(pos,1+IOArity);
+primFun(primHSetPosn) { /* Set file position               */
+    long pos = 0;
+    Int h;
+    HandleArg(h, 2 + IOArity);
+    IntArg(pos, 1 + IOArity);
     checkOpen(h, "IO.hSetPosn");
     setRWState(h, RW_NEUTRAL);
     fflush(handles[h].hfp);
-    if (fseek(handles[h].hfp,pos,SEEK_SET) == 0) {
-	IOReturn(nameUnit);
+    if (fseek(handles[h].hfp, pos, SEEK_SET) == 0) {
+        IOReturn(nameUnit);
     }
 }
 
-primFun(primHSeek) {	/* Seek to new file posn */
-                        /* :: Handle -> Int -> Int -> IO () */
+primFun(primHSeek) { /* Seek to new file posn */
+                     /* :: Handle -> Int -> Int -> IO () */
     Int h;
     Int sMode;
     Int off;
 
-    HandleArg(h,3+IOArity);
-    IntArg(sMode, 2+IOArity);
-    IntArg(off, 1+IOArity);
+    HandleArg(h, 3 + IOArity);
+    IntArg(sMode, 2 + IOArity);
+    IntArg(off, 1 + IOArity);
 
-    if (sMode == 0) 
-	sMode = SEEK_SET;
+    if (sMode == 0)
+        sMode = SEEK_SET;
     else if (sMode == 1)
-	sMode = SEEK_CUR;
+        sMode = SEEK_CUR;
     else
-	sMode = SEEK_END;
+        sMode = SEEK_END;
 
     checkOpen(h, "IO.hSeek");
-    if (fseek(handles[h].hfp,off,sMode) != 0)
-	throwErrno("IO.hSeek", TRUE, h, NULL);
+    if (fseek(handles[h].hfp, off, sMode) != 0)
+        throwErrno("IO.hSeek", TRUE, h, NULL);
 
     setRWState(h, RW_NEUTRAL);
 
@@ -1027,194 +972,185 @@ primFun(primHLookAhead) { /* Peek at the next char */
                           /* :: Handle -> IO Char  */
     Int h;
     Int c;
-    
-    HandleArg(h,1+IOArity);
+
+    HandleArg(h, 1 + IOArity);
 
     checkReadable(h, "IO.hLookAhead");
 #if CHAR_ENCODING
-    if (handles[h].hLookAhead>=0) {
-	IOReturn(mkChar(handles[h].hLookAhead));
-	return;
+    if (handles[h].hLookAhead >= 0) {
+        IOReturn(mkChar(handles[h].hLookAhead));
+        return;
     }
 #endif
     setRWState(h, RW_READING);
-    if (feof(handles[h].hfp) ||
-	(c = hGetChar(h, "IO.hLookAhead")) == EOF) {
-	setRWState(h, RW_NEUTRAL);
-	IOFail(mkIOError(&handles[h].hcell,
-			 nameEOFErr,
-			 "IO.hLookAhead",
-			 "end of file",
-			 NULL));
+    if (feof(handles[h].hfp) || (c = hGetChar(h, "IO.hLookAhead")) == EOF) {
+        setRWState(h, RW_NEUTRAL);
+        IOFail(mkIOError(&handles[h].hcell, nameEOFErr, "IO.hLookAhead",
+                         "end of file", NULL));
     }
 #if CHAR_ENCODING
     if (handles[h].hBinaryMode)
-	ungetc(c, handles[h].hfp);
+        ungetc(c, handles[h].hfp);
     else
-	handles[h].hLookAhead = c;
+        handles[h].hLookAhead = c;
 #else
     ungetc(c, handles[h].hfp);
 #endif
     IOReturn(mkChar(c));
 }
 
-primFun(primHSetBuffering) {	/* Change a Handle's buffering */
-                                /* :: Handle -> Int -> Int -> IO () */
+primFun(primHSetBuffering) { /* Change a Handle's buffering */
+                             /* :: Handle -> Int -> Int -> IO () */
     Int h;
     Int ty;
     Int sz;
     int rc;
-    HandleArg(h,3+IOArity);
-    IntArg(ty,2+IOArity);
-    IntArg(sz,1+IOArity);
+    HandleArg(h, 3 + IOArity);
+    IntArg(ty, 2 + IOArity);
+    IntArg(sz, 1 + IOArity);
 
     checkOpen(h, "IO.hSetBuffering");
-    switch(ty) {
+    switch (ty) {
     case 0:
-	ty = _IONBF;
-	handles[h].hbufMode = HANDLE_NOTBUFFERED;
-	handles[h].hbufSize = 0;
-	break;
+        ty = _IONBF;
+        handles[h].hbufMode = HANDLE_NOTBUFFERED;
+        handles[h].hbufSize = 0;
+        break;
     case 1:
-	ty = _IOLBF;
-	sz = BUFSIZ;
-	handles[h].hbufMode = HANDLE_LINEBUFFERED;
-	handles[h].hbufSize = 0;
-	break;
+        ty = _IOLBF;
+        sz = BUFSIZ;
+        handles[h].hbufMode = HANDLE_LINEBUFFERED;
+        handles[h].hbufSize = 0;
+        break;
     case 2:
-	ty = _IOFBF;
-	handles[h].hbufMode = HANDLE_BLOCKBUFFERED;
-	if (sz == 0) {
-	    sz=BUFSIZ;
-	}
-	handles[h].hbufSize = sz;
-	break;
+        ty = _IOFBF;
+        handles[h].hbufMode = HANDLE_BLOCKBUFFERED;
+        if (sz == 0) {
+            sz = BUFSIZ;
+        }
+        handles[h].hbufSize = sz;
+        break;
     default:
-	IOFail(mkIOError(&handles[h].hcell,
-			 nameIllegal,
-			 "IO.hSetBuffering",
-			 "illegal buffer mode",
-			 NULL));
+        IOFail(mkIOError(&handles[h].hcell, nameIllegal, "IO.hSetBuffering",
+                         "illegal buffer mode", NULL));
     }
 
     /* Change the buffering mode; setvbuf() flushes the old buffer. */
     /* Let setvbuf() allocate the buffer for us. */
     rc = setvbuf(handles[h].hfp, NULL, ty, sz);
     if (rc != 0)
-	throwErrno("IO.hSetBuffering", TRUE, h, NULL);
-    if ((handles[h].hmode&(HWRITE|HAPPEND|HREADWRITE)) &&
-	isatty(fileno(handles[h].hfp)))
-	setBuffTerminal(fileno(handles[h].hfp), ty!=0);
+        throwErrno("IO.hSetBuffering", TRUE, h, NULL);
+    if ((handles[h].hmode & (HWRITE | HAPPEND | HREADWRITE)) &&
+        isatty(fileno(handles[h].hfp)))
+        setBuffTerminal(fileno(handles[h].hfp), ty != 0);
     IOReturn(nameUnit);
 }
 
-primFun(primHGetBuffering) {	/* Return buffering info of a handle. */
-                                /*  Handle :: IO (Int,Int)            */
+primFun(primHGetBuffering) { /* Return buffering info of a handle. */
+                             /*  Handle :: IO (Int,Int)            */
     Int h;
-    HandleArg(h,1+IOArity);
+    HandleArg(h, 1 + IOArity);
 
     checkOpen(h, "IO.hGetBuffering");
     if (handles[h].hbufMode == HUNKNOWN_BUFFERING) {
-	/* figure out buffer mode and size. */
-	if (isatty (fileno(handles[h].hfp)) ) {
-	    /* TTY connected handles are normally linebuffered. */
-	    handles[h].hbufMode =
-		(handles[h].hmode&(HWRITE|HAPPEND|HREADWRITE))==0 ||
-		    getBuffTerminal(fileno(handles[h].hfp)) ?
-		    HANDLE_LINEBUFFERED : HANDLE_NOTBUFFERED;
-	    handles[h].hbufSize = 0;
-	} else {
-	    /* ..if not, block buffered. */
-	    handles[h].hbufMode = HANDLE_BLOCKBUFFERED;
-	    handles[h].hbufSize = BUFSIZ;
-	}
+        /* figure out buffer mode and size. */
+        if (isatty(fileno(handles[h].hfp))) {
+            /* TTY connected handles are normally linebuffered. */
+            handles[h].hbufMode =
+                (handles[h].hmode & (HWRITE | HAPPEND | HREADWRITE)) == 0 ||
+                        getBuffTerminal(fileno(handles[h].hfp))
+                    ? HANDLE_LINEBUFFERED
+                    : HANDLE_NOTBUFFERED;
+            handles[h].hbufSize = 0;
+        } else {
+            /* ..if not, block buffered. */
+            handles[h].hbufMode = HANDLE_BLOCKBUFFERED;
+            handles[h].hbufSize = BUFSIZ;
+        }
     }
-    IOReturn(ap(ap(mkTuple(2),mkInt((Int)handles[h].hbufMode)),
-		mkInt((Int)handles[h].hbufSize)));
+    IOReturn(ap(ap(mkTuple(2), mkInt((Int)handles[h].hbufMode)),
+                mkInt((Int)handles[h].hbufSize)));
 }
 
-primFun(primHIsOpen) {			/* Test is handle open             */
+primFun(primHIsOpen) { /* Test is handle open             */
     Int h;
-    HandleArg(h,1+IOArity);
-    IOBoolResult(handles[h].hmode!=HCLOSED 
-		 && handles[h].hmode!=HSEMICLOSED);
+    HandleArg(h, 1 + IOArity);
+    IOBoolResult(handles[h].hmode != HCLOSED &&
+                 handles[h].hmode != HSEMICLOSED);
 }
 
-primFun(primHIsClosed) {		/* Test is handle closed           */
+primFun(primHIsClosed) { /* Test is handle closed           */
     Int h;
-    HandleArg(h,1+IOArity);
-    IOBoolResult(handles[h].hmode==HCLOSED);
+    HandleArg(h, 1 + IOArity);
+    IOBoolResult(handles[h].hmode == HCLOSED);
 }
 
-primFun(primHIsReadable) {		/* Test is handle readable         */
+primFun(primHIsReadable) { /* Test is handle readable         */
     Int h;
-    HandleArg(h,1+IOArity);
-    IOBoolResult(handles[h].hmode&(HREAD|HREADWRITE));
+    HandleArg(h, 1 + IOArity);
+    IOBoolResult(handles[h].hmode & (HREAD | HREADWRITE));
 }
 
-primFun(primHIsWritable) {		/* Test is handle writable         */
+primFun(primHIsWritable) { /* Test is handle writable         */
     Int h;
-    HandleArg(h,1+IOArity);
-    IOBoolResult(handles[h].hmode&(HWRITE|HREADWRITE|HAPPEND));
+    HandleArg(h, 1 + IOArity);
+    IOBoolResult(handles[h].hmode & (HWRITE | HREADWRITE | HAPPEND));
 }
 
 #if defined(IS_WINDOWS) && !defined(S_ISREG)
-#define S_ISREG(x)  ((x) & _S_IFREG)
+# define S_ISREG(x) ((x) & _S_IFREG)
 #endif
 
-primFun(primHIsSeekable) {		/* Test if handle is writable   */
+primFun(primHIsSeekable) { /* Test if handle is writable   */
     Int h;
     Bool okHandle;
     struct stat sb;
 
-    HandleArg(h,1+IOArity);
+    HandleArg(h, 1 + IOArity);
 
-    okHandle = (handles[h].hmode&(HREAD|HWRITE|HREADWRITE|HAPPEND));
+    okHandle = (handles[h].hmode & (HREAD | HWRITE | HREADWRITE | HAPPEND));
     if (okHandle && (fstat(fileno(handles[h].hfp), &sb) == 0)) {
-	okHandle = S_ISREG(sb.st_mode);
+        okHandle = S_ISREG(sb.st_mode);
     }
     IOBoolResult(okHandle);
 }
 
-primFun(primHFileSize) {  /* If handle points to a regular file,
-			     return the size of the file   */
-                          /* :: Handle -> IO Integer       */
+primFun(primHFileSize) { /* If handle points to a regular file,
+                             return the size of the file   */
+                         /* :: Handle -> IO Integer       */
     Int h;
     struct stat sb;
 
-    HandleArg(h,1+IOArity);
+    HandleArg(h, 1 + IOArity);
 
     checkOpen(h, "IO.hFileSize");
-    if (handles[h].hmode&(HWRITE|HREADWRITE|HAPPEND))
-	fflush(handles[h].hfp);
+    if (handles[h].hmode & (HWRITE | HREADWRITE | HAPPEND))
+        fflush(handles[h].hfp);
     if (fstat(fileno(handles[h].hfp), &sb) != 0 || !S_ISREG(sb.st_mode)) {
-	IOFail(mkIOError(&handles[h].hcell,
-			 nameIllegal,
-			 "IO.hFileSize",
-			 "not a regular file",
-			 NULL));
+        IOFail(mkIOError(&handles[h].hcell, nameIllegal, "IO.hFileSize",
+                         "not a regular file", NULL));
     }
     IOReturn(bigWord(sb.st_size));
-  }
+}
 
-primFun(primEqHandle) {			/* Test for handle equality        */
+primFun(primEqHandle) { /* Test for handle equality        */
     Int h1, h2;
-    HandleArg(h1,1);
-    HandleArg(h2,2);
-    BoolResult(h1==h2);
+    HandleArg(h1, 1);
+    HandleArg(h2, 2);
+    BoolResult(h1 == h2);
 }
 
 primFun(primGetHandleNumber) {
     Int h;
-    HandleArg(h,1);
+    HandleArg(h, 1);
     IntResult(h);
 }
 
 primFun(primHSetBinaryMode) {
     Int h;
     Bool binary;
-    HandleArg(h, 2+IOArity);
-    BoolArg(binary, 1+IOArity);
+    HandleArg(h, 2 + IOArity);
+    BoolArg(binary, 1 + IOArity);
 
     checkOpen(h, "System.IO.hSetBinaryMode");
 #if defined(mingw32_HOST_OS) || defined(_MSC_VER)
@@ -1226,130 +1162,113 @@ primFun(primHSetBinaryMode) {
     IOReturn(nameUnit);
 }
 
-primFun(primHPutBuf) {			/* write binary data from a buffer   */
+primFun(primHPutBuf) { /* write binary data from a buffer   */
     Int h, size;
     Pointer buf;
 
-    HandleArg(h, 3+IOArity);
-    PtrArg(buf, 2+IOArity);
-    IntArg(size, 1+IOArity);
+    HandleArg(h, 3 + IOArity);
+    PtrArg(buf, 2 + IOArity);
+    IntArg(size, 1 + IOArity);
 
     /* argument checks */
     checkWritable(h, "System.IO.hPutBuf");
     if (size < 0) {
-	IOFail(mkIOError(&handles[h].hcell,
-			 nameIllegal,
-			 "System.IO.hPutBuf",
-			 "illegal buffer size",
-			 NULL));
+        IOFail(mkIOError(&handles[h].hcell, nameIllegal, "System.IO.hPutBuf",
+                         "illegal buffer size", NULL));
     }
 #if CHAR_ENCODING
     if (!handles[h].hBinaryMode) {
-	IOFail(mkIOError(&handles[h].hcell,
-			 nameIllegal,
-			 "System.IO.hPutBuf",
-			 "not a binary handle",
-			 NULL));
+        IOFail(mkIOError(&handles[h].hcell, nameIllegal, "System.IO.hPutBuf",
+                         "not a binary handle", NULL));
     }
 #endif
     setRWState(h, RW_WRITING);
 
     errno = 0;
     while (size > 0) {
-	size -= (Int)fwrite(buf, 1, size, handles[h].hfp);
-	if (ferror(handles[h].hfp))    /* a successful fwrite may still  */
-	    throwErrno("System.IO.hPutBuf", TRUE, h, NULL); /* set errno */
+        size -= (Int)fwrite(buf, 1, size, handles[h].hfp);
+        if (ferror(handles[h].hfp)) /* a successful fwrite may still  */
+            throwErrno("System.IO.hPutBuf", TRUE, h, NULL); /* set errno */
     }
 
     IOReturn(nameUnit);
 }
 
-primFun(primHGetBuf) {			/* read binary data into a buffer   */
+primFun(primHGetBuf) { /* read binary data into a buffer   */
     Int h, size, numRead;
     Pointer buf;
 
-    HandleArg(h, 3+IOArity);
-    PtrArg(buf, 2+IOArity);
-    IntArg(size, 1+IOArity);
+    HandleArg(h, 3 + IOArity);
+    PtrArg(buf, 2 + IOArity);
+    IntArg(size, 1 + IOArity);
 
     /* argument checks */
     checkReadable(h, "System.IO.hGetBuf");
     if (size < 0) {
-	IOFail(mkIOError(&handles[h].hcell,
-			 nameIllegal,
-			 "System.IO.hGetBuf",
-			 "illegal buffer size",
-			 NULL));
+        IOFail(mkIOError(&handles[h].hcell, nameIllegal, "System.IO.hGetBuf",
+                         "illegal buffer size", NULL));
     }
 #if CHAR_ENCODING
     if (!handles[h].hBinaryMode) {
-	IOFail(mkIOError(&handles[h].hcell,
-			 nameIllegal,
-			 "System.IO.hGetBuf",
-			 "not a binary handle",
-			 NULL));
+        IOFail(mkIOError(&handles[h].hcell, nameIllegal, "System.IO.hGetBuf",
+                         "not a binary handle", NULL));
     }
 #endif
     setRWState(h, RW_READING);
 
     numRead = (Int)fread(buf, 1, size, handles[h].hfp);
     if (numRead < size && ferror(handles[h].hfp))
-	throwErrno("System.IO.hGetBuf", TRUE, h, NULL);
+        throwErrno("System.IO.hGetBuf", TRUE, h, NULL);
     IOReturn(mkInt(numRead));
 }
 
 primFun(primHWaitForInput) { /* Check whether a character can be read
-				from a handle within x msecs */
+                                from a handle within x msecs */
                              /* :: Handle -> Int -> IO Bool */
     Int h;
     Int msecs;
-    
-    HandleArg(h,2+IOArity);
-    IntArg(msecs,1+IOArity);
-    
+
+    HandleArg(h, 2 + IOArity);
+    IntArg(msecs, 1 + IOArity);
+
 #if HAVE_SELECT
     checkReadable(h, "IO.hWaitForInput");
     {
-	/* Implementation is a rip-off of GHC's inputReady.c */
-	int maxfd, fd;
-	int ready;
-	fd_set rfd;
-	struct timeval tv;
-	
-	FD_ZERO(&rfd);
-	fd = fileno(handles[h].hfp);
-	FD_SET(fd, &rfd);
-	
-	maxfd = fd + 1;
-	tv.tv_sec  = msecs / 1000;
-	tv.tv_usec = (msecs % 1000) * 1000;	/* tv_usec counts microseconds */
-	
-	while ( (ready = select(maxfd, &rfd, NULL, NULL, &tv)) < 0 ) {
-	    if (errno != EINTR) {
-		IOFail(mkIOError(&handles[h].hcell,
-				 nameIllegal,
-				 "IO.hWaitForInput",
-				 "input waiting terminated by signal",
-				 NULL));
-	    }
-	}
-	IOBoolResult(ready > 0);
+        /* Implementation is a rip-off of GHC's inputReady.c */
+        int maxfd, fd;
+        int ready;
+        fd_set rfd;
+        struct timeval tv;
+
+        FD_ZERO(&rfd);
+        fd = fileno(handles[h].hfp);
+        FD_SET(fd, &rfd);
+
+        maxfd = fd + 1;
+        tv.tv_sec = msecs / 1000;
+        tv.tv_usec = (msecs % 1000) * 1000; /* tv_usec counts microseconds */
+
+        while ((ready = select(maxfd, &rfd, NULL, NULL, &tv)) < 0) {
+            if (errno != EINTR) {
+                IOFail(mkIOError(&handles[h].hcell, nameIllegal,
+                                 "IO.hWaitForInput",
+                                 "input waiting terminated by signal", NULL));
+            }
+        }
+        IOBoolResult(ready > 0);
     }
 #else
     /* For now, punt on implementing async IO under Win32 */
     /* For other platforms that don't support select() on file
        file descs, please insert code that'll work. */
-    IOFail(mkIOError(&handles[h].hcell,
-		     nameIllegal,
-		     "IO.hWaitForInput",
-		     "unsupported operation",
-		     NULL));
+    IOFail(mkIOError(&handles[h].hcell, nameIllegal, "IO.hWaitForInput",
+                     "unsupported operation", NULL));
 #endif
 }
 
 primFun(primHIsTerminalDevice) { /* Does the handle refer to a terminal? */
     Int h;
-    HandleArg(h, 1+IOArity);
+    HandleArg(h, 1 + IOArity);
     checkOpen(h, "System.IO.hIsTerminalDevice");
     IOBoolResult(isatty(fileno(handles[h].hfp)));
 }
@@ -1357,7 +1276,7 @@ primFun(primHIsTerminalDevice) { /* Does the handle refer to a terminal? */
 primFun(primHGetEcho) {
     Int h;
     Int fd;
-    HandleArg(h, 1+IOArity);
+    HandleArg(h, 1 + IOArity);
     checkOpen(h, "System.IO.hGetEcho");
     fd = fileno(handles[h].hfp);
     IOBoolResult(isatty(fd) && getEchoTerminal(fd));
@@ -1367,51 +1286,51 @@ primFun(primHSetEcho) {
     Int h;
     Bool echo;
     Int fd;
-    HandleArg(h, 2+IOArity);
-    BoolArg(echo, 1+IOArity);
+    HandleArg(h, 2 + IOArity);
+    BoolArg(echo, 1 + IOArity);
     checkOpen(h, "System.IO.hSetEcho");
     fd = fileno(handles[h].hfp);
     if (isatty(fd))
-	setEchoTerminal(fd, echo);
+        setEchoTerminal(fd, echo);
     IOReturn(nameUnit);
 }
-
 
 /* --------------------------------------------------------------------------
  * Mutable variables
  * ------------------------------------------------------------------------*/
 
-
 #if CHECK_TAGS
-#define checkRef() if (MUTVAR != whatIs(whnfHead)) internal("Ref expected")
+# define checkRef()                                                            \
+     if (MUTVAR != whatIs(whnfHead))                                           \
+     internal("Ref expected")
 #else
-#define checkRef() /* do nothing */
+# define checkRef() /* do nothing */
 #endif
 
-primFun(primNewRef) {			/* a -> IO (Ref a)		   */
-    IOReturn(ap(MUTVAR,IOArg(1)));
+primFun(primNewRef) { /* a -> IO (Ref a)                   */
+    IOReturn(ap(MUTVAR, IOArg(1)));
 }
 
-primFun(primDerefRef) {			/* Ref a -> IO a		   */
+primFun(primDerefRef) { /* Ref a -> IO a                   */
     eval(pop());
     checkRef();
     IOReturn(snd(whnfHead));
 }
 
-primFun(primAssignRef) {		/* Ref a -> a -> IO ()		   */
+primFun(primAssignRef) { /* Ref a -> a -> IO ()            */
     eval(IOArg(2));
     checkRef();
     snd(whnfHead) = IOArg(1);
     IOReturn(nameUnit);
 }
 
-primFun(primEqRef) {			/* Ref a -> Ref a -> Bool	   */
+primFun(primEqRef) { /* Ref a -> Ref a -> Bool     */
     eval(primArg(2));
     checkRef();
     push(whnfHead);
     eval(primArg(1));
     checkRef();
-    updateRoot(pop()==whnfHead ? nameTrue : nameFalse);
+    updateRoot(pop() == whnfHead ? nameTrue : nameFalse);
 }
 
 /* --------------------------------------------------------------------------
@@ -1419,70 +1338,65 @@ primFun(primEqRef) {			/* Ref a -> Ref a -> Bool	   */
  * ------------------------------------------------------------------------*/
 
 #if CHECK_TAGS
-#define checkSP() checkInt()
+# define checkSP() checkInt()
 #else
-#define checkSP() /* do nothing */
+# define checkSP() /* do nothing */
 #endif
 
-#define SPArg(nm,offset)                          \
-    eval(primArg(offset));                        \
-    checkSP();                                    \
+#define SPArg(nm, offset)                                                      \
+    eval(primArg(offset));                                                     \
+    checkSP();                                                                 \
     nm = (CuddlesStablePtr)whnfInt
 
 /* nm should be a variable in which result is stored.
    If you use an expression, reevaluation might occur */
-#define SPResult(nm)                              \
-   updateRoot(mkInt((Int)(nm)))
+#define SPResult(nm) updateRoot(mkInt((Int)(nm)))
 
-
-primFun(primMakeSP) {			/* a -> IO (StablePtr a)	   */
+primFun(primMakeSP) { /* a -> IO (StablePtr a)     */
     CuddlesStablePtr sp = mkStablePtr(IOArg(1));
     if (sp == 0) {
-        IOFail(mkIOError(NULL,
-			 nameIsFull,
-			 "Foreign.makeStablePtr",
-		         "too many StablePtrs",
-			 NULL));
+        IOFail(mkIOError(NULL, nameIsFull, "Foreign.makeStablePtr",
+                         "too many StablePtrs", NULL));
     }
     IOReturn(mkInt(sp));
 }
 
-primFun(primDerefSP) {			/* StablePtr a -> IO a   	   */
+primFun(primDerefSP) { /* StablePtr a -> IO a              */
     CuddlesStablePtr x;
-    SPArg(x,1+IOArity);
-    
+    SPArg(x, 1 + IOArity);
+
     IOReturn(derefStablePtr(x));
 }
 
-primFun(primFreeSP) {			/* StablePtr a -> IO ()   	   */
+primFun(primFreeSP) { /* StablePtr a -> IO ()              */
     CuddlesStablePtr x;
-    SPArg(x,1+IOArity);
+    SPArg(x, 1 + IOArity);
     freeStablePtr(x);
     IOReturn(nameUnit);
 }
 
-primFun(primCastSPToP) {		/* StablePtr a -> Ptr ()   	   */
+primFun(primCastSPToP) { /* StablePtr a -> Ptr ()          */
     CuddlesStablePtr x;
-    SPArg(x,1);
+    SPArg(x, 1);
     PtrResult((Pointer)x);
 }
 
-primFun(primCastPToSP) {		/* Ptr () -> StablePtr a   	   */
+primFun(primCastPToSP) { /* Ptr () -> StablePtr a          */
     Pointer x;
-    PtrArg(x,1);
+    PtrArg(x, 1);
     SPResult((HsStablePtr)x);
 }
 
-
-    
 /* --------------------------------------------------------------------------
  * Foreign Objects
  * ------------------------------------------------------------------------*/
 
 #if CHECK_TAGS
-#define checkForeign() if (MPCELL != whatIs(whnfHead)) internal("ForeignObj expected")
+# define checkForeign()                                                        \
+     if (MPCELL != whatIs(whnfHead))                                           \
+     internal("ForeignObj expected")
 #else
-#define checkForeign() /* do nothing */
+# define checkForeign() /* do nothing */
 #endif
 
 primFun(primNewFP) { /* Ptr a -> IO (ForeignPtr a) */
@@ -1501,19 +1415,19 @@ primFun(primAddFPF) { /* FunPtr (Ptr a -> IO ()) -> ForeignPtr a -> IO () */
     IOReturn(nameUnit);
 }
 
-primFun(primAddFPFEnv) {	 /* FunPtr (Ptr env -> Ptr a -> IO ()) ->  */
-    int mp;			 /*	Ptr Env -> ForeignPtr a -> IO ()   */
+primFun(primAddFPFEnv) { /* FunPtr (Ptr env -> Ptr a -> IO ()) ->  */
+    int mp;              /*     Ptr Env -> ForeignPtr a -> IO ()   */
     eval(IOArg(1));
     mp = mpOf(whnfHead);
     eval(IOArg(2));
     push(whnfHead);
     eval(IOArg(3));
     mallocPtrs[mp].finalizers =
-	cons(pair(whnfHead, pop()), mallocPtrs[mp].finalizers);
+        cons(pair(whnfHead, pop()), mallocPtrs[mp].finalizers);
     IOReturn(nameUnit);
 }
 
-primFun(primWriteFP) {		/* ForeignPtr a -> Ptr a -> IO ()	   */
+primFun(primWriteFP) { /* ForeignPtr a -> Ptr a -> IO ()           */
     Cell mp = NIL;
     eval(IOArg(2));
     checkForeign();
@@ -1523,22 +1437,22 @@ primFun(primWriteFP) {		/* ForeignPtr a -> Ptr a -> IO ()	   */
     IOReturn(nameUnit);
 }
 
-primFun(primEqFP) {		/* ForeignPtr a -> ForeignPtr a -> Bool    */
+primFun(primEqFP) { /* ForeignPtr a -> ForeignPtr a -> Bool    */
     eval(primArg(2));
     checkForeign();
     push(whnfHead);
     eval(primArg(1));
     checkForeign();
-    updateRoot(pop()==whnfHead ? nameTrue : nameFalse);
+    updateRoot(pop() == whnfHead ? nameTrue : nameFalse);
 }
 
-primFun(primTouchFP) {		/* ForeignPtr a -> IO ()	           */
+primFun(primTouchFP) { /* ForeignPtr a -> IO ()            */
     eval(IOArg(1));
     checkForeign();
     IOReturn(nameUnit);
 }
 
-primFun(primFPToP) {		/* ForeignPtr a -> Ptr a                   */
+primFun(primFPToP) { /* ForeignPtr a -> Ptr a                   */
     eval(primArg(1));
     checkForeign();
     PtrResult(derefMP(whnfHead));
@@ -1548,24 +1462,24 @@ primFun(primFPToP) {		/* ForeignPtr a -> Ptr a                   */
  * Stable Names
  * ------------------------------------------------------------------------*/
 
-primFun(primMakeSN) {		/* a -> IO (StableName a)		   */
-    IOReturn(ap(STABLENAME,IOArg(1)));
+primFun(primMakeSN) { /* a -> IO (StableName a)            */
+    IOReturn(ap(STABLENAME, IOArg(1)));
 }
 
-primFun(primDerefSN) {		/* StableName a -> a			   */
+primFun(primDerefSN) { /* StableName a -> a                        */
     eval(primArg(1));
     updateRoot(snd(whnfHead));
 }
 
-primFun(primHashSN) {		/* StableName a -> Int			   */
+primFun(primHashSN) { /* StableName a -> Int                       */
     eval(primArg(1));
     updateRoot(mkInt(whnfHead));
 }
-primFun(primEqSN) {		/* StableName a -> StableName a -> Bool	   */
+primFun(primEqSN) { /* StableName a -> StableName a -> Bool        */
     eval(primArg(2));
     push(whnfHead);
     eval(primArg(1));
-    updateRoot(pop()==whnfHead ? nameTrue : nameFalse);
+    updateRoot(pop() == whnfHead ? nameTrue : nameFalse);
 }
 
 /* --------------------------------------------------------------------------
@@ -1573,100 +1487,100 @@ primFun(primEqSN) {		/* StableName a -> StableName a -> Bool	   */
  * ------------------------------------------------------------------------*/
 
 #if CHECK_TAGS
-#define checkWeak() if(WEAKCELL!=whatIs(whnfHead)) internal("weakPtr expected");
+# define checkWeak()                                                           \
+     if (WEAKCELL != whatIs(whnfHead))                                         \
+         internal("weakPtr expected");
 #else
-#define checkWeak() /* do nothing */
+# define checkWeak() /* do nothing */
 #endif
 
-primFun(primWeakPtrEq) {		/* Weak a -> Weak a -> Bool	   */
+primFun(primWeakPtrEq) { /* Weak a -> Weak a -> Bool       */
     eval(primArg(2));
     push(whnfHead);
     eval(primArg(1));
-    updateRoot(pop()==whnfHead ? nameTrue : nameFalse);
+    updateRoot(pop() == whnfHead ? nameTrue : nameFalse);
 }
 
-primFun(primMkWeak) {			/* k -> v -> Maybe (IO ())	   */
-    Cell w = NIL;			/*		    -> IO (Weak v) */
+primFun(primMkWeak) { /* k -> v -> Maybe (IO ())           */
+    Cell w = NIL;     /*                    -> IO (Weak v) */
     eval(IOArg(1));
-    if (whnfHead==nameJust) {		/* Look for finalizer		   */
-	w = pop();
+    if (whnfHead == nameJust) { /* Look for finalizer              */
+        w = pop();
     }
-    w		     = ap(NIL,ap(NIL,ap(NIL,w)));
-    fst(snd(w))      = IOArg(3);
+    w = ap(NIL, ap(NIL, ap(NIL, w)));
+    fst(snd(w)) = IOArg(3);
     fst(snd(snd(w))) = IOArg(2);
-    liveWeakPtrs     = cons(w,liveWeakPtrs);
-    fst(w)           = WEAKFIN;
+    liveWeakPtrs = cons(w, liveWeakPtrs);
+    fst(w) = WEAKFIN;
     IOReturn(w);
 }
 
-primFun(primDeRefWeak) {		/* Weak v -> IO (Maybe v)	   */
+primFun(primDeRefWeak) { /* Weak v -> IO (Maybe v)         */
     eval(IOArg(1));
-    if (whatIs(whnfHead)!=WEAKFIN) {
-	internal("primDeRefWeak");
+    if (whatIs(whnfHead) != WEAKFIN) {
+        internal("primDeRefWeak");
     }
     if (nonNull(snd(whnfHead))) {
-	IOReturn(ap(nameJust,fst(snd(snd(whnfHead)))));
+        IOReturn(ap(nameJust, fst(snd(snd(whnfHead)))));
     } else {
-	IOReturn(nameNothing);
+        IOReturn(nameNothing);
     }
 }
 
-primFun(primReplaceFinalizer) {		/* Weak v -> Maybe (IO ())	   */
-					/*	-> IO (Maybe (IO ()))	   */
-    eval(IOArg(1));			/* Grab new finalizer ...	   */
-    if (whnfHead!=nameJust) {
-	push(NIL);
+primFun(primReplaceFinalizer) { /* Weak v -> Maybe (IO ())         */
+                                /*      -> IO (Maybe (IO ()))      */
+    eval(IOArg(1));             /* Grab new finalizer ...          */
+    if (whnfHead != nameJust) {
+        push(NIL);
     }
-    eval(IOArg(2));			/* Get weak pointer ...		   */
-    if (whatIs(whnfHead)!=WEAKFIN) {
-	internal("primReplaceFinalizer");
-    } else if (nonNull(snd(whnfHead))) {/* ... and replace finalizer	   */
-	Cell oldfin = snd(snd(snd(whnfHead)));
-	snd(snd(snd(whnfHead))) = pop();
-	if (nonNull(oldfin)) {
-	    IOReturn(ap(nameJust,oldfin));
-	}
+    eval(IOArg(2)); /* Get weak pointer ...                */
+    if (whatIs(whnfHead) != WEAKFIN) {
+        internal("primReplaceFinalizer");
+    } else if (nonNull(snd(whnfHead))) { /* ... and replace finalizer      */
+        Cell oldfin = snd(snd(snd(whnfHead)));
+        snd(snd(snd(whnfHead))) = pop();
+        if (nonNull(oldfin)) {
+            IOReturn(ap(nameJust, oldfin));
+        }
     }
     IOReturn(nameNothing);
 }
 
-primFun(primFinalize) {			/* Weak v -> IO ()		   */
-    eval(IOArg(1));			/* Bring weak pointer to an early  */
-    if (whatIs(whnfHead)!=WEAKFIN) {	/* end ...			   */
-	internal("primFinalize");
+primFun(primFinalize) {                /* Weak v -> IO ()                  */
+    eval(IOArg(1));                    /* Bring weak pointer to an early  */
+    if (whatIs(whnfHead) != WEAKFIN) { /* end ...                          */
+        internal("primFinalize");
     } else if (nonNull(snd(whnfHead))) {
-	Cell wp = whnfHead;
-	Cell vf = snd(snd(wp));
-	if (isPair(vf)) {
-	    if (nonNull(snd(vf))) {
-		fst(vf)    = snd(vf);
-		snd(vf)    = finalizers;
-		finalizers = vf;
-	    }
-	    fst(snd(wp)) = NIL;
-	    snd(snd(wp)) = NIL;
-	    snd(wp)      = NIL;
-	}
-	liveWeakPtrs = removeCell(wp,liveWeakPtrs);
+        Cell wp = whnfHead;
+        Cell vf = snd(snd(wp));
+        if (isPair(vf)) {
+            if (nonNull(snd(vf))) {
+                fst(vf) = snd(vf);
+                snd(vf) = finalizers;
+                finalizers = vf;
+            }
+            fst(snd(wp)) = NIL;
+            snd(snd(wp)) = NIL;
+            snd(wp) = NIL;
+        }
+        liveWeakPtrs = removeCell(wp, liveWeakPtrs);
     }
     IOReturn(nameUnit);
 }
 
-primFun(primRunFinalizer) {		/* IO ()			   */
+primFun(primRunFinalizer) { /* IO ()                       */
     if (isNull(finalizers)) {
-	IOReturn(nameUnit);
+        IOReturn(nameUnit);
     } else {
-	updapRoot(ap(hd(finalizers),primArg(2)),primArg(1));
-	finalizers = tl(finalizers);
-	return;
+        updapRoot(ap(hd(finalizers), primArg(2)), primArg(1));
+        finalizers = tl(finalizers);
+        return;
     }
 }
 
-primFun(primFinalizerWaiting) {		/* IO Boolean			   */
-  IOBoolResult(!isNull(finalizers));
+primFun(primFinalizerWaiting) { /* IO Boolean                      */
+    IOBoolResult(!isNull(finalizers));
 }
-
-
 
 /* --------------------------------------------------------------------------
  * Primitives for implementing disposable memo functions
@@ -1686,7 +1600,7 @@ primFun(primFinalizerWaiting) {		/* IO Boolean			   */
  *  portable since it assumes that sizeof(FloatPro) == sizeof(Int).)
  * ------------------------------------------------------------------------*/
 
-primFun(primIOEql) {		    /* :: Eval a => a -> a -> ST Mem Bool */
+primFun(primIOEql) { /* :: Eval a => a -> a -> ST Mem Bool */
     Cell x = IOArg(1);
     Cell y = IOArg(2);
     eval(x);
@@ -1695,25 +1609,31 @@ primFun(primIOEql) {		    /* :: Eval a => a -> a -> ST Mem Bool */
     y = followInd(IOArg(2));
 
     if (whatIs(x) == whatIs(y)) {
-	switch (whatIs(x)) {
-	    case INTCELL   : IOBoolResult(intOf(x)==intOf(y));
-	    case CHARCELL  : IOBoolResult(charOf(x)==charOf(y));
-	    /* deliberate fall through to end */
-	    default        : break;
-	}
+        switch (whatIs(x)) {
+        case INTCELL:
+            IOBoolResult(intOf(x) == intOf(y));
+        case CHARCELL:
+            IOBoolResult(charOf(x) == charOf(y));
+        /* deliberate fall through to end */
+        default:
+            break;
+        }
     }
-    IOBoolResult(x==y);
+    IOBoolResult(x == y);
 }
 
-primFun(primIOHash) {                      /* :: Eval a => a -> ST Mem Int */
+primFun(primIOHash) { /* :: Eval a => a -> ST Mem Int */
     Cell x = IOArg(1);
     eval(x);
-    x = followInd(IOArg(1)); 
+    x = followInd(IOArg(1));
 
-    switch(whatIs(x)) {
-	case INTCELL   : IOReturn(x);
-	case CHARCELL  : IOReturn(mkInt(charOf(x)));
-	default        : break;
+    switch (whatIs(x)) {
+    case INTCELL:
+        IOReturn(x);
+    case CHARCELL:
+        IOReturn(mkInt(charOf(x)));
+    default:
+        break;
     }
     IOReturn(mkInt((Int)x));
 }

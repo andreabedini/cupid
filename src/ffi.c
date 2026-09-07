@@ -22,25 +22,25 @@
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local foreignType    (Int,Type);
-static Void local foreignGet     (Int,Type,String,Int);
-static Void local foreignPut     (Int,Type,String,Int);
-static Void local ffiInclude     (Text);
-static Void local checkCEntity   (Int,Text);
-static Void local ffiDeclare     (Int,Type,String,Int);
-static Void local ffiDeclareList (Int,List,String);
-static Void local foreignType    (Int,Type);
-static Void local ffiGetList     (Int,List,String);
-static Void local ffiPutList     (Int,List,String);
-static Void local ffiCallFun     (Int,Text,List,List);
-static Void local ffiDeclareFun  (Int,Text,Bool,Bool,List,Type);
-static Void local ffiFunTypeCast (Int,List,Type);
-static Void local ffiPrimProto   (Text,Int);
-static Void local ffiPrimHeader  (Text,Int);
-static Void local ffiReturn      (Type,String,Int);
+static Void local foreignType(Int, Type);
+static Void local foreignGet(Int, Type, String, Int);
+static Void local foreignPut(Int, Type, String, Int);
+static Void local ffiInclude(Text);
+static Void local checkCEntity(Int, Text);
+static Void local ffiDeclare(Int, Type, String, Int);
+static Void local ffiDeclareList(Int, List, String);
+static Void local foreignType(Int, Type);
+static Void local ffiGetList(Int, List, String);
+static Void local ffiPutList(Int, List, String);
+static Void local ffiCallFun(Int, Text, List, List);
+static Void local ffiDeclareFun(Int, Text, Bool, Bool, List, Type);
+static Void local ffiFunTypeCast(Int, List, Type);
+static Void local ffiPrimProto(Text, Int);
+static Void local ffiPrimHeader(Text, Int);
+static Void local ffiReturn(Type, String, Int);
 
-static FILE* out = NIL;                /* file we're generating code into */
-static List  includes = NIL;           /* files already #included         */
+static FILE *out = NIL;     /* file we're generating code into */
+static List includes = NIL; /* files already #included         */
 
 /* The statics that hold cells: registered as roots at INSTALL and marked
  * by the collector on every collection */
@@ -48,35 +48,37 @@ static Cell *const ffiRoots[] = {
     &includes,
 };
 
-Void ffi(Int what)
-{
+Void ffi(Int what) {
     switch (what) {
-        case RESET   : if (out) {
-                           fclose(out);
-                           out = NIL;
-                       }
-                       includes = NIL;
-		       break;
-        case INSTALL : registerRoots(ffiRoots);
-		       break;
+    case RESET:
+        if (out) {
+            fclose(out);
+            out = NIL;
+        }
+        includes = NIL;
+        break;
+    case INSTALL:
+        registerRoots(ffiRoots);
+        break;
     }
 }
 
 static String ffiFlags = 0; /* extra flags for compilation command line */
 
-Void ffiSetFlags(String s) 
-{
-    if (s == 0) return;
+Void ffiSetFlags(String s) {
+    if (s == 0)
+        return;
     if (ffiFlags) {
-        Int    l = strlen(ffiFlags);
-        String t = (char *)realloc(ffiFlags,l+strlen(s)+2);
-	if (t==0) {                    /* keep old ffiFlags on failure     */
-	    errHead(0); errPrintf("String storage space exhausted");
-	    errFail();
-	}
-	ffiFlags = t;
-	ffiFlags[l] = ' ';
-	strcpy(ffiFlags+l+1,s);
+        Int l = strlen(ffiFlags);
+        String t = (char *)realloc(ffiFlags, l + strlen(s) + 2);
+        if (t == 0) { /* keep old ffiFlags on failure     */
+            errHead(0);
+            errPrintf("String storage space exhausted");
+            errFail();
+        }
+        ffiFlags = t;
+        ffiFlags[l] = ' ';
+        strcpy(ffiFlags + l + 1, s);
     } else {
         ffiFlags = strCopy(s);
     }
@@ -85,88 +87,87 @@ Void ffiSetFlags(String s)
 static String cppDirectives = 0; /* extra C preprocessor directives */
 
 Void ffiAddCppInclude(String s) {
-    Int    l;
+    Int l;
     String t;
-    Int needed = strlen(s)+11;
+    Int needed = strlen(s) + 11;
     if (cppDirectives) {
         l = strlen(cppDirectives);
-        t = (char *)realloc(cppDirectives,l+needed);
+        t = (char *)realloc(cppDirectives, l + needed);
     } else {
-	l = 0;
-	t = (char *)malloc(needed);
+        l = 0;
+        t = (char *)malloc(needed);
     }
-    if (t==0) {                        /* keep old cppDirectives on error  */
-	errHead(0); errPrintf("String storage space exhausted");
-	errFail();
+    if (t == 0) { /* keep old cppDirectives on error  */
+        errHead(0);
+        errPrintf("String storage space exhausted");
+        errFail();
     }
     cppDirectives = t;
-    sprintf(cppDirectives+l, "#include %s\n", s);
+    sprintf(cppDirectives + l, "#include %s\n", s);
 }
 
-Bool foreignNeedStubs(List imps, List exps)
-{
- return (nonNull(imps) || nonNull(exps)); 
+Bool foreignNeedStubs(List imps, List exps) {
+    return (nonNull(imps) || nonNull(exps));
 }
 
-Void foreignHeader(String fn) 
-{
+Void foreignHeader(String fn) {
     String fnm = mkFFIFilename(fn);
-    FILE* f = fopen(fnm,"w");
+    FILE *f = fopen(fnm, "w");
     if (f == NULL) {
-        errHead(0); errPrintf("Unable to create file '%s'", fnm);
+        errHead(0);
+        errPrintf("Unable to create file '%s'", fnm);
         errFail();
     }
     out = f;
-    fprintf(out,"/* Machine generated file, do not modify */\n");
-    fprintf(out,"#include <stdlib.h>\n");
-    fprintf(out,"#include \"HsFFI.h\"\n");
+    fprintf(out, "/* Machine generated file, do not modify */\n");
+    fprintf(out, "#include <stdlib.h>\n");
+    fprintf(out, "#include \"HsFFI.h\"\n");
     if (cppDirectives)
-	fprintf(out,"%s",cppDirectives);
-    fprintf(out,"\n");
-    fprintf(out,"static CuddlesAPI5 *cuddles = 0;\n");
+        fprintf(out, "%s", cppDirectives);
+    fprintf(out, "\n");
+    fprintf(out, "static CuddlesAPI5 *cuddles = 0;\n");
 }
 
-Void foreignFooter(String fn, Text mn, List is, List es)
-{
-    List xs   = NIL;
-    fprintf(out,"\n");
+Void foreignFooter(String fn, Text mn, List is, List es) {
+    List xs = NIL;
+    fprintf(out, "\n");
 
     /* Table of all primitives generated by foreign imports */
-    fprintf(out,"static struct cuddles_primitive cuddles_primTable[] = {\n");
-    for(xs=is; nonNull(xs); xs=tl(xs)) {
-        Name n       = hd(xs);
-        fprintf(out,"    {\"%s\", ",textToStr(name(n).text));
-        fprintf(out,"%d, ",name(n).arity);
-        fprintf(out,"cuddlesprim_%s_%d},\n",textToStr(name(n).extFun),name(n).foreignId);
+    fprintf(out, "static struct cuddles_primitive cuddles_primTable[] = {\n");
+    for (xs = is; nonNull(xs); xs = tl(xs)) {
+        Name n = hd(xs);
+        fprintf(out, "    {\"%s\", ", textToStr(name(n).text));
+        fprintf(out, "%d, ", name(n).arity);
+        fprintf(out, "cuddlesprim_%s_%d},\n", textToStr(name(n).extFun),
+                name(n).foreignId);
     }
-    for(xs=es; nonNull(xs); xs=tl(xs)) {
-        Name n       = hd(xs);
-        Text ext     = name(n).extFun;
+    for (xs = es; nonNull(xs); xs = tl(xs)) {
+        Name n = hd(xs);
+        Text ext = name(n).extFun;
         Bool dynamic = inventedText(ext);
         if (dynamic) {
-            fprintf(out,"    {\"%s\", 3, ",textToStr(name(n).text));
-            fprintf(out,"cuddlesprim_%s},\n",textToStr(name(n).extFun));
+            fprintf(out, "    {\"%s\", 3, ", textToStr(name(n).text));
+            fprintf(out, "cuddlesprim_%s},\n", textToStr(name(n).extFun));
         }
     }
-    fprintf(out,"};\n");
-    fprintf(out,"\n");
+    fprintf(out, "};\n");
+    fprintf(out, "\n");
 
     /* The control function: rebuilds stable ptr table on RESET */
-    fprintf(out,
-            "static void cuddles_primControl(int);\n"
-            "static void cuddles_primControl(int what)\n"
-            "{\n");
+    fprintf(out, "static void cuddles_primControl(int);\n"
+                 "static void cuddles_primControl(int what)\n"
+                 "{\n");
 
     if (nonNull(es)) {
-      fprintf(out,
-	      "    switch (what) {\n"
-              "        case %d:\n", RESET
-	      );
+        fprintf(out,
+                "    switch (what) {\n"
+                "        case %d:\n",
+                RESET);
     }
 
-    for(xs=es; nonNull(xs); xs=tl(xs)) {
-        Name n       = hd(xs);
-        Text ext     = name(n).extFun;
+    for (xs = es; nonNull(xs); xs = tl(xs)) {
+        Name n = hd(xs);
+        Text ext = name(n).extFun;
         Bool dynamic = inventedText(ext);
         if (!dynamic) {
             fprintf(out, "        cuddles_stable_for_%s = ", textToStr(ext));
@@ -177,7 +178,7 @@ Void foreignFooter(String fn, Text mn, List is, List es)
         }
     }
     if (nonNull(es)) {
-      fprintf(out,"    }\n");
+        fprintf(out, "    }\n");
     }
     fprintf(out, "}\n");
 
@@ -188,140 +189,200 @@ Void foreignFooter(String fn, Text mn, List is, List es)
     fprintf(out, "#ifdef STATIC_LINKAGE\n");
     fprintf(out, "#define initModule init");
     {
-	String s = textToStr(mn);
-	String next;
-	while ((next = strchr(s, '.')) != NULL) {
-	    fprintf(out, "%c", s[0]);
-	    s = next+1;
-	}
-	fprintf(out, "%s\n", s);
+        String s = textToStr(mn);
+        String next;
+        while ((next = strchr(s, '.')) != NULL) {
+            fprintf(out, "%c", s[0]);
+            s = next + 1;
+        }
+        fprintf(out, "%s\n", s);
     }
     fprintf(out, "#endif\n");
     fprintf(out, "\n");
 
     /* Boilerplate initialization function */
-    fprintf(out,
-           "static struct cuddles_primInfo cuddles_prims = { cuddles_primControl, cuddles_primTable, 0 };\n"
-           "\n"
-           "#ifdef __cplusplus\n"
-           "extern \"C\" {\n"
-           "#endif\n"
-           "#ifndef __cplusplus\n"
-	   "DLLEXPORT(int)  CuddlesAPIVersion(void);\n"
-           "#endif\n"
-	   "DLLEXPORT(int)  CuddlesAPIVersion() {return (%d);}\n"
-           "DLLEXPORT(void) initModule(CuddlesAPI5 *);\n"
-           "DLLEXPORT(void) initModule(CuddlesAPI5 *cuddlesAPI) {\n"
-           "    cuddles = cuddlesAPI;\n"
-           "    cuddles->registerPrims(&cuddles_prims);\n"
-           ,CUDDLES_API_VERSION);
-    fprintf(out,
-           "}\n"
-           "#ifdef __cplusplus\n"
-           "}\n"
-           "#endif\n"
-           "\n");
+    fprintf(
+        out,
+        "static struct cuddles_primInfo cuddles_prims = { cuddles_primControl, cuddles_primTable, 0 };\n"
+        "\n"
+        "#ifdef __cplusplus\n"
+        "extern \"C\" {\n"
+        "#endif\n"
+        "#ifndef __cplusplus\n"
+        "DLLEXPORT(int)  CuddlesAPIVersion(void);\n"
+        "#endif\n"
+        "DLLEXPORT(int)  CuddlesAPIVersion() {return (%d);}\n"
+        "DLLEXPORT(void) initModule(CuddlesAPI5 *);\n"
+        "DLLEXPORT(void) initModule(CuddlesAPI5 *cuddlesAPI) {\n"
+        "    cuddles = cuddlesAPI;\n"
+        "    cuddles->registerPrims(&cuddles_prims);\n",
+        CUDDLES_API_VERSION);
+    fprintf(out, "}\n"
+                 "#ifdef __cplusplus\n"
+                 "}\n"
+                 "#endif\n"
+                 "\n");
 
     fclose(out);
     out = NIL;
 
     compileAndLink(fn, ffiFlags);
-    if (ffiFlags) { free(ffiFlags); ffiFlags=0; }
+    if (ffiFlags) {
+        free(ffiFlags);
+        ffiFlags = 0;
+    }
 }
 
-
-
-static Void local foreignType(Int l, Type t)
-{
-    if      (t == typeChar)   fprintf(out,"HsChar");
-    else if (t == typeInt)    fprintf(out,"HsInt");
-    else if (t == typeInt8)   fprintf(out,"HsInt8");
-    else if (t == typeInt16)  fprintf(out,"HsInt16");
-    else if (t == typeInt32)  fprintf(out,"HsInt32");
-    else if (t == typeInt64)  fprintf(out,"HsInt64");
-    else if (t == typeWord8)  fprintf(out,"HsWord8");
-    else if (t == typeWord16) fprintf(out,"HsWord16");
-    else if (t == typeWord32) fprintf(out,"HsWord32");
-    else if (t == typeWord64) fprintf(out,"HsWord64");
-    else if (t == typeFloat)  fprintf(out,"HsFloat");
-    else if (t == typeDouble) fprintf(out,"HsDouble");
-    else if (t == typeBool)   fprintf(out,"HsBool");
-    else if (t == typeAddr)   fprintf(out,"HsAddr");
-    else if (getHead(t) == typePtr)    fprintf(out,"HsPtr");
-    else if (getHead(t) == typeFunPtr) fprintf(out,"HsFunPtr");
-    else if (getHead(t) == typeForeign)fprintf(out,"CuddlesForeign");
-    else if (getHead(t) == typeStable) fprintf(out,"HsStablePtr");
+static Void local foreignType(Int l, Type t) {
+    if (t == typeChar)
+        fprintf(out, "HsChar");
+    else if (t == typeInt)
+        fprintf(out, "HsInt");
+    else if (t == typeInt8)
+        fprintf(out, "HsInt8");
+    else if (t == typeInt16)
+        fprintf(out, "HsInt16");
+    else if (t == typeInt32)
+        fprintf(out, "HsInt32");
+    else if (t == typeInt64)
+        fprintf(out, "HsInt64");
+    else if (t == typeWord8)
+        fprintf(out, "HsWord8");
+    else if (t == typeWord16)
+        fprintf(out, "HsWord16");
+    else if (t == typeWord32)
+        fprintf(out, "HsWord32");
+    else if (t == typeWord64)
+        fprintf(out, "HsWord64");
+    else if (t == typeFloat)
+        fprintf(out, "HsFloat");
+    else if (t == typeDouble)
+        fprintf(out, "HsDouble");
+    else if (t == typeBool)
+        fprintf(out, "HsBool");
+    else if (t == typeAddr)
+        fprintf(out, "HsAddr");
+    else if (getHead(t) == typePtr)
+        fprintf(out, "HsPtr");
+    else if (getHead(t) == typeFunPtr)
+        fprintf(out, "HsFunPtr");
+    else if (getHead(t) == typeForeign)
+        fprintf(out, "CuddlesForeign");
+    else if (getHead(t) == typeStable)
+        fprintf(out, "HsStablePtr");
     else {
-        errHead(l); errPrintf("Illegal foreign type");
-        errPrintf(" \""); errType(t);
+        errHead(l);
+        errPrintf("Illegal foreign type");
+        errPrintf(" \"");
+        errType(t);
         errPrintf("\"");
         errFail();
-   }
+    }
 }
 
-static Void local foreignGet(Int l, Type t, String nm, Int num)
-{
-    if (t == typeUnit)        fprintf(out,"cuddles->getUnit();\n");
-    else if (t == typeChar)   fprintf(out,"%s%d = cuddles->getChar();\n",       nm, num);
-    else if (t == typeInt)    fprintf(out,"%s%d = cuddles->getInt();\n",        nm, num);
-    else if (t == typeInt8)   fprintf(out,"%s%d = cuddles->getInt8();\n",       nm, num);
-    else if (t == typeInt16)  fprintf(out,"%s%d = cuddles->getInt16();\n",      nm, num);
-    else if (t == typeInt32)  fprintf(out,"%s%d = cuddles->getInt32();\n",      nm, num);
-    else if (t == typeInt64)  fprintf(out,"%s%d = cuddles->getInt64();\n",      nm, num);
-    else if (t == typeWord8)  fprintf(out,"%s%d = cuddles->getWord8();\n",      nm, num);
-    else if (t == typeWord16) fprintf(out,"%s%d = cuddles->getWord16();\n",     nm, num);
-    else if (t == typeWord32) fprintf(out,"%s%d = cuddles->getWord32();\n",     nm, num);
-    else if (t == typeWord64) fprintf(out,"%s%d = cuddles->getWord64();\n",     nm, num);
-    else if (t == typeFloat)  fprintf(out,"%s%d = cuddles->getFloat();\n",      nm, num);
-    else if (t == typeDouble) fprintf(out,"%s%d = cuddles->getDouble();\n",     nm, num);
-    else if (t == typeBool)   fprintf(out,"%s%d = cuddles->getBool();\n",       nm, num);
-    else if (t == typeAddr)   fprintf(out,"%s%d = cuddles->getAddr();\n",       nm, num);
-    else if (getHead(t) == typePtr)    fprintf(out,"%s%d = cuddles->getPtr();\n",        nm, num);
-    else if (getHead(t) == typeFunPtr) fprintf(out,"%s%d = cuddles->getFunPtr();\n",     nm, num);
-    else if (getHead(t) == typeForeign)fprintf(out,"%s%d = cuddles->getForeign();\n", nm, num);
-    else if (getHead(t) == typeStable) fprintf(out,"%s%d = cuddles->getStablePtr4();\n",  nm, num);
+static Void local foreignGet(Int l, Type t, String nm, Int num) {
+    if (t == typeUnit)
+        fprintf(out, "cuddles->getUnit();\n");
+    else if (t == typeChar)
+        fprintf(out, "%s%d = cuddles->getChar();\n", nm, num);
+    else if (t == typeInt)
+        fprintf(out, "%s%d = cuddles->getInt();\n", nm, num);
+    else if (t == typeInt8)
+        fprintf(out, "%s%d = cuddles->getInt8();\n", nm, num);
+    else if (t == typeInt16)
+        fprintf(out, "%s%d = cuddles->getInt16();\n", nm, num);
+    else if (t == typeInt32)
+        fprintf(out, "%s%d = cuddles->getInt32();\n", nm, num);
+    else if (t == typeInt64)
+        fprintf(out, "%s%d = cuddles->getInt64();\n", nm, num);
+    else if (t == typeWord8)
+        fprintf(out, "%s%d = cuddles->getWord8();\n", nm, num);
+    else if (t == typeWord16)
+        fprintf(out, "%s%d = cuddles->getWord16();\n", nm, num);
+    else if (t == typeWord32)
+        fprintf(out, "%s%d = cuddles->getWord32();\n", nm, num);
+    else if (t == typeWord64)
+        fprintf(out, "%s%d = cuddles->getWord64();\n", nm, num);
+    else if (t == typeFloat)
+        fprintf(out, "%s%d = cuddles->getFloat();\n", nm, num);
+    else if (t == typeDouble)
+        fprintf(out, "%s%d = cuddles->getDouble();\n", nm, num);
+    else if (t == typeBool)
+        fprintf(out, "%s%d = cuddles->getBool();\n", nm, num);
+    else if (t == typeAddr)
+        fprintf(out, "%s%d = cuddles->getAddr();\n", nm, num);
+    else if (getHead(t) == typePtr)
+        fprintf(out, "%s%d = cuddles->getPtr();\n", nm, num);
+    else if (getHead(t) == typeFunPtr)
+        fprintf(out, "%s%d = cuddles->getFunPtr();\n", nm, num);
+    else if (getHead(t) == typeForeign)
+        fprintf(out, "%s%d = cuddles->getForeign();\n", nm, num);
+    else if (getHead(t) == typeStable)
+        fprintf(out, "%s%d = cuddles->getStablePtr4();\n", nm, num);
     else {
-        errHead(l); errPrintf("Illegal outbound (away from Haskell) type");
-        errPrintf(" \""); errType(t);
+        errHead(l);
+        errPrintf("Illegal outbound (away from Haskell) type");
+        errPrintf(" \"");
+        errType(t);
         errPrintf("\"");
         errFail();
-   }
+    }
 }
 
-static Void local foreignPut(Int l, Type t, String nm, Int num)
-{
-    if      (t == typeUnit)   fprintf(out,"\n");
-    else if (t == typeChar)   fprintf(out,"cuddles->putChar(%s%d);\n",       nm, num);
-    else if (t == typeInt)    fprintf(out,"cuddles->putInt(%s%d);\n",        nm, num);
-    else if (t == typeInt8)   fprintf(out,"cuddles->putInt8(%s%d);\n",       nm, num);
-    else if (t == typeInt16)  fprintf(out,"cuddles->putInt16(%s%d);\n",      nm, num);
-    else if (t == typeInt32)  fprintf(out,"cuddles->putInt32(%s%d);\n",      nm, num);
-    else if (t == typeInt64)  fprintf(out,"cuddles->putInt64(%s%d);\n",      nm, num);
-    else if (t == typeWord8)  fprintf(out,"cuddles->putWord8(%s%d);\n",      nm, num);
-    else if (t == typeWord16) fprintf(out,"cuddles->putWord16(%s%d);\n",     nm, num);
-    else if (t == typeWord32) fprintf(out,"cuddles->putWord32(%s%d);\n",     nm, num);
-    else if (t == typeWord64) fprintf(out,"cuddles->putWord64(%s%d);\n",     nm, num);
-    else if (t == typeFloat)  fprintf(out,"cuddles->putFloat(%s%d);\n",      nm, num);
-    else if (t == typeDouble) fprintf(out,"cuddles->putDouble(%s%d);\n",     nm, num);
-    else if (t == typeBool)   fprintf(out,"cuddles->putBool(%s%d);\n",       nm, num);
-    else if (t == typeAddr)   fprintf(out,"cuddles->putAddr(%s%d);\n",       nm, num);
-    else if (getHead(t) == typePtr)    fprintf(out,"cuddles->putPtr(%s%d);\n",        nm, num);
-    else if (getHead(t) == typeFunPtr) fprintf(out,"cuddles->putFunPtr(%s%d);\n",     nm, num);
-    else if (getHead(t) == typeForeign)fprintf(out,"cuddles->putForeign(%s%d);\n", nm, num);
-    else if (getHead(t) == typeStable) fprintf(out,"cuddles->putStablePtr4(%s%d);\n", nm, num);
+static Void local foreignPut(Int l, Type t, String nm, Int num) {
+    if (t == typeUnit)
+        fprintf(out, "\n");
+    else if (t == typeChar)
+        fprintf(out, "cuddles->putChar(%s%d);\n", nm, num);
+    else if (t == typeInt)
+        fprintf(out, "cuddles->putInt(%s%d);\n", nm, num);
+    else if (t == typeInt8)
+        fprintf(out, "cuddles->putInt8(%s%d);\n", nm, num);
+    else if (t == typeInt16)
+        fprintf(out, "cuddles->putInt16(%s%d);\n", nm, num);
+    else if (t == typeInt32)
+        fprintf(out, "cuddles->putInt32(%s%d);\n", nm, num);
+    else if (t == typeInt64)
+        fprintf(out, "cuddles->putInt64(%s%d);\n", nm, num);
+    else if (t == typeWord8)
+        fprintf(out, "cuddles->putWord8(%s%d);\n", nm, num);
+    else if (t == typeWord16)
+        fprintf(out, "cuddles->putWord16(%s%d);\n", nm, num);
+    else if (t == typeWord32)
+        fprintf(out, "cuddles->putWord32(%s%d);\n", nm, num);
+    else if (t == typeWord64)
+        fprintf(out, "cuddles->putWord64(%s%d);\n", nm, num);
+    else if (t == typeFloat)
+        fprintf(out, "cuddles->putFloat(%s%d);\n", nm, num);
+    else if (t == typeDouble)
+        fprintf(out, "cuddles->putDouble(%s%d);\n", nm, num);
+    else if (t == typeBool)
+        fprintf(out, "cuddles->putBool(%s%d);\n", nm, num);
+    else if (t == typeAddr)
+        fprintf(out, "cuddles->putAddr(%s%d);\n", nm, num);
+    else if (getHead(t) == typePtr)
+        fprintf(out, "cuddles->putPtr(%s%d);\n", nm, num);
+    else if (getHead(t) == typeFunPtr)
+        fprintf(out, "cuddles->putFunPtr(%s%d);\n", nm, num);
+    else if (getHead(t) == typeForeign)
+        fprintf(out, "cuddles->putForeign(%s%d);\n", nm, num);
+    else if (getHead(t) == typeStable)
+        fprintf(out, "cuddles->putStablePtr4(%s%d);\n", nm, num);
     else {
-        errHead(l); errPrintf("Illegal inbound (coming into Haskell) type");
-        errPrintf(" \""); errType(t);
+        errHead(l);
+        errPrintf("Illegal inbound (coming into Haskell) type");
+        errPrintf(" \"");
+        errType(t);
         errPrintf("\"");
         errFail();
-   }
+    }
 }
 
-static Void local ffiInclude(Text fn)                     /* Add #include  */
+static Void local ffiInclude(Text fn) /* Add #include  */
 {
-    if (fn != -1 && !varIsMember(fn,includes)) {
+    if (fn != -1 && !varIsMember(fn, includes)) {
         fprintf(out, "#include \"%s\"\n", textToStr(fn));
-        includes = cons(mkVar(fn),includes);
+        includes = cons(mkVar(fn), includes);
     }
 }
 
@@ -335,140 +396,145 @@ static Void local ffiInclude(Text fn)                     /* Add #include  */
  * uncompilable C and a C compiler error instead of a Cuddles one; catch that
  * here instead.
  */
-static Void local checkCEntity(Int line, Text cid)
-{
+static Void local checkCEntity(Int line, Text cid) {
     String s = textToStr(cid);
     String p = s;
-    Bool ok = (*p == '_' || (*p>='A' && *p<='Z') || (*p>='a' && *p<='z'));
+    Bool ok =
+        (*p == '_' || (*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z'));
     for (++p; ok && *p; p++)
-        ok = (*p == '_' || (*p>='A' && *p<='Z') || (*p>='a' && *p<='z')
-                        || (*p>='0' && *p<='9'));
+        ok = (*p == '_' || (*p >= 'A' && *p <= 'Z') ||
+              (*p >= 'a' && *p <= 'z') || (*p >= '0' && *p <= '9'));
     if (!ok) {
-        errHead(line); errPrintf("Foreign import entity \"%s\" is not a valid C identifier", s);
+        errHead(line);
+        errPrintf("Foreign import entity \"%s\" is not a valid C identifier",
+                  s);
         errFail();
     }
 }
 
-static Void local ffiDeclare(Int line, Type ty, String prefix, Int i)       /* Declare variable  */
+static Void local ffiDeclare(Int line, Type ty, String prefix,
+                             Int i) /* Declare variable  */
 {
     if (ty != typeUnit) {
-        fprintf(out,"    ");
-        foreignType(line,ty);
-        fprintf(out," %s%d;\n",prefix,i);
+        fprintf(out, "    ");
+        foreignType(line, ty);
+        fprintf(out, " %s%d;\n", prefix, i);
     }
 }
 
-static Void local ffiReturn(Type ty, String prefix, Int i)             /* Return variable  */
+static Void local ffiReturn(Type ty, String prefix,
+                            Int i) /* Return variable  */
 {
     if (ty != typeUnit) {
-        fprintf(out,"    return %s%d;\n",prefix,i);
+        fprintf(out, "    return %s%d;\n", prefix, i);
     } else {
-        fprintf(out,"    return;\n");
+        fprintf(out, "    return;\n");
     }
 }
 
-static Void local ffiDeclareList(Int line, List tys, String prefix)   /* Declare variables */
+static Void local ffiDeclareList(Int line, List tys,
+                                 String prefix) /* Declare variables */
 {
-    Int  i;
-    for(i=1; nonNull(tys); tys=tl(tys),++i) {
-        ffiDeclare(line,hd(tys),prefix,i);
+    Int i;
+    for (i = 1; nonNull(tys); tys = tl(tys), ++i) {
+        ffiDeclare(line, hd(tys), prefix, i);
     }
 }
 
-static Void local ffiGetList(Int line, List tys, String prefix)   /* Get values from Haskell */
+static Void local ffiGetList(Int line, List tys,
+                             String prefix) /* Get values from Haskell */
 {
-    Int  i;
-    for(i=1; nonNull(tys); tys=tl(tys),++i) {
-        fprintf(out,"    ");
-        foreignGet(line,hd(tys),prefix,i);
+    Int i;
+    for (i = 1; nonNull(tys); tys = tl(tys), ++i) {
+        fprintf(out, "    ");
+        foreignGet(line, hd(tys), prefix, i);
     }
 }
 
-static Void local ffiPutList(Int line, List tys, String prefix)    /* Put values to Haskell */
+static Void local ffiPutList(Int line, List tys,
+                             String prefix) /* Put values to Haskell */
 {
-    Int  i;
-    for(i=1; nonNull(tys); tys=tl(tys),++i) {
-        fprintf(out,"    ");
-        foreignPut(line,hd(tys),prefix,i);
+    Int i;
+    for (i = 1; nonNull(tys); tys = tl(tys), ++i) {
+        fprintf(out, "    ");
+        foreignPut(line, hd(tys), prefix, i);
     }
 }
 
-static Void local ffiDeclareFun(Int line, Text n, Bool indirect, Bool extraArg, List argTys, List resultTy)
-               /* Add a StablePtr argument? */
+static Void local ffiDeclareFun(Int line, Text n, Bool indirect, Bool extraArg,
+                                List argTys, List resultTy)
+/* Add a StablePtr argument? */
 {
-    Int  i;
+    Int i;
     if (resultTy == typeUnit) {
-        fprintf(out,"void");
+        fprintf(out, "void");
     } else {
-        foreignType(line,resultTy);
+        foreignType(line, resultTy);
     }
     if (indirect) {
-        fprintf(out," (*%s)", textToStr(n));
+        fprintf(out, " (*%s)", textToStr(n));
     } else {
-        fprintf(out," %s", textToStr(n));
+        fprintf(out, " %s", textToStr(n));
     }
-    fprintf(out,"(");
+    fprintf(out, "(");
     if (extraArg) {
-        fprintf(out,"CuddlesStablePtr fun1");
+        fprintf(out, "CuddlesStablePtr fun1");
         if (nonNull(argTys)) {
-            fprintf(out,", ");
+            fprintf(out, ", ");
         }
     }
-    for(i=1; nonNull(argTys); argTys=tl(argTys),++i) {
-        foreignType(line,hd(argTys));
-        fprintf(out," arg%d",i);
+    for (i = 1; nonNull(argTys); argTys = tl(argTys), ++i) {
+        foreignType(line, hd(argTys));
+        fprintf(out, " arg%d", i);
         if (nonNull(tl(argTys))) {
-            fprintf(out,", ");
+            fprintf(out, ", ");
         }
     }
-    fprintf(out,")");
+    fprintf(out, ")");
 }
 
-static Void local ffiFunTypeCast(Int line, List argTys, List resultTy)
-{
-    Int  i;
-    fprintf(out,"(");
+static Void local ffiFunTypeCast(Int line, List argTys, List resultTy) {
+    Int i;
+    fprintf(out, "(");
     if (resultTy == typeUnit) {
-        fprintf(out,"void");
+        fprintf(out, "void");
     } else {
-        foreignType(line,resultTy);
+        foreignType(line, resultTy);
     }
-    fprintf(out," (*)(");
-    for(i=1; nonNull(argTys); argTys=tl(argTys),++i) {
-        foreignType(line,hd(argTys));
+    fprintf(out, " (*)(");
+    for (i = 1; nonNull(argTys); argTys = tl(argTys), ++i) {
+        foreignType(line, hd(argTys));
         if (nonNull(tl(argTys))) {
-            fprintf(out,", ");
+            fprintf(out, ", ");
         }
     }
-    fprintf(out,"))");
+    fprintf(out, "))");
 }
 
-static Void local ffiCallFun(Int line, Text e, List argTys, Type resultTy)
-{
-    Int  i;
-    fprintf(out,"    ");
+static Void local ffiCallFun(Int line, Text e, List argTys, Type resultTy) {
+    Int i;
+    fprintf(out, "    ");
     if (resultTy != typeUnit) {
-        fprintf(out,"res1 = ");
+        fprintf(out, "res1 = ");
     }
-    fprintf(out,"%s(", textToStr(e));
-    for(i=1; nonNull(argTys); argTys=tl(argTys),++i) {
-        fprintf(out,"arg%d",i);
+    fprintf(out, "%s(", textToStr(e));
+    for (i = 1; nonNull(argTys); argTys = tl(argTys), ++i) {
+        fprintf(out, "arg%d", i);
         if (nonNull(tl(argTys))) {
-            fprintf(out,", ");
+            fprintf(out, ", ");
         }
     }
-    fprintf(out,");\n");
+    fprintf(out, ");\n");
 }
-
 
 /* Generate a Cuddles Prim prototype.
  * name should match the C function we're calling because we know
  * that name is a valid C identifier whereas the Haskell name may
  * not be.
  */
-static Void local ffiPrimProto(Text name, Int id)
-{
-    fprintf(out,"\nstatic void cuddlesprim_%s_%d(CuddlesStackPtr);\n",textToStr(name),id);
+static Void local ffiPrimProto(Text name, Int id) {
+    fprintf(out, "\nstatic void cuddlesprim_%s_%d(CuddlesStackPtr);\n",
+            textToStr(name), id);
 }
 
 /* Generate a Cuddles Prim Header.
@@ -476,9 +542,9 @@ static Void local ffiPrimProto(Text name, Int id)
  * that name is a valid C identifier whereas the Haskell name may
  * not be.
  */
-static Void local ffiPrimHeader(Text name, Int id)
-{
-    fprintf(out,"static void cuddlesprim_%s_%d(CuddlesStackPtr cuddles_root)\n", textToStr(name),id);
+static Void local ffiPrimHeader(Text name, Int id) {
+    fprintf(out, "static void cuddlesprim_%s_%d(CuddlesStackPtr cuddles_root)\n",
+            textToStr(name), id);
 }
 
 /* Generate C code for calling C functions from Haskell.
@@ -505,65 +571,63 @@ static Void local ffiPrimHeader(Text name, Int id)
  *     }
  * 
  */
-Void implementForeignImport(Int line, Name n, Int id, Text fn, Text cid, Bool isStatic, Text libName, List argTys, Bool isIO, Type resultTy)
-           /* Include file */
-           /* Function name */
+Void implementForeignImport(Int line, Name n, Int id, Text fn, Text cid,
+                            Bool isStatic, Text libName, List argTys, Bool isIO,
+                            Type resultTy)
+/* Include file */
+/* Function name */
 {
 
-
-    checkCEntity(line,cid);
+    checkCEntity(line, cid);
     ffiInclude(fn);
 
     /* Prevent the cid from matching a C macro */
-    fprintf(out,"\n#ifndef ENABLE_MACRO_INTERFACE\n");
-    fprintf(out,"#undef %s\n", textToStr(cid));
-    fprintf(out,"#endif\n");
+    fprintf(out, "\n#ifndef ENABLE_MACRO_INTERFACE\n");
+    fprintf(out, "#undef %s\n", textToStr(cid));
+    fprintf(out, "#endif\n");
 
-    ffiPrimProto(cid,id);
-    ffiPrimHeader(cid,id);
-    fprintf(out,"{\n");
+    ffiPrimProto(cid, id);
+    ffiPrimHeader(cid, id);
+    fprintf(out, "{\n");
 
-
-    ffiDeclareList(line,argTys,"arg");
-    ffiDeclare(line,resultTy,"res",1);
-    ffiGetList(line,argTys,"arg");
-    ffiCallFun(line,cid,argTys,resultTy);
-    fprintf(out,"    ");
-    foreignPut(line,resultTy,"res",1);
+    ffiDeclareList(line, argTys, "arg");
+    ffiDeclare(line, resultTy, "res", 1);
+    ffiGetList(line, argTys, "arg");
+    ffiCallFun(line, cid, argTys, resultTy);
+    fprintf(out, "    ");
+    foreignPut(line, resultTy, "res", 1);
     if (isIO || nonNull(argTys)) {
-      fprintf(out,"    cuddles->return%s(cuddles_root,%d);\n", 
-              isIO?"IO":"Id",
-              resultTy==typeUnit ? 0 : 1);
+        fprintf(out, "    cuddles->return%s(cuddles_root,%d);\n",
+                isIO ? "IO" : "Id", resultTy == typeUnit ? 0 : 1);
     }
-    fprintf(out,"}\n");
+    fprintf(out, "}\n");
 }
 
-Void implementForeignImportDynamic(Int line, Int id, Text e, List argTys, Bool isIO, Type resultTy)
-{
-    ffiPrimProto(e,id);
-    ffiPrimHeader(e,id);
-    fprintf(out,"{\n");
+Void implementForeignImportDynamic(Int line, Int id, Text e, List argTys,
+                                   Bool isIO, Type resultTy) {
+    ffiPrimProto(e, id);
+    ffiPrimHeader(e, id);
+    fprintf(out, "{\n");
 
     /* Declare arguments and result */
-    fprintf(out,"    ");
-    ffiDeclareFun(line,e,TRUE,FALSE,argTys,resultTy);
-    fprintf(out,";\n");
+    fprintf(out, "    ");
+    ffiDeclareFun(line, e, TRUE, FALSE, argTys, resultTy);
+    fprintf(out, ";\n");
 
-    ffiDeclareList(line,argTys,"arg");
-    ffiDeclare(line,resultTy,"res",1);
-    fprintf(out,"    %s = ", textToStr(e));
-    ffiFunTypeCast(line,argTys,resultTy);
-    fprintf(out,"cuddles->getFunPtr();\n");
-    ffiGetList(line,argTys,"arg");
-    ffiCallFun(line,e,argTys,resultTy);
-    fprintf(out,"    ");
-    foreignPut(line,resultTy,"res",1);
+    ffiDeclareList(line, argTys, "arg");
+    ffiDeclare(line, resultTy, "res", 1);
+    fprintf(out, "    %s = ", textToStr(e));
+    ffiFunTypeCast(line, argTys, resultTy);
+    fprintf(out, "cuddles->getFunPtr();\n");
+    ffiGetList(line, argTys, "arg");
+    ffiCallFun(line, e, argTys, resultTy);
+    fprintf(out, "    ");
+    foreignPut(line, resultTy, "res", 1);
     if (isIO || nonNull(argTys)) {
-      fprintf(out,"    cuddles->return%s(cuddles_root,%d);\n", 
-              isIO?"IO":"Id",
-              resultTy==typeUnit ? 0 : 1);
+        fprintf(out, "    cuddles->return%s(cuddles_root,%d);\n",
+                isIO ? "IO" : "Id", resultTy == typeUnit ? 0 : 1);
     }
-    fprintf(out,"}\n");
+    fprintf(out, "}\n");
 }
 
 /*
@@ -598,51 +662,48 @@ Void implementForeignImportDynamic(Int line, Int id, Text e, List argTys, Bool i
  *         cuddles->returnIO(cuddles_root,1);
  *     }
  */
-Void implementForeignImportWrapper(Int line, Int id, Text e, List argTys, Bool isIO, Type resultTy)
-{
+Void implementForeignImportWrapper(Int line, Int id, Text e, List argTys,
+                                   Bool isIO, Type resultTy) {
     /* Prototype for function we're generating */
-    fprintf(out,"\nstatic ");
-    ffiDeclareFun(line,e,FALSE,TRUE,argTys,resultTy);
-    fprintf(out,";\n");
+    fprintf(out, "\nstatic ");
+    ffiDeclareFun(line, e, FALSE, TRUE, argTys, resultTy);
+    fprintf(out, ";\n");
 
     /* The function wrapper */
-    fprintf(out,"static ");
-    ffiDeclareFun(line,e,FALSE,TRUE,argTys,resultTy);
-    fprintf(out,"\n{\n");
-    ffiDeclare(line,resultTy,"res",1);
+    fprintf(out, "static ");
+    ffiDeclareFun(line, e, FALSE, TRUE, argTys, resultTy);
+    fprintf(out, "\n{\n");
+    ffiDeclare(line, resultTy, "res", 1);
 
     /* Push function pointer and arguments */
-    fprintf(out,"    cuddles->derefStablePtr4(fun1);\n");
-    ffiPutList(line,argTys,"arg");
+    fprintf(out, "    cuddles->derefStablePtr4(fun1);\n");
+    ffiPutList(line, argTys, "arg");
 
     /* Make the call and check for uncaught exception */
     /* ToDo: I'm not sure that exiting from the Cuddles session is the right 
      * response to the Haskell function calling System.exit.
      */
-    fprintf(out,"    if (cuddles->run%s(%d)) {\n", isIO?"IO":"Id", length(argTys));
-    fprintf(out,
-            "        exit(cuddles->getInt());\n"
-            "    }\n"
-            );
-    fprintf(out,"    ");
-    foreignGet(line,resultTy,"res",1);
-    ffiReturn(resultTy,"res",1);
+    fprintf(out, "    if (cuddles->run%s(%d)) {\n", isIO ? "IO" : "Id",
+            length(argTys));
+    fprintf(out, "        exit(cuddles->getInt());\n"
+                 "    }\n");
+    fprintf(out, "    ");
+    foreignGet(line, resultTy, "res", 1);
+    ffiReturn(resultTy, "res", 1);
 
     /* Return result */
-    fprintf(out,"}\n");
+    fprintf(out, "}\n");
 
-    ffiPrimProto(e,id);
-    ffiPrimHeader(e,id);
+    ffiPrimProto(e, id);
+    ffiPrimHeader(e, id);
     fprintf(out,
             "{\n"
             "    CuddlesStablePtr arg1 = cuddles->makeStablePtr4();\n"
             "    void* thunk = cuddles->mkThunk((HsFunPtr)%s,arg1);\n",
-            textToStr(e)
-            );
-    fprintf(out,
-            "    cuddles->putAddr(thunk);\n"
-            "    cuddles->returnIO(cuddles_root,1);\n"
-            "}\n");
+            textToStr(e));
+    fprintf(out, "    cuddles->putAddr(thunk);\n"
+                 "    cuddles->returnIO(cuddles_root,1);\n"
+                 "}\n");
 }
 
 /* 
@@ -671,42 +732,41 @@ Void implementForeignImportWrapper(Int line, Int id, Text e, List argTys, Bool i
  *     }
  *
  */
-Void implementForeignExport(Int line, Int id, Text e, List argTys, Bool isIO, Type resultTy)
-{
+Void implementForeignExport(Int line, Int id, Text e, List argTys, Bool isIO,
+                            Type resultTy) {
 
     /* Prototype for function we're generating */
-    fprintf(out,"\nextern ");
-    ffiDeclareFun(line,e,FALSE,FALSE,argTys,resultTy);
-    fprintf(out,";\n");
+    fprintf(out, "\nextern ");
+    ffiDeclareFun(line, e, FALSE, FALSE, argTys, resultTy);
+    fprintf(out, ";\n");
 
-    fprintf(out,"static CuddlesStablePtr cuddles_stable_for_%s = -1;\n", textToStr(e));
+    fprintf(out, "static CuddlesStablePtr cuddles_stable_for_%s = -1;\n",
+            textToStr(e));
 
     /* The function wrapper */
-    ffiDeclareFun(line,e,FALSE,FALSE,argTys,resultTy);
-    fprintf(out,"\n{\n");
-    ffiDeclare(line,resultTy,"res",1);
+    ffiDeclareFun(line, e, FALSE, FALSE, argTys, resultTy);
+    fprintf(out, "\n{\n");
+    ffiDeclare(line, resultTy, "res", 1);
 
     /* Push function pointer and arguments */
-    fprintf(out,"    cuddles->putInt(cuddles_stable_for_%s);\n", textToStr(e));
-    ffiPutList(line,argTys,"arg");
+    fprintf(out, "    cuddles->putInt(cuddles_stable_for_%s);\n", textToStr(e));
+    ffiPutList(line, argTys, "arg");
 
     /* Make the call and check for uncaught exception */
     if (isIO) {
         /* ToDo: I'm not sure that exiting from the Cuddles session is the right 
          * response to the Haskell function calling System.exit.
          */
-        fprintf(out,"    if (cuddles->runIO(%d)) {\n", length(argTys));
-        fprintf(out,
-                "        exit(cuddles->getInt());\n"
-                "    }\n"
-                );
+        fprintf(out, "    if (cuddles->runIO(%d)) {\n", length(argTys));
+        fprintf(out, "        exit(cuddles->getInt());\n"
+                     "    }\n");
     } else {
-        fprintf(out,"    cuddles->ap(%d);\n", length(argTys));
-    } 
-    fprintf(out,"    ");
-    foreignGet(line,resultTy,"res",1);
-    ffiReturn(resultTy,"res",1);
-    fprintf(out,"}\n");
+        fprintf(out, "    cuddles->ap(%d);\n", length(argTys));
+    }
+    fprintf(out, "    ");
+    foreignGet(line, resultTy, "res", 1);
+    ffiReturn(resultTy, "res", 1);
+    fprintf(out, "}\n");
 }
 
 /* 
@@ -729,27 +789,28 @@ Void implementForeignExport(Int line, Int id, Text e, List argTys, Bool isIO, Ty
  *         cuddles_returnId(1);
  *     }
  */
-Void implementForeignImportLabel(Int line, Int id, Text fn, Text cid, Text n, Type ty)
-           /* Include file */
-           /* Function name */
-           /* Haskell name */
+Void implementForeignImportLabel(Int line, Int id, Text fn, Text cid, Text n,
+                                 Type ty)
+/* Include file */
+/* Function name */
+/* Haskell name */
 {
-    checkCEntity(line,cid);
+    checkCEntity(line, cid);
     ffiInclude(fn);
 
     /* Prevent the cid from matching a C macro */
-    fprintf(out,"\n#ifndef ENABLE_MACRO_INTERFACE\n");
-    fprintf(out,"#undef %s\n", textToStr(cid));
-    fprintf(out,"#endif\n");
+    fprintf(out, "\n#ifndef ENABLE_MACRO_INTERFACE\n");
+    fprintf(out, "#undef %s\n", textToStr(cid));
+    fprintf(out, "#endif\n");
 
-    ffiPrimProto(cid,id);
-    ffiPrimHeader(cid,id);
-    fprintf(out,"{\n");
+    ffiPrimProto(cid, id);
+    ffiPrimHeader(cid, id);
+    fprintf(out, "{\n");
     if (getHead(ty) == typeFunPtr)
-	fprintf(out,"    cuddles->putFunPtr((HsFunPtr)&%s);\n", textToStr(cid));
+        fprintf(out, "    cuddles->putFunPtr((HsFunPtr)&%s);\n", textToStr(cid));
     else
-	fprintf(out,"    cuddles->putPtr(&%s);\n", textToStr(cid));
-    fprintf(out,"}\n");
+        fprintf(out, "    cuddles->putPtr(&%s);\n", textToStr(cid));
+    fprintf(out, "}\n");
 }
 
 /* ToDo: 

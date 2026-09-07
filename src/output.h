@@ -11,15 +11,12 @@
 #ifndef __OUTPUT_H__
 #define __OUTPUT_H__
 
-extern Void printExp     (FILE *,Cell);
-extern Void printType    (FILE *,Cell);
-extern Void printContext (FILE *,List);
-extern Void printPred    (FILE *,Cell);
-extern Void printKind	 (FILE *,Kind);
-extern Void printKinds	 (FILE *,Kinds);
-extern Void printFD	 (FILE *,Pair);
-
-
-
+extern Void printExp(FILE *, Cell);
+extern Void printType(FILE *, Cell);
+extern Void printContext(FILE *, List);
+extern Void printPred(FILE *, Cell);
+extern Void printKind(FILE *, Kind);
+extern Void printKinds(FILE *, Kinds);
+extern Void printFD(FILE *, Pair);
 
 #endif /* __OUTPUT_H__ */

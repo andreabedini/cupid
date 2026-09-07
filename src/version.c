@@ -29,14 +29,14 @@
 
 /* CUDDLES_VERSION comes from config.h, where the build system sets it */
 #ifndef CUDDLES_VERSION
-#define CUDDLES_VERSION "<snapshot>"
+# define CUDDLES_VERSION "<snapshot>"
 #endif
 #define VERSION_STRING CUDDLES_VERSION
 
 String versionString = VERSION_STRING;
 
 #if USE_REGISTRY
-#define CUDDLESROOT ("SOFTWARE\\Haskell\\Cuddles\\" VERSION_STRING "\\")
+# define CUDDLESROOT ("SOFTWARE\\Haskell\\Cuddles\\" VERSION_STRING "\\")
 
 String cuddlesRegRoot = CUDDLESROOT;
 #endif
