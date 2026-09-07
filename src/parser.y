@@ -1,8 +1,10 @@
 /* --------------------------------------------------------------------------
- * Cuddles parser (included as part of input.c)
+ * Cuddles parser.  The lexer is in input.c; the two meet through the token
+ * numbers and yylval in the generated parser.h, and through yylex.
  *
- * Expect 16 shift/reduce conflicts when passing this grammar through yacc,
- * but don't worry; they should all be resolved in an appropriate manner.
+ * Regenerate parser.c and parser.h with:  bison -o parser.c parser.y
+ * (in this directory, GNU Bison 3.8).  Expect 6 shift/reduce conflicts;
+ * they are all resolved in an appropriate manner.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
@@ -14,8 +16,21 @@
  * $Date: 2006/08/30 18:57:13 $
  * ------------------------------------------------------------------------*/
 
+%code requires {
+#define YYSTYPE			 Cell
+}
+
 %{
-#define lint
+#include "prelude.h"
+#include "storage.h"
+#include "connect.h"
+#include "errors.h"
+#include "input.h"
+#include "module.h"
+#include "script.h"
+#include "goal.h"
+#include "machdep.h"	/* needPrims */
+
 #define defTycon(n,l,lhs,rhs,w)	 tyconDefn(intOf(l),lhs,rhs,w); sp-=n
 #define sigdecl(l,vs,t)		 ap(SIGDECL,triple(l,vs,t))
 #define fixdecl(l,ops,a,p)	 ap(FIXDECL,\
@@ -27,14 +42,6 @@
 #define qualify(ps,t)		 (nonNull(ps) ? ap(QUAL,pair(ps,t)) : t)
 #define exportSelf()		 singleton(ap(MODULEENT,mkCon(module(currentModule).text)))
 #define yyerror(s)		 /* errors handled elsewhere */
-#define YYSTYPE			 Cell
-
-#ifdef YYBISON
-# if !defined(__GNUC__) || __GNUC__ <= 1
-static void __yy_memcpy (char*,char*, unsigned int);
-# endif
-#endif
-
 
 static Cell   local gcShadow	 (Int,Cell);
 static Void   local syntaxError	 (String);
@@ -77,6 +84,7 @@ static Cell   local checkConstr	 (Cell);
 
 %}
 
+%header "parser.h"
 %token EXPR       CTXT       SCRIPT
 %token CASEXP     OF         DATA       TYPE       IF
 %token THEN       ELSE       WHERE      LET        IN

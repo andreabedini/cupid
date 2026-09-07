@@ -14,6 +14,8 @@
 #include "prelude.h"
 #include "storage.h"
 #include "connect.h"
+#include "input.h"
+#include "parser.h"	/* tokens, yylval and yyparse, from parser.y */
 #include "command.h"
 #include "errors.h"
 #include "module.h"
@@ -69,11 +71,6 @@ static Int  local nextLine        (Void);
 static Void local skip            (Void);
 static Void local thisLineIs      (Int);
 static Void local newlineSkip     (Void);
-static Void local closeAnyInput   (Void);
-
-       Int  yyparse         (Void); /* can't stop yacc making this   */
-					  /* public, but don't advertise   */
-					  /* it in a header file.          */
 
 static Void local endToken        (Void);
 static Text local readOperator    (Void);
@@ -94,12 +91,8 @@ static Cell local readHexChar     (Void);
 static Int  local readHexDigit    (Char);
 static Cell local readDecChar     (Void);
 
-static Void local goOffside       (Int);
-static Void local unOffside       (Void);
-static Bool local canUnOffside    (Void);
 
 static Void local skipWhitespace  (Void);
-static Int  local yylex           (Void);
 static Int  local repeatLast      (Void);
 
 static Void local parseInput      (Int);
@@ -140,18 +133,18 @@ Text   textPrelude;                     /* Prelude / Cuddles.Prelude          */
 Text   textUserPrelude;                 /* Prelude                         */
 Text   textPlus;			/* (+)				   */
 
-static Cell conMain;                    /* Main                            */
+Cell conMain;                    /* Main                            */
 static Cell varMain;                    /* main                            */
 
-static Cell varMinus;                   /* (-)                             */
-static Cell varPlus;			/* (+)				   */
-static Cell varBang;                    /* (!)                             */
-static Cell varDot;			/* (.)				   */
-static Cell varHiding;                  /* hiding                          */
-static Cell varQualified;               /* qualified                       */
-static Cell varAsMod;                   /* as                              */
+Cell varMinus;                   /* (-)                             */
+Cell varPlus;			/* (+)				   */
+Cell varBang;                    /* (!)                             */
+Cell varDot;			/* (.)				   */
+Cell varHiding;                  /* hiding                          */
+Cell varQualified;               /* qualified                       */
+Cell varAsMod;                   /* as                              */
 
-static List imps;                       /* List of imports to be chased    */
+List imps;                       /* List of imports to be chased    */
 
 
 #define FOPEN_MODE                "rb"
@@ -177,7 +170,10 @@ static List imps;                       /* List of imports to be chased    */
 static Int    reading   = NOTHING;
 
 static Target readSoFar;
-static Int    row, column, startColumn;
+Int           row;                     /* current line, also used by the  */
+                                       /* parser to report errors         */
+Int           column, startColumn;     /* and the layout state the grammar */
+                                       /* rules consult                   */
 static int    c0, c1;
 static FILE   *inputStream = 0;
 static Bool   thisLiterate;
@@ -572,7 +568,7 @@ static Void local newlineSkip() {      /* skip `\n' (supports lit scripts) */
     skip();
 }
 
-static Void local closeAnyInput() {    /* Close input stream, if open,     */
+Void closeAnyInput() {    /* Close input stream, if open,     */
     switch (reading) {                 /* or skip to end of console line   */
 	case SCRIPTFILE : if (inputStream) {
 			      if (preprocessor) {
@@ -589,12 +585,6 @@ static Void local closeAnyInput() {    /* Close input stream, if open,     */
     }
     reading=NOTHING;
 }
-
-/* --------------------------------------------------------------------------
- * Parser: Uses table driven parser generated from parser.y using yacc
- * ------------------------------------------------------------------------*/
-
-#include "parser.c"
 
 /* --------------------------------------------------------------------------
  * Single token input routines:
@@ -1235,7 +1225,7 @@ static  Int        layout[MAXINDENT+1];/* indentation stack                */
 #define HARD       (-1)                /* indicates hard indentation       */
 static  Int        indentDepth = (-1); /* current indentation nesting      */
 
-static Void local goOffside(Int col)       /* insert offside marker            */
+Void goOffside(Int col)       /* insert offside marker            */
 {                             /* for specified column             */
     if (indentDepth>=MAXINDENT) {
 	ERRMSG(row) "Too many levels of program nesting"
@@ -1244,11 +1234,11 @@ static Void local goOffside(Int col)       /* insert offside marker            *
     layout[++indentDepth] = col;
 }
 
-static Void local unOffside() {        /* leave layout rule area           */
+Void unOffside() {        /* leave layout rule area           */
     indentDepth--;
 }
 
-static Bool local canUnOffside() {     /* Decide if unoffside permitted    */
+Bool canUnOffside() {     /* Decide if unoffside permitted    */
     return indentDepth>=0 && layout[indentDepth]!=HARD;
 }
 
@@ -1380,7 +1370,7 @@ static Void local skipWhitespaceTok() { /* Skip over whitespace/comments    */
 static Bool firstToken;                /* Set to TRUE for first token      */
 static Int  firstTokenIs;              /* ... with token value stored here */
 
-static Int local yylex() {             /* Read next input token ...        */
+Int yylex() {                          /* Read next input token ...        */
     static Bool insertOpen    = FALSE;
     static Bool insertClose   = FALSE;
     static Bool insertedToken = FALSE;
