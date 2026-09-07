@@ -29,7 +29,7 @@ import Prelude
 
 
 
-import Hugs.ST
+import Cuddles.ST
 import Data.Typeable
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       

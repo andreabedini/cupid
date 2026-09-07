@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * Implementation of primitives which provide access to internal Hugs
+ * Implementation of primitives which provide access to internal Cuddles
  * data structures and representations from within Haskell.
  *
  * Despite appearances, the only primitives which break referential
@@ -97,48 +97,48 @@ static struct primInfo internalPrims = {internalControl, internalPrimTable, 0};
 
 static Module moduleInternals;
 
-static Name nameHugsApply;            /* data CellKind = Apply Cell [Cell] */
-static Name nameHugsFun;              /*    	       | Fun   Name        */
-static Name nameHugsCon;              /*    	       | Con   Name        */
-static Name nameHugsTuple;            /*    	       | Tuple Int         */
-static Name nameHugsInt;              /*    	       | Int   Int         */
-static Name nameHugsInteger;          /*    	       | Integer Integer   */
-static Name nameHugsFloat;            /*    	       | Float Float       */
-static Name nameHugsDouble;           /*    	       | Double Double     */
-static Name nameHugsChar;             /*    	       | Char  Char        */
-static Name nameHugsPrim;             /*    	       | Prim  String      */
-static Name nameHugsError;            /*    	       | Error Cell        */
+static Name nameCuddlesApply;            /* data CellKind = Apply Cell [Cell] */
+static Name nameCuddlesFun;              /*    	       | Fun   Name        */
+static Name nameCuddlesCon;              /*    	       | Con   Name        */
+static Name nameCuddlesTuple;            /*    	       | Tuple Int         */
+static Name nameCuddlesInt;              /*    	       | Int   Int         */
+static Name nameCuddlesInteger;          /*    	       | Integer Integer   */
+static Name nameCuddlesFloat;            /*    	       | Float Float       */
+static Name nameCuddlesDouble;           /*    	       | Double Double     */
+static Name nameCuddlesChar;             /*    	       | Char  Char        */
+static Name nameCuddlesPrim;             /*    	       | Prim  String      */
+static Name nameCuddlesError;            /*    	       | Error Cell        */
 
 static Void linkInternals() {
-    String internLib = "Hugs.Internals";
+    String internLib = "Cuddles.Internals";
     moduleInternals = findModule(findText(internLib));
     if (nonNull(moduleInternals)) {
 	setCurrModule(moduleInternals);
-	nameHugsApply   = findName(findText("Apply"));
-	nameHugsFun     = findName(findText("Fun"));
-	nameHugsCon     = findName(findText("Con"));
-	nameHugsTuple   = findName(findText("Tuple"));
-	nameHugsInt     = findName(findText("Int"));
-	nameHugsInteger = findName(findText("Integer"));
-	nameHugsFloat   = findName(findText("Float"));
-	nameHugsDouble  = findName(findText("Double"));
-	nameHugsChar    = findName(findText("Char"));
-	nameHugsPrim    = findName(findText("Prim"));
-	nameHugsError   = findName(findText("Error"));
+	nameCuddlesApply   = findName(findText("Apply"));
+	nameCuddlesFun     = findName(findText("Fun"));
+	nameCuddlesCon     = findName(findText("Con"));
+	nameCuddlesTuple   = findName(findText("Tuple"));
+	nameCuddlesInt     = findName(findText("Int"));
+	nameCuddlesInteger = findName(findText("Integer"));
+	nameCuddlesFloat   = findName(findText("Float"));
+	nameCuddlesDouble  = findName(findText("Double"));
+	nameCuddlesChar    = findName(findText("Char"));
+	nameCuddlesPrim    = findName(findText("Prim"));
+	nameCuddlesError   = findName(findText("Error"));
      
-	if (isNull(nameHugsApply)   
-	    || isNull(nameHugsFun)     
-	    || isNull(nameHugsCon)     
-	    || isNull(nameHugsTuple)   
-	    || isNull(nameHugsInt)     
-	    || isNull(nameHugsInteger) 
-	    || isNull(nameHugsFloat)   
-	    || isNull(nameHugsDouble)   
-	    || isNull(nameHugsChar)    
-	    || isNull(nameHugsPrim)    
-	    || isNull(nameHugsError)
+	if (isNull(nameCuddlesApply)   
+	    || isNull(nameCuddlesFun)     
+	    || isNull(nameCuddlesCon)     
+	    || isNull(nameCuddlesTuple)   
+	    || isNull(nameCuddlesInt)     
+	    || isNull(nameCuddlesInteger) 
+	    || isNull(nameCuddlesFloat)   
+	    || isNull(nameCuddlesDouble)   
+	    || isNull(nameCuddlesChar)    
+	    || isNull(nameCuddlesPrim)    
+	    || isNull(nameCuddlesError)
 	    ) {
-		fatal("module HugsInternals doesn't define CellKind correctly");
+		fatal("module CuddlesInternals doesn't define CellKind correctly");
 	}
     }
 }
@@ -147,21 +147,21 @@ static Void linkInternals() {
  * Operations on Cells
  * ------------------------------------------------------------------------*/
 
-/* Cells have to be boxed (using the HUGSOBJECT tag) so that we can        */
+/* Cells have to be boxed (using the CUDDLESOBJECT tag) so that we can        */
 /* evaluate a Cell expression such as "fst (cell1, cell2)" without         */
 /* evaluating the thunk inside the Cell.                                   */
 
-#define isHugsObject(a)     (isPair(a) && fst(a)==HUGSOBJECT)
-#define checkHugsObject(x)  \
-  if (!isHugsObject(x)) internal("HugsObject expected")
+#define isCuddlesObject(a)     (isPair(a) && fst(a)==CUDDLESOBJECT)
+#define checkCuddlesObject(x)  \
+  if (!isCuddlesObject(x)) internal("CuddlesObject expected")
 
-#define HugsObjectArg(nm, offset)                  \
+#define CuddlesObjectArg(nm, offset)                  \
    eval(primArg(offset));                          \
-   checkHugsObject(whnfHead);                      \
+   checkCuddlesObject(whnfHead);                      \
    nm = snd(whnfHead);
 
 primFun(primGetCell) {                 /* Trivial coercion                 */
-    updapRoot(HUGSOBJECT,primArg(1));  /*  :: a -> Cell                    */
+    updapRoot(CUDDLESOBJECT,primArg(1));  /*  :: a -> Cell                    */
 }
 
 
@@ -172,9 +172,9 @@ primFun(primGetCell) {                 /* Trivial coercion                 */
 primFun(primCellPtrEq) {	       /* Unsafe pointer equality test     */
     Cell x = 0;
     Cell y = 0;
-    HugsObjectArg(x,1);
+    CuddlesObjectArg(x,1);
     push(x);
-    HugsObjectArg(y,2);
+    CuddlesObjectArg(y,2);
     x = pop();
 
     /* We chase indirection chains since that's easy and gives more
@@ -200,7 +200,7 @@ primFun(primCatchError2) {	       /* Error catching  primitive        */
     if (isNull(err)) {
 	updapRoot(nameRight, primArg(1));
     } else {
-	updapRoot(nameLeft, ap(HUGSOBJECT, err));
+	updapRoot(nameLeft, ap(CUDDLESOBJECT, err));
     }
 }
 
@@ -235,14 +235,14 @@ primFun(primClassifyCell) {          /* classifyCell                       */
     if (strict) {
 	Cell temp;
 	eval(IOArg(1)); /* object */
-	checkHugsObject(whnfHead);
+	checkCuddlesObject(whnfHead);
 	whnfHead = snd(whnfHead);
 	if (nonNull(temp = evalWithNoError(whnfHead))) {
-	    IOReturn(ap(nameHugsError,ap(HUGSOBJECT,temp)));
+	    IOReturn(ap(nameCuddlesError,ap(CUDDLESOBJECT,temp)));
 	}
     } else {
 	eval(IOArg(1)); /* object */
-	checkHugsObject(whnfHead);
+	checkCuddlesObject(whnfHead);
 	whnfHead = snd(whnfHead);
 	unwind(whnfHead);
     }
@@ -251,55 +251,55 @@ primFun(primClassifyCell) {          /* classifyCell                       */
 	Cell args = nameNil;
 	while (whnfArgs-- > 0) 
 	    args = ap(ap(nameCons,
-			 ap(HUGSOBJECT, pushed(whnfArgs))),
+			 ap(CUDDLESOBJECT, pushed(whnfArgs))),
 			 args);
-	result = ap(ap(nameHugsApply, 
-		       ap(HUGSOBJECT,whnfHead)), 
+	result = ap(ap(nameCuddlesApply, 
+		       ap(CUDDLESOBJECT,whnfHead)), 
 		       args);
     } else {
 	switch (whatIs(whnfHead)) {
 
-	    case NAME     : result = ap((isCfun(whnfHead) ? nameHugsCon 
-							  : nameHugsFun), 
+	    case NAME     : result = ap((isCfun(whnfHead) ? nameCuddlesCon 
+							  : nameCuddlesFun), 
 					mkInt(whnfHead));
 			    break;
 
-	    case TUPLE    : result = ap(nameHugsTuple,mkInt(tupleOf(whnfHead)));
+	    case TUPLE    : result = ap(nameCuddlesTuple,mkInt(tupleOf(whnfHead)));
 			    break;
 
 	    case ZERONUM  : 
 	    case POSNUM   : 
 	    case NEGNUM   : 
-			    result = ap(nameHugsInteger, whnfHead);
+			    result = ap(nameCuddlesInteger, whnfHead);
 			    break;
 
-	    case INTCELL  : result = ap(nameHugsInt, whnfHead);
+	    case INTCELL  : result = ap(nameCuddlesInt, whnfHead);
 			    break;
 
-	    case CHARCELL : result = ap(nameHugsChar, whnfHead);
+	    case CHARCELL : result = ap(nameCuddlesChar, whnfHead);
 			    break;
 
-	    case FLOATCELL: result = ap(nameHugsFloat, whnfHead);
+	    case FLOATCELL: result = ap(nameCuddlesFloat, whnfHead);
 			    break;
 
-	    case DOUBLECELL: result = ap(nameHugsDouble, whnfHead);
+	    case DOUBLECELL: result = ap(nameCuddlesDouble, whnfHead);
 			    break;
 
-	    case HANDCELL : result = ap(nameHugsPrim, mkStr(findText("{handle}")));
+	    case HANDCELL : result = ap(nameCuddlesPrim, mkStr(findText("{handle}")));
 			    break;
 
-	    case MUTVAR   : result = ap(nameHugsPrim, mkStr(findText("{ref}")));
+	    case MUTVAR   : result = ap(nameCuddlesPrim, mkStr(findText("{ref}")));
 			    break;
 
-	    case ARRAY    : result = ap(nameHugsPrim, mkStr(findText("{primitive array}")));
+	    case ARRAY    : result = ap(nameCuddlesPrim, mkStr(findText("{primitive array}")));
 			    break;
 
-	    case HUGSOBJECT : 
+	    case CUDDLESOBJECT : 
 			    /* ToDo: fix so that debugger can examine itself */
-			    result = ap(nameHugsPrim, mkStr(findText("{Cell ...}")));
+			    result = ap(nameCuddlesPrim, mkStr(findText("{Cell ...}")));
 			    break;
 
-	    case INSTANCE : result = ap(nameHugsPrim, mkStr(findText("{instance}")));
+	    case INSTANCE : result = ap(nameCuddlesPrim, mkStr(findText("{instance}")));
 			    break;
 	    default       : internal("Error in graph2");
 			    break;
@@ -393,7 +393,7 @@ primFun(primDoubleAt) {               /* Obtain float at address           */
 primFun(primCellAt) {                 /* Obtain cell at address            */
   Addr m;                             /*  :: Addr -> Cell                  */
   IntArg(m,1);
-  updapRoot(HUGSOBJECT,CellAt(m));
+  updapRoot(CUDDLESOBJECT,CellAt(m));
 }
 
 primFun(primNameAt) {                 /* Obtain Name at address            */

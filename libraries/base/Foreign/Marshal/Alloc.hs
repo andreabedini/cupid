@@ -51,9 +51,9 @@ import Control.Exception	( bracket )
 
 
 
-import Hugs.Prelude		( IOException(IOError),
+import Cuddles.Prelude		( IOException(IOError),
 				  IOErrorType(ResourceExhausted) )
-import Hugs.ForeignPtr		( FinalizerPtr )
+import Cuddles.ForeignPtr		( FinalizerPtr )
 
 
 

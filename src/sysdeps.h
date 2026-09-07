@@ -17,11 +17,11 @@
 #if !defined(_WIN32) && !defined(__APPLE__) && !defined(__linux__) && \
     !defined(__FreeBSD__) && !defined(__DragonFly__) && \
     !defined(__NetBSD__) && !defined(__OpenBSD__)
-# error "Hugs supports Linux, macOS, Windows and the BSDs only"
+# error "Cuddles supports Linux, macOS, Windows and the BSDs only"
 #endif
 #if !defined(__x86_64__) && !defined(_M_X64) && \
     !defined(__aarch64__) && !defined(_M_ARM64)
-# error "Hugs supports x86-64 and ARM64 only"
+# error "Cuddles supports x86-64 and ARM64 only"
 #endif
 
 /* --------------------------------------------------------------------------

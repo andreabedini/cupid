@@ -11,7 +11,7 @@
 module Eliza where
 
 import Interact
-import Char(toUpper)
+import Data.Char (toUpper)
 
 eliza = interact (writeStr hi $ session initial [])
  where hi = "\n\

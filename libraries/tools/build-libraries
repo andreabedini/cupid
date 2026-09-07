@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Assemble the Hugs libraries in the build directory.
+"""Assemble the Cuddles libraries in the build directory.
 
-usage: build-libraries SRCROOT OUT FFIHUGS MKSYSCONFIG PLATFORM_DIR STAMP
+usage: build-libraries SRCROOT OUT FFICUDDLES MKSYSCONFIG PLATFORM_DIR STAMP
 
-The library sources under libraries/ are plain Haskell that Hugs owns,
+The library sources under libraries/ are plain Haskell that Cuddles owns,
 so building them means copying them into OUT/packages,
 generating the two platform-dependent files with mksysconfig, and running
-ffihugs over the modules that contain foreign imports to build their C
-stubs.  OUT is what gets installed as hugsdir.
+fficuddles over the modules that contain foreign imports to build their C
+stubs.  OUT is what gets installed as cuddlesdir.
 """
 import os
 import re
@@ -15,13 +15,13 @@ import shutil
 import subprocess
 import sys
 
-PACKAGES = ["hugsbase", "base", "haskell98"]
+PACKAGES = ["cuddles", "base"]
 
-# Modules with foreign imports, in dependency order: ffihugs loads a
+# Modules with foreign imports, in dependency order: fficuddles loads a
 # module's imports, so a module's stub must exist before the modules that
 # import it are compiled.  Any others found are compiled afterwards.
 FFI_ORDER = [
-    "hugsbase/Hugs/Storable.hs",
+    "cuddles/Cuddles/Storable.hs",
     "base/Foreign/C/Error.hs",
     "base/Foreign/Marshal/Alloc.hs",
     "base/Foreign/Marshal/Utils.hs",
@@ -34,13 +34,13 @@ FFI_ORDER = [
 
 # Header every base module's stub includes, as its .cabal file used to say
 PACKAGE_INCLUDES = {"base": ["HsBase.h"]}
-PACKAGE_INCLUDE_DIRS = {"base": ["include"], "hugsbase": ["Hugs"]}
+PACKAGE_INCLUDE_DIRS = {"base": ["include"], "cuddles": ["Cuddles"]}
 
 
 def main(argv):
     if len(argv) != 6:
         raise SystemExit(__doc__)
-    srcroot, out, ffihugs, mksysconfig, platform_dir, stamp = argv
+    srcroot, out, fficuddles, mksysconfig, platform_dir, stamp = argv
     lib = os.path.join(srcroot, "libraries")
     pkgdir = os.path.join(out, "packages")
 
@@ -53,7 +53,7 @@ def main(argv):
     # Platform-dependent parts, from the compiler
     with open(os.path.join(pkgdir, "base", "include", "HsBaseConfig.h"), "w") as f:
         subprocess.run([mksysconfig, "--header"], stdout=f, check=True)
-    with open(os.path.join(pkgdir, "hugsbase", "Hugs", "SysConfig.hs"), "w") as f:
+    with open(os.path.join(pkgdir, "cuddles", "Cuddles", "SysConfig.hs"), "w") as f:
         subprocess.run([mksysconfig, "--haskell"], stdout=f, check=True)
 
     # FFI stubs
@@ -69,7 +69,7 @@ def main(argv):
     ordered = [m for m in FFI_ORDER if m in ffi_modules]
     ordered += sorted(m for m in ffi_modules if m not in FFI_ORDER)
 
-    env = dict(os.environ, HUGSDIR=out)
+    env = dict(os.environ, CUDDLESDIR=out)
     search_path = os.pathsep.join(os.path.join(pkgdir, p) for p in PACKAGES)
     for rel in ordered:
         package = rel.split("/")[0]
@@ -83,15 +83,13 @@ def main(argv):
         includes = PACKAGE_INCLUDES.get(package, [])
         for m in re.finditer(r"\{-#\s*INCLUDE\s+(.*?)\s*#-\}", text):
             includes += m.group(1).replace('"', "").split()
-        cmd = [ffihugs, "-P" + search_path]
+        cmd = [fficuddles, "-P" + search_path]
         cmd += ['-i"%s"' % inc for inc in includes]
         cmd.append(path)
         cmd += ["-I" + os.path.join(pdir, d) for d in PACKAGE_INCLUDE_DIRS.get(package, [])]
-        cmd += ["-I" + os.path.join(out, "include"),
-                "-I" + os.path.join(lib, "include"),
-                "-I" + platform_dir]
+        cmd += ["-I" + os.path.join(out, "include"), "-I" + platform_dir]
         cmd += cfiles
-        print("ffihugs", rel, flush=True)
+        print("fficuddles", rel, flush=True)
         subprocess.run(cmd, env=env, check=True)
 
     with open(stamp, "w"):

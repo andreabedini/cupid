@@ -34,7 +34,7 @@ import Prelude
 import Data.Typeable
 
 
-import Hugs.Stable
+import Cuddles.Stable
 
 
 

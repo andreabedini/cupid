@@ -90,7 +90,7 @@ term0 = Square (Square (Plus (Num 3) (Num 7)))
 nfs0  = normalForms term0
 rsq0  = redSequences term0
 
--- Using Hugs:
+-- Using Cuddles:
 --
 -- ? length nfs0
 -- 547

@@ -14,7 +14,7 @@
 #ifndef __PRELUDE_H__
 #define __PRELUDE_H__
 
-/* Hugs is compiled as standard C23.  Strict mode hides the POSIX and BSD
+/* Cuddles is compiled as standard C23.  Strict mode hides the POSIX and BSD
  * interfaces we use (fdopen, fileno, realpath, tm_gmtoff, ...) unless a
  * feature macro asks for them, and it must be defined before the first
  * system header. */
@@ -45,7 +45,7 @@ _Static_assert(sizeof(double) == SIZEOF_DOUBLE, "platform.h: SIZEOF_DOUBLE");
 _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 
 /*---------------------------------------------------------------------------
- * Most of the configuration code from earlier versions of Hugs has been moved
+ * Most of the configuration code from earlier versions of Cuddles has been moved
  * into config.h (which is usually automatically generated).  
  *
  * Most of the configuration code is "feature based".  That is, the 
@@ -99,7 +99,7 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  *   GC_WEAKPTRS    to include support for weak pointers.
  *   STABLE_NAMES   stable names a la Simon PJ
  *   REDIRECT_OUTPUT ability to redirect stdout/stderr to a buffer.
- *                  Only necessary for the Hugs server interface
+ *                  Only necessary for the Cuddles server interface
  *                  (which is used in the Netscape plugin and the standalone
  *                  evaluator). 
  *   WORD_OPS       to include operations on unsigned ints
@@ -143,7 +143,7 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 /*---------------------------------------------------------------------------
  * Macros used in declarations:
  *  local declarations
- *  HUGS_noreturn/HUGS_unused (prevent spurious warnings)
+ *  CUDDLES_noreturn/CUDDLES_unused (prevent spurious warnings)
  *  result type of main
  *  dynamic linking declarations
  *-------------------------------------------------------------------------*/
@@ -153,15 +153,15 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 
 #ifdef __GNUC__     /* Avoid spurious warnings                             */
 #if __GNUC__ > 2 || __GNUC__ == 2 && __GNUC_MINOR__ >= 7
-#define HUGS_noreturn  __attribute__ ((noreturn))
-#define HUGS_unused    __attribute__ ((unused))
+#define CUDDLES_noreturn  __attribute__ ((noreturn))
+#define CUDDLES_unused    __attribute__ ((unused))
 #else
-#define HUGS_noreturn  
-#define HUGS_unused
+#define CUDDLES_noreturn  
+#define CUDDLES_unused
 #endif
 #else
-#define HUGS_noreturn  
-#define HUGS_unused
+#define CUDDLES_noreturn  
+#define CUDDLES_unused
 #endif
 
 /*---------------------------------------------------------------------------
@@ -247,11 +247,11 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
     * so that the prompt can be redrawn instead of hanging.
     */
 #  define ctrlbrk(bh)	do { \
-			  struct sigaction hugs_sigbrk_sa; \
-			  hugs_sigbrk_sa.sa_handler = (bh); \
-			  sigemptyset(&hugs_sigbrk_sa.sa_mask); \
-			  hugs_sigbrk_sa.sa_flags = 0; \
-			  sigaction(SIGINT, &hugs_sigbrk_sa, NULL); \
+			  struct sigaction cuddles_sigbrk_sa; \
+			  cuddles_sigbrk_sa.sa_handler = (bh); \
+			  sigemptyset(&cuddles_sigbrk_sa.sa_mask); \
+			  cuddles_sigbrk_sa.sa_flags = 0; \
+			  sigaction(SIGINT, &cuddles_sigbrk_sa, NULL); \
 			} while (0)
 
 # endif
@@ -279,14 +279,14 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 
 #include <float.h>
 
-# define HUGS_FLT_RADIX    FLT_RADIX
-# define HUGS_FLT_MANT_DIG FLT_MANT_DIG
-# define HUGS_FLT_MIN_EXP  FLT_MIN_EXP
-# define HUGS_FLT_MAX_EXP  FLT_MAX_EXP
+# define CUDDLES_FLT_RADIX    FLT_RADIX
+# define CUDDLES_FLT_MANT_DIG FLT_MANT_DIG
+# define CUDDLES_FLT_MIN_EXP  FLT_MIN_EXP
+# define CUDDLES_FLT_MAX_EXP  FLT_MAX_EXP
 
-# define HUGS_DBL_MANT_DIG DBL_MANT_DIG
-# define HUGS_DBL_MIN_EXP  DBL_MIN_EXP
-# define HUGS_DBL_MAX_EXP  DBL_MAX_EXP
+# define CUDDLES_DBL_MANT_DIG DBL_MANT_DIG
+# define CUDDLES_DBL_MIN_EXP  DBL_MIN_EXP
+# define CUDDLES_DBL_MAX_EXP  DBL_MAX_EXP
 
 /*---------------------------------------------------------------------------
  * Memory allocation
@@ -431,8 +431,8 @@ typedef void*    Pointer;
 
 #ifndef STD_PRELUDE
 #define STD_PRELUDE	      "Prelude"
-#define STD_PRELUDE_HUGS      "Hugs.Prelude"
-#define STD_EMPTY_MODULE      "Hugs"
+#define STD_PRELUDE_CUDDLES      "Cuddles.Prelude"
+#define STD_EMPTY_MODULE      "Cuddles"
 #endif
 
 #define NUM_HANDLES	   40
@@ -459,13 +459,13 @@ typedef void*    Pointer;
 #define MAXIMUMHEAP	   0
 #define DEFAULTHEAP        1000000
 #define MAXPOSINT          0x7fffffff
-#define MAXHUGSWORD        0xffffffffU
+#define MAXCUDDLESWORD        0xffffffffU
 #define NUM_STABLEPTRS	   10000
 #define NUM_MALLOCPTRS	   10000
 #define NUM_DTUPLES	   5
 
 /* Some infinite computations generate an infinite depth of alternations
- * between eval() and run().  If they don't use the Hugs stack or heap,
+ * between eval() and run().  If they don't use the Cuddles stack or heap,
  * they will overrun the C stack, crashing the interpreter.  To protect
  * against this, we place a limit on the depth of recursion of eval().
  */

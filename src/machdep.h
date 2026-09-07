@@ -42,13 +42,13 @@ extern String readRegChildStrings (HKEY, String, String, String);
 #endif /* USE_REGISTRY */
 
 /* --------------------------------------------------------------------------
- * Search for script files on the HUGS path:
+ * Search for script files on the CUDDLES path:
  * ------------------------------------------------------------------------*/
 
 extern String RealPath  (String);
 extern String substPath (String,String);
 extern String uniqPath  (String);
-#ifndef HUGS_SERVER
+#ifndef CUDDLES_SERVER
 extern Bool startEdit   (Int,String);
 #endif
 

@@ -24,8 +24,8 @@ Name namePutStr;		        /* Prelude.putStr                  */
 
 static Name namePass;			/* auxiliary:: \f b a -> f a b     */
 static Name nameHreader;	        /* auxiliary function		   */
-static Cell hugsProgName;		/* value of getProgName            */
-static Cell hugsArgs;			/* value of getArgs                */
+static Cell cuddlesProgName;		/* value of getProgName            */
+static Cell cuddlesArgs;			/* value of getArgs                */
 
 static Void   local throwErrno     (String,Bool,Int,Cell *);
 static String local toIOErrorDescr (int,Bool);
@@ -60,14 +60,14 @@ static Void iomonadControl(Int what)
 		       pFun(nameHreader, "_hreader", "hreader");
 #undef pFun
 #define predef(nm,str) nm=newName(findText(str),NIL); name(nm).defn=PREDEFINED
-		       predef(nameIORun,    "hugsIORun");
+		       predef(nameIORun,    "cuddlesIORun");
 		       predef(nameIOBind,   "primbindIO");
 		       predef(namePutStr,   "putStr");
 #undef predef
 		       break;
 
-	case MARK    : mark(hugsProgName);
-		       mark(hugsArgs);
+	case MARK    : mark(cuddlesProgName);
+		       mark(cuddlesArgs);
 		       break;
     }
 }
@@ -668,36 +668,36 @@ primFun(primSystem) {                   /* primSystem :: String -> IO Int  */
     IOReturn(mkInt(WEXITSTATUS(r)));
 }
 
-Void setHugsArgs(Int argc, String argv[])
+Void setCuddlesArgs(Int argc, String argv[])
 {
     int i;
     Cell str;
 
-    hugsArgs = nameNil;
+    cuddlesArgs = nameNil;
     pushString(argv[0]);
-    hugsProgName = pop();
+    cuddlesProgName = pop();
     for (i=argc-1; i>0; i--) {
 	pushString(argv[i]);
 	str = pop();
-	hugsArgs = ap2(nameCons, str, hugsArgs);
+	cuddlesArgs = ap2(nameCons, str, cuddlesArgs);
     }
 }
 
 primFun(primGetProgName) {              /* primGetProgName :: IO String    */
-    IOReturn(hugsProgName);
+    IOReturn(cuddlesProgName);
 }
 
 primFun(primGetArgs) {                  /* primGetArgs :: IO [String]      */
-    IOReturn(hugsArgs);
+    IOReturn(cuddlesArgs);
 }
 
 primFun(primSetProgName) {              /* primSetProgName :: String -> IO () */
-    hugsProgName = IOArg(1);
+    cuddlesProgName = IOArg(1);
     IOReturn(nameUnit);
 }
 
 primFun(primSetArgs) {                  /* primSetArgs :: [String] -> IO () */
-    hugsArgs = IOArg(1);
+    cuddlesArgs = IOArg(1);
     IOReturn(nameUnit);
 }
 
@@ -1409,7 +1409,7 @@ primFun(primEqRef) {			/* Ref a -> Ref a -> Bool	   */
 #define SPArg(nm,offset)                          \
     eval(primArg(offset));                        \
     checkSP();                                    \
-    nm = (HugsStablePtr)whnfInt
+    nm = (CuddlesStablePtr)whnfInt
 
 /* nm should be a variable in which result is stored.
    If you use an expression, reevaluation might occur */
@@ -1418,7 +1418,7 @@ primFun(primEqRef) {			/* Ref a -> Ref a -> Bool	   */
 
 
 primFun(primMakeSP) {			/* a -> IO (StablePtr a)	   */
-    HugsStablePtr sp = mkStablePtr(IOArg(1));
+    CuddlesStablePtr sp = mkStablePtr(IOArg(1));
     if (sp == 0) {
         IOFail(mkIOError(NULL,
 			 nameIsFull,
@@ -1430,21 +1430,21 @@ primFun(primMakeSP) {			/* a -> IO (StablePtr a)	   */
 }
 
 primFun(primDerefSP) {			/* StablePtr a -> IO a   	   */
-    HugsStablePtr x;
+    CuddlesStablePtr x;
     SPArg(x,1+IOArity);
     
     IOReturn(derefStablePtr(x));
 }
 
 primFun(primFreeSP) {			/* StablePtr a -> IO ()   	   */
-    HugsStablePtr x;
+    CuddlesStablePtr x;
     SPArg(x,1+IOArity);
     freeStablePtr(x);
     IOReturn(nameUnit);
 }
 
 primFun(primCastSPToP) {		/* StablePtr a -> Ptr ()   	   */
-    HugsStablePtr x;
+    CuddlesStablePtr x;
     SPArg(x,1);
     PtrResult((Pointer)x);
 }

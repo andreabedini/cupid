@@ -27,16 +27,16 @@
 
 #include "prelude.h"
 
-/* HUGS_VERSION comes from config.h, where the build system sets it */
-#ifndef HUGS_VERSION
-#define HUGS_VERSION "<snapshot>"
+/* CUDDLES_VERSION comes from config.h, where the build system sets it */
+#ifndef CUDDLES_VERSION
+#define CUDDLES_VERSION "<snapshot>"
 #endif
-#define VERSION_STRING HUGS_VERSION
+#define VERSION_STRING CUDDLES_VERSION
 
 String versionString = VERSION_STRING;
 
 #if USE_REGISTRY
-#define HUGSROOT ("SOFTWARE\\Haskell\\Hugs\\" VERSION_STRING "\\")
+#define CUDDLESROOT ("SOFTWARE\\Haskell\\Cuddles\\" VERSION_STRING "\\")
 
-String hugsRegRoot = HUGSROOT;
+String cuddlesRegRoot = CUDDLESROOT;
 #endif

@@ -75,6 +75,6 @@ par :: a -> b -> b
 
 
 
--- For now, Hugs does not support par properly.
+-- For now, Cuddles does not support par properly.
 par a b = b
 

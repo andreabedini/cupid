@@ -34,7 +34,7 @@ module Foreign.StablePtr
 
 
 
-import Hugs.StablePtr
+import Cuddles.StablePtr
 
 
 

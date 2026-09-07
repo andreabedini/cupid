@@ -97,7 +97,6 @@ extern  Text         subText            (String,Int);
 #define FFI_CCONV_UNKNOWN  0
 #define FFI_CCONV_CCALL    8
 #define FFI_CCONV_STDCALL 16
-#define FFI_CCONV_DOTNET  32
 
 #define FFI_TYPE_UNIT      0
 #define FFI_TYPE_CHAR      1
@@ -342,7 +341,7 @@ extern void growDynTable       (DynTable*);
 
 #define ARRAY        55		  /* Array	snd :: (Bounds,[Values])   */
 #define MUTVAR	     56		  /* Mutvar	snd :: Cell		   */
-#define HUGSOBJECT   57		  /* HUGSOBJECT	snd :: Cell	           */
+#define CUDDLESOBJECT   57		  /* CUDDLESOBJECT	snd :: Cell	           */
 
 #define STABLENAME   58		  /* Stable Nm  snd :: Cell		   */
 
@@ -869,7 +868,7 @@ extern	StackPtr sp;
 #define clearStack() sp=(-1)
 #define stackEmpty() (sp==(-1))
 #define stack(p)     cellStack[p]
-#define chkStack(n)  if (sp>=NUM_STACK-(n)) hugsStackOverflow()
+#define chkStack(n)  if (sp>=NUM_STACK-(n)) cuddlesStackOverflow()
 #define push(c)      \
   do {               \
     chkStack(1);     \
@@ -883,7 +882,7 @@ extern	StackPtr sp;
 #define topfun(f)    top()=ap((f),top())
 #define toparg(x)    top()=ap(top(),(x))
 
-extern  Void hugsStackOverflow (Void);
+extern  Void cuddlesStackOverflow (Void);
 
 /* STACK_CHECK compares the address of a local variable against a limit
  * derived from CStackBase (machdep.c) and the process's stack rlimit, so

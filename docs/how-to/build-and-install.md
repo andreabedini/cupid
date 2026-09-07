@@ -1,4 +1,4 @@
-# Build and install Hugs
+# Build and install Cuddles
 
 Build the interpreter and its libraries from source with meson and
 install them under a prefix.
@@ -12,9 +12,9 @@ install them under a prefix.
 - optionally bison, only if you change `src/parser.y`
 - optionally hp2ps, to view heap profiles from a profiling build
 
-Hugs builds on x86-64 and ARM64 machines running a current Linux, macOS
+Cuddles builds on x86-64 and ARM64 machines running a current Linux, macOS
 or BSD.  Windows is supported by design but not yet verified; see
-[Build Hugs on Windows](build-on-windows.md).
+[Build Cuddles on Windows](build-on-windows.md).
 
 ## Steps
 
@@ -25,7 +25,7 @@ CC=gcc meson setup build --prefix=/usr/local
 ```
 
 meson takes the compiler from `CC`.  Name the real compiler, not a
-wrapper such as `sccache cc`: the same command is baked into `ffihugs`,
+wrapper such as `sccache cc`: the same command is baked into `fficuddles`,
 which runs it during the library build and again at run time to compile
 the C stubs of modules with foreign imports.  A wrapper that does not
 work as a plain command breaks the library step even though the C
@@ -50,8 +50,8 @@ later with `meson configure build`.  They are listed in
 ninja -C build
 ```
 
-This compiles `hugs`, `runhugs` and `ffihugs` into `build/src`, then
-assembles the Haskell libraries into `build/libraries/hugsdir`.  The
+This compiles `cuddles`, `runcuddles` and `fficuddles` into `build/src`, then
+assembles the Haskell libraries into `build/libraries/cuddlesdir`.  The
 source tree is not written to.  The whole thing takes about a minute.
 
 ### 3. Install
@@ -61,7 +61,7 @@ ninja -C build install
 ```
 
 With the default prefix this puts the binaries in `/usr/local/bin`, the
-libraries in `/usr/local/lib/hugs` (or `lib64/hugs` where the
+libraries in `/usr/local/lib/cuddles` (or `lib64/cuddles` where the
 distribution uses it) and the manual page in `/usr/local/share/man`.
 `DESTDIR` is honoured for staged installs:
 
@@ -69,36 +69,36 @@ distribution uses it) and the manual page in `/usr/local/share/man`.
 DESTDIR=/tmp/stage ninja -C build install
 ```
 
-An installed `hugs` finds its libraries without any environment
+An installed `cuddles` finds its libraries without any environment
 variable.
 
 ## Verify it worked
 
 ```sh
-/usr/local/bin/hugs
+/usr/local/bin/cuddles
 ```
 
 At the prompt:
 
 ```
-Hugs> [1..10]
+Cuddles> [1..10]
 [1,2,3,4,5,6,7,8,9,10]
-Hugs> :quit
+Cuddles> :quit
 ```
 
 Then run one of the installed demos:
 
 ```sh
-hugs /usr/local/lib/hugs/demos/Say.hs
+cuddles /usr/local/lib/cuddles/demos/Say.hs
 ```
 
 ```
-Say> putStr (say "Hugs")
+Say> putStr (say "Cuddles")
 ```
 
 ## Troubleshooting
 
-### `ffihugs` reports "Error while running compilation command"
+### `fficuddles` reports "Error while running compilation command"
 
 **Cause**: `CC` named a compiler wrapper that cannot be run as a plain
 command in the library build.
@@ -120,7 +120,7 @@ without otherwise.
 
 ## See also
 
-- [Run Hugs from the build tree](run-from-the-build-tree.md) if you do
+- [Run Cuddles from the build tree](run-from-the-build-tree.md) if you do
   not want to install
 - [Build options and install layout](../reference/build-options.md)
 - [Run the static analysis](run-clang-tidy.md)

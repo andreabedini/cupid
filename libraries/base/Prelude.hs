@@ -171,7 +171,7 @@ module Prelude (
 
 
 
-import Hugs.Prelude
+import Cuddles.Prelude
 
 
 

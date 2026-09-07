@@ -183,7 +183,7 @@ module Data.Bits (
 
 
 
-import Hugs.Bits
+import Cuddles.Bits
 
 
 infixl 8 `shift`, `rotate`, `shiftL`, `shiftR`, `rotateL`, `rotateR`

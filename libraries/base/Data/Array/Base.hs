@@ -45,11 +45,11 @@ import Foreign.StablePtr
 
 import Data.Bits
 import Foreign.Storable
-import qualified Hugs.Array as Arr
-import qualified Hugs.ST as ArrST
-import Hugs.Array ( unsafeIndex )
-import Hugs.ST ( STArray, ST(..), runST )
-import Hugs.ByteArray
+import qualified Cuddles.Array as Arr
+import qualified Cuddles.ST as ArrST
+import Cuddles.Array ( unsafeIndex )
+import Cuddles.ST ( STArray, ST(..), runST )
+import Cuddles.ByteArray
 
 
 import Data.Typeable

@@ -1,19 +1,18 @@
 # The libraries
 
-The Haskell modules that ship with Hugs.
+The Haskell modules that ship with Cuddles.
 
 ## Packages
 
-The libraries are plain Haskell that Hugs owns.  They live in three
+The libraries are plain Haskell that Cuddles owns.  They live in two
 directories under `libraries/` in the source tree and are installed as
 subdirectories of `packages/` in the library directory, where the
 default search path finds them.
 
 | Package | Contents |
 |---|---|
-| `hugsbase` | The `Prelude`, `Hugs.Prelude` (where most of it is defined) and the `Hugs.*` modules that bind the interpreter's primitives |
+| `cuddles` | The `Prelude`, `Cuddles.Prelude` (where most of it is defined) and the `Cuddles.*` modules that bind the interpreter's primitives |
 | `base` | The `base` library of 2006: `Control.*`, `Data.*`, `Foreign.*`, `System.*`, `Text.*` |
-| `haskell98` | The Haskell 98 library modules under their old flat names: `List`, `Char`, `IO`, `Random` and so on |
 
 ## Modules beyond Haskell 2010
 
@@ -27,10 +26,10 @@ enabled; see [Language extensions](extensions.md).
 ## Modules with foreign imports
 
 Nine modules call C through the FFI.  Their stubs are compiled by
-`ffihugs` when the libraries are built, and the objects are installed
+`fficuddles` when the libraries are built, and the objects are installed
 next to them:
 
-- `Hugs.Storable`
+- `Cuddles.Storable`
 - `Foreign.C.Error`, `Foreign.Marshal.Alloc`, `Foreign.Marshal.Utils`,
   `Foreign.Ptr`
 - `System.Posix.Internals`, `System.Posix.Signals`,
@@ -39,7 +38,7 @@ next to them:
 
 ## The generated module
 
-`Hugs.SysConfig` is not in the source tree.  It is generated at build
+`Cuddles.SysConfig` is not in the source tree.  It is generated at build
 time by `libraries/tools/mksysconfig.c` and holds the mapping from C
 types to Haskell types (`HsType_int`, `HsType_mode_t`, ...), the
 `errno` and signal constants (`const_E2BIG`, `const_SIGINT`, ...), and
@@ -47,9 +46,9 @@ types to Haskell types (`HsType_int`, `HsType_mode_t`, ...), the
 
 ## Module list
 
-### hugsbase
+### cuddles
 
-`Hugs`, `Prelude`, and under `Hugs.`: `Array`, `Base`, `Bits`,
+`Cuddles`, `Prelude`, and under `Cuddles.`: `Array`, `Base`, `Bits`,
 `ByteArray`, `Char`, `ConcBase`, `CVHAssert`, `Directory`, `Dynamic`,
 `Exception`, `ForeignPtr`, `GenericPrint`, `Int`, `Internals`, `IO`,
 `IOArray`, `IOExts`, `IORef`, `LazyST`, `Memo`, `Numeric`, `Prelude`,
@@ -87,14 +86,6 @@ types to Haskell types (`HsType_int`, `HsType_mode_t`, ...), the
 `Text.ParserCombinators.ReadP`, `Text.ParserCombinators.ReadPrec`,
 `Text.PrettyPrint` (and `.HughesPJ`), `Text.Printf`, `Text.Read` (and
 `.Lex`), `Text.Show` (and `.Functions`).
-
-### haskell98
-
-`Array`, `Bits`, `CError`, `CForeign`, `Char`, `Complex`, `CPUTime`,
-`CString`, `CTypes`, `Directory`, `ForeignPtr`, `Int`, `IO`, `Ix`,
-`List`, `Locale`, `MarshalAlloc`, `MarshalArray`, `MarshalError`,
-`MarshalUtils`, `Maybe`, `Monad`, `Numeric`, `Ptr`, `Random`, `Ratio`,
-`StablePtr`, `Storable`, `System`, `Time`, `Word`.
 
 ## Demos
 

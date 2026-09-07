@@ -1,5 +1,5 @@
 /*
- * String utilities needed throughout the Hugs codebase.
+ * String utilities needed throughout the Cuddles codebase.
  */ 
 #ifndef __STRUTIL_H__
 #define __STRUTIL_H__

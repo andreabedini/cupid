@@ -1133,7 +1133,7 @@ StackPtr sp;                        /* stack pointer                       */
 extern Int  rootsp;
 extern Cell evalRoots[];
 
-Void hugsStackOverflow() {	    /* Report stack overflow               */
+Void cuddlesStackOverflow() {	    /* Report stack overflow               */
     ERRMSG(0) "Control stack overflow" ETHEN
     if (rootsp>=0) {
 	Int i;
@@ -1161,7 +1161,7 @@ Void hugsStackOverflow() {	    /* Report stack overflow               */
 
 #else /* !GIMME_STACK_DUMPS */
 
-Void hugsStackOverflow() {          /* Report stack overflow               */
+Void cuddlesStackOverflow() {          /* Report stack overflow               */
     ERRMSG(0) "Control stack overflow"
     EEND;
 }
@@ -1419,7 +1419,7 @@ String fileOfModule(Module m)
 {
     Script s;
     if (m == modulePrelude) {
-	return findMPathname(STD_PRELUDE_HUGS);
+	return findMPathname(STD_PRELUDE_CUDDLES);
     }
     for(s=0; s<scriptHw; ++s) {
 	if ( scripts[s].moduleHw == m ) {
@@ -2039,7 +2039,7 @@ Void garbageCollect()     {             /* Run garbage collector ...       */
 Void profilerLog(String s)                     /* turn heap profiling on, saving log*/
 {                             /* in specified file                 */
     if ((profile=fopen(s,"w")) != NULL) {
-	fprintf(profile,"JOB \"Hugs Heap Profile\"\n");
+	fprintf(profile,"JOB \"Cuddles Heap Profile\"\n");
 	fprintf(profile,"DATE \"%s\"\n",timeString());
 	fprintf(profile,"SAMPLE_UNIT \"reductions\"\n");
 	fprintf(profile,"VALUE_UNIT \"cells\"\n");

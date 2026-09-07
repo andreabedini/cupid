@@ -331,7 +331,7 @@ static Void local printer(Name pr, Int d)		/* Main part: primPrint/primNPrint */
 			pr = nameNPrint;
 			break;
 
-	case HUGSOBJECT: 
+	case CUDDLESOBJECT: 
 			outStr("{Cell ...}");
 			pr = nameNPrint;
 			break;

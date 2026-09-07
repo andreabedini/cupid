@@ -4,21 +4,21 @@
  * A somewhat limited version for other systems is also included, believed
  * to be ANSI compatible, but not guaranteed ...
  *
- * It is included in the Hugs distribution for the purpose of benchmarking
- * the Hugs interpreter, comparing its performance across a variety of
+ * It is included in the Cuddles distribution for the purpose of benchmarking
+ * the Cuddles interpreter, comparing its performance across a variety of
  * different machines, and with other systems for similar languages.
  *
  * To make use of these functions, use the --enable-timer when configuring
- * Hugs or change the setting of "WANT_TIMER" in config.h and recompile
- * Hugs.
+ * Cuddles or change the setting of "WANT_TIMER" in config.h and recompile
+ * Cuddles.
  *
  * It would be somewhat foolish to try to use the timings produced in this
  * way for anything other than the purpose described above.  In particular,
  * using timings to compare the performance of different versions of an
  * algorithm is likely to give very misleading results.  The current
- * implementation of Hugs as an interpreter, without any significant
+ * implementation of Cuddles as an interpreter, without any significant
  * optimizations, means that there are much more significant overheads than
- * can be accounted for by small variations in Hugs code.
+ * can be accounted for by small variations in Cuddles code.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,

@@ -7,7 +7,7 @@
 #define __OPTS_H__
 
 /* --------------------------------------------------------------------------
- * Functions for processing and displaying Hugs options:
+ * Functions for processing and displaying Cuddles options:
  * ------------------------------------------------------------------------*/
 extern Bool   processOption       (String);
 extern Void   readOptions         (String,Bool);
@@ -48,10 +48,10 @@ extern Bool  printTypeUseDefaults;     /* TRUE => use 'default'ing when printing
 extern Int   cutoff;		       /* Constraint Cutoff depth	  */
 extern String prompt;                  /* Prompt string                   */
 extern String repeatStr;               /* Repeat last expr                */
-extern String hugsPath;                /* String for file search path     */
-extern String hugsSuffixes;            /* Source filename suffixes        */
+extern String cuddlesPath;                /* String for file search path     */
+extern String cuddlesSuffixes;            /* Source filename suffixes        */
 extern Int    hpSize;                  /* Desired heap size               */
-extern String hugsEdit;                /* String for editor command       */
+extern String cuddlesEdit;                /* String for editor command       */
 
 /* The rest are conditionally supported flags: */
 #if PROFILING

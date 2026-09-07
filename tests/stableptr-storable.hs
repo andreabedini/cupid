@@ -1,5 +1,5 @@
 -- The foreign import marshalling of a StablePtr argument/result (used by
--- e.g. Storable's peek/poke for StablePtr, via Hugs/Storable.hs's
+-- e.g. Storable's peek/poke for StablePtr, via Cuddles/Storable.hs's
 -- readStablePtrOffPtr/writeStablePtrOffPtr) popped the argument without
 -- evaluating it first, and pushed the C-side result as a raw Cell number
 -- instead of a boxed Int -- both at odds with how newStablePtr represents

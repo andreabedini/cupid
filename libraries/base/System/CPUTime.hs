@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -optc-D__HUGS__ #-}
+{-# OPTIONS_GHC -optc-D__CUDDLES__ #-}
 {-# LINE 1 "System/CPUTime.hsc" #-}
 -----------------------------------------------------------------------------
 {-# LINE 2 "System/CPUTime.hsc" #-}
@@ -27,7 +27,7 @@ import Data.Ratio
 
 
 {-# LINE 26 "System/CPUTime.hsc" #-}
-import Hugs.Time ( getCPUTime, clockTicks )
+import Cuddles.Time ( getCPUTime, clockTicks )
 
 {-# LINE 28 "System/CPUTime.hsc" #-}
 

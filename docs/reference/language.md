@@ -1,11 +1,11 @@
-# The language Hugs accepts
+# The language Cuddles accepts
 
-What Hugs implements of Haskell 2010, where it deviates, and what it
+What Cuddles implements of Haskell 2010, where it deviates, and what it
 adds.
 
 ## Summary
 
-Hugs accepts Haskell 2010: the Haskell 98 language with hierarchical
+Cuddles accepts Haskell 2010: the Haskell 98 language with hierarchical
 module names, the foreign function interface, pattern guards, empty
 data declarations, `then` and `else` at do-block indentation and
 `LINE` pragmas.  The n+k patterns that Haskell 2010 removed are not
@@ -38,7 +38,7 @@ characters from ISO 8859-1.
 
 ### Expressions
 
-**Fixities are resolved after parsing.**  Hugs does not use operator
+**Fixities are resolved after parsing.**  Cuddles does not use operator
 fixities during parsing, so it rejects legal but odd expressions such
 as
 
@@ -53,7 +53,7 @@ must be a function application, `case` or `do`.  `(a+b+)` and
 ### Declarations and bindings
 
 **Polymorphic recursion is slightly more permissive.**  In a group of
-mutually recursive bindings where one function has a signature, Hugs
+mutually recursive bindings where one function has a signature, Cuddles
 treats the others as depending only on that signature, and so can
 infer polymorphic types where the Report requires an explicit
 signature:
@@ -69,18 +69,18 @@ zag (Zero a) = a
 zag (Succ t) = snd (zig t)
 ```
 
-Haskell 2010 rejects this without a signature for `zag`; Hugs accepts
+Haskell 2010 rejects this without a signature for `zag`; Cuddles accepts
 it.
 
 **Class methods may constrain the class variable.**  Contrary to
-section 4.3.1 of the Report, Hugs allows
+section 4.3.1 of the Report, Cuddles allows
 
 ```haskell
 class Foo a where
     op :: Num a => a -> a -> a
 ```
 
-**The monomorphism restriction is applied per binding group.**  Hugs
+**The monomorphism restriction is applied per binding group.**  Cuddles
 rejects this example from section 4.5.5 of the Report:
 
 ```haskell
@@ -110,7 +110,7 @@ an imported module is aliased as `M`.
 **Mutually recursive modules are not supported.**
 
 **`(:)` is exported by the Prelude as if it were an identifier,** so
-Hugs wrongly rejects
+Cuddles wrongly rejects
 
 ```haskell
 module Foo where
@@ -132,7 +132,7 @@ the output can differ slightly.
 `Show` are defined for tuples of up to seven components; the Report
 requires every tuple size.
 
-**No file locking.**  Hugs does not enforce the single-writer,
+**No file locking.**  Cuddles does not enforce the single-writer,
 multiple-reader rule on files.  A program that reads and writes the
 same file at once may see inconsistent data instead of failing.
 
@@ -141,7 +141,7 @@ same file at once may see inconsistent data instead of failing.
 **Infinite computations can crash.**  An unbounded computation usually
 ends with `Garbage collection fails to reclaim sufficient space` or
 `Control stack overflow`, or runs for ever.  Depending on the sizes of
-the heap, the Hugs stack and the C stack, it can instead overflow the C
+the heap, the Cuddles stack and the C stack, it can instead overflow the C
 stack, which on Unix is a segmentation fault.
 
 **Top-level bindings leak.**  This runs in constant space at the
@@ -180,16 +180,16 @@ The FFI of Haskell 2010 is implemented with these limits:
   targets this tree builds for are among them, and that code has been
   removed, so it fails at run time everywhere.
   See [Foreign import wrappers](../explanation/foreign-import-wrappers.md).
-- `foreign export` declarations are accepted and `ffihugs` generates C
+- `foreign export` declarations are accepted and `fficuddles` generates C
   for them, but nothing in the tree exercises them and they should be
   considered untested.
 
 A module containing foreign declarations must be compiled with
-[ffihugs](ffihugs.md) before it can be loaded.
+[fficuddles](fficuddles.md) before it can be loaded.
 
 ## Hierarchical modules
 
-A module name may contain dots.  To find `A.B.C`, Hugs looks for
+A module name may contain dots.  To find `A.B.C`, Cuddles looks for
 `A/B/C.hs` or `A/B/C.lhs` in each directory of the search path.  See
 [Modules, files and the search path](../explanation/modules-and-the-search-path.md).
 

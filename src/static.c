@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * Static Analysis for Hugs
+ * Static Analysis for Cuddles
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
@@ -3587,18 +3587,18 @@ static Name local addNewPrim(Int l, Text vn, String s, Cell t)	/* make binding o
 }
 
 /* --------------------------------------------------------------------------
- * Foreign import declarations are Hugs' equivalent of GHC's ccall mechanism.
+ * Foreign import declarations are Cuddles' equivalent of GHC's ccall mechanism.
  * They are used to "import" C functions into a module.
- * Foreign export declarations allow Hugs functions to be called from C.
+ * Foreign export declarations allow Cuddles functions to be called from C.
  * Foreign export declarations provide the address of a C symbol.
  * ------------------------------------------------------------------------*/
 
-/* When using the FFI, you first run Hugs with generateFFI == TRUE
+/* When using the FFI, you first run Cuddles with generateFFI == TRUE
  * to generate C files for any modules which contain foreign import/export
  * declarations.  You then compile and partially link the C files and run
- * Hugs with generateFFI == FALSE to load the object files and lookup
+ * Cuddles with generateFFI == FALSE to load the object files and lookup
  * the appropriate helper functions in the object files.
- * Only when you run Hugs in the second mode can you actually execute code.
+ * Only when you run Cuddles in the second mode can you actually execute code.
  */
 Bool generateFFI = FALSE;
 
@@ -3678,8 +3678,8 @@ Void foreignExport(Cell l, Cell v, Cell callconv, Cell ext, Cell intName, Cell t
      * the signature of the definition and might even be overloaded.
      *
      * The only problem is that the text of the name has to be
-     * shared between the generated code and Hugs.  Since these
-     * are two separate invocations of Hugs, we cannot use an
+     * shared between the generated code and Cuddles.  Since these
+     * are two separate invocations of Cuddles, we cannot use an
      * invented Text so we generate the text by adding a prefix
      * to the start which cannot conflict with normal identifiers.
      */
@@ -3900,7 +3900,7 @@ static Void local checkForeignImport(Name p)   /* Check foreign import          
         if ((e = matchToken("[",ext))) {
             ext = skipToChar(e,']');
             if (*ext != ']' || ext == e) goto cantparse;
-            ERRMSG(line) "Hugs doesn't use library specifications."
+            ERRMSG(line) "Cuddles doesn't use library specifications."
             EEND;
         }
         if (*ext != '\0') {

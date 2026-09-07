@@ -82,9 +82,7 @@ Void internal(String msg)                      /* handle internal error         
     stopAnyPrinting();
     Printf("INTERNAL ERROR: %s\n",msg);
 
-    Printf("Please report this Hugs bug to ");
-    Printf("http://hackage.haskell.org/trac/hugs");
-    Printf("\n");
+    Printf("This is a bug in Cuddles; please report it.\n");
 
     FlushStdout();
     longjmp(catch_error,1);
@@ -136,16 +134,16 @@ static Bool disableOutput = FALSE;      /* redirect output to buffer?      */
 
 #define BufferSize 10000	      /* size of redirected output buffer  */
 
-typedef struct _HugsStream {
+typedef struct _CuddlesStream {
     char buffer[BufferSize];          /* buffer for redirected output      */
     Int  next;                        /* next space in buffer              */
-} HugsStream;
+} CuddlesStream;
 
-static Void   local vBufferedPrintf  (HugsStream*, const char*, va_list);
-static Void   local bufferedPutchar  (HugsStream*, int);
-static String local bufferClear      (HugsStream *stream);
+static Void   local vBufferedPrintf  (CuddlesStream*, const char*, va_list);
+static Void   local bufferedPutchar  (CuddlesStream*, int);
+static String local bufferClear      (CuddlesStream *stream);
 
-static Void local vBufferedPrintf(HugsStream* stream, const char* fmt, va_list ap)
+static Void local vBufferedPrintf(CuddlesStream* stream, const char* fmt, va_list ap)
 {
     Int spaceLeft = BufferSize - stream->next;
     char* p = &stream->buffer[stream->next];
@@ -156,7 +154,7 @@ static Void local vBufferedPrintf(HugsStream* stream, const char* fmt, va_list a
 	stream->next = 0;
 }
 
-static Void local bufferedPutchar(HugsStream*stream, int c)
+static Void local bufferedPutchar(CuddlesStream*stream, int c)
 {
     if (BufferSize - stream->next >= 2) {
 	stream->buffer[stream->next++] = c;
@@ -164,7 +162,7 @@ static Void local bufferedPutchar(HugsStream*stream, int c)
     }
 }
 
-static String local bufferClear(HugsStream*stream)
+static String local bufferClear(CuddlesStream*stream)
 {
     if (stream->next == 0) {
 	return "";
@@ -176,21 +174,21 @@ static String local bufferClear(HugsStream*stream)
 
 /* ----------------------------------------------------------------------- */
 
-static HugsStream outputStream;
+static CuddlesStream outputStream;
 /* ADR note:
  * We rely on standard C semantics to initialise outputStream.next to 0.
  */
 
-Void hugsEnableOutput(Bool f)
+Void cuddlesEnableOutput(Bool f)
 {
     disableOutput = !f;
 }
 
-String hugsClearOutputBuffer() {
+String cuddlesClearOutputBuffer() {
     return bufferClear(&outputStream);
 }
 
-Void hugsPrintf(const char *fmt, ...) {
+Void cuddlesPrintf(const char *fmt, ...) {
     va_list ap;                    /* pointer into argument list           */
     va_start(ap, fmt);             /* make ap point to first arg after fmt */
     if (!disableOutput) {
@@ -201,7 +199,7 @@ Void hugsPrintf(const char *fmt, ...) {
     va_end(ap);                    /* clean up                             */
 }
 
-Void hugsPutchar(int c)
+Void cuddlesPutchar(int c)
 {
     if (!disableOutput) {
 	putchar(c);
@@ -210,20 +208,20 @@ Void hugsPutchar(int c)
     }
 }
 
-Void hugsFlushStdout() {
+Void cuddlesFlushStdout() {
     if (!disableOutput) {
 	fflush(stdout);
     }
 }
 
-Void hugsFFlush(FILE* fp)
+Void cuddlesFFlush(FILE* fp)
 {
     if (!disableOutput) {
 	fflush(fp);
     }
 }
 
-Void hugsFPrintf(FILE *fp, const char* fmt, ...) {
+Void cuddlesFPrintf(FILE *fp, const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     if (!disableOutput) {
@@ -234,7 +232,7 @@ Void hugsFPrintf(FILE *fp, const char* fmt, ...) {
     va_end(ap);
 }
 
-Void hugsPutc(int c, FILE* fp)
+Void cuddlesPutc(int c, FILE* fp)
 {
     if (!disableOutput) {
 	fputc(c,fp);

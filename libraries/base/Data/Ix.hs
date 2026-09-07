@@ -67,7 +67,7 @@ import Prelude
 
 
 
-import Hugs.Prelude( Ix(..) )
+import Cuddles.Prelude( Ix(..) )
 
 
 

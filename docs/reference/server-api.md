@@ -1,22 +1,22 @@
 # The server API
 
 The C interface through which a host program drives the interpreter.
-`runhugs` and `ffihugs` are written against it.
+`runcuddles` and `fficuddles` are written against it.
 
 ## Synopsis
 
 ```c
-#include "HugsAPI.h"
+#include "CuddlesAPI.h"
 
-HugsServerAPI *initHugsServer(int argc, char *argv[]);
-void           shutdownHugsServer(HugsServerAPI *hugs);
+CuddlesServerAPI *initCuddlesServer(int argc, char *argv[]);
+void           shutdownCuddlesServer(CuddlesServerAPI *cuddles);
 ```
 
 ## Description
 
-`initHugsServer` starts the interpreter with the options in `argv`
+`initCuddlesServer` starts the interpreter with the options in `argv`
 (`argv[0]` is the program name; file names are not allowed), loads the
-`Prelude` and the `Hugs.Dynamic` module, and returns a table of
+`Prelude` and the `Cuddles.Dynamic` module, and returns a table of
 function pointers.  It returns `NULL` if initialisation fails.  Every
 other operation is a member of the table.
 
@@ -51,7 +51,7 @@ it.
 | `void setOptions(char *opts)` | Process an option string, as `:set` would |
 | `char *getOptions(void)` | The current options as a string |
 | `void garbageCollect(void)` | Force a collection |
-| `void setHugsArgs(int argc, char **argv)` | What `getProgName` and `getArgs` return; `argv[0]` is the program name |
+| `void setCuddlesArgs(int argc, char **argv)` | What `getProgName` and `getArgs` return; `argv[0]` is the program name |
 | `void loadProject(char *)` | Obsolete; does nothing useful |
 
 ### Stack
@@ -86,10 +86,10 @@ further loads and evaluations but not `reset`.  Using a handle after
 ## Building against it
 
 There is no installed library.  A host program is built inside the
-tree, linking `server.c` and the interpreter objects as `runhugs`
-does; see [Embed the interpreter in a C program](../how-to/embed-hugs.md).
+tree, linking `server.c` and the interpreter objects as `runcuddles`
+does; see [Embed the interpreter in a C program](../how-to/embed-cuddles.md).
 
 ## See also
 
-- `src/HugsAPI.h` for the declarations
-- `src/runhugs.c` for a complete host program
+- `src/CuddlesAPI.h` for the declarations
+- `src/runcuddles.c` for a complete host program

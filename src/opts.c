@@ -25,7 +25,7 @@ Bool   useDots      = FALSE;     /* TRUE => use dots in progress    */
 Bool   listScripts  = FALSE;     /* TRUE => list scripts after loading*/
 Bool   quiet        = TRUE;      /* TRUE => don't show progress     */
 Bool   printing     = FALSE;     /* TRUE => currently printing value*/
-String  hugsEdit   = 0;	         /* String for editor command       */
+String  cuddlesEdit   = 0;	         /* String for editor command       */
 String  prompt     = 0;          /* Prompt string                   */
 
 #if EXPLAIN_INSTANCE_RESOLUTION
@@ -91,7 +91,7 @@ struct options toggle[] = {     /* List of command line toggles    */
     Option(0, 0, 0)
 };
 
-Void setOptions(Void)  /* change command line options from Hugs command line */
+Void setOptions(Void)  /* change command line options from Cuddles command line */
 {
   String s;
   if ((s=readFilename())!=0) {
@@ -146,7 +146,7 @@ Void optionInfo(Void) {                 /* Print information about command */
     }
 
     Printf("\nOTHER OPTIONS: (leading + or - makes no difference)\n");
-    Printf(fmts,"hnum","Set heap size (cannot be changed within Hugs)");
+    Printf(fmts,"hnum","Set heap size (cannot be changed within Cuddles)");
     Printf(fmts,"pstr","Set prompt string to str");
     Printf(fmts,"rstr","Set repeat last expression string to str");
     Printf(fmts,"Pstr","Set search path for modules to str");
@@ -168,11 +168,11 @@ Void optionInfo(Void) {                 /* Print information about command */
     printString(repeatStr);
     Printf(" -c%d",cutoff);
     Printf("\nSearch path     : -P");
-    printString(hugsPath);
+    printString(cuddlesPath);
     Printf("\nSource suffixes : -S");
-    printString(hugsSuffixes);
+    printString(cuddlesSuffixes);
     Printf("\nEditor setting  : -E");
-    printString(hugsEdit);
+    printString(cuddlesEdit);
     Printf("\nPreprocessor    : -F");
     printString(preprocessor);
 #if PROFILING
@@ -273,9 +273,9 @@ String optionsToStr() {          /* convert options to string */
     PUTInt('h',hpSize);  PUTC(' ');
     PUTStr('p',prompt);
     PUTStr('r',repeatStr);
-    PUTStr('P',hugsPath);
-    PUTStr('S',hugsSuffixes);
-    PUTStr('E',hugsEdit);
+    PUTStr('P',cuddlesPath);
+    PUTStr('S',cuddlesSuffixes);
+    PUTStr('E',cuddlesEdit);
     PUTInt('c',cutoff);  PUTC(' ');
     PUTStr('F',preprocessor);
 #if PROFILING
@@ -370,18 +370,18 @@ Bool processOption(String s)    /* process string s for options,   */
                            String prelLoc;
  	                   String savedPath;
 			   
-			   savedPath = hugsPath;
+			   savedPath = cuddlesPath;
 			   if (*(s+1) == '\0') {
-			     hugsPath = uniqPath(strCopy(HUGSPATH));
+			     cuddlesPath = uniqPath(strCopy(CUDDLESPATH));
 			   } else {
-			     hugsPath  = substPath(s+1,hugsPath ? hugsPath : "");
+			     cuddlesPath  = substPath(s+1,cuddlesPath ? cuddlesPath : "");
 			   }
 			   prelLoc = findMPathname(STD_PRELUDE);
 			   /* prelLoc points to static storage, don't free. */
 			   if (!prelLoc) {
-			       Printf("ERROR: unable to locate Prelude along new path: \"%s\" - ignoring it.\n", hugsPath);
-			       if (hugsPath) free(hugsPath);
-			       hugsPath = savedPath;
+			       Printf("ERROR: unable to locate Prelude along new path: \"%s\" - ignoring it.\n", cuddlesPath);
+			       if (cuddlesPath) free(cuddlesPath);
+			       cuddlesPath = savedPath;
 			   } else {
 			       if (savedPath) free(savedPath);
 			   }
@@ -389,23 +389,23 @@ Bool processOption(String s)    /* process string s for options,   */
 		       }
 
 	    case 'S' : {
-			   String saveSuffixes = hugsSuffixes;
+			   String saveSuffixes = cuddlesSuffixes;
 			   if (*(s+1) == '\0')
-			       hugsSuffixes = strCopy(HUGSSUFFIXES);
+			       cuddlesSuffixes = strCopy(CUDDLESSUFFIXES);
 			   else
-			       hugsSuffixes = substPath(s+1,hugsSuffixes);
+			       cuddlesSuffixes = substPath(s+1,cuddlesSuffixes);
 			   if ( !findMPathname(STD_PRELUDE) ) {
-			       Printf("ERROR: unable to locate Prelude with new suffix list: \"%s\" - ignoring it.\n", hugsSuffixes);
-			       free(hugsSuffixes);
-			       hugsSuffixes = saveSuffixes;
+			       Printf("ERROR: unable to locate Prelude with new suffix list: \"%s\" - ignoring it.\n", cuddlesSuffixes);
+			       free(cuddlesSuffixes);
+			       cuddlesSuffixes = saveSuffixes;
 			   } else {
 			       free(saveSuffixes);
 			   }
 			   return TRUE;
 		       }
 
-	    case 'E' : if (hugsEdit) free(hugsEdit);
-		       hugsEdit = strCopy(s+1);
+	    case 'E' : if (cuddlesEdit) free(cuddlesEdit);
+		       cuddlesEdit = strCopy(s+1);
 		       return TRUE;
 
 	    case 'F' : if (preprocessor) free(preprocessor);
@@ -441,7 +441,7 @@ Bool processOption(String s)    /* process string s for options,   */
 			  state ? '+' : '-', *s);
 		       return TRUE;
 
-	    case 'L' : Printf("ERROR: +L is no longer supported for ffihugs - put the argument (without +L) *after* the module - ignoring it.\n");
+	    case 'L' : Printf("ERROR: +L is no longer supported for fficuddles - put the argument (without +L) *after* the module - ignoring it.\n");
 		       return TRUE;
 
 	    default  :
@@ -471,7 +471,7 @@ Void setHeapSize(String s)
 	else if (MAXIMUMHEAP && hpSize > MAXIMUMHEAP)
 	    hpSize = MAXIMUMHEAP;
 	if (heapBuilt() && hpSize != heapSize) {
-#define HEAP_RESIZE_MSG "Change to heap size will not take effect until you rerun Hugs"
+#define HEAP_RESIZE_MSG "Change to heap size will not take effect until you rerun Cuddles"
 #if USE_REGISTRY
 	    FPrintf(stderr,HEAP_RESIZE_MSG "\n");
 #else
@@ -563,7 +563,7 @@ Void processOptionVector(Int argc, String argv[])
 /*
  * Read option settings from sources other than the command-line:
  *
- *   - HUGSFLAGS environment variable
+ *   - CUDDLESFLAGS environment variable
  *   - Registry (machine-wide and user-specific portions.)
  *   - Preference files (MacOS<t>, where t < 10).
  *   - WinHugs GUI options.
@@ -572,15 +572,15 @@ Void processOptionVector(Int argc, String argv[])
 Void readOptionSettings() {
 
 #if USE_REGISTRY
-    readOptions(readRegString(HKEY_LOCAL_MACHINE,hugsRegRoot,"Options",""), TRUE);
+    readOptions(readRegString(HKEY_LOCAL_MACHINE,cuddlesRegRoot,"Options",""), TRUE);
     if (!fromEnv("IGNORE_USER_REGISTRY",NULL)) {
       /* If IGNORE_USER_REGISTRY exist as an env var, don't consult
        * the user portion of the Registry. Emergency workaround if it has
        * somehow become invalid.
        */
-      readOptions(readRegString(HKEY_CURRENT_USER, hugsRegRoot,"Options",""), TRUE);
+      readOptions(readRegString(HKEY_CURRENT_USER, cuddlesRegRoot,"Options",""), TRUE);
     }
 #endif /* USE_REGISTRY */
-    readOptions(fromEnv("HUGSFLAGS",""),FALSE);
+    readOptions(fromEnv("CUDDLESFLAGS",""),FALSE);
 }
 

@@ -65,7 +65,7 @@ import Data.Ix
 
 
 
-import Hugs.Array
+import Cuddles.Array
 
 
 

@@ -110,7 +110,7 @@ import Control.Exception as Exception
 
 
 
-import Hugs.ConcBase
+import Cuddles.ConcBase
 
 
 import Control.Concurrent.MVar

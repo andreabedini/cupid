@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * Definition of the Hugs server API
+ * Definition of the Cuddles server API
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
@@ -10,7 +10,7 @@
  * $Revision: 1.12 $
  * $Date: 2003/10/14 13:56:25 $
  * ------------------------------------------------------------------------*/
-#include "HugsAPI.h"
+#include "CuddlesAPI.h"
 
 /* These have non-local scope, as they're used when creating 
  * extended/delegated versions of the server API (cf. the server
@@ -26,5 +26,5 @@ extern char*  lastError;
 /* Get the API method table from the currently running interpreter.
  * => the interpreter / server is assumed to have already been initialized.
  */
-extern HugsServerAPI* getHugsAPI (Void);
+extern CuddlesServerAPI* getCuddlesAPI (Void);
 /* ------------------------------------------------------------------------*/

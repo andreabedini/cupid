@@ -136,7 +136,7 @@ Text   textStdcall;                     /* stdcall                         */
 #endif
 
 Text   textNum;                         /* Num                             */
-Text   textPrelude;                     /* Prelude / Hugs.Prelude          */
+Text   textPrelude;                     /* Prelude / Cuddles.Prelude          */
 Text   textUserPrelude;                 /* Prelude                         */
 Text   textPlus;			/* (+)				   */
 
@@ -488,7 +488,7 @@ static Void local skip() {              /* move forward one char in input  */
 		c1 = EOF;
 	    else {
 		c1 = nextConsoleChar();
-#if HAVE_WINDOWS_H && !HUGS_FOR_WINDOWS
+#if HAVE_WINDOWS_H && !CUDDLES_FOR_WINDOWS
 		Sleep(0);
 #endif
 		/* On Win32, hitting ctrl-C causes the next getchar to
@@ -1746,14 +1746,14 @@ Void input(Int what)
 		       textBang       = findText("!");
 		       textDot	      = findText(".");
 		       textImplies    = findText("=>");
-		       textPrelude    = findText(STD_PRELUDE_HUGS);
+		       textPrelude    = findText(STD_PRELUDE_CUDDLES);
 		       textUserPrelude= findText(STD_PRELUDE);
 		       textNum        = findText("Num");
 		       textModule     = findText("module");
 		       textImport     = findText("import");
 		       textHiding     = findText("hiding");
 		       textQualified  = findText("qualified");
-		       textNeedPrims  = findText("needPrims_hugs");
+		       textNeedPrims  = findText("needPrims_cuddles");
 		       textForeign    = findText("foreign");
 		       textExport     = findText("export");
 		       textCCall      = findText("ccall");

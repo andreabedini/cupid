@@ -1,4 +1,4 @@
--- This file contains a Hugs implementation of the programs described in:
+-- This file contains a Cuddles implementation of the programs described in:
 --
 -- Mark P. Jones, Computing with lattices: An application of type classes,
 -- Journal of Functional Programming, Volume 2, Number 4, Oct 1992.

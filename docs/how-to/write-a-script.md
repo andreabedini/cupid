@@ -1,11 +1,11 @@
-# Write a script that runs with runhugs
+# Write a script that runs with runcuddles
 
 Make a Haskell file executable so that it runs from the shell like any
 other script.
 
 ## Prerequisites
 
-- an installed `runhugs` (this guide assumes `/usr/local/bin/runhugs`)
+- an installed `runcuddles` (this guide assumes `/usr/local/bin/runcuddles`)
 - a file containing a `Main` module
 
 ## Steps
@@ -18,7 +18,7 @@ with `>` are code, so the `#!` line is a comment.  Create a file called
 `myecho`:
 
 ```
-#! /usr/local/bin/runhugs +l
+#! /usr/local/bin/runcuddles +l
 
 > module Main where
 > import System.Environment
@@ -28,7 +28,7 @@ with `>` are code, so the `#!` line is a comment.  Create a file called
 >   putStrLn (unwords args)
 ```
 
-The `+l` option tells `runhugs` that the file is a literate script
+The `+l` option tells `runcuddles` that the file is a literate script
 even though its name does not end in `.lhs`.
 
 ### 2. Make it executable
@@ -47,19 +47,19 @@ chmod 755 myecho
 Hello World
 ```
 
-The kernel runs `/usr/local/bin/runhugs +l ./myecho Hello World`;
-`runhugs` loads the file, runs `main`, and `getArgs` returns the words
+The kernel runs `/usr/local/bin/runcuddles +l ./myecho Hello World`;
+`runcuddles` loads the file, runs `main`, and `getArgs` returns the words
 after the file name.
 
 ## Passing more than one option
 
 The `#!` line passes everything after the program name as a single
-argument.  With `#! /usr/local/bin/runhugs +l -h4M` the first argument
+argument.  With `#! /usr/local/bin/runcuddles +l -h4M` the first argument
 would be the one string `+l -h4M`, which is not an option.  Use `-X` to
 have the string split into options:
 
 ```
-#! /usr/local/bin/runhugs -X+l -h4M
+#! /usr/local/bin/runcuddles -X+l -h4M
 ```
 
 Everything after `-X` is re-read as an option string, so both `+l` and
@@ -67,17 +67,17 @@ Everything after `-X` is re-read as an option string, so both `+l` and
 
 ## Troubleshooting
 
-### `runhugs: missing file argument`
+### `runcuddles: missing file argument`
 
 **Cause**: every argument on the command line began with `+` or `-`,
-so `runhugs` found no file name.
+so `runcuddles` found no file name.
 
 **Fix**: put the script's name after the options.  In a `#!` line this
-is done for you; from the shell write `runhugs +l myecho`.
+is done for you; from the shell write `runcuddles +l myecho`.
 
 ### The program runs but `getArgs` returns the wrong words
 
-**Cause**: options were placed after the file name, where `runhugs`
+**Cause**: options were placed after the file name, where `runcuddles`
 treats them as program arguments.
 
 **Fix**: options go before the file name; arguments for the program go
@@ -85,5 +85,5 @@ after it.
 
 ## See also
 
-- [runhugs](../reference/runhugs.md)
+- [runcuddles](../reference/runcuddles.md)
 - [Options](../reference/options.md) for `+l` and `-X`

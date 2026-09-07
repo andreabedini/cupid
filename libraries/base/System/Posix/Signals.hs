@@ -93,7 +93,7 @@ module System.Posix.Signals (
   -- siginterrupt
   ) where
 
-import Hugs.SysConfig
+import Cuddles.SysConfig
 import Prelude -- necessary to get dependencies right
 
 import Foreign

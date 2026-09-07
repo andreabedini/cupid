@@ -7,11 +7,11 @@
 -- could write a banner program -- something to print messages out
 -- in large letters.
 --
--- The original program was in Basic, but here is a version in Hugs.
+-- The original program was in Basic, but here is a version in Cuddles.
 -- The program itself is only two lines long and that is rather pleasing,
 -- but the raw data for the letters (and the function mapping characters
 -- to letters) take up rather more space.  I don't have that Basic version
--- anymore.  I wonder whether the complete Hugs code is that much shorter?
+-- anymore.  I wonder whether the complete Cuddles code is that much shorter?
 --
 -- One of the nice things about this program is that the main program is
 -- completely independent of the size of characters.  You could easily add
@@ -30,8 +30,8 @@
 ------------------------------------------------------------------------------
 
 module Say where
-import Char( ord, chr, isSpace, isUpper, isLower, isDigit )
-import List( transpose )
+import Data.Char ( ord, chr, isSpace, isUpper, isLower, isDigit )
+import Data.List ( transpose )
 
 sayit :: String -> IO ()
 sayit  = putStr . say

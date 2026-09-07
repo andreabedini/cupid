@@ -8,10 +8,11 @@
 
 module Calendar( calendar, cal, calFor, calProg ) where
 import Gofer
-import List(zip4)
-import IO(hPutStr,stderr)
-import System( getArgs, getProgName, exitWith, ExitCode(..) )
-import Char (digitToInt, isDigit)
+import Data.List (zip4)
+import System.IO (hPutStr, stderr)
+import System.Environment (getArgs, getProgName)
+import System.Exit (exitWith, ExitCode(..))
+import Data.Char (digitToInt, isDigit)
 
 -- Picture handling:
 
@@ -107,10 +108,10 @@ cal year = unlines (banner year `above` body year)
 
 -- For a standalone calendar program:
 --
--- To use this with "runhugs" on Unix:
+-- To use this with "runcuddles" on Unix:
 --
 --   cat >cal
---   #! /usr/local/bin/runhugs
+--   #! /usr/local/bin/runcuddles
 --   
 --   > module Main( main ) where
 --   > import Calendar

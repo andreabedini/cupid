@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """Run the regression tests under tests/.
 
-usage: run-tests HUGS RUNHUGS PACKAGES TESTDIR [NAME...]
+usage: run-tests CUDDLES RUNCUDDLES PACKAGES TESTDIR [NAME...]
 
 Every NAME.hs in TESTDIR is one test (all of them when no NAME is given).
 The files that go with it, all optional except NAME.stdout:
 
   NAME.stdout   the exact output expected (stdout and stderr together)
   NAME.stdin    if present, the test is a REPL session: NAME.hs is loaded
-                into `hugs +q`, NAME.stdin is fed to the prompt and the
+                into `cuddles +q`, NAME.stdin is fed to the prompt and the
                 banner is dropped from the output; otherwise NAME.hs is
-                run with runhugs
+                run with runcuddles
   NAME.args     extra command-line options, one shell word per line
   NAME.env      environment changes, one per line: VAR=VALUE sets,
                 -VAR unsets
@@ -37,7 +37,7 @@ def read(path, default=None):
         return default
 
 
-def run_one(hugs, runhugs, packages, testdir, name):
+def run_one(cuddles, runcuddles, packages, testdir, name):
     base = os.path.join(testdir, name)
     expected = read(base + ".stdout")
     if expected is None:
@@ -56,9 +56,9 @@ def run_one(hugs, runhugs, packages, testdir, name):
             env[var] = value
 
     if stdin is None:
-        cmd = [runhugs, "-P" + packages] + args + [name + ".hs"]
+        cmd = [runcuddles, "-P" + packages] + args + [name + ".hs"]
     else:
-        cmd = [hugs, "+q", "-P" + packages] + args + [name + ".hs"]
+        cmd = [cuddles, "+q", "-P" + packages] + args + [name + ".hs"]
 
     def limit_stack():
         if stack_kb:
@@ -93,12 +93,12 @@ def run_one(hugs, runhugs, packages, testdir, name):
 def main(argv):
     if len(argv) < 5:
         sys.exit(__doc__)
-    hugs, runhugs, packages, testdir = [os.path.abspath(a) for a in argv[1:5]]
+    cuddles, runcuddles, packages, testdir = [os.path.abspath(a) for a in argv[1:5]]
     names = argv[5:] or sorted(
         f[:-3] for f in os.listdir(testdir) if f.endswith(".hs"))
     failed = 0
     for name in names:
-        ok, detail = run_one(hugs, runhugs, packages, testdir, name)
+        ok, detail = run_one(cuddles, runcuddles, packages, testdir, name)
         print(("PASS " if ok else "FAIL ") + name)
         if not ok:
             failed += 1

@@ -19,7 +19,7 @@ module System.Mem (
 import Prelude
 
 
-import Hugs.IOExts
+import Cuddles.IOExts
 
 
 

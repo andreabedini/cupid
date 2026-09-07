@@ -13,8 +13,8 @@
 #ifndef __ERRORS_H__
 #define __ERRORS_H__
 
-extern Void internal	    (String) HUGS_noreturn;
-extern Void fatal	    (String) HUGS_noreturn;
+extern Void internal	    (String) CUDDLES_noreturn;
+extern Void fatal	    (String) CUDDLES_noreturn;
 extern Void stopAnyPrinting (Void);
 
 /*---------------------------------------------------------------------------
@@ -23,25 +23,25 @@ extern Void stopAnyPrinting (Void);
  * effect on output of Haskell programs (which should use hPutStr and friends).
  *-------------------------------------------------------------------------*/
 
-extern Void   hugsPrintf            (const char *, ...);
-extern Void   hugsPutchar           (int);
-extern Void   hugsFlushStdout       (Void);
-extern Void   hugsEnableOutput      (Bool);
-extern String hugsClearOutputBuffer (Void);
+extern Void   cuddlesPrintf            (const char *, ...);
+extern Void   cuddlesPutchar           (int);
+extern Void   cuddlesFlushStdout       (Void);
+extern Void   cuddlesEnableOutput      (Bool);
+extern String cuddlesClearOutputBuffer (Void);
 
-extern Void   hugsFFlush    	    (FILE*);
-extern Void   hugsFPrintf   	    (FILE*, const char*, ...);
-extern Void   hugsPutc      	    (int, FILE*);
+extern Void   cuddlesFFlush    	    (FILE*);
+extern Void   cuddlesFPrintf   	    (FILE*, const char*, ...);
+extern Void   cuddlesPutc      	    (int, FILE*);
 
-#define Printf         	     hugsPrintf
-#define Putchar        	     hugsPutchar
-#define FlushStdout    	     hugsFlushStdout
-#define EnableOutput   	     hugsEnableOutput
-#define ClearOutputBuffer    hugsClearOutputBuffer
+#define Printf         	     cuddlesPrintf
+#define Putchar        	     cuddlesPutchar
+#define FlushStdout    	     cuddlesFlushStdout
+#define EnableOutput   	     cuddlesEnableOutput
+#define ClearOutputBuffer    cuddlesClearOutputBuffer
 
-#define FFlush               hugsFFlush
-#define FPrintf              hugsFPrintf
-#define Putc                 hugsPutc
+#define FFlush               cuddlesFFlush
+#define FPrintf              cuddlesFPrintf
+#define Putc                 cuddlesPutc
 
 
 /*-------------------------------------------------------------------------*/
@@ -64,7 +64,7 @@ extern Void   hugsPutc      	    (int, FILE*);
 #define ERRFD(fd)	 Hilite(); printFD(errorStream,fd); Lolite()
 
 extern Void errHead      (Int);		   /* in main.c		   */
-extern Void errFail	 (Void) HUGS_noreturn;
+extern Void errFail	 (Void) CUDDLES_noreturn;
 extern Void errAbort	 (Void);
 
 extern sigProto(breakHandler);

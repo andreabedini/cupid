@@ -34,7 +34,7 @@ module Control.Concurrent.MVar
     ) where
 
 
-import Hugs.ConcBase ( MVar, newEmptyMVar, newMVar, takeMVar, putMVar,
+import Cuddles.ConcBase ( MVar, newEmptyMVar, newMVar, takeMVar, putMVar,
 		  tryTakeMVar, tryPutMVar, isEmptyMVar,
 		)
 

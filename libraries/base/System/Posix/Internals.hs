@@ -39,7 +39,7 @@ module System.Posix.Internals where
 
  
 
-import Hugs.SysConfig
+import Cuddles.SysConfig
 import Control.Monad
 import System.Posix.Types
 
@@ -51,7 +51,7 @@ import Data.Maybe
 
 import System.IO
 
-import Hugs.Prelude (IOException(..), IOErrorType(..))
+import Cuddles.Prelude (IOException(..), IOErrorType(..))
 
 {-# CFILES cbits/PrelIOUtils.c cbits/dirUtils.c cbits/consUtils.c #-}
 

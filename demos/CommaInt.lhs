@@ -39,7 +39,7 @@ Example: evaluation of commaint "1234567"
                V
            "1,234,567"
 
-In a Hugs session:
+In a Cuddles session:
 
     ? commaint "1234567"
     1,234,567

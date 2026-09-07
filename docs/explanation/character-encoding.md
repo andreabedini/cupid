@@ -1,12 +1,12 @@
 # Character encoding
 
 Haskell's `Char` is a Unicode code point.  Files, terminals and the
-operating system deal in bytes.  This page is about where Hugs
+operating system deal in bytes.  This page is about where Cuddles
 converts between the two and how the choice is made.
 
 ## Where conversion happens
 
-Hugs decodes bytes into characters when it reads program text and when
+Cuddles decodes bytes into characters when it reads program text and when
 a program reads from a handle in text mode, and encodes characters
 into bytes when a program writes to a text-mode handle, and at the
 boundary with the system: file names, environment variables, command
@@ -19,7 +19,7 @@ exception: the lexer accepts only Latin-1 characters in names.
 
 ## The `char-encoding` build option
 
-The encoding is chosen when Hugs is built, with `-Dchar-encoding=`:
+The encoding is chosen when Cuddles is built, with `-Dchar-encoding=`:
 
 | Value | Behaviour |
 |---|---|
@@ -38,10 +38,10 @@ an environment that genuinely uses another encoding.
 - With the default, a file in Latin-1 is read as malformed UTF-8.
   Convert it, or build with `locale` and set the locale accordingly.
 - Output to a terminal that is not in UTF-8 mode shows the raw bytes.
-- `LC_ALL`, `LC_CTYPE` and `LANG` have no effect on Hugs itself unless
+- `LC_ALL`, `LC_CTYPE` and `LANG` have no effect on Cuddles itself unless
   it was built with `locale`.
 
 ## See also
 
 - [Build options and install layout](../reference/build-options.md)
-- [The language Hugs accepts](../reference/language.md#lexical-structure)
+- [The language Cuddles accepts](../reference/language.md#lexical-structure)

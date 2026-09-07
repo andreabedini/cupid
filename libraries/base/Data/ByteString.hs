@@ -16,7 +16,7 @@
 -- Maintainer  : dons@cse.unsw.edu.au
 -- Stability   : experimental
 -- Portability : portable, requires ffi and cpp
--- Tested with : GHC 6.4.1 and Hugs March 2005
+-- Tested with : GHC 6.4.1 and Cuddles March 2005
 -- 
 
 --

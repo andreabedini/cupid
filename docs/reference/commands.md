@@ -1,23 +1,23 @@
 # Interpreter commands
 
-What the `hugs` prompt accepts.
+What the `cuddles` prompt accepts.
 
 ## Synopsis
 
 ```
-hugs [option ...] [file-or-module ...]
+cuddles [option ...] [file-or-module ...]
 ```
 
-Hugs reads its options (see [Options](options.md)), loads the `Prelude`
+Cuddles reads its options (see [Options](options.md)), loads the `Prelude`
 and any modules named on the command line, and shows a prompt.  The
 prompt names the current module; at the start this is the empty module
-`Hugs`, so the prompt is `Hugs>`.
+`Cuddles`, so the prompt is `Cuddles>`.
 
 At the prompt, a line is either a Haskell expression or a command.
 Commands begin with `:` and may be abbreviated to their first letter:
 `:l` for `:load`, `:t` for `:type`, and so on.
 
-Ctrl-C interrupts a load or an evaluation; Hugs prints
+Ctrl-C interrupts a load or an evaluation; Cuddles prints
 `{Interrupted!}` and returns to the prompt.  Ctrl-D at the prompt
 leaves the interpreter.
 
@@ -30,7 +30,7 @@ Evaluate a Haskell expression.  The expression must fit on one line.
 The value is converted to a string with `show` and printed:
 
 ```
-Hugs> 1+2
+Cuddles> 1+2
 3
 ```
 
@@ -38,7 +38,7 @@ If the expression has type `IO t`, the action is performed and its
 result discarded:
 
 ```
-Hugs> print (1+2) >> putStrLn "bye"
+Cuddles> print (1+2) >> putStrLn "bye"
 3
 bye
 ```
@@ -62,7 +62,7 @@ this rule is an error.
 Print the type of *expr* without evaluating it:
 
 ```
-Hugs> :type 1+2
+Cuddles> :type 1+2
 1 + 2 :: Num a => a
 ```
 
@@ -82,7 +82,7 @@ Main> withArgs ["a", "b"] main
 
 Set options; see [Options](options.md).  With no arguments, list the
 options and their current values.  Options set this way last until the
-interpreter exits; put them in `HUGSFLAGS` to make them permanent.
+interpreter exits; put them in `CUDDLESFLAGS` to make them permanent.
 
 ### `:quit`
 
@@ -90,7 +90,7 @@ Exit.
 
 ## Loading modules
 
-Hugs keeps one module per file.  A file may be named by its path or,
+Cuddles keeps one module per file.  A file may be named by its path or,
 if it is on the search path, by its module name.  See
 [Modules, files and the search path](../explanation/modules-and-the-search-path.md)
 for how names are resolved.
@@ -101,7 +101,7 @@ the prompt.
 
 ### `:load` [*file-or-module* ...]
 
-Forget every module except the empty module `Hugs`, the `Prelude` and
+Forget every module except the empty module `Cuddles`, the `Prelude` and
 what it uses, then load the named files or modules.  The last one
 loaded becomes the current module.
 
@@ -131,7 +131,7 @@ Make *module* the current module.  It must be loaded.
 Start the editor on *file*.  With no argument, edit the file last
 edited or last named in an error message, at the line of the error;
 failing that, the file of the last module loaded.  When the editor
-exits, Hugs reloads the modules.  The editor is chosen by the `-E` option or
+exits, Cuddles reloads the modules.  The editor is chosen by the `-E` option or
 the `EDITOR` environment variable; see
 [Make `:edit` open your editor](../how-to/configure-the-editor.md).
 
@@ -153,9 +153,9 @@ like a shell file pattern: `*` matches any string, `?` any character,
 character `c` itself.  With no pattern, list every name in scope.
 
 ```
-Hugs> :names ma*
-Hugs.Prelude.map Hugs.Prelude.mapM Hugs.Prelude.mapM_ Hugs.Prelude.max
-Hugs.Prelude.maxBound Hugs.Prelude.maximum Hugs.Prelude.maybe
+Cuddles> :names ma*
+Cuddles.Prelude.map Cuddles.Prelude.mapM Cuddles.Prelude.mapM_ Cuddles.Prelude.max
+Cuddles.Prelude.maxBound Cuddles.Prelude.maximum Cuddles.Prelude.maybe
 (7 names listed)
 ```
 
@@ -166,7 +166,7 @@ definition, constructors and instances.  Qualified names may refer to
 anything defined or imported in any loaded module.
 
 ```
-Hugs> :info Maybe
+Cuddles> :info Maybe
 -- type constructor
 data Maybe a
 
@@ -195,8 +195,8 @@ module.
 Print the version:
 
 ```
-Hugs> :version
--- Hugs Version September 2006
+Cuddles> :version
+-- Cuddles Version 0.1.0
 ```
 
 ## Other commands
@@ -218,9 +218,9 @@ Force a garbage collection and report how many cells were recovered.
 ### `:xplain` *context*
 
 Explain how the instances for *context* are resolved.  Only present
-when Hugs was built with `-Dexplain-instance-resolution=true`.
+when Cuddles was built with `-Dexplain-instance-resolution=true`.
 
 ## See also
 
 - [Options](options.md)
-- [Getting started with Hugs](../tutorials/getting-started.md)
+- [Getting started with Cuddles](../tutorials/getting-started.md)

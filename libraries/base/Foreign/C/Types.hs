@@ -53,7 +53,7 @@ module Foreign.C.Types
 	, CFile,        CFpos,     CJmpBuf
 	) where
 
-import Hugs.SysConfig
+import Cuddles.SysConfig
 import Foreign.Storable
 import Data.Bits	( Bits(..) )
 import Data.Int		( Int8,  Int16,  Int32,  Int64  )
@@ -62,7 +62,7 @@ import Data.Typeable
 
 import Control.Monad	( liftM )
 
-import Hugs.Ptr		( castPtr )
+import Cuddles.Ptr		( castPtr )
 
  
 

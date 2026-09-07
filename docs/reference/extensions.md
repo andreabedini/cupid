@@ -1,6 +1,6 @@
 # Language extensions
 
-The language features Hugs accepts beyond Haskell 2010.  They are
+The language features Cuddles accepts beyond Haskell 2010.  They are
 always enabled; there is no option to turn them off.  Most are needed by
 the shipped libraries (see [The libraries](libraries.md)) and
 correspond to GHC extensions, though GHC's versions are often more
@@ -11,7 +11,7 @@ general.
 ### Flexible contexts
 
 In Haskell 2010 a context constrains type variables, possibly applied
-to types.  In Hugs any type may be constrained, in signatures and in
+to types.  In Cuddles any type may be constrained, in signatures and in
 class and instance declarations:
 
 ```haskell
@@ -21,7 +21,7 @@ g :: (C [a], D (a -> b)) => [a] -> b
 ### Flexible instances
 
 In Haskell 2010 an instance head is a `data` or `newtype` constructor
-applied to distinct type variables.  In Hugs any type may be made an
+applied to distinct type variables.  In Cuddles any type may be made an
 instance, and a type synonym may stand for it:
 
 ```haskell
@@ -35,7 +35,7 @@ instance Swap (Pair a) where ...
 ```
 
 With flexible contexts as well, constraint solving is undecidable in
-general.  Hugs bounds the depth of constraints it will reduce, set by
+general.  Cuddles bounds the depth of constraints it will reduce, set by
 the `-c` option (default 40), and reports an error when the bound is
 reached.  Reaching it usually means the constraints would not have
 terminated.  GHC instead restricts the form of instances
@@ -51,7 +51,7 @@ instance C (Bool,a) where ...
 instance C (a,Char) where ...
 ```
 
-Hugs rejects this:
+Cuddles rejects this:
 
 ```
 ERROR "Test.hs":4 - Overlapping instances for class "C"
@@ -79,7 +79,7 @@ f :: C a => [a] -> String
 f xs = toString xs
 ```
 
-the choice cannot be made and Hugs rejects the definition.  With `+O`
+the choice cannot be made and Cuddles rejects the definition.  With `+O`
 it is accepted and the more general instance is chosen, which is wrong
 if `f` is later applied to a `[Char]`.
 
@@ -239,10 +239,10 @@ round.
 
 Differences from GHC's scoped type variables:
 
-- GHC's pattern-bound type variables may be instantiated; in Hugs they
+- GHC's pattern-bound type variables may be instantiated; in Cuddles they
   are rigid, so `g (xs :: [a]) = xs ++ "\n"` is rejected.
 - Variables bound in a class or instance head do not scope over the
-  method definitions in Hugs.
+  method definitions in Cuddles.
 - Result type signatures on the left of a definition are not accepted.
 
 ## Field puns
@@ -294,4 +294,4 @@ portably with a `newtype` or by not exporting a type's constructors.
 ## See also
 
 - [Options](options.md) for `+o`, `+O` and `-c`
-- [The language Hugs accepts](language.md)
+- [The language Cuddles accepts](language.md)

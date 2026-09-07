@@ -1,11 +1,11 @@
-project('hugs98', 'c',
-  version: '2006.09.20',
+project('cuddles', 'c',
+  version: '0.1.0',
   license: 'BSD-3-Clause',
   meson_version: '>= 1.1.0',
   default_options: ['c_std=c23', 'buildtype=debugoptimized', 'warning_level=1'])
 
 # The string the banner and :version print
-hugs_version_string = 'September 2006'
+cuddles_version_string = '0.1.0'
 
 cc = meson.get_compiler('c')
 host = host_machine.system()
@@ -23,7 +23,7 @@ host_os_names = {
   'openbsd': 'openbsd',
 }
 if host not in host_os_names
-  error('Hugs supports Linux, macOS, Windows and the BSDs only (host is @0@)'.format(host))
+  error('Cuddles supports Linux, macOS, Windows and the BSDs only (host is @0@)'.format(host))
 endif
 host_os = host_os_names[host]
 
@@ -35,17 +35,17 @@ prefix = get_option('prefix')
 bindir = prefix / get_option('bindir')
 libdir = prefix / get_option('libdir')
 datadir = prefix / get_option('datadir')
-hugsdir = get_option('hugsdir')
-if hugsdir == ''
-  hugsdir = libdir / 'hugs'
+cuddlesdir = get_option('cuddlesdir')
+if cuddlesdir == ''
+  cuddlesdir = libdir / 'cuddles'
 endif
 
 if is_windows
-  hugspath = '.;{Hugs}\\packages\\*'
-  hugssuffixes = '.hs;.lhs'
+  cuddlespath = '.;{Cuddles}\\packages\\*'
+  cuddlessuffixes = '.hs;.lhs'
 else
-  hugspath = '.:{Home}/lib/hugs/packages/*:/usr/local/lib/hugs/packages/*:{Hugs}/packages/*'
-  hugssuffixes = '.hs:.lhs'
+  cuddlespath = '.:{Home}/lib/cuddles/packages/*:/usr/local/lib/cuddles/packages/*:{Cuddles}/packages/*'
+  cuddlessuffixes = '.hs:.lhs'
 endif
 
 # ---------------------------------------------------------------------------
@@ -94,7 +94,7 @@ endif
 
 hp2ps = find_program('hp2ps', required: false)
 
-# The command ffihugs runs to turn generated C into a loadable library
+# The command fficuddles runs to turn generated C into a loadable library
 cc_cmd = ' '.join(cc.cmd_array())
 if host == 'darwin'
   dll_flags = '-bundle -undefined dynamic_lookup'
@@ -115,10 +115,10 @@ if not get_option('debug-code')
 endif
 
 conf = configuration_data()
-conf.set_quoted('HUGS_VERSION', hugs_version_string)
-conf.set_quoted('HUGSDIR', hugsdir)
-conf.set_quoted('HUGSPATH', hugspath)
-conf.set_quoted('HUGSSUFFIXES', hugssuffixes)
+conf.set_quoted('CUDDLES_VERSION', cuddles_version_string)
+conf.set_quoted('CUDDLESDIR', cuddlesdir)
+conf.set_quoted('CUDDLESPATH', cuddlespath)
+conf.set_quoted('CUDDLESSUFFIXES', cuddlessuffixes)
 conf.set_quoted('MKDLL_CMD', mkdll_cmd)
 conf.set('USE_PREPROCESSOR', 1)
 if use_readline
@@ -170,13 +170,13 @@ if get_option('libraries')
 endif
 subdir('docs')
 
-install_subdir('demos', install_dir: hugsdir)
-install_data('README.md', 'License', 'Credits', install_dir: hugsdir)
+install_subdir('demos', install_dir: cuddlesdir)
+install_data('README.md', 'License', 'Credits', install_dir: cuddlesdir)
 
 summary({
-  'hugsdir': hugsdir,
+  'cuddlesdir': cuddlesdir,
   'readline': use_readline,
   'character encoding': get_option('char-encoding'),
   'Haskell libraries': get_option('libraries'),
-  'ffihugs compile command': mkdll_cmd,
+  'fficuddles compile command': mkdll_cmd,
 }, section: 'Configuration')

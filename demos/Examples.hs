@@ -1,4 +1,4 @@
--- Some examples of functional programming for Hugs
+-- Some examples of functional programming for Cuddles
 module Examples where
 
 import Gofer

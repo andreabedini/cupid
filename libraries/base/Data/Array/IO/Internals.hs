@@ -28,7 +28,7 @@ import Data.Word
 import Data.Typeable
 
 
-import Hugs.IOArray
+import Cuddles.IOArray
 
 
 import Control.Monad.ST		( RealWorld, stToIO )

@@ -1,6 +1,6 @@
-# Getting started with Hugs
+# Getting started with Cuddles
 
-Learn to use Hugs by building it, evaluating expressions at its prompt,
+Learn to use Cuddles by building it, evaluating expressions at its prompt,
 loading a module of your own and running a program from the shell.
 
 **Time**: about 20 minutes, most of it the build.
@@ -11,10 +11,10 @@ Haskell text alongside this.
 
 By the end you will be able to:
 
-- build Hugs from source and run it without installing it
+- build Cuddles from source and run it without installing it
 - evaluate expressions and ask for their types at the prompt
 - write a module in a file, load it, and fix an error in it
-- run a program's `main` from the shell with `runhugs`
+- run a program's `main` from the shell with `runcuddles`
 
 ## Prerequisites
 
@@ -37,10 +37,10 @@ On macOS with Homebrew:
 brew install meson ninja
 ```
 
-Everything else in this tutorial is done from the top of the Hugs
+Everything else in this tutorial is done from the top of the Cuddles
 source tree.
 
-## Step 1: Build Hugs
+## Step 1: Build Cuddles
 
 Configure a build directory and build in it:
 
@@ -50,19 +50,19 @@ ninja -C build
 ```
 
 The build compiles three programs into `build/src` and then assembles
-the Haskell libraries into `build/libraries/hugsdir`.  The last lines
+the Haskell libraries into `build/libraries/cuddlesdir`.  The last lines
 of output look like this:
 
 ```
 Compiling FFI stubs for base/Data/ByteString/Base.hs
-[43/43] Generating libraries/hugs-libraries with a custom command
+[43/43] Generating libraries/cuddles-libraries with a custom command
 ```
 
 Now tell the shell where the programs and the libraries are:
 
 ```sh
 export PATH="$PWD/build/src:$PATH"
-export HUGSDIR="$PWD/build/libraries/hugsdir"
+export CUDDLESDIR="$PWD/build/libraries/cuddlesdir"
 ```
 
 These two settings last for the current shell session.  Every later
@@ -73,32 +73,29 @@ step assumes them.
 Start the interpreter:
 
 ```sh
-hugs
+cuddles
 ```
 
 You will see the banner and a prompt:
 
 ```
-__   __ __  __  ____   ___      _________________________________________
-||   || ||  || ||  || ||__      Hugs 98: Based on the Haskell 98 standard
-||___|| ||__|| ||__||  __||     Copyright (c) 1994-2005
-||---||         ___||           World Wide Web: http://haskell.org/hugs
-||   ||                         Bugs: http://hackage.haskell.org/trac/hugs
-||   || Version: September 2006 _________________________________________
+Cuddles 0.1.0, a Haskell interpreter written in C
+Derived from Hugs 98, Copyright (c) 1994-2005 Mark P Jones, Alastair Reid,
+the Yale Haskell Group and the OGI School of Science & Engineering at OHSU
 
 Type :? for help
-Hugs>
+Cuddles>
 ```
 
-Type an expression and press Enter.  Hugs evaluates it and prints the
+Type an expression and press Enter.  Cuddles evaluates it and prints the
 result:
 
 ```
-Hugs> 1 + 2
+Cuddles> 1 + 2
 3
-Hugs> map (*2) [1..5]
+Cuddles> map (*2) [1..5]
 [2,4,6,8,10]
-Hugs> words "the quick brown fox"
+Cuddles> words "the quick brown fox"
 ["the","quick","brown","fox"]
 ```
 
@@ -106,22 +103,22 @@ Lines that begin with a colon are commands to the interpreter rather
 than expressions.  Ask for the type of an expression with `:type`:
 
 ```
-Hugs> :type map (*2)
+Cuddles> :type map (*2)
 map (flip (*) 2) :: Num a => [a] -> [a]
 ```
 
 Expressions of type `IO` are run rather than shown:
 
 ```
-Hugs> putStrLn "hello"
+Cuddles> putStrLn "hello"
 hello
 ```
 
 Leave the interpreter with `:quit`.  You can also press Ctrl-D.
 
 ```
-Hugs> :quit
-[Leaving Hugs]
+Cuddles> :quit
+[Leaving Cuddles]
 ```
 
 ## Step 3: Write a module
@@ -141,24 +138,24 @@ variance xs = mean [ (x - m) ^ 2 | x <- xs ]
 ```
 
 The file is deliberately incomplete: `variance` uses a name `m` that is
-never defined.  You will see how Hugs reports that next.
+never defined.  You will see how Cuddles reports that next.
 
 ## Step 4: Load the module and fix the error
 
-Start Hugs with the file name on the command line:
+Start Cuddles with the file name on the command line:
 
 ```sh
-hugs Stats.hs
+cuddles Stats.hs
 ```
 
-After the banner, Hugs tries to load the file and stops at the error:
+After the banner, Cuddles tries to load the file and stops at the error:
 
 ```
 ERROR "Stats.hs":7 - Undefined variable "m"
-Hugs>
+Cuddles>
 ```
 
-The message names the file and the line.  Leave Hugs running, open
+The message names the file and the line.  Leave Cuddles running, open
 `Stats.hs` in your editor, and add a `where` clause to `variance` so that
 the function reads:
 
@@ -171,7 +168,7 @@ variance xs = mean [ (x - m) ^ 2 | x <- xs ]
 Save the file.  Back at the prompt, reload it:
 
 ```
-Hugs> :reload
+Cuddles> :reload
 Stats>
 ```
 
@@ -208,11 +205,11 @@ main = do
   putStrLn ("variance: " ++ show (variance xs))
 ```
 
-Leave the interpreter with `:quit` and run the program with `runhugs`,
+Leave the interpreter with `:quit` and run the program with `runcuddles`,
 giving it some numbers as arguments:
 
 ```sh
-runhugs Main.hs 1 2 3 4
+runcuddles Main.hs 1 2 3 4
 ```
 
 ```
@@ -220,14 +217,14 @@ mean:     2.5
 variance: 1.25
 ```
 
-`runhugs` loads `Main.hs`, finds `Stats.hs` in the same directory
+`runcuddles` loads `Main.hs`, finds `Stats.hs` in the same directory
 because `Main` imports it, runs `main`, and exits.  The words after
 the file name are what `getArgs` returns.
 
 You can run the same program from inside the interpreter with `:main`:
 
 ```sh
-hugs Main.hs
+cuddles Main.hs
 ```
 
 ```
@@ -238,19 +235,19 @@ variance: 25.0
 
 ## What you have done
 
-You built Hugs, evaluated expressions at its prompt, wrote a module,
-found and fixed an error in it with the help of Hugs's error message,
+You built Cuddles, evaluated expressions at its prompt, wrote a module,
+found and fixed an error in it with the help of Cuddles's error message,
 and ran a two-module program both from the shell and from the prompt.
 
 ## Next steps
 
-- [Write a script that runs with runhugs](../how-to/write-a-script.md)
+- [Write a script that runs with runcuddles](../how-to/write-a-script.md)
   shows how to make `Main.hs` an executable file.
 - [Make `:edit` open your editor](../how-to/configure-the-editor.md)
-  lets you jump to an error's line without leaving Hugs.
+  lets you jump to an error's line without leaving Cuddles.
 - [Interpreter commands](../reference/commands.md) lists everything the
   prompt understands.
 - [The libraries](../reference/libraries.md) lists the modules you can
   import.
-- [Build and install Hugs](../how-to/build-and-install.md) explains
+- [Build and install Cuddles](../how-to/build-and-install.md) explains
   how to install so that the two `export` lines are no longer needed.

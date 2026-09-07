@@ -21,7 +21,7 @@ module System.Info
        compilerVersion	    -- :: Version
    ) where
 
-import Hugs.SysConfig
+import Cuddles.SysConfig
 import Prelude
 import Data.Version
 
@@ -91,7 +91,7 @@ compilerVersionRaw :: Int
 
 os = hostOS
 arch = hostArch
-compilerName = "hugs"
+compilerName = "cuddles"
 compilerVersionRaw = 0  -- ToDo
 
 

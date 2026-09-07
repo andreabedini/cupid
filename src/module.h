@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * Haskell 98 module system implementation for Hugs.
+ * Haskell 98 module system implementation for Cuddles.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,

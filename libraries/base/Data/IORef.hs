@@ -30,7 +30,7 @@ module Data.IORef
 import Prelude	-- Explicit dependency helps 'make depend' do the right thing
 
 
-import Hugs.IORef
+import Cuddles.IORef
 
 
 
@@ -79,7 +79,7 @@ atomicModifyIORef :: IORef a -> (a -> (a,b)) -> IO b
 
 
 
-atomicModifyIORef = plainModifyIORef	-- Hugs has no preemption
+atomicModifyIORef = plainModifyIORef	-- Cuddles has no preemption
   where plainModifyIORef r f = do
 		a <- readIORef r
 		case f a of (a',b) -> writeIORef r a' >> return b

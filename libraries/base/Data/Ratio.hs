@@ -40,7 +40,7 @@ import Prelude
 
 
 
-import Hugs.Prelude(Ratio(..), (%), numerator, denominator)
+import Cuddles.Prelude(Ratio(..), (%), numerator, denominator)
 
 
 

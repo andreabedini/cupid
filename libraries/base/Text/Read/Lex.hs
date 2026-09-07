@@ -48,7 +48,7 @@ import Data.Char( chr, ord, isSpace, isAlpha, isAlphaNum )
 import Data.Ratio( Ratio, (%) )
 
 
-import Hugs.Prelude( Ratio(..) )
+import Cuddles.Prelude( Ratio(..) )
 
 import Data.Maybe
 import Control.Monad

@@ -28,9 +28,9 @@ core = files(
 )
 
 no_opt = cc.get_argument_syntax() == 'msvc' ? '/Od' : '-O0'
-libgc = static_library('hugs-gcsafe', gc_sensitive,
+libgc = static_library('cuddles-gcsafe', gc_sensitive,
   c_args: no_opt, include_directories: src_inc)
-libcore = static_library('hugs-core', core, include_directories: src_inc)
+libcore = static_library('cuddles-core', core, include_directories: src_inc)
 
 # The two groups reference each other, so link them as objects rather than
 # as archives to avoid link-order problems
@@ -44,17 +44,17 @@ if use_readline
   deps += readline_dep
 endif
 
-hugs = executable('hugs', files('hugs.c', 'edit.c'),
+cuddles = executable('cuddles', files('cuddles.c', 'edit.c'),
   objects: core_objs, include_directories: src_inc, dependencies: deps,
   install: true)
 
-runhugs = executable('runhugs', files('runhugs.c', 'server.c'),
+runcuddles = executable('runcuddles', files('runcuddles.c', 'server.c'),
   objects: core_objs, include_directories: src_inc, dependencies: deps,
   install: true)
 
-ffihugs = executable('ffihugs', files('runhugs.c', 'server.c'),
+fficuddles = executable('fficuddles', files('runcuddles.c', 'server.c'),
   c_args: '-DFFI_COMPILER',
   objects: core_objs, include_directories: src_inc, dependencies: deps,
   install: true)
 
-install_headers('HsFFI.h', install_dir: hugsdir / 'include')
+install_headers('HsFFI.h', install_dir: cuddlesdir / 'include')

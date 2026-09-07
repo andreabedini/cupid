@@ -10,9 +10,9 @@ module Prolog
 	, varsIn, renClauses, addClause, emptyDb, termlist, clause
 	) where
 
-import List
+import Data.List
 import CombParse
-import Char
+import Data.Char
 
 infix 6 :-
 

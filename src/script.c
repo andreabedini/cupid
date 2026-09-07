@@ -325,7 +325,7 @@ Void readScripts(Int n)        /* Reread current list of scripts, */
 
 Void whatScripts() {       /* list scripts in current session */
     int i;
-    Printf("\nHugs session for:");
+    Printf("\nCuddles session for:");
     for (i=0; i<numScripts; ++i) {
 	Printf("\n%s",scriptTable[i].fileName);
     }

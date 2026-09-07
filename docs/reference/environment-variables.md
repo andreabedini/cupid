@@ -1,24 +1,24 @@
 # Environment variables
 
-Variables that `hugs`, `runhugs` and `ffihugs` consult.
+Variables that `cuddles`, `runcuddles` and `fficuddles` consult.
 
-### `HUGSFLAGS`
+### `CUDDLESFLAGS`
 
 Options, in the syntax of [Options](options.md), read before the
 command line.  Spaces inside an option need a backslash or double
 quotes:
 
 ```sh
-HUGSFLAGS='+k -E"vi +%d %s"'
-export HUGSFLAGS
+CUDDLESFLAGS='+k -E"vi +%d %s"'
+export CUDDLESFLAGS
 ```
 
-### `HUGSDIR`
+### `CUDDLESDIR`
 
 The library directory.  Default: the directory chosen at build time,
-`lib/hugs` under the prefix.  It is substituted for `{Hugs}` in the
-search path and must contain `packages/`, and for `ffihugs` also
-`include/HsFFI.h`.  Set it to `build/libraries/hugsdir` to run from
+`lib/cuddles` under the prefix.  It is substituted for `{Cuddles}` in the
+search path and must contain `packages/`, and for `fficuddles` also
+`include/HsFFI.h`.  Set it to `build/libraries/cuddlesdir` to run from
 the build tree.
 
 ### `HOME`
@@ -36,14 +36,14 @@ The shell run by `:!`.  Default: `/bin/sh`.
 
 ### `EMACS`
 
-If set, Hugs assumes it is running in an Emacs shell buffer and reads
+If set, Cuddles assumes it is running in an Emacs shell buffer and reads
 its input line by line without stripping carriage returns.
 
 ### `CC`
 
-Read by meson at configuration time, not by Hugs.  The compiler it
-names is also the one `ffihugs` runs.  See
-[Build and install Hugs](../how-to/build-and-install.md).
+Read by meson at configuration time, not by Cuddles.  The compiler it
+names is also the one `fficuddles` runs.  See
+[Build and install Cuddles](../how-to/build-and-install.md).
 
 ## See also
 

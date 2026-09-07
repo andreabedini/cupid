@@ -1,6 +1,6 @@
-runhugs: Error occurred
+runcuddles: Error occurred
 
 INTERNAL ERROR: freeStablePtr
-Please report this Hugs bug to http://hackage.haskell.org/trac/hugs
+This is a bug in Cuddles; please report it.
 
 

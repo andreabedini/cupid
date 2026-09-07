@@ -66,8 +66,8 @@ module Data.Char
 
 
 
-import Hugs.Prelude (Ix)
-import Hugs.Char
+import Cuddles.Prelude (Ix)
+import Cuddles.Char
 
 
 

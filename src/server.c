@@ -1,8 +1,8 @@
 /* --------------------------------------------------------------------------
- * Implementation of the Hugs server API.
+ * Implementation of the Cuddles server API.
  *
- * The Hugs server allows you to programmatically load scripts and
- * build/evaluate terms. Used by 'runhugs' to provide a batch-mode
+ * The Cuddles server allows you to programmatically load scripts and
+ * build/evaluate terms. Used by 'runcuddles' to provide a batch-mode
  * UI to the interpreter.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
@@ -27,7 +27,7 @@
 
 #include <setjmp.h>
 
-static Void   setHugsAPI   (Void);
+static Void   setCuddlesAPI   (Void);
 static Bool   SetModule    (String);
 static Bool   linkDynamic     (Void);
 
@@ -69,40 +69,40 @@ static HVal   PopHVal         (Void);
 static Void   PushHVal        (HVal);
 static Void   FreeHVal        (HVal);
 
-static HugsServerAPI hugs;             /* virtual function table            */
+static CuddlesServerAPI cuddles;             /* virtual function table            */
 
-static Void setHugsAPI() {       /* initialise virtual function table */
+static Void setCuddlesAPI() {       /* initialise virtual function table */
     static Bool api_inited = FALSE;
     if (!api_inited) {
       api_inited = TRUE;
 
-      hugs.clearError      = ClearError;
-      hugs.setHugsArgs     = setHugsArgs;
-      hugs.getNumScripts   = GetNumScripts;
-      hugs.reset           = Reset;
-      hugs.setOutputEnable = SetOutputEnable;
-      hugs.changeDir       = ChangeDir;
-      hugs.loadProject     = LoadProject;
-      hugs.loadFile        = LoadFile;
-      hugs.loadFromBuffer  = LoadStringF;
-      hugs.setOptions      = SetOptions;
-      hugs.getOptions      = GetOptions;
-      hugs.compileExpr     = CompileExpr;
-      hugs.garbageCollect  = GarbageCollect;
-      hugs.lookupName      = LookupName;
-      hugs.mkInt           = MkInt;
-      hugs.mkAddr          = MkAddr;
-      hugs.mkString        = MkString;
-      hugs.apply           = Apply;
-      hugs.evalInt         = EvalInt;
-      hugs.evalAddr        = EvalAddr;
-      hugs.evalString      = EvalString;
-      hugs.doIO            = DoIO;
-      hugs.doIO_Int        = DoIO_Int;
-      hugs.doIO_Addr       = DoIO_Addr;
-      hugs.popHVal         = PopHVal;
-      hugs.pushHVal        = PushHVal;
-      hugs.freeHVal        = FreeHVal;
+      cuddles.clearError      = ClearError;
+      cuddles.setCuddlesArgs     = setCuddlesArgs;
+      cuddles.getNumScripts   = GetNumScripts;
+      cuddles.reset           = Reset;
+      cuddles.setOutputEnable = SetOutputEnable;
+      cuddles.changeDir       = ChangeDir;
+      cuddles.loadProject     = LoadProject;
+      cuddles.loadFile        = LoadFile;
+      cuddles.loadFromBuffer  = LoadStringF;
+      cuddles.setOptions      = SetOptions;
+      cuddles.getOptions      = GetOptions;
+      cuddles.compileExpr     = CompileExpr;
+      cuddles.garbageCollect  = GarbageCollect;
+      cuddles.lookupName      = LookupName;
+      cuddles.mkInt           = MkInt;
+      cuddles.mkAddr          = MkAddr;
+      cuddles.mkString        = MkString;
+      cuddles.apply           = Apply;
+      cuddles.evalInt         = EvalInt;
+      cuddles.evalAddr        = EvalAddr;
+      cuddles.evalString      = EvalString;
+      cuddles.doIO            = DoIO;
+      cuddles.doIO_Int        = DoIO_Int;
+      cuddles.doIO_Addr       = DoIO_Addr;
+      cuddles.popHVal         = PopHVal;
+      cuddles.pushHVal        = PushHVal;
+      cuddles.freeHVal        = FreeHVal;
     }
 }
 
@@ -150,7 +150,7 @@ Void setError(String s)            /* Format an error message        */
 }
 
 /* All server entry points set CStackBase for the benefit of the (conservative)
- * GC and do error catching.  Any calls to Hugs functions should be "protected"
+ * GC and do error catching.  Any calls to Cuddles functions should be "protected"
  * by being placed inside this macro.
  *
  *   void entryPoint(arg1, arg2, result)
@@ -186,20 +186,20 @@ Void setError(String s)            /* Format an error message        */
  * ------------------------------------------------------------------------*/
 
 /* I've added a special case for the server.  Probably should just add
-   another entry point but what the heck.  If argc = -1 then the hugs
-   server should NOT read registry or default hugs path stuff.  Instead,
+   another entry point but what the heck.  If argc = -1 then the cuddles
+   server should NOT read registry or default cuddles path stuff.  Instead,
    all options are in the first argument in argv.   -- jcp
 
 */
 
-DLLEXPORT(HugsServerAPI*) initHugsServer(Int argc, String argv[]) /*server initialisation*/
+DLLEXPORT(CuddlesServerAPI*) initCuddlesServer(Int argc, String argv[]) /*server initialisation*/
 {
 
     static Bool is_initialized = FALSE;
 
     if (!is_initialized) {
       is_initialized = TRUE;
-      setHugsAPI();
+      setCuddlesAPI();
       
       BEGIN_PROTECT			/* Too much text for protect()	   */
       Int i;
@@ -220,31 +220,31 @@ DLLEXPORT(HugsServerAPI*) initHugsServer(Int argc, String argv[]) /*server initi
       EnableOutput(FALSE);
       loadPrelude();
 
-      addScriptName("Hugs.Dynamic",TRUE);
+      addScriptName("Cuddles.Dynamic",TRUE);
 
       readScripts(0);
       everybody(RESET);
       if (!linkDynamic()) {
-	setError("module Hugs.Dynamic doesn't define the expected functions");
+	setError("module Cuddles.Dynamic doesn't define the expected functions");
 	return NULL;
       }
       END_PROTECT
    }
-   return &hugs;  /* error must have occurred */
+   return &cuddles;  /* error must have occurred */
 }
 
 /* Just give me the method table; initialisation is assumed to already have taken
  * place. Used when external code needs to callback into Haskell.
  */
-HugsServerAPI* getHugsAPI() {
-  setHugsAPI();
-  return &hugs;
+CuddlesServerAPI* getCuddlesAPI() {
+  setCuddlesAPI();
+  return &cuddles;
 }
 
 /* --------------------------------------------------------------------------
  * Shutting down:
  * ------------------------------------------------------------------------*/
-DLLEXPORT(Void) shutdownHugsServer(HugsServerAPI* hserv) /* server shutdown */
+DLLEXPORT(Void) shutdownCuddlesServer(CuddlesServerAPI* hserv) /* server shutdown */
 {
   /* The 'hserv' argument isn't actually used */
   clearStack();
@@ -260,11 +260,11 @@ DLLEXPORT(Void) shutdownHugsServer(HugsServerAPI* hserv) /* server shutdown */
  * We use dynamic typing to make the system more robust - all values pushed
  * on the stack have type "Dynamic" and we check the real type on function
  * application and evaluation.  This requires on functions and a class
- * defined in the HugsDynamic library.
+ * defined in the CuddlesDynamic library.
  *
  * sof 2001 - interposing a Dynamic-typed layer sometimes gets in the way
  *            (missing Typeable instances, extra loading of modules), as
- *            has proven the case when using the HugsServerAPI by HaskellScript,
+ *            has proven the case when using the CuddlesServerAPI by HaskellScript,
  *            Lambada, and mod_haskell. By defining NO_DYNAMIC_TYPES,
  *            you may turn this feature off.
  * ------------------------------------------------------------------------*/
@@ -444,7 +444,7 @@ static Void LookupName(String m, String v) /*Push value of qualified name onto s
 static Void MkInt(Int i)              /* Push an Int onto the stack      */
 {
     /* getTypeableDict() must run inside protect() too, not just the push:
-     * it can itself raise a Hugs error, and outside protect() that would
+     * it can itself raise a Cuddles error, and outside protect() that would
      * longjmp to whatever catch_error happens to hold from some earlier,
      * unrelated call.                                                  */
     protect(Cell d = getTypeableDict(typeInt);

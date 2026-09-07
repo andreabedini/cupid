@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * Connections between components of the Hugs system
+ * Connections between components of the Cuddles system
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
@@ -125,7 +125,7 @@ extern Text  textNum;			/* used to process default decls   */
 
 extern String versionString;		/* String containing version name  */
 #if USE_REGISTRY
-extern String hugsRegRoot;		/* Root in registry for windows    */
+extern String cuddlesRegRoot;		/* Root in registry for windows    */
 #endif
 extern String scriptFile;               /* Name of current script (if any) */
 
@@ -215,8 +215,8 @@ extern Bool  preludeLoaded;		/* TRUE => prelude has been loaded */
 #define EXIT	4		/* Take action immediately before exit()   */
 #define BREAK   5		/* Take action after program break	   */
 
-/* hugs.c exports: */
-extern  Void   shutdownHugs     (Void);
+/* cuddles.c exports: */
+extern  Void   shutdownCuddles     (Void);
 extern  Void   promptForInput   (String);
 /* The next three are required only by winhugs */
 extern  Bool   doCommand        (Void);
@@ -290,7 +290,7 @@ extern  Void   implementForeignImportWrapper (Int,Int,Text,List,Bool,Type);
 extern  Void   implementForeignImportLabel   (Int,Int,Text,Text,Text,Type);
 extern  Void   implementForeignExport        (Int,Int,Text,List,Bool,Type);
 extern  Bool   foreignNeedStubs              (List,List);
-extern  Bool   generateFFI;	/* running ffihugs? */
+extern  Bool   generateFFI;	/* running fficuddles? */
 extern  Bool   generate_ffi;	/* generate FFI for the current module? */
 
 extern  Void   typeChecker      (Int);
@@ -328,7 +328,7 @@ extern void    growMemory       (Void);
 extern  Void   eval             (Cell);
 extern  Cell   evalWithNoError  (Cell);
 extern  Void   evalFails        (StackPtr);
-extern  Void   throwException   (Cell) HUGS_noreturn;
+extern  Void   throwException   (Cell) CUDDLES_noreturn;
 
 #if BYTECODE_PRIMS
 extern Int     IntAt            (Addr);
@@ -354,7 +354,7 @@ extern  Bignum bigStr		(String);
 extern  Cell   bigOut		(Bignum,Cell,Bool);
 extern  Bignum bigShift		(Bignum,Int,Int);
 extern  Int    bigCmp		(Bignum,Bignum);
-extern Void   setHugsArgs       (Int,String[]);
+extern Void   setCuddlesArgs       (Int,String[]);
 
 extern  Void   machdep          (Int);
 extern  String findPathname     (String);
@@ -364,7 +364,7 @@ extern  Bool   readable         (String,Bool);
 #if PROFILING
 extern  String timeString	(Void);
 #endif
-extern  String hugsdir          (Void);
+extern  String cuddlesdir          (Void);
 extern  String mkFFIFilename    (String);
 extern  String mkFFIFilename2   (String);
 extern  Void   freeDLL          (void*);

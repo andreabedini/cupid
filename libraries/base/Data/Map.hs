@@ -176,9 +176,9 @@ import Data.Foldable (Foldable(foldMap))
 {-
 -- for quick check
 import qualified Prelude
-import qualified List
+import qualified Data.List as List
 import Debug.QuickCheck       
-import List(nub,sort)    
+import Data.List (nub,sort)
 -}
 
 

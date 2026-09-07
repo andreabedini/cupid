@@ -1,5 +1,5 @@
 /*
- * The Hugs evaluator / command interpreter + support functions.
+ * The Cuddles evaluator / command interpreter + support functions.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
@@ -30,8 +30,8 @@
  *
  * ------------------------------------------------------------------------*/
 Int    hpSize            = DEFAULTHEAP; /* Desired heap size               */
-String hugsPath		 = 0;		/* String for file search path     */
-String hugsSuffixes	 = 0;		/* Source filename suffixes        */
+String cuddlesPath		 = 0;		/* String for file search path     */
+String cuddlesSuffixes	 = 0;		/* Source filename suffixes        */
 
 /* --------------------------------------------------------------------------
  * Evaluator initialization:
@@ -40,8 +40,8 @@ Void startEvaluator(Void)
 {
     initScripts();
 
-    hugsPath      = uniqPath(strCopy(HUGSPATH));
-    hugsSuffixes  = strCopy(HUGSSUFFIXES);
+    cuddlesPath      = uniqPath(strCopy(CUDDLESPATH));
+    cuddlesSuffixes  = strCopy(CUDDLESSUFFIXES);
 }
 
 /* --------------------------------------------------------------------------
@@ -49,8 +49,8 @@ Void startEvaluator(Void)
  * ------------------------------------------------------------------------*/
 Void stopEvaluator() {
   /* Let go of dynamic storage */  
-    if (hugsPath)     { free(hugsPath); hugsPath=0; }
-    if (hugsSuffixes) { free(hugsSuffixes); hugsSuffixes=0; }
+    if (cuddlesPath)     { free(cuddlesPath); cuddlesPath=0; }
+    if (cuddlesSuffixes) { free(cuddlesSuffixes); cuddlesSuffixes=0; }
     if (prompt)       { free(prompt);    prompt=0; }
     if (repeatStr)    { free(repeatStr); repeatStr=0; }
 }
@@ -175,12 +175,12 @@ Void loadPrelude() {  /* load in the Prelude module(s). */
     String prelLocation;
     Bool   listFlg;
 
-    if (!hugsPath)
-	fatal("Hugs search path not defined");
+    if (!cuddlesPath)
+	fatal("Cuddles search path not defined");
 
-    if (!( prelLocation = findMPathname(STD_PRELUDE_HUGS)) ) {
+    if (!( prelLocation = findMPathname(STD_PRELUDE_CUDDLES)) ) {
 	Printf("%s not found on current path: \"%s\"\n",
-	       STD_PRELUDE_HUGS, hugsPath);
+	       STD_PRELUDE_CUDDLES, cuddlesPath);
 	fatal("Unable to load prelude implementation");
     }
     addScriptName(prelLocation, FALSE);
@@ -188,7 +188,7 @@ Void loadPrelude() {  /* load in the Prelude module(s). */
     /* add the H98 Prelude module to the stack */
     if (!( prelLocation = findMPathname(STD_PRELUDE)) ) {
 	Printf("%s not found on current path: \"%s\"\n",
-	       STD_PRELUDE, hugsPath);
+	       STD_PRELUDE, cuddlesPath);
 	fatal("Unable to load prelude");
     }
     addScriptName(prelLocation, FALSE);

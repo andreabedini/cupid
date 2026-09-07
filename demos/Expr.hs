@@ -5,7 +5,7 @@
 
 module Expr where
 
-import Char( digitToInt, isDigit )
+import Data.Char ( digitToInt, isDigit )
 
 infixr 6 &&&
 infixl 5 >>>

@@ -106,7 +106,7 @@ Bool readable(String f, Bool isReg)        /* is f readable (and also, a regular
 
 
 /* --------------------------------------------------------------------------
- * Search for script files on the HUGS path:
+ * Search for script files on the CUDDLES path:
  * ------------------------------------------------------------------------*/
 
 static String local homeDir	  (void);
@@ -144,18 +144,18 @@ static Bool   local scanSubDirs   (String);
 #endif
 
 #if HAVE_GETMODULEFILENAME
-static HMODULE hugsModule = (HMODULE)0;
-static String  hugsRoot   = 0;
+static HMODULE cuddlesModule = (HMODULE)0;
+static String  cuddlesRoot   = 0;
 
-extern Void setHugsModule (HMODULE);
-extern Bool setHugsRoot   (String);
+extern Void setCuddlesModule (HMODULE);
+extern Bool setCuddlesRoot   (String);
 
-Void setHugsModule(HMODULE hmod)
+Void setCuddlesModule(HMODULE hmod)
 {
-    hugsModule = hmod;
+    cuddlesModule = hmod;
 }
 
-Bool setHugsRoot(String s)
+Bool setCuddlesRoot(String s)
 {
     String newRoot = malloc(strlen(s) + 1);
     
@@ -163,34 +163,34 @@ Bool setHugsRoot(String s)
     
     strcpy(newRoot,s);
     
-    if (hugsRoot) free(hugsRoot);
-    hugsRoot = newRoot;
+    if (cuddlesRoot) free(cuddlesRoot);
+    cuddlesRoot = newRoot;
     return TRUE;
 }
 
 #endif
 
 
-String hugsdir() {		/* directory containing libraries/Prelude.hs */
+String cuddlesdir() {		/* directory containing libraries/Prelude.hs */
 #if HAVE_GETMODULEFILENAME
     /* On Windows, we can find the binary we're running and it's
      * conventional to put the libraries in the same place.
      */
     static char dir[FILENAME_MAX+1] = "";
    
-    if (hugsRoot)
-	return hugsRoot;
+    if (cuddlesRoot)
+	return cuddlesRoot;
 
     if ( dir[0] == '\0' ) { /* not initialised yet */
  	String slash = NIL;
-	char *hugsdir = getenv("HUGSDIR");
+	char *cuddlesdir = getenv("CUDDLESDIR");
 	
-	if (hugsdir) {
-	    strncpy(dir,hugsdir,FILENAME_MAX);
+	if (cuddlesdir) {
+	    strncpy(dir,cuddlesdir,FILENAME_MAX);
 	} else {
-	    GetModuleFileName(hugsModule,dir,FILENAME_MAX+1);
+	    GetModuleFileName(cuddlesModule,dir,FILENAME_MAX+1);
 	    if ( dir[0] == '\0' ) { /* GetModuleFileName must have failed */
-		return HUGSDIR;
+		return CUDDLESDIR;
 	    }
 	    if ( (slash = strrchr(dir,SLASH)) != NULL ) {
 		/* truncate after directory name */
@@ -205,8 +205,8 @@ String hugsdir() {		/* directory containing libraries/Prelude.hs */
      * First, check for an environment var, then fall back to
      * a configuration-time constant (--datadir=...).
      */
-    char *hugsdir = getenv("HUGSDIR");
-    return hugsdir ? hugsdir : HUGSDIR;
+    char *cuddlesdir = getenv("CUDDLESDIR");
+    return cuddlesdir ? cuddlesdir : CUDDLESDIR;
 #endif
 }
 
@@ -282,7 +282,7 @@ static Bool local tryEndings()  /* Try each of the listed endings          */
     String sp;
 
     save = searchPos;
-    sp = hugsSuffixes;
+    sp = cuddlesSuffixes;
     while (*sp) {
 	for ( ; *sp && ! isPATHSEP(sp); sp++)
 	    if (searchPos<FILENAME_MAX)
@@ -400,13 +400,13 @@ struct shellVariable {
 };
 
 static struct shellVariable shell_var[] = {
-    { "Hugs",		&hugsdir },
+    { "Cuddles",		&cuddlesdir },
     { "Home",		&homeDir },
     { 0, 0 }
 };
 
 /*
-    findPathname nm = [ nm ++ e | e <- "" : hugsSuffixes ]
+    findPathname nm = [ nm ++ e | e <- "" : cuddlesSuffixes ]
 */
 
 String findPathname(String filename)   /* Look for a file, trying various extensions */
@@ -422,8 +422,8 @@ String findPathname(String filename)   /* Look for a file, trying various extens
 
     find maybe_dir nm = [ d ++ map dot2slash nm ++ e | d <- dirs, e <- exts ]
       where 
-        dirs          = maybeToList maybe_dir ++ hugsPath
-        exts          = hugsSuffixes		-- default: [".hs",".lhs"]
+        dirs          = maybeToList maybe_dir ++ cuddlesPath
+        exts          = cuddlesSuffixes		-- default: [".hs",".lhs"]
 
 	-- the dir is added if the importing module was found there, or
 	-- was specified as an explicit filename.
@@ -455,10 +455,10 @@ String findMPathname(String name)	    /* Look for a module                      
 
 static Bool find1(String name)		/* Search each directory of the path */
 {
-    String pathpt = hugsPath;
+    String pathpt = cuddlesPath;
     String value;
 
-    searchReset(0);		/* look along the HUGSPATH */
+    searchReset(0);		/* look along the CUDDLESPATH */
     if (pathpt) {
 	while (*pathpt) {
 	    searchReset(0);
@@ -967,7 +967,7 @@ static sigHandler(panic) {              /* exit in a panic, on receipt of  */
 
 #if IS_WINDOWS
 BOOL WINAPI consoleHandler(DWORD dwCtrlType) {
-    switch (dwCtrlType) {		/* Allows Hugs to be terminated    */
+    switch (dwCtrlType) {		/* Allows Cuddles to be terminated    */
 	case CTRL_CLOSE_EVENT :		/* from the window's close menu.   */
 	    ExitProcess(0);
     }
@@ -1448,12 +1448,12 @@ String mkFFIFilename(String file)                      /* get DLL path for modul
 }
 
 #  define INIT_MODULE_FUN  "initModule"
-#  define API_VERSION_FUN  "HugsAPIVersion"
+#  define API_VERSION_FUN  "CuddlesAPIVersion"
 
 Void needPrims(Int version, void*  dll)   /* Load dll containing prims for current module */
 {
     /* Version 2-5: the Haskell module specifies what module to expect
-     *              (via a needPrims_hugs decl).
+     *              (via a needPrims_cuddles decl).
      *
      * Version 0:   the extension DLL specifies the API version it assumes.
      */
@@ -1467,7 +1467,7 @@ Void needPrims(Int version, void*  dll)   /* Load dll containing prims for curre
 	    initModule = (InitModuleFun4)getDLLSymbol(dll,INIT_MODULE_FUN);
 	    if (initModule) {
 	        Bool flg = setOldDLLFlag(TRUE);
-		(*initModule)(hugsAPI4()); 
+		(*initModule)(cuddlesAPI4()); 
 		setScriptPrims(setPrimInfoDll(dll));
 		setOldDLLFlag(flg);
 		return;
@@ -1481,7 +1481,7 @@ Void needPrims(Int version, void*  dll)   /* Load dll containing prims for curre
 	    initModule = (InitModuleFun5)getDLLSymbol(dll,INIT_MODULE_FUN);
 	    if (initModule) {
 	        Bool flg = setOldDLLFlag(FALSE);
-		(*initModule)(hugsAPI5()); 
+		(*initModule)(cuddlesAPI5()); 
 		setScriptPrims(setPrimInfoDll(dll));
 		setOldDLLFlag(flg);
 		return;
@@ -1503,7 +1503,7 @@ Void needPrims(Int version, void*  dll)   /* Load dll containing prims for curre
 	}
     default: 
 	{
-	    ERRMSG(0) "This version of Hugs does not support FFI version %d\n", version
+	    ERRMSG(0) "This version of Cuddles does not support FFI version %d\n", version
 	    EEND;
 	}
     }
@@ -1591,7 +1591,7 @@ Void compileAndLink(String fn, String flags)
     used    = 0;
 
 #if defined(MKDLL_VISUAL_STUDIO)
-    /* find the location of ffihugs.bat */
+    /* find the location of fficuddles.bat */
     /* is in the same directory */
     {
 	char Buffer[MAX_PATH+1];
@@ -1609,11 +1609,11 @@ Void compileAndLink(String fn, String flags)
 #endif
     
     /* Identify ourselves */
-    insert(" -D__HUGS__");
+    insert(" -D__CUDDLES__");
 
     /* the path to HsFFI.h */
     insert(" \"-I");
-    insertPath(hugsdir());
+    insertPath(cuddlesdir());
     insertChar('/');
     insert("include\"");
 
@@ -1625,7 +1625,7 @@ Void compileAndLink(String fn, String flags)
     insert(" ");
     insertQuoted(mkFFIFilename(i));
 
-    /* compiler and linker flags specified on Hugs command line */
+    /* compiler and linker flags specified on Cuddles command line */
     if (flags) {
         insert(" ");
         insert(flags);
@@ -1735,7 +1735,7 @@ Bool writeRegString(String var, String val)      /* write String to registry */
 {
     String realVal = ( (NULL == val) ? "" : val);
 
-    return setValue(HKEY_CURRENT_USER, hugsRegRoot, var,
+    return setValue(HKEY_CURRENT_USER, cuddlesRegRoot, var,
 		    REG_SZ, (LPBYTE)realVal, lstrlen(realVal)+1);
 }
 

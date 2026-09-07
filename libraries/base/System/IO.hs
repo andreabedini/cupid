@@ -175,10 +175,10 @@ module System.IO (
 
 
 
-import Hugs.IO
-import Hugs.IOExts
-import Hugs.IORef
-import Hugs.Prelude	( throw, Exception(NonTermination) )
+import Cuddles.IO
+import Cuddles.IOExts
+import Cuddles.IORef
+import Cuddles.Prelude	( throw, Exception(NonTermination) )
 import System.IO.Unsafe	( unsafeInterleaveIO )
 
 

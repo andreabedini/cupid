@@ -1,5 +1,5 @@
 /*
- * String utilities needed throughout the Hugs codebase.
+ * String utilities needed throughout the Cuddles codebase.
  */ 
 #include "prelude.h"
 #include "storage.h"

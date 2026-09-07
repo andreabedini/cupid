@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * This is the Hugs compiler, handling translation of typechecked code to
+ * This is the Cuddles compiler, handling translation of typechecked code to
  * `kernel' language, elimination of pattern matching and translation to
  * super combinators (lambda lifting).
  *
@@ -831,7 +831,7 @@ static List local remPat1(Cell pat, Cell expr, List lds)
  * Eliminate pattern matching in function definitions -- pattern matching
  * compiler:
  *
- * The original Gofer/Hugs pattern matching compiler was based on Wadler's
+ * The original Gofer/Cuddles pattern matching compiler was based on Wadler's
  * algorithms described in `Implementation of functional programming
  * languages'.  That should still provide a good starting point for anyone
  * wanting to understand this part of the system.  However, the original
@@ -1000,7 +1000,7 @@ static Void local pmcFunDef(Int co, List sc, Triple fd)  /* apply pattern matchi
 /* ---------------------------------------------------------------------------
  * Main part of pattern matching compiler: convert [Alt] to case constructs
  *
- * This section of Hugs has been almost completely rewritten to be more
+ * This section of Cuddles has been almost completely rewritten to be more
  * general, in particular, to allow pattern matching in orders other than the
  * strictly left-to-right approach of the previous version.  This is needed
  * for the implementation of the so-called Haskell 1.3 `record' syntax.

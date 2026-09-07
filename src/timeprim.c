@@ -240,7 +240,7 @@ primFun(primGetCPUUsage) { /* IO (Int,Int,Int,Int) */
  
     /* Notice that the 'process time' includes the time used
        by all the threads of a process, all of which may not
-       be kept busy running the Hugs interpreter...
+       be kept busy running the Cuddles interpreter...
     */
     if (!GetProcessTimes (GetCurrentProcess(), &creationTime,
 		          &exitTime, &kernelTime, &userTime)) {

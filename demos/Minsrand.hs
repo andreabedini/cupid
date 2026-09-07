@@ -13,7 +13,7 @@
 -- into the range (0..1) if required.
 --
 -- [This program assumes that you are working on a machine with (at least)
--- 32 bit integers.  Folks using Hugs on a PC will have to stick with the
+-- 32 bit integers.  Folks using Cuddles on a PC will have to stick with the
 -- less sophisticated random number generator in the file `randoms'.]
 -------------------------------------------------------------------------------
 
@@ -45,7 +45,7 @@ min_stand_randoms  = iterate min_stand_test
 --
 --   iterate min_stand_test 1 !! 10000
 --
--- Hugs would have first constructed the expression graph:
+-- Cuddles would have first constructed the expression graph:
 --
 --   min_stand_test (min_stand_test (... (min_stand_test 1) ...))
 --
@@ -53,7 +53,7 @@ min_stand_randoms  = iterate min_stand_test
 -- and then attempted to evaluate this.  In either case, you'd need a
 -- large heap to represent the complete expression and a large stack so
 -- that you could handle 10000 levels of function calling.  Most standard
--- configurations of Hugs aren't set up with sufficiently large defaults
+-- configurations of Cuddles aren't set up with sufficiently large defaults
 -- to make this possible, so the most likely outcome would be a runtime
 -- error of one kind or another!
 

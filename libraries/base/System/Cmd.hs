@@ -31,7 +31,7 @@ import System.Exit 	( ExitCode )
 
 
 
-import Hugs.System
+import Cuddles.System
 
 
 

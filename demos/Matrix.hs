@@ -1,9 +1,9 @@
--- Some simple Hugs programs for manipulating matrices.
+-- Some simple Cuddles programs for manipulating matrices.
 --
 
 module Matrix where
 
-import List
+import Data.List
 
 type Matrix k = [Row k]          -- matrix represented by a list of its rows
 type Row k    = [k]              -- a row represented by a list of literals

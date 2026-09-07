@@ -37,7 +37,7 @@ import Prelude
 
 
 
-import Hugs.System
+import Cuddles.System
 
 
 

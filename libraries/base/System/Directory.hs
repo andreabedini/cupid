@@ -76,7 +76,7 @@ import Control.Monad           ( when, unless )
 
 
 
-import Hugs.Directory
+import Cuddles.Directory
 
 
 

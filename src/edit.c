@@ -25,10 +25,10 @@ Bool startEdit(Int line, String nm)    /* Start editor on file name at    */
      * program to launch to, so an editor named to the empty string ""
      * is often desirable.
      */
-    if (!hugsEdit 
-        || *hugsEdit == '\0'
+    if (!cuddlesEdit 
+        || *cuddlesEdit == '\0'
 	             ) {
-	ERRMSG(0) "Hugs is not configured to use an editor"
+	ERRMSG(0) "Cuddles is not configured to use an editor"
 	EEND;
     } 
       
@@ -42,9 +42,9 @@ Bool startEdit(Int line, String nm)    /* Start editor on file name at    */
     nmLen = strlen(nm);
     lineLen = 1 + (line == 0 ? 0 : (unsigned int)log10((double)line));
     
-    he = hugsEdit;
+    he = cuddlesEdit;
 
-    /* Compute the length of the expanded 'hugsEdit' string */
+    /* Compute the length of the expanded 'cuddlesEdit' string */
     while (*he) {
       if (*he++ == '%') {
 	if (*he == 's') {
@@ -91,10 +91,10 @@ Bool startEdit(Int line, String nm)    /* Start editor on file name at    */
     /* Given a properly sized output buffer, perform the expansion */
     expandedName = FALSE;
     ec = editorCmd;
-    he = hugsEdit;
+    he = cuddlesEdit;
     
     /* If the editor command is prefixed with '&', the editor is
-     * started up asynchronously (the default is for Hugs to block
+     * started up asynchronously (the default is for Cuddles to block
      * and wait for the editor to exit).
      *
      * If the editor command is prefixed with '!', then the editor is
@@ -122,9 +122,9 @@ Bool startEdit(Int line, String nm)    /* Start editor on file name at    */
 	  /* Shell-quote it (see shellQuote in machdep.c) if the %s
 	   * occurrence is surrounded by wspace only; the start/end of the
 	   * template counts as whitespace too, so he[-2] is only looked at
-	   * when it is within hugsEdit. Quoting protects against the name
+	   * when it is within cuddlesEdit. Quoting protects against the name
 	   * (module- or user-supplied) containing shell metacharacters. */
-	  Bool useQuotes = (he-hugsEdit<2 || isspace(he[-2]))
+	  Bool useQuotes = (he-cuddlesEdit<2 || isspace(he[-2]))
 			    && (he[1] == '\0' || isspace(he[1]));
 	  String src = (*he == 's') ? nm : fullNm;
 	  if (useQuotes) {

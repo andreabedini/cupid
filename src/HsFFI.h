@@ -1,27 +1,27 @@
 #ifndef __HSFFI_H__
 #define __HSFFI_H__
 
-typedef unsigned char      hugs_uint8_t;
-typedef unsigned short     hugs_uint16_t;
-typedef unsigned int       hugs_uint32_t;
-typedef signed   char      hugs_int8_t;
-typedef signed   short     hugs_int16_t;
-typedef signed   int       hugs_int32_t;
+typedef unsigned char      cuddles_uint8_t;
+typedef unsigned short     cuddles_uint16_t;
+typedef unsigned int       cuddles_uint32_t;
+typedef signed   char      cuddles_int8_t;
+typedef signed   short     cuddles_int16_t;
+typedef signed   int       cuddles_int32_t;
 # ifdef _MSC_VER
-typedef unsigned __int64   hugs_uint64_t;
-typedef          __int64   hugs_int64_t;
+typedef unsigned __int64   cuddles_uint64_t;
+typedef          __int64   cuddles_int64_t;
 # else
-typedef unsigned long long hugs_uint64_t;
-typedef signed   long long hugs_int64_t;
+typedef unsigned long long cuddles_uint64_t;
+typedef signed   long long cuddles_int64_t;
 # endif
 
 /* 
  * The test on __PRELUDE_H__ (the include guard of prelude.h) is a crude
- * way of testing whether this file is #included into Hugs.  Use it to
+ * way of testing whether this file is #included into Cuddles.  Use it to
  * eliminate non-portable stuff.
  */
 
-#ifdef __PRELUDE_H__ /* #included into Hugs */
+#ifdef __PRELUDE_H__ /* #included into Cuddles */
 
 typedef Int            HsInt;        
 typedef Int8           HsInt8;         
@@ -35,13 +35,13 @@ typedef unsigned int   HsWord32;
 #else /* #included into user-provided C code */
 
 typedef int            HsInt;        
-typedef hugs_int8_t    HsInt8;         
-typedef hugs_int16_t   HsInt16;        
-typedef hugs_int32_t   HsInt32;        
+typedef cuddles_int8_t    HsInt8;         
+typedef cuddles_int16_t   HsInt16;        
+typedef cuddles_int32_t   HsInt32;        
 typedef unsigned int   HsWord;       
-typedef hugs_uint8_t   HsWord8;        
-typedef hugs_uint16_t  HsWord16;       
-typedef hugs_uint32_t  HsWord32;       
+typedef cuddles_uint8_t   HsWord8;        
+typedef cuddles_uint16_t  HsWord16;       
+typedef cuddles_uint32_t  HsWord32;       
 
 #endif   
 
@@ -53,8 +53,8 @@ typedef hugs_uint32_t  HsWord32;
 typedef float          HsFloat;      
 typedef double         HsDouble;     
 
-typedef hugs_int64_t   HsInt64;        
-typedef hugs_uint64_t  HsWord64;       
+typedef cuddles_int64_t   HsInt64;        
+typedef cuddles_uint64_t  HsWord64;       
 typedef int            HsChar;
 typedef int            HsBool;         
 typedef void*          HsAddr;       
@@ -114,30 +114,30 @@ typedef void*          HsStablePtr;
 
 #endif /* included into user code */
 
-typedef int            HugsStackPtr;
-typedef void*          HugsForeign;   
-typedef int            HugsStablePtr;  
+typedef int            CuddlesStackPtr;
+typedef void*          CuddlesForeign;   
+typedef int            CuddlesStablePtr;  
 
-typedef void (*HugsPrim) (HugsStackPtr); /* primitive function	   */
+typedef void (*CuddlesPrim) (CuddlesStackPtr); /* primitive function	   */
 
 #ifndef __PRELUDE_H__
-struct hugs_primitive {		         /* table of primitives		   */
+struct cuddles_primitive {		         /* table of primitives		   */
     char*  ref;				 /* primitive reference string	   */
     int	   arity;			 /* primitive function arity	   */
-    HugsPrim imp;		         /* primitive implementation	   */
+    CuddlesPrim imp;		         /* primitive implementation	   */
 };
 
-struct hugs_primInfo {
+struct cuddles_primInfo {
     void                  (*controlFun)(int);
-    struct hugs_primitive *primFuns;
-    struct hugs_primInfo  *nextPrimInfo;
+    struct cuddles_primitive *primFuns;
+    struct cuddles_primInfo  *nextPrimInfo;
 };
 #else
-#define hugs_primInfo primInfo
+#define cuddles_primInfo primInfo
 #endif
 
 /* API Version number */
-#define HUGS_API_VERSION 5
+#define CUDDLES_API_VERSION 5
 
 typedef struct {
 
@@ -149,7 +149,7 @@ typedef struct {
   HsFloat        (*getFloat)       (void);
   HsDouble       (*getDouble)      (void);
   HsChar         (*getChar)        (void);
-  HugsForeign    (*getForeign)     (void);
+  CuddlesForeign    (*getForeign)     (void);
   HsStablePtr    (*getStablePtr4)  (void);
   HsInt8         (*getInt8)        (void);
   HsInt16        (*getInt16)       (void);
@@ -171,7 +171,7 @@ typedef struct {
   void           (*putFloat)       (HsFloat);
   void           (*putDouble)      (HsDouble);
   void           (*putChar)        (HsChar);
-  void      	 (*putForeign)     (HugsForeign, void (*)(HugsForeign));
+  void      	 (*putForeign)     (CuddlesForeign, void (*)(CuddlesForeign));
   void           (*putInt8)        (HsInt8);
   void           (*putInt16)       (HsInt16);
   void           (*putInt32)       (HsInt32);
@@ -186,39 +186,39 @@ typedef struct {
   void           (*putStablePtr4)  (HsStablePtr);
 
   /* return in IO monad or Id monad */
-  void      	 (*returnIO)       (HugsStackPtr, int);
+  void      	 (*returnIO)       (CuddlesStackPtr, int);
   int      	 (*runIO)          (int);
-  void           (*returnId)       (HugsStackPtr, int);
+  void           (*returnId)       (CuddlesStackPtr, int);
   int            (*runId)          (int);
 
   /* register the prim table */	    			 
-  void      	 (*registerPrims)  (struct hugs_primInfo*);
+  void      	 (*registerPrims)  (struct cuddles_primInfo*);
 			   
-  HugsStablePtr  (*lookupName)     (char*, char*);
+  CuddlesStablePtr  (*lookupName)     (char*, char*);
   void           (*ap)             (int);
   void           (*getUnit)        (void);
-  void*          (*mkThunk)        (HsFunPtr, HugsStablePtr);
+  void*          (*mkThunk)        (HsFunPtr, CuddlesStablePtr);
   void           (*freeThunk)      (void*);
 
-  HugsStablePtr  (*makeStablePtr4) (void);
-  void           (*derefStablePtr4)(HugsStablePtr);
+  CuddlesStablePtr  (*makeStablePtr4) (void);
+  void           (*derefStablePtr4)(CuddlesStablePtr);
   void      	 (*freeStablePtr4) (HsStablePtr);
-} HugsAPI5;
+} CuddlesAPI5;
 
 /* Note: the change in going from version 4 to 5 is that
-   with 5 (and later), the DLLs specify the HugsAPI version
-   assumed by the DLL primitives. The HugsAPI method table
+   with 5 (and later), the DLLs specify the CuddlesAPI version
+   assumed by the DLL primitives. The CuddlesAPI method table
    is _not_ identical to 4's; it has been re-orged and
    tidied up.
 */
 
-extern  HugsAPI5* hugsAPI5     (void);
-typedef void (*InitModuleFun5) (HugsAPI5*);
+extern  CuddlesAPI5* cuddlesAPI5     (void);
+typedef void (*InitModuleFun5) (CuddlesAPI5*);
 typedef int  (*APIVersionFun)  (void);
 
-/* To ensure backward compatibility, HugsAPI4 is also supported:
- * (due to the HugsAPI4 vtbl being an extension of HugsAPI3's and
- *  HugsAPI2's, support for these two comes for free.)
+/* To ensure backward compatibility, CuddlesAPI4 is also supported:
+ * (due to the CuddlesAPI4 vtbl being an extension of CuddlesAPI3's and
+ *  CuddlesAPI2's, support for these two comes for free.)
  */
 typedef struct {
 
@@ -229,8 +229,8 @@ typedef struct {
   HsFloat        (*getFloat)       (void);
   HsDouble       (*getDouble)      (void);
   char           (*getChar)        (void);
-  HugsForeign    (*getForeign)     (void);
-  HugsStablePtr  (*getStablePtr)   (void); /* deprecated */
+  CuddlesForeign    (*getForeign)     (void);
+  CuddlesStablePtr  (*getStablePtr)   (void); /* deprecated */
 
   /* push part of result   */
   void           (*putInt)         (HsInt);
@@ -239,28 +239,28 @@ typedef struct {
   void           (*putFloat)       (HsFloat);
   void           (*putDouble)      (HsDouble);
   void           (*putChar)        (char);
-  void      	 (*putForeign)     (HugsForeign, void (*)(HugsForeign));
-  void           (*putStablePtr)   (HugsStablePtr); /* deprecated */
+  void      	 (*putForeign)     (CuddlesForeign, void (*)(CuddlesForeign));
+  void           (*putStablePtr)   (CuddlesStablePtr); /* deprecated */
 
   /* return n values in IO monad or Id monad */
-  void      	 (*returnIO)       (HugsStackPtr, int);
-  void      	 (*returnId)       (HugsStackPtr, int);
+  void      	 (*returnIO)       (CuddlesStackPtr, int);
+  void      	 (*returnId)       (CuddlesStackPtr, int);
   int      	 (*runIO)          (int);
 
   /* free a stable pointer */	    			 
-  void      	 (*freeStablePtr)  (HugsStablePtr); /* deprecated */
+  void      	 (*freeStablePtr)  (CuddlesStablePtr); /* deprecated */
 
   /* register the prim table */	    			 
-  void      	 (*registerPrims)  (struct hugs_primInfo*);
+  void      	 (*registerPrims)  (struct cuddles_primInfo*);
 			   
   /* garbage collect */
   void		 (*garbageCollect) (void);
 
   /* API3 additions follow */
-  HugsStablePtr  (*lookupName)     (char*, char*);
+  CuddlesStablePtr  (*lookupName)     (char*, char*);
   void           (*ap)             (int);
   void           (*getUnit)        (void);
-  void*          (*mkThunk)        (HsFunPtr, HugsStablePtr);
+  void*          (*mkThunk)        (HsFunPtr, CuddlesStablePtr);
   void           (*freeThunk)      (void*);
   HsBool         (*getBool)        (void);
   void           (*putBool)        (HsBool);
@@ -290,18 +290,18 @@ typedef struct {
   void           (*putFunPtr)      (HsFunPtr);
   void           (*putForeignPtr)  (HsForeignPtr);
 
-  HugsStablePtr  (*makeStablePtr4) (void);
-  void           (*derefStablePtr4)(HugsStablePtr);
+  CuddlesStablePtr  (*makeStablePtr4) (void);
+  void           (*derefStablePtr4)(CuddlesStablePtr);
 
   void           (*putStablePtr4)  (HsStablePtr);
   HsStablePtr    (*getStablePtr4)  (void);
   void      	 (*freeStablePtr4) (HsStablePtr);
 
   int      	 (*runId)          (int);
-} HugsAPI4;
+} CuddlesAPI4;
 
-extern  HugsAPI4* hugsAPI4     (void);
-typedef void (*InitModuleFun4) (HugsAPI4*);
+extern  CuddlesAPI4* cuddlesAPI4     (void);
+typedef void (*InitModuleFun4) (CuddlesAPI4*);
 
 extern void hs_perform_gc(void);
 extern void hs_free_stable_ptr(HsStablePtr sp);

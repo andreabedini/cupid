@@ -12,7 +12,7 @@ import Prolog
 import Interact
 import Subst
 import StackEngine
-import List(nub)
+import Data.List (nub)
 
 --- Command structure and parsing:
 

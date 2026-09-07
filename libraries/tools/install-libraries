@@ -1,9 +1,9 @@
 #!/bin/sh
-# meson install script: copy the built Hugs libraries into hugsdir.
+# meson install script: copy the built Cuddles libraries into cuddlesdir.
 #
-# usage: install-libraries BUILT_HUGSDIR HUGSDIR
+# usage: install-libraries BUILT_CUDDLESDIR CUDDLESDIR
 #
-# meson sets DESTDIR when staging an install; HUGSDIR is the final
+# meson sets DESTDIR when staging an install; CUDDLESDIR is the final
 # absolute path.  Everything under packages/ is installed except the C
 # sources, which are only needed to build the FFI stubs.
 
@@ -17,7 +17,7 @@ if [ ! -d "$src/packages" ]; then
 	exit 1
 fi
 
-echo "Installing Hugs libraries to $dest"
+echo "Installing Cuddles libraries to $dest"
 (cd "$src" && find packages -type f -print) | while read file
 do
 	case $file in

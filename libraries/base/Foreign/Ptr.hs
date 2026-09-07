@@ -53,7 +53,7 @@ import Data.Bits
 import Data.Typeable 	( Typeable(..), mkTyCon, mkTyConApp )
 import Foreign.Storable ( Storable(..) )
 
-import Hugs.Ptr
+import Cuddles.Ptr
 
  
 

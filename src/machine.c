@@ -33,7 +33,7 @@ Int    evalDepth;			/* depth of nested eval()'s        */
  * the type checker, the compiler passes that walk the AST): it compares
  * the address of a local against cStackLimit and, when that fails, calls
  * cStackCheck() below, which reports "Control stack overflow" through
- * the usual error path (hugsStackOverflow(), storage.c) instead of
+ * the usual error path (cuddlesStackOverflow(), storage.c) instead of
  * letting the recursion run off the end of the stack and segfault.
  *
  * CStackBase (machdep.c) is recorded once, very early in main(); it is
@@ -86,7 +86,7 @@ Void cStackCheck(Void) {		/* slow path of STACK_CHECK        */
 	initCStackLimit();
     }
     if (&here <= cStackLimit) {
-	hugsStackOverflow();
+	cuddlesStackOverflow();
     }
 }
 
@@ -121,7 +121,7 @@ Void tooManyOffsets(Void)              /* mkOffset(o) with o>=NUM_OFFSETS  */
  * ------------------------------------------------------------------------*/
 
 /* This list defines the sequence of all instructions that can be used in
- * the abstract machine code for Hugs.  The Ins() macro is used to
+ * the abstract machine code for Cuddles.  The Ins() macro is used to
  * ensure that the correct mapping of instructions to labels is used when
  * compiling the GCC_THREADED version.
  */
@@ -1190,7 +1190,7 @@ Void eval(Cell n)                            /* Graph reduction evaluator       
 
     STACK_CHECK
     if (++evalDepth >= MAX_EVAL_DEPTH)
-	hugsStackOverflow();
+	cuddlesStackOverflow();
 #if GIMME_STACK_DUMPS
     evalRoots[++rootsp] = n;		/* Save pointer to root expression */
 					/* should probably test that rootsp*/

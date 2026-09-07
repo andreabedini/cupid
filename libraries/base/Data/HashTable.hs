@@ -59,7 +59,7 @@ import Data.IORef	( IORef, newIORef, readIORef, writeIORef )
 import System.IO.Unsafe	( unsafePerformIO )
 import Data.Int		( Int64 )
 
-import Hugs.IOArray	( IOArray, newIOArray,
+import Cuddles.IOArray	( IOArray, newIOArray,
 			  unsafeReadIOArray, unsafeWriteIOArray )
 
 

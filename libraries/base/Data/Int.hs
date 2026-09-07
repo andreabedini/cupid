@@ -30,7 +30,7 @@ module Data.Int
 
 
 
-import Hugs.Int ( Int8, Int16, Int32, Int64 )
+import Cuddles.Int ( Int8, Int16, Int32, Int64 )
 
 
 

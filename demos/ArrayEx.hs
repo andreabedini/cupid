@@ -1,7 +1,7 @@
 -- Some simple examples using arrays:
 
 module ArrayEx where
-import Array
+import Data.Array
 
 -- Some applications, most taken from the Gentle Introduction ... -------------
 
