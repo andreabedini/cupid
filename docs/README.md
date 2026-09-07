@@ -31,7 +31,6 @@ program with `runcuddles`.
 - [Preprocess source files before loading](how-to/preprocess-sources.md)
 - [Add a library to the search path](how-to/add-a-library.md)
 - [Measure time and memory use](how-to/measure-time-and-memory.md)
-- [Embed the interpreter in a C program](how-to/embed-cuddles.md)
 - [Run the static analysis](how-to/run-clang-tidy.md)
 
 ## Reference
@@ -49,8 +48,6 @@ program with `runcuddles`.
 - [Language extensions](reference/extensions.md) — what Cuddles accepts
   beyond Haskell 2010
 - [The libraries](reference/libraries.md) — packages and modules shipped
-- [The server API](reference/server-api.md) — the C interface used by
-  `runcuddles` and by embedding programs
 
 ## Explanation
 

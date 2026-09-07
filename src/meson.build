@@ -58,11 +58,11 @@ cuddles = executable('cuddles', files('cuddles.c', 'edit.c'),
   objects: core_objs, include_directories: src_inc, dependencies: deps,
   install: true)
 
-runcuddles = executable('runcuddles', files('runcuddles.c', 'server.c'),
+runcuddles = executable('runcuddles', files('runcuddles.c'),
   objects: core_objs, include_directories: src_inc, dependencies: deps,
   install: true)
 
-fficuddles = executable('fficuddles', files('runcuddles.c', 'server.c'),
+fficuddles = executable('fficuddles', files('runcuddles.c'),
   c_args: '-DFFI_COMPILER',
   objects: core_objs, include_directories: src_inc, dependencies: deps,
   install: true)

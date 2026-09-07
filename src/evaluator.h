@@ -13,6 +13,7 @@
 extern Void startEvaluator(Void);
 extern Void stopEvaluator(Void);
 extern Void evaluator(Module);
+extern Int runProgram(Module);
 extern Void everybody(Int);
 extern Void loadPrelude(Void);
 

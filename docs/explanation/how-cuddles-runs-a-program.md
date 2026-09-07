@@ -69,9 +69,11 @@ the loop that reads a line, decides whether it is a command or an
 expression, and acts.  `edit.c` adds line editing through readline or
 libedit when one was found at build time.
 
-`runcuddles.c` is a small C program written against the server API of
-`server.c` (see [The server API](../reference/server-api.md)): it
-loads one file, looks up `Main.main`, runs it and exits.
+`runcuddles.c` is the same interpreter without the prompt: it starts the
+evaluator, loads the Prelude and the file it is given, and calls
+`runProgram`, which is the expression pipeline the prompt uses, applied
+to `main >> return () :: IO ()` in module `Main`.  The exit code is
+whatever the program asked for.
 
 `fficuddles` is `runcuddles.c` compiled with `FFI_COMPILER` defined.  In
 that mode, loading a module with `foreign` declarations makes `ffi.c`

@@ -65,4 +65,4 @@ argument:
 ## See also
 
 - [Write a script that runs with runcuddles](../how-to/write-a-script.md)
-- [The server API](server-api.md), which `runcuddles` is written against
+- [How Cuddles runs a program](../explanation/how-cuddles-runs-a-program.md)

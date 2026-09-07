@@ -48,9 +48,7 @@ extern String readRegChildStrings(HKEY, String, String, String);
 extern String RealPath(String);
 extern String substPath(String, String);
 extern String uniqPath(String);
-#ifndef CUDDLES_SERVER
-extern Bool startEdit(Int, String);
-#endif
+extern Bool startEdit(Int, String); /* edit.c, linked into cuddles only */
 
 extern Int shellEsc(String, Bool, Bool);
 extern Int shellQuote(String, String);

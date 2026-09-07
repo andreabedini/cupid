@@ -1,134 +1,114 @@
 /* --------------------------------------------------------------------------
- * Standalone cuddles system
+ * Run a Haskell program, and, built as fficuddles, generate the C stubs for
+ * a module's foreign imports.
+ *
+ * This is the interpreter without the prompt: it starts the same evaluator
+ * cuddles starts, loads the Prelude and the module it is given, and runs
+ * main.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
  *
- * $RCSfile: runcuddles.c,v $
- * $Revision: 1.23 $
- * $Date: 2006/04/26 12:26:44 $
  * ------------------------------------------------------------------------*/
-
-#define CUDDLES_SERVER 1
 
 #include "prelude.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "storage.h"
 #include "connect.h"
+#include "errors.h"
+#include "evaluator.h"
 #include "machdep.h"
-#include "server.h"
+#include "opts.h"
+#include "script.h"
 
-#if defined(_MSC_VER) && !defined(_MANAGED)
-# include <windows.h>
-#endif
+/* The name in the error messages is fixed: fficuddles is this program built
+ * with FFI_COMPILER, and its errors have always come out as runcuddles'.  */
+static const char *progName = "runcuddles";
 
-extern int main(int, char **);
-static void check(void);
-static void loadCuddles(int, char **);
+/* Interpreter output is captured rather than printed (EnableOutput(FALSE)),
+ * so an error arrives here as a buffer to be shown once, on the way out.
+ */
+static Void reportError(Void) {
+    String out = ClearOutputBuffer();
 
-static CuddlesServerAPI *cuddles = 0;
-
-static void check() {
-    char *err = cuddles->clearError();
-    if (err) {
-        fprintf(stderr, "runcuddles: %s\n", err);
-        fflush(stderr);
-        exit(1);
-    }
+    normalTerminal();
+    fprintf(stderr, "%s: Error occurred\n", progName);
+    if (out)
+        fprintf(stderr, "%s\n", out);
+    fprintf(stderr, "\n");
+    fflush(stderr);
 }
 
-static void loadCuddles(int argc, char *argv[]) {
-    cuddles = initCuddlesServer(argc, argv);
-    if (NULL == cuddles) {
-        fprintf(stderr, "runcuddles: Unable to initialise Cuddles (%s)\n",
-                lastError);
-        fflush(stderr);
-        exit(1);
-    }
-    cuddles->setOutputEnable(0);
-    check();
+static Void usageError(const char *message, String arg) {
+    fprintf(stderr, "%s: %s%s\n", progName, message, arg ? arg : "");
+    fflush(stderr);
+    exit(1);
 }
 
-/* --------------------------------------------------------------------------
- * main
- * ------------------------------------------------------------------------*/
+int main(int argc, char *argv[]);
 
 int main(int argc, char *argv[]) {
-    int exitCode = 0;
-    char **cuddles_argv;
-    int cuddles_argc;
-    char *progname;
+    Int exitCode = 0;
+    Int i;
 
-    progname = argv ? argv[0] : "runcuddles";
-    if (!initSystem()) {
-        fprintf(stderr, "%s: failed to initialize, exiting\n", progname);
-        fflush(stderr);
-        exit(1);
-    }
+    CStackBase = &argc; /* Save stack base for use in gc   */
+
+    if (!initSystem())
+        usageError("failed to initialize, exiting", 0);
 
 #if defined(FFI_COMPILER)
     generateFFI = TRUE;
 #endif
 
-    /* skip over any option flags before the program name */
-    {
-        int i = 1;                 /* ignore first arg - name of this program */
-        while (i < argc && argv[i] /* paranoia */
-               && (argv[i][0] == '+' || argv[i][0] == '-')) {
-            ++i;
-        }
-        cuddles_argv = argv;
-        cuddles_argc = i;
-
-        argv += i;
-        argc -= i;
-    }
-
-    if (argc < 1) {
-        fprintf(stderr, "%s: missing file argument\n", progname);
-        fflush(stderr);
+    if (setjmp(catch_error)) { /* every interpreter error lands here */
+        reportError();
         exit(1);
     }
 
-#if defined(_MSC_VER) && !defined(_MANAGED)
-    __try {
-#endif
+    startEvaluator();
+    readOptionSettings();
 
-        loadCuddles(cuddles_argc, cuddles_argv);
+    /* The options come before the module name; everything after it belongs
+     * to the program, or, for fficuddles, to the C compiler.            */
+    for (i = 1; i < argc && argv[i] && (argv[i][0] == '+' || argv[i][0] == '-');
+         ++i)
+        if (!processOption(argv[i]))
+            usageError("unrecognised option ", argv[i]);
+    argv += i;
+    argc -= i;
+
+    if (argc < 1)
+        usageError("missing file argument", 0);
+
+    EnableOutput(FALSE);
+    loadPrelude();
 
 #if defined(FFI_COMPILER)
-        /* all arguments following the module name are passed to the C compiler */
-        {
-            int i;
-            for (i = 1; i < argc; ++i)
-                ffiSetFlags(argv[i]);
-        }
-
-        cuddles->loadFile(argv[0]);
-        check();
-#else
-    /* all arguments following the module name are available via getArgs */
-    cuddles->loadFile(argv[0]);
-    check();
-
-    cuddles->setCuddlesArgs(argc, argv);
-    cuddles->pushHVal(cuddles->compileExpr("Main", "main >> return () :: IO ()"));
-    exitCode = cuddles->doIO();
-    check();
+    for (i = 1; i < argc; ++i) /* the C compiler's flags */
+        ffiSetFlags(argv[i]);
 #endif
 
-#if defined(_MSC_VER) && !defined(_MANAGED)
-    } __except (((GetExceptionCode() == EXCEPTION_STACK_OVERFLOW)
-                     ? EXCEPTION_EXECUTE_HANDLER
-                     : EXCEPTION_CONTINUE_SEARCH)) {
-        fatal("C stack overflow");
+    addScriptName(argv[0], TRUE);
+    readScripts(0);
+    everybody(RESET);
+
+#if !defined(FFI_COMPILER)
+    {
+        Module main = findModule(findText("Main"));
+        if (isNull(main))
+            usageError("can't find \"Main\" module", 0);
+        setCuddlesArgs(argc, argv); /* what getArgs returns */
+        exitCode = runProgram(main);
     }
 #endif
 
-    shutdownCuddlesServer(cuddles);
+    clearStack();
+    stopAnyPrinting();
+    everybody(EXIT);
+    stopEvaluator();
 
     exit(exitCode);
     return 0; /*NOTUSED*/

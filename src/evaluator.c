@@ -68,11 +68,16 @@ Void stopEvaluator() {
     }
 }
 
-Void evaluator(Module m) { /* evaluate expr and print value    */
-    Type type, bd, t;
-    Kinds ks = NIL;
-    Cell temp = NIL;
+/* --------------------------------------------------------------------------
+ * Compiling and running an expression:
+ *
+ * The prompt and runcuddles both take an expression, check it against the
+ * module it is to run in and build its graph; what they do with the result
+ * is where they differ, so the three steps they share are here.
+ * ------------------------------------------------------------------------*/
 
+static Type local typeInputExpr(Module m) /* Check the expression waiting in */
+{                                         /* the input buffer, in module m   */
     setCurrModule(m);
     scriptFile = 0;
     startNewScript(0); /* Enables recovery of storage      */
@@ -80,7 +85,54 @@ Void evaluator(Module m) { /* evaluate expr and print value    */
     parseExp();
     checkExp();
     defaultDefns = evalDefaults;
-    type = typeCheckExp(TRUE);
+    return typeCheckExp(TRUE);
+}
+
+static Void local buildInputGraph(Void) /* Compile the checked expression   */
+{                                       /* and build the graph to reduce    */
+    inputExpr = ap(nameIORun, inputExpr);
+    compileExp();
+    clearStack();
+    run(inputCode, sp);
+}
+
+static Void local startEval(Void) /* Reset the counters before reducing */
+{
+    numCells = 0;
+    numReductions = 0;
+    numGcs = 0;
+    printing = TRUE;
+    consGC = FALSE;
+}
+
+Int runProgram(Module m) /* Run main in module m and return the exit  */
+{                        /* code the program asked for                */
+    Cell temp = NIL;
+    Int exitCode = 0;
+
+    stringInput("main >> return () :: IO ()");
+    typeInputExpr(m);
+    buildInputGraph();
+    startEval();
+
+    if (nonNull(temp = evalWithNoError(pop())))
+        abandon("Program execution", temp);
+    if (whnfHead == nameLeft) { /* Left n  => the program exited with n */
+        if (nonNull(temp = evalWithNoError(pop())))
+            abandon("Program execution", temp);
+        exitCode = whnfInt;
+    } else /* Right () => it ran to the end        */
+        drop();
+    stopAnyPrinting();
+    return exitCode;
+}
+
+Void evaluator(Module m) { /* evaluate expr and print value    */
+    Type type, bd, t;
+    Kinds ks = NIL;
+    Cell temp = NIL;
+
+    type = typeInputExpr(m);
     if (isPolyType(type)) {
         ks = polySigOf(type);
         bd = monotypeOf(type);
@@ -150,10 +202,7 @@ Void evaluator(Module m) { /* evaluate expr and print value    */
         inputExpr = ap(ap(ap(printer, mkInt(MIN_PREC)), inputExpr), nameNil);
         inputExpr = ap(namePutStr, inputExpr);
     }
-    inputExpr = ap(nameIORun, inputExpr);
-    compileExp();
-    clearStack();
-    run(inputCode, sp); /* Build graph for redex */
+    buildInputGraph();
 #if DEBUG_CODE
     if (debugCode) {
         Printf("evaluator() builds: ");
@@ -161,11 +210,7 @@ Void evaluator(Module m) { /* evaluate expr and print value    */
         Putchar('\n');
     }
 #endif
-    numCells = 0;
-    numReductions = 0;
-    numGcs = 0;
-    printing = TRUE;
-    consGC = FALSE;
+    startEval();
     if (nonNull(type) && addType) {
         onto(NIL);
         pushed(0) = pushed(1);
