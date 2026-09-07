@@ -19,6 +19,10 @@
 #include "machdep.h"
 #include "errors.h"
 #include "output.h"
+#include "static.h"
+#include "deriving.h"
+#include "ffi.h"
+#include "fixity.h"
 #include "subst.h"
 #include "module.h"
 #include "opts.h"
@@ -34,12 +38,12 @@ static Void local checkUnqualImport(Triple);
 
 static Void local checkTyconDefn(Tycon);
 static Void local depConstrs(Tycon, List, Cell);
-static Int local userArity(Name);
+Int userArity(Name);
 static List local addSels(Int, Name, List, List);
 static List local selectCtxt(List, List);
 static Void local checkSynonyms(List);
 static List local visitSyn(List, Tycon, List);
-static Type local fullerExpand(Type);
+Type fullerExpand(Type);
 static Type local instantiateNewtype(Name, Type);
 static Type local instantiateSyn(Type, Type);
 
@@ -55,14 +59,14 @@ static Name local newDSel(Class, Int);
 static Text local generateText(String, Class);
 static Int local visitClass(Class);
 
-static List local classBindings(String, Class, List);
+List classBindings(String, Class, List);
 static Name local memberName(Class, Text);
 static List local numInsert(Int, Cell, List);
 
 static List local typeVarsIn(Cell, List, List, List);
 static List local maybeAppendVar(Cell, List);
 
-static Type local checkSigType(Int, String, Cell, Type);
+Type checkSigType(Int, String, Cell, Type);
 static Void local checkOptQuantVars(Int, List, List);
 static Type local depTopType(Int, List, Type);
 static Type local depCompType(Int, List, Type);
@@ -84,74 +88,25 @@ static Void local kindTC(Cell);
 static Void local genTC(Cell);
 
 static Void local checkInstDefn(Inst);
-static Void local insertInst(Inst);
+Void insertInst(Inst);
 static Bool local instCompare(Inst, Inst);
-static Name local newInstImp(Inst);
-static Void local kindInst(Inst, Int);
-static Void local checkDerive(Tycon, List, List, Cell);
-static Void local addDerInst(Int, Class, List, List, Type, Int);
-static Void local deriveContexts(List);
-static Void local initDerInst(Inst);
-static Void local calcInstPreds(Inst);
+Name newInstImp(Inst);
+Void kindInst(Inst, Int);
 static List local calcFunDeps(List);
-static Void local maybeAddPred(Cell, Int, Int, List);
-static Cell local copyAdj(Cell, Int, Int);
-static Void local tidyDerInst(Inst);
 static List local inheritFundeps(Class, Cell, Int);
 static Void local extendFundeps(Class);
 
 static List local otvarsZonk(Cell, List, Int);
-static Void local addDerivImp(Inst);
-static List local getDiVars(Int);
-static Cell local mkBind(String, List);
-static Cell local mkVarAlts(Int, Cell);
-
-static List local deriveEq(Tycon);
-static Pair local mkAltEq(Int, List);
-static List local deriveOrd(Tycon);
-static Pair local mkAltOrd(Int, List);
-static List local makeDPats2(Cell, Int);
-
-static List local deriveEnum(Tycon);
-static List local deriveIx(Tycon);
-static Bool local isEnumType(Tycon);
-static List local mkIxBinds(Int, Cell, Int);
-static Cell local prodRange(Int, List, Cell, Cell, Cell);
-static Cell local prodIndex(Int, List, Cell, Cell, Cell);
-static Cell local prodInRange(Int, List, Cell, Cell, Cell);
-
-static List local deriveShow(Tycon);
-static Cell local mkAltShow(Int, Cell, Int);
-static Cell local showsPrecRhs(Cell, Cell, Int);
-
-static List local deriveRead(Cell);
-static Cell local mkReadCon(Name, Cell, Cell);
-static Cell local mkReadPrefix(Cell);
-static Cell local mkReadInfix(Cell);
-static Cell local mkReadTuple(Cell);
-static Cell local mkReadRecord(Cell, List);
-
-static List local deriveBounded(Tycon);
-static List local mkBndBinds(Int, Cell, Int);
 
 static Void local checkDefaultDefns(Void);
 
 static List local checkPrimDefn(Triple);
 static Name local addNewPrim(Int, Text, String, Cell);
 
-static Void local checkForeignImport(Name);
-static Void local checkForeignExport(Name);
-static Void local linkForeign(Name);
-
-static Cell local tidyInfix(Int, Cell);
-static Pair local attachFixity(Int, Cell);
-static Syntax local lookupSyntax(Text);
-
 static Cell local checkPat(Int, Cell);
 static Cell local checkMaybeCnkPat(Int, Cell);
 static Cell local checkApPat(Int, Int, Cell);
 static Void local addToPatVars(Int, Cell);
-static Name local conDefined(Int, Cell, Bool);
 static Void local checkIsCfun(Int, Name);
 static Void local checkCfunArgs(Int, Cell, Int);
 static Cell local checkPatType(Int, String, Cell, Type);
@@ -166,7 +121,7 @@ static List local getPatVars(Int, Cell, List);
 static List local addPatVar(Int, Cell, List);
 static List local eqnsToBindings(List, List, List, List);
 static Void local notDefined(Int, List, Cell);
-static Cell local findBinding(Text, List);
+Cell findBinding(Text, List);
 static Cell local getAttr(List, Cell);
 static Void local addSigdecl(List, Cell);
 static Void local addFixdecl(List, List, List, List, Triple);
@@ -729,8 +684,8 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
     }
 }
 
-static Int local userArity(Name c) /* Find arity for cfun, ignoring   */
-{                                  /* CDICTS parameters            */
+Int userArity(Name c) /* Find arity for cfun, ignoring   */
+{                     /* CDICTS parameters            */
     Int a = nameRec(c)->arity;
     Type t = nameRec(c)->type;
     Int w;
@@ -747,8 +702,8 @@ static Int local userArity(Name c) /* Find arity for cfun, ignoring   */
     return a;
 }
 
-static List cfunSfuns; /* List of (Cfun,[SelectorVar])     */
-                       /*  - used for deriving Show       */
+List cfunSfuns; /* List of (Cfun,[SelectorVar])     */
+                /*  - used for deriving Show       */
 
 static List local addSels(Int line, Name c, List fs,
                           List ss) /* Add fields to selector list          */
@@ -871,11 +826,11 @@ static List local visitSyn(List path, Tycon t,
  * Expanding out all type synonyms and newtypes in a type expression:
  * ------------------------------------------------------------------------*/
 
-static Type local fullerExpand(Type t) /* find full expansion of type exp */
-{                                      /* assuming that all relevant type */
-    Cell h = t;                        /* synonym defns of lower rank have*/
-    Int n = 0;                         /* already been fully expanded but */
-    List args;                         /* not assuming same for newtypes  */
+Type fullerExpand(Type t) /* find full expansion of type exp */
+{                         /* assuming that all relevant type */
+    Cell h = t;           /* synonym defns of lower rank have*/
+    Int n = 0;            /* already been fully expanded but */
+    List args;            /* not assuming same for newtypes  */
     for (args = NIL; isAp(h); h = fun(h), n++) {
         /* Does not apply recursively because the ffi is only interested
          * in the top level constructors
@@ -1512,7 +1467,7 @@ static Int local visitClass(Class c) /* visit class defn to check that  */
  * Process class and instance declaration binding groups:
  * ------------------------------------------------------------------------*/
 
-static List local classBindings(String where, Class c, List bs)
+List classBindings(String where, Class c, List bs)
 /* Check validity of bindings bs   */
 /* for class c (or an inst of c)   */
 { /* sort into approp. member order  */
@@ -1654,7 +1609,7 @@ static List local maybeAppendVar(Cell v,
  *   - ensure that the type is well-kinded.
  * ------------------------------------------------------------------------*/
 
-static Type local checkSigType(Int line, String where, Cell e, Type type)
+Type checkSigType(Int line, String where, Cell e, Type type)
 /* Check validity of type expr in  */
 /* explicit type signature         */
 {
@@ -2453,7 +2408,7 @@ static Void local checkInstDefn(Inst in) /* Validate instance declaration   */
     }
 }
 
-static Void local insertInst(Inst in) /* Insert instance into class        */
+Void insertInst(Inst in) /* Insert instance into class        */
 {
     Class c = instRec(in)->c;
     List ins = cclassRec(c)->instances;
@@ -2554,7 +2509,7 @@ static Bool local instCompare(Inst ia,
     return matchPred(instRec(ia)->head, alpha, instRec(ib)->head, beta);
 }
 
-static Name local newInstImp(Inst in) /* Make definition for inst builder*/
+Name newInstImp(Inst in) /* Make definition for inst builder*/
 {
     Name b = newName(inventText(), in);
     nameRec(b)->line = instRec(in)->line;
@@ -2567,8 +2522,7 @@ static Name local newInstImp(Inst in) /* Make definition for inst builder*/
  * Kind checking of instance declaration headers:
  * ------------------------------------------------------------------------*/
 
-static Void local kindInst(Inst in,
-                           Int freedom) /* check predicates in instance    */
+Void kindInst(Inst in, Int freedom) /* check predicates in instance    */
 {
     Int beta;
 
@@ -2584,1080 +2538,6 @@ static Void local kindInst(Inst in,
             cons(copyKindvar(beta + freedom), instRec(in)->kinds);
     }
     emptySubstitution();
-}
-
-/* --------------------------------------------------------------------------
- * Process derived instance requests:
- * ------------------------------------------------------------------------*/
-
-static List derivedInsts; /* list of derived instances     */
-
-static Void local checkDerive(Tycon t, List p, List ts,
-                              Cell ct) /* verify derived instance request */
-                                       /* for tycon t, with explicit       */
-                                       /* context p, component types ts   */
-                                       /* and named class ct               */
-{
-    Int line = tyconRec(t)->line;
-    Class c = findQualClass(ct);
-    if (isNull(c)) {
-        errHead(line);
-        errPrintf("Unknown class \"%s\" in derived instance", identToStr(ct));
-        errFail();
-    }
-    addDerInst(line, c, p, dupList(ts), t, tyconRec(t)->arity);
-}
-
-static Void local addDerInst(Int line, Class c, List p, List cts, Type t,
-                             Int a) /* Add a derived instance  */
-{
-    Inst in;
-    Cell head = t; /* Build instance head          */
-    Int i = 0;
-
-    for (; i < a; i++) {
-        head = ap(head, mkOffset(i));
-    }
-    head = ap(c, head);
-
-    in = newInst();
-    instRec(in)->c = c;
-    instRec(in)->line = line;
-    instRec(in)->head = head;
-    instRec(in)->specifics = ap(DERIVE, pair(dupList(p), cts));
-    instRec(in)->implements = NIL;
-    instRec(in)->kinds = mkInt(a);
-    derivedInsts = cons(in, derivedInsts);
-}
-
-Void addTupInst(Class c, Int n) /* Request derived instance of c   */
-                                /* for mkTuple(n) constructor      */
-{
-    Int m = n;
-    List cts = NIL;
-    while (0 < m--) {
-        cts = cons(mkOffset(m), cts);
-    }
-    cts = rev(cts);
-    addDerInst(0, c, NIL, cts, mkTuple(n), n);
-}
-
-/* --------------------------------------------------------------------------
- * Calculation of contexts for derived instances:
- *
- * Allowing arbitrary types to appear in contexts makes it rather harder
- * to decide what the context for a derived instance should be.  For
- * example, given:
- *
- *    data T a = MkT [a] deriving Show,
- *
- * we could have either of the following:
- *
- *    instance (Show [a]) => Show (T a) where ...
- *    instance (Show a) => Show (T a) where ...
- *
- * (assuming, of course, that instance (Show a) => Show [a]).  For now, we
- * choose to reduce contexts in the hope of detecting errors at an earlier
- * stage---in contrast with value definitions, there is no way for a user
- * to provide something analogous to a `type signature' by which they might
- * be able to control this behaviour themselves.  We eliminate tautological
- * predicates, but only allow predicates to appear in the final result if
- * they have at least one argument with a variable at its head.
- *
- * In general, we have to deal with mutually recursive instance declarations.
- * We find a solution in the obvious way by iterating to find a fixed point.
- * Of course, without restrictions on the form of instance declarations, we
- * cannot be sure that this will always terminate!
- *
- * For each instance we maintain a pair of the form DERIVE (ctxt,ps).
- * Ctxt is a list giving the parts of the context that have been produced
- * so far in the form of predicate skeletons.  During the calculation of
- * derived instances, we attach a dummy NIL value to the end of the list
- * which acts as a kind of `variable': other parts of the system maintain
- * pointers to this variable, and use it to detect when the context has
- * been extended with new elements.  Meanwhile, ps is a list containing
- * predicates (pi,o) together with (delayed) substitutions of the form
- * (o,xs) where o is an offset and xs is one of the context variables
- * described above, which may have been partially instantiated.
- * ------------------------------------------------------------------------*/
-
-static Bool instsChanged;
-
-static Void local deriveContexts(List is) /* Calc contexts for derived insts */
-{
-    emptySubstitution();
-    mapProc(initDerInst, is); /* Prepare derived instances         */
-
-    do { /* Main calculation of contexts           */
-        instsChanged = FALSE;
-        mapProc(calcInstPreds, is);
-    } while (instsChanged);
-
-    mapProc(tidyDerInst, is); /* Tidy up results                   */
-}
-
-static Void local initDerInst(Inst in) /* Prepare instance for calculation*/
-{                                      /* of derived instance context      */
-    Cell spcs = instRec(in)->specifics;
-    Int beta = newKindedVars(instRec(in)->kinds);
-    if (whatIs(spcs) != DERIVE) {
-        internal("initDerInst");
-    }
-    fst(snd(spcs)) = appendOnto(fst(snd(spcs)), singleton(NIL));
-    for (spcs = snd(snd(spcs)); nonNull(spcs); spcs = tl(spcs)) {
-        hd(spcs) = ap2(instRec(in)->c, hd(spcs), mkInt(beta));
-    }
-    instRec(in)->numSpecifics = beta;
-}
-
-static Void local
-calcInstPreds(Inst in) /* Calculate next approximation           */
-{                      /* of the context for a derived           */
-    List retain = NIL; /* instance                       */
-    List ps = snd(snd(instRec(in)->specifics));
-    List spcs = fst(snd(instRec(in)->specifics));
-    Int beta = instRec(in)->numSpecifics;
-    Int its = 1;
-    Int factor = 1 + length(ps);
-
-    while (nonNull(ps)) {
-        Cell p = hd(ps);
-        ps = tl(ps);
-
-        if (its++ >= factor * cutoff) {
-            Cell bpi = instRec(in)->head;
-            errHead(instRec(in)->line);
-            errPrintf("\n*** Cannot derive ");
-            errPred(bpi);
-            errPrintf(" after %d iterations.", its - 1);
-            errPrintf(
-                "\n*** This may indicate that the problem is undecidable.  However,\n");
-            errPrintf(
-                "*** you may still try to increase the cutoff limit using the -c\n");
-            errPrintf(
-                "*** option and then try again.  (The current setting is -c%d)\n",
-                cutoff);
-            errFail();
-        }
-        if (isInt(fst(p))) { /* Delayed substitution?   */
-            List qs = snd(p);
-            for (; nonNull(hd(qs)); qs = tl(qs)) {
-                ps = cons(pair(hd(qs), fst(p)), ps);
-            }
-            retain = cons(pair(fst(p), qs), retain);
-        } else { /* Class predicate        */
-            Cell pi = fst(p);
-            Int o = intOf(snd(p));
-            Inst in1 = findInstFor(pi, o);
-            if (nonNull(in1)) {
-                List qs = instRec(in1)->specifics;
-                Int off = mkInt(typeOff);
-                if (whatIs(qs) == DERIVE) { /* Still being derived         */
-                    for (qs = fst(snd(qs)); nonNull(hd(qs)); qs = tl(qs)) {
-                        ps = cons(pair(hd(qs), off), ps);
-                    }
-                    retain = cons(pair(off, qs), retain);
-                } else { /* Previously def'd inst   */
-                    for (; nonNull(qs); qs = tl(qs)) {
-                        ps = cons(pair(hd(qs), off), ps);
-                    }
-                }
-            } else { /* No matching instance       */
-                Cell qi = pi;
-                while (isAp(qi) && isOffset(getDerefHead(arg(qi), o))) {
-                    qi = fun(qi);
-                }
-                if (isAp(qi)) {
-                    Cell bpi = instRec(in)->head;
-                    pi = copyPred(pi, o);
-                    errHead(instRec(in)->line);
-                    errPrintf("An instance of ");
-                    errPred(pi);
-                    errPrintf(" is required to derive ");
-                    errPred(bpi);
-                    errPrintf("\n");
-                    errFail();
-                } else {
-                    maybeAddPred(pi, o, beta, spcs);
-                }
-            }
-        }
-    }
-    snd(snd(instRec(in)->specifics)) = retain;
-}
-
-static Void local maybeAddPred(Cell pi, Int o, Int beta, List ps)
-/* Add predicate pi to the list ps,*/
-/* setting the instsChanged flag if*/
-/* pi is not already a member and  */
-{ /* using beta to adjust vars     */
-    Cell c = getHead(pi);
-    for (; nonNull(ps); ps = tl(ps)) {
-        if (isNull(hd(ps))) { /* reached the `dummy' end of list?*/
-            hd(ps) = copyAdj(pi, o, beta);
-            tl(ps) = pair(NIL, NIL);
-            instsChanged = TRUE;
-            return;
-        } else if (c == getHead(hd(ps)) && samePred(pi, o, hd(ps), beta)) {
-            return;
-        }
-    }
-}
-
-static Cell local copyAdj(Cell c, Int o,
-                          Int beta) /* Copy (c,o), replacing vars with */
-                                    /* offsets relative to beta.           */
-{
-    switch (whatIs(c)) {
-    case AP: {
-        Cell l = copyAdj(fst(c), o, beta);
-        Cell r = copyAdj(snd(c), o, beta);
-        return ap(l, r);
-    }
-
-    case OFFSET: {
-        Int vn = o + offsetOf(c);
-        Tyvar *tyv = tyvar(vn);
-        if (isBound(tyv)) {
-            return copyAdj(tyv->bound, tyv->offs, beta);
-        }
-        vn -= beta;
-        if (vn < 0 || vn >= NUM_OFFSETS) {
-            internal("copyAdj");
-        }
-        return mkOffset(vn);
-    }
-    default:
-        break;
-    }
-    return c;
-}
-
-static Void local tidyDerInst(Inst in) /* Tidy up results of derived inst */
-{                                      /* calculations                     */
-    Int o = instRec(in)->numSpecifics;
-    List ps = tl(rev(fst(snd(instRec(in)->specifics))));
-    clearMarks();
-    copyPred(instRec(in)->head, o);
-    instRec(in)->specifics = simpleContext(ps, o);
-    instRec(in)->numSpecifics = length(instRec(in)->specifics);
-}
-
-/* --------------------------------------------------------------------------
- * Generate code for derived instances:
- * ------------------------------------------------------------------------*/
-
-static Void local addDerivImp(Inst in) {
-    List imp = NIL;
-    Type t = getHead(arg(instRec(in)->head));
-    Class c = instRec(in)->c;
-    if (c == classEq) {
-        imp = deriveEq(t);
-    } else if (c == classOrd) {
-        imp = deriveOrd(t);
-    } else if (c == classEnum) {
-        imp = deriveEnum(t);
-    } else if (c == classIx) {
-        imp = deriveIx(t);
-    } else if (c == classShow) {
-        imp = deriveShow(t);
-    } else if (c == classRead) {
-        imp = deriveRead(t);
-    } else if (c == classBounded) {
-        imp = deriveBounded(t);
-    } else {
-        errHead(instRec(in)->line);
-        errPrintf("Cannot derive instances of class \"%s\"",
-                  textToStr(cclassRec(instRec(in)->c)->text));
-        errFail();
-    }
-
-    kindInst(in, intOf(instRec(in)->kinds));
-    insertInst(in);
-    instRec(in)->builder = newInstImp(in);
-    instRec(in)->implements =
-        classBindings("derived instance", instRec(in)->c, imp);
-}
-
-static List diVars = NIL; /* Acts as a cache of invented vars*/
-static Int diNum = 0;
-
-static List local getDiVars(Int n) /* get list of at least n vars for */
-{                                  /* derived instance generation          */
-    for (; diNum < n; diNum++) {
-        diVars = cons(inventVar(), diVars);
-    }
-    return diVars;
-}
-
-static Cell local mkBind(String s,
-                         List alts) /* make a binding for a variable   */
-{
-    return pair(mkVar(findText(s)), pair(NIL, alts));
-}
-
-static Cell local mkVarAlts(Int line,
-                            Cell r) /* make alts for binding a var to  */
-                                    /* a simple expression                 */
-{
-    return singleton(pair(NIL, pair(mkInt(line), r)));
-}
-
-/* --------------------------------------------------------------------------
- * Given a datatype:   data T a b = A a b | B Int | C  deriving (Eq, Ord)
- * The derived definitions of equality and ordering are given by:
- *
- *   A a b == A x y  =  a==x && b==y
- *   B a   == B x    =  a==x
- *   C     == C      =  True
- *   _     == _      =  False
- *
- *   compare (A a b) (A x y) =  primCompAux a x (compare b y)
- *   compare (B a)   (B x)   =  compare a x
- *   compare C       C       =  EQ
- *   compare a       x       =  cmpConstr a x
- *
- * In each case, the last line is only needed if there are multiple
- * constructors in the datatype definition.
- * ------------------------------------------------------------------------*/
-
-#define ap2(f, x, y) ap(ap(f, x), y)
-
-static List local deriveEq(Type t) /* generate binding for derived == */
-{                                  /* for some TUPLE or DATATYPE t         */
-    List alts = NIL;
-    if (isTycon(t)) { /* deal with type constrs    */
-        List cs = tyconRec(t)->defn;
-        for (; hasCfun(cs); cs = tl(cs)) {
-            alts = cons(mkAltEq(tyconRec(t)->line,
-                                makeDPats2(hd(cs), userArity(hd(cs)))),
-                        alts);
-        }
-        if (cfunOf(hd(tyconRec(t)->defn)) != 0) {
-            alts = cons(pair(cons(WILDCARD, cons(WILDCARD, NIL)),
-                             pair(mkInt(tyconRec(t)->line), nameFalse)),
-                        alts);
-        }
-        alts = rev(alts);
-    } else { /* special case for tuples    */
-        alts = singleton(mkAltEq(0, makeDPats2(t, tupleOf(t))));
-    }
-
-    return singleton(mkBind("==", alts));
-}
-
-static Pair local mkAltEq(Int line,
-                          List pats) /* make alt for an equation for == */
-                                     /* using patterns in pats for lhs  */
-{                                    /* arguments                          */
-    Cell p = hd(pats);
-    Cell q = hd(tl(pats));
-    Cell e = nameTrue;
-
-    if (isAp(p)) {
-        e = ap2(nameEq, arg(p), arg(q));
-        for (p = fun(p), q = fun(q); isAp(p); p = fun(p), q = fun(q)) {
-            e = ap2(nameAnd, ap2(nameEq, arg(p), arg(q)), e);
-        }
-    }
-    return pair(pats, pair(mkInt(line), e));
-}
-
-static List local deriveOrd(Type t) /* make binding for derived compare*/
-{                                   /* for some TUPLE or DATATYPE t        */
-    List alts = NIL;
-    if (isEnumType(t)) { /* special case for enumerations   */
-        alts = mkVarAlts(tyconRec(t)->line, nameConCmp);
-    } else if (isTycon(t)) { /* deal with type constrs     */
-        List cs = tyconRec(t)->defn;
-        for (; hasCfun(cs); cs = tl(cs)) {
-            alts = cons(mkAltOrd(tyconRec(t)->line,
-                                 makeDPats2(hd(cs), userArity(hd(cs)))),
-                        alts);
-        }
-        if (cfunOf(hd(tyconRec(t)->defn)) != 0) {
-            Cell u = inventVar();
-            Cell w = inventVar();
-            alts =
-                cons(pair(cons(u, singleton(w)), pair(mkInt(tyconRec(t)->line),
-                                                      ap2(nameConCmp, u, w))),
-                     alts);
-        }
-        alts = rev(alts);
-    } else { /* special case for tuples    */
-        alts = singleton(mkAltOrd(0, makeDPats2(t, tupleOf(t))));
-    }
-
-    return singleton(mkBind("compare", alts));
-}
-
-static Pair local mkAltOrd(Int line,
-                           List pats) /* make alt for eqn for compare      */
-                                      /* using patterns in pats for lhs  */
-{                                     /* arguments                         */
-    Cell p = hd(pats);
-    Cell q = hd(tl(pats));
-    Cell e = nameEQ;
-
-    if (isAp(p)) {
-        e = ap2(nameCompare, arg(p), arg(q));
-        for (p = fun(p), q = fun(q); isAp(p); p = fun(p), q = fun(q)) {
-            e = ap(ap2(nameCompAux, arg(p), arg(q)), e);
-        }
-    }
-
-    return pair(pats, pair(mkInt(line), e));
-}
-
-static List local makeDPats2(Cell h, Int n) /* generate pattern list       */
-/* by putting two new patterns with*/
-{ /* head h and new var components   */
-    List us = getDiVars(2 * n);
-    List vs = NIL;
-    Cell p;
-    Int i;
-
-    for (i = 0, p = h; i < n; ++i) { /* make first version of pattern   */
-        p = ap(p, hd(us));
-        us = tl(us);
-    }
-    vs = cons(p, vs);
-
-    for (i = 0, p = h; i < n; ++i) { /* make second version of pattern  */
-        p = ap(p, hd(us));
-        us = tl(us);
-    }
-    return cons(p, vs);
-}
-
-/* --------------------------------------------------------------------------
- * Deriving Ix and Enum:
- * ------------------------------------------------------------------------*/
-
-static List local
-deriveEnum(Tycon t) /* Construct definition of enumeration         */
-{
-    Int l = tyconRec(t)->line;
-
-    if (!isEnumType(t)) {
-        errHead(l);
-        errPrintf("Can only derive instances of Enum for enumeration types");
-        errFail();
-    }
-
-    return cons(
-        mkBind("toEnum", mkVarAlts(l, ap(nameEnToEn, hd(tyconRec(t)->defn)))),
-        cons(mkBind("fromEnum", mkVarAlts(l, nameEnFrEn)),
-             cons(mkBind("enumFrom", mkVarAlts(l, nameEnFrom)),
-                  cons(mkBind("enumFromTo", mkVarAlts(l, nameEnFrTo)),
-                       cons(mkBind("enumFromThen", mkVarAlts(l, nameEnFrTh)),
-                            NIL)))));
-}
-
-static List local deriveIx(Tycon t) /* Construct definition of indexing      */
-{
-    if (isEnumType(t)) { /* Definitions for enumerations                   */
-        return cons(
-            mkBind("range", mkVarAlts(tyconRec(t)->line, nameEnRange)),
-            cons(mkBind("index", mkVarAlts(tyconRec(t)->line, nameEnIndex)),
-                 cons(mkBind("inRange",
-                             mkVarAlts(tyconRec(t)->line, nameEnInRng)),
-                      NIL)));
-    } else if (isTuple(t)) { /* Definitions for product types      */
-        return mkIxBinds(0, t, tupleOf(t));
-    } else if (isTycon(t) && cfunOf(hd(tyconRec(t)->defn)) == 0) {
-        return mkIxBinds(tyconRec(t)->line, hd(tyconRec(t)->defn),
-                         userArity(hd(tyconRec(t)->defn)));
-    }
-
-    errHead(tyconRec(t)->line);
-    errPrintf(
-        "Can only derive instances of Ix for enumeration or product types");
-    errFail();
-    return NIL; /* NOTREACHED*/
-}
-
-static Bool local
-isEnumType(Tycon t) /* Determine whether t is an enumeration   */
-{                   /* type (i.e. all constructors arity == 0) */
-    if (isTycon(t) &&
-        (tyconRec(t)->what == DATATYPE || tyconRec(t)->what == NEWTYPE)) {
-        List cs = tyconRec(t)->defn;
-        for (; hasCfun(cs); cs = tl(cs)) {
-            if (nameRec(hd(cs))->arity != 0) {
-                return FALSE;
-            }
-        }
-        addCfunTable(t);
-        return TRUE;
-    }
-    return FALSE;
-}
-
-static List local mkIxBinds(Int line, Cell h,
-                            Int n) /* build bindings for derived Ix on*/
-                                   /* a product type               */
-{
-    List vs = getDiVars(3 * n);
-    Cell ls = h;
-    Cell us = h;
-    Cell is = h;
-    Cell js = h;
-    Cell pr = NIL;
-    Cell pats = NIL;
-    Int i;
-
-    for (i = 0; i < n; ++i, vs = tl(vs)) { /* build three patterns for values */
-        ls = ap(ls, hd(vs));               /* of the datatype concerned    */
-        us = ap(us, hd(vs = tl(vs)));
-        is = ap(is, hd(vs = tl(vs)));
-        js = ap(js, hd(vs)); /* ... and one expression     */
-    }
-    pr = ap2(mkTuple(2), ls, us);   /* Build (ls,us)               */
-    pats = cons(pr, cons(is, NIL)); /* Build [(ls,us),is]                  */
-
-    return cons(prodRange(line, singleton(pr), ls, us, js),
-                cons(prodIndex(line, pats, ls, us, is),
-                     cons(prodInRange(line, pats, ls, us, is), NIL)));
-}
-
-static Cell local prodRange(Int line, List pats, Cell ls, Cell us, Cell is)
-/* Make definition of range for a  */
-/* product type                    */
-{
-    /* range :: (a,a) -> [a]
-     * range (X a b c, X p q r)
-     *   = [ X x y z | x <- range (a,p), y <- range (b,q), z <- range (c,r) ]
-     */
-    Cell is1 = is;
-    List e = NIL;
-    for (; isAp(ls); ls = fun(ls), us = fun(us), is = fun(is)) {
-        e = cons(
-            ap(FROMQUAL,
-               pair(arg(is), ap(nameRange, ap2(mkTuple(2), arg(ls), arg(us))))),
-            e);
-    }
-    e = ap(COMP, pair(is1, e));
-    e = singleton(pair(pats, pair(mkInt(line), e)));
-    return mkBind("range", e);
-}
-
-static Cell local prodIndex(Int line, List pats, Cell ls, Cell us, Cell is)
-/* Make definition of index for a  */
-/* product type                    */
-{
-    /* index :: (a,a) -> a -> Bool
-     * index (X a b c, X p q r) (X x y z)
-     *  = index (c,r) z + rangeSize (c,r) * (
-     *     index (b,q) y + rangeSize (b,q) * (
-     *      index (a,x) x))
-     */
-    List xs = NIL;
-    Cell e = NIL;
-    for (; isAp(ls); ls = fun(ls), us = fun(us), is = fun(is)) {
-        xs = cons(ap2(nameIndex, ap2(mkTuple(2), arg(ls), arg(us)), arg(is)),
-                  xs);
-    }
-    for (e = hd(xs); nonNull(xs = tl(xs));) {
-        Cell x = hd(xs);
-        e = ap2(namePlus, x, ap2(nameMult, ap(nameRangeSize, arg(fun(x))), e));
-    }
-    e = singleton(pair(pats, pair(mkInt(line), e)));
-    return mkBind("index", e);
-}
-
-static Cell local prodInRange(Int line, List pats, Cell ls, Cell us, Cell is)
-/* Make definition of inRange for a*/
-/* product type                    */
-{
-    /* inRange :: (a,a) -> a -> Bool
-     * inRange (X a b c, X p q r) (X x y z)
-     *          = inRange (a,p) x && inRange (b,q) y && inRange (c,r) z
-     */
-    Cell e = ap2(nameInRange, ap2(mkTuple(2), arg(ls), arg(us)), arg(is));
-    while (ls = fun(ls), us = fun(us), is = fun(is), isAp(ls)) {
-        e = ap2(nameAnd,
-                ap2(nameInRange, ap2(mkTuple(2), arg(ls), arg(us)), arg(is)),
-                e);
-    }
-    e = singleton(pair(pats, pair(mkInt(line), e)));
-    return mkBind("inRange", e);
-}
-
-/* --------------------------------------------------------------------------
- * Deriving Show:
- * ------------------------------------------------------------------------*/
-
-static List local
-deriveShow(Tycon t) /* Construct definition of text conversion */
-{
-    List alts = NIL;
-    if (isTycon(t)) { /* deal with type constrs    */
-        List cs = tyconRec(t)->defn;
-        for (; hasCfun(cs); cs = tl(cs)) {
-            alts = cons(mkAltShow(tyconRec(t)->line, hd(cs), userArity(hd(cs))),
-                        alts);
-        }
-        alts = rev(alts);
-    } else { /* special case for tuples    */
-        alts = singleton(mkAltShow(0, t, tupleOf(t)));
-    }
-
-    return singleton(mkBind("showsPrec", alts));
-}
-
-static Cell local mkAltShow(Int line, Cell h,
-                            Int a) /* make alt for showsPrec eqn           */
-{
-    List vs = getDiVars(a + 1);
-    Cell d = hd(vs);
-    Cell pat = h;
-    List pats = NIL;
-    Int i = 0;
-    for (vs = tl(vs); i < a; i++) {
-        pat = ap(pat, hd(vs));
-        vs = tl(vs);
-    }
-    pats = cons(d, cons(pat, NIL));
-    return pair(pats, pair(mkInt(line), showsPrecRhs(d, pat, a)));
-}
-
-#define APP_PREC 10 /* precedence of function application */
-#define shows0 ap(nameShowsPrec, mkInt(0))
-#define showsN(x) ap(nameShowsPrec, mkInt(x))
-#define showsOP ap(nameComp, consChar('('))
-#define showsOB ap(nameComp, consChar('{'))
-#define showsCM ap(nameComp, consChar(','))
-#define showsSP ap(nameComp, consChar(' '))
-#define showsBQ ap(nameComp, consChar('`'))
-#define showsCP consChar(')')
-#define showsCB consChar('}')
-
-static Cell local showsPrecRhs(Cell d, Cell pat,
-                               Int a) /* build a rhs for showsPrec for a */
-                                      /* given pattern, pat                */
-{
-    Cell h = getHead(pat);
-    List cfs = cfunSfuns;
-
-    if (isTuple(h)) {
-        /* To display a tuple:
-         *    showsPrec d (a,b,c,d) = showChar '(' . showsPrec 0 a .
-         *                            showChar ',' . showsPrec 0 b .
-         *                            showChar ',' . showsPrec 0 c .
-         *                            showChar ',' . showsPrec 0 d .
-         *                            showChar ')'
-         */
-        Int i = tupleOf(h);
-        Cell rhs = showsCP;
-        for (; i > 1; --i) {
-            rhs = ap(showsCM, ap2(nameComp, ap(shows0, arg(pat)), rhs));
-            pat = fun(pat);
-        }
-        return ap(showsOP, ap2(nameComp, ap(shows0, arg(pat)), rhs));
-    }
-
-    for (; nonNull(cfs) && h != fst(hd(cfs)); cfs = tl(cfs)) {
-    }
-    if (nonNull(cfs)) {
-        /* To display a value using record syntax:
-         *    showsPrec d C{x=e, y=f, z=g} =
-         *              showString "C"  . showString " {" .
-         *              showField "x" e . showString ", " .
-         *              showField "y" f . showString ", " .
-         *              showField "z" g . showChar '}'
-         *    showField lab val
-         *      = showString lab . showString " = " . shows val
-         */
-        Cell rhs = showsCB;
-        List vs = dupOnto(snd(hd(cfs)), NIL);
-        if (isAp(pat)) {
-            for (;;) {
-                rhs = ap2(nameComp,
-                          ap2(nameShowField, mkStr(textOf(hd(vs))), arg(pat)),
-                          rhs);
-                pat = fun(pat);
-                vs = tl(vs);
-                if (isAp(pat)) {
-                    rhs = ap(showsCM, ap(showsSP, rhs));
-                } else {
-                    break;
-                }
-            }
-        }
-        rhs = ap2(nameComp, ap(nameApp, mkStr(nameRec(h)->text)),
-                  ap(showsSP, ap(showsOB, rhs)));
-        return rhs;
-    } else if (a == 0) {
-        /* To display a nullary constructor:
-         *    showsPrec d Foo = showString "Foo"
-         */
-        return ap(nameApp, mkStr(nameRec(h)->text));
-    } else {
-        Syntax s = syntaxOf(h);
-        if (a == 2 && assocOf(s) != APPLIC) {
-            /* For a binary constructor with prec p:
-             * showsPrec d (a :* b) = showParen (d > p)
-             *                          (showsPrec lp a . showChar ' ' .
-             *                           showsString s  . showChar ' ' .
-             *                           showsPrec rp b)
-             */
-            Int p = precOf(s);
-            Int lp =
-                (p +
-                 1); /* how it was in Haskell from Day 1 until 11/4/2002:  (assocOf(s)==LEFT_ASS)  ? p : (p+1); */
-            Int rp = (p + 1); /* ditto:  (assocOf(s)==RIGHT_ASS) ? p : (p+1); */
-            Cell rhs = ap(showsSP, ap2(nameShowsPrec, mkInt(rp), arg(pat)));
-            if (defaultSyntax(nameRec(h)->text) == APPLIC) {
-                rhs = ap(showsBQ,
-                         ap2(nameComp,
-                             ap(nameApp, mkStr(fixLitText(nameRec(h)->text))),
-                             ap(showsBQ, rhs)));
-            } else {
-                rhs =
-                    ap2(nameComp,
-                        ap(nameApp, mkStr(fixLitText(nameRec(h)->text))), rhs);
-            }
-
-            rhs = ap2(nameComp, ap2(nameShowsPrec, mkInt(lp), arg(fun(pat))),
-                      ap(showsSP, rhs));
-            rhs = ap2(nameShowParen, ap2(nameGt, d, mkInt(p)), rhs);
-            return rhs;
-        } else {
-            /* To display a non-nullary constructor with applicative syntax:
-             *    showsPrec d (Foo x y) = showParen (d>APP_PREC)
-             *                             (showString "Foo" .
-             *                              showChar ' ' . showsPrec (APP_PREC+1) x .
-             *                              showChar ' ' . showsPrec (APP_PREC+1) y)
-             */
-            Cell rhs = ap(showsSP, ap(showsN(APP_PREC + 1), arg(pat)));
-            for (pat = fun(pat); isAp(pat); pat = fun(pat)) {
-                rhs = ap(showsSP, ap2(nameComp,
-                                      ap(showsN(APP_PREC + 1), arg(pat)), rhs));
-            }
-            rhs = ap2(nameComp, ap(nameApp, mkStr(nameRec(h)->text)), rhs);
-            rhs = ap2(nameShowParen, ap2(nameGt, d, mkInt(APP_PREC)), rhs);
-            return rhs;
-        }
-    }
-}
-#undef showsN
-#undef shows0
-#undef showsOP
-#undef showsOB
-#undef showsCM
-#undef showsSP
-#undef showsBQ
-#undef showsCP
-#undef showsCB
-
-/* --------------------------------------------------------------------------
- * Deriving Read:
- * ------------------------------------------------------------------------*/
-
-#define Tuple2(f, s) ap2(mkTuple(2), f, s)
-#define Lex(r) ap(nameLex, r)
-#define ZFexp(h, q) ap(FROMQUAL, pair(h, q))
-#define ReadsPrec(n, e) ap2(nameReadsPrec, n, e)
-#define Lambda(v, e) ap(LAMBDA, pair(v, pair(mkInt(0), e)))
-#define ReadParen(a, b, c) ap(ap2(nameReadParen, a, b), c)
-#define ReadField(f, s) ap2(nameReadField, f, s)
-#define GT(l, r) ap2(nameGt, l, r)
-#define Append(a, b) ap2(nameApp, a, b)
-
-/*  Construct the readsPrec function of the form:
- *
- *    readsPrec d r = (readParen (d>p1) (\r -> [ (C1 ...,s) | ... ]) r ++
- *                    (readParen (d>p2) (\r -> [ (C2 ...,s) | ... ]) r ++
- *                    ...
- *                    (readParen (d>pn) (\r -> [ (Cn ...,s) | ... ]) r) ... ))
- */
-static List local
-deriveRead(Cell t) /* construct definition of text reader          */
-{
-    Cell alt = NIL;
-    Cell exp = NIL;
-    Cell d = inventVar();
-    Cell r = inventVar();
-    List pat = cons(d, cons(r, NIL));
-    Int line = 0;
-
-    if (isTycon(t)) {
-        List cs = tyconRec(t)->defn;
-        List exps = NIL;
-        for (; hasCfun(cs); cs = tl(cs)) {
-            exps = cons(mkReadCon(hd(cs), d, r), exps);
-        }
-        /* reverse concatenate list of subexpressions */
-        exp = hd(exps);
-        for (exps = tl(exps); nonNull(exps); exps = tl(exps)) {
-            exp = ap2(nameApp, hd(exps), exp);
-        }
-        line = tyconRec(t)->line;
-    } else { /* Tuples */
-        exp = ap(mkReadTuple(t), r);
-    }
-    /* printExp(stdout,exp); putc('\n',stdout); */
-    alt = pair(pat, pair(mkInt(line), exp));
-    return singleton(mkBind("readsPrec", singleton(alt)));
-}
-
-/* Generate an expression of the form:
- *
- *   readParen (d > p) <derived expression> r
- *
- * for a (non-tuple) constructor "con" of precedence "p".
- */
-
-static Cell local mkReadCon(Name con, Cell d,
-                            Cell r) /* generate reader for a constructor */
-{
-    Cell exp = NIL;
-    Int p = 0;
-    Syntax s = syntaxOf(con);
-    List cfs = cfunSfuns;
-
-    for (; nonNull(cfs) && con != fst(hd(cfs)); cfs = tl(cfs)) {
-    }
-    if (nonNull(cfs)) {
-        exp = mkReadRecord(con, snd(hd(cfs)));
-        return ReadParen(nameFalse, exp, r);
-    }
-
-    if (userArity(con) == 2 && assocOf(s) != APPLIC) {
-        exp = mkReadInfix(con);
-        p = precOf(s);
-    } else {
-        exp = mkReadPrefix(con);
-        p = APP_PREC;
-    }
-    return ReadParen(userArity(con) == 0 ? nameFalse : GT(d, mkInt(p)), exp, r);
-}
-
-/* Given an n-ary prefix constructor, generate a single lambda
- * expression, such that
- *
- *   data T ... = Constr a1 a2 .. an | ....
- *
- * derives
- *
- *   \ r -> [ (Constr t1 t2 ... tn, sn) | ("Constr",s0) <- lex r,
- *                                        (t1,s1) <- readsPrec (APP_PREC+1) s0,
- *                                        (t2,s2) <- readsPrec (APP_PREC+1) s1,
- *                                        ...,
- *                                        (tn,sn) <- readsPrec (APP_PREC+1) sn-1 ]
- *
- */
-static Cell local mkReadPrefix(Cell con) /* readsPrec for prefix constructor */
-{
-    Int arity = userArity(con);
-    Cell cn = mkStr(nameRec(con)->text);
-    Cell r = inventVar();
-    Cell prev_s = inventVar();
-    Cell exp = con;
-    List quals = NIL;
-    Int i;
-
-    /* build (reversed) list of qualifiers and constructor */
-    quals = cons(ZFexp(Tuple2(cn, prev_s), Lex(r)), quals);
-    for (i = 0; i < arity; i++) {
-        Cell t = inventVar();
-        Cell s = inventVar();
-        quals = cons(
-            ZFexp(Tuple2(t, s), ReadsPrec(mkInt(APP_PREC + 1), prev_s)), quals);
-        exp = ap(exp, t);
-        prev_s = s;
-    }
-
-    /* \r -> [ (exp, prev_s) | quals ] */
-    return Lambda(singleton(r),
-                  ap(COMP, pair(Tuple2(exp, prev_s), rev(quals))));
-}
-
-/* Given a binary infix constructor of precedence p
- *
- *   ... | T1 `con` T2 | ...
- *
- * generate the lambda expression
- *
- *   \ r -> [ (u `con` v, s2) | (u,s0)     <- readsPrec lp r,
- *                              ("con",s1) <- lex s0,
- *                              (v,s2)     <- readsPrec rp s1 ]
- *
- * where lp and rp are either p or p+1 depending on associativity
- */
-static Cell local mkReadInfix(Cell con) {
-    Syntax s = syntaxOf(con);
-    Int p = precOf(s);
-    Int lp =
-        (p +
-         1); /* how it was in Haskell from Day 1 until 11/4/2002: assocOf(s)==LEFT_ASS  ? p : (p+1); */
-    Int rp = (p + 1); /* ditto: assocOf(s)==RIGHT_ASS ? p : (p+1); */
-    Cell cn = mkStr(nameRec(con)->text);
-    Cell r = inventVar();
-    Cell s0 = inventVar();
-    Cell s1 = inventVar();
-    Cell s2 = inventVar();
-    Cell u = inventVar();
-    Cell v = inventVar();
-    List quals = NIL;
-
-    quals = cons(ZFexp(Tuple2(u, s0), ReadsPrec(mkInt(lp), r)), quals);
-    quals = cons(ZFexp(Tuple2(cn, s1), Lex(s0)), quals);
-    quals = cons(ZFexp(Tuple2(v, s2), ReadsPrec(mkInt(rp), s1)), quals);
-
-    return Lambda(singleton(r),
-                  ap(COMP, pair(Tuple2(ap2(con, u, v), s2), rev(quals))));
-}
-
-/* Given the n-ary tuple constructor return a lambda expression:
- *
- *   \ r -> [ ((t1,t2,...tn),s(2n+1)) | ("(",s0)      <- lex r,
- *                                      (t1, s1)      <- readsPrec 0 s0,
- *                                      ...
- *                                      (",",s(2n-1)) <- lex s(2n-2),
- *                                      (tn, s(2n))   <- readsPrec 0 s(2n-1),
- *                                      (")",s(2n+1)) <- lex s(2n) ]
- */
-static Cell local mkReadTuple(Cell tup) /* readsPrec for n-tuple */
-{
-    Int arity = tupleOf(tup);
-    Cell lp = mkStr(findText("("));
-    Cell rp = mkStr(findText(")"));
-    Cell co = mkStr(findText(","));
-    Cell sep = lp;
-    Cell r = inventVar();
-    Cell prev_s = r;
-    Cell s = inventVar();
-    Cell exp = tup;
-    List quals = NIL;
-    Int i;
-
-    /* build (reversed) list of qualifiers and constructor */
-    for (i = 0; i < arity; i++) {
-        Cell t = inventVar();
-        Cell si = inventVar();
-        Cell sj = inventVar();
-        quals = cons(ZFexp(Tuple2(sep, si), Lex(prev_s)), quals);
-        quals = cons(ZFexp(Tuple2(t, sj), ReadsPrec(mkInt(0), si)), quals);
-        exp = ap(exp, t);
-        prev_s = sj;
-        sep = co;
-    }
-    quals = cons(ZFexp(Tuple2(rp, s), Lex(prev_s)), quals);
-
-    /* \ r -> [ (exp,s) | quals ] */
-    return Lambda(singleton(r), ap(COMP, pair(Tuple2(exp, s), rev(quals))));
-}
-
-/* Given a record constructor
- *
- *   ... | C { f1 :: T1, ... fn :: Tn } | ...
- *
- * generate the expression:
- *
- *   \ r -> [(C t1 t2 ... tn,s(2n+1)) | ("C", s0)    <- lex r,
- *                                      ("{", s1)    <- lex s0,
- *                                      (t1,  s2)    <- readField "f1" s1,
- *                                      ...
- *                                      (",", s(2n-1)) <- lex s(2n),
- *                                      (tn,  s(2n)) <- readField "fn" s(2n+1),
- *                                      ("}", s(2n+1)) <- lex s(2n+2) ]
- *
- * where
- *
- *   readField    :: Read a => String -> ReadS a
- *   readField m s0 = [ r | (t,  s1) <- lex s0, t == m,
- *                          ("=",s2) <- lex s1,
- *                          r        <- reads s2 ]
- */
-static Cell local mkReadRecord(Cell con,
-                               List fs) /* readsPrec for record constructor */
-{
-    Cell cn = mkStr(nameRec(con)->text);
-    Cell lb = mkStr(findText("{"));
-    Cell rb = mkStr(findText("}"));
-    Cell co = mkStr(findText(","));
-    Cell sep = lb;
-    Cell r = inventVar();
-    Cell s0 = inventVar();
-    Cell prev_s = s0;
-    Cell s = inventVar();
-    Cell exp = con;
-    List quals = NIL;
-
-    /* build (reversed) list of qualifiers and constructor */
-    quals = cons(ZFexp(Tuple2(cn, s0), Lex(r)), quals);
-    for (; nonNull(fs); fs = tl(fs)) {
-        Cell f = mkStr(textOf(hd(fs)));
-        Cell t = inventVar();
-        Cell si = inventVar();
-        Cell sj = inventVar();
-        quals = cons(ZFexp(Tuple2(sep, si), Lex(prev_s)), quals);
-        quals = cons(ZFexp(Tuple2(t, sj), ReadField(f, si)), quals);
-        exp = ap(exp, t);
-        prev_s = sj;
-        sep = co;
-    }
-    quals = cons(ZFexp(Tuple2(rb, s), Lex(prev_s)), quals);
-
-    /* \ r -> [ (exp,s) | quals ] */
-    return Lambda(singleton(r), ap(COMP, pair(Tuple2(exp, s), rev(quals))));
-}
-
-#undef Tuple2
-#undef Lex
-#undef ZFexp
-#undef ReadsPrec
-#undef Lambda
-#undef ReadParen
-#undef ReadField
-#undef GT
-#undef Append
-
-/* --------------------------------------------------------------------------
- * Deriving Bounded:
- * ------------------------------------------------------------------------*/
-
-static List local
-deriveBounded(Tycon t) /* construct definition of bounds           */
-{
-    if (isEnumType(t)) {
-        Cell last = tyconRec(t)->defn;
-        Cell first = hd(last);
-        while (hasCfun(tl(last))) {
-            last = tl(last);
-        }
-        return cons(
-            mkBind("minBound", mkVarAlts(tyconRec(t)->line, first)),
-            cons(mkBind("maxBound", mkVarAlts(tyconRec(t)->line, hd(last))),
-                 NIL));
-    } else if (isTuple(t)) { /* Definitions for product types      */
-        return mkBndBinds(0, t, tupleOf(t));
-    } else if (isTycon(t) && cfunOf(hd(tyconRec(t)->defn)) == 0) {
-        return mkBndBinds(tyconRec(t)->line, hd(tyconRec(t)->defn),
-                          userArity(hd(tyconRec(t)->defn)));
-    }
-
-    errHead(tyconRec(t)->line);
-    errPrintf(
-        "Can only derive instances of Bounded for enumeration and product types");
-    errFail();
-    return NIL;
-}
-
-static List local mkBndBinds(Int line, Cell h,
-                             Int n) /* build bindings for derived          */
-                                    /* Bounded on a product type           */
-{
-    Cell minB = h;
-    Cell maxB = h;
-    while (n-- > 0) {
-        minB = ap(minB, nameMinBnd);
-        maxB = ap(maxB, nameMaxBnd);
-    }
-    return cons(mkBind("minBound", mkVarAlts(line, minB)),
-                cons(mkBind("maxBound", mkVarAlts(line, maxB)), NIL));
 }
 
 /* --------------------------------------------------------------------------
@@ -3751,441 +2631,6 @@ static Name local addNewPrim(Int l, Text vn, String s,
 
     addPrim(l, n, s, currentModule, t);
     return n;
-}
-
-/* --------------------------------------------------------------------------
- * Foreign import declarations are Cuddles' equivalent of GHC's ccall mechanism.
- * They are used to "import" C functions into a module.
- * Foreign export declarations allow Cuddles functions to be called from C.
- * Foreign export declarations provide the address of a C symbol.
- * ------------------------------------------------------------------------*/
-
-/* When using the FFI, you first run Cuddles with generateFFI == TRUE
- * to generate C files for any modules which contain foreign import/export
- * declarations.  You then compile and partially link the C files and run
- * Cuddles with generateFFI == FALSE to load the object files and lookup
- * the appropriate helper functions in the object files.
- * Only when you run Cuddles in the second mode can you actually execute code.
- */
-Bool generateFFI = FALSE;
-
-Bool generate_ffi = FALSE; /* generate FFI for the current module? */
-
-static Int checkCallConv(Int, Text);
-
-/* Checking if the calling convention is supported */
-static Int checkCallConv(Int line, Text t) {
-    if (t == textCCall)
-        return FFI_CCONV_CCALL;
-#if STDCALL_SUPPORTED
-    /* also support the stdcall calling convention */
-    if (t == textStdcall)
-        return FFI_CCONV_STDCALL;
-#endif
-    return FFI_CCONV_UNKNOWN;
-}
-
-/* Tricky naming detail:
- *
- * When we generate C function names, we need to make sure they
- * are unique within each module.  This is done using the foreignCount
- * variable.
- */
-Void foreignImport(Cell l, Cell callconv, Cell safety, Cell ext, Cell intName,
-                   Cell type)
-/* Handle foreign imports    */
-{
-    Text t = textOf(intName);
-    Name n = findName(t);
-    Int sfty;
-    Int cconv;
-    Int line = intOf(l);
-
-    if (isNull(n)) {
-        n = newName(t, NIL);
-    } else if (nameRec(n)->defn != PREDEFINED) {
-        errHead(line);
-        errPrintf("Redeclaration of foreign \"%s\"", textToStr(t));
-        errFail();
-    }
-    cconv = checkCallConv(line, textOf(callconv));
-    if (cconv == FFI_CCONV_UNKNOWN) {
-        errHead(line);
-        errPrintf("Foreign import calling convention \"%s\" not supported",
-                  textToStr(textOf(callconv)));
-        errFail();
-    }
-
-    if (isNull(safety) || textOf(safety) == textSafe) {
-        sfty = FFI_SAFE;
-    } else if (textOf(safety) == textUnsafe) {
-        sfty = FFI_UNSAFE;
-    } else if (textOf(safety) == textThreadsafe) {
-        sfty = FFI_THREADSAFE;
-    } else {
-        errHead(line);
-        errPrintf("Foreign import safety level \"%s\" not supported",
-                  textToStr(textOf(safety)));
-        errFail();
-    }
-    nameRec(n)->line = line;
-    nameRec(n)->type = type;
-    nameRec(n)->extFun = textOf(ext);
-    nameRec(n)->foreignId = foreignCount++;
-    nameRec(n)->foreignFlags = sfty | cconv;
-    foreignImports = cons(n, foreignImports);
-}
-
-Void foreignExport(Cell l, Cell v, Cell callconv, Cell ext, Cell intName,
-                   Cell type)
-/* Handle foreign exports    */
-{
-    /*
-     * Export attaches to an existing name in the symbol table.
-     * We generate a new name whose definition is
-     *   newName :: type
-     *   newName = intName;
-     * and pass the whole thing through the typechecker.
-     *
-     * This lets us have multiple exports of each symbol and nicely
-     * deals with the fact that the exported signature might not match
-     * the signature of the definition and might even be overloaded.
-     *
-     * The only problem is that the text of the name has to be
-     * shared between the generated code and Cuddles.  Since these
-     * are two separate invocations of Cuddles, we cannot use an
-     * invented Text so we generate the text by adding a prefix
-     * to the start which cannot conflict with normal identifiers.
-     */
-    Int line = intOf(l);
-    Int cconv;
-    Text t = concatText("--FFI_", textToStr(textOf(ext)));
-    Name n = newName(t, NIL);
-
-    if (textOf(v) != textExport) {
-        errHead(line);
-        errPrintf(
-            "Foreign declarations must be either import or export not \"%s\"",
-            textToStr(textOf(v)));
-        errFail();
-    }
-    cconv = checkCallConv(line, textOf(callconv));
-    if (cconv == FFI_CCONV_UNKNOWN) {
-        errHead(line);
-        errPrintf("Foreign export calling convention \"%s\" not supported",
-                  textToStr(textOf(callconv)));
-        errFail();
-    }
-
-    nameRec(n)->line = line;
-    nameRec(n)->type = type;
-    nameRec(n)->extFun = textOf(ext);
-    nameRec(n)->defn = intName;
-    nameRec(n)->foreignId = foreignCount++;
-    nameRec(n)->foreignFlags = FFI_NOSAFETY | cconv;
-    foreignExports = cons(n, foreignExports);
-}
-
-static String skipSpaces(String);
-static String matchToken(String, String);
-static String skipToSpace(String);
-static String skipToChar(String, int);
-static String matchFname(String);
-
-static String skipSpaces(String s) {
-    while (isspace(*s)) {
-        ++s;
-    }
-    return s;
-}
-
-static String skipToSpace(String s) {
-    while (*s != '\0' && !isspace(*s)) {
-        ++s;
-    }
-    return s;
-}
-
-static String skipToChar(String s, int c) {
-    while (*s != '\0' && *s != c) {
-        ++s;
-    }
-    return s;
-}
-
-static String matchToken(String t, String s) {
-    while (*t != '\0' && *t == *s) {
-        ++t;
-        ++s;
-    }
-    if (*t == '\0') {
-        return s;
-    } else {
-        return 0;
-    }
-}
-
-static String matchFname(String s) {
-    String t = skipToSpace(s);
-    if (t - s >= 3 && t[-2] == '.' && t[-1] == 'h') {
-        return t;
-    } else {
-        return 0;
-    }
-}
-
-static Void local checkForeignImport(Name p) /* Check foreign import          */
-{
-    Int line = nameRec(p)->line;
-    String ext = textToStr(nameRec(p)->extFun);
-    String e = 0;
-    Type t = NIL;
-    List argTys = NIL;
-
-    Bool generate_stub = generate_ffi;
-
-    emptySubstitution();
-    nameRec(p)->type = checkSigType(
-        nameRec(p)->line, "foreign import declaration", p, nameRec(p)->type);
-
-    t = nameRec(p)->type;
-    if (isPolyType(t)) {
-        t = monotypeOf(t);
-    }
-    t = fullerExpand(t);
-    while (getHead(t) == typeArrow && argCount == 2) {
-        Type ta = fullerExpand(arg(fun(t)));
-        Type tr = fullerExpand(arg(t));
-        argTys = cons(ta, argTys);
-        t = tr;
-    }
-    argTys = rev(argTys);
-    /* argTys now holds the argument tys and t holds result type */
-
-    /* What kind of import is this? */
-    ext = skipSpaces(ext);
-    if ((e = matchToken("dynamic", ext))) { /* dynamic import */
-        Type ta = NIL;
-        Bool isIO = FALSE;
-
-        e = skipSpaces(e);
-        if (*e != '\0')
-            goto cantparse;
-
-        /* type must be of the form:
-         *
-         *    (FunPtr fty) -> fty
-         *
-         */
-
-        if (length(argTys) < 1)
-            goto dynerr;
-        ta = hd(argTys);
-        argTys = tl(argTys);
-
-        if (getHead(ta) != typeFunPtr || argCount != 1)
-            goto dynerr;
-        ta = hd(getArgs(ta));
-
-        /* ToDo: check that ta == argTys -> t and check it's a valid type */
-
-        if (getHead(t) == typeIO && argCount == 1) {
-            isIO = TRUE;
-            t = fullerExpand(hd(getArgs(t)));
-        }
-
-        if (generate_stub) {
-            nameRec(p)->arity = 1 + length(argTys) + (isIO ? IOArity : 0);
-            nameRec(p)->extFun = inventText();
-            implementForeignImportDynamic(line, nameRec(p)->foreignId,
-                                          nameRec(p)->extFun, argTys, isIO, t);
-        }
-
-    } else if ((e = matchToken("wrapper", ext))) { /* thunk builder */
-        Bool isIO = FALSE;
-
-        e = skipSpaces(e);
-        if (*e != '\0')
-            goto cantparse;
-
-        if (length(argTys) != 1)
-            goto wraperr;
-
-        if (getHead(t) != typeIO || argCount != 1)
-            goto wraperr;
-        t = fullerExpand(hd(getArgs(t)));
-
-        if (getHead(t) != typeFunPtr)
-            goto wraperr;
-        t = fullerExpand(hd(getArgs(t)));
-
-        /* ToDo: check that hd(argTys) is the type t we just unwrapped */
-
-        t = fullerExpand(t);
-        argTys = NIL;
-        while (getHead(t) == typeArrow && argCount == 2) {
-            Type ta = fullerExpand(arg(fun(t)));
-            Type tr = fullerExpand(arg(t));
-            argTys = cons(ta, argTys);
-            t = tr;
-        }
-        argTys = rev(argTys);
-        /* argTys now holds the argument tys and t holds result type */
-
-        if (getHead(t) == typeIO && argCount == 1) {
-            isIO = TRUE;
-            t = fullerExpand(hd(getArgs(t)));
-        }
-        t = fullerExpand(t);
-
-        if (generate_stub) {
-            nameRec(p)->arity = 1 + IOArity;
-            nameRec(p)->extFun = inventText();
-            implementForeignImportWrapper(line, nameRec(p)->foreignId,
-                                          nameRec(p)->extFun, argTys, isIO, t);
-        }
-
-    } else {
-        /* static function or address:
-         *
-         *  ['static'] [fname] ['[' lib ']'] [&] [cid]
-         *
-         * or, for .NET bindings:
-         *
-         *  ['static'] ['ctor' | 'field' | 'method' ] ['[' lib ']'] [cid]
-         *
-         */
-        Bool isStatic = FALSE;
-        Text fn = -1;
-        Text cid = -1;
-        Bool isLabel = FALSE;
-
-        if ((e = matchToken("static", ext))) {
-            isStatic = TRUE;
-            ext = skipSpaces(e);
-        }
-        if ((e = matchFname(ext))) {
-            fn = subText(ext, e - ext);
-            ext = skipSpaces(e);
-        }
-
-        if ((e = matchToken("&", ext))) {
-            isLabel = TRUE;
-            ext = skipSpaces(e);
-        }
-
-        if ((e = matchToken("[", ext))) {
-            ext = skipToChar(e, ']');
-            if (*ext != ']' || ext == e)
-                goto cantparse;
-            errHead(line);
-            errPrintf("Cuddles doesn't use library specifications.");
-            errFail();
-        }
-        if (*ext != '\0') {
-            e = skipToSpace(ext);
-            cid = subText(ext, e - ext);
-            ext = skipSpaces(e);
-        } else {
-            cid = nameRec(p)->text;
-        }
-
-        if (*ext != '\0')
-            goto cantparse;
-
-        if (isLabel) {
-            if (!isNull(argTys))
-                goto labelerr;
-            if (!((getHead(t) == typePtr && argCount == 1) ||
-                  (getHead(t) == typeFunPtr && argCount == 1))) {
-                goto labelerr;
-            }
-            if (generate_stub) {
-                nameRec(p)->arity = 0;
-                implementForeignImportLabel(line, nameRec(p)->foreignId, fn,
-                                            cid, nameRec(p)->text, t);
-                nameRec(p)->extFun = cid;
-            }
-        } else {
-            Bool isIO = FALSE;
-
-            if (getHead(t) == typeIO && argCount == 1) {
-                isIO = TRUE;
-                t = fullerExpand(hd(getArgs(t)));
-            }
-
-            if (generate_stub) {
-                nameRec(p)->arity = length(argTys) + (isIO ? IOArity : 0);
-                implementForeignImport(line, p, nameRec(p)->foreignId, fn, cid,
-                                       isStatic, -1, argTys, isIO, t);
-                nameRec(p)->extFun = cid;
-            }
-        }
-    }
-
-    return;
-
-cantparse:
-    errHead(line);
-    errPrintf("Can't parse external entity '");
-    errPrintf(ext);
-    errPrintf("'\n");
-    errFail();
-
-dynerr:
-    errHead(line);
-    errPrintf("foreign import dynamic must have type '(FunPtr ft) -> ft'");
-    errFail();
-
-wraperr:
-    errHead(line);
-    errPrintf("foreign import wrapper must have type 'ft -> IO (FunPtr ft)'");
-    errFail();
-
-labelerr:
-    errHead(line);
-    errPrintf("foreign import & must have type 'Ptr a' or 'FunPtr a'");
-    errFail();
-}
-
-static Void local checkForeignExport(Name p) /* Check foreign export      */
-{
-    Int line = nameRec(p)->line;
-    Text ext = nameRec(p)->extFun;
-    Type t;
-    List argTys = NIL;
-    Bool isIO = FALSE;
-
-    emptySubstitution();
-    nameRec(p)->type =
-        checkSigType(line, "foreign export declaration", p, nameRec(p)->type);
-    t = nameRec(p)->type;
-    t = fullerExpand(t);
-
-    while (getHead(t) == typeArrow && argCount == 2) {
-        Type ta = fullerExpand(arg(fun(t)));
-        Type tr = fullerExpand(arg(t));
-        argTys = cons(ta, argTys);
-        t = tr;
-    }
-    argTys = rev(argTys);
-
-    if (getHead(t) == typeIO && argCount == 1) {
-        t = fullerExpand(hd(getArgs(t)));
-        isIO = TRUE;
-    }
-
-    if (generate_ffi) {
-        nameRec(p)->arity = length(argTys) + (isIO ? IOArity : 0);
-        implementForeignExport(line, nameRec(p)->foreignId, ext, argTys, isIO,
-                               t);
-    }
-}
-
-static Void local linkForeign(Name p) /* Link an ffi-generated primitive */
-{
-    addPrim(nameRec(p)->line, p, textToStr(nameRec(p)->text), nameRec(p)->mod,
-            nameRec(p)->type);
 }
 
 /* --------------------------------------------------------------------------
@@ -4345,7 +2790,7 @@ static Void local addToPatVars(Int line,
     }
 }
 
-static Name local conDefined(Int line, Cell nm, Bool check)
+Name conDefined(Int line, Cell nm, Bool check)
 /* check that nm is the name of a  */
 /* previously defined constructor  */
 { /* function (and only one.)        */
@@ -4700,9 +3145,8 @@ static Void local notDefined(Int line, List bs,
     }
 }
 
-static Cell local findBinding(Text t,
-                              List bs) /* look for binding for variable t  */
-                                       /* in list of bindings bs           */
+Cell findBinding(Text t, List bs) /* look for binding for variable t  */
+                                  /* in list of bindings bs           */
 {
     for (; nonNull(bs); bs = tl(bs)) {
         if (isVar(fst(hd(bs)))) { /* function-binding? */
@@ -4838,275 +3282,11 @@ static Void local missFixity(Int line,
     errFail();
 }
 
-/* --------------------------------------------------------------------------
- * Dealing with infix operators:
- *
- * Expressions involving infix operators or unary minus are parsed as
- * elements of the following type:
- *
- *     data InfixExp = Only Exp | Neg InfixExp | Infix InfixExp Op Exp
- *
- * (The algorithms here do not assume that negation can be applied only once,
- * i.e., that - - x is a syntax error, as required by the Haskell report.
- * Instead, that restriction is captured by the grammar itself, given above.)
- *
- * There are rules of precedence and grouping, expressed by two functions:
- *
- *     prec :: Op -> Int;   assoc :: Op -> Assoc    (Assoc = {L, N, R})
- *
- * InfixExp values are rearranged accordingly when a complete expression
- * has been read using a simple shift-reduce parser whose result may be taken
- * to be a value of the following type:
- *
- *     data Exp = Atom Int | Negate Exp | Apply Op Exp Exp | Error String
- *
- * The machine on which this parser is based can be defined as follows:
- *
- *     tidy                         :: InfixExp -> [(Op,Exp)] -> Exp
- *     tidy (Only a)      []         = a
- *     tidy (Only a)      ((o,b):ss) = tidy (Only (Apply o a b)) ss
- *     tidy (Infix a o b) []         = tidy a [(o,b)]
- *     tidy (Infix a o b) ((p,c):ss)
- *                      | shift  o p = tidy a ((o,b):(p,c):ss)
- *                      | red    o p = tidy (Infix a o (Apply p b c)) ss
- *                      | ambig  o p = Error "ambiguous use of operators"
- *     tidy (Neg e)       []         = tidy (tidyNeg e) []
- *     tidy (Neg e)       ((o,b):ss)
- *                      | nshift o   = tidy (Neg (underNeg o b e)) ss
- *                      | nred   o   = tidy (tidyNeg e) ((o,b):ss)
- *                      | nambig o   = Error "illegal use of negation"
- *
- * At each stage, the parser can either shift, reduce, accept, or error.
- * The transitions when dealing with juxtaposed operators o and p are
- * determined by the following rules:
- *
- *     shift o p  = (prec o > prec p)
- *               || (prec o == prec p && assoc o == L && assoc p == L)
- *
- *     red o p    = (prec o < prec p)
- *               || (prec o == prec p && assoc o == R && assoc p == R)
- *
- *     ambig o p  = (prec o == prec p)
- *               && (assoc o == N || assoc p == N || assoc o /= assoc p)
- *
- * The transitions when dealing with juxtaposed unary minus and infix
- * operators are as follows.  The precedence of unary minus (infixl 6) is
- * hardwired in to these definitions, as it is to the definitions of the
- * Haskell grammar in the official report.
- *
- *     nshift o   = (prec o > 6)
- *     nred   o   = (prec o < 6) || (prec o == 6 && assoc o == L)
- *     nambig o   = prec o == 6 && (assoc o == R || assoc o == N)
- *
- * An InfixExp of the form (Neg e) means negate the last thing in
- * the InfixExp e; we can force this negation using:
- *
- *     tidyNeg              :: OpExp -> OpExp
- *     tidyNeg (Only e)      = Only (Negate e)
- *     tidyNeg (Infix a o b) = Infix a o (Negate b)
- *     tidyNeg (Neg e)       = tidyNeg (tidyNeg e)
- *
- * On the other hand, if we want to sneak application of an infix operator
- * under a negation, then we use:
- *
- *     underNeg                  :: Op -> Exp -> OpExp -> OpExp
- *     underNeg o b (Only e)      = Only (Apply o e b)
- *     underNeg o b (Neg e)       = Neg (underNeg o b e)
- *     underNeg o b (Infix e p f) = Infix e p (Apply o f b)
- *
- * As a concession to efficiency, we lower the number of calls to syntaxOf
- * by keeping track of the values of sye, sys throughout the process.  The
- * value APPLIC is used to indicate that the syntax value is unknown.
- * ------------------------------------------------------------------------*/
-
-static Cell local tidyInfix(Int line, Cell e) /* Convert infixExp to Exp     */
-{                                             /* :: OpExp                    */
-    Cell s = NIL;                             /* :: [(Op,Exp)]               */
-    Syntax sye = APPLIC; /* Syntax of op in e (init unknown)*/
-    Syntax sys = APPLIC; /* Syntax of op in s (init unknown)*/
-    Cell d = e;
-
-    while (fst(d) != ONLY) { /* Attach fixities to operators    */
-        if (fst(d) == NEG) {
-            d = snd(d);
-        } else {
-            fun(fun(d)) = attachFixity(line, fun(fun(d)));
-            d = arg(fun(d));
-        }
-    }
-
-    for (;;)
-        switch (whatIs(e)) {
-        case ONLY:
-            e = snd(e);
-            while (nonNull(s)) {
-                Cell next = arg(fun(s));
-                arg(fun(s)) = e;
-                fun(fun(s)) = snd(snd(fun(fun(s))));
-                e = s;
-                s = next;
-            }
-            return e;
-
-        case NEG:
-            if (nonNull(s)) {
-                if (sys == APPLIC) { /* calculate sys      */
-                    sys = intOf(fst(fun(fun(s))));
-                }
-
-                if (precOf(sys) == UMINUS_PREC && /* nambig  */
-                    assocOf(sys) != UMINUS_ASSOC) {
-                    errHead(line);
-                    errPrintf("Ambiguous use of unary minus with \"");
-                    errExpr(fst(snd(fun(fun(s)))));
-                    errPrintf("\"");
-                    errFail();
-                }
-
-                if (precOf(sys) > UMINUS_PREC) { /* nshift  */
-                    Cell e1 = snd(e);
-                    Cell t = s;
-                    s = arg(fun(s));
-                    while (whatIs(e1) == NEG)
-                        e1 = snd(e1);
-                    arg(fun(t)) = arg(e1);
-                    fun(fun(t)) = snd(snd(fun(fun(t))));
-                    arg(e1) = t;
-                    sys = APPLIC;
-                    continue;
-                }
-            }
-
-            /* Intentional fall-thru for nreduce and isNull(s) */
-
-            {
-                Cell prev = e; /* e := tidyNeg e  */
-                Cell temp = arg(prev);
-                Int nneg = 1;
-                for (; whatIs(temp) == NEG; nneg++) {
-                    fun(prev) = nameNegate;
-                    prev = temp;
-                    temp = arg(prev);
-                }
-                if (isInt(arg(temp))) { /* special cases   */
-                    if (nneg & 1)       /* for literals    */
-                        arg(temp) = mkInt(-intOf(arg(temp)));
-                } else if (isBignum(arg(temp))) {
-                    if (nneg & 1)
-                        arg(temp) = bigNeg(arg(temp));
-                } else if (isDouble(arg(temp))) {
-                    if (nneg & 1)
-                        arg(temp) = mkDouble(-doubleOf(arg(temp)));
-                } else {
-                    fun(prev) = nameNegate;
-                    arg(prev) = arg(temp);
-                    arg(temp) = e;
-                }
-                e = temp;
-            }
-            continue;
-
-        default:
-            if (isNull(s)) { /* Move operation onto empty stack */
-                Cell next = arg(fun(e));
-                s = e;
-                arg(fun(s)) = NIL;
-                e = next;
-                sys = sye;
-                sye = APPLIC;
-            } else { /* deal with pair of operators        */
-
-                if (sye == APPLIC) { /* calculate sys and sye   */
-                    sye = intOf(fst(fun(fun(e))));
-                }
-                if (sys == APPLIC) {
-                    sys = intOf(fst(fun(fun(s))));
-                }
-
-                if (precOf(sye) == precOf(sys) && /* ambig   */
-                    (assocOf(sye) != assocOf(sys) || assocOf(sye) == NON_ASS)) {
-                    errHead(line);
-                    errPrintf("Ambiguous use of operator \"");
-                    errExpr(fst(snd(fun(fun(e)))));
-                    errPrintf("\" with \"");
-                    errExpr(fst(snd(fun(fun(s)))));
-                    errPrintf("\"");
-                    errFail();
-                }
-
-                if (precOf(sye) > precOf(sys) || /* shift   */
-                    (precOf(sye) == precOf(sys) && assocOf(sye) == LEFT_ASS &&
-                     assocOf(sys) == LEFT_ASS)) {
-                    Cell next = arg(fun(e));
-                    arg(fun(e)) = s;
-                    s = e;
-                    e = next;
-                    sys = sye;
-                    sye = APPLIC;
-                } else { /* reduce  */
-                    Cell next = arg(fun(s));
-                    arg(fun(s)) = arg(e);
-                    fun(fun(s)) = snd(snd(fun(fun(s))));
-                    arg(e) = s;
-                    s = next;
-                    sys = APPLIC;
-                    /* sye unchanged */
-                }
-            }
-            continue;
-        }
-}
-
-static Pair local attachFixity(Int line,
-                               Cell op) /* Attach fixity to operator in an */
-                                        /* infix expression                */
-{
-    Syntax sy = DEF_OPSYNTAX;
-    Cell trop = op;
-
-    switch (whatIs(op)) {
-    case VAROPCELL:
-    case VARIDCELL:
-        if ((sy = lookupSyntax(textOf(op))) == NO_SYNTAX) {
-            Name n = findName(textOf(op));
-            if (isNull(n)) {
-                errHead(line);
-                errPrintf("Undefined variable \"%s\"", textToStr(textOf(op)));
-                errFail();
-            }
-            sy = syntaxOf(n);
-            trop = n;
-        }
-        break;
-
-    case CONOPCELL:
-    case CONIDCELL:
-        sy = syntaxOf(trop = conDefined(line, op, FALSE));
-        break;
-
-    case QUALIDENT: {
-        Name n = findQualName(op);
-        if (nonNull(n)) {
-            trop = n;
-            sy = syntaxOf(n);
-        } else {
-            errHead(line);
-            errPrintf("Undefined qualified variable \"%s\"", identToStr(op));
-            errFail();
-        }
-    } break;
-    default:
-        break;
-    }
-    if (sy == APPLIC) {
-        sy = DEF_OPSYNTAX;
-    }
-    return pair(mkInt(sy), pair(trop, op)); /* Pair fixity with (possibly) */
-                                            /* translated operator       */
-}
-
-static Syntax local lookupSyntax(Text t) /* Try to find fixity for var in  */
-{                                        /* enclosing bindings            */
+/* lookupSyntax walks the scope stacks that the dependency analysis below
+ * maintains, so it lives here rather than with the infix resolution in
+ * fixity.c, which is its only caller. */
+Syntax lookupSyntax(Text t) /* Try to find fixity for var in  */
+{                           /* enclosing bindings            */
     List bounds1 = bounds;
     List bindings1 = bindings;
 
@@ -5988,10 +4168,8 @@ Void checkDefns() { /* Top level static analysis           */
     mapProc(addRSsigdecls,
             typeInDefns); /* add sigdecls for RESTRICTSYN           */
     valDefns = eqnsToBindings(valDefns, tyconDefns, classDefns, primDefns);
-    mapProc(allNoPrevDef, valDefns);    /* check against previous defns    */
-    mapProc(addDerivImp, derivedInsts); /* Add impls for derived instances */
-    deriveContexts(derivedInsts);       /* Calculate derived inst contexts */
-    instDefns = appendOnto(instDefns, derivedInsts);
+    mapProc(allNoPrevDef, valDefns); /* check against previous defns    */
+    instDefns = appendOnto(instDefns, derivedInstances());
     checkDefaultDefns(); /* validate default definitions           */
 
     tyconDefns = NIL;
@@ -6147,11 +4325,11 @@ static Void local checkTypeIn(Pair cvs) /* Check that vars in restricted   */
 /* The statics that hold cells: registered as roots at INSTALL and marked
  * by the collector on every collection */
 static Cell *const staticRoots[] = {
-    &patVars,      &bounds, &bindings,  &depends,     &tcDeps,
-    &derivedInsts, &diVars, &cfunSfuns, &unkindTypes,
+    &patVars, &bounds, &bindings, &depends, &tcDeps, &cfunSfuns, &unkindTypes,
 };
 
 Void staticAnalysis(Int what) {
+    derivingControl(what); /* deriving.c holds part of this state */
     switch (what) {
     case RESET:
         cfunSfuns = NIL;
@@ -6160,9 +4338,6 @@ Void staticAnalysis(Int what) {
         bindings = NIL;
         depends = NIL;
         tcDeps = NIL;
-        derivedInsts = NIL;
-        diVars = NIL;
-        diNum = 0;
         unkindTypes = NIL;
         break;
 

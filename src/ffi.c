@@ -17,6 +17,447 @@
 #include "errors.h"
 #include "output.h"
 #include "strutil.h"
+#include "machdep.h"
+#include "subst.h"
+#include "module.h"
+#include "goal.h"
+#include "static.h"
+#include "ffi.h"
+
+/* --------------------------------------------------------------------------
+ * Foreign import declarations are Cuddles' equivalent of GHC's ccall mechanism.
+ * They are used to "import" C functions into a module.
+ * Foreign export declarations allow Cuddles functions to be called from C.
+ * Foreign export declarations provide the address of a C symbol.
+ * ------------------------------------------------------------------------*/
+
+/* When using the FFI, you first run Cuddles with generateFFI == TRUE
+ * to generate C files for any modules which contain foreign import/export
+ * declarations.  You then compile and partially link the C files and run
+ * Cuddles with generateFFI == FALSE to load the object files and lookup
+ * the appropriate helper functions in the object files.
+ * Only when you run Cuddles in the second mode can you actually execute code.
+ */
+Bool generateFFI = FALSE;
+
+Bool generate_ffi = FALSE; /* generate FFI for the current module? */
+
+static Int checkCallConv(Int, Text);
+
+/* Checking if the calling convention is supported */
+static Int checkCallConv(Int line, Text t) {
+    if (t == textCCall)
+        return FFI_CCONV_CCALL;
+#if STDCALL_SUPPORTED
+    /* also support the stdcall calling convention */
+    if (t == textStdcall)
+        return FFI_CCONV_STDCALL;
+#endif
+    return FFI_CCONV_UNKNOWN;
+}
+
+/* Tricky naming detail:
+ *
+ * When we generate C function names, we need to make sure they
+ * are unique within each module.  This is done using the foreignCount
+ * variable.
+ */
+Void foreignImport(Cell l, Cell callconv, Cell safety, Cell ext, Cell intName,
+                   Cell type)
+/* Handle foreign imports    */
+{
+    Text t = textOf(intName);
+    Name n = findName(t);
+    Int sfty;
+    Int cconv;
+    Int line = intOf(l);
+
+    if (isNull(n)) {
+        n = newName(t, NIL);
+    } else if (nameRec(n)->defn != PREDEFINED) {
+        errHead(line);
+        errPrintf("Redeclaration of foreign \"%s\"", textToStr(t));
+        errFail();
+    }
+    cconv = checkCallConv(line, textOf(callconv));
+    if (cconv == FFI_CCONV_UNKNOWN) {
+        errHead(line);
+        errPrintf("Foreign import calling convention \"%s\" not supported",
+                  textToStr(textOf(callconv)));
+        errFail();
+    }
+
+    if (isNull(safety) || textOf(safety) == textSafe) {
+        sfty = FFI_SAFE;
+    } else if (textOf(safety) == textUnsafe) {
+        sfty = FFI_UNSAFE;
+    } else if (textOf(safety) == textThreadsafe) {
+        sfty = FFI_THREADSAFE;
+    } else {
+        errHead(line);
+        errPrintf("Foreign import safety level \"%s\" not supported",
+                  textToStr(textOf(safety)));
+        errFail();
+    }
+    nameRec(n)->line = line;
+    nameRec(n)->type = type;
+    nameRec(n)->extFun = textOf(ext);
+    nameRec(n)->foreignId = foreignCount++;
+    nameRec(n)->foreignFlags = sfty | cconv;
+    foreignImports = cons(n, foreignImports);
+}
+
+Void foreignExport(Cell l, Cell v, Cell callconv, Cell ext, Cell intName,
+                   Cell type)
+/* Handle foreign exports    */
+{
+    /*
+     * Export attaches to an existing name in the symbol table.
+     * We generate a new name whose definition is
+     *   newName :: type
+     *   newName = intName;
+     * and pass the whole thing through the typechecker.
+     *
+     * This lets us have multiple exports of each symbol and nicely
+     * deals with the fact that the exported signature might not match
+     * the signature of the definition and might even be overloaded.
+     *
+     * The only problem is that the text of the name has to be
+     * shared between the generated code and Cuddles.  Since these
+     * are two separate invocations of Cuddles, we cannot use an
+     * invented Text so we generate the text by adding a prefix
+     * to the start which cannot conflict with normal identifiers.
+     */
+    Int line = intOf(l);
+    Int cconv;
+    Text t = concatText("--FFI_", textToStr(textOf(ext)));
+    Name n = newName(t, NIL);
+
+    if (textOf(v) != textExport) {
+        errHead(line);
+        errPrintf(
+            "Foreign declarations must be either import or export not \"%s\"",
+            textToStr(textOf(v)));
+        errFail();
+    }
+    cconv = checkCallConv(line, textOf(callconv));
+    if (cconv == FFI_CCONV_UNKNOWN) {
+        errHead(line);
+        errPrintf("Foreign export calling convention \"%s\" not supported",
+                  textToStr(textOf(callconv)));
+        errFail();
+    }
+
+    nameRec(n)->line = line;
+    nameRec(n)->type = type;
+    nameRec(n)->extFun = textOf(ext);
+    nameRec(n)->defn = intName;
+    nameRec(n)->foreignId = foreignCount++;
+    nameRec(n)->foreignFlags = FFI_NOSAFETY | cconv;
+    foreignExports = cons(n, foreignExports);
+}
+
+static String skipSpaces(String);
+static String matchToken(String, String);
+static String skipToSpace(String);
+static String skipToChar(String, int);
+static String matchFname(String);
+
+static String skipSpaces(String s) {
+    while (isspace(*s)) {
+        ++s;
+    }
+    return s;
+}
+
+static String skipToSpace(String s) {
+    while (*s != '\0' && !isspace(*s)) {
+        ++s;
+    }
+    return s;
+}
+
+static String skipToChar(String s, int c) {
+    while (*s != '\0' && *s != c) {
+        ++s;
+    }
+    return s;
+}
+
+static String matchToken(String t, String s) {
+    while (*t != '\0' && *t == *s) {
+        ++t;
+        ++s;
+    }
+    if (*t == '\0') {
+        return s;
+    } else {
+        return 0;
+    }
+}
+
+static String matchFname(String s) {
+    String t = skipToSpace(s);
+    if (t - s >= 3 && t[-2] == '.' && t[-1] == 'h') {
+        return t;
+    } else {
+        return 0;
+    }
+}
+
+Void checkForeignImport(Name p) /* Check foreign import          */
+{
+    Int line = nameRec(p)->line;
+    String ext = textToStr(nameRec(p)->extFun);
+    String e = 0;
+    Type t = NIL;
+    List argTys = NIL;
+
+    Bool generate_stub = generate_ffi;
+
+    emptySubstitution();
+    nameRec(p)->type = checkSigType(
+        nameRec(p)->line, "foreign import declaration", p, nameRec(p)->type);
+
+    t = nameRec(p)->type;
+    if (isPolyType(t)) {
+        t = monotypeOf(t);
+    }
+    t = fullerExpand(t);
+    while (getHead(t) == typeArrow && argCount == 2) {
+        Type ta = fullerExpand(arg(fun(t)));
+        Type tr = fullerExpand(arg(t));
+        argTys = cons(ta, argTys);
+        t = tr;
+    }
+    argTys = rev(argTys);
+    /* argTys now holds the argument tys and t holds result type */
+
+    /* What kind of import is this? */
+    ext = skipSpaces(ext);
+    if ((e = matchToken("dynamic", ext))) { /* dynamic import */
+        Type ta = NIL;
+        Bool isIO = FALSE;
+
+        e = skipSpaces(e);
+        if (*e != '\0')
+            goto cantparse;
+
+        /* type must be of the form:
+         *
+         *    (FunPtr fty) -> fty
+         *
+         */
+
+        if (length(argTys) < 1)
+            goto dynerr;
+        ta = hd(argTys);
+        argTys = tl(argTys);
+
+        if (getHead(ta) != typeFunPtr || argCount != 1)
+            goto dynerr;
+        ta = hd(getArgs(ta));
+
+        /* ToDo: check that ta == argTys -> t and check it's a valid type */
+
+        if (getHead(t) == typeIO && argCount == 1) {
+            isIO = TRUE;
+            t = fullerExpand(hd(getArgs(t)));
+        }
+
+        if (generate_stub) {
+            nameRec(p)->arity = 1 + length(argTys) + (isIO ? IOArity : 0);
+            nameRec(p)->extFun = inventText();
+            implementForeignImportDynamic(line, nameRec(p)->foreignId,
+                                          nameRec(p)->extFun, argTys, isIO, t);
+        }
+
+    } else if ((e = matchToken("wrapper", ext))) { /* thunk builder */
+        Bool isIO = FALSE;
+
+        e = skipSpaces(e);
+        if (*e != '\0')
+            goto cantparse;
+
+        if (length(argTys) != 1)
+            goto wraperr;
+
+        if (getHead(t) != typeIO || argCount != 1)
+            goto wraperr;
+        t = fullerExpand(hd(getArgs(t)));
+
+        if (getHead(t) != typeFunPtr)
+            goto wraperr;
+        t = fullerExpand(hd(getArgs(t)));
+
+        /* ToDo: check that hd(argTys) is the type t we just unwrapped */
+
+        t = fullerExpand(t);
+        argTys = NIL;
+        while (getHead(t) == typeArrow && argCount == 2) {
+            Type ta = fullerExpand(arg(fun(t)));
+            Type tr = fullerExpand(arg(t));
+            argTys = cons(ta, argTys);
+            t = tr;
+        }
+        argTys = rev(argTys);
+        /* argTys now holds the argument tys and t holds result type */
+
+        if (getHead(t) == typeIO && argCount == 1) {
+            isIO = TRUE;
+            t = fullerExpand(hd(getArgs(t)));
+        }
+        t = fullerExpand(t);
+
+        if (generate_stub) {
+            nameRec(p)->arity = 1 + IOArity;
+            nameRec(p)->extFun = inventText();
+            implementForeignImportWrapper(line, nameRec(p)->foreignId,
+                                          nameRec(p)->extFun, argTys, isIO, t);
+        }
+
+    } else {
+        /* static function or address:
+         *
+         *  ['static'] [fname] ['[' lib ']'] [&] [cid]
+         *
+         * or, for .NET bindings:
+         *
+         *  ['static'] ['ctor' | 'field' | 'method' ] ['[' lib ']'] [cid]
+         *
+         */
+        Bool isStatic = FALSE;
+        Text fn = -1;
+        Text cid = -1;
+        Bool isLabel = FALSE;
+
+        if ((e = matchToken("static", ext))) {
+            isStatic = TRUE;
+            ext = skipSpaces(e);
+        }
+        if ((e = matchFname(ext))) {
+            fn = subText(ext, e - ext);
+            ext = skipSpaces(e);
+        }
+
+        if ((e = matchToken("&", ext))) {
+            isLabel = TRUE;
+            ext = skipSpaces(e);
+        }
+
+        if ((e = matchToken("[", ext))) {
+            ext = skipToChar(e, ']');
+            if (*ext != ']' || ext == e)
+                goto cantparse;
+            errHead(line);
+            errPrintf("Cuddles doesn't use library specifications.");
+            errFail();
+        }
+        if (*ext != '\0') {
+            e = skipToSpace(ext);
+            cid = subText(ext, e - ext);
+            ext = skipSpaces(e);
+        } else {
+            cid = nameRec(p)->text;
+        }
+
+        if (*ext != '\0')
+            goto cantparse;
+
+        if (isLabel) {
+            if (!isNull(argTys))
+                goto labelerr;
+            if (!((getHead(t) == typePtr && argCount == 1) ||
+                  (getHead(t) == typeFunPtr && argCount == 1))) {
+                goto labelerr;
+            }
+            if (generate_stub) {
+                nameRec(p)->arity = 0;
+                implementForeignImportLabel(line, nameRec(p)->foreignId, fn,
+                                            cid, nameRec(p)->text, t);
+                nameRec(p)->extFun = cid;
+            }
+        } else {
+            Bool isIO = FALSE;
+
+            if (getHead(t) == typeIO && argCount == 1) {
+                isIO = TRUE;
+                t = fullerExpand(hd(getArgs(t)));
+            }
+
+            if (generate_stub) {
+                nameRec(p)->arity = length(argTys) + (isIO ? IOArity : 0);
+                implementForeignImport(line, p, nameRec(p)->foreignId, fn, cid,
+                                       isStatic, -1, argTys, isIO, t);
+                nameRec(p)->extFun = cid;
+            }
+        }
+    }
+
+    return;
+
+cantparse:
+    errHead(line);
+    errPrintf("Can't parse external entity '");
+    errPrintf(ext);
+    errPrintf("'\n");
+    errFail();
+
+dynerr:
+    errHead(line);
+    errPrintf("foreign import dynamic must have type '(FunPtr ft) -> ft'");
+    errFail();
+
+wraperr:
+    errHead(line);
+    errPrintf("foreign import wrapper must have type 'ft -> IO (FunPtr ft)'");
+    errFail();
+
+labelerr:
+    errHead(line);
+    errPrintf("foreign import & must have type 'Ptr a' or 'FunPtr a'");
+    errFail();
+}
+
+Void checkForeignExport(Name p) /* Check foreign export      */
+{
+    Int line = nameRec(p)->line;
+    Text ext = nameRec(p)->extFun;
+    Type t;
+    List argTys = NIL;
+    Bool isIO = FALSE;
+
+    emptySubstitution();
+    nameRec(p)->type =
+        checkSigType(line, "foreign export declaration", p, nameRec(p)->type);
+    t = nameRec(p)->type;
+    t = fullerExpand(t);
+
+    while (getHead(t) == typeArrow && argCount == 2) {
+        Type ta = fullerExpand(arg(fun(t)));
+        Type tr = fullerExpand(arg(t));
+        argTys = cons(ta, argTys);
+        t = tr;
+    }
+    argTys = rev(argTys);
+
+    if (getHead(t) == typeIO && argCount == 1) {
+        t = fullerExpand(hd(getArgs(t)));
+        isIO = TRUE;
+    }
+
+    if (generate_ffi) {
+        nameRec(p)->arity = length(argTys) + (isIO ? IOArity : 0);
+        implementForeignExport(line, nameRec(p)->foreignId, ext, argTys, isIO,
+                               t);
+    }
+}
+
+Void linkForeign(Name p) /* Link an ffi-generated primitive */
+{
+    addPrim(nameRec(p)->line, p, textToStr(nameRec(p)->text), nameRec(p)->mod,
+            nameRec(p)->type);
+}
 
 /* --------------------------------------------------------------------------
  * Local function prototypes:
