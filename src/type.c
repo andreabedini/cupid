@@ -16,6 +16,7 @@
 #include "connect.h"
 #include "scc.h"
 #include "preds.h"
+#include "tagcheck.h"
 #include "errors.h"
 #include "output.h"
 #include "subst.h"
@@ -2141,6 +2142,8 @@ static Type local genTest(Int l, Cell v, List ps, Type dt, Type t, Int o)/* Gene
 static Type local generalize(List qs, Type t)	/* calculate generalization of t   */
             /* having already marked fixed vars*/
 {				/* with qualifying preds qs	   */
+    assertPredList(qs);
+    assertType(t);
     if (nonNull(qs))
 	t = ap(QUAL,pair(qs,t));
     if (nonNull(genericVars)) {

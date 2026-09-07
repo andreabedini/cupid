@@ -19,6 +19,7 @@
 #include "output.h"
 #include "opts.h"
 #include "subst.h"
+#include "tagcheck.h"
 
 static Int numTyvars;			/* no. type vars currently in use  */
 static Int maxTyvars = 0;
@@ -172,6 +173,7 @@ Int newTyvars(Int n)		        /* allocate new type variables	   */
 
 Int newKindedVars(Kind k)			/* allocate new variables with	   */
 {				/* specified kinds		   */
+    assertKinds(k);
     Int beta = numTyvars;		/* if k = k0 -> k1 -> ... -> kn	   */
     for (; isPair(k); k=snd(k)) {	/* then allocate n vars with kinds */
 	expandSubst(1);			/* k0, k1, ..., k(n-1)		   */
@@ -185,6 +187,7 @@ Int newKindedVars(Kind k)			/* allocate new variables with	   */
 
 Void instantiate(Type type)			/* instantiate type, if nonNull	   */
 {
+    if (nonNull(type)) assertType(type);
     predsAre = NIL;
     typeIs   = type;
     typeFree = 0;
@@ -489,6 +492,7 @@ Type copyTyvar(Int vn)	        	/* calculate most general form of  */
 Type copyType(Type t, Int o)	        	/* calculate most general form of  */
                    /* type expression (t,o) 	   */
 {
+    assertType(t);
     STACK_CHECK
     switch (whatIs(t)) {
 	case AP        : {   Type l = copyType(fst(t),o);/* ensure correct */
@@ -777,6 +781,7 @@ Bool eqKind(Kind k1, Kind k2)			/* check that two (mono)kinds are  */
 Kind getKind(Cell c, Int o)			/* Find kind of constr during type */
             /* checking process		   */
 {
+    assertType(c);
     if (isAp(c))					/* application	   */
 	return snd(getKind(fst(c),o));
     switch (whatIs(c)) {
@@ -920,6 +925,8 @@ static Bool local varToTypeBind(Tyvar*tyv, Type t, Int o)/* Make binding tyv := 
 Bool unify(Type t1, Int o1, Type t2, Int o2)			/* Main unification routine	   */
                /* unify (t1,o1) with (t2,o2)	   */
 {
+    assertType(t1);
+    assertType(t2);
     Tyvar *tyv1, *tyv2;
 
     STACK_CHECK
@@ -1121,6 +1128,8 @@ Bool matchPred(Cell pi1, Int o1, Cell pi, Int o)		/* One way match predicate (pi
             /* vars in 2nd pred to be bound.   */
             /* Assumes preds are kind correct  */
 {				/* with the same class and that no */
+    assertPred(pi1);
+    assertPred(pi);
     Bool result;			/* vars have been alloc'd since o. */
     bindOnlyAbove(o);
     result = unifyPred(pi1,o1,pi,o);
@@ -1132,6 +1141,8 @@ Bool unifyPred(Cell pi1, Int o1, Cell pi, Int o)		/* Unify two predicates		   */
              /* Assumes preds are kind correct  */
             /* with the same class.		   */
 {
+    assertPred(pi1);
+    assertPred(pi);
   for (; isAp(pi1); pi1=fun(pi1), pi=fun(pi)) {
 	if (!isAp(pi) || !unify(arg(pi1),o1,arg(pi),o))
 	    return FALSE;
@@ -1148,6 +1159,7 @@ Bool unifyPred(Cell pi1, Int o1, Cell pi, Int o)		/* Unify two predicates		   */
 Inst findInstFor(Cell pi, Int o)			/* Find matching instance for pred */
              /* (pi,o), or otherwise NIL.  If a */
 {				/* match is found, then tyvars from*/
+    assertPred(pi);
     Class c = getHead(pi);		/* typeOff have been initialized to*/
     List  ins;				/* allow direct use of specifics.  */
     Cell  kspi = NIL;
@@ -1414,6 +1426,8 @@ Bool sameType(Type t1, Int o1, Cell t, Int o)		/* Test to see if types are	   */
             /* the variables in either one.	   */
             /* Assumes types are kind correct  */
 {				/* with the same kind.		   */
+    assertType(t1);
+    assertType(t);
     Bool result;
     noBind();
     result = unify(t1,o1,t,o);
@@ -1475,6 +1489,8 @@ static Bool local kvarToTypeBind(Tyvar*tyv, Type t, Int o)/* Make binding tyv :=
 Bool kunify(Kind k1, Int o1, Kind k2, Int o2)		/* Unify kind expr (k1,o1) with	   */
                /* (k2,o2)			   */
 {
+    assertKind(k1);
+    assertKind(k2);
     Tyvar *kyv1, *kyv2;
 
     deRef(kyv1,k1,o1);

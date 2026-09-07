@@ -19,6 +19,7 @@
 #include "subst.h"
 #include "opts.h"	/* allowOverlap, EXPLAIN_INSTANCE_RESOLUTION */
 #include "preds.h"
+#include "tagcheck.h"
 
 /* --------------------------------------------------------------------------
  * Local function prototypes:
@@ -51,6 +52,7 @@ List preds;				/* Current predicate assignment	   */
 Cell assumeEvid(Cell pi, Int o)	/* Add predicate pi (offset o) to  */
             /* preds with new dict var nd	   */
 {
+    assertPred(pi);
     Cell nd = inventDictVar();
     preds   = cons(triple(pi,mkInt(o),nd),preds);
     return nd;
@@ -60,6 +62,7 @@ Cell assumeEvid(Cell pi, Int o)	/* Add predicate pi (offset o) to  */
 List makePredAss(List qs, Int o)	/* Make list of predicate assumps. */
             /* from qs (offset o), w/ new dict */
 {				/* vars for each predicate	   */
+    assertPredList(qs);
     List result = NIL;
     for (; nonNull(qs); qs=tl(qs))
 	result = cons(triple(hd(qs),mkInt(o),inventDictVar()),result);
@@ -302,6 +305,7 @@ static Cell local entail(List ps, Cell pi, Int o, Int d)	/* Calc evidence for (p
             /* Uses superclasses, equality,    */
             /* tautology, and construction	   */
 {
+    assertPred(pi);
     Cell ev = NIL;
 
 #if EXPLAIN_INSTANCE_RESOLUTION
@@ -406,6 +410,8 @@ Cell provePred(Kinds ks, List ps, Cell pi)                /* Find evidence for p
                                         /* assuming ps.  If ps is null,    */
                                         /* then we get to decide whether   */
 {                             /* is tautological, and we can use */
+    assertKinds(ks);
+    assertPred(pi);
     Int  beta;                          /* the evidence as a dictionary.   */
     Cell ev;
     emptySubstitution();
@@ -419,6 +425,8 @@ Cell provePred(Kinds ks, List ps, Cell pi)                /* Find evidence for p
 Cell resolvePred(Kinds ks, Cell pi)			/* Find evidence for predicate pi. */
              /* Unlike `provePred', also uses   */
 {				/* desparate measures like context */
+    assertKinds(ks);
+    assertPred(pi);
     Int  beta;				/* reduction and defaulting.       */
     List qs;
 

@@ -15,6 +15,7 @@
 #include "storage.h"
 #include "connect.h"
 #include "scc.h"
+#include "tagcheck.h"
 #include "machdep.h"
 #include "errors.h"
 #include "output.h"
@@ -1992,6 +1993,7 @@ Void ambigError(Int line, String where, Cell e, Type type)	/* produce error mess
 static Void local kindConstr(Int line, Int alpha, Int m, Cell c)
               /* Determine kind of constructor   */
 {
+    assertType(c);
     Cell h = getHead(c);
     Int  n = argCount;
 
@@ -2081,6 +2083,7 @@ static Kind local kindAtom(Int alpha, Cell c)	/* Find kind of atomic constructor
 
 static Void local kindPred(Int l, Int alpha, Int m, Cell pi)/* Check kinds of arguments in pred*/
 {
+    assertPred(pi);
     {   static String predicate = "class constraint";
 	Class c  = getHead(pi);
 	List  as = getArgs(pi);
@@ -2097,6 +2100,7 @@ static Void local kindPred(Int l, Int alpha, Int m, Cell pi)/* Check kinds of ar
 static Void local kindType(Int line, String wh, Type type)/* check that (poss qualified) type*/
                 /* is well-kinded		   */
 {
+    assertType(type);
     checkKind(line,0,0,type,NIL,wh,STAR,0);
 }
 

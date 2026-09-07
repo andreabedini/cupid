@@ -25,7 +25,8 @@ gc_sensitive = files('compiler.c', 'module.c', 'preds.c', 'scc.c', 'subst.c',
 core = files(
   'char.c', 'errors.c', 'evaluator.c', 'ffi.c', 'goal.c',
   'input.c', 'machdep.c', 'machine.c', 'opts.c', 'output.c', 'parser.c',
-  'script.c', 'storage.c', 'strutil.c', 'unitable.c', 'version.c',
+  'script.c', 'storage.c', 'strutil.c', 'tagcheck.c', 'unitable.c',
+  'version.c',
   'prims/array.c', 'prims/bignums.c', 'prims/builtin.c', 'prims/dirprim.c',
   'prims/iomonad.c', 'prims/printer.c', 'prims/timeprim.c',
 )
