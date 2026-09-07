@@ -14,6 +14,14 @@
  * $Revision: 1.14 $
  * $Date: 2003/11/19 21:49:48 $
  * ------------------------------------------------------------------------*/
+
+#include "prelude.h"
+#include "storage.h"
+#include "connect.h"
+#include "errors.h"
+#include "machdep.h"
+#include "builtin.h"
+
  
 /* --------------------------------------------------------------------------
  * internalPrims control
@@ -22,10 +30,8 @@
 static Void linkInternals (Void);
 
 /* nameLeft and nameRight (the standard Left/Right data constructors) are
- * declared extern in connect.h and defined in type.c; interns.c is #included
- * into builtin.c (see the INTERNAL_PRIMS block there), so redeclaring them
- * here - as this used to, with "static" - conflicts with connect.h's extern
- * declaration in the same translation unit and fails to compile.
+ * declared in connect.h and defined in type.c; use those declarations
+ * rather than redeclaring them here.
  */
 
 static Void local internalControl (Int);
@@ -89,7 +95,7 @@ static struct primitive internalPrimTable[] = {
   {0,		    0, 0}
 };
 
-static struct primInfo internalPrims = {internalControl, internalPrimTable, 0};
+struct primInfo internalPrims = {internalControl, internalPrimTable, 0};
 
 /* --------------------------------------------------------------------------
  * linkInternals

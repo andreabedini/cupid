@@ -239,7 +239,6 @@ PROTO_PRIM(primExpFloat);
 PROTO_PRIM(primLogFloat);
 PROTO_PRIM(primSqrtFloat);
 PROTO_PRIM(primFloatToInt);
-PROTO_PRIM(primFloatRadix);
 PROTO_PRIM(primFloatDigits);
 PROTO_PRIM(primFloatMinExp);
 PROTO_PRIM(primFloatMaxExp);
@@ -300,7 +299,6 @@ PROTO_PRIM(primUniGenCat);
 PROTO_PRIM(primUnsafePtrEq);
 PROTO_PRIM(primUnsafePtrToInt);
 
-static Cell local followInd ( Cell );
 
 /* --------------------------------------------------------------------------
  * Table of primitive/built-in values:
@@ -415,7 +413,6 @@ static struct primitive builtinPrimTable[] = {
   {"primLogFloat",      1, primLogFloat},
   {"primSqrtFloat",     1, primSqrtFloat},
   {"primFloatToInt",    1, primFloatToInt},
-  {"primFloatRadix",    0, primFloatRadix},
   {"primFloatDigits",   0, primFloatDigits},
   {"primFloatMinExp",   0, primFloatMinExp},
   {"primFloatMaxExp",   0, primFloatMaxExp},
@@ -432,7 +429,6 @@ static struct primitive builtinPrimTable[] = {
   {"primLogDouble",     1, primLogDouble},
   {"primSqrtDouble",    1, primSqrtDouble},
   {"primDoubleToInt",   1, primDoubleToInt},
-  {"primDoubleRadix",   0, primFloatRadix},
   {"primDoubleDigits",  0, primDoubleDigits},
   {"primDoubleMinExp",  0, primDoubleMinExp},
   {"primDoubleMaxExp",  0, primDoubleMaxExp},
@@ -977,13 +973,6 @@ primFun(primW32toW64) {
     updateRoot(pair(I64CELL,pair(mkInt(x),mkInt(y))));
 }
 
-
-/* --------------------------------------------------------------------------
- * Haskell Integer (bignum) primitives:
- * ------------------------------------------------------------------------*/
-
-#include "bignums.c"
-
 /* --------------------------------------------------------------------------
  * Coercion primitives:
  * ------------------------------------------------------------------------*/
@@ -1132,7 +1121,6 @@ Double2DoublePre(primSqrtDouble,sqrt(x),x>=0) /* Double square root primitive */
 Float2Int(primFloatToInt,(Int) x)      /* Adhoc Float --> Int conversion   */
 Double2Int(primDoubleToInt,(Int) x)    /* Adhoc Double --> Int conversion  */
 
-CAFBignum(primFloatRadix,bigInt(CUDDLES_FLT_RADIX)) /* Float radix primitive  */
 
 CAFInt(primFloatDigits,CUDDLES_FLT_MANT_DIG)/* Float sig. digits primitive    */
 				       /* again, courtesy K&R2             */
@@ -1272,12 +1260,6 @@ primFun(primCmpDouble) {               /* Double compare primitive         */
 }
 
 /* --------------------------------------------------------------------------
- * Print primitives:
- * ------------------------------------------------------------------------*/
-
-#include "printer.c"
-
-/* --------------------------------------------------------------------------
  * Evaluate name, obtaining a C string from a Cuddles string:
  * ------------------------------------------------------------------------*/
 
@@ -1338,39 +1320,6 @@ Void outputString(FILE*fp)                   /* Evaluate string on top of stack 
 }
 
 /* --------------------------------------------------------------------------
- * IO monad implementation
- * ------------------------------------------------------------------------*/
-
-#include "iomonad.c"
-
-/* --------------------------------------------------------------------------
- * Time and CPUTime module implementations
- * ------------------------------------------------------------------------*/
-
-#include "timeprim.c"
-
-/* --------------------------------------------------------------------------
- * Directory module implementation
- * ------------------------------------------------------------------------*/
-
-#include "dirprim.c"
-
-/* --------------------------------------------------------------------------
- * Error catching primitives
- * (not standard Haskell but jolly useful)
- * ------------------------------------------------------------------------*/
-
-#if INTERNAL_PRIMS
-#include "interns.c"
-#endif
-
-/* --------------------------------------------------------------------------
- * Array primitives:
- * ------------------------------------------------------------------------*/
-
-#include "array.c"
-
-/* --------------------------------------------------------------------------
  * Char primitives:
  * ------------------------------------------------------------------------*/
 
@@ -1397,7 +1346,7 @@ Char2Int(primUniGenCat,uni_gencat(x))
  * Auxilliary functions
  * ------------------------------------------------------------------------*/
 
-static Cell local followInd(Cell c)    /* follow chain of indirections and CAFs */
+Cell followInd(Cell c)    /* follow chain of indirections and CAFs */
 {
     do {
 	switch (whatIs(c)) {

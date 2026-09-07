@@ -12,6 +12,15 @@
  * $Date: 2006/09/05 22:43:44 $
  * ------------------------------------------------------------------------*/
 
+#include "prelude.h"
+#include "storage.h"
+#include "connect.h"
+#include "errors.h"
+#include "machdep.h"
+#include "builtin.h"
+#include "char.h"
+
+
 #include <inttypes.h>
 
 static Void   local printer		(Name,Int);
@@ -24,7 +33,6 @@ static Void   local outLPr		(Name,Cell);
 static Void   local outException	(Cell);
 static Void   local outBadRedex		(Cell);
 static Cell   local printDException	(Cell);
-static Cell   local printException	(Cell,Cell);
 
 static Name nameLPrint, nameNLPrint;	/* list printing primitives	   */
 static Name nameSPrint, nameNSPrint;	/* string printing primitives	   */
@@ -86,7 +94,7 @@ static struct primitive printerPrimTable[] = {
   {0,			0, 0}
 };
 
-static struct primInfo printerPrims = { printerControl, printerPrimTable, 0 };
+struct primInfo printerPrims = { printerControl, printerPrimTable, 0 };
 
 /*-------------------------------------------------------------------------*/
 
@@ -550,7 +558,7 @@ static Cell local printDException(Cell ex)	/* Produce expression for exception*/
 	return printException(ex,nameNil);
 }
 
-static Cell local printException(Cell ex, Cell rs)	/* produce expression for exception*/
+Cell printException(Cell ex, Cell rs)	/* produce expression for exception*/
 {
    out = NIL;
    outException(ex);

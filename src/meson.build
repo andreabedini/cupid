@@ -22,10 +22,15 @@ src_inc = include_directories('.')
 gc_sensitive = files('compiler.c', 'module.c', 'subst.c', 'static.c', 'type.c')
 
 core = files(
-  'builtin.c', 'char.c', 'errors.c', 'evaluator.c', 'ffi.c', 'goal.c',
+  'char.c', 'errors.c', 'evaluator.c', 'ffi.c', 'goal.c',
   'input.c', 'machdep.c', 'machine.c', 'opts.c', 'output.c',
   'script.c', 'storage.c', 'strutil.c', 'version.c',
+  'prims/array.c', 'prims/bignums.c', 'prims/builtin.c', 'prims/dirprim.c',
+  'prims/iomonad.c', 'prims/printer.c', 'prims/timeprim.c',
 )
+if get_option('internal-prims')
+  core += files('prims/interns.c')
+endif
 
 no_opt = cc.get_argument_syntax() == 'msvc' ? '/Od' : '-O0'
 libgc = static_library('cuddles-gcsafe', gc_sensitive,

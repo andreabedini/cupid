@@ -1,8 +1,35 @@
 /*
  * Primitives needed to implement the Haskell 98 Directory module.
  *
- * This file has to be included by builtin.c, and won't compile on its own.
+ * Compiled as its own translation unit; see builtin.h for the toolkit.
  */
+
+#include "prelude.h"
+#include "storage.h"
+#include "connect.h"
+#include "errors.h"
+#include "machdep.h"
+#include "builtin.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+#include <errno.h>
+#include <fcntl.h>
+#if HAVE_IO_H
+# include <io.h>
+#endif
+#if HAVE_WINDOWS_H
+# include <windows.h>
+#endif
+#if HAVE_DIRENT_H
+# include <dirent.h>
+#endif
+#if HAVE_DIRECT_H
+# include <direct.h>
+#endif
+
  
 
 /* --------------------------------------------------------------------------
@@ -51,7 +78,7 @@ static struct primitive dirPrimTable[] = {
   {0,			0, 0}
 };
 
-static struct primInfo dirPrims = { dirControl, dirPrimTable, 0 };
+struct primInfo dirPrims = { dirControl, dirPrimTable, 0 };
 
 static	Bool	local	isDirectory	(String);
 

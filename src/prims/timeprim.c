@@ -1,8 +1,41 @@
 /*
  * Primitives needed to implement the Haskell 98 Time & CPUTime modules.
  *
- * This file has to be included by builtin.c, and won't compile on its own.
+ * Compiled as its own translation unit; see builtin.h for the toolkit.
  */
+
+#include "prelude.h"
+#include "storage.h"
+#include "connect.h"
+#include "errors.h"
+#include "machdep.h"
+#include "builtin.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+#include <errno.h>
+#include <fcntl.h>
+#if HAVE_IO_H
+# include <io.h>
+#endif
+#if HAVE_WINDOWS_H
+# include <windows.h>
+#endif
+#if HAVE_SYS_TIMES_H && !mingw32_HOST_OS
+# include <sys/times.h>
+#endif
+#if HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
+#if HAVE_SYS_RESOURCE_H && !mingw32_HOST_OS
+# include <sys/resource.h>
+#endif
+#if HAVE_SYS_TIMEB_H
+# include <sys/timeb.h>
+#endif
+
  
 
 /* --------------------------------------------------------------------------
@@ -37,7 +70,7 @@ static struct primitive timePrimTable[] = {
   {0,			0, 0}
 };
 
-static struct primInfo timePrims = { timeControl, timePrimTable, 0 };
+struct primInfo timePrims = { timeControl, timePrimTable, 0 };
 
 /* --------------------------------------------------------------------------
  * Time primitives:

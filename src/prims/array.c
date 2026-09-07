@@ -11,6 +11,14 @@
  * $Date: 2004/01/06 10:02:51 $
  * ------------------------------------------------------------------------*/
 
+#include "prelude.h"
+#include "storage.h"
+#include "connect.h"
+#include "errors.h"
+#include "machdep.h"
+#include "builtin.h"
+
+
 static Name nameEltUndef;		/* undefined element in array	   */
 
 PROTO_PRIM(primArray);
@@ -70,7 +78,7 @@ static Void arrayControl(Int what)
     }
 }
 
-static struct primInfo arrayPrims = { arrayControl, arrayPrimTable, 0 };
+struct primInfo arrayPrims = { arrayControl, arrayPrimTable, 0 };
 
 /*-------------------------------------------------------------------------*/
 

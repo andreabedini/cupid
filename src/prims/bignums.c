@@ -11,6 +11,15 @@
  * $Date: 2004/10/29 12:43:09 $
  * ------------------------------------------------------------------------*/
 
+#include "prelude.h"
+#include "storage.h"
+#include "connect.h"
+#include "errors.h"
+#include "machdep.h"
+#include "builtin.h"
+#include <math.h>
+
+
 /*#define DEBUG_BIGNUMS*/
 
 
@@ -22,6 +31,7 @@ static List bigRem = NIL;	/* used in bigQrm to return remainder	   */
 /*-------------------------------------------------------------------------*/
 
 PROTO_PRIM(primPlusInteger);
+PROTO_PRIM(primFloatRadix);
 PROTO_PRIM(primMinusInteger);
 PROTO_PRIM(primMulInteger);
 PROTO_PRIM(primQrmInteger);
@@ -36,6 +46,8 @@ PROTO_PRIM(primEqInteger);
 PROTO_PRIM(primCmpInteger);
 
 static struct primitive bignumPrimTable[] = {
+  {"primFloatRadix",	0, primFloatRadix},
+  {"primDoubleRadix",	0, primFloatRadix},
   {"primPlusInteger",	2, primPlusInteger},
   {"primMinusInteger",	2, primMinusInteger},
   {"primMulInteger",	2, primMulInteger},
@@ -75,7 +87,7 @@ static Void bignumControl(Int what)
     }
 }
 
-static struct primInfo bignumPrims = { bignumControl, bignumPrimTable, 0 };
+struct primInfo bignumPrims = { bignumControl, bignumPrimTable, 0 };
 
 /* Used by the IO implementation, so not 'static' like the rest. */
 extern Bignum bigWord   (Unsigned);
@@ -904,4 +916,4 @@ primFun(primQrmInteger) {		/* Integer quotient and remainder  */
 }
 
 /*-------------------------------------------------------------------------*/
-
+CAFBignum(primFloatRadix,bigInt(CUDDLES_FLT_RADIX)) /* Float radix primitive  */

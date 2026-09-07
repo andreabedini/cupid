@@ -17,6 +17,29 @@
  * $Revision: 1.101 $
  * $Date: 2006/05/03 09:10:40 $
  * ------------------------------------------------------------------------*/
+
+#include "prelude.h"
+#include "storage.h"
+#include "connect.h"
+#include "errors.h"
+#include "machdep.h"
+#include "builtin.h"
+#include "char.h"
+#include <ctype.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+#include <errno.h>
+#include <fcntl.h>
+#if HAVE_IO_H
+# include <io.h>
+#endif
+#if HAVE_WINDOWS_H
+# include <windows.h>
+#endif
+
  
 Name nameIORun;			        /* run IO code                     */
 Name nameIOBind;		        /* bind IO code                    */
@@ -27,7 +50,6 @@ static Name nameHreader;	        /* auxiliary function		   */
 static Cell cuddlesProgName;		/* value of getProgName            */
 static Cell cuddlesArgs;			/* value of getArgs                */
 
-static Void   local throwErrno     (String,Bool,Int,Cell *);
 static String local toIOErrorDescr (int,Bool);
 static Name   local toIOError      (int);
 static Int    local newHandle      (Cell *,String);
@@ -257,7 +279,7 @@ static struct primitive iomonadPrimTable[] = {
   {0,			0, 0}
 };
 
-static struct primInfo iomonadPrims = { iomonadControl, iomonadPrimTable, 0 };
+struct primInfo iomonadPrims = { iomonadControl, iomonadPrimTable, 0 };
 
 /* --------------------------------------------------------------------------
  * The monad combinators:
@@ -553,7 +575,7 @@ mkIOError(Cell   *mbH,	/* a Handle or NULL */
  * IO Errors (more defined for file ops)
  * ------------------------------------------------------------------------*/
 
-static Void local throwErrno(String fname, Bool isFile, Int h, Cell *mbF)
+Void throwErrno(String fname, Bool isFile, Int h, Cell *mbF)
 {
     IOFail(mkIOError(h == NO_HANDLE ? NULL : &handles[h].hcell,
 		     toIOError(errno),
@@ -705,13 +727,6 @@ primFun(primSetArgs) {                  /* primSetArgs :: [String] -> IO () */
  * File IO
  * ------------------------------------------------------------------------*/
 
-
-#define HandleArg(nm,offset)  \
-    eval(primArg(offset));    \
-    nm = intValOf(whnfHead)
-
-#define IOBoolResult(e)  \
-    IOReturn((e)?nameTrue:nameFalse)
 
 primFun(primHGetChar) {			/* Read character from handle	   */
     Int h;

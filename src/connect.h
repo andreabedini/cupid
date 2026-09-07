@@ -346,6 +346,7 @@ extern  Void   outputString	(FILE *);
 extern  Void   dialogue		(Cell);
 extern  Cell   consChar		(Char);
 extern  Bignum bigInt		(Int);
+extern  Bignum bigWord		(Unsigned);
 extern  Bignum bigDouble	(double);
 extern  Bignum bigNeg		(Bignum);
 extern  Cell   bigToInt		(Bignum);

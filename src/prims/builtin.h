@@ -15,6 +15,17 @@
 
 extern String evalName  (Cell);
 extern Cell   mkIOError (Cell *,Name,String,String,Cell *);
+extern Cell   followInd (Cell);			/* builtin.c: skip indirections	*/
+extern Void   throwErrno(String,Bool,Int,Cell *);	/* iomonad.c: raise an IOError	*/
+extern Cell   printException(Cell,Cell);		/* printer.c: exception -> String*/
+
+/* The primitive tables of the other units in this directory, registered
+ * by builtIn(INSTALL) in builtin.c */
+extern struct primInfo arrayPrims, bignumPrims, dirPrims, iomonadPrims,
+                       printerPrims, timePrims;
+#if INTERNAL_PRIMS
+extern struct primInfo internalPrims;
+#endif
 
 /* --------------------------------------------------------------------------
  * Macros used to define primitives:
@@ -552,5 +563,10 @@ extern Cell   mkIOError (Cell *,Name,String,String,Cell *);
 #define IOArg(n)    primArg((n)+IOArity)
 #define IOReturn(r) { updapRoot(primArg(1),r); return; }
 #define IOFail(r)   throwException(ap(nameIOException,r))
+#define IOBoolResult(e)  \
+    IOReturn((e)?nameTrue:nameFalse)
+#define HandleArg(nm,offset)  \
+    eval(primArg(offset));    \
+    nm = intValOf(whnfHead)
 
 #endif /* __BUILTIN_H__ */
