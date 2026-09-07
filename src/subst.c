@@ -256,6 +256,7 @@ Type localizeBtyvs(Type t)			/* Localize type to eliminate refs */
 
 	case VARIDCELL:
 	case VAROPCELL: return mkInt(findBtyvsInt(textOf(t)));
+	default       : break;
     }
     return t;
 }
@@ -272,6 +273,7 @@ Tyvar *getTypeVar(Type t, Int o)			/* get number of type variable	   */
 	case OFFSET    : return tyvar(o+offsetOf(t));
 	case VARIDCELL :
 	case VAROPCELL : return tyvar(findBtyvsInt(textOf(t)));
+	default        : break;
     }
     return ((Tyvar *)0);
 }
@@ -497,6 +499,7 @@ Type copyType(Type t, Int o)	        	/* calculate most general form of  */
 	case INTCELL   : return copyTyvar(intOf(t));
 	case VARIDCELL :
 	case VAROPCELL : return copyTyvar(findBtyvsInt(textOf(t)));
+	default        : break;
     }
 
     return t;
@@ -534,6 +537,7 @@ Type zonkType(Type t, Int o)	/* flatten type by chasing all references	   */
 			 }
 	case OFFSET    : return zonkTyvar(o+offsetOf(t));
 	case INTCELL   : return zonkTyvar(intOf(t));
+	default        : break;
     }
 
     return t;
@@ -557,6 +561,7 @@ Kind copyKind(Kind k, Int o)	        	/* build kind expression from	   */
 		       }
 	case OFFSET  : return copyKindvar(o+offsetOf(k));
 	case INTCELL : return copyKindvar(intOf(k));
+	default      : break;
     }
     return k;
 }
@@ -614,6 +619,7 @@ static Cell local dupTyvars(Cell t, Int o, List ns)
 			 }
 	case OFFSET    : return dupTyvar(o+offsetOf(t),ns);
 	case INTCELL   : return dupTyvar(intOf(t),ns);
+	default        : break;
     }
     return t;
 }
@@ -780,6 +786,7 @@ Kind getKind(Cell c, Int o)			/* Find kind of constr during type */
 	case VARIDCELL :
 	case VAROPCELL : return tyvar(findBtyvsInt(textOf(c)))->kind;
 	case TYCON     : return tycon(c).kind;
+	default        : break;
     }
     internal("getKind");
     return STAR;/* not reached */
@@ -816,6 +823,7 @@ List genvarType(Type t, Int o, List vs)			/* calculate list of generic vars  */
 	case INTCELL   : return genvarTyvar(intOf(t),vs);
 	case VARIDCELL :
 	case VAROPCELL : return genvarTyvar(findBtyvsInt(textOf(t)),vs);
+	default        : break;
     }
     return vs;
 }

@@ -787,6 +787,7 @@ static Void local checkSynonyms(List ts)	/* Check for mutually recursive	   */
 	    case SYNONYM     :
 	    case RESTRICTSYN : syns = cons(t,syns);
 			       break;
+	    default          : break;
 	}
     }
     while (nonNull(syns)) {		/* then visit each synonym	   */
@@ -1547,6 +1548,7 @@ static List local typeVarsIn(Cell ty, List us, List ws, List vs)/*Calculate list
 			     }
 			     return vs;
 			 }
+	default        : break;
     }
     return vs;
 }
@@ -2031,6 +2033,7 @@ static Void local kindConstr(Int line, Int alpha, Int m, Cell c)
 			    EEND;
 			}
 			break;
+	default       : break;
     }
 
     if (n==0) {				/* trivial case, no arguments	   */
@@ -2070,6 +2073,7 @@ static Kind local kindAtom(Int alpha, Cell c)	/* Find kind of atomic constructor
 				 return snd(vt);
 			     }
 			 }
+	default        : break;
     }
     internal("kindAtom");
     return STAR;/* not reached */
@@ -2141,6 +2145,7 @@ static Void local initTCKind(Cell c)		/* build initial kind/arity for	c  */
 	switch (whatIs(tycon(c).what)) {
 	    case NEWTYPE  :
 	    case DATATYPE : bindTv(typeOff+tycon(c).arity,STAR,0);
+	    default       : break;
 	}
 	tycon(c).kind = mkInt(beta);
     } else {
@@ -2689,6 +2694,7 @@ static Cell local copyAdj(Cell c, Int o, Int beta)	/* Copy (c,o), replacing vars
 			  }
 			  return mkOffset(vn);
 		      }
+	default     : break;
     }
     return c;
 }
@@ -4868,6 +4874,7 @@ static Pair local attachFixity(Int line, Cell op)	/* Attach fixity to operator i
 			     }
 			 }
 			 break;
+	default        : break;
     }
     if (sy==APPLIC) {
 	sy = DEF_OPSYNTAX;
@@ -5283,6 +5290,7 @@ static Void local depComp(Int l, Cell e, List qs)	/* find dependents of comprehe
 	    case BOOLQUAL : snd(q) = depExpr(l,snd(q));
 			    depComp(l,e,qs1);
 			    break;
+	    default       : break;
 	}
     }
 }

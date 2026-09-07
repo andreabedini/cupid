@@ -1251,6 +1251,7 @@ static Cell local maDiscr(Cell ma)   /* Get the discriminator for a non-empty   
 			       arg(fun(p)) = translate(arg(fun(p)));
 			   return p;
 		       }
+	default      : break;
     }
     return h;
 }
@@ -1263,6 +1264,7 @@ static Bool local isNumDiscr(Cell d) /* TRUE => numeric discriminator           
 	case CHARCELL  : return FALSE;
 
 	case AP        : return TRUE;   /* must be a literal or (n+k)      */
+	default        : break;
     }
     internal("isNumDiscr");
     return 0;/*NOTREACHED*/
@@ -1275,6 +1277,7 @@ Int discrArity(Cell d)                      /* Find arity of discriminator      
 	case TUPLE     : return tupleOf(d);
 	case CHARCELL  : return 0;
 	case AP        : return 0;      /* must be an Int or Double lit    */
+	default        : break;
     }
     internal("discrArity");
     return 0;/*NOTREACHED*/

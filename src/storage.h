@@ -195,7 +195,7 @@ extern  Void	     markWithoutMove (Cell);
 #define isPair(c)    ((c)<0)
 #define isGenPair(c) ((c)<0 && -heapSize<=(c))
 
-#define whatIs(c)    (isPair(c)? (isTag(fst(c)) ? fst(c) : AP ) : whatCode[c])
+#define whatIs(c)    ((CellTag)(isPair(c)? (isTag(fst(c)) ? fst(c) : AP ) : whatCode[c]))
 extern unsigned char whatCode[];
 
 /* --------------------------------------------------------------------------
@@ -212,29 +212,134 @@ extern unsigned char whatCode[];
 #define isConTag(c)  (BCSTAG<=(c) && (c)<SPECMIN) /* Constr cell tag values*/
 #define TAG_MASK     (~0x7f)	  /* This masks 0..SPECMIN-1		   */
 
-#define INDIRECT     1		  /* Indirection node:	      snd :: Cell  */
-#define INDIRECT1    2		  /* Temporary indirection:   snd :: Cell  */
-#define FREECELL     3		  /* Free list cell:	      snd :: Cell  */
-#define VARIDCELL    4		  /* Identifier variable:     snd :: Text  */
-#define VAROPCELL    5		  /* Operator variable:       snd :: Text  */
-#define DICTVAR	     6		  /* Dictionary variable:     snd :: Text  */
-#define CONIDCELL    7		  /* Identifier constructor:  snd :: Text  */
-#define CONOPCELL    8		  /* Operator constructor:    snd :: Text  */
-#define STRCELL      9		  /* String literal:	      snd :: Text  */
-#define INTCELL	     10		  /* Int literal:	      snd :: Int   */
-#define HANDCELL     12		  /* IO monad Handle:	      snd :: Int   */
-#define WEAKCELL     13		  /* WeakPtr Cell:	      snd::(Cell,List)*/
-#define WEAKFIN	     14		  /* Weak pointer with fin:   snd::(k,(v,f))*/
-#define FLOATCELL    15		  /* Floating pt number:      snd :: Float */
-#define MPCELL       17		  /* Malloc Ptr Cell:         snd :: Int   */
+/* Every tag and special value, so that whatIs() has a type the compiler can
+ * check switches against.  The numeric values are load-bearing: isTag,
+ * isBoxTag, isConTag and the whatCode table are defined by these ranges. */
+typedef enum CellTag {
+    INDIRECT    = 1,	  /* Indirection node:	      snd :: Cell  */
+    INDIRECT1   = 2,	  /* Temporary indirection:   snd :: Cell  */
+    FREECELL    = 3,	  /* Free list cell:	      snd :: Cell  */
+    VARIDCELL   = 4,	  /* Identifier variable:     snd :: Text  */
+    VAROPCELL   = 5,	  /* Operator variable:       snd :: Text  */
+    DICTVAR     = 6,	  /* Dictionary variable:     snd :: Text  */
+    CONIDCELL   = 7,	  /* Identifier constructor:  snd :: Text  */
+    CONOPCELL   = 8,	  /* Operator constructor:    snd :: Text  */
+    STRCELL     = 9,	  /* String literal:	      snd :: Text  */
+    INTCELL     = 10,	  /* Int literal:	      snd :: Int   */
+    HANDCELL    = 12,	  /* IO monad Handle:	      snd :: Int   */
+    WEAKCELL    = 13,	  /* WeakPtr Cell:	      snd::(Cell,List)*/
+    WEAKFIN     = 14,	  /* Weak pointer with fin:   snd::(k,(v,f))*/
+    FLOATCELL   = 15,	  /* Floating pt number:      snd :: Float */
+    MPCELL      = 17,	  /* Malloc Ptr Cell:         snd :: Int   */
 #if SIZEOF_INTP == SIZEOF_INT
-#define PTRCELL      18           /* C Heap Pointer:          snd ::Pointer*/
+    PTRCELL     = 18,	  /* C Heap Pointer:          snd ::Pointer*/
 #endif
 /* CHARCELL is the whatIs code for chars; if UNICODE_CHARS is set, it
  * is also used for box cells representing character values greater than
  * or equal to NUM_SMALL_CHARS, in the same way as INTCELL.
  */
-#define CHARCELL     22		  /* Char literal:	      snd :: Char  */
+    CHARCELL    = 22,	  /* Char literal:	      snd :: Char  */
+
+    /* Constructor cell tags (BCSTAG..SPECMIN-1): the fst of a pair that
+     * describes a syntactic construct; see the note above isAp. */
+
+    LETREC      = 30,	  /* LETREC	snd :: ([Decl],Exp)	   */
+    COND        = 31,	  /* COND	snd :: (Exp,Exp,Exp)	   */
+    LAMBDA      = 32,	  /* LAMBDA	snd :: Alt		   */
+    FINLIST     = 33,	  /* FINLIST	snd :: [Exp]		   */
+    DOCOMP      = 34,	  /* DOCOMP	snd :: (Exp,[Qual])	   */
+
+    BANG        = 35,	  /* BANG	snd :: Type		   */
+    COMP        = 36,	  /* COMP	snd :: (Exp,[Qual])	   */
+    ASPAT       = 37,	  /* ASPAT	snd :: (Var,Exp)	   */
+    ESIGN       = 38,	  /* ESIGN	snd :: (Exp,Type)	   */
+    RSIGN       = 39,	  /* RSIGN	snd :: (Rhs,Type)	   */
+    CASE        = 40,	  /* CASE	snd :: (Exp,[Alt])	   */
+    NUMCASE     = 41,	  /* NUMCASE	snd :: (Exp,Disc,Rhs)	   */
+    FATBAR      = 42,	  /* FATBAR	snd :: (Exp,Exp)	   */
+    LAZYPAT     = 43,	  /* LAZYPAT	snd :: Exp		   */
+    DERIVE      = 45,	  /* DERIVE	snd :: Cell		   */
+
+    POSNUM      = 47,	  /* POSNUM	snd :: [Int]		   */
+    NEGNUM      = 48,	  /* NEGNUM	snd :: [Int]		   */
+
+    BOOLQUAL    = 49,	  /* BOOLQUAL	snd :: Exp		   */
+    QWHERE      = 50,	  /* QWHERE	snd :: [Decl]		   */
+    FROMQUAL    = 51,	  /* FROMQUAL	snd :: (Exp,Exp)	   */
+    DOQUAL      = 52,	  /* DOQUAL	snd :: Exp		   */
+    MONADCOMP   = 53,	  /* MONADCOMP	snd :: ((m,m0),(Exp,[Qual])*/
+
+    GUARDED     = 54,	  /* GUARDED	snd :: [guarded exprs]	   */
+
+    ARRAY       = 55,	  /* Array	snd :: (Bounds,[Values])   */
+    MUTVAR      = 56,	  /* Mutvar	snd :: Cell		   */
+    CUDDLESOBJECT= 57,	  /* CUDDLESOBJECT	snd :: Cell	           */
+
+    STABLENAME  = 58,	  /* Stable Nm  snd :: Cell		   */
+
+    POLYTYPE    = 60,	  /* POLYTYPE	snd :: (Kind,Type)	   */
+    QUAL        = 61,	  /* QUAL	snd :: ([Classes],Type)	   */
+    RANK2       = 62,	  /* RANK2	snd :: (Int,Type)	   */
+    EXIST       = 63,	  /* EXIST	snd :: (Int,Type)	   */
+    POLYREC     = 64,	  /* POLYREC	snd :: (Int,Type)	   */
+    BIGLAM      = 65,	  /* BIGLAM	snd :: (vars,patterns)	   */
+    CDICTS      = 66,	  /* CDICTS	snd :: ([Pred],Type)	   */
+
+    LABC        = 70,	  /* LABC	snd :: (con,[(Vars,Type)]) */
+    CONFLDS     = 71,	  /* CONFLDS	snd :: (con,[Field])	   */
+    UPDFLDS     = 72,	  /* UPDFLDS	snd :: (Exp,[con],[Field]) */
+    IMPDEPS     = 78,	  /* IMPDEPS	snd :: [Binding]	   */
+
+    QUALIDENT   = 80,	  /* Qualified identifier  snd :: (Id,Id)  */
+    HIDDEN      = 81,	  /* hiding import list    snd :: [Entity] */
+    MODULEENT   = 82,	  /* module in export list snd :: con      */
+
+    INFIX       = 90,	  /* INFIX	snd :: (see tidyInfix)	   */
+    ONLY        = 91,	  /* ONLY	snd :: Exp		   */
+    NEG         = 92,	  /* NEG	snd :: Exp		   */
+
+    DOUBLECELL  = 97,	  /* DOUBLECELL snd :: (Int,Int)	   */
+    I64CELL     = 98,	  /* Int/Word64 snd :: (Int,Int)           */
+
+#if SIZEOF_INTP != SIZEOF_INT
+    PTRCELL     = 99,	  /* C Heap Pointer snd :: (Int,Int)       */
+#endif
+
+    /* Special cell values (SPECMIN..TUPMIN-1): atoms that are also their own
+     * whatIs codes. */
+
+    NONE        = 129,	  /* Dummy stub				   */
+    STAR        = 130,	  /* Representing the kind of types	   */
+    WILDCARD    = 132,	  /* Wildcard pattern			   */
+
+    SKOLEM      = 133,	  /* Skolem constant			   */
+
+    DOTDOT      = 134,	  /* ".." in import/export list            */
+
+    ZERONUM     = 136,	  /* The zero bignum (see POSNUM, NEGNUM)  */
+
+    NAME        = 138,	  /* whatIs code for isName		   */
+    TYCON       = 139,	  /* whatIs code for isTycon		   */
+    CLASS       = 140,	  /* whatIs code for isClass		   */
+    MODULE      = 141,	  /* whatIs code for isModule              */
+    INSTANCE    = 142,	  /* whatIs code for isInst                */
+    TUPLE       = 143,	  /* whatIs code for tuple constructor	   */
+    OFFSET      = 144,	  /* whatis code for offset		   */
+    AP          = 145,	  /* whatIs code for application node	   */
+
+    SIGDECL     = 148,	  /* Signature declaration		   */
+    FIXDECL     = 149,	  /* Fixity declaration			   */
+    FUNBIND     = 150,	  /* Function binding			   */
+    PATBIND     = 151,	  /* Pattern binding			   */
+
+    DATATYPE    = 158,	  /* Datatype type constructor		   */
+    NEWTYPE     = 159,	  /* Newtype type constructor		   */
+    SYNONYM     = 160,	  /* Synonym type constructor		   */
+    RESTRICTSYN = 161,	  /* Synonym with restricted scope	   */
+
+    NODEPENDS   = 163,	  /* Stop calculation of deps in type check*/
+    PREDEFINED  = 164,	  /* Predefined name, not yet filled       */
+} CellTag;
 
 #define textOf(c)	((Text)(snd(c)))         /* c ::  (VAR|CON)(ID|OP) */
 #define qmodOf(c)       (textOf(fst(snd(c))))    /* c ::  QUALIDENT        */
@@ -310,73 +415,6 @@ extern void growDynTable       (DynTable*);
  * element is a special cell will be treated as an application node.
  * ------------------------------------------------------------------------*/
 
-#define LETREC	     30 	  /* LETREC	snd :: ([Decl],Exp)	   */
-#define COND	     31 	  /* COND	snd :: (Exp,Exp,Exp)	   */
-#define LAMBDA	     32 	  /* LAMBDA	snd :: Alt		   */
-#define FINLIST      33 	  /* FINLIST	snd :: [Exp]		   */
-#define DOCOMP       34 	  /* DOCOMP	snd :: (Exp,[Qual])	   */
-
-
-#define BANG	     35		  /* BANG	snd :: Type		   */
-#define COMP         36 	  /* COMP	snd :: (Exp,[Qual])	   */
-#define ASPAT	     37 	  /* ASPAT	snd :: (Var,Exp)	   */
-#define ESIGN	     38 	  /* ESIGN	snd :: (Exp,Type)	   */
-#define RSIGN	     39 	  /* RSIGN	snd :: (Rhs,Type)	   */
-#define CASE	     40 	  /* CASE	snd :: (Exp,[Alt])	   */
-#define NUMCASE	     41		  /* NUMCASE	snd :: (Exp,Disc,Rhs)	   */
-#define FATBAR	     42 	  /* FATBAR	snd :: (Exp,Exp)	   */
-#define LAZYPAT      43 	  /* LAZYPAT	snd :: Exp		   */
-#define DERIVE	     45		  /* DERIVE	snd :: Cell		   */
-
-#define POSNUM	     47		  /* POSNUM	snd :: [Int]		   */
-#define NEGNUM	     48		  /* NEGNUM	snd :: [Int]		   */
-
-#define BOOLQUAL     49 	  /* BOOLQUAL	snd :: Exp		   */
-#define QWHERE	     50 	  /* QWHERE	snd :: [Decl]		   */
-#define FROMQUAL     51 	  /* FROMQUAL	snd :: (Exp,Exp)	   */
-#define DOQUAL	     52		  /* DOQUAL	snd :: Exp		   */
-#define MONADCOMP    53 	  /* MONADCOMP	snd :: ((m,m0),(Exp,[Qual])*/
-
-#define GUARDED      54 	  /* GUARDED	snd :: [guarded exprs]	   */
-
-#define ARRAY        55		  /* Array	snd :: (Bounds,[Values])   */
-#define MUTVAR	     56		  /* Mutvar	snd :: Cell		   */
-#define CUDDLESOBJECT   57		  /* CUDDLESOBJECT	snd :: Cell	           */
-
-#define STABLENAME   58		  /* Stable Nm  snd :: Cell		   */
-
-
-#define POLYTYPE     60		  /* POLYTYPE	snd :: (Kind,Type)	   */
-#define QUAL	     61		  /* QUAL	snd :: ([Classes],Type)	   */
-#define RANK2	     62		  /* RANK2	snd :: (Int,Type)	   */
-#define EXIST	     63		  /* EXIST	snd :: (Int,Type)	   */
-#define POLYREC	     64		  /* POLYREC	snd :: (Int,Type)	   */
-#define BIGLAM	     65		  /* BIGLAM	snd :: (vars,patterns)	   */
-#define CDICTS	     66		  /* CDICTS	snd :: ([Pred],Type)	   */
-
-#define LABC	     70		  /* LABC	snd :: (con,[(Vars,Type)]) */
-#define CONFLDS	     71		  /* CONFLDS	snd :: (con,[Field])	   */
-#define UPDFLDS	     72		  /* UPDFLDS	snd :: (Exp,[con],[Field]) */
-#define IMPDEPS	     78		  /* IMPDEPS	snd :: [Binding]	   */
-
-#define QUALIDENT    80           /* Qualified identifier  snd :: (Id,Id)  */
-#define HIDDEN       81           /* hiding import list    snd :: [Entity] */
-#define MODULEENT    82           /* module in export list snd :: con      */
-
-
-#define INFIX	     90		  /* INFIX	snd :: (see tidyInfix)	   */
-#define ONLY	     91		  /* ONLY	snd :: Exp		   */
-#define NEG	     92		  /* NEG	snd :: Exp		   */
-
-
-#define DOUBLECELL   97		  /* DOUBLECELL snd :: (Int,Int)	   */
-#define I64CELL      98           /* Int/Word64 snd :: (Int,Int)           */
-
-#if SIZEOF_INTP != SIZEOF_INT
-#define PTRCELL      99           /* C Heap Pointer snd :: (Int,Int)       */
-#endif
-
-/* Last constructor tag must be less than SPECMIN */
 
 /* --------------------------------------------------------------------------
  * Special cell values:
@@ -384,37 +422,6 @@ extern void growDynTable       (DynTable*);
 
 #define SPECMIN      129	  /* must be out of TAG_MASK range         */
 
-#define NONE	     129	  /* Dummy stub				   */
-#define STAR	     130	  /* Representing the kind of types	   */
-#define WILDCARD     132	  /* Wildcard pattern			   */
-
-#define SKOLEM	     133	  /* Skolem constant			   */
-
-#define DOTDOT       134          /* ".." in import/export list            */
-
-#define ZERONUM      136	  /* The zero bignum (see POSNUM, NEGNUM)  */
-
-#define NAME	     138	  /* whatIs code for isName		   */
-#define TYCON	     139	  /* whatIs code for isTycon		   */
-#define CLASS	     140	  /* whatIs code for isClass		   */
-#define MODULE       141          /* whatIs code for isModule              */
-#define INSTANCE     142          /* whatIs code for isInst                */
-#define TUPLE	     143	  /* whatIs code for tuple constructor	   */
-#define OFFSET	     144	  /* whatis code for offset		   */
-#define AP	     145	  /* whatIs code for application node	   */
-
-#define SIGDECL      148	  /* Signature declaration		   */
-#define FIXDECL      149	  /* Fixity declaration			   */
-#define FUNBIND	     150	  /* Function binding			   */
-#define PATBIND	     151	  /* Pattern binding			   */
-
-#define DATATYPE     158	  /* Datatype type constructor		   */
-#define NEWTYPE	     159	  /* Newtype type constructor		   */
-#define SYNONYM	     160	  /* Synonym type constructor		   */
-#define RESTRICTSYN  161	  /* Synonym with restricted scope	   */
-
-#define NODEPENDS    163	  /* Stop calculation of deps in type check*/
-#define PREDEFINED   164	  /* Predefined name, not yet filled       */
 
 /* --------------------------------------------------------------------------
  * Tuple data/type constructors:
@@ -1037,7 +1044,7 @@ extern  List   addNamesMatching  (String,List);
 
 #define isTag1(c)   (((c) & TAG_MASK) == 0)	    /* doesn't exclude NIL */
 
-#define whatIs1(c)  (isPair(c)? (isTag1(fst(c))? fst(c) : AP ) : whatCode[c])
+#define whatIs1(c)  ((CellTag)(isPair(c)? (isTag1(fst(c))? fst(c) : AP ) : whatCode[c]))
 
 #define isAp1(c)    (isPair(c) && !isTag1(fst(c)))
 

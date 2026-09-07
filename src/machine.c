@@ -466,6 +466,7 @@ static Void local asTEST(Cell c, Label l)           /* test whnf and branch on m
 					/* match without further tests     */
 	case NAME    : if (isCfun(c) && cfunOf(c)==0)
 			   return;
+	default      : break;
     }
     instrCellLab(iTEST,c,l);
 }
@@ -982,6 +983,7 @@ static Void local makeNumcase(Triple nc, Int co, Label f, Label d)/* Build code 
 		      asTEST(nameTrue,f);
 		      make(thd3(nc),co,f,d);
 		      break;
+	default     : break;
     }
 }
 
@@ -1279,6 +1281,7 @@ unw:switch (whatIs(n)) {                /* unwind spine of application     */
 
 	case STRCELL   : evalString(n);
 			 goto unw;
+	default        : break;
     }
 
 
@@ -1321,6 +1324,7 @@ unw:switch (whatIs(n)) {
 
 	case STRCELL   : evalString(n);
 			 goto unw;
+	default        : break;
     }
     whnfHead = n;
 }

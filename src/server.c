@@ -773,6 +773,7 @@ Cell getTypeableDict(Type t) /* Find a Typeable dictionary for instance t, */
 	case RANK2 :
 	case EXIST :
 	case CDICTS: return NIL;
+	default    : break;
     }
     return provePred(ks,NIL,ap(c,t));
 }

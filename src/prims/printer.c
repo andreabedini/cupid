@@ -482,6 +482,7 @@ static Void local outName(Name nm)  /* output nm using parent field if possible 
 	case NAME     : outName(p);
 			outCh('_');
 			break;
+	default       : break;
     }
     outStr(textToStr(name(nm).text));
 }

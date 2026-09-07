@@ -1137,6 +1137,7 @@ static Void local typeComp(Int l, Type m, Cell e, List qs)	/* type check compreh
 	    case DOQUAL   : spCheck(l,snd(q),NIL,genQual,m,newTyvars(1));
 			    typeComp(l,m,e,qs1);
 			    break;
+	    default       : break;
 	}
     }
 }

@@ -1696,6 +1696,7 @@ primFun(primIOEql) {		    /* :: Eval a => a -> a -> ST Mem Bool */
 	    case INTCELL   : IOBoolResult(intOf(x)==intOf(y));
 	    case CHARCELL  : IOBoolResult(charOf(x)==charOf(y));
 	    /* deliberate fall through to end */
+	    default        : break;
 	}
     }
     IOBoolResult(x==y);
@@ -1709,6 +1710,7 @@ primFun(primIOHash) {                      /* :: Eval a => a -> ST Mem Int */
     switch(whatIs(x)) {
 	case INTCELL   : IOReturn(x);
 	case CHARCELL  : IOReturn(mkInt(charOf(x)));
+	default        : break;
     }
     IOReturn(mkInt((Int)x));
 }

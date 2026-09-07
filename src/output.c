@@ -354,6 +354,7 @@ static Void local putQual(Cell q)            /* print list comp qualifier       
 			putStr("<-");
 			put(NEVER,snd(snd(q)));
 			return;
+	default       : break;
     }
 }
 
@@ -364,6 +365,7 @@ static Bool local isDictVal(Cell e)          /* Look for dictionary value       
     switch (whatIs(h)) {
 	case DICTVAR : return TRUE;
 	case NAME    : return isDfun(h);
+	default      : break;
     }
 #endif
     return FALSE;
