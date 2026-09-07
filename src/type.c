@@ -14,6 +14,7 @@
 #include "prelude.h"
 #include "storage.h"
 #include "connect.h"
+#include "scc.h"
 #include "errors.h"
 #include "output.h"
 #include "subst.h"
@@ -1633,15 +1634,20 @@ static Void local unrestricted(List bs)	/* Type unrestricted binding group */
     hd(defnBounds) = NIL;
 }
 
-#define  SCC		 itbscc		/* scc for implicitly typed binds  */
-#define  LOWLINK	 itblowlink
-#define  DEPENDS(t)	 fst(snd(t))
-#define  SETDEPENDS(c,v) fst(snd(c))=v
-#include "scc.c"
-#undef   SETDEPENDS
-#undef	 DEPENDS
-#undef 	 LOWLINK
-#undef	 SCC
+static Cell local itbDepends(Cell t)		/* dependency list of an implicitly*/
+{						/* typed binding		   */
+    return fst(snd(t));
+}
+
+static Void local itbSetDepends(Cell t, Cell v)
+{
+    fst(snd(t)) = v;
+}
+
+static List local itbscc(List bs)		/* scc for implicitly typed binds  */
+{
+    return sccSort(bs,NIL,itbDepends,itbSetDepends);
+}
 
 static Void local addEvidParams(List qs, Cell v)  /* overwrite VARID/OPCELL v with	   */
                   /* application of variable to evid. */
@@ -2375,7 +2381,6 @@ Void typeChecker(Int what)
 {
     switch (what) {
 	case RESET   : tcMode	    = EXPRESSION;
-		       daSccs	    = NIL;
 		       preds	    = NIL;
 		       pendingBtyvs = NIL;
 		       emptyAssumption();
@@ -2389,7 +2394,6 @@ Void typeChecker(Int what)
 		       mark(localEvs);
 		       mark(savedPs);
 		       mark(dummyVar);
-		       mark(daSccs);
 		       mark(preds);
 		       mark(stdDefaults);
 		       mark(arrow);

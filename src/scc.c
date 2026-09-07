@@ -1,30 +1,16 @@
 /* --------------------------------------------------------------------------
- * Strongly connected components algorithm for static.c.
+ * Strongly connected components algorithm for static.c and type.c.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: scc.c,v $
- * $Revision: 1.5 $
- * $Date: 2003/10/14 13:56:24 $
  * ------------------------------------------------------------------------*/
 
-#ifndef SCC_C
-#define SCC_C
-#define visited(d) (isInt(DEPENDS(d)))		/* binding already visited?*/
-
-static Cell daSccs = NIL;
-static Int  daCount;
-
-static Int local sccMin	(Int,Int);
-
-static Int local sccMin(Int x, Int y)		/* calculate minimum of x,y	   */
-{				/* (unless y is zero)		   */
-    return (x<=y || y==0) ? x : y;
-}
-#endif
+#include "prelude.h"
+#include "storage.h"
+#include "connect.h"
+#include "scc.h"
 
 /* --------------------------------------------------------------------------
  * A couple of parts of this program require an algorithm for sorting a list
@@ -39,29 +25,45 @@ static Int local sccMin(Int x, Int y)		/* calculate minimum of x,y	   */
  * The version used here probably owes most to the latter presentation but
  * has been modified to simplify the algorithm and improve the use of space.
  *
- * This would probably have been a good application for C++ templates ...
+ * The callers differ only in where a node keeps its dependency list, so
+ * they pass accessors for that field; the working state below is shared
+ * because the sort never nests.
  * ------------------------------------------------------------------------*/
 
-static Int local LOWLINK (Cell);	/* local function		   */
-static Int local LOWLINK(Cell v)		/* calculate `lowlink' of v	   */
+static List          daSccs = NIL;	/* SCCs found so far (a GC root)   */
+static Int           daCount;		/* next depth first search number  */
+static SccDepends    depends;		/* accessors for the current sort  */
+static SccSetDepends setDepends;
+
+#define visited(d) (isInt(depends(d)))	/* node already visited?	   */
+
+static Int  local sccMin  (Int,Int);
+static Int  local lowlink (Cell);
+
+static Int local sccMin(Int x, Int y)		/* calculate minimum of x,y	   */
+{				/* (unless y is zero)		   */
+    return (x<=y || y==0) ? x : y;
+}
+
+static Int local lowlink(Cell v)		/* calculate `lowlink' of v	   */
 {
     Int  low = daCount;
     Int  dfn = daCount; 		/* depth first search no. of v	   */
-    List ws  = DEPENDS(v);		/* adjacency list for v		   */
+    List ws  = depends(v);		/* adjacency list for v		   */
 
-    SETDEPENDS(v,mkInt(daCount++));     /* push v onto stack		   */
+    setDepends(v,mkInt(daCount++));     /* push v onto stack		   */
     push(v);
 
     while (nonNull(ws)) {		/* scan adjacency list for v	   */
 	Cell w = hd(ws);
 	ws     = tl(ws);
-	low    = sccMin(low, (visited(w) ? intOf(DEPENDS(w)) : LOWLINK(w)));
+	low    = sccMin(low, (visited(w) ? intOf(depends(w)) : lowlink(w)));
     }
 
     if (low == dfn) {			/* start a new scc?		   */
 	List temp=NIL;
 	do {				/* take elements from stack	   */
-	    SETDEPENDS(top(),mkInt(0));
+	    setDepends(top(),mkInt(0));
 	    temp = cons(top(),temp);
 	} while (pop()!=v);
 	daSccs = cons(temp,daSccs);	/* make new strongly connected comp*/
@@ -70,35 +72,31 @@ static Int local LOWLINK(Cell v)		/* calculate `lowlink' of v	   */
     return low;
 }
 
-#ifdef SCC
-static List local SCC(List bs)		/* sort list with added dependency */
-{				/* info into SCCs		   */
+List sccSort(List bs, List cs, SccDepends d, SccSetDepends s)
+{				/* sort lists with added dependency*/
+    depends    = d;			/* info into SCCs		   */
+    setDepends = s;
     clearStack();
     daSccs = NIL;			/* clear current list of SCCs	   */
 
     for (daCount=1; nonNull(bs); bs=tl(bs))	 /* visit each binding	   */
 	if (!visited(hd(bs)))
-	    LOWLINK(hd(bs));
-
-    return rev(daSccs);			/* reverse to obtain correct order */
-}
-#endif
-
-#ifdef SCC2				/* Two argument version		   */
-static List local SCC2(List bs, List cs)		/* sort lists with added dependency*/
-{				/* info into SCCs		   */
-    clearStack();
-    daSccs = NIL;			/* clear current list of SCCs	   */
-
-    for (daCount=1; nonNull(bs); bs=tl(bs))	 /* visit each binding	   */
-	if (!visited(hd(bs)))
-	    LOWLINK(hd(bs));
+	    lowlink(hd(bs));
     for (; nonNull(cs); cs=tl(cs))
 	if (!visited(hd(cs)))
-	    LOWLINK(hd(cs));
+	    lowlink(hd(cs));
 
     return rev(daSccs);			/* reverse to obtain correct order */
 }
-#endif
+
+Void sccControl(Int what)
+{
+    switch (what) {
+	case RESET : daSccs = NIL;
+		     break;
+	case MARK  : mark(daSccs);
+		     break;
+    }
+}
 
 /*-------------------------------------------------------------------------*/

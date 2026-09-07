@@ -14,6 +14,7 @@
 #include "prelude.h"
 #include "storage.h"
 #include "connect.h"
+#include "scc.h"
 #include "machdep.h"
 #include "errors.h"
 #include "output.h"
@@ -5596,33 +5597,43 @@ static List local depFields(Int l, Cell e, List fs, Bool isP)	/* check field bin
 
 
 /* --------------------------------------------------------------------------
- * Several parts of this program require an algorithm for sorting a list
- * of values (with some added dependency information) into a list of strongly
- * connected components in which each value appears before its dependents.
- *
- * Each of these algorithms is obtained by parameterising a standard
- * algorithm in "scc.c" as shown below.
+ * Dependency ordering, using the strongly connected components sort in
+ * scc.c.  Type constructors and classes keep their dependency list in the
+ * kind field until kinds are inferred; bindings keep theirs in depVal.
  * ------------------------------------------------------------------------*/
 
-#define  SCC2		 tcscc		/* make scc algorithm for Tycons   */
-#define  LOWLINK	 tclowlink
-#define  DEPENDS(c)      (isTycon(c) ? tycon(c).kind : cclass(c).kinds)
-#define  SETDEPENDS(c,v) if(isTycon(c)) tycon(c).kind=v; else cclass(c).kinds=v
-#include "scc.c"
-#undef   SETDEPENDS
-#undef	 DEPENDS
-#undef 	 LOWLINK
-#undef	 SCC2
+static Cell local tcDepends(Cell c)
+{
+    return isTycon(c) ? tycon(c).kind : cclass(c).kinds;
+}
 
-#define  SCC		 bscc		/* make scc algorithm for Bindings */
-#define  LOWLINK	 blowlink
-#define  DEPENDS(t)	 depVal(t)
-#define  SETDEPENDS(c,v) depVal(c)=v
-#include "scc.c"
-#undef   SETDEPENDS
-#undef	 DEPENDS
-#undef 	 LOWLINK
-#undef	 SCC
+static Void local tcSetDepends(Cell c, Cell v)
+{
+    if (isTycon(c))
+	tycon(c).kind = v;
+    else
+	cclass(c).kinds = v;
+}
+
+static List local tcscc(List ts, List cs)	/* scc for tycons and classes	   */
+{
+    return sccSort(ts,cs,tcDepends,tcSetDepends);
+}
+
+static Cell local bDepends(Cell b)
+{
+    return depVal(b);
+}
+
+static Void local bSetDepends(Cell b, Cell v)
+{
+    depVal(b) = v;
+}
+
+static List local bscc(List bs)			/* scc for bindings		   */
+{
+    return sccSort(bs,NIL,bDepends,bSetDepends);
+}
 
 /* --------------------------------------------------------------------------
  * Main static analysis:
@@ -5857,9 +5868,7 @@ static Void local checkTypeIn(Pair cvs)	/* Check that vars in restricted   */
 Void staticAnalysis(Int what)
 {
     switch (what) {
-	case RESET   :
-	               cfunSfuns    = NIL;
-		       daSccs	    = NIL;
+	case RESET   : cfunSfuns    = NIL;
 		       patVars	    = NIL;
 		       bounds	    = NIL;
 		       bindings	    = NIL;
@@ -5871,8 +5880,7 @@ Void staticAnalysis(Int what)
 		       unkindTypes  = NIL;
 		       break;
 
-	case MARK    : mark(daSccs);
-		       mark(patVars);
+	case MARK    : mark(patVars);
 		       mark(bounds);
 		       mark(bindings);
 		       mark(depends);

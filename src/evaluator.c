@@ -17,6 +17,7 @@
 #include "opts.h"
 #include "machdep.h"
 #include "evaluator.h"
+#include "scc.h"
 
 #if HAVE_WINDOWS_H
 #include <windows.h>
@@ -211,6 +212,7 @@ Void everybody(Int what)            /* send command `what' to each component of*
     machdep(what);              /* The order of calling each component is  */
     storage(what);              /* important for the INSTALL command       */
     substitution(what);
+    sccControl(what);
     input(what);
     staticAnalysis(what);
     typeChecker(what);

@@ -13,13 +13,14 @@ platform_h = configure_file(input: 'platform.h.in', output: 'platform.h',
   configuration: platform_conf)
 src_inc = include_directories('.')
 
-# These five files allocate heap cells and rely on the conservative
+# These files allocate heap cells and rely on the conservative
 # collector finding every live cell on the C stack.  An optimiser may keep
 # a pointer to a cell as a common subexpression instead of the cell itself,
 # which the collector's scan of the stack would miss, so they are built
 # without optimisation.  The evaluator files are safe because they do not
 # assume conservative collection (see the notice in builtin.c).
-gc_sensitive = files('compiler.c', 'module.c', 'subst.c', 'static.c', 'type.c')
+gc_sensitive = files('compiler.c', 'module.c', 'scc.c', 'subst.c', 'static.c',
+  'type.c')
 
 core = files(
   'char.c', 'errors.c', 'evaluator.c', 'ffi.c', 'goal.c',
