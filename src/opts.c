@@ -97,8 +97,8 @@ Void setOptions(Void)  /* change command line options from Cuddles command line 
   if ((s=readFilename())!=0) {
     do {
       if (!processOption(s)) {
-	ERRMSG(0) "Option string must begin with `+' or `-'"
-	  EEND;
+	errHead(0); errPrintf("Option string must begin with `+' or `-'");
+	  errFail();
       }
     } while ((s=readFilename())!=0);
 #if USE_REGISTRY
@@ -301,8 +301,8 @@ String optionsToStr() {          /* convert options to string */
 Void readOptions(String options, Bool freeUp)  /* read options from string */
 {
     if (!readOptions2(options)) {
-        ERRMSG(0) "Option string must begin with `+' or `-'"
-	EEND;
+        errHead(0); errPrintf("Option string must begin with `+' or `-'");
+	errFail();
     }
     if (options && freeUp) {
 	free(options);
@@ -491,23 +491,23 @@ Int argToInt(String s)            /* read integer from argument str  */
     String t = s;
 
     if (*s=='\0' || !isascii(*s) || !isdigit(*s)) {
-	ERRMSG(0) "Missing integer in option setting \"%s\"", t
-	EEND;
+	errHead(0); errPrintf("Missing integer in option setting \"%s\"", t);
+	errFail();
     }
 
     do {
 	Int d = (*s++) - '0';
 	if (n > ((MAXPOSINT - d)/10)) {
-	    ERRMSG(0) "Option setting \"%s\" is too large", t
-	    EEND;
+	    errHead(0); errPrintf("Option setting \"%s\" is too large", t);
+	    errFail();
 	}
 	n     = 10*n + d;
     } while (isascii(*s) && isdigit(*s));
 
     if (*s=='K' || *s=='k') {
 	if (n > (MAXPOSINT/1000)) {
-	    ERRMSG(0) "Option setting \"%s\" is too large", t
-	    EEND;
+	    errHead(0); errPrintf("Option setting \"%s\" is too large", t);
+	    errFail();
 	}
 	n *= 1000;
 	s++;
@@ -516,8 +516,8 @@ Int argToInt(String s)            /* read integer from argument str  */
 #if MAXPOSINT > 1000000                 /* waste of time on 16 bit systems */
     if (*s=='M' || *s=='m') {
 	if (n > (MAXPOSINT/1000000)) {
-	    ERRMSG(0) "Option setting \"%s\" is too large", t
-	    EEND;
+	    errHead(0); errPrintf("Option setting \"%s\" is too large", t);
+	    errFail();
 	}
 	n *= 1000000;
 	s++;
@@ -527,8 +527,8 @@ Int argToInt(String s)            /* read integer from argument str  */
 #if MAXPOSINT > 1000000000
     if (*s=='G' || *s=='g') {
 	if (n > (MAXPOSINT/1000000000)) {
-	    ERRMSG(0) "Option setting \"%s\" is too large", t
-	    EEND;
+	    errHead(0); errPrintf("Option setting \"%s\" is too large", t);
+	    errFail();
 	}
 	n *= 1000000000;
 	s++;
@@ -536,8 +536,8 @@ Int argToInt(String s)            /* read integer from argument str  */
 #endif
 
     if (*s!='\0') {
-	ERRMSG(0) "Unwanted characters after option setting \"%s\"", t
-	EEND;
+	errHead(0); errPrintf("Unwanted characters after option setting \"%s\"", t);
+	errFail();
     }
 
     return n;

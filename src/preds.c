@@ -171,21 +171,21 @@ static Void local cutoffExceeded(Cell pi, Int o, List ps)
             /* Display error msg when cutoff   */
 {
     clearMarks();
-    ERRMSG(0)
-	"\n*** The type checker has reached the cutoff limit while trying to\n"
-    ETHEN ERRTEXT
-	"*** determine whether:\n***     "     ETHEN ERRPRED(copyPred(pi,o));
+    errHead(0); errPrintf(
+	"\n*** The type checker has reached the cutoff limit while trying to\n");
+ errPrintf(
+	"*** determine whether:\n***     "); errPred(copyPred(pi,o));
     ps = copyPreds(ps);
-    ERRTEXT
-	"\n*** can be deduced from:\n***     " ETHEN ERRCONTEXT(ps);
-    ERRTEXT
-	"\n*** This may indicate that the problem is undecidable.  However,\n"
-    ETHEN ERRTEXT
-	"*** you may still try to increase the cutoff limit using the -c\n"
-    ETHEN ERRTEXT
+    errPrintf(
+	"\n*** can be deduced from:\n***     "); errContext(ps);
+    errPrintf(
+	"\n*** This may indicate that the problem is undecidable.  However,\n");
+ errPrintf(
+	"*** you may still try to increase the cutoff limit using the -c\n");
+ errPrintf(
 	"*** option and then try again.  (The current setting is -c%d)\n",
-	cutoff
-    EEND;
+	cutoff);
+    errFail();
 }
 
 static Cell local scFind(Cell e, Cell pi1, Int o1, Cell pi, Int o, Int d)/* Use superclass entailment to   */

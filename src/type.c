@@ -424,10 +424,10 @@ static Void local leavePendingBtyvs() {
 	    Cell v = fst(hd(vs));
 	    Cell t = copyTyvar(intOf(snd(hd(vs))));
 	    if (!isOffset(t)) {
-		ERRMSG(line) "Type annotation uses variable " ETHEN ERREXPR(v);
-		ERRTEXT      " where a more specific type "   ETHEN ERRTYPE(t);
-		ERRTEXT      " was inferred"
-		EEND;
+		errHead(line); errPrintf("Type annotation uses variable "); errExpr(v);
+		errPrintf(" where a more specific type "); errType(t);
+		errPrintf(" was inferred");
+		errFail();
 	    }
 	    else if (offsetOf(t)!=i) {
 		List us = snd(hd(pts));
@@ -436,10 +436,10 @@ static Void local leavePendingBtyvs() {
 		    internal("leavePendingBtyvs");
 		for (; j>0; j--)
 		    us = tl(us);
-		ERRMSG(line) "Type annotation uses distinct variables " ETHEN
-		ERREXPR(v);  ERRTEXT " and " ETHEN ERREXPR(fst(hd(us)));
-		ERRTEXT      " where a single variable was inferred"
-		EEND;
+		errHead(line); errPrintf("Type annotation uses distinct variables ");
+		errExpr(v);  errPrintf(" and "); errExpr(fst(hd(us)));
+		errPrintf(" where a single variable was inferred");
+		errFail();
 	    }
 	    else
 		i++;
@@ -491,8 +491,8 @@ static Void local enterScope() {
 	Int      more = maxScopes ? 2*maxScopes : 64;
 	TcScope *grown = realloc(scopes,more*sizeof(TcScope));
 	if (!grown) {
-	    ERRMSG(0) "Cannot allocate type checker scopes"
-	    EEND;
+	    errHead(0); errPrintf("Cannot allocate type checker scopes");
+	    errFail();
 	}
 	scopes    = grown;
 	maxScopes = more;
@@ -538,13 +538,13 @@ static Void local leaveScope(Int l, Type t, Int o, Int m)
 	    if (tyvar(vn)->offs == FIXED_TYVAR) {
 		Cell tv = copyTyvar(vn);
 		Type ty = liftRank2(t,o,m);
-		ERRMSG(l) "Existentially quantified variable in inferred type"
-		ETHEN
-		ERRTEXT   "\n*** Variable     : " ETHEN ERRTYPE(tv);
-		ERRTEXT   "\n*** From pattern : " ETHEN ERREXPR(snd(hd(vs)));
-		ERRTEXT   "\n*** Result type  : " ETHEN ERRTYPE(ty);
-		ERRTEXT   "\n"
-		EEND;
+		errHead(l); errPrintf("Existentially quantified variable in inferred type");
+
+		errPrintf("\n*** Variable     : "); errType(tv);
+		errPrintf("\n*** From pattern : "); errExpr(snd(hd(vs)));
+		errPrintf("\n*** Result type  : "); errType(ty);
+		errPrintf("\n");
+		errFail();
 	    }
 	}
 
@@ -556,11 +556,11 @@ static Void local leaveScope(Int l, Type t, Int o, Int m)
 	for (vs=sc->skolems; nonNull(vs); vs=tl(vs)) {
 	    Int vn = intOf(fst(hd(vs)));
 	    if (tyvar(vn)->offs == FIXED_TYVAR) {
-		ERRMSG(l)
-		  "Existentially quantified variable escapes from pattern "
-		ETHEN ERREXPR(snd(hd(vs)));
-		ERRTEXT "\n"
-		EEND;
+		errHead(l); errPrintf(
+		  "Existentially quantified variable escapes from pattern ");
+ errExpr(snd(hd(vs)));
+		errPrintf("\n");
+		errFail();
 	    }
 	}
     }
@@ -589,18 +589,18 @@ static Void local typeError(Int l, Cell e, Cell in, String wh, Type t, Int o)
 static Void local reportTypeError(Int l, Cell e, Cell in, String wh, Type inft, Type expt)
              /* Error printing part of typeError*/
 {
-    ERRMSG(l)   "Type error in %s", wh    ETHEN
+    errHead(l); errPrintf("Type error in %s", wh);
     if (nonNull(in)) {
-	ERRTEXT "\n*** Expression     : " ETHEN ERREXPR(in);
+	errPrintf("\n*** Expression     : "); errExpr(in);
     }
-    ERRTEXT     "\n*** Term           : " ETHEN ERREXPR(e);
-    ERRTEXT     "\n*** Type           : " ETHEN ERRTYPE(inft);
-    ERRTEXT     "\n*** Does not match : " ETHEN ERRTYPE(expt);
+    errPrintf("\n*** Term           : "); errExpr(e);
+    errPrintf("\n*** Type           : "); errType(inft);
+    errPrintf("\n*** Does not match : "); errType(expt);
     if (unifyFails) {
-	ERRTEXT "\n*** Because        : %s", unifyFails ETHEN
+	errPrintf("\n*** Because        : %s", unifyFails);
     }
-    ERRTEXT "\n"
-    EEND;
+    errPrintf("\n");
+    errFail();
 }
 
 static Void local shouldBe(Int l, Cell e, Cell in, String where, Type t, Int o)
@@ -621,23 +621,23 @@ static Void local cantEstablish(Int line, String wh, Cell e, Type t, List ps)
               /* are not sufficient to discharge */
              /* or defer the inferred context.  */
 {
-    ERRMSG(line) "Cannot justify constraints in %s", wh ETHEN
-    ERRTEXT	 "\n*** Expression    : " ETHEN ERREXPR(e);
-    ERRTEXT	 "\n*** Type          : " ETHEN ERRTYPE(t);
-    ERRTEXT	 "\n*** Given context : " ETHEN ERRCONTEXT(ps);
-    ERRTEXT	 "\n*** Constraints   : " ETHEN ERRCONTEXT(copyPreds(preds));
-    ERRTEXT "\n"
-    EEND;
+    errHead(line); errPrintf("Cannot justify constraints in %s", wh);
+    errPrintf("\n*** Expression    : "); errExpr(e);
+    errPrintf("\n*** Type          : "); errType(t);
+    errPrintf("\n*** Given context : "); errContext(ps);
+    errPrintf("\n*** Constraints   : "); errContext(copyPreds(preds));
+    errPrintf("\n");
+    errFail();
 }
 
 static Void local tooGeneral(Int l, Cell e, Type dt, Type it)	/* explicit type sig. too general  */
 {
-    ERRMSG(l) "Inferred type is not general enough" ETHEN
-    ERRTEXT   "\n*** Expression    : " ETHEN ERREXPR(e);
-    ERRTEXT   "\n*** Expected type : " ETHEN ERRTYPE(dt);
-    ERRTEXT   "\n*** Inferred type : " ETHEN ERRTYPE(it);
-    ERRTEXT   "\n"
-    EEND;
+    errHead(l); errPrintf("Inferred type is not general enough");
+    errPrintf("\n*** Expression    : "); errExpr(e);
+    errPrintf("\n*** Expected type : "); errType(dt);
+    errPrintf("\n*** Inferred type : "); errType(it);
+    errPrintf("\n");
+    errFail();
 }
 
 /* --------------------------------------------------------------------------
@@ -879,13 +879,13 @@ static Cell local typeAp(Int l, Cell e)		/* Type check application, which   */
 	Bool added = FALSE;
 
 	if (n<nr2) {			/* Must have enough arguments	   */
-	    ERRMSG(l)   "Use of " ETHEN ERREXPR(h);
+	    errHead(l); errPrintf("Use of "); errExpr(h);
 	    if (n>1) {
-		ERRTEXT " in "    ETHEN ERREXPR(e);
+		errPrintf(" in "); errExpr(e);
 	    }
-	    ERRTEXT     " requires at least %d argument%s\n",
-			nr2, (nr2==1 ? "" : "s")
-	    EEND;
+	    errPrintf(" requires at least %d argument%s\n",
+			nr2, (nr2==1 ? "" : "s"));
+	    errFail();
 	}
 
 	for (i=nr2; i<n; ++i)		/* Find rank two arguments	   */
@@ -898,10 +898,10 @@ static Cell local typeAp(Int l, Cell e)		/* Type check application, which   */
 		    hd(as) = typeExpected(l,app,hd(as),expect,alpha,m,TRUE);
 		else if (hd(as)!=WILDCARD) {	/* Pattern binding/match   */
 		    if (!isVar(hd(as))) {
-			ERRMSG(l) "Argument "    ETHEN ERREXPR(arg(as));
-			ERRTEXT   " in pattern " ETHEN ERREXPR(e);
-			ERRTEXT   " where a variable is required\n"
-			EEND;
+			errHead(l); errPrintf("Argument "); errExpr(arg(as));
+			errPrintf(" in pattern "); errExpr(e);
+			errPrintf(" where a variable is required\n");
+			errFail();
 		    }
 		    if (tcMode==NEW_PATTERN) {	/* Pattern match	   */
 			if (m>0 && !added) {
@@ -918,10 +918,10 @@ static Cell local typeAp(Int l, Cell e)		/* Type check application, which   */
 			    internal("typeAp3");
 			instantiate(expect);
 			if (nonNull(predsAre)) {
-			    ERRMSG(l) "Cannot use pattern binding for " ETHEN
-			    ERREXPR(hd(as));
-			    ERRTEXT   " as a component with a qualified type\n"
-			    EEND;
+			    errHead(l); errPrintf("Cannot use pattern binding for ");
+			    errExpr(hd(as));
+			    errPrintf(" as a component with a qualified type\n");
+			    errFail();
 			}
 			shouldBe(l,hd(as),e,app,aVar,intOf(defType(snd(a))));
 		    }
@@ -1042,9 +1042,9 @@ static Void local typeAlt(String wh, Cell e, Cell a, Type t, Int o, Int m)	/* Ty
     enterScope();
     if (whatIs(t)==RANK2) {
 	if (n<(nr2=intOf(fst(snd(t))))) {
-	    ERRMSG(l) "Definition requires at least %d parameters on lhs",
-		      intOf(fst(snd(t)))
-	    EEND;
+	    errHead(l); errPrintf("Definition requires at least %d parameters on lhs",
+		      intOf(fst(snd(t))));
+	    errFail();
 	}
 	t = snd(snd(t));
     }
@@ -1054,9 +1054,9 @@ static Void local typeAlt(String wh, Cell e, Cell a, Type t, Int o, Int m)	/* Ty
 	if (isPolyOrQualType(ta)) {
 	    if (hd(ps)!=WILDCARD) {
 		if (!isVar(hd(ps))) {
-		   ERRMSG(l) "Argument " ETHEN ERREXPR(hd(ps));
-		   ERRTEXT   " used where a variable or wildcard is required\n"
-		   EEND;
+		   errHead(l); errPrintf("Argument "); errExpr(hd(ps));
+		   errPrintf(" used where a variable or wildcard is required\n");
+		   errFail();
 		}
 		if (m>0 && !added) {
 		    Int i = 0;
@@ -1327,8 +1327,8 @@ static Void local typeUpdFlds(Int line, Cell e)	/* Type check an update		   */
 		    ;
 
 		if (isPolyOrQualType(arg(fun(td)))) {
-		    ERRMSG(line) "Sorry, record update syntax cannot currently be used for polymorphic components"
-		    EEND;
+		    errHead(line); errPrintf("Sorry, record update syntax cannot currently be used for polymorphic components");
+		    errFail();
 		}
 
 		f = hd(f);
@@ -1449,16 +1449,16 @@ static Void local monorestrict(List bs)	/* Type restricted binding group   */
 	    Cell ass = findInAssumList(textOf(v),hd(varsBounds));
 	    preds    = scSimplify(preds);
 
-	    ERRMSG(line) "Unresolved top-level overloading" ETHEN
-	    ERRTEXT     "\n*** Binding             : %s", textToStr(textOf(v))
-	    ETHEN
+	    errHead(line); errPrintf("Unresolved top-level overloading");
+	    errPrintf("\n*** Binding             : %s", textToStr(textOf(v)));
+
 	    if (nonNull(ass)) {
-		ERRTEXT "\n*** Inferred type       : " ETHEN ERRTYPE(snd(ass));
+		errPrintf("\n*** Inferred type       : "); errType(snd(ass));
 	    }
-	    ERRTEXT     "\n*** Outstanding context : " ETHEN
-						ERRCONTEXT(copyPreds(preds));
-	    ERRTEXT     "\n"
-	    EEND;
+	    errPrintf("\n*** Outstanding context : ");
+						errContext(copyPreds(preds));
+	    errPrintf("\n");
+	    errFail();
 	}
     }
 
@@ -1497,10 +1497,10 @@ static Void local restrictedAss(Int l, Cell v, Type t) /* Assume that type of bi
 {
     newDefnBind(v,t);
     if (nonNull(predsAre)) {
-	ERRMSG(l) "Explicit overloaded type for \"%s\"",textToStr(textOf(v))
-	ETHEN
-	ERRTEXT   " not permitted in restricted binding"
-	EEND;
+	errHead(l); errPrintf("Explicit overloaded type for \"%s\"",textToStr(textOf(v)));
+
+	errPrintf(" not permitted in restricted binding");
+	errFail();
     }
 }
 
@@ -1868,15 +1868,15 @@ static Void local typeInstDefn(Inst in)	/* Type check implementations of   */
 	}
 	if (isNull(ev)) {
 	    clearMarks();
-	    ERRMSG(inst(in).line) "Cannot build superclass instance" ETHEN
-	    ERRTEXT "\n*** Instance            : " ETHEN
-		ERRPRED(copyPred(inst(in).head,beta));
-	    ERRTEXT "\n*** Context supplied    : " ETHEN
-		ERRCONTEXT(copyPreds(params));
-	    ERRTEXT "\n*** Required superclass : " ETHEN
-		ERRPRED(copyPred(fst3(pi),intOf(snd3(pi))));
-	    ERRTEXT "\n"
-	    EEND;
+	    errHead(inst(in).line); errPrintf("Cannot build superclass instance");
+	    errPrintf("\n*** Instance            : ");
+		errPred(copyPred(inst(in).head,beta));
+	    errPrintf("\n*** Context supplied    : ");
+		errContext(copyPreds(params));
+	    errPrintf("\n*** Required superclass : ");
+		errPred(copyPred(fst3(pi),intOf(snd3(pi))));
+	    errPrintf("\n");
+	    errFail();
 	}
 	locs	= cons(pair(thd3(pi),singleton(pair(NIL,ap(l,ev)))),locs);
 	dictDef = ap(dictDef,thd3(pi));
@@ -1954,13 +1954,13 @@ static Void local typeMember(String wh, Name mem, Cell alts, List evids, Cell he
     if (nonNull(preds) && resolveDefs(genvarType(t,o,NIL),FALSE))
 	qs = elimPredsUsing(evids,qs);
     if (nonNull(qs)) {
-	ERRMSG(line)
+	errHead(line); errPrintf(
 		"Implementation of %s requires extra context",
-		 textToStr(name(mem).text) ETHEN
-	ERRTEXT "\n*** Expected type   : " ETHEN ERRTYPE(rt);
-	ERRTEXT "\n*** Missing context : " ETHEN ERRCONTEXT(copyPreds(qs));
-	ERRTEXT "\n"
-	EEND;
+		 textToStr(name(mem).text));
+	errPrintf("\n*** Expected type   : "); errType(rt);
+	errPrintf("\n*** Missing context : "); errContext(copyPreds(qs));
+	errPrintf("\n");
+	errFail();
     }
 
     resetGenerics();			/* Make sure we're general enough  */
@@ -2278,12 +2278,12 @@ static Void local typeDefnGroup(List bs)	/* type check group of value defns */
 	Name n = findName(textOf(v));
 	Int  l = nonNull(n) ? name(n).line : 0;
 	preds  = scSimplify(preds);
-	ERRMSG(l) "Instance%s of ", (length(preds)==1 ? "" : "s") ETHEN
-	ERRCONTEXT(copyPreds(preds));
-	ERRTEXT	  " required for definition of " ETHEN
-	ERREXPR(nonNull(n)?n:v);
-	ERRTEXT   "\n"
-	EEND;
+	errHead(l); errPrintf("Instance%s of ", (length(preds)==1 ? "" : "s"));
+	errContext(copyPreds(preds));
+	errPrintf(" required for definition of ");
+	errExpr(nonNull(n)?n:v);
+	errPrintf("\n");
+	errFail();
     }
 
     if (nonNull(scope()->skolems)) {
@@ -2308,8 +2308,8 @@ static Void local typeForeignExport(Name n)	/* Typecheck a foreign export decl *
 {
     Int line = name(n).line;
     /* todo */
-    ERRMSG(line) "Foreign export not implemented yet."
-    EEND;
+    errHead(line); errPrintf("Foreign export not implemented yet.");
+    errFail();
 }
 
 static Pair local typeSel(Name s)		/* Calculate a suitable type for a */
@@ -2372,12 +2372,12 @@ static Pair local typeSel(Name s)		/* Calculate a suitable type for a */
 	    clearMarks();
 	    rng  = liftRank1(rng,o,m);
 	    rng1 = liftRank1(rng1,o1,m1);
-	    ERRMSG(name(s).line) "Mismatch in field types for selector \"%s\"",
-				 textToStr(name(s).text) ETHEN
-	    ERRTEXT "\n*** Field type     : " 		 ETHEN ERRTYPE(rng1);
-	    ERRTEXT "\n*** Does not match : " 		 ETHEN ERRTYPE(rng);
-	    ERRTEXT "\n"
-	    EEND;
+	    errHead(name(s).line); errPrintf("Mismatch in field types for selector \"%s\"",
+				 textToStr(name(s).text));
+	    errPrintf("\n*** Field type     : "); errType(rng1);
+	    errPrintf("\n*** Does not match : "); errType(rng);
+	    errPrintf("\n");
+	    errFail();
 	}
 	alts = cons(pair(singleton(pat),pair(mkInt(line),nv)),alts);
     }
@@ -2499,8 +2499,8 @@ static Name local linkName(String s)
 {
     Name n = findName(findText(s));
     if (isNull(n)) {
-        ERRMSG(0) "Prelude does not define standard name \"%s\"", s
-        EEND;
+        errHead(0); errPrintf("Prelude does not define standard name \"%s\"", s);
+        errFail();
     }
     return n;
 }
@@ -2509,8 +2509,8 @@ static Tycon local linkTycon(String s)
 {
     Tycon tc = findTycon(findText(s));
     if (isNull(tc)) {
-        ERRMSG(0) "Prelude does not define standard type \"%s\"", s
-        EEND;
+        errHead(0); errPrintf("Prelude does not define standard type \"%s\"", s);
+        errFail();
     }
     return tc;
 }
@@ -2519,8 +2519,8 @@ static Class local linkClass(String s)
 {
     Class cc = findClass(findText(s));
     if (isNull(cc)) {
-        ERRMSG(0) "Prelude does not define standard class \"%s\"", s
-        EEND;
+        errHead(0); errPrintf("Prelude does not define standard class \"%s\"", s);
+        errFail();
     }
     return cc;
 }

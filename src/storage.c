@@ -153,8 +153,8 @@ Text fixLitText(Text t)                /* fix literal text that might include \ 
     if (i < MAX_FIXLIT-2) {
       p[i] = 0;
     } else {
-	ERRMSG(0) "storage space exhausted for internal literal string"
-	EEND;
+	errHead(0); errPrintf("storage space exhausted for internal literal string");
+	errFail();
     }
     return (findText(p));
 }
@@ -169,9 +169,9 @@ Text concatText(String s1, String s2)
     /* snprintf returns the length the string would have had, not -1, when
      * the output is truncated; only a genuine encoding error returns -1. */
     if (n<0 || n>=MAX_TEXTLEN) {
-	ERRMSG(0) "Generated name '%s%s' exceeds limit of %d",
-                  s1, s2, MAX_TEXTLEN
-	EEND;
+	errHead(0); errPrintf("Generated name '%s%s' exceeds limit of %d",
+                  s1, s2, MAX_TEXTLEN);
+	errFail();
     }
     return findText(s);
 }    
@@ -235,8 +235,8 @@ Text findText(String s)                       /* Locate string in Text array    
 
     textPos = textHw;                  /* if not found, save in array      */
     if (textHw + (Int)strlen(s) + 1 > savedText) {
-	ERRMSG(0) "Character string storage space exhausted"
-	EEND;
+	errHead(0); errPrintf("Character string storage space exhausted");
+	errFail();
     }
     while ((text[textHw++] = *s++) != 0) {
     }
@@ -255,8 +255,8 @@ static Int local saveText(Text t)            /* Save text value in buffer       
     Int    l = strlen(s);
 
     if (textHw + l + 1 > savedText) {
-	ERRMSG(0) "Character string storage space exhausted"
-	EEND;
+	errHead(0); errPrintf("Character string storage space exhausted");
+	errFail();
     }
     savedText -= l+1;
     strcpy(text+savedText,s);
@@ -317,8 +317,8 @@ Tycon newTycon(Text t)                       /* add new tycon to tycon table    
     Int h = tHash(t);
 
     if (tyconHw-TYCMIN >= NUM_TYCON) {
-	ERRMSG(0) "Type constructor storage space exhausted"
-	EEND;
+	errHead(0); errPrintf("Type constructor storage space exhausted");
+	errFail();
     }
     tycon(tyconHw).text          = t;   /* clear new tycon record          */
     tycon(tyconHw).mod           = currentModule;
@@ -484,8 +484,8 @@ Name newName(Text t, Cell parent)                  /* Add new name to name table
     Int h = nHash(t);
 
     if (nameHw-NAMEMIN >= NUM_NAME) {
-	ERRMSG(0) "Name storage space exhausted"
-	EEND;
+	errHead(0); errPrintf("Name storage space exhausted");
+	errFail();
     }
     name(nameHw).text         = t;      /* clear new name record           */
     name(nameHw).line         = 0;
@@ -849,8 +849,8 @@ Void addPrim(Int l, Name n, String s, Module mod, Type ty)               /* Add 
       }
     } while (!lookInPrelude);
 
-    ERRMSG(name(n).line) "Unknown primitive reference \"%s\"", s
-    EEND;
+    errHead(name(n).line); errPrintf("Unknown primitive reference \"%s\"", s);
+    errFail();
 }
 
 Name addPrimCfun(Text t, Int arity, Int no, Cell type)       /* add primitive constructor func  */
@@ -921,8 +921,8 @@ List addNamesMatching(String pat, List ns)           /* Add names matching patte
 
 static Void local patternError(String s)       /* report error in pattern         */
 {
-    ERRMSG(0) "%s in pattern", s
-    EEND;
+    errHead(0); errPrintf("%s in pattern", s);
+    errFail();
 }
 
 static Bool local stringMatch(String pat, String str)  /* match string against pattern    */
@@ -1134,36 +1134,36 @@ extern Int  rootsp;
 extern Cell evalRoots[];
 
 Void cuddlesStackOverflow() {	    /* Report stack overflow               */
-    ERRMSG(0) "Control stack overflow" ETHEN
+    errHead(0); errPrintf("Control stack overflow");
     if (rootsp>=0) {
 	Int i;
 	if (rootsp>=UPPER_DISP+LOWER_DISP) {
 	    for (i=0; i<UPPER_DISP; i++) {
-		ERRTEXT "\nwhile evaluating: " ETHEN
-		ERREXPR(evalRoots[rootsp-i]);
+		errPrintf("\nwhile evaluating: ");
+		errExpr(evalRoots[rootsp-i]);
 	    }
-	    ERRTEXT "\n..." ETHEN
+	    errPrintf("\n...");
 	    for (i=LOWER_DISP-1; i>=0; i--) {
-		ERRTEXT "\nwhile evaluating: " ETHEN
-		ERREXPR(evalRoots[i]);
+		errPrintf("\nwhile evaluating: ");
+		errExpr(evalRoots[i]);
 	    }
 	}
 	else {
 	    for (i=rootsp; i>=0; i--) {
-		ERRTEXT "\nwhile evaluating: " ETHEN
-		ERREXPR(evalRoots[i]);
+		errPrintf("\nwhile evaluating: ");
+		errExpr(evalRoots[i]);
 	    }
 	}
     }
-    ERRTEXT "\n"
-    EEND;
+    errPrintf("\n");
+    errFail();
 }
 
 #else /* !GIMME_STACK_DUMPS */
 
 Void cuddlesStackOverflow() {          /* Report stack overflow               */
-    ERRMSG(0) "Control stack overflow"
-    EEND;
+    errHead(0); errPrintf("Control stack overflow");
+    errFail();
 }
 
 #endif /* !GIMME_STACK_DUMPS */
@@ -1202,8 +1202,8 @@ Bool isValidModule(Module m)                  /* is m a legitimate module id?   
 Module newModule(Text t)                     /* add new module to module table  */
 {
     if (moduleHw-MODMIN >= NUM_MODULE) {
-	ERRMSG(0) "Module storage space exhausted"
-	EEND;
+	errHead(0); errPrintf("Module storage space exhausted");
+	errFail();
     }
     module(moduleHw).text          = t; /* clear new module record         */
     module(moduleHw).tycons        = NIL;
@@ -1662,8 +1662,8 @@ Void gcRegisterRoots(Cell *const *cells, Int count)
 	Int more = maxRootTables ? 2*maxRootTables : 16;
 	struct rootTable *grown = realloc(rootTables,more*sizeof(*grown));
 	if (!grown) {
-	    ERRMSG(0) "Cannot allocate root table"
-	    EEND;
+	    errHead(0); errPrintf("Cannot allocate root table");
+	    errFail();
 	}
 	rootTables    = grown;
 	maxRootTables = more;
@@ -2068,8 +2068,8 @@ Void garbageCollect()     {             /* Run garbage collector ...       */
 
     /* can only return if freeList is nonempty on return. */
     if (recovered<minRecovery || isNull(freeList)) {
-	ERRMSG(0) "Garbage collection fails to reclaim sufficient space"
-	EEND;
+	errHead(0); errPrintf("Garbage collection fails to reclaim sufficient space");
+	errFail();
     }
     numGcs++;
     cellsRecovered = recovered;
@@ -2085,8 +2085,8 @@ Void profilerLog(String s)                     /* turn heap profiling on, saving
 	fprintf(profile,"VALUE_UNIT \"cells\"\n");
     }
     else {
-	ERRMSG(0) "Cannot open profile log file \"%s\"", s
-	EEND;
+	errHead(0); errPrintf("Cannot open profile log file \"%s\"", s);
+	errFail();
     }
 }
 #endif
@@ -2462,14 +2462,14 @@ Pointer ptrOf(Cell c)
 #warning "type Ptr not supported on this architecture - don't use it"
 Cell mkPtr(Pointer p)
 {
-    ERRMSG(0) "mkPtr: type Ptr not supported on this architecture"
-    EEND;
+    errHead(0); errPrintf("mkPtr: type Ptr not supported on this architecture");
+    errFail();
 }
 
 Pointer ptrOf(Cell c)
 {
-    ERRMSG(0) "ptrOf: type Ptr not supported on this architecture"
-    EEND;
+    errHead(0); errPrintf("ptrOf: type Ptr not supported on this architecture");
+    errFail();
 }
 #endif
 
@@ -2869,8 +2869,8 @@ Cell newMallocPtr(Pointer ptr) 			/* create a new malloc pointer     */
 	    ;					/* and try again ...	   */
     }
     if (i>=NUM_MALLOCPTRS) {			/* ... before we give up   */
-	ERRMSG(0) "Too many ForeignPtrs open"
-	EEND;
+	errHead(0); errPrintf("Too many ForeignPtrs open");
+	errFail();
     }
     mallocPtrs[i].ptr      = ptr;
     mallocPtrs[i].finalizers = NIL;
@@ -3021,8 +3021,8 @@ DynTable* allocDynTable(unsigned long eltSize, unsigned long maxIdx, unsigned lo
    }
    
    if (tab == NULL || tab->data == NULL) {
-       ERRMSG(0) "Cannot allocate dynamic table \"%s\"", tabName
-       EEND;
+       errHead(0); errPrintf("Cannot allocate dynamic table \"%s\"", tabName);
+       errFail();
    }
    return tab;
 }
@@ -3042,15 +3042,15 @@ void growDynTable(DynTable* tab)
    void*         newData;
 
    if ( tab == NULL )  {
-       ERRMSG(0) "growDynTable: null table"
-       EEND;
+       errHead(0); errPrintf("growDynTable: null table");
+       errFail();
    }
 
    /* Are we already at the limit? */
    if ( tab->hWater != 0 && tab->maxIdx == tab->hWater ) {
-       ERRMSG(0) "growDynTable: unable to grow table \"%s\" further (reached limit: %d)", 
-                 tab->tabName, tab->hWater
-       EEND;
+       errHead(0); errPrintf("growDynTable: unable to grow table \"%s\" further (reached limit: %lu)",
+                 tab->tabName, tab->hWater);
+       errFail();
    }
    /* Growing currently means doubling. */   
     newSize = 2*tab->maxIdx;
@@ -3064,9 +3064,9 @@ void growDynTable(DynTable* tab)
    newData = (void*)realloc(tab->data, newSize*tab->eltSize);
    
    if ( newData == NULL ) {
-       ERRMSG(0) "growDynTable: unable to grow table \"%s\" (limit: %d)", 
-                 tab->tabName, tab->hWater
-       EEND;
+       errHead(0); errPrintf("growDynTable: unable to grow table \"%s\" (limit: %lu)",
+                 tab->tabName, tab->hWater);
+       errFail();
    } else {
      tab->maxIdx = newSize;
      tab->data   = newData;
@@ -3247,9 +3247,9 @@ Void storage(Int what)
 		       heapSnd = heapAlloc(heapSize);
 
 		       if (heapFst==(Heap)0 || heapSnd==(Heap)0) {
-			   ERRMSG(0) "Cannot allocate heap storage (%d cells)",
-				     heapSize
-			   EEND;
+			   errHead(0); errPrintf("Cannot allocate heap storage (%d cells)",
+				     heapSize);
+			   errFail();
 		       }
 
 		       heapTopFst = heapFst + heapSize;
@@ -3257,8 +3257,8 @@ Void storage(Int what)
 #if PROFILING
 		       heapThd = heapAlloc(heapSize);
 		       if (heapThd==(Heap)0) {
-			   ERRMSG(0) "Cannot allocate profiler storage space"
-			   EEND;
+			   errHead(0); errPrintf("Cannot allocate profiler storage space");
+			   errFail();
 		       }
 		       heapTopThd   = heapThd + heapSize;
 		       profile      = 0;
@@ -3278,8 +3278,8 @@ Void storage(Int what)
 
 		       marksSize  = bitArraySize(heapSize);
 		       if ((marks=(Int *)calloc(marksSize, sizeof(Int)))==0) {
-			   ERRMSG(0) "Unable to allocate gc markspace"
-			   EEND;
+			   errHead(0); errPrintf("Unable to allocate gc markspace");
+			   errFail();
 		       }
 		       
 		       dynTabScripts = allocDynTable(sizeof(script),10,0,"scripts");

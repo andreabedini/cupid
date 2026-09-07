@@ -71,8 +71,8 @@ Void ffiSetFlags(String s)
         Int    l = strlen(ffiFlags);
         String t = (char *)realloc(ffiFlags,l+strlen(s)+2);
 	if (t==0) {                    /* keep old ffiFlags on failure     */
-	    ERRMSG(0) "String storage space exhausted"
-	    EEND;
+	    errHead(0); errPrintf("String storage space exhausted");
+	    errFail();
 	}
 	ffiFlags = t;
 	ffiFlags[l] = ' ';
@@ -96,8 +96,8 @@ Void ffiAddCppInclude(String s) {
 	t = (char *)malloc(needed);
     }
     if (t==0) {                        /* keep old cppDirectives on error  */
-	ERRMSG(0) "String storage space exhausted"
-	EEND;
+	errHead(0); errPrintf("String storage space exhausted");
+	errFail();
     }
     cppDirectives = t;
     sprintf(cppDirectives+l, "#include %s\n", s);
@@ -113,8 +113,8 @@ Void foreignHeader(String fn)
     String fnm = mkFFIFilename(fn);
     FILE* f = fopen(fnm,"w");
     if (f == NULL) {
-        ERRMSG(0) "Unable to create file '%s'", fnm
-        EEND;
+        errHead(0); errPrintf("Unable to create file '%s'", fnm);
+        errFail();
     }
     out = f;
     fprintf(out,"/* Machine generated file, do not modify */\n");
@@ -252,10 +252,10 @@ static Void local foreignType(Int l, Type t)
     else if (getHead(t) == typeForeign)fprintf(out,"CuddlesForeign");
     else if (getHead(t) == typeStable) fprintf(out,"HsStablePtr");
     else {
-        ERRMSG(l) "Illegal foreign type" ETHEN
-        ERRTEXT " \"" ETHEN ERRTYPE(t);
-        ERRTEXT "\""
-        EEND;
+        errHead(l); errPrintf("Illegal foreign type");
+        errPrintf(" \""); errType(t);
+        errPrintf("\"");
+        errFail();
    }
 }
 
@@ -281,10 +281,10 @@ static Void local foreignGet(Int l, Type t, String nm, Int num)
     else if (getHead(t) == typeForeign)fprintf(out,"%s%d = cuddles->getForeign();\n", nm, num);
     else if (getHead(t) == typeStable) fprintf(out,"%s%d = cuddles->getStablePtr4();\n",  nm, num);
     else {
-        ERRMSG(l) "Illegal outbound (away from Haskell) type" ETHEN
-        ERRTEXT " \"" ETHEN ERRTYPE(t);
-        ERRTEXT "\""
-        EEND;
+        errHead(l); errPrintf("Illegal outbound (away from Haskell) type");
+        errPrintf(" \""); errType(t);
+        errPrintf("\"");
+        errFail();
    }
 }
 
@@ -310,10 +310,10 @@ static Void local foreignPut(Int l, Type t, String nm, Int num)
     else if (getHead(t) == typeForeign)fprintf(out,"cuddles->putForeign(%s%d);\n", nm, num);
     else if (getHead(t) == typeStable) fprintf(out,"cuddles->putStablePtr4(%s%d);\n", nm, num);
     else {
-        ERRMSG(l) "Illegal inbound (coming into Haskell) type" ETHEN
-        ERRTEXT " \"" ETHEN ERRTYPE(t);
-        ERRTEXT "\""
-        EEND;
+        errHead(l); errPrintf("Illegal inbound (coming into Haskell) type");
+        errPrintf(" \""); errType(t);
+        errPrintf("\"");
+        errFail();
    }
 }
 
@@ -344,8 +344,8 @@ static Void local checkCEntity(Int line, Text cid)
         ok = (*p == '_' || (*p>='A' && *p<='Z') || (*p>='a' && *p<='z')
                         || (*p>='0' && *p<='9'));
     if (!ok) {
-        ERRMSG(line) "Foreign import entity \"%s\" is not a valid C identifier", s
-        EEND;
+        errHead(line); errPrintf("Foreign import entity \"%s\" is not a valid C identifier", s);
+        errFail();
     }
 }
 

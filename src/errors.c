@@ -18,6 +18,8 @@
 #include "evaluator.h" /* everybody() proto only */
 #include <setjmp.h>
 
+static Void local cuddlesVFPrintf (FILE *,const char *,va_list);
+
 jmp_buf catch_error;          /* jump buffer for error trapping  */
 
 /* --------------------------------------------------------------------------
@@ -70,6 +72,22 @@ Void errFail() {                        /* terminate error message and     */
     longjmp(catch_error,1);
 }
 
+Void errPrintf(const char *fmt, ...)	/* part of an error message	   */
+{
+    va_list ap;
+    va_start(ap, fmt);
+    cuddlesVFPrintf(errorStream, fmt, ap);
+    va_end(ap);
+}
+
+Void errExpr   (Cell e)   { printExp(errorStream,e); }
+Void errType   (Type t)   { printType(errorStream,t); }
+Void errContext(List qs)  { printContext(errorStream,qs); }
+Void errPred   (Cell pi)  { printPred(errorStream,pi); }
+Void errKind   (Kind k)   { printKind(errorStream,k); }
+Void errKinds  (Kinds ks) { printKinds(errorStream,ks); }
+Void errFD     (Cell fd)  { printFD(errorStream,fd); }
+
 Void errAbort() {                       /* altern. form of error handling  */
     failed();                           /* used when suitable error message*/
     stopAnyPrinting();                  /* has already been printed        */
@@ -106,9 +124,7 @@ Void fatal(String msg)                         /* handle fatal error            
  * not signal context, on every platform.
  */
 sigHandler(breakHandler) {              /* respond to break interrupt      */
-    Hilite();
     Printf("{Interrupted!}\n");
-    Lolite();
     breakOn(TRUE);  /* reinstall break trapping (in case breakOn(FALSE) ran */
 		    /* while this break was pending)                        */
     everybody(BREAK);
@@ -221,14 +237,19 @@ Void cuddlesFFlush(FILE* fp)
     }
 }
 
-Void cuddlesFPrintf(FILE *fp, const char* fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
+static Void local cuddlesVFPrintf(FILE *fp, const char *fmt, va_list ap)
+{
     if (!disableOutput) {
 	vfprintf(fp, fmt, ap);
     } else {
 	vBufferedPrintf(&outputStream, fmt, ap);
     }
+}
+
+Void cuddlesFPrintf(FILE *fp, const char* fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    cuddlesVFPrintf(fp, fmt, ap);
     va_end(ap);
 }
 

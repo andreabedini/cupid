@@ -252,27 +252,27 @@ static Void local kindError(Int l, Constr c, Constr in, String wh, Kind k, Int o
     clearMarks();
 
     if (!kindExpert) {			/* for those with a fear of kinds  */
-	ERRMSG(l) "Illegal type" ETHEN
+	errHead(l); errPrintf("Illegal type");
 	if (nonNull(in)) {
-	    ERRTEXT " \"" ETHEN ERRTYPE(in);
-	    ERRTEXT "\""  ETHEN
+	    errPrintf(" \""); errType(in);
+	    errPrintf("\"");
 	}
-	ERRTEXT " in %s\n", wh
-	EEND;
+	errPrintf(" in %s\n", wh);
+	errFail();
     }
 
-    ERRMSG(l) "Kind error in %s", wh ETHEN
+    errHead(l); errPrintf("Kind error in %s", wh);
     if (nonNull(in)) {
-	ERRTEXT "\n*** expression     : " ETHEN ERRTYPE(in);
+	errPrintf("\n*** expression     : "); errType(in);
     }
-    ERRTEXT "\n*** constructor    : " ETHEN ERRTYPE(c);
-    ERRTEXT "\n*** kind           : " ETHEN ERRKIND(copyType(typeIs,typeOff));
-    ERRTEXT "\n*** does not match : " ETHEN ERRKIND(copyType(k,o));
+    errPrintf("\n*** constructor    : "); errType(c);
+    errPrintf("\n*** kind           : "); errKind(copyType(typeIs,typeOff));
+    errPrintf("\n*** does not match : "); errKind(copyType(k,o));
     if (unifyFails) {
-	ERRTEXT "\n*** because        : %s", unifyFails ETHEN
+	errPrintf("\n*** because        : %s", unifyFails);
     }
-    ERRTEXT "\n"
-    EEND;
+    errPrintf("\n");
+    errFail();
 }
 
 static Void local shouldKind(Int l, Cell c, Cell in, String wh, Kind k, Int o)
@@ -306,8 +306,8 @@ Void startModule(Cell nm)                             /* switch to a new module 
 	}
     } else if (!isPreludeScript()) {
 	/* You're allowed to break the rules in the Prelude! */
-	ERRMSG(0) "Module \"%s\" already loaded", textToStr(t)
-	EEND;
+	errHead(0); errPrintf("Module \"%s\" already loaded", textToStr(t));
+	errFail();
     }
     setCurrModule(m);
 }
@@ -321,9 +321,9 @@ static Void local checkQualImport(Pair i)   /* Process qualified import         
 {
     Module m = findModid(snd(i));
     if (isNull(m)) {
-	ERRMSG(0) "Module \"%s\" not previously loaded",
-		  textToStr(textOf(snd(i)))
-	EEND;
+	errHead(0); errPrintf("Module \"%s\" not previously loaded",
+		  textToStr(textOf(snd(i))));
+	errFail();
     }
     snd(i)=m;
 }
@@ -332,9 +332,9 @@ static Void local checkUnqualImport(Pair i) /* Process unqualified import       
 {
     Module m = findModid(fst(i));
     if (isNull(m)) {
-	ERRMSG(0) "Module \"%s\" not previously loaded",
-		  textToStr(textOf(fst(i)))
-	EEND;
+	errHead(0); errPrintf("Module \"%s\" not previously loaded",
+		  textToStr(textOf(fst(i))));
+	errFail();
     }
     fst(i)=m;
 }
@@ -368,23 +368,23 @@ Void tyconDefn(Int line, Cell lhs, Cell rhs, Cell what)	/* process new type defi
     Tycon tc = findTycon(t);
 
     if ( nonNull(tc) ) {
-	ERRMSG(line) "Multiple declarations of type constructor \"%s\"",
-		     textToStr(t)
-	EEND;
+	errHead(line); errPrintf("Multiple declarations of type constructor \"%s\"",
+		     textToStr(t));
+	errFail();
     } else if (nonNull(tc) && nonNull(tycon(tc).clashes)) {
         List ls = tycon(tc).clashes;
-	ERRMSG(line) "Ambiguous type constructor occurrence \"%s\"", textToStr(t) ETHEN
-        ERRTEXT "\n*** Could refer to: " ETHEN
-       ERRTEXT "%s.%s ", textToStr(module(tycon(tc).mod).text), textToStr(tycon(tc).text) ETHEN
+	errHead(line); errPrintf("Ambiguous type constructor occurrence \"%s\"", textToStr(t));
+        errPrintf("\n*** Could refer to: ");
+       errPrintf("%s.%s ", textToStr(module(tycon(tc).mod).text), textToStr(tycon(tc).text));
 	for(;nonNull(ls);ls=tl(ls)) {
-	  ERRTEXT "%s.%s ", textToStr(module(tycon(hd(ls)).mod).text), textToStr(tycon(hd(ls)).text)
-	  ETHEN
+	  errPrintf("%s.%s ", textToStr(module(tycon(hd(ls)).mod).text), textToStr(tycon(hd(ls)).text));
+
 	}
-	ERRTEXT "\n" EEND;
+	errPrintf("\n"); errFail();
     } else if (nonNull(findClass(t))) {
-	ERRMSG(line) "\"%s\" used as both class and type constructor",
-		     textToStr(t)
-	EEND;
+	errHead(line); errPrintf("\"%s\" used as both class and type constructor",
+		     textToStr(t));
+	errFail();
     }
     else {
 	Tycon nw	= newTycon(t);
@@ -456,9 +456,9 @@ static Void local checkTyconDefn(Tycon d)	/* validate type constructor defn  */
 					/* check for repeated tyvars on lhs*/
     for (temp=tyvars; nonNull(temp); temp=tl(temp))
 	if (nonNull(varIsMember(textOf(hd(temp)),tl(temp)))) {
-	    ERRMSG(line) "Repeated type variable \"%s\" on left hand side",
-			 textToStr(textOf(hd(temp)))
-	    EEND;
+	    errHead(line); errPrintf("Repeated type variable \"%s\" on left hand side",
+			 textToStr(textOf(hd(temp))));
+	    errFail();
 	}
 
     tcDeps = NIL;			/* find dependents		   */
@@ -466,9 +466,9 @@ static Void local checkTyconDefn(Tycon d)	/* validate type constructor defn  */
 	case RESTRICTSYN :
 	case SYNONYM	 : rhs = depTopType(line,tyvars,rhs);
 			   if (cellIsMember(d,tcDeps)) {
-			       ERRMSG(line) "Recursive type synonym \"%s\"",
-					    textToStr(tycon(d).text)
-			       EEND;
+			       errHead(line); errPrintf("Recursive type synonym \"%s\"",
+					    textToStr(tycon(d).text));
+			       errFail();
 			   }
 			   break;
 
@@ -537,10 +537,10 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
 	    for (us = typeVarsIn(lps,NIL,NIL,NIL); nonNull(us); us=tl(us))
 		if (!varIsMember(textOf(hd(us)),tyvars) &&
 		    !varIsMember(textOf(hd(us)),evs)) {
-		    ERRMSG(line)
+		    errHead(line); errPrintf(
 			"Variable \"%s\" in constraint is not locally bound",
-			textToStr(textOf(hd(us)))
-		    EEND;
+			textToStr(textOf(hd(us))));
+		    errFail();
 		}
 	    map2Over(depPredExp,line,sig,lps);
 	    con     = snd(snd(con));
@@ -595,9 +595,9 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
 	    fun(con) = typeArrow;
 	    if (isPolyOrQualType(cmp)) {
 		if (nonNull(derivs)) {
-		    ERRMSG(line) "Cannot derive instances for types" ETHEN
-		    ERRTEXT      " with polymorphic or qualified components"
-		    EEND;
+		    errHead(line); errPrintf("Cannot derive instances for types");
+		    errPrintf(" with polymorphic or qualified components");
+		    errFail();
 		}
 		if (nr2==0)
 		    nr2 = i;
@@ -614,14 +614,14 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
 
 	if (nonNull(evs)) {		/* Add existential annotation	   */
 	    if (nonNull(derivs)) {
-		ERRMSG(line) "Cannot derive instances for types" ETHEN
-		ERRTEXT      " with existentially typed components"
-		EEND;
+		errHead(line); errPrintf("Cannot derive instances for types");
+		errPrintf(" with existentially typed components");
+		errFail();
 	    }
 	    if (fs!=NONE) {
-		ERRMSG(line)
-		   "Cannot use selectors with existentially typed components"
-		EEND;
+		errHead(line); errPrintf(
+		   "Cannot use selectors with existentially typed components");
+		errFail();
 	    }
 	    type = ap(EXIST,pair(mkInt(length(evs)),type));
 	}
@@ -663,19 +663,19 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
 	name(n).type   = type;
 	if (tycon(t).what==NEWTYPE) {
 	    if (nonNull(lps)) {
-		ERRMSG(line)
-		   "A newtype constructor cannot have class constraints"
-		EEND;
+		errHead(line); errPrintf(
+		   "A newtype constructor cannot have class constraints");
+		errFail();
 	    }
 	    if (arity!=1) {
-		ERRMSG(line)
-		   "A newtype constructor must have exactly one argument"
-		EEND;
+		errHead(line); errPrintf(
+		   "A newtype constructor must have exactly one argument");
+		errFail();
 	    }
 	    if (nonNull(scs)) {
-		ERRMSG(line)
-		   "Illegal strictness annotation for newtype constructor"
-		EEND;
+		errHead(line); errPrintf(
+		   "Illegal strictness annotation for newtype constructor");
+		errFail();
 	    }
 	    name(n).defn = nameId;
 	} else {
@@ -732,9 +732,9 @@ static List local addSels(Int line, Name c, List fs, List ss)	/* Add fields to s
 	Text t  = textOf(hd(fs));
 
 	if (nonNull(varIsMember(t,tl(fs)))) {
-	    ERRMSG(line) "Repeated field name \"%s\" for constructor \"%s\"",
-			 textToStr(t), textToStr(name(c).text)
-	    EEND;
+	    errHead(line); errPrintf("Repeated field name \"%s\" for constructor \"%s\"",
+			 textToStr(t), textToStr(name(c).text));
+	    errFail();
 	}
 
 	while (nonNull(ns) && t!=name(hd(ns)).text) {
@@ -748,9 +748,9 @@ static List local addSels(Int line, Name c, List fs, List ss)	/* Add fields to s
 	    Name oldnm = findName(t);
 	    if ( nonNull(oldnm) ) {
 	        if ( name(oldnm).mod == currentModule ) {
-		    ERRMSG(line) "Multiple declarations for selector \"%s\"",
-			         textToStr(t)
-		    EEND;
+		    errHead(line); errPrintf("Multiple declarations for selector \"%s\"",
+			         textToStr(t));
+		    errFail();
 		} else {
 		    removeName(oldnm);
 		}
@@ -807,10 +807,10 @@ static List local visitSyn(List path, Tycon t, List syns)	/* visit synonym defin
                /* for cycles			   */
 {
     if (cellIsMember(t,path)) {		/* every elt in path depends on t  */
-	ERRMSG(tycon(t).line)
+	errHead(tycon(t).line); errPrintf(
 	    "Type synonyms \"%s\" and \"%s\" are mutually recursive",
-	    textToStr(tycon(t).text), textToStr(tycon(hd(path)).text)
-	EEND;
+	    textToStr(tycon(t).text), textToStr(tycon(hd(path)).text));
+	errFail();
     } else {
 	List ds    = tycon(t).kind;
 	List path1 = NIL;
@@ -860,10 +860,10 @@ static Type local fullerExpand(Type t)	/* find full expansion of type exp */
              * well enough.  For those that grok the data structures, it
              * should be simple.
              */
-            ERRMSG(name(h).line) "Use of polymorphic newtype '" ETHEN
-            ERRTYPE(t);
-            ERRTEXT "' not supported in foreign function declarations."
-            EEND;
+            errHead(name(h).line); errPrintf("Use of polymorphic newtype '");
+            errType(t);
+            errPrintf("' not supported in foreign function declarations.");
+            errFail();
         }
         t = instantiateNewtype(hd(tycon(h).defn),t);
         t = fullerExpand(t); /* chase chains of newtypes */
@@ -967,13 +967,13 @@ Void classDefn(Int line, Cell head, List ms, List fds)       /* process new clas
     Int  arity = argCount;
 
     if (nonNull(findClass(ct))) {
-	ERRMSG(line) "Multiple declarations of class \"%s\"",
-		     textToStr(ct)
-	EEND;
+	errHead(line); errPrintf("Multiple declarations of class \"%s\"",
+		     textToStr(ct));
+	errFail();
     } else if (nonNull(findTycon(ct))) {
-	ERRMSG(line) "\"%s\" used as both class and type constructor",
-		     textToStr(ct)
-	EEND;
+	errHead(line); errPrintf("\"%s\" used as both class and type constructor",
+		     textToStr(ct));
+	errFail();
     } else {
 	Class nw	   = newClass(ct);
 	cclass(nw).line    = line;
@@ -1021,14 +1021,14 @@ static Void local checkClassDefn(Class c)    /* validate class definition	   */
 
     for (; isAp(temp); temp=fun(temp)) {
 	if (!isVar(arg(temp))) {
-	    ERRMSG(cclass(c).line) "Type variable required in class head"
-	    EEND;
+	    errHead(cclass(c).line); errPrintf("Type variable required in class head");
+	    errFail();
 	}
 	if (nonNull(varIsMember(textOf(arg(temp)),tyvars))) {
-	    ERRMSG(cclass(c).line)
+	    errHead(cclass(c).line); errPrintf(
 		"Repeated type variable \"%s\" in class head",
-		textToStr(textOf(arg(temp)))
-	    EEND;
+		textToStr(textOf(arg(temp))));
+	    errFail();
 	}
 	tyvars = cons(arg(temp),tyvars);
     }
@@ -1040,8 +1040,8 @@ static Void local checkClassDefn(Class c)    /* validate class definition	   */
 	/* Check for trivial dependency
 	 */
 	if (isNull(vs)) {
-	    ERRMSG(cclass(c).line) "Functional dependency is trivial"
-	    EEND;
+	    errHead(cclass(c).line); errPrintf("Functional dependency is trivial");
+	    errFail();
 	}
 
 	/* Check for duplicated vars on right hand side, and for vars on
@@ -1049,16 +1049,16 @@ static Void local checkClassDefn(Class c)    /* validate class definition	   */
 	 */
 	for (vs=snd(fd); nonNull(vs); vs=tl(vs)) {
 	    if (varIsMember(textOf(hd(vs)),fst(fd))) {
-		ERRMSG(cclass(c).line)
+		errHead(cclass(c).line); errPrintf(
 		    "Trivial dependency for variable \"%s\"",
-		    textToStr(textOf(hd(vs)))
-		EEND;
+		    textToStr(textOf(hd(vs))));
+		errFail();
 	    }
 	    if (varIsMember(textOf(hd(vs)),tl(vs))) {
-		ERRMSG(cclass(c).line)
+		errHead(cclass(c).line); errPrintf(
 		    "Repeated variable \"%s\" in functional dependency",
-		    textToStr(textOf(hd(vs)))
-		EEND;
+		    textToStr(textOf(hd(vs))));
+		errFail();
 	    }
 	    hd(vs) = depTypeVar(cclass(c).line,tyvars,textOf(hd(vs)));
 	}
@@ -1067,10 +1067,10 @@ static Void local checkClassDefn(Class c)    /* validate class definition	   */
 	 */
 	for (vs=fst(fd); nonNull(vs); vs=tl(vs)) {
 	    if (varIsMember(textOf(hd(vs)),tl(vs))) {
-		ERRMSG(cclass(c).line)
+		errHead(cclass(c).line); errPrintf(
 		    "Repeated variable \"%s\" in functional dependency",
-		    textToStr(textOf(hd(vs)))
-		EEND;
+		    textToStr(textOf(hd(vs))));
+		errFail();
 	    }
 	    hd(vs) = depTypeVar(cclass(c).line,tyvars,textOf(hd(vs)));
 	}
@@ -1124,9 +1124,9 @@ static Void local checkClassDefn2(Class c)    /* validate class definition, pt 2
 	tvts = odiff(tvps,tvts);
 
 	if (!isNull(tvts)) {
-	    ERRMSG(cclass(c).line) "Undefined type variable \"%s\"",
-	      textToStr(textOf(nth(offsetOf(hd(tvts)),cclass(c).tyvars)))
-	    EEND;
+	    errHead(cclass(c).line); errPrintf("Undefined type variable \"%s\"",
+	      textToStr(textOf(nth(offsetOf(hd(tvts)),cclass(c).tyvars))));
+	    errFail();
 	}
     }
 }
@@ -1226,21 +1226,21 @@ static Cell local depPredExp(Int line, List tyvars, Cell pred)
     if (isQCon(h)) {			/* standard class constraint	   */
 	Class c = findQualClass(h);
 	if (isNull(c)) {
-	    ERRMSG(line) "Undefined class \"%s\"", identToStr(h)
-	    EEND;
+	    errHead(line); errPrintf("Undefined class \"%s\"", identToStr(h));
+	    errFail();
 	}
 	if (!isQualIdent(h) && nonNull(cclass(c).clashes)) {
 	    List ls = cclass(c).clashes;
-	    ERRMSG(line) "Ambiguous class occurrence \"%s\"", textToStr(cclass(c).text) ETHEN
-	    ERRTEXT "\n*** Could refer to: " ETHEN
-	    ERRTEXT "%s.%s ", textToStr(module(cclass(c).mod).text), textToStr(cclass(c).text) ETHEN
+	    errHead(line); errPrintf("Ambiguous class occurrence \"%s\"", textToStr(cclass(c).text));
+	    errPrintf("\n*** Could refer to: ");
+	    errPrintf("%s.%s ", textToStr(module(cclass(c).mod).text), textToStr(cclass(c).text));
 	    for (;nonNull(ls);ls=tl(ls)) {
-		ERRTEXT "%s.%s ",
+		errPrintf("%s.%s ",
 			textToStr(module(cclass(hd(ls)).mod).text),
-			textToStr(cclass(hd(ls)).text)
-			ETHEN
+			textToStr(cclass(hd(ls)).text));
+
 	    }
-	    ERRTEXT "\n" EEND;
+	    errPrintf("\n"); errFail();
         }
 	if (isNull(prev)) {
 	    pred = c;
@@ -1248,9 +1248,9 @@ static Cell local depPredExp(Int line, List tyvars, Cell pred)
 	    fun(prev) = c;
 	}
 	if (args!=cclass(c).arity) {
-	    ERRMSG(line) "Wrong number of arguments for class \"%s\"",
-			textToStr(cclass(c).text)
-	    EEND;
+	    errHead(line); errPrintf("Wrong number of arguments for class \"%s\"",
+			textToStr(cclass(c).text));
+	    errFail();
 	}
 	if (cellIsMember(c,classDefns) && !cellIsMember(c,tcDeps)) {
 	    tcDeps = cons(c,tcDeps);
@@ -1378,9 +1378,9 @@ static Name local newMember(Int l, Int no, Cell v, Type t, Class parent)
     if (isNull(m)) {
 	m = newName(textOf(v),parent);
     } else if (name(m).defn!=PREDEFINED && name(m).mod == currentModule) {
-	ERRMSG(l) "Multiple declarations for member function \"%s\"",
-	  textToStr(name(m).text)
-	EEND;
+	errHead(l); errPrintf("Multiple declarations for member function \"%s\"",
+	  textToStr(name(m).text));
+	errFail();
     } else if (name(m).defn!=PREDEFINED) {
 	Name oldnm = m;
 	removeName(m);
@@ -1420,8 +1420,8 @@ static Text local generateText(String sk, Class c)	/* We need to generate names 
     char buffer[MAX_GEN+1];
 
     if ((strlen(sk)+strlen(cname))>=MAX_GEN) {
-	ERRMSG(0) "Please use a shorter name for class \"%s\"", cname
-	EEND;
+	errHead(0); errPrintf("Please use a shorter name for class \"%s\"", cname);
+	errFail();
     }
     sprintf(buffer,sk,cname);
     return findText(buffer);
@@ -1430,9 +1430,9 @@ static Text local generateText(String sk, Class c)	/* We need to generate names 
 static Int local visitClass(Class c)		/* visit class defn to check that  */
 {				/* class hierarchy is acyclic	   */
     if (cclass(c).level < 0) {		/* already visiting this class?	   */
-	ERRMSG(cclass(c).line) "Superclass relation for \"%s\" is cyclic",
-			       textToStr(cclass(c).text)
-	EEND;
+	errHead(cclass(c).line); errPrintf("Superclass relation for \"%s\" is cyclic",
+			       textToStr(cclass(c).text));
+	errFail();
     } else if (cclass(c).level == 0) {	/* visiting class for first time   */
 	List scs = cclass(c).supers;
 	Int  lev = 0;
@@ -1463,18 +1463,18 @@ static List local classBindings(String where, Class c, List bs)
 	Name mnm;
 
 	if ( !(isVar(fst(b))) ) { /* Only allow function bindings    */
-	    ERRMSG(rhsLine(snd(body)))
-		"Pattern binding illegal in %s declaration", where
-	    EEND;
+	    errHead(rhsLine(snd(body))); errPrintf(
+		"Pattern binding illegal in %s declaration", where);
+	    errFail();
 	}
 
 	nm = textOf(fst(b));
 
 	if (isNull(mnm=memberName(c,nm))) {
-	    ERRMSG(rhsLine(snd(hd(body))))
+	    errHead(rhsLine(snd(hd(body)))); errPrintf(
 		"No member \"%s\" in class \"%s\"",
-		textToStr(nm), textToStr(cclass(c).text)
-	    EEND;
+		textToStr(nm), textToStr(cclass(c).text));
+	    errFail();
 	}
 	snd(b) = body;
 	nbs    = numInsert(mfunOf(mnm)-1,b,nbs);
@@ -1612,8 +1612,8 @@ static Type local checkSigType(Int line, String where, Cell e, Type type)
 
     if (nonNull(tvs)) {
 	if (length(tvs)>=NUM_OFFSETS) {
-	    ERRMSG(line) "Too many type variables in %s\n", where
-	    EEND;
+	    errHead(line); errPrintf("Too many type variables in %s\n", where);
+	    errFail();
 	} else {
 	    List ts = tvs;
 	    for (; nonNull(ts); ts=tl(ts)) {
@@ -1637,21 +1637,21 @@ static Void local checkOptQuantVars(Int line, List xtvs, List tvs)
 	List vs = tvs;
 	for (; nonNull(vs); vs=tl(vs)) {
 	    if (!varIsMember(textOf(hd(vs)),xtvs)) {
-		ERRMSG(line) "Quantifier does not mention type variable \"%s\"",
-			     textToStr(textOf(hd(vs)))
-		EEND;
+		errHead(line); errPrintf("Quantifier does not mention type variable \"%s\"",
+			     textToStr(textOf(hd(vs))));
+		errFail();
 	    }
 	}
 	for (vs=xtvs; nonNull(vs); vs=tl(vs)) {
 	    if (!varIsMember(textOf(hd(vs)),tvs)) {
-		ERRMSG(line) "Quantified type variable \"%s\" is not used",
-			     textToStr(textOf(hd(vs)))
-		EEND;
+		errHead(line); errPrintf("Quantified type variable \"%s\" is not used",
+			     textToStr(textOf(hd(vs))));
+		errFail();
 	    }
 	    if (varIsMember(textOf(hd(vs)),tl(vs))) {
-		ERRMSG(line) "Quantified type variable \"%s\" is repeated",
-			     textToStr(textOf(hd(vs)))
-		EEND;
+		errHead(line); errPrintf("Quantified type variable \"%s\" is repeated",
+			     textToStr(textOf(hd(vs))));
+		errFail();
 	    }
 	}
     }
@@ -1725,16 +1725,16 @@ static Type local depTypeExp(Int line, List tyvars, Type type)
 	case VARIDCELL	: return depTypeVar(line,tyvars,textOf(type));
 
 	case QUALIDENT  : if (isQVar(type)) {
-			      ERRMSG(line) "Qualified type variables not allowed"
-			      EEND;
+			      errHead(line); errPrintf("Qualified type variables not allowed");
+			      errFail();
 			  }
 			  /* deliberate fall through */
 	case CONIDCELL  : {   Tycon tc = findQualTycon(type);
 			      if (isNull(tc)) {
-				  ERRMSG(line)
+				  errHead(line); errPrintf(
 				      "Undefined type constructor \"%s\"",
-				      identToStr(type)
-				  EEND;
+				      identToStr(type));
+				  errFail();
 			      }
 			      if ( whatIs(type) != QUALIDENT ) {
 				  checkTyconAmbig(line,tycon(tc).text,tc);
@@ -1770,8 +1770,8 @@ static Type local depTypeVar(Int line, List tyvars, Text tv)
 	if (nonNull(vt)) {
 	    return fst(vt);
 	}
-	ERRMSG(line) "Undefined type variable \"%s\"", textToStr(tv)
-	EEND;
+	errHead(line); errPrintf("Undefined type variable \"%s\"", textToStr(tv));
+	errFail();
     }
     return mkOffset(found);
 }
@@ -1786,14 +1786,14 @@ static List local checkQuantVars(Int line, List vs, List tvs, Cell body)
 	for (; nonNull(us); us=tl(us)) {
 	    Text u = textOf(hd(us));
 	    if (varIsMember(u,tl(us))) {
-		ERRMSG(line) "Repeated quantified variable %s",
-			     textToStr(u)
-		EEND;
+		errHead(line); errPrintf("Repeated quantified variable %s",
+			     textToStr(u));
+		errFail();
 	    }
 	    if (!varIsMember(u,bvs)) {
-		ERRMSG(line) "Locally quantified variable %s is not used",
-			     textToStr(u)
-		EEND;
+		errHead(line); errPrintf("Locally quantified variable %s is not used",
+			     textToStr(u));
+		errFail();
 	    }
 	}
 	tvs = appendOnto(tvs,vs);
@@ -1975,13 +1975,13 @@ List calcFunDepsPreds(List ps)
 Void ambigError(Int line, String where, Cell e, Type type)	/* produce error message for	   */
                 /* ambiguity			   */
 {
-    ERRMSG(line) "Ambiguous type signature in %s", where ETHEN
-    ERRTEXT      "\n*** ambiguous type : " ETHEN ERRTYPE(type);
+    errHead(line); errPrintf("Ambiguous type signature in %s", where);
+    errPrintf("\n*** ambiguous type : "); errType(type);
     if (nonNull(e)) {
-	ERRTEXT  "\n*** assigned to    : " ETHEN ERREXPR(e);
+	errPrintf("\n*** assigned to    : "); errExpr(e);
     }
-    ERRTEXT      "\n"
-    EEND;
+    errPrintf("\n");
+    errFail();
 }
 
 /* --------------------------------------------------------------------------
@@ -2027,10 +2027,10 @@ static Void local kindConstr(Int line, Int alpha, Int m, Cell c)
 
 
 	case TYCON    : if (isSynonym(h) && n<tycon(h).arity) {
-			    ERRMSG(line)
+			    errHead(line); errPrintf(
 			      "Not enough arguments for type synonym \"%s\"",
-			      textToStr(tycon(h).text)
-			    EEND;
+			      textToStr(tycon(h).text));
+			    errFail();
 			}
 			break;
 	default       : break;
@@ -2280,16 +2280,16 @@ static Void local checkInstDefn(Inst in)	/* Validate instance declaration   */
     tvts = oclose(fds,tvts);
     tvts = odiff(tvps,tvts);
     if (!isNull(tvts)) {
-	ERRMSG(line) "Ambiguous type variable \"%s\"",
-	  textToStr(textOf(nth(offsetOf(hd(tvts)),tyvars)))
-	EEND;
+	errHead(line); errPrintf("Ambiguous type variable \"%s\"",
+	  textToStr(textOf(nth(offsetOf(hd(tvts)),tyvars))));
+	errFail();
     }
 
     inst(in).numSpecifics = length(inst(in).specifics);
     inst(in).c            = getHead(inst(in).head);
     if (!isClass(inst(in).c)) {
-	ERRMSG(line) "Illegal predicate in instance declaration"
-	EEND;
+	errHead(line); errPrintf("Illegal predicate in instance declaration");
+	errFail();
     }
 
     /* should this be over xfds? */
@@ -2301,17 +2301,17 @@ static Void local checkInstDefn(Inst in)	/* Validate instance declaration   */
 	    List fs = calcFunDeps(inst(in).specifics);
 	    as = oclose(fs,as);
             if (!osubset(bs,as)) {
-		ERRMSG(inst(in).line)
-		   "Instance is more general than a dependency allows"
-		ETHEN
-		ERRTEXT "\n*** Instance         : "
-		ETHEN ERRPRED(inst(in).head);
-		ERRTEXT "\n*** For class        : "
-		ETHEN ERRPRED(cclass(inst(in).c).head);
-		ERRTEXT "\n*** Under dependency : "
-		ETHEN ERRFD(hd(fds));
-		ERRTEXT "\n"
-		EEND;
+		errHead(inst(in).line); errPrintf(
+		   "Instance is more general than a dependency allows");
+
+		errPrintf("\n*** Instance         : ");
+ errPred(inst(in).head);
+		errPrintf("\n*** For class        : ");
+ errPred(cclass(inst(in).c).head);
+		errPrintf("\n*** Under dependency : ");
+ errFD(hd(fds));
+		errPrintf("\n");
+		errFail();
             }
         }
     }
@@ -2320,14 +2320,14 @@ static Void local checkInstDefn(Inst in)	/* Validate instance declaration   */
     insertInst(in);
 
     if (nonNull(extractSigdecls(inst(in).implements))) {
-	ERRMSG(line)
-	  "Type signature declarations not permitted in instance declaration"
-	EEND;
+	errHead(line); errPrintf(
+	  "Type signature declarations not permitted in instance declaration");
+	errFail();
     }
     if (nonNull(extractFixdecls(inst(in).implements))) {
-	ERRMSG(line)
-	  "Fixity declarations not permitted in instance declaration"
-	EEND;
+	errHead(line); errPrintf(
+	  "Fixity declarations not permitted in instance declaration");
+	errFail();
     }
     inst(in).implements = classBindings("instance",
 					inst(in).c,
@@ -2367,19 +2367,19 @@ static Void local insertInst(Inst in)	/* Insert instance into class	   */
 					 nthArg(n,inst(hd(ins1)).head),beta);
 		    }
 		    if (!same) {
-			ERRMSG(inst(in).line)
-			   "Instances are not consistent with dependencies"
-			ETHEN
-			ERRTEXT "\n*** This instance    : "
-			ETHEN ERRPRED(inst(in).head);
-			ERRTEXT "\n*** Conflicts with   : "
-			ETHEN ERRPRED(inst(hd(ins1)).head);
-			ERRTEXT "\n*** For class        : "
-			ETHEN ERRPRED(cclass(c).head);
-			ERRTEXT "\n*** Under dependency : "
-			ETHEN ERRFD(hd(fds));
-			ERRTEXT "\n"
-			EEND;
+			errHead(inst(in).line); errPrintf(
+			   "Instances are not consistent with dependencies");
+
+			errPrintf("\n*** This instance    : ");
+ errPred(inst(in).head);
+			errPrintf("\n*** Conflicts with   : ");
+ errPred(inst(hd(ins1)).head);
+			errPrintf("\n*** For class        : ");
+ errPred(cclass(c).head);
+			errPrintf("\n*** Under dependency : ");
+ errFD(hd(fds));
+			errPrintf("\n");
+			errFail();
 		    }
 		}
 	    }
@@ -2404,16 +2404,16 @@ static Void local insertInst(Inst in)	/* Insert instance into class	   */
 		    continue;
 		}
 	    }
-		ERRMSG(inst(in).line) "Overlapping instances for class \"%s\"",
-				      textToStr(cclass(c).text)
-		ETHEN
-		ERRTEXT "\n*** This instance   : " ETHEN ERRPRED(inst(in).head);
-		ERRTEXT "\n*** Overlaps with   : " ETHEN
-						   ERRPRED(inst(hd(ins)).head);
-		ERRTEXT "\n*** Common instance : " ETHEN
-						   ERRPRED(pi);
-		ERRTEXT "\n"
-		EEND;
+		errHead(inst(in).line); errPrintf("Overlapping instances for class \"%s\"",
+				      textToStr(cclass(c).text));
+
+		errPrintf("\n*** This instance   : "); errPred(inst(in).head);
+		errPrintf("\n*** Overlaps with   : ");
+						   errPred(inst(hd(ins)).head);
+		errPrintf("\n*** Common instance : ");
+						   errPred(pi);
+		errPrintf("\n");
+		errFail();
 	}
 	prev = ins;			/* No overlap detected, so move on */
 	ins  = tl(ins);			/* to next instance		   */
@@ -2477,9 +2477,9 @@ static Void local checkDerive(Tycon t, List p, List ts, Cell ct)/* verify derive
     Int   line = tycon(t).line;
     Class c    = findQualClass(ct);
     if (isNull(c)) {
-	ERRMSG(line) "Unknown class \"%s\" in derived instance",
-		     identToStr(ct)
-	EEND;
+	errHead(line); errPrintf("Unknown class \"%s\" in derived instance",
+		     identToStr(ct));
+	errFail();
     }
     addDerInst(line,c,p,dupList(ts),t,tycon(t).arity);
 }
@@ -2602,16 +2602,16 @@ static Void local calcInstPreds(Inst in)	/* Calculate next approximation	   */
 
 	if (its++ >= factor*cutoff) {
 	    Cell bpi = inst(in).head;
-	    ERRMSG(inst(in).line) "\n*** Cannot derive " ETHEN ERRPRED(bpi);
-	    ERRTEXT " after %d iterations.", its-1   ETHEN
-	    ERRTEXT
-		"\n*** This may indicate that the problem is undecidable.  However,\n"
-	    ETHEN ERRTEXT
-		"*** you may still try to increase the cutoff limit using the -c\n"
-	    ETHEN ERRTEXT
+	    errHead(inst(in).line); errPrintf("\n*** Cannot derive "); errPred(bpi);
+	    errPrintf(" after %d iterations.", its-1);
+	    errPrintf(
+		"\n*** This may indicate that the problem is undecidable.  However,\n");
+ errPrintf(
+		"*** you may still try to increase the cutoff limit using the -c\n");
+ errPrintf(
 		"*** option and then try again.  (The current setting is -c%d)\n",
-		cutoff
-	    EEND;
+		cutoff);
+	    errFail();
 	}
 	if (isInt(fst(p))) {			/* Delayed substitution?   */
 	    List qs = snd(p);
@@ -2645,10 +2645,10 @@ static Void local calcInstPreds(Inst in)	/* Calculate next approximation	   */
 		if (isAp(qi)) {
 		    Cell bpi = inst(in).head;
 		    pi       = copyPred(pi,o);
-		    ERRMSG(inst(in).line) "An instance of " ETHEN ERRPRED(pi);
-		    ERRTEXT " is required to derive "       ETHEN ERRPRED(bpi);
-		    ERRTEXT "\n"
-		    EEND;
+		    errHead(inst(in).line); errPrintf("An instance of "); errPred(pi);
+		    errPrintf(" is required to derive "); errPred(bpi);
+		    errPrintf("\n");
+		    errFail();
 		} else {
 		    maybeAddPred(pi,o,beta,spcs);
 		}
@@ -2736,9 +2736,9 @@ static Void local addDerivImp(Inst in)
     } else if (c==classBounded) {
 	imp = deriveBounded(t);
     } else {
-	ERRMSG(inst(in).line) "Cannot derive instances of class \"%s\"",
-			      textToStr(cclass(inst(in).c).text)
-	EEND;
+	errHead(inst(in).line); errPrintf("Cannot derive instances of class \"%s\"",
+			      textToStr(cclass(inst(in).c).text));
+	errFail();
     }
 
     kindInst(in,intOf(inst(in).kinds));
@@ -2904,8 +2904,8 @@ static List local deriveEnum(Tycon t)	/* Construct definition of enumeration	   
     Int l = tycon(t).line;
 
     if (!isEnumType(t)) {
-	ERRMSG(l) "Can only derive instances of Enum for enumeration types"
-	EEND;
+	errHead(l); errPrintf("Can only derive instances of Enum for enumeration types");
+	errFail();
     }
 
     return cons(mkBind("toEnum",mkVarAlts(l,ap(nameEnToEn,hd(tycon(t).defn)))),
@@ -2930,9 +2930,9 @@ static List local deriveIx(Tycon t)	/* Construct definition of indexing	   */
 			 userArity(hd(tycon(t).defn)));
     }
 
-    ERRMSG(tycon(t).line)
-	"Can only derive instances of Ix for enumeration or product types"
-    EEND;
+    errHead(tycon(t).line); errPrintf(
+	"Can only derive instances of Ix for enumeration or product types");
+    errFail();
     return NIL;/* NOTREACHED*/
 }
 
@@ -3486,9 +3486,9 @@ static List local deriveBounded(Tycon t)/* construct definition of bounds	   */
 			  userArity(hd(tycon(t).defn)));
     }
 
-    ERRMSG(tycon(t).line)
-     "Can only derive instances of Bounded for enumeration and product types"
-    EEND;
+    errHead(tycon(t).line); errPrintf(
+     "Can only derive instances of Bounded for enumeration and product types");
+    errFail();
     return NIL;
 }
 
@@ -3515,9 +3515,9 @@ static List local mkBndBinds(Int line, Cell h, Int n)	/* build bindings for deri
 Void defaultDefn(Int line, List defs)		/* Handle default types definition */
 {
     if (defaultLine!=0) {
-	ERRMSG(line) "Multiple default declarations are not permitted in" ETHEN
-	ERRTEXT      " a single script file.\n"
-	EEND;
+	errHead(line); errPrintf("Multiple default declarations are not permitted in");
+	errPrintf(" a single script file.\n");
+	errFail();
     }
     defaultDefns = defs;
     defaultLine  = line;
@@ -3544,9 +3544,9 @@ static Void local checkDefaultDefns() {	/* check that default types are	   */
 
     for (ds=defaultDefns; nonNull(ds); ds=tl(ds)) {
 	if (isNull(provePred(NIL,NIL,ap(classNum,hd(ds))))) {
-	    ERRMSG(defaultLine)
-		"Default types must be instances of the Num class"
-	    EEND;
+	    errHead(defaultLine); errPrintf(
+		"Default types must be instances of the Num class");
+	    errFail();
 	}
     }
 }
@@ -3644,14 +3644,14 @@ Void foreignImport(Cell l, Cell callconv, Cell safety, Cell ext, Cell intName, C
     if (isNull(n)) {
         n = newName(t,NIL);
     } else if (name(n).defn!=PREDEFINED) {
-        ERRMSG(line) "Redeclaration of foreign \"%s\"", textToStr(t)
-        EEND;
+        errHead(line); errPrintf("Redeclaration of foreign \"%s\"", textToStr(t));
+        errFail();
     }
     cconv = checkCallConv(line,textOf(callconv));
     if ( cconv == FFI_CCONV_UNKNOWN ) {
-      ERRMSG(line) "Foreign import calling convention \"%s\" not supported",
-  	           textToStr(textOf(callconv))
-      EEND;
+      errHead(line); errPrintf("Foreign import calling convention \"%s\" not supported",
+  	           textToStr(textOf(callconv)));
+      errFail();
     }
 
     if (isNull(safety) || textOf(safety) == textSafe) {
@@ -3661,8 +3661,8 @@ Void foreignImport(Cell l, Cell callconv, Cell safety, Cell ext, Cell intName, C
     } else if (textOf(safety) == textThreadsafe) {
         sfty = FFI_THREADSAFE;
     } else {
-        ERRMSG(line) "Foreign import safety level \"%s\" not supported", textToStr(textOf(safety))
-        EEND;
+        errHead(line); errPrintf("Foreign import safety level \"%s\" not supported", textToStr(textOf(safety)));
+        errFail();
     }
     name(n).line         = line;
     name(n).type         = type;
@@ -3698,14 +3698,14 @@ Void foreignExport(Cell l, Cell v, Cell callconv, Cell ext, Cell intName, Cell t
     Name n   = newName(t,NIL);
 
     if (textOf(v) != textExport) {
-        ERRMSG(line) "Foreign declarations must be either import or export not \"%s\"", textToStr(textOf(v))
-        EEND;
+        errHead(line); errPrintf("Foreign declarations must be either import or export not \"%s\"", textToStr(textOf(v)));
+        errFail();
     }
     cconv = checkCallConv(line,textOf(callconv));
     if ( cconv == FFI_CCONV_UNKNOWN ) {
-      ERRMSG(line) "Foreign export calling convention \"%s\" not supported",
-  	           textToStr(textOf(callconv))
-      EEND;
+      errHead(line); errPrintf("Foreign export calling convention \"%s\" not supported",
+  	           textToStr(textOf(callconv)));
+      errFail();
     }
 
     name(n).line     = line;
@@ -3909,8 +3909,8 @@ static Void local checkForeignImport(Name p)   /* Check foreign import          
         if ((e = matchToken("[",ext))) {
             ext = skipToChar(e,']');
             if (*ext != ']' || ext == e) goto cantparse;
-            ERRMSG(line) "Cuddles doesn't use library specifications."
-            EEND;
+            errHead(line); errPrintf("Cuddles doesn't use library specifications.");
+            errFail();
         }
         if (*ext != '\0') {
             e = skipToSpace(ext);
@@ -3958,22 +3958,22 @@ static Void local checkForeignImport(Name p)   /* Check foreign import          
     return;
 
   cantparse:
-     ERRMSG(line) "Can't parse external entity '"
-     ETHEN ERRTEXT ext
-     ETHEN ERRTEXT "'\n"
-     EEND;
+     errHead(line); errPrintf("Can't parse external entity '");
+ errPrintf(ext);
+ errPrintf("'\n");
+     errFail();
 
   dynerr:
-    ERRMSG(line) "foreign import dynamic must have type '(FunPtr ft) -> ft'"
-    EEND;
+    errHead(line); errPrintf("foreign import dynamic must have type '(FunPtr ft) -> ft'");
+    errFail();
 
   wraperr:
-    ERRMSG(line) "foreign import wrapper must have type 'ft -> IO (FunPtr ft)'"
-    EEND;
+    errHead(line); errPrintf("foreign import wrapper must have type 'ft -> IO (FunPtr ft)'");
+    errFail();
 
   labelerr:
-    ERRMSG(line) "foreign import & must have type 'Ptr a' or 'FunPtr a'"
-    EEND;
+    errHead(line); errPrintf("foreign import & must have type 'Ptr a' or 'FunPtr a'");
+    errFail();
 
 }
 
@@ -4086,8 +4086,8 @@ static Cell local checkPat(Int line, Cell p)     /* Check valid pattern syntax	 
 			 fst(snd(p)) = checkPat(line,fst(snd(p)));
 			 break;
 
-	default        : ERRMSG(line) "Illegal pattern syntax"
-			 EEND;
+	default        : errHead(line); errPrintf("Illegal pattern syntax");
+			 errFail();
     }
     return p;
 }
@@ -4108,16 +4108,16 @@ static Cell local checkApPat(Int line, Int args, Cell p)
 			 break;
 
 	case TUPLE     : if (tupleOf(p)!=args) {
-			     ERRMSG(line) "Illegal tuple pattern"
-			     EEND;
+			     errHead(line); errPrintf("Illegal tuple pattern");
+			     errFail();
 			 }
 			 break;
 
 
 	case QUALIDENT : if (!isQCon(p)) {
-			    ERRMSG(line)
-				"Illegal use of qualified variable in pattern"
-			    EEND;
+			    errHead(line); errPrintf(
+				"Illegal use of qualified variable in pattern");
+			    errFail();
 			 }
 			 /* deliberate fall through */
 	case CONIDCELL :
@@ -4129,8 +4129,8 @@ static Cell local checkApPat(Int line, Int args, Cell p)
 			 checkCfunArgs(line,p,args);
 			 break;
 
-	default        : ERRMSG(line) "Illegal pattern syntax"
-			 EEND;
+	default        : errHead(line); errPrintf("Illegal pattern syntax");
+			 errFail();
     }
     return p;
 }
@@ -4144,9 +4144,9 @@ static Void local addToPatVars(Int line, Cell v)	/* Add variable v to list of va
 
     for (; nonNull(n); p=n, n=tl(n)) {
 	if (textOf(hd(n))==t) {
-	    ERRMSG(line) "Repeated variable \"%s\" in pattern",
-			 textToStr(t)
-	    EEND;
+	    errHead(line); errPrintf("Repeated variable \"%s\" in pattern",
+			 textToStr(t));
+	    errFail();
 	}
     }
 
@@ -4163,8 +4163,8 @@ static Name local conDefined(Int line, Cell nm, Bool check)
 {		 /* function (and only one.)        */
     Name n = findQualName(nm);
     if (isNull(n)) {
-	ERRMSG(line) "Undefined data constructor \"%s\"", identToStr(nm)
-	EEND;
+	errHead(line); errPrintf("Undefined data constructor \"%s\"", identToStr(nm));
+	errFail();
     }
     checkIsCfun(line,n);
     if (check) {
@@ -4180,9 +4180,9 @@ static Name local conDefined(Int line, Cell nm, Bool check)
 static Void local checkIsCfun(Int line, Name c)  /* Check that c is a constructor fn */
 {
     if (!isCfun(c)) {
-	ERRMSG(line) "\"%s\" is not a data constructor",
-		     textToStr(name(c).text)
-	EEND;
+	errHead(line); errPrintf("\"%s\" is not a data constructor",
+		     textToStr(name(c).text));
+	errFail();
     }
 }
 
@@ -4192,10 +4192,10 @@ static Void local checkCfunArgs(Int line, Cell c, Int args)
 {
     Int a = userArity(c);
     if (a!=args) {
-	ERRMSG(line)
+	errHead(line); errPrintf(
 	  "Constructor \"%s\" must have exactly %d argument%s in pattern",
-	  textToStr(name(c).text), a, ((a==1)?"":"s")
-	EEND;
+	  textToStr(name(c).text), a, ((a==1)?"":"s"));
+	errFail();
     }
 }
 
@@ -4208,8 +4208,8 @@ static Cell local checkPatType(Int l, String wh, Cell e, Type t)/* Check type ap
     }
     t = checkSigType(l,"pattern type",e,t);
     if (isPolyOrQualType(t) || whatIs(t)==RANK2) {
-	ERRMSG(l) "Illegal syntax in %s type annotation", wh
-	EEND;
+	errHead(l); errPrintf("Illegal syntax in %s type annotation", wh);
+	errFail();
     }
     return t;
 }
@@ -4316,9 +4316,9 @@ static List local extractSigdecls(List es)  /* Extract the SIGDECLS from list   
 	    List vs   = snd3(sig);
 	    for(; nonNull(vs); vs=tl(vs)) {
 		if (isQualIdent(hd(vs))) {
-		    ERRMSG(line) "Type signature for qualified variable \"%s\" is not allowed",
-				 identToStr(hd(vs))
-		    EEND;
+		    errHead(line); errPrintf("Type signature for qualified variable \"%s\" is not allowed",
+				 identToStr(hd(vs)));
+		    errFail();
 		}
 	    }
 	    sigdecls = cons(sig,sigdecls);           /* discard SIGDECL tag*/
@@ -4358,9 +4358,9 @@ static List local extractBindings(List ds)	/* extract untyped bindings from   */
 	    }
 	    if (nonNull(lastVar) && (textOf(v))==textOf(lastVar)) {
 		if (argCount!=lastArity) {
-		    ERRMSG(line) "Equations give different arities for \"%s\"",
-				 textToStr(textOf(v))
-		    EEND;
+		    errHead(line); errPrintf("Equations give different arities for \"%s\"",
+				 textToStr(textOf(v)));
+		    errFail();
 		}
 		fbindAlts(hd(bs)) = cons(newAlt,fbindAlts(hd(bs)));
 	    }
@@ -4462,9 +4462,9 @@ static List local addPatVar(Int line, Cell v, List vs)	/* Add var to list of pre
               /* encountered variables	   */
 {
     if (varIsMember(textOf(v),vs)) {
-	ERRMSG(line) "Repeated use of variable \"%s\" in pattern binding",
-		     textToStr(textOf(v))
-	EEND;
+	errHead(line); errPrintf("Repeated use of variable \"%s\" in pattern binding",
+		     textToStr(textOf(v)));
+	errFail();
     }
     return cons(v,vs);
 }
@@ -4483,8 +4483,8 @@ static Void local notDefined(Int line, List bs, Cell v)/* check if name already 
                     /* list of bindings		   */
 {
     if (nonNull(findBinding(textOf(v),bs))) {
-	ERRMSG(line) "\"%s\" multiply defined", textToStr(textOf(v))
-	EEND;
+	errHead(line); errPrintf("\"%s\" multiply defined", textToStr(textOf(v)));
+	errFail();
     }
 }
 
@@ -4549,13 +4549,13 @@ static Void local addSigdecl(List bs, Cell sigdecl)/* add type information to bi
 	Cell v    = hd(vs);
 	Pair attr = getAttr(bs,v);
 	if (isNull(attr)) {
-	    ERRMSG(l) "Missing binding for variable \"%s\" in type signature",
-		      textToStr(textOf(v))
-	    EEND;
+	    errHead(l); errPrintf("Missing binding for variable \"%s\" in type signature",
+		      textToStr(textOf(v)));
+	    errFail();
 	} else if (nonNull(fst(attr))) {
-	    ERRMSG(l) "Multiple type signatures for \"%s\"",
-		      textToStr(textOf(v))
-	    EEND;
+	    errHead(l); errPrintf("Multiple type signatures for \"%s\"",
+		      textToStr(textOf(v)));
+	    errFail();
 	}
 	fst(attr) = type;
     }
@@ -4606,17 +4606,17 @@ static Void local addFixdecl(List bs, List ts, List cs, List ps, Triple fixdecl)
 
 static Void local dupFixity(Int line, Text t)	/* Report repeated fixity decl	   */
 {
-    ERRMSG(line)
-	"Multiple fixity declarations for operator \"%s\"", textToStr(t)
-    EEND;
+    errHead(line); errPrintf(
+	"Multiple fixity declarations for operator \"%s\"", textToStr(t));
+    errFail();
 }
 
 static Void local missFixity(Int line, Text t)	/* Report missing op for fixity	   */
 {
-    ERRMSG(line)
+    errHead(line); errPrintf(
 	"Cannot find binding for operator \"%s\" in fixity declaration",
-	textToStr(t)
-    EEND;
+	textToStr(t));
+    errFail();
 }
 
 /* --------------------------------------------------------------------------
@@ -4735,11 +4735,11 @@ static Cell local tidyInfix(Int line, Cell e)	/* Convert infixExp to Exp	   */
 
 			    if (precOf(sys)==UMINUS_PREC &&	/* nambig  */
 				assocOf(sys)!=UMINUS_ASSOC) {
-				ERRMSG(line)
-				 "Ambiguous use of unary minus with \""
-				ETHEN ERREXPR(fst(snd(fun(fun(s)))));
-				ERRTEXT "\""
-				EEND;
+				errHead(line); errPrintf(
+				 "Ambiguous use of unary minus with \"");
+ errExpr(fst(snd(fun(fun(s)))));
+				errPrintf("\"");
+				errFail();
 			    }
 
 			    if (precOf(sys)>UMINUS_PREC) {	/* nshift  */
@@ -4807,12 +4807,12 @@ static Cell local tidyInfix(Int line, Cell e)	/* Convert infixExp to Exp	   */
 			    if (precOf(sye)==precOf(sys) &&	/* ambig   */
 				(assocOf(sye)!=assocOf(sys) ||
 				 assocOf(sye)==NON_ASS)) {
-				ERRMSG(line) "Ambiguous use of operator \""
-				ETHEN ERREXPR(fst(snd(fun(fun(e)))));
-				ERRTEXT "\" with \""
-				ETHEN ERREXPR(fst(snd(fun(fun(s)))));
-				ERRTEXT "\""
-				EEND;
+				errHead(line); errPrintf("Ambiguous use of operator \"");
+ errExpr(fst(snd(fun(fun(e)))));
+				errPrintf("\" with \"");
+ errExpr(fst(snd(fun(fun(s)))));
+				errPrintf("\"");
+				errFail();
 			    }
 
 			    if (precOf(sye)>precOf(sys) ||	/* shift   */
@@ -4851,9 +4851,9 @@ static Pair local attachFixity(Int line, Cell op)	/* Attach fixity to operator i
 	case VARIDCELL : if ((sy=lookupSyntax(textOf(op)))==NO_SYNTAX) {
 			     Name n = findName(textOf(op));
 			     if (isNull(n)) {
-				ERRMSG(line) "Undefined variable \"%s\"",
-					     textToStr(textOf(op))
-				EEND;
+				errHead(line); errPrintf("Undefined variable \"%s\"",
+					     textToStr(textOf(op)));
+				errFail();
 			     }
 			     sy = syntaxOf(n);
 			     trop = n;
@@ -4869,10 +4869,10 @@ static Pair local attachFixity(Int line, Cell op)	/* Attach fixity to operator i
 				 trop = n;
 				 sy = syntaxOf(n);
 			     } else {
-				 ERRMSG(line)
+				 errHead(line); errPrintf(
 				   "Undefined qualified variable \"%s\"",
-				   identToStr(op)
-				 EEND;
+				   identToStr(op));
+				 errFail();
 			     }
 			 }
 			 break;
@@ -5233,14 +5233,14 @@ Cell depExpr(Int line, Cell e)      /* find dependents of expression    */
 			  break;
 
 
-	case ASPAT	: ERRMSG(line) "Illegal `@' in expression"
-			  EEND;
+	case ASPAT	: errHead(line); errPrintf("Illegal `@' in expression");
+			  errFail();
 
-	case LAZYPAT	: ERRMSG(line) "Illegal `~' in expression"
-			  EEND;
+	case LAZYPAT	: errHead(line); errPrintf("Illegal `~' in expression");
+			  errFail();
 
-	case WILDCARD	: ERRMSG(line) "Illegal `_' in expression"
-			  EEND;
+	case WILDCARD	: errHead(line); errPrintf("Illegal `_' in expression");
+			  errFail();
 
 
 	default 	: internal("depExpr");
@@ -5315,14 +5315,14 @@ static Void local checkNameAmbigName(Int line, Cell n, Bool isV)
     if (!isNull(n) && nonNull(name(n).clashes)) {
 	Text t = name(n).text;
 	List ls = name(n).clashes;
-	ERRMSG(line) "Ambiguous %s occurrence \"%s\"", kind, textToStr(t) ETHEN
-	    ERRTEXT "\n*** Could refer to: " ETHEN
-	    ERRTEXT "%s.%s ", textToStr(module(name(n).mod).text), textToStr(name(n).text) ETHEN
+	errHead(line); errPrintf("Ambiguous %s occurrence \"%s\"", kind, textToStr(t));
+	    errPrintf("\n*** Could refer to: ");
+	    errPrintf("%s.%s ", textToStr(module(name(n).mod).text), textToStr(name(n).text));
 	    for(;nonNull(ls);ls=tl(ls)) {
-		ERRTEXT "%s.%s ", textToStr(module(name(hd(ls)).mod).text), textToStr(name(hd(ls)).text)
-		ETHEN
+		errPrintf("%s.%s ", textToStr(module(name(hd(ls)).mod).text), textToStr(name(hd(ls)).text));
+
 	    }
-	    ERRTEXT "\n" EEND;
+	    errPrintf("\n"); errFail();
     }
 }
 
@@ -5352,14 +5352,14 @@ static Cell local checkTyconAmbig(Int line, Text t, Cell e)
     if (!isNull(tc) && nonNull(tycon(tc).clashes)) {
 	Text t = tycon(tc).text;
 	List ls = tycon(tc).clashes;
-	ERRMSG(line) "Ambiguous type constructor occurrence \"%s\"", textToStr(t) ETHEN
-	    ERRTEXT "\n*** Could refer to: " ETHEN
-	    ERRTEXT "%s.%s ", textToStr(module(tycon(tc).mod).text), textToStr(tycon(tc).text) ETHEN
+	errHead(line); errPrintf("Ambiguous type constructor occurrence \"%s\"", textToStr(t));
+	    errPrintf("\n*** Could refer to: ");
+	    errPrintf("%s.%s ", textToStr(module(tycon(tc).mod).text), textToStr(tycon(tc).text));
 	    for(;nonNull(ls);ls=tl(ls)) {
-		ERRTEXT "%s.%s ", textToStr(module(tycon(hd(ls)).mod).text), textToStr(tycon(hd(ls)).text)
-		ETHEN
+		errPrintf("%s.%s ", textToStr(module(tycon(hd(ls)).mod).text), textToStr(tycon(hd(ls)).text));
+
 	    }
-	    ERRTEXT "\n" EEND;
+	    errPrintf("\n"); errFail();
     }
     return e;
 }
@@ -5396,8 +5396,8 @@ static Cell local depVar(Int line, Cell e, Bool check)	/* Register occurrence of
     }
 
     if (isNull(n=findName(t))) {	       /* check global definitions */
-	ERRMSG(line) "Undefined variable \"%s\"", textToStr(t)
-	EEND;
+	errHead(line); errPrintf("Undefined variable \"%s\"", textToStr(t));
+	errFail();
     }
     /* Check whether there's no ambiguity about which global entity */
     if (check) {
@@ -5420,18 +5420,18 @@ static Cell local depQVar(Int line, Cell e, Bool isV)/* register occurrence of q
     String kind = (isV ? "variable" : "data constructor");
     Name n;
     if (isNull(ns)) {	                        /* check global definitions */
-	ERRMSG(line) "Undefined qualified %s \"%s\"", kind, identToStr(e)
-	EEND;
+	errHead(line); errPrintf("Undefined qualified %s \"%s\"", kind, identToStr(e));
+	errFail();
     }
     if (!isNull(tl(ns))) {
         List ls = ns;
-	ERRMSG(line) "Ambiguous qualified %s occurrence \"%s\"", kind, identToStr(e) ETHEN
-        ERRTEXT "\n*** Could refer to: " ETHEN
+	errHead(line); errPrintf("Ambiguous qualified %s occurrence \"%s\"", kind, identToStr(e));
+        errPrintf("\n*** Could refer to: ");
 	for(;nonNull(ls);ls=tl(ls)) {
-	  ERRTEXT "%s.%s ", textToStr(module(name(hd(ls)).mod).text), textToStr(name(hd(ls)).text)
-	  ETHEN
+	  errPrintf("%s.%s ", textToStr(module(name(hd(ls)).mod).text), textToStr(name(hd(ls)).text));
+
 	}
-	ERRTEXT "\n" EEND;
+	errPrintf("\n"); errFail();
     }
 
     n = hd(ns);
@@ -5453,11 +5453,11 @@ static Void local depConFlds(Int line, Cell e, Bool isP)/* check construction us
 	nonNull(cellIsMember(c,depFields(line,e,snd(snd(e)),isP)))) {
 	fst(snd(e)) = c;
     } else {
-	ERRMSG(line) "Constructor \"%s\" does not have selected fields in ",
-		     textToStr(name(c).text)
-	ETHEN ERREXPR(e);
-	ERRTEXT "\n"
-	EEND;
+	errHead(line); errPrintf("Constructor \"%s\" does not have selected fields in ",
+		     textToStr(name(c).text));
+ errExpr(e);
+	errPrintf("\n");
+	errFail();
     }
     if (!isP && isPair(name(c).defn)) {	/* Check that banged fields defined*/
 	List scs = fst(name(c).defn);	/* List of strict components	   */
@@ -5509,12 +5509,12 @@ static Void local depConFlds(Int line, Cell e, Bool isP)/* check construction us
 		for (; nonNull(fs1) && s!=fst(hd(fs1)); fs1=tl(fs1)) {
 		}
 		if (isNull(fs1)) {
-		    ERRMSG(line) "Construction does not define strict field"
-		    ETHEN
-		    ERRTEXT      "\nExpression : " ETHEN ERREXPR(e);
-		    ERRTEXT	 "\nField      : " ETHEN ERREXPR(s);
-		    ERRTEXT      "\n"
-		    EEND;
+		    errHead(line); errPrintf("Construction does not define strict field");
+
+		    errPrintf("\nExpression : "); errExpr(e);
+		    errPrintf("\nField      : "); errExpr(s);
+		    errPrintf("\n");
+		    errFail();
 		}
 	    }
 	}
@@ -5524,8 +5524,8 @@ static Void local depConFlds(Int line, Cell e, Bool isP)/* check construction us
 static Void local depUpdFlds(Int line, Cell e)	/* check update using fields	   */
 {
     if (isNull(thd3(snd(e)))) {
-	ERRMSG(line) "Empty field list in update"
-	EEND;
+	errHead(line); errPrintf("Empty field list in update");
+	errFail();
     }
     fst3(snd(e)) = depExpr(line,fst3(snd(e)));
     snd3(snd(e)) = depFields(line,e,thd3(snd(e)),FALSE);
@@ -5549,13 +5549,13 @@ static List local depFields(Int l, Cell e, List fs, Bool isP)	/* check field bin
 	    fst(fb) = s;
 	} else {
 	  if (isQualIdent(fst(fb))) {
-	    ERRMSG(l) "\"%s.%s\" is not a selector function/field name",
-	      textToStr(qmodOf(fst(fb))),textToStr(qtextOf(fst(fb)))
-            EEND;
+	    errHead(l); errPrintf("\"%s.%s\" is not a selector function/field name",
+	      textToStr(qmodOf(fst(fb))),textToStr(qtextOf(fst(fb))));
+            errFail();
 	  } else {
-	    ERRMSG(l) "\"%s\" is not a selector function/field name",
-		      textToStr(textOf(fst(fb)))
-	    EEND;
+	    errHead(l); errPrintf("\"%s\" is not a selector function/field name",
+		      textToStr(textOf(fst(fb))));
+	    errFail();
 	  }
 	}
 
@@ -5583,18 +5583,18 @@ static List local depFields(Int l, Cell e, List fs, Bool isP)	/* check field bin
 	    }
 
 	    if (cellIsMember(s,ss)) {	/* check for repeated uses	   */
-		ERRMSG(l) "Repeated field name \"%s\" in field list",
-			  textToStr(name(s).text)
-		EEND;
+		errHead(l); errPrintf("Repeated field name \"%s\" in field list",
+			  textToStr(name(s).text));
+		errFail();
 	    }
 	    ss = cons(s,ss);
 	}
 
 	if (isNull(cs)) {		/* Are there any matching constrs? */
-	    ERRMSG(l) "No constructor has all of the fields specified in "
-	    ETHEN ERREXPR(e);
-	    ERRTEXT "\n"
-	    EEND;
+	    errHead(l); errPrintf("No constructor has all of the fields specified in ");
+ errExpr(e);
+	    errPrintf("\n");
+	    errFail();
 	}
 
 	snd(fb) = (isP ? checkPat(l,snd(fb)) : depExpr(l,snd(fb)));
@@ -5846,13 +5846,13 @@ static Void local noPrevDef(Int line, Cell v)	 /* ensure no previous binding for
 static Void local duplicateError(Int line, Module mod, Text t, String kind)/* report duplicate defn */
 {
     if (mod == currentModule) {
-	ERRMSG(line) "Multiple declarations for %s \"%s\"", kind,
-		     textToStr(t)
-	EEND;
+	errHead(line); errPrintf("Multiple declarations for %s \"%s\"", kind,
+		     textToStr(t));
+	errFail();
     } else {
-	ERRMSG(line) "Declaration of %s \"%s\" clashes with import", kind,
-		     textToStr(t)
-	EEND;
+	errHead(line); errPrintf("Declaration of %s \"%s\" clashes with import", kind,
+		     textToStr(t));
+	errFail();
     }
 }
 
@@ -5863,10 +5863,10 @@ static Void local checkTypeIn(Pair cvs)	/* Check that vars in restricted   */
 
     for (; nonNull(vs); vs=tl(vs)) {
 	if (isNull(findName(textOf(hd(vs))))) {
-	    ERRMSG(tycon(c).line)
+	    errHead(tycon(c).line); errPrintf(
 		"No top level binding of \"%s\" for restricted synonym \"%s\"",
-		textToStr(textOf(hd(vs))), textToStr(tycon(c).text)
-	    EEND;
+		textToStr(textOf(hd(vs))), textToStr(tycon(c).text));
+	    errFail();
 	}
     }
 }

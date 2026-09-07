@@ -265,18 +265,18 @@ static Void local expandPath(String origPath, String expandedPath, unsigned int 
   if (*origPath == '~' && *(origPath+1) == '/') {
     String home = getenv("HOME");
     if (!home) {
-	ERRMSG(0) "Cannot expand \"~\": the HOME environment variable is not set"
-	EEND;
+	errHead(0); errPrintf("Cannot expand \"~\": the HOME environment variable is not set");
+	errFail();
     }
     if ((unsigned)snprintf(expandedPath,maxLen,"%s%s",home,origPath+1) >= maxLen) {
-	ERRMSG(0) "Path \"%s\" is too long", origPath
-	EEND;
+	errHead(0); errPrintf("Path \"%s\" is too long", origPath);
+	errFail();
     }
     return;
   }
   if ((unsigned)snprintf(expandedPath,maxLen,"%s",origPath) >= maxLen) {
-      ERRMSG(0) "Path \"%s\" is too long", origPath
-      EEND;
+      errHead(0); errPrintf("Path \"%s\" is too long", origPath);
+      errFail();
   }
 }
 
@@ -285,8 +285,8 @@ static Void local changeDir() {         /* change directory                */
     char expandedPath[FILENAME_MAX+1];
     expandPath(path, expandedPath,sizeof(expandedPath));
     if (path && chdir(expandedPath)) {
-	ERRMSG(0) "Unable to change to directory \"%s\"", path
-	EEND;
+	errHead(0); errPrintf("Unable to change to directory \"%s\"", path);
+	errFail();
     }
 }
 
@@ -314,8 +314,8 @@ static Void local editor() {            /* interpreter-editor interface    */
     if (newFile) {
 	setLastEdit(newFile,0);
 	if (readFilename()) {
-	    ERRMSG(0) "Multiple filenames not permitted"
-	    EEND;
+	    errHead(0); errPrintf("Multiple filenames not permitted");
+	    errFail();
 	}
     }
     runEditor();
@@ -324,12 +324,12 @@ static Void local editor() {            /* interpreter-editor interface    */
 static Void local find() {              /* edit file containing definition */
     String nm = readFilename();         /* of specified name               */
     if (!nm) {
-	ERRMSG(0) "No name specified"
-	EEND;
+	errHead(0); errPrintf("No name specified");
+	errFail();
     }
     else if (readFilename()) {
-	ERRMSG(0) "Multiple names not permitted"
-	EEND;
+	errHead(0); errPrintf("Multiple names not permitted");
+	errFail();
     }
     else {
 	Text t;
@@ -345,8 +345,8 @@ static Void local find() {              /* edit file containing definition */
 		readScripts(1);
 	    }
 	} else {
-	    ERRMSG(0) "No current definition for name \"%s\"", nm
-	    EEND;
+	    errHead(0); errPrintf("No current definition for name \"%s\"", nm);
+	    errFail();
 	}
     }
 }
@@ -377,8 +377,8 @@ static Void local setModule(){/*set module in which to evaluate expressions*/
 	Text    t = findText(s);
 	Module  m = findModule(t);
 	if (isNull(m)) {
-	    ERRMSG(0) "Cannot find module \"%s\"", s
-	    EEND;
+	    errHead(0); errPrintf("Cannot find module \"%s\"", s);
+	    errFail();
 	}
 	else {
 	    evalModule = t;
@@ -527,8 +527,8 @@ static String local objToStr(Module m, Cell c)
     if (needed > newVarLen) {
 	newVar = realloc(newVar, needed);
 	if (!newVar) {
-	    ERRMSG(0) "Cannot allocate name buffer"
-	    EEND;
+	    errHead(0); errPrintf("Cannot allocate name buffer");
+	    errFail();
 	}
 	newVarLen = needed;
     }
@@ -788,8 +788,8 @@ static Void local listNames() {         /* list names matching optional pat*/
 	names = addNamesMatching((String)0,names);
     }
     if (isNull(names)) {                /* Then print them out             */
-	ERRMSG(0) "No names selected"
-	EEND;
+	errHead(0); errPrintf("No names selected");
+	errFail();
     }
     for (termPos=0; nonNull(names); names=tl(names)) {
 	String s = objToStr(mod,hd(names));
@@ -918,9 +918,9 @@ static Void local interpreter(Int argc, String argv[])/* main interpreter loop  
 
 	    /* careful not to do a garbage collection here
 	       (as it may have caused the overflow). */
-	    ERRTEXT "ERROR - C stack overflow"
-	    /* EEND does a longjmp back to a sane state. */
-	    EEND;
+	    errPrintf("ERROR - C stack overflow"
+	    /* errFail does a longjmp back to a sane state. */);
+	    errFail();
 	} else {
 	    fatal("C stack overflow; unable to recover.");
 	}

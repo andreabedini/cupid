@@ -46,24 +46,22 @@ extern Void   cuddlesPutc      	    (int, FILE*);
 
 /*-------------------------------------------------------------------------*/
 
-#define Hilite()         doNothing()
-#define Lolite()         doNothing()
-#define errorStream	 stdout
+#define errorStream	 stdout		   /* where error messages go   */
 
-#define ERRMSG(l)	 Hilite(); errHead(l); FPrintf(errorStream,
-#define EEND       	 ); Lolite(); errFail()
-#define EEND_NORET       ); Lolite()
-#define ETHEN		 );
-#define ERRTEXT		 Hilite(); FPrintf(errorStream,
-#define ERREXPR(e)	 Hilite(); printExp(errorStream,e); Lolite()
-#define ERRTYPE(e)	 Hilite(); printType(errorStream,e); Lolite()
-#define ERRCONTEXT(qs)   Hilite(); printContext(errorStream,qs); Lolite()
-#define ERRPRED(pi)      Hilite(); printPred(errorStream,pi); Lolite()
-#define ERRKIND(k)	 Hilite(); printKind(errorStream,k); Lolite()
-#define ERRKINDS(ks)	 Hilite(); printKinds(errorStream,ks); Lolite()
-#define ERRFD(fd)	 Hilite(); printFD(errorStream,fd); Lolite()
-
-extern Void errHead      (Int);		   /* in main.c		   */
+/* Reporting an error: errHead(line) prints the header, errPrintf and the
+ * err* functions print the parts of the message, and errFail ends it and
+ * returns to the command loop.  (Before this the same sequence was written
+ * with the ERRMSG/ETHEN/EEND macros, whose parentheses did not balance
+ * within a line.) */
+extern Void errHead      (Int);		   /* ERROR "file":line -  */
+extern Void errPrintf    (const char *,...) CUDDLES_printf(1,2);
+extern Void errExpr      (Cell);
+extern Void errType      (Type);
+extern Void errContext   (List);
+extern Void errPred      (Cell);
+extern Void errKind      (Kind);
+extern Void errKinds     (Kinds);
+extern Void errFD        (Cell);
 extern Void errFail	 (Void) CUDDLES_noreturn;
 extern Void errAbort	 (Void);
 

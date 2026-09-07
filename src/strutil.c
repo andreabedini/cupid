@@ -17,8 +17,8 @@ String strCopy(String s)         /* make malloced copy of a string   */
     if (s) {
 	char *t;
 	if ((t=(char *)malloc(strlen(s)+1))==0) {
-	    ERRMSG(0) "String storage space exhausted"
-	    EEND;
+	    errHead(0); errPrintf("String storage space exhausted");
+	    errFail();
 	}
 	strcpy(t, s);
 	return t;
@@ -33,8 +33,8 @@ String strnCopy(String s, Int n)      /* make malloced copy of a substring */
 	if ((Int)strlen(s) < n)
 	    n = strlen(s);
 	if ((t=(char *)malloc(n+1))==0) {
-	    ERRMSG(0) "String storage space exhausted"
-	    EEND;
+	    errHead(0); errPrintf("String storage space exhausted");
+	    errFail();
 	}
 	strncpy(t, s, n);
 	t[n] = '\0';

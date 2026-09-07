@@ -159,6 +159,14 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 #define CUDDLES_inline static inline
 #endif
 
+/* CUDDLES_printf(f,a): the function takes a printf format as parameter f
+ * and its arguments from parameter a on, so the compiler checks them */
+#if defined(__GNUC__) || defined(__clang__)
+#define CUDDLES_printf(f,a) __attribute__((format(printf,f,a)))
+#else
+#define CUDDLES_printf(f,a)
+#endif
+
 /* local = prefix for locally defined functions */
 #define local
 

@@ -129,8 +129,8 @@ static Void local expandSubst(Int n)	/* add further n type variables to */
 	Int   i;
 
 	if (numTyvars+n>newMax) {	/* safety precaution		   */
-	    ERRMSG(0) "Substitution expanding too quickly"
-	    EEND;
+	    errHead(0); errPrintf("Substitution expanding too quickly");
+	    errFail();
 	}
 
 	/* It would be better to realloc() here, but that isn't portable
@@ -143,8 +143,8 @@ static Void local expandSubst(Int n)	/* add further n type variables to */
 
 	newTvs = (Tyvar *)calloc(newMax,sizeof(Tyvar));
 	if (!newTvs) {
-	    ERRMSG(0) "Too many variables (%d) in type checker", newMax
-	    EEND;
+	    errHead(0); errPrintf("Too many variables (%d) in type checker", newMax);
+	    errFail();
 	}
 	for (i=0; i<numTyvars;++i) {		/* copy substitution	   */
 	    newTvs[i].offs  = tyvars[i].offs;
@@ -478,9 +478,9 @@ Type copyTyvar(Int vn)	        	/* calculate most general form of  */
 
 	case UNUSED_GENERIC : (tyv->offs) = GENERIC + nextGeneric++;
 			      if (nextGeneric>=NUM_OFFSETS) {
-				  ERRMSG(0)
-				      "Too many quantified type variables"
-				  EEND;
+				  errHead(0); errPrintf(
+				      "Too many quantified type variables");
+				  errFail();
 			      }
 			      genericVars = cons(mkInt(vn),genericVars);
 
@@ -1306,19 +1306,19 @@ Bool pairImprove(Int line, Class c, Cell pi1, Int o1, Cell pi2, Int o2, Int abov
 			}
 		    }
 		    if (!same) {
-			ERRMSG(line)
-			  "Constraints are not consistent with functional dependency"
-			ETHEN
-			ERRTEXT "\n*** Constraint       : "
-			ETHEN ERRPRED(copyPred(pi1,o1));
-			ERRTEXT "\n*** And constraint   : "
-			ETHEN ERRPRED(copyPred(pi2,o2));
-			ERRTEXT "\n*** For class        : "
-			ETHEN ERRPRED(cclass(c).head);
-			ERRTEXT "\n*** Break dependency : "
-			ETHEN ERRFD(hd(fds));
-			ERRTEXT "\n"
-			EEND;
+			errHead(line); errPrintf(
+			  "Constraints are not consistent with functional dependency");
+
+			errPrintf("\n*** Constraint       : ");
+ errPred(copyPred(pi1,o1));
+			errPrintf("\n*** And constraint   : ");
+ errPred(copyPred(pi2,o2));
+			errPrintf("\n*** For class        : ");
+ errPred(cclass(c).head);
+			errPrintf("\n*** Break dependency : ");
+ errFD(hd(fds));
+			errPrintf("\n");
+			errFail();
 		    }
 		}
 	    }

@@ -5458,8 +5458,8 @@ static Cell local gcShadow(Int n, Cell e)		/* keep parsed fragments on stack  */
 
 static Void local syntaxError(String s)	/* report on syntax error	   */
 {
-    ERRMSG(row) "Syntax error in %s (unexpected %s)", s, unexpected()
-    EEND;
+    errHead(row); errPrintf("Syntax error in %s (unexpected %s)", s, unexpected());
+    errFail();
 }
 
 static String local unexpected() {     /* find name for unexpected token   */
@@ -5543,9 +5543,9 @@ static String local unexpected() {     /* find name for unexpected token   */
 static Cell local checkPrec(Cell p)		/* Check for valid precedence value*/
 {
     if (!isInt(p) || intOf(p)<MIN_PREC || intOf(p)>MAX_PREC) {
-	ERRMSG(row) "Precedence value must be an integer in the range [%d..%d]",
-		    MIN_PREC, MAX_PREC
-	EEND;
+	errHead(row); errPrintf("Precedence value must be an integer in the range [%d..%d]",
+		    MIN_PREC, MAX_PREC);
+	errFail();
     }
     return p;
 }
@@ -5658,8 +5658,8 @@ static Cell local checkPred(Cell c)		/* check that type expr is a valid */
 static Pair local checkDo(List dqs)		/* convert reversed list of dquals */
 {				/* to an (expr,quals) pair         */
     if (isNull(dqs) || whatIs(hd(dqs))!=DOQUAL) {
-	ERRMSG(row) "Last generator in do {...} must be an expression"
-	EEND;
+	errHead(row); errPrintf("Last generator in do {...} must be an expression");
+	errFail();
     }
     fst(dqs) = snd(fst(dqs));		/* put expression in fst of pair   */
     snd(dqs) = rev(snd(dqs));		/* & reversed list of quals in snd */
@@ -5674,8 +5674,8 @@ static Cell local checkTyLhs(Cell c)		/* check that lhs is of the form   */
 	tlhs = fun(tlhs);
     }
     if (whatIs(tlhs)!=CONIDCELL) {
-	ERRMSG(row) "Illegal left hand side in data type declaration"
-	EEND;
+	errHead(row); errPrintf("Illegal left hand side in data type declaration");
+	errFail();
     }
     return c;
 }
@@ -5687,8 +5687,8 @@ static Cell local checkConstr(Cell c)	/* check that data constructor has */
 	chd = fun(chd);
     }
     if (whatIs(chd)==QUALIDENT) {
-	ERRMSG(row) "Qualified constructor in data type declaration"
-	EEND;
+	errHead(row); errPrintf("Qualified constructor in data type declaration");
+	errFail();
     }
     return c;
 }

@@ -298,8 +298,8 @@ static Bool local fileInput(String nm, Long len)     /* prepare to input charact
 	Int  reallen = strlen(preprocessor) + 1 + qlen;
 	char *cmd = malloc(reallen+1);
 	if (cmd == NULL) {
-	    ERRMSG(0) "Unable to allocate memory for filter command."
-	    EEND_NORET;
+	    errHead(0); errPrintf("Unable to allocate memory for filter command.");
+
 	    return FALSE;
 	}
 	strcpy(cmd, preprocessor);
@@ -328,8 +328,8 @@ static Bool local fileInput(String nm, Long len)     /* prepare to input charact
 	setGoal("Parsing", (Target)len);
     }
     else {
-	ERRMSG(0) "Unable to open file \"%s\"", nm
-	EEND_NORET;
+	errHead(0); errPrintf("Unable to open file \"%s\"", nm);
+
 	return FALSE;
     }
     return TRUE;
@@ -436,8 +436,8 @@ static Int local nextLine()
 		lineLength=1;
 	    }
 	    else {
-		ERRMSG(row) "\\begin{code} encountered inside code block"
-		EEND;
+		errHead(row); errPrintf("\\begin{code} encountered inside code block");
+		errFail();
 	    }
 	}
 	else if (linecmp(ENDCODE, lineBuffer)) {
@@ -448,8 +448,8 @@ static Int local nextLine()
 		lineLength=1;
 	    }
 	    else {
-		ERRMSG(row) "\\end{code} encountered outside code block"
-		EEND;
+		errHead(row); errPrintf("\\end{code} encountered outside code block");
+		errFail();
 	    }
 	}
     }
@@ -525,8 +525,8 @@ static Void local thisLineIs(Int kind)     /* register kind of current line    *
 {                            /* & check for literate script errs */
     if ((kind==DEFNLINE && lastLine==TEXTLINE) ||
 	(kind==TEXTLINE && lastLine==DEFNLINE)) {
-	ERRMSG(row) "Program line next to comment"
-	EEND;
+	errHead(row); errPrintf("Program line next to comment");
+	errFail();
     }
     lastLine = kind;
 }
@@ -559,9 +559,9 @@ static Void local newlineSkip() {      /* skip `\n' (supports lit scripts) */
 	} while (c0!=EOF);             /* if new line, start again         */
 
 	if (litLines==0) {
-	    ERRMSG(row) "Empty script - perhaps you forgot the `%c's?",
-			DEFNCHAR
-	    EEND;
+	    errHead(row); errPrintf("Empty script - perhaps you forgot the `%c's?",
+			DEFNCHAR);
+	    errFail();
 	}
 	return;
     }
@@ -607,8 +607,8 @@ static Int  opType;                    /* operator type  : CONOP / VAROP   */
 									   
 static Void local endToken() {         /* check for token overflow         */
     if (tokPtr>tokenStr+MAX_TOKEN) {
-	ERRMSG(row) "Maximum token length (%d) exceeded", MAX_TOKEN	   
-	EEND;								   
+	errHead(row); errPrintf("Maximum token length (%d) exceeded", MAX_TOKEN);
+	errFail();
     }									   
     *tokPtr = '\0';						   
 }									   
@@ -710,8 +710,8 @@ static Cell local readNumber() {        /* read numeric constant           */
 	    skip();
 
 	if (!isLatin1(c0) || !isIn(c0,DIGIT)) {
-	    ERRMSG(row) "Missing digits in exponent"
-	    EEND;
+	    errHead(row); errPrintf("Missing digits in exponent");
+	    errFail();
 	}
 	else {
 	    do {
@@ -736,8 +736,8 @@ static Cell local readChar() {         /* read character constant          */
 
     skip(/* '\'' */);
     if (c0=='\'' || c0=='\n' || c0==EOF) {
-	ERRMSG(row) "Illegal character constant"
-	EEND;
+	errHead(row); errPrintf("Illegal character constant");
+	errFail();
     }
 
     charRead = readAChar(FALSE);
@@ -745,8 +745,8 @@ static Cell local readChar() {         /* read character constant          */
     if (c0=='\'')
 	skip(/* '\'' */);
     else {
-	ERRMSG(row) "Improperly terminated character constant"
-	EEND;
+	errHead(row); errPrintf("Improperly terminated character constant");
+	errFail();
     }
     return charRead;
 }
@@ -765,8 +765,8 @@ static Cell local readString() {       /* read string literal              */
     if (c0=='\"')
 	skip(/* '\"' */);
     else {
-	ERRMSG(row) "Improperly terminated string"
-	EEND;
+	errHead(row); errPrintf("Improperly terminated string");
+	errFail();
     }
     endToken();
     return mkStr(findText(tokenStr));
@@ -898,8 +898,8 @@ static Cell local readEscapeChar(Bool isStrLit, Bool skipEsc)/* read escape char
 			skip();
 			return NIL;
 		    }
-		    ERRMSG(row) "Illegal use of `\\&' in character constant"
-		    EEND;
+		    errHead(row); errPrintf("Illegal use of `\\&' in character constant");
+		    errFail();
 		    break;/*NOTREACHED*/
 
 	case '^'  : return readCtrlChar();
@@ -908,16 +908,16 @@ static Cell local readEscapeChar(Bool isStrLit, Bool skipEsc)/* read escape char
 	case 'x'  : return readHexChar();
 
 	default   : if (!isLatin1(c0)) {
-			ERRMSG(row) "Illegal escape sequence"
-			EEND;
+			errHead(row); errPrintf("Illegal escape sequence");
+			errFail();
 		    }
 		    else if (isIn(c0,SPACE)) {
 			if (isStrLit) {
 			    skipGap();
 			    return NIL;
 			}
-			ERRMSG(row) "Illegal use of gap in character constant"
-			EEND;
+			errHead(row); errPrintf("Illegal use of gap in character constant");
+			errFail();
 			break;
 		    }
 		    else if (isIn(c0,DIGIT))
@@ -930,9 +930,9 @@ static Cell local readEscapeChar(Bool isStrLit, Bool skipEsc)/* read escape char
 
     alreadyRead[alreadyMatched++] = (char)c0;
     alreadyRead[alreadyMatched++] = '\0';
-    ERRMSG(row) "Illegal character escape sequence \"\\%s\"",
-                 alreadyRead
-    EEND;
+    errHead(row); errPrintf("Illegal character escape sequence \"\\%s\"",
+                 alreadyRead);
+    errFail();
     return NIL;/*NOTREACHED*/
 }
 
@@ -944,8 +944,8 @@ static Void local skipGap() {          /* skip over gap in string literal  */
 	    skip();
     while (isLatin1(c0) && isIn(c0,SPACE));
     if (c0!='\\') {
-	ERRMSG(row) "Missing `\\' terminating string literal gap"
-	EEND;
+	errHead(row); errPrintf("Missing `\\' terminating string literal gap");
+	errFail();
     }
     skip(/* '\\' */);
 }
@@ -956,8 +956,8 @@ static Cell local readCtrlChar() {     /* read escape sequence \^x         */
 
     skip(/* '^' */);
     if ((which = strchr(controls,c0))==NULL) {
-	ERRMSG(row) "Unrecognised escape sequence `\\^%c'", c0
-	EEND;
+	errHead(row); errPrintf("Unrecognised escape sequence `\\^%c'", c0);
+	errFail();
     }
     skip();
     return mkChar(which-controls);
@@ -969,13 +969,13 @@ static Cell local readOctChar() {      /* read octal character constant    */
 
     skip(/* 'o' */);
     if ((d = readHexDigit(c0))<0 || d>=8) {
-	ERRMSG(row) "Empty octal character escape"
-	EEND;
+	errHead(row); errPrintf("Empty octal character escape");
+	errFail();
     }
     do {
 	if (overflows(n,8,d,MAXCHARVAL)) {
-	    ERRMSG(row) "Octal character escape out of range"
-	    EEND;
+	    errHead(row); errPrintf("Octal character escape out of range");
+	    errFail();
 	}
 	n = 8*n + d;
 	skip();
@@ -990,13 +990,13 @@ static Cell local readHexChar() {      /* read hex character constant      */
 
     skip(/* 'x' */);
     if ((d = readHexDigit(c0))<0) {
-	ERRMSG(row) "Empty hexadecimal character escape"
-	EEND;
+	errHead(row); errPrintf("Empty hexadecimal character escape");
+	errFail();
     }
     do {
 	if (overflows(n,16,d,MAXCHARVAL)) {
-	    ERRMSG(row) "Hexadecimal character escape out of range"
-	    EEND;
+	    errHead(row); errPrintf("Hexadecimal character escape out of range");
+	    errFail();
 	}
 	n = 16*n + d;
 	skip();
@@ -1021,8 +1021,8 @@ static Cell local readDecChar() {      /* read decimal character constant  */
 
     do {
 	if (overflows(n,10,(c0-'0'),MAXCHARVAL)) {
-	    ERRMSG(row) "Decimal character escape out of range"
-	    EEND;
+	    errHead(row); errPrintf("Decimal character escape out of range");
+	    errFail();
 	}
 	n = 10*n + (c0-'0');
 	skip();
@@ -1171,8 +1171,8 @@ String readFilename() {                /* Read filename from input (if any)*/
 	    if (c0=='"')
 		skip();
 	    else {
-		ERRMSG(row) "a closing quote, '\"', was expected"
-		EEND;
+		errHead(row); errPrintf("a closing quote, '\"', was expected");
+		errFail();
 	    }
 	}
 	else {
@@ -1228,8 +1228,8 @@ static  Int        indentDepth = (-1); /* current indentation nesting      */
 Void goOffside(Int col)       /* insert offside marker            */
 {                             /* for specified column             */
     if (indentDepth>=MAXINDENT) {
-	ERRMSG(row) "Too many levels of program nesting"
-	EEND;
+	errHead(row); errPrintf("Too many levels of program nesting");
+	errFail();
     }
     layout[++indentDepth] = col;
 }
@@ -1275,8 +1275,8 @@ static Void local skipWhitespace() {   /* Skip over whitespace/comments    */
 		else
 		    skip();
 	    if (nesting>0) {
-		ERRMSG(origRow) "Unterminated nested comment {- ..."
-		EEND;
+		errHead(origRow); errPrintf("Unterminated nested comment {- ...");
+		errFail();
 	    }
 	}
 	else if (c0=='-' && c1=='-') {  /* One line comment                */
@@ -1337,8 +1337,8 @@ static Void local skipWhitespaceTok() { /* Skip over whitespace/comments    */
 		else
 		    skip();
 	    if (nesting>0) {
-		ERRMSG(origRow) "Unterminated nested comment {- ..."
-		EEND;
+		errHead(origRow); errPrintf("Unterminated nested comment {- ...");
+		errFail();
 	    }
 	}
 	else if (c0=='-' && c1=='-') {  /* One line comment...   */
@@ -1485,8 +1485,8 @@ Int yylex() {                          /* Read next input token ...        */
 		    skip();
 		    return '{';
 	case '}'  : if (indentDepth<0) {
-			ERRMSG(row) "Misplaced `}'"
-			EEND;
+			errHead(row); errPrintf("Misplaced `}'");
+			errFail();
 		    }
 		    if (layout[indentDepth]==HARD)      /* skip over hard }*/
 			skip();
@@ -1603,8 +1603,8 @@ loop:	    skip();                     /* Skip qualifying dot             */
 	return NUMLIT;
     }
 
-    ERRMSG(row) "Unrecognised character `\\%d' in column %d", ((int)c0), column
-    EEND;
+    errHead(row); errPrintf("Unrecognised character `\\%d' in column %d", ((int)c0), column);
+    errFail();
     return 0; /*NOTREACHED*/
 }
 
@@ -1624,8 +1624,8 @@ Bool isModuleId(String s)
 
 static Int local repeatLast() {         /* Obtain last expression entered  */
     if (isNull(yylval=getLastExpr())) {
-	ERRMSG(row) "Cannot use %s without any previous input", repeatStr
-	EEND;
+	errHead(row); errPrintf("Cannot use %s without any previous input", repeatStr);
+	errFail();
     }
     return REPEAT;
 }
@@ -1655,8 +1655,8 @@ static Void local parseInput(Int startWith)/* Parse input with given first tok,*
 
     clearStack();
     if (yyparse()) {                   /* This can only be parser overflow */
-	ERRMSG(row) "Parser overflow"  /* as all syntax errors are caught  */
-	EEND;                          /* in the parser...                 */
+	errHead(row); errPrintf("Parser overflow"  /* as all syntax errors are caught  */);
+	errFail();                          /* in the parser...                 */
     }
     drop();
     if (!stackEmpty())                 /* stack should now be empty        */

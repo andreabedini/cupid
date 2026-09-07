@@ -28,8 +28,8 @@ Bool startEdit(Int line, String nm)    /* Start editor on file name at    */
     if (!cuddlesEdit 
         || *cuddlesEdit == '\0'
 	             ) {
-	ERRMSG(0) "Cuddles is not configured to use an editor"
-	EEND;
+	errHead(0); errPrintf("Cuddles is not configured to use an editor");
+	errFail();
     } 
       
     /* More sanity checks */

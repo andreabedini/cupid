@@ -1486,16 +1486,16 @@ static HsPtr          getPtr()       { eval(pop()); checkPtr();   return ptrOf(w
 static HsFunPtr       getFunPtr()    { eval(pop()); checkPtr();   return (HsFunPtr)ptrOf(whnfHead); }
 
 static HsForeignPtr   getForeignPtr() {
-    ERRMSG(0) "getForeignPtr: not implemented in Cuddles"
-    EEND;
+    errHead(0); errPrintf("getForeignPtr: not implemented in Cuddles");
+    errFail();
     return 0;
 }
 
 static CuddlesStablePtr  getStablePtr() { 
     Cell c = mkStablePtr(pop());
     if (isNull(c)) {
-	ERRMSG(0) "Stable pointer table full"
-	EEND;
+	errHead(0); errPrintf("Stable pointer table full");
+	errFail();
     }
     return c;
 }
@@ -1507,13 +1507,13 @@ static CuddlesStablePtr  lookupName(String q, String n)
     Cell c;
     
     if (isNull(nm)) {
-	ERRMSG(0) "Can't find qualified name '%s.%s'", q, n
-	EEND;
+	errHead(0); errPrintf("Can't find qualified name '%s.%s'", q, n);
+	errFail();
     }
     c = mkStablePtr(nm);
     if (isNull(c)) {
-	ERRMSG(0) "Stable pointer table full"
-	EEND;
+	errHead(0); errPrintf("Stable pointer table full");
+	errFail();
     }
     return c;
 }
@@ -1570,8 +1570,8 @@ static void putDouble(HsDouble x) {
 }
 
 static void putForeignPtr(HsForeignPtr x) {
-    ERRMSG(0) "putForeignPtr: not implemented in Cuddles"
-    EEND;
+    errHead(0); errPrintf("putForeignPtr: not implemented in Cuddles");
+    errFail();
 }
 
 static void returnIO(CuddlesStackPtr root, int n) /* return in IO monad */
@@ -1642,18 +1642,18 @@ static int runIO(int n)
     /* evaluate it - should have type IO a */
     temp = evalWithNoError(ap(nameIORun,pop()));
     if (nonNull(temp)) {
-	ERRMSG(0) "runIO: uncaught error"
-	EEND;
+	errHead(0); errPrintf("runIO: uncaught error");
+	errFail();
     }
     if (sp != old_sp+1) {
-	ERRMSG(0) "runIO: unbalanced stack (%d)", sp-old_sp
-	EEND;
+	errHead(0); errPrintf("runIO: unbalanced stack (%d)", sp-old_sp);
+	errFail();
     }
     if (whnfHead == nameRight) {
 	return 0;
     } else if (whnfHead != nameLeft) { /* Called "exit" */
-	ERRMSG(0) "runIO: bad return value"
-	EEND;
+	errHead(0); errPrintf("runIO: bad return value");
+	errFail();
     }
     return 1;
 }    
@@ -1738,8 +1738,8 @@ static void* mkThunk(void (*app)(void), CuddlesStablePtr s) {
      * in particular before allocating a thunk_data and linking it into
      * foreignThunks, which the earlier code did first and
      * left there, half-initialised, once this error longjmp'd out. */
-    ERRMSG(0) "Foreign import wrapper is not supported on this architecture"
-    EEND;
+    errHead(0); errPrintf("Foreign import wrapper is not supported on this architecture");
+    errFail();
     return 0; /*NOTREACHED*/
 }
 

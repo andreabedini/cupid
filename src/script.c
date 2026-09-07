@@ -93,8 +93,8 @@ String getScriptName(Script s)  /* access the script name at index 's' */
   if ( s >=0 && s <= numScripts ) {
     return scriptTable[s].fileName;
   } else {
-    ERRMSG(0) "getScriptName: Illegal script index %d (max: %d)", s, numScripts
-    EEND;
+    errHead(0); errPrintf("getScriptName: Illegal script index %d (max: %d)", s, numScripts);
+    errFail();
   }
   return NULL;
 }
@@ -104,8 +104,8 @@ String getScriptRealName(Script s)  /* access the path of script at index 's' */
   if ( s >=0 && s <= numScripts ) {
     return scriptTable[s].realName;
   } else {
-    ERRMSG(0) "getScriptRealName: Illegal script index %d (max: %d)", s, numScripts
-    EEND;
+    errHead(0); errPrintf("getScriptRealName: Illegal script index %d (max: %d)", s, numScripts);
+    errFail();
   }
   return NULL;
 }
@@ -127,17 +127,17 @@ Void addScriptName(String s, Bool sch)  /* Add script to list of scripts   */
                            /* to be read in ...               */
 {              /* TRUE => requires pathname search*/
     if (namesUpto>=NUM_SCRIPTS) {
-	ERRMSG(0) "Too many module files (maximum of %d allowed)",
-		  NUM_SCRIPTS
-	EEND;
+	errHead(0); errPrintf("Too many module files (maximum of %d allowed)",
+		  NUM_SCRIPTS);
+	errFail();
 	return;
     }
     if (sch) {
 	if (isModuleId(s)) {
 	    String location = findMPathname(s);
 	    if (!location) {
-		ERRMSG(0) "Can't find module \"%s\"", s
-		EEND;
+		errHead(0); errPrintf("Can't find module \"%s\"", s);
+		errFail();
 	    }
 	    scriptTable[namesUpto].fileName  = strCopy(location);
 	    scriptTable[namesUpto].directory = NULL;
@@ -198,8 +198,8 @@ Bool chase(List imps)                 /* Process list of import requests */
 	if (iname == NULL)
 	    iname = findMPathname(modname);
 	if (iname == NULL) {
-	    ERRMSG(0) "Can't find imported module \"%s\"", modname
-	    EEND;
+	    errHead(0); errPrintf("Can't find imported module \"%s\"", modname);
+	    errFail();
 	}
 
 	rname = RealPath(iname);
@@ -217,10 +217,10 @@ Bool chase(List imps)                 /* Process list of import requests */
 		if (inOrigDir)
 		    scriptTable[i].directory = strCopy(origDir);
 	    } else if (scriptTable[i].postponed) {/* imported by itself? */
-		ERRMSG(0)
+		errHead(0); errPrintf(
 		  "Recursive import dependency between \"%s\" and \"%s\"",
-		  scriptTable[origPos].fileName, iname
-		EEND;
+		  scriptTable[origPos].fileName, iname);
+		errFail();
 	    }
 	    /* Right rotate section of tables between numScripts and i so
 	     * that i ends up with other imports in front of orig. script

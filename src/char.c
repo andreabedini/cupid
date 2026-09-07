@@ -465,8 +465,8 @@ Cell consChar(Char c)                /* return application (:) c */
     if (consCharTable_i==NULL) {	/* level 2 entry */
 	consCharTable_i = consCharTable[i] = AllocArray(Cell *, NUM_LEVEL2);
 	if (consCharTable_i==NULL) {
-	    ERRMSG(0) "Cannot allocate char cons table"
-	    EEND;
+	    errHead(0); errPrintf("Cannot allocate char cons table");
+	    errFail();
 	}
 	for (j=0; j<NUM_LEVEL2; j++)
 	    consCharTable_i[j] = NULL;
@@ -477,8 +477,8 @@ Cell consChar(Char c)                /* return application (:) c */
     if (consCharTable_i_j==NULL) {	/* level 3 entry */
 	consCharTable_i_j = consCharTable_i[j] = AllocArray(Cell, NUM_LEVEL3);
 	if (consCharTable_i_j==NULL) {
-	    ERRMSG(0) "Cannot allocate char cons table"
-	    EEND;
+	    errHead(0); errPrintf("Cannot allocate char cons table");
+	    errFail();
 	}
 	for (k=0; k<NUM_LEVEL3; k++)
 	    consCharTable_i_j[k] = NIL;

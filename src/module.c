@@ -99,11 +99,11 @@ static List local checkSubentities(List imports, List named, List wanted, String
 	Text t = isPair(snd(x)) ? qtextOf(x) : textOf(x);
 	Name n = lookupName(t,wanted);
 	if (isNull(n)) {
-	    ERRMSG(0) "Entity \"%s\" is not a %s \"%s\"",
+	    errHead(0); errPrintf("Entity \"%s\" is not a %s \"%s\"",
 		      textToStr(t),
 		      description,
-		      textToStr(textParent)
-	    EEND;
+		      textToStr(textParent));
+	    errFail();
 	}
 	imports = cons(n,imports);
     }
@@ -321,10 +321,10 @@ static List local checkImportEntity(List imports, Module exporter, Bool isHidden
 	}
     }
     if (!impFound) {
-	ERRMSG(0) "Unknown entity \"%s\" %s from module \"%s\"",
+	errHead(0); errPrintf("Unknown entity \"%s\" %s from module \"%s\"",
                   textToStr(t), ((!isHidden) ? "imported" : "hidden"),
-		  textToStr(module(exporter ).text)
-	EEND;
+		  textToStr(module(exporter ).text));
+	errFail();
     }
     return imports;
 }
@@ -482,9 +482,9 @@ Void checkImportList(Bool isQual, Pair importSpec) /*Import a module (un)qualifi
     Bool   isHidden = (isPair(impList) && HIDDEN == fst(impList));
 
     if (!isQual && moduleThisScript(m)) { 
-        ERRMSG(0) "Module \"%s\" recursively imports itself",
-                  textToStr(module(m).text)
-        EEND;
+        errHead(0); errPrintf("Module \"%s\" recursively imports itself",
+                  textToStr(module(m).text));
+        errFail();
     }
     if ( isHidden ) {
         List orphans;
@@ -702,22 +702,22 @@ static Void local reportAmbigEntity(Text mt, Text t, List clashes)
     if (nonNull(clashes)) {
 	/* Unqualified name is ambiguous, report this. */
 	Module m1;
-	ERRMSG(0) "Ambiguous export of entity \"%s\"",
-	    textToStr(t) ETHEN
-	    ERRTEXT "\n*** Could refer to: %s.%s ",
+	errHead(0); errPrintf("Ambiguous export of entity \"%s\"",
+	    textToStr(t));
+	    errPrintf("\n*** Could refer to: %s.%s ",
 	    textToStr(mt),
-	    textToStr(t) ETHEN
+	    textToStr(t));
 	    for(;nonNull(clashes);clashes=tl(clashes)) {
 		m1 = modOfEntity(hd(clashes));
 		
 		if (m1) {
-		    ERRTEXT "%s.%s ", 
+		    errPrintf("%s.%s ",
 			textToStr(module(m1).text),
-			textToStr(t)
-			ETHEN
+			textToStr(t));
+
 		}
 	    }
-	ERRTEXT "\n" EEND;
+	errPrintf("\n"); errFail();
     }
 }
 
@@ -786,14 +786,14 @@ static Void local checkExportDistinct(List exports, Bool ambigCheck, Cell ent)
   }
       
   if (inConflict) {
-      ERRMSG(0) "Conflicting exports of entity \"%s\"",
-                textToStr(txt) ETHEN
-      ERRTEXT "\n*** Could refer to %s.%s or %s.%s",
+      errHead(0); errPrintf("Conflicting exports of entity \"%s\"",
+                textToStr(txt));
+      errPrintf("\n*** Could refer to %s.%s or %s.%s",
 	      textToStr(module(mod1).text),
     	      textToStr(txt),
 	      textToStr(module(mod2).text),
-	      textToStr(txt)
-      EEND;
+	      textToStr(txt));
+      errFail();
   }
   
   if (ambigCheck && nonNull(clashes)) {
@@ -830,10 +830,10 @@ static List local checkExportModule(List exports, Text mt, Cell e)
 
     /* Re-exporting a module we didn't import isn't allowed. */
     if (isNull(mods)) {
-        ERRMSG(0) "Unknown module \"%s\" exported from module \"%s\"",
+        errHead(0); errPrintf("Unknown module \"%s\" exported from module \"%s\"",
 	          textToStr(alias),
-	          textToStr(mt)
-	EEND;
+	          textToStr(mt));
+	errFail();
     }
     for (;nonNull(mods);mods=tl(mods)) {
          m = hd(mods);
@@ -1006,9 +1006,9 @@ static List local checkExport(List exports, Text mt, Cell e) /* Process entry in
 	       !isPreludeScript() && 
 	        currentModule != moduleUserPrelude) {
 	    /* Special case reqd for Prelude(s) to handle (:) */
-		ERRMSG(0) "Illegal export of a lone data constructor \"%s\"",
-		          textToStr(name(export).text)
-	        EEND;
+		errHead(0); errPrintf("Illegal export of a lone data constructor \"%s\"",
+		          textToStr(name(export).text));
+	        errFail();
 	  }
 	  expFound = TRUE;
 	  /* Re-use static analysis code to verify that 
@@ -1022,10 +1022,10 @@ static List local checkExport(List exports, Text mt, Cell e) /* Process entry in
 	  exports=cons(export,exports);
 	}
 	if (!expFound) {
-	    ERRMSG(0) "Unknown entity \"%s\" exported from module \"%s\"",
+	    errHead(0); errPrintf("Unknown entity \"%s\" exported from module \"%s\"",
 		      identToStr(e),
-		      textToStr(mt)
-	    EEND;
+		      textToStr(mt));
+	    errFail();
 	}
 	return exports;
     } else if (MODULEENT == fst(e)) {
@@ -1038,18 +1038,18 @@ static List local checkExport(List exports, Text mt, Cell e) /* Process entry in
 	    switch (tycon(nm).what) {
 	    case SYNONYM:
 		if (DOTDOT!=parts) {
-		    ERRMSG(0) "Explicit constructor list given for type synonym \"%s\" in export list of module \"%s\"",
+		    errHead(0); errPrintf("Explicit constructor list given for type synonym \"%s\" in export list of module \"%s\"",
 			      identToStr(ident),
-			      textToStr(mt)
-		    EEND;
+			      textToStr(mt));
+		    errFail();
 		}
 		exports = addEntity(nm,DOTDOT,exports);
 		return exports;
 	    case RESTRICTSYN:	
-		ERRMSG(0) "Transparent export of restricted type synonym \"%s\" in export list of module \"%s\"",
+		errHead(0); errPrintf("Transparent export of restricted type synonym \"%s\" in export list of module \"%s\"",
 			  identToStr(ident),
-			  textToStr(mt)
-		EEND;
+			  textToStr(mt));
+		errFail();
 		return exports; /* Not reached */
 	    case NEWTYPE:
 	    case DATATYPE:
@@ -1097,10 +1097,10 @@ static List local checkExport(List exports, Text mt, Cell e) /* Process entry in
 	    }
 	    return exports;
 	} else {
-	    ERRMSG(0) "Explicit export list given for non-class/datatype \"%s\" in export list of module \"%s\"",
+	    errHead(0); errPrintf("Explicit export list given for non-class/datatype \"%s\" in export list of module \"%s\"",
 		      identToStr(ident),
-		      textToStr(mt)
-	    EEND;
+		      textToStr(mt));
+	    errFail();
 	}
     }
     return exports; /*NOTUSED*/

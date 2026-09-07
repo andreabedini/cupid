@@ -79,11 +79,11 @@ Void evaluator(Module m)
 	bd = type;
 
     if (whatIs(bd)==QUAL) {
-	ERRMSG(0) "Unresolved overloading" ETHEN
-	ERRTEXT   "\n*** Type       : "    ETHEN ERRTYPE(type);
-	ERRTEXT   "\n*** Expression : "    ETHEN ERREXPR(inputExpr);
-	ERRTEXT   "\n"
-	EEND;
+	errHead(0); errPrintf("Unresolved overloading");
+	errPrintf("\n*** Type       : "); errType(type);
+	errPrintf("\n*** Expression : "); errExpr(inputExpr);
+	errPrintf("\n");
+	errFail();
     }
   
 #if PROFILING
@@ -103,11 +103,11 @@ Void evaluator(Module m)
                 Cell d = resolvePred(ks,ap(classShow,t));
                 if (isNull(d)) {
                     printing = FALSE;
-                    ERRMSG(0) "Cannot find \"show\" function for IO result:" ETHEN
-                    ERRTEXT   "\n*** Expression : "   ETHEN ERREXPR(inputExpr);
-                    ERRTEXT   "\n*** Of type    : "   ETHEN ERRTYPE(type);
-                    ERRTEXT   "\n"
-                    EEND;
+                    errHead(0); errPrintf("Cannot find \"show\" function for IO result:");
+                    errPrintf("\n*** Expression : "); errExpr(inputExpr);
+                    errPrintf("\n*** Of type    : "); errType(type);
+                    errPrintf("\n");
+                    errFail();
                 }
                 printer = ap(nameShowsPrec,d);
             }
@@ -122,11 +122,11 @@ Void evaluator(Module m)
 	    Cell d = resolvePred(ks,ap(classShow,bd));
 	    if (isNull(d)) {
 		printing = FALSE;
-		ERRMSG(0) "Cannot find \"show\" function for:" ETHEN
-		ERRTEXT   "\n*** Expression : "   ETHEN ERREXPR(inputExpr);
-		ERRTEXT   "\n*** Of type    : "   ETHEN ERRTYPE(type);
-		ERRTEXT   "\n"
-		EEND;
+		errHead(0); errPrintf("Cannot find \"show\" function for:");
+		errPrintf("\n*** Expression : "); errExpr(inputExpr);
+		errPrintf("\n*** Of type    : "); errType(type);
+		errPrintf("\n");
+		errFail();
 	    }
 	    printer = ap(nameShowsPrec,d);
 	}

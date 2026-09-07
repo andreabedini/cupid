@@ -105,15 +105,15 @@ Void cStackCheck(Void) {		/* slow path of STACK_CHECK        */
 
 Void tooManyTupleComponents(Void)      /* mkTuple(n) with n>=NUM_TUPLES    */
 {
-    ERRMSG(0) "Tuples with more than %d components are not supported",
-	      NUM_TUPLES
-    EEND;
+    errHead(0); errPrintf("Tuples with more than %d components are not supported",
+	      NUM_TUPLES);
+    errFail();
 }
 
 Void tooManyOffsets(Void)              /* mkOffset(o) with o>=NUM_OFFSETS  */
 {
-    ERRMSG(0) "Compiled code too complex"
-    EEND;
+    errHead(0); errPrintf("Compiled code too complex");
+    errFail();
 }
 
 /* --------------------------------------------------------------------------
@@ -374,8 +374,8 @@ static Label local newLabel(Label d)         /* allocate new label              
 {
     if (d==RUNON) {
 	if (nextLab>=NUM_FIXUPS) {
-	    ERRMSG(0) "Compiled code too complex"
-	    EEND;
+	    errHead(0); errPrintf("Compiled code too complex");
+	    errFail();
 	}
 	return nextLab++;
     }

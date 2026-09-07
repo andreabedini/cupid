@@ -567,8 +567,8 @@ String local substPath(String new, String sub) /* substitute sub path into new p
     String next = new;                     /* next uncopied char in new    */
     String start = next;                   /* start of last path component */
     if (r == 0) {
-	ERRMSG(0) "String storage space exhausted"
-	EEND;
+	errHead(0); errPrintf("String storage space exhausted");
+	errFail();
     }
     do {
 	if (isPATHSEP(next) || *next == '\0') {
@@ -1308,8 +1308,8 @@ static void* local getDLL(String dll)  /* load dll */
 			    );
 
     if (NULL == instance) {
-	ERRMSG(0) "Error while importing DLL \"%s\":\n%s\n", dll, dlerror()
-	EEND;
+	errHead(0); errPrintf("Error while importing DLL \"%s\":\n%s\n", dll, dlerror());
+	errFail();
     }
     
     return instance;
@@ -1320,8 +1320,8 @@ static void* local getDLLSymbol(void*  instance, String symbol)  /* lookup dll s
     void *sym;
 
     if ((sym = dlsym(instance,symbol)) == 0) {
-	ERRMSG(0) "Error loading sym:\n%s\n", dlerror()
-	EEND;
+	errHead(0); errPrintf("Error loading sym:\n%s\n", dlerror());
+	errFail();
     }
 
     return sym;
@@ -1345,8 +1345,8 @@ static void* local getDLL(String dll)  /* load dll */
 	/* GetLastError allegedly provides more detail - in practice,
 	 * it tells you nothing more.
 	 */
-	ERRMSG(0) "Error while importing DLL \"%s\"", dll
-	EEND;
+	errHead(0); errPrintf("Error while importing DLL \"%s\"", dll);
+	errFail();
     }
     /* fprintf(stderr, "Loaded DLL 0x%p\n",instance); fflush(stderr); */
     return instance;
@@ -1503,12 +1503,12 @@ Void needPrims(Int version, void*  dll)   /* Load dll containing prims for curre
 	}
     default: 
 	{
-	    ERRMSG(0) "This version of Cuddles does not support FFI version %d\n", version
-	    EEND;
+	    errHead(0); errPrintf("This version of Cuddles does not support FFI version %d\n", version);
+	    errFail();
 	}
     }
-    ERRMSG(0) "Unable to load FFI primitives\n"
-    EEND;
+    errHead(0); errPrintf("Unable to load FFI primitives\n");
+    errFail();
 }
 
 
@@ -1537,8 +1537,8 @@ static Void local reserve(size_t extra)
             n *= 2;
         char* p = realloc(buffer, n);
         if (!p) {
-            ERRMSG(0) "Unable to build compilation command"
-            EEND;
+            errHead(0); errPrintf("Unable to build compilation command");
+            errFail();
         }
         buffer  = p;
         bufsize = n;
@@ -1632,8 +1632,8 @@ Void compileAndLink(String fn, String flags)
     }
 
     if (shellEsc(buffer,TRUE,TRUE) != 0) {
-        ERRMSG(0) "Error while running compilation command '%s'", buffer
-        EEND;
+        errHead(0); errPrintf("Error while running compilation command '%s'", buffer);
+        errFail();
     }
     used = 0;
 }
