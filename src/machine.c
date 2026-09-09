@@ -156,10 +156,25 @@ typedef union {
 
 typedef MemCell *Memory;
 static Memory memory;
-/* (Dynamically) growable memory. */
+/* The code table grows by realloc, so `memory' moves.  Everything that reads
+ * code goes through the accessors below, which re-index `memory' on each
+ * access; the one exception is run(), which keeps a MemCell * in a register
+ * for the whole of a supercombinator.  That is sound only because code is
+ * generated exclusively by the load and prompt pipelines -- codeGen and
+ * implementCfun, reached from compileDefns, compileExp and checkDefns --
+ * and neither can run while the evaluator is on the C stack: run() itself
+ * calls only eval(), the heap constructors and evalFails(), and every route
+ * from eval() to the compiler would have to pass through a primitive.
+ * growMemory() checks that invariant rather than leaving it to be
+ * rediscovered. */
 DynTable *dynMemory = NULL;
 
 void growMemory(void) {
+    /* evalDepth is 0 outside evaluation and >= 1 inside eval().  A nonzero
+     * depth here means code is being generated underneath a live run(),
+     * whose pc the realloc below would leave dangling. */
+    if (evalDepth != 0)
+        internal("code generated during evaluation");
     growDynTable(dynMemory);
     memory = (Memory)(dynMemory->data);
     if (memory == 0)
@@ -1798,7 +1813,8 @@ Void machine(Int what) {
     switch (what) {
     case INSTALL:
         /* prelude.h defines NUM_ADDRS; 0 is the upper bound (=> unbounded.) */
-        dynMemory = allocDynTable(sizeof(Memory), NUM_ADDRS, 0, "memory");
+        /* the elements are MemCells, not pointers to them */
+        dynMemory = allocDynTable(sizeof(MemCell), NUM_ADDRS, 0, "memory");
         memory = (Memory)(dynMemory->data);
         if (memory == 0)
             fatal("Cannot allocate program memory");
