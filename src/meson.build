@@ -13,6 +13,17 @@ platform_h = configure_file(input: 'platform.h.in', output: 'platform.h',
   configuration: platform_conf)
 src_inc = include_directories('.')
 
+# parser.c and parser.h are generated from the bison grammar parser.y, into
+# the build directory, so the grammar is the only copy of itself in the
+# tree.  They must not also exist in src/: a `#include "parser.h"' in
+# src/input.c would find that one first and could be compiled against a
+# stale set of token numbers.
+bison = find_program('bison')
+parser = custom_target('parser',
+  input: 'parser.y',
+  output: ['parser.c', 'parser.h'],
+  command: [bison, '--defines=@OUTPUT1@', '-o', '@OUTPUT0@', '@INPUT@'])
+
 # These files allocate heap cells and rely on the conservative
 # collector finding every live cell on the C stack.  An optimiser may keep
 # a pointer to a cell as a common subexpression instead of the cell itself,
@@ -24,7 +35,7 @@ gc_sensitive = files('compiler.c', 'deriving.c', 'module.c', 'preds.c',
 
 core = files(
   'char.c', 'errors.c', 'evaluator.c', 'ffi.c', 'fixity.c', 'goal.c',
-  'input.c', 'machdep.c', 'machine.c', 'opts.c', 'output.c', 'parser.c',
+  'input.c', 'machdep.c', 'machine.c', 'opts.c', 'output.c',
   'script.c', 'storage.c', 'strutil.c', 'tagcheck.c', 'unitable.c',
   'version.c',
   'prims/array.c', 'prims/bignums.c', 'prims/builtin.c', 'prims/dirprim.c',
@@ -40,7 +51,8 @@ endif
 no_opt = cc.get_argument_syntax() == 'msvc' ? '/Od' : '-O0'
 libgc = static_library('cuddles-gcsafe', gc_sensitive,
   c_args: no_opt, include_directories: src_inc)
-libcore = static_library('cuddles-core', core, include_directories: src_inc)
+libcore = static_library('cuddles-core', core, parser,
+  include_directories: src_inc)
 
 # The two groups reference each other, so link them as objects rather than
 # as archives to avoid link-order problems

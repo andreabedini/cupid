@@ -75,7 +75,6 @@ static Cell   local checkConstr	 (Cell);
 
 %}
 
-%header "parser.h"
 %token EXPR       CTXT       SCRIPT
 %token CASEXP     OF         DATA       TYPE       IF
 %token THEN       ELSE       WHERE      LET        IN
