@@ -25,7 +25,7 @@ Bool useDots = FALSE;     /* TRUE => use dots in progress    */
 Bool listScripts = FALSE; /* TRUE => list scripts after loading*/
 Bool quiet = TRUE;        /* TRUE => don't show progress     */
 Bool printing = FALSE;    /* TRUE => currently printing value*/
-String cuddlesEdit = 0;    /* String for editor command       */
+String cuddlesEdit = 0;   /* String for editor command       */
 String prompt = 0;        /* Prompt string                   */
 
 #if EXPLAIN_INSTANCE_RESOLUTION
@@ -90,7 +90,8 @@ struct options toggle[] =
 #endif
      Option(0, 0, 0)};
 
-Void setOptions(Void) /* change command line options from Cuddles command line */
+Void setOptions(
+    Void) /* change command line options from Cuddles command line */
 {
     String s;
     if ((s = readFilename()) != 0) {
@@ -318,17 +319,130 @@ Void readOptions(String options, Bool freeUp) /* read options from string */
     }
 }
 
-Bool readOptions2(String options) /* read options from string */
+/* --------------------------------------------------------------------------
+ * Tokenising option strings:
+ *
+ * Option strings come from the command line, from CUDDLESFLAGS, from the
+ * registry and from the argument of -X, and they are split into words here.
+ * They used to be split by pointing the global input stream at them with
+ * stringInput() and reading words back with readFilename(), but there is
+ * only one input stream: a -X nested inside an option string reset it, and
+ * everything after that -X was silently lost -- the rest of CUDDLESFLAGS, or
+ * the rest of a ":set" line, which was then read back as the next command.
+ *
+ * The word syntax is the one readFilename() accepted.  Words are separated
+ * by white space.  A double quote begins a quoted section, which ends at the
+ * next quote and may contain spaces; inside it \", \\ and "\ " stand for a
+ * quote, a backslash and a space, and a backslash before anything else is an
+ * ordinary backslash.  Outside quotes "\ " also stands for a space.  No
+ * other escape is recognised, so that a backslash in a Windows path name
+ * means itself.
+ * ------------------------------------------------------------------------*/
+
+#define MAX_OPTION_WORD 4000 /* longest word an option string may hold */
+
+struct optScan { /* the state of a scan over an option string */
+    String rest; /* the part of the string not read yet       */
+    Char c;      /* the character at the scan position, or 0  */
+                 /* at the end of the string                  */
+    String out;  /* where the next character of the word goes */
+    String word; /* the buffer the word is built in           */
+};
+
+static Void local optSkip(struct optScan *sc) /* advance one character */
 {
-    String s;
-    if (options) {
-        stringInput(options);
-        while ((s = readFilename()) != 0) {
-            if (*s && !processOption(s))
-                return FALSE;
+    String at = sc->rest;
+    if (*at == '\0') { /* ExtractChar would step past the NUL */
+        sc->c = '\0';
+        return;
+    }
+    sc->c = ExtractChar(sc->rest);
+    if (sc->rest == at) /* a malformed encoding decodes to nothing */
+        sc->rest = at + 1;
+}
+
+static Void local optSave(struct optScan *sc,
+                          Char c) /* add a character to the word */
+{
+    if (sc->out > sc->word + MAX_OPTION_WORD - MAX_CHAR_ENCODING) {
+        errHead(0);
+        errPrintf("Maximum option length (%d) exceeded", MAX_OPTION_WORD);
+        errFail();
+    }
+    AddChar(c, sc->out);
+}
+
+static String local
+optWord(struct optScan *sc) /* the next word of the option string, or   */
+{                           /* 0 when there are none left.  The word is */
+                            /* in the scan's buffer until the next call */
+    while (sc->c != '\0' && isIn(sc->c, SPACE))
+        optSkip(sc);
+    if (sc->c == '\0')
+        return 0;
+
+    sc->out = sc->word;
+    while (sc->c != '\0' && !isIn(sc->c, SPACE)) {
+        if (sc->c == '"') {
+            optSkip(sc);
+            while (sc->c != '\0' && sc->c != '"') {
+                if (sc->c == '\\') {
+                    optSkip(sc);
+                    if (sc->c == '"' || sc->c == ' ' || sc->c == '\\') {
+                        optSave(sc, sc->c);
+                        optSkip(sc);
+                    } else {
+                        optSave(sc, '\\');
+                    }
+                } else {
+                    optSave(sc, sc->c);
+                    optSkip(sc);
+                }
+            }
+            if (sc->c != '"') {
+                errHead(0);
+                errPrintf("a closing quote, '\"', was expected");
+                errFail();
+            }
+            optSkip(sc);
+        } else {
+            Char saved = sc->c;
+            optSkip(sc);
+            if (saved == '\\' && sc->c == ' ') {
+                optSave(sc, ' ');
+                optSkip(sc);
+            } else {
+                optSave(sc, saved);
+            }
         }
     }
-    return TRUE;
+    *sc->out = '\0';
+    return sc->word;
+}
+
+Bool readOptions2(String options) /* read options from string */
+{
+    struct optScan sc;
+    String s;
+    Bool ok = TRUE;
+
+    if (options) {
+        if (!charTabBuilt) /* optWord classifies with isIn() */
+            initCharTab();
+        sc.word = (String)malloc(MAX_OPTION_WORD + 1);
+        if (!sc.word) {
+            errHead(0);
+            errPrintf("Out of memory reading options");
+            errFail();
+        }
+        sc.rest = options;
+        optSkip(&sc); /* prime the scan with the first character */
+        while (ok && (s = optWord(&sc)) != 0)
+            if (*s && !processOption(s))
+                ok = FALSE;
+        free(sc.word);
+    }
+    return ok;
 }
 
 Bool processOption(String s) /* process string s for options,   */
@@ -606,8 +720,8 @@ Void processOptionVector(Int argc, String argv[]) {
 Void readOptionSettings() {
 
 #if USE_REGISTRY
-    readOptions(readRegString(HKEY_LOCAL_MACHINE, cuddlesRegRoot, "Options", ""),
-                TRUE);
+    readOptions(
+        readRegString(HKEY_LOCAL_MACHINE, cuddlesRegRoot, "Options", ""), TRUE);
     if (!fromEnv("IGNORE_USER_REGISTRY", NULL)) {
         /* If IGNORE_USER_REGISTRY exist as an env var, don't consult
        * the user portion of the Registry. Emergency workaround if it has
