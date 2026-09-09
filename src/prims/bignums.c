@@ -92,9 +92,6 @@ static Void bignumControl(Int what) {
 
 struct primInfo bignumPrims = {bignumControl, bignumPrimTable, 0};
 
-/* Used by the IO implementation, so not 'static' like the rest. */
-extern Bignum bigWord(Unsigned);
-
 /* --------------------------------------------------------------------------
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
@@ -147,6 +144,29 @@ Bignum bigWord(Unsigned n) /* convert Word to bignum       */
         bn = pair(POSNUM, NIL);
         for (nx = bn; no > 0; no /= BIGBASE, nx = tl(nx)) {
             tl(nx) = pair(mkDigit(no % BIGBASE), NIL);
+        }
+        return bn;
+    }
+}
+
+Bignum bigInt64(HsInt64 n) /* convert 64-bit int to bignum */
+{
+    if (n == 0)
+        return ZERONUM;
+    else {
+        HsWord64 no;
+        Cell nx;
+        if (n < 0) {
+            /* as in bigInt: negating the unsigned reinterpretation gets the
+             * magnitude of HS_INT64_MIN without signed overflow.          */
+            no = (HsWord64)(0u - (HsWord64)n);
+            bn = pair(NEGNUM, NIL);
+        } else {
+            no = (HsWord64)(n);
+            bn = pair(POSNUM, NIL);
+        }
+        for (nx = bn; no > 0; no /= BIGBASE, nx = tl(nx)) {
+            tl(nx) = pair(mkDigit((Int)(no % BIGBASE)), NIL);
         }
         return bn;
     }

@@ -1131,7 +1131,7 @@ primFun(primHFileSize) { /* If handle points to a regular file,
         IOFail(mkIOError(&handles[h].hcell, nameIllegal, "IO.hFileSize",
                          "not a regular file", NULL));
     }
-    IOReturn(bigWord(sb.st_size));
+    IOReturn(bigInt64(sb.st_size));
 }
 
 primFun(primEqHandle) { /* Test for handle equality        */
