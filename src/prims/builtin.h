@@ -19,6 +19,8 @@ extern Cell followInd(Cell); /* builtin.c: skip indirections    */
 extern Void throwErrno(String, Bool, Int,
                        Cell *);         /* iomonad.c: raise an IOError  */
 extern Cell printException(Cell, Cell); /* printer.c: exception -> String*/
+extern Name predefPrim(String, String); /* builtin.c: name + primitive  */
+extern Name predefName(String);         /* builtin.c: name to be defined*/
 
 /* The primitive tables of the other units in this directory, registered
  * by builtIn(INSTALL) in builtin.c */

@@ -37,13 +37,9 @@ static Void local internalControl(Int);
 static Void local internalControl(Int what) {
     switch (what) {
     case INSTALL:
-#define predef(nm, str)                                                        \
-    nm = newName(findText(str), NIL);                                          \
-    nameRec(nm)->defn = PREDEFINED
         setCurrModule(modulePrelude);
-        predef(nameLeft, "Left");
-        predef(nameRight, "Right");
-#undef predef
+        nameLeft = predefName("Left");
+        nameRight = predefName("Right");
         break;
 
     case RESET:
@@ -152,16 +148,16 @@ static Void linkInternals() {
 /* evaluating the thunk inside the Cell.                                   */
 
 #define isCuddlesObject(a) (isPair(a) && fst(a) == CUDDLESOBJECT)
-#define checkCuddlesObject(x)                                                   \
-    if (!isCuddlesObject(x))                                                    \
+#define checkCuddlesObject(x)                                                  \
+    if (!isCuddlesObject(x))                                                   \
     internal("CuddlesObject expected")
 
-#define CuddlesObjectArg(nm, offset)                                            \
+#define CuddlesObjectArg(nm, offset)                                           \
     eval(primArg(offset));                                                     \
-    checkCuddlesObject(whnfHead);                                               \
+    checkCuddlesObject(whnfHead);                                              \
     nm = snd(whnfHead);
 
-primFun(primGetCell) {                   /* Trivial coercion                 */
+primFun(primGetCell) {                    /* Trivial coercion                 */
     updapRoot(CUDDLESOBJECT, primArg(1)); /*  :: a -> Cell                    */
 }
 

@@ -61,15 +61,12 @@ static Void printerControl(Int what) {
     case INSTALL:
         registerRoots(printerRoots);
         setCurrModule(modulePrelude);
-#define pFun(n, s, t)                                                          \
-    addPrim(0, n = newName(findText(s), NIL), t, modulePrelude, NIL)
-        pFun(namePrint, "_print", "print");
-        pFun(nameNPrint, "_nprint", "nprint");
-        pFun(nameLPrint, "_lprint", "lprint");
-        pFun(nameNLPrint, "_nlprint", "nlprint");
-        pFun(nameSPrint, "_sprint", "sprint");
-        pFun(nameNSPrint, "_nsprint", "nsprint");
-#undef pFun
+        namePrint = predefPrim("_print", "print");
+        nameNPrint = predefPrim("_nprint", "nprint");
+        nameLPrint = predefPrim("_lprint", "lprint");
+        nameNLPrint = predefPrim("_nlprint", "nlprint");
+        nameSPrint = predefPrim("_sprint", "sprint");
+        nameNSPrint = predefPrim("_nsprint", "nsprint");
         /* deliberate fall through */
     case RESET:
         out = NIL;

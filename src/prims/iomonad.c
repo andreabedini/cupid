@@ -45,8 +45,8 @@ Name nameIORun;  /* run IO code                     */
 Name nameIOBind; /* bind IO code                    */
 Name namePutStr; /* Prelude.putStr                  */
 
-static Name namePass;       /* auxiliary:: \f b a -> f a b     */
-static Name nameHreader;    /* auxiliary function                  */
+static Name namePass;        /* auxiliary:: \f b a -> f a b     */
+static Name nameHreader;     /* auxiliary function                  */
 static Cell cuddlesProgName; /* value of getProgName            */
 static Cell cuddlesArgs;     /* value of getArgs                */
 
@@ -84,18 +84,11 @@ static Void iomonadControl(Int what) {
     case INSTALL:
         registerRoots(iomonadRoots);
         setCurrModule(modulePrelude);
-#define pFun(n, s, t)                                                          \
-    addPrim(0, n = newName(findText(s), NIL), t, modulePrelude, NIL)
-        pFun(namePass, "_pass", "passIO");
-        pFun(nameHreader, "_hreader", "hreader");
-#undef pFun
-#define predef(nm, str)                                                        \
-    nm = newName(findText(str), NIL);                                          \
-    nameRec(nm)->defn = PREDEFINED
-        predef(nameIORun, "cuddlesIORun");
-        predef(nameIOBind, "primbindIO");
-        predef(namePutStr, "putStr");
-#undef predef
+        namePass = predefPrim("_pass", "passIO");
+        nameHreader = predefPrim("_hreader", "hreader");
+        nameIORun = predefName("cuddlesIORun");
+        nameIOBind = predefName("primbindIO");
+        namePutStr = predefName("putStr");
         break;
     }
 }

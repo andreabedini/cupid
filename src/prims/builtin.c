@@ -868,7 +868,7 @@ IntInt2Bool(primTestInt, (x >> y) & 1)
  * Unsigned arithmetic primitives:
  * ------------------------------------------------------------------------*/
 
-CAFWord(primMaxWord, MAXCUDDLESWORD)     /* maximum integer CAF              */
+CAFWord(primMaxWord, MAXCUDDLESWORD)    /* maximum integer CAF              */
     WordWord2Word(primPlusWord, x + y)  /* Word addition primitive          */
     WordWord2Word(primMinusWord, x - y) /* Word subtraction primitive       */
     Word2Word(primNegateWord, -(Int)x)  /* Word negation (modulo MAXWORD)   */
@@ -1125,7 +1125,7 @@ FloatFloat2Float(primPlusFloat, x + y) /* Float addition primitive         */
 
     CAFInt(primFloatDigits,
            CUDDLES_FLT_MANT_DIG) /* Float sig. digits primitive    */
-                                /* again, courtesy K&R2             */
+                                 /* again, courtesy K&R2             */
 
     CAFInt(primFloatMinExp,
            CUDDLES_FLT_MIN_EXP) /* Float min exponent primitive    */
@@ -1134,7 +1134,7 @@ FloatFloat2Float(primPlusFloat, x + y) /* Float addition primitive         */
 
     CAFInt(primDoubleDigits,
            CUDDLES_DBL_MANT_DIG) /* Double sig. digits primitive  */
-                                /* again, courtesy K&R2             */
+                                 /* again, courtesy K&R2             */
 
     CAFInt(primDoubleMinExp,
            CUDDLES_DBL_MIN_EXP) /* Double min exponent primitive  */
@@ -1147,8 +1147,8 @@ FloatFloat2Float(primPlusFloat, x + y) /* Float addition primitive         */
     Int n;                     /* another gruesome hack            */
     FloatArg(f, 1);
     f = frexp((double)(f), &n); /* 0.5   <= f < 1                   */
-    f = ldexp(f,
-              CUDDLES_FLT_MANT_DIG); /* 2^m-1 <= f < 2^m, m=CUDDLES_FLT_MANT_DIG*/
+    f = ldexp(
+        f, CUDDLES_FLT_MANT_DIG); /* 2^m-1 <= f < 2^m, m=CUDDLES_FLT_MANT_DIG*/
     n -= CUDDLES_FLT_MANT_DIG;
     push(bigDouble(f));
     updapRoot(ap(mkTuple(2), top()), mkInt(n));
@@ -1169,8 +1169,8 @@ primFun(primDoubleDecode) { /* Double decode primitive           */
     Int n;                  /* another gruesome hack            */
     DoubleArg(f, 1);
     f = frexp((double)(f), &n); /* 0.5   <= f < 1                   */
-    f = ldexp(f,
-              CUDDLES_DBL_MANT_DIG); /* 2^m-1 <= f < 2^m, m=CUDDLES_DBL_MANT_DIG*/
+    f = ldexp(
+        f, CUDDLES_DBL_MANT_DIG); /* 2^m-1 <= f < 2^m, m=CUDDLES_DBL_MANT_DIG*/
     n -= CUDDLES_DBL_MANT_DIG;
     push(bigDouble(f));
     updapRoot(ap(mkTuple(2), top()), mkInt(n));
@@ -1341,7 +1341,25 @@ CAFChar(primMaxChar, MAXCHARVAL)
  * Auxilliary functions
  * ------------------------------------------------------------------------*/
 
-    Cell followInd(Cell c) /* follow chain of indirections and CAFs */
+    /* The two ways the INSTALL cases in this directory make a Prelude name
+ * the interpreter refers to by hand.  Both were a `pFun' and a `predef'
+ * macro repeated in six files, each assigning to the caller's global from
+ * inside the expansion; a function has its effect in its signature. */
+    Name predefPrim(String s, String impl) /* a Prelude name implemented by  */
+{                                          /* a primitive table entry        */
+    Name n = newName(findText(s), NIL);
+    addPrim(0, n, impl, modulePrelude, NIL);
+    return n;
+}
+
+Name predefName(String s) /* a Prelude name the Prelude itself defines; */
+{                         /* recorded now so the compiler can name it   */
+    Name n = newName(findText(s), NIL);
+    nameRec(n)->defn = PREDEFINED;
+    return n;
+}
+
+Cell followInd(Cell c) /* follow chain of indirections and CAFs */
 {
     do {
         switch (whatIs(c)) {
@@ -2082,67 +2100,60 @@ Void builtIn(Int what) {
         registerPrims(&internalPrims);
 #endif
         setCurrModule(modulePrelude);
-#define pFun(n, s, t)                                                          \
-    addPrim(0, n = newName(findText(s), NIL), t, modulePrelude, NIL)
-        pFun(nameFatbar, "_FATBAR", "fatbar");
-        pFun(nameFail, "_FAIL", "fail");
-        pFun(nameIf, "_IF", "if");
-        pFun(nameSel, "_SEL", "sel");
+        nameFatbar = predefPrim("_FATBAR", "fatbar");
+        nameFail = predefPrim("_FAIL", "fail");
+        nameIf = predefPrim("_IF", "if");
+        nameSel = predefPrim("_SEL", "sel");
 
-        pFun(nameConCmp, "_concmp", "conCmp");
-        pFun(nameEnRange, "_range", "enRange");
-        pFun(nameEnIndex, "_index", "enIndex");
-        pFun(nameEnInRng, "_inRange", "enInRng");
-        pFun(nameEnToEn, "_toEnum", "enToEn");
-        pFun(nameEnFrEn, "_frEnum", "enFrEn");
-        pFun(nameEnFrom, "_from", "enFrom");
-        pFun(nameEnFrTo, "_fromTo", "enFrTo");
-        pFun(nameEnFrTh, "_fromThen", "enFrTh");
+        nameConCmp = predefPrim("_concmp", "conCmp");
+        nameEnRange = predefPrim("_range", "enRange");
+        nameEnIndex = predefPrim("_index", "enIndex");
+        nameEnInRng = predefPrim("_inRange", "enInRng");
+        nameEnToEn = predefPrim("_toEnum", "enToEn");
+        nameEnFrEn = predefPrim("_frEnum", "enFrEn");
+        nameEnFrom = predefPrim("_from", "enFrom");
+        nameEnFrTo = predefPrim("_fromTo", "enFrTo");
+        nameEnFrTh = predefPrim("_fromThen", "enFrTh");
 
-        pFun(namePrimThrow, "_throw", "primThrowException");
-        pFun(nameBlackHole, "_Gc Black Hole", "gcBhole");
-        pFun(nameInd, "_indirect", "dictIndirect");
+        namePrimThrow = predefPrim("_throw", "primThrowException");
+        nameBlackHole = predefPrim("_Gc Black Hole", "gcBhole");
+        nameInd = predefPrim("_indirect", "dictIndirect");
         nameRec(nameInd)->number = DFUNNAME;
-#undef pFun
-#define predef(nm, str)                                                        \
-    nm = newName(findText(str), NIL);                                          \
-    nameRec(nm)->defn = PREDEFINED
-        predef(nameNegate, "negate");
-        predef(nameFlip, "flip");
-        predef(nameFrom, "enumFrom");
-        predef(nameFromThen, "enumFromThen");
-        predef(nameFromTo, "enumFromTo");
-        predef(nameFromThenTo, "enumFromThenTo");
-        predef(nameFst, "fst");
-        predef(nameSnd, "snd");
-        predef(nameAnd, "&&");
-        predef(nameOr, "||");
-        predef(nameId, "id");
-        predef(nameOtherwise, "otherwise");
-        predef(nameComp, ".");
-        predef(nameApp, "++");
-        predef(nameShowField, "showField");
-        predef(nameShowParen, "showParen");
-        predef(nameReadField, "readField");
-        predef(nameReadParen, "readParen");
-        predef(nameLex, "lex");
-        predef(nameRangeSize, "rangeSize");
-        predef(nameCompAux, "primCompAux");
-        predef(namePmInt, "primPmInt");
-        predef(namePmInteger, "primPmInteger");
-        predef(namePmFlt, "primPmFlt");
-        predef(nameReturnIO, "primretIO");
-        predef(nameRationalToDouble, "rationalToDouble");
-        predef(nameRationalToFloat, "rationalToFloat");
-        predef(nameFloatToRational, "floatToRational");
-        predef(nameDoubleToRational, "doubleToRational");
-        predef(nameDoubleToRatio, "doubleToRatio");
-        predef(nameIntToRatio, "intToRatio");
-        predef(nameIntToFloat, "primIntToFloat");
-        predef(nameIntToDouble, "primIntToDouble");
-        predef(nameDoubleToFloat, "primDoubleToFloat");
-        predef(nameFloatToDouble, "primFloatToDouble");
-#undef predef
+        nameNegate = predefName("negate");
+        nameFlip = predefName("flip");
+        nameFrom = predefName("enumFrom");
+        nameFromThen = predefName("enumFromThen");
+        nameFromTo = predefName("enumFromTo");
+        nameFromThenTo = predefName("enumFromThenTo");
+        nameFst = predefName("fst");
+        nameSnd = predefName("snd");
+        nameAnd = predefName("&&");
+        nameOr = predefName("||");
+        nameId = predefName("id");
+        nameOtherwise = predefName("otherwise");
+        nameComp = predefName(".");
+        nameApp = predefName("++");
+        nameShowField = predefName("showField");
+        nameShowParen = predefName("showParen");
+        nameReadField = predefName("readField");
+        nameReadParen = predefName("readParen");
+        nameLex = predefName("lex");
+        nameRangeSize = predefName("rangeSize");
+        nameCompAux = predefName("primCompAux");
+        namePmInt = predefName("primPmInt");
+        namePmInteger = predefName("primPmInteger");
+        namePmFlt = predefName("primPmFlt");
+        nameReturnIO = predefName("primretIO");
+        nameRationalToDouble = predefName("rationalToDouble");
+        nameRationalToFloat = predefName("rationalToFloat");
+        nameFloatToRational = predefName("floatToRational");
+        nameDoubleToRational = predefName("doubleToRational");
+        nameDoubleToRatio = predefName("doubleToRatio");
+        nameIntToRatio = predefName("intToRatio");
+        nameIntToFloat = predefName("primIntToFloat");
+        nameIntToDouble = predefName("primIntToDouble");
+        nameDoubleToFloat = predefName("primDoubleToFloat");
+        nameFloatToDouble = predefName("primFloatToDouble");
         break;
 
     case RESET:

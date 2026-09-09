@@ -67,10 +67,7 @@ static Void arrayControl(Int what) {
     switch (what) {
     case INSTALL:
         setCurrModule(modulePrelude);
-#define pFun(n, s, t)                                                          \
-    addPrim(0, n = newName(findText(s), NIL), t, modulePrelude, NIL)
-        pFun(nameEltUndef, "_undefined_array_element", "eltUndef");
-#undef pFun
+        nameEltUndef = predefPrim("_undefined_array_element", "eltUndef");
         break;
     }
 }

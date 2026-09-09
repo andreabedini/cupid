@@ -78,11 +78,7 @@ static Void bignumControl(Int what) {
     switch (what) {
     case INSTALL:
         registerRoots(bignumRoots);
-#define predef(nm, str)                                                        \
-    nm = newName(findText(str), NIL);                                          \
-    nameRec(nm)->defn = PREDEFINED
-        predef(nameIntToInteger, "primIntToInteger");
-#undef predef
+        nameIntToInteger = predefName("primIntToInteger");
     case RESET:
         bn = NIL;
         bigRem = NIL;
@@ -947,4 +943,5 @@ BignumBignum2Bignum(primPlusInteger, bigAdd(x, y)) /* Integer addition     */
 }
 
 /*-------------------------------------------------------------------------*/
-CAFBignum(primFloatRadix, bigInt(CUDDLES_FLT_RADIX)) /* Float radix primitive  */
+CAFBignum(primFloatRadix,
+          bigInt(CUDDLES_FLT_RADIX)) /* Float radix primitive  */
