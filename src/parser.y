@@ -620,6 +620,17 @@ exp_err	  : exp0a COCO sigType		{$$ = gcShadow(3,ap(ESIGN,pair($1,$3)));}
 exp0	  : exp0a			{$$ = $1;}
 	  | exp0b			{$$ = $1;}
 	  ;
+/* The `a' and `b' forms below are not an accident and must stay in step.
+ * An `exp10b' is one of the forms whose body extends as far to the right as
+ * it can -- a lambda, a `let', an `if', a `do' without braces -- and Haskell
+ * allows one of those only as the LAST operand of an operator chain:
+ * `True && \x -> x' parses, and `\x -> x + 1' is a lambda whose body is
+ * `x + 1', never `(\x -> x) + 1'.  `infixExpb' is therefore `infixExpa'
+ * with the final operand changed, and it is spelled out because bison has
+ * no way to parameterise a rule by a nonterminal.  Merging the two would
+ * admit a greedy form in every operand position and make `\x -> x + 1'
+ * ambiguous.  Edit one and you must edit the other. */
+
 exp0a	  : infixExpa			{$$ = gcShadow(1,ap(INFIX,$1));}
 	  | exp10a			{$$ = $1;}
 	  ;
