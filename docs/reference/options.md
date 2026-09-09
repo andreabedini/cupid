@@ -90,7 +90,9 @@ After each load, list the files loaded.  Default: off.
 
 Run each source file through *cmd* before reading it: Cuddles runs
 *cmd* with the file name appended and reads its standard output.  An
-empty *cmd* turns the filter off.  Default: unset.  See
+empty *cmd* turns the filter off.  Default: unset.  *cmd* is split into
+words on whitespace and run directly, without a shell, so shell syntax
+in it is not interpreted and the file name needs no quoting.  See
 [Preprocess source files before loading](../how-to/preprocess-sources.md).
 
 ### `-P`*str*
@@ -131,13 +133,19 @@ could not be found.  Only `.lhs` files are treated as literate.
 The command that `:edit` and `:find` run.  Default: the `EDITOR`
 environment variable.  *str* is a template:
 
-- `%s` is replaced by the file name.  If it is surrounded by spaces the
-  name is put in double quotes.
+- `%s` is replaced by the file name.
 - `%d` is replaced by the line number of the last error.
 - `%f` is replaced by the absolute file name.
 - `%%` is a literal `%`.
 
 If neither `%s` nor `%f` appears, the file name is appended.
+
+The template is split into words on whitespace and the editor is run
+directly, without a shell, so nothing needs quoting: a file name that
+contains a space, a quote or a `$` is one argument whatever it holds.
+By the same token the template's own words are separated on whitespace
+and on nothing else - shell syntax in it is not interpreted.  A leading
+`&` starts the editor without waiting for it.
 
 ```
 -E"vi +%d %s"

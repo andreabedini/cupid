@@ -62,6 +62,12 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stdlib.h>
+#if HAVE_SYS_WAIT_H
+# include <sys/wait.h>
+#endif
+#if IS_WINDOWS
+# include <process.h>
+#endif
 
 /* --------------------------------------------------------------------------
  * Prototypes for registry reading
@@ -1028,113 +1034,222 @@ static Void local installHandlers() { /* Install handlers for all fatal    */
  * Shell escapes:
  * ------------------------------------------------------------------------*/
 
-/* Append the quoted form of s to dst, so that a shell (cmd.exe on Windows,
- * a POSIX shell everywhere else) sees s as a single word no matter what
- * punctuation it contains - a file name is not trustworthy input, and both
- * popen() and system() (see shellEsc below) pass their argument straight
- * to a shell.  If dst is NULL, nothing is written, but the number of
- * characters shellQuote(dst,s) would write (not counting the terminating
- * NUL, which is written whenever dst is not NULL) is still returned, so a
- * caller can size (or grow) a buffer first, e.g.
+/* --------------------------------------------------------------------------
+ * Running an external program:
  *
- *     char *buf = malloc((size_t)shellQuote(NULL,s) + 1);
- *     shellQuote(buf,s);
+ * The preprocessor filter, the editor and the FFI compile-and-link command
+ * are built as an argv and handed straight to the operating system, so no
+ * shell parses them.  A file name is module- or user-supplied and is not
+ * trustworthy; as one element of an argv it is one argument whatever
+ * punctuation it contains, which is why nothing here quotes anything.
  *
- * On POSIX, s is wrapped in single quotes, with each embedded single quote
- * replaced by '\'' (close the quote, an escaped literal quote, reopen the
- * quote) - the standard way to quote arbitrary bytes for a POSIX shell.
- * On Windows, s is wrapped in double quotes instead, with embedded double
- * quotes backslash-escaped; this is the convention the MSVC runtime (and
- * hence cmd.exe / CreateProcess argv parsing) expects.
- */
-Int shellQuote(String dst, String s) {
-    Int n = 0;
-#if !IS_WINDOWS
-# define QUOTE_CHAR '\''
-# define ESCAPED_QUOTE "'\\''" /* close, escaped quote, reopen    */
-#else
-# define QUOTE_CHAR '"'
-# define ESCAPED_QUOTE "\\\"" /* backslash-escaped quote         */
-#endif
-    if (dst)
-        dst[n] = QUOTE_CHAR;
-    n++;
-    for (; *s; s++) {
-        if (*s == QUOTE_CHAR) {
-            if (dst)
-                strcpy(dst + n, ESCAPED_QUOTE);
-            n += (Int)strlen(ESCAPED_QUOTE);
-        } else {
-            if (dst)
-                dst[n] = *s;
-            n++;
-        }
-    }
-    if (dst)
-        dst[n] = QUOTE_CHAR;
-    n++;
-    if (dst)
-        dst[n] = '\0';
-#undef QUOTE_CHAR
-#undef ESCAPED_QUOTE
-    return n;
+ * The commands that are meant to run a shell still do: the `:!' escape at
+ * the prompt, primSystem, and an editor command prefixed with `!', all
+ * through shellEsc below.
+ *
+ * A configured command (the -F filter, the editor template, MKDLL_CMD,
+ * the FFI flags) is split into words on whitespace and on nothing else:
+ * quotes, `$' and backticks in one are ordinary characters now.
+ * ------------------------------------------------------------------------*/
+
+Void argvInit(Argv *a) {
+    a->vec = NULL;
+    a->used = 0;
+    a->size = 0;
 }
 
-Int shellEsc(String cmd, Bool sync,
-             Bool useShell) /* run a shell command (or shell)  */
-{
-#ifndef HAVE_WINDOWS_H
+static Void local argvPush(Argv *a, String w) {
+    if (a->used + 2 > a->size) {
+        size_t n = a->size ? 2 * a->size : 8;
+        String *p = (String *)realloc(a->vec, n * sizeof(String));
+        if (!p) {
+            errHead(0);
+            errPrintf("Unable to build a command");
+            errFail();
+        }
+        a->vec = p;
+        a->size = n;
+    }
+    a->vec[a->used++] = w;
+    a->vec[a->used] = NULL;
+}
 
-/* currently ignore the 'useShell' and 'sync' flags */
-# if HAVE_BIN_SH
+Void argvWord(Argv *a, String s) {
+    argvPush(a, strCopy(s));
+}
+
+Void argvWords(Argv *a, String s) {
+    for (;;) {
+        String start;
+        while (*s && isspace((unsigned char)*s))
+            s++;
+        if (!*s)
+            return;
+        start = s;
+        while (*s && !isspace((unsigned char)*s))
+            s++;
+        argvPush(a, strnCopy(start, (Int)(s - start)));
+    }
+}
+
+Void argvFree(Argv *a) {
+    size_t i;
+    for (i = 0; i < a->used; i++)
+        free(a->vec[i]);
+    free(a->vec);
+    argvInit(a);
+}
+
+#if !IS_WINDOWS
+
+/* Wait for pid.  shield says to ignore SIGINT and SIGQUIT while waiting,
+ * which is what system() did for us and what the editor needs: without it
+ * a Ctrl-C meant for the editor runs the interpreter's break handler, which
+ * longjmps out of here and leaves the child behind.  The filter does not
+ * shield, because pclose() did not either.  Setting the dispositions after
+ * the fork keeps them out of the child, and exec resets a handled signal to
+ * its default there anyway. */
+static Int local argvWait(ProcId pid, Bool shield) {
+    int status;
+    void (*oldInt)(int) = NULL;
+    void (*oldQuit)(int) = NULL;
+
+    if (shield) {
+        oldInt = signal(SIGINT, SIG_IGN);
+        oldQuit = signal(SIGQUIT, SIG_IGN);
+    }
+    while (waitpid(pid, &status, 0) < 0) {
+        if (errno != EINTR) {
+            status = -1;
+            break;
+        }
+    }
+    if (shield) {
+        signal(SIGINT, oldInt);
+        signal(SIGQUIT, oldQuit);
+    }
+    if (status != -1 && WIFEXITED(status))
+        return WEXITSTATUS(status);
+    return -1;
+}
+
+/* Fork and exec a->vec.  outFd, when it is not -1, becomes the child's
+ * standard output; shutFd, when it is not -1, is closed in the child so
+ * that the program does not inherit the other end of a pipe. */
+static ProcId local argvStart(Argv *a, int outFd, int shutFd) {
+    ProcId pid;
+    if (a->used == 0)
+        return -1;
+    fflush(NULL); /* buffered output must not be duplicated by the fork */
+    if ((pid = fork()) < 0)
+        return -1;
+    if (pid == 0) {
+        if (shutFd >= 0)
+            close(shutFd);
+        if (outFd >= 0 && outFd != 1) {
+            dup2(outFd, 1);
+            close(outFd);
+        }
+        execvp(a->vec[0], a->vec);
+        _exit(127); /* the shell's code for a command it cannot run */
+    }
+    return pid;
+}
+
+Int argvRun(Argv *a, Bool sync) {
+    ProcId pid;
+    /* sync is ignored, as it was when this went through system() */
+    (void)sync;
+    if ((pid = argvStart(a, -1, -1)) < 0)
+        return -1;
+    return argvWait(pid, TRUE);
+}
+
+FILE *argvOpen(Argv *a, ProcId *pidp) {
+    int fd[2];
+    FILE *f;
+    ProcId pid;
+    if (pipe(fd) < 0)
+        return NULL;
+    pid = argvStart(a, fd[1], fd[0]);
+    close(fd[1]);
+    if (pid < 0) {
+        close(fd[0]);
+        return NULL;
+    }
+    if ((f = fdopen(fd[0], "r")) == NULL) {
+        close(fd[0]);
+        argvWait(pid, FALSE);
+        return NULL;
+    }
+    *pidp = pid;
+    return f;
+}
+
+Int argvClose(FILE *f, ProcId pid) {
+    fclose(f);
+    return argvWait(pid, FALSE);
+}
+
+#else /* IS_WINDOWS: the same three entry points on _spawnvp.  Like the
+       * rest of the Windows support here, this is written to the
+       * documented interface but is not verified on a Windows host. */
+
+Int argvRun(Argv *a, Bool sync) {
+    intptr_t r;
+    if (a->used == 0)
+        return -1;
+    fflush(NULL);
+    r = _spawnvp(sync ? _P_WAIT : _P_NOWAIT, a->vec[0],
+                 (const char *const *)a->vec);
+    if (r < 0)
+        return -1;
+    return sync ? (Int)r : 0;
+}
+
+FILE *argvOpen(Argv *a, ProcId *pidp) {
+    int fd[2], saved;
+    intptr_t pid;
+    FILE *f;
+    if (a->used == 0 || _pipe(fd, 4096, _O_BINARY) < 0)
+        return NULL;
+    fflush(NULL);
+    saved = _dup(1); /* the child inherits our stdout, so aim it at the pipe */
+    _dup2(fd[1], 1);
+    _close(fd[1]);
+    pid = _spawnvp(_P_NOWAIT, a->vec[0], (const char *const *)a->vec);
+    _dup2(saved, 1);
+    _close(saved);
+    if (pid < 0) {
+        _close(fd[0]);
+        return NULL;
+    }
+    if ((f = _fdopen(fd[0], "r")) == NULL) {
+        _close(fd[0]);
+        return NULL;
+    }
+    *pidp = (ProcId)pid;
+    return f;
+}
+
+Int argvClose(FILE *f, ProcId pid) {
+    int status;
+    fclose(f);
+    if (_cwait(&status, (intptr_t)pid, 0) < 0)
+        return -1;
+    return status;
+}
+
+#endif /* IS_WINDOWS */
+
+Int shellEsc(String cmd) /* run cmd, or a shell, through the shell   */
+{
+#if HAVE_BIN_SH
     if (cmd[0] == '\0') {
         cmd = fromEnv("SHELL", "/bin/sh");
     }
-# endif
-    return system(cmd);
-#else
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
-    BOOL bStatus;
-    DWORD dwResult;
-
-    if (useShell) {
-        return system(cmd);
-    }
-
-    ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(si);
-    si.dwFlags = STARTF_USESHOWWINDOW;
-    si.wShowWindow = SW_SHOW;
-
-    bStatus = CreateProcess(
-        NULL, /* app name is the first component of the command line string */
-        cmd, NULL,                /* default process security attributes */
-        NULL,                     /* default prim. thread security attributes */
-        FALSE,                    /* don't inherit */
-        CREATE_NEW_CONSOLE, NULL, /* environment; same block as parent */
-        NULL,                     /* current directory; same as parent */
-        &si, &pi);
-
-    if (!bStatus) {
-        return 1;
-    } else {
-        CloseHandle(pi.hThread);
-        /*
-     * Wait for the editor process to complete, or not. If we
-     * don't wait for the editor process to complete, the user
-     * will have to manually :(re)load the sources after having
-     * save them within the editor. The default is to wait.
-     */
-        if (!sync) {
-            CloseHandle(pi.hProcess);
-            return 0;
-        } else {
-            dwResult = WaitForSingleObject(pi.hProcess, INFINITE);
-            return (dwResult == WAIT_OBJECT_0 ? 0 : 1);
-        }
-    }
 #endif
+    return system(cmd);
 }
 
 /* --------------------------------------------------------------------------
@@ -1504,73 +1619,32 @@ Void needPrims(Int version,
  * the above mechanisms.
  * ------------------------------------------------------------------------*/
 
-/* The command is assembled in a buffer that grows as needed: with a long
- * build directory the absolute paths of the include directories and the
- * extra C files alone run to well over a kilobyte. */
-static char *buffer = NULL;
-static size_t bufsize = 0;
-static size_t used = 0;
-static Void local reserve(size_t);
-static Void local insert(String);
-static Void local insertPath(String);
-static Void local insertChar(Char);
-static Void local insertQuoted(String);
-
-static Void local reserve(size_t extra) {
-    if (used + extra + 1 > bufsize) {
-        size_t n = bufsize ? bufsize : 1024;
-        while (used + extra + 1 > n)
-            n *= 2;
-        char *p = realloc(buffer, n);
-        if (!p) {
-            errHead(0);
-            errPrintf("Unable to build compilation command");
-            errFail();
-        }
-        buffer = p;
-        bufsize = n;
+/* "-I<cuddlesdir>/include", with the separators turned into the '/' every
+ * supported compiler accepts. */
+static String local includeArg(Void) {
+    String dir = cuddlesdir();
+    String s = (String)malloc(strlen(dir) + sizeof("-I/include"));
+    String p;
+    if (!s) {
+        errHead(0);
+        errPrintf("Unable to build compilation command");
+        errFail();
     }
-}
-
-static Void local insert(String s) {
-    size_t l = strlen(s);
-    reserve(l);
-    memcpy(buffer + used, s, l + 1);
-    used += l;
-}
-
-/* Convert backslashes, because they can cause problems with system() */
-static Void local insertPath(String s) {
-    reserve(strlen(s));
-    while (*s) {
-        buffer[used++] = *s == SLASH ? '/' : *s;
-        s++;
+    strcpy(s, "-I");
+    p = s + 2;
+    while (*dir) {
+        *p++ = (*dir == SLASH) ? '/' : *dir;
+        dir++;
     }
-    buffer[used] = '\0';
-}
-
-/* Append the shell-quoted form of s (see shellQuote above): unlike the
- * "\"...\"" wrapping this used to do, this is safe even if a file name
- * (ultimately module- or user-supplied) contains a quote, '$' or backtick.
- */
-static Void local insertQuoted(String s) {
-    Int l = shellQuote(NULL, s);
-    reserve((size_t)l);
-    shellQuote(buffer + used, s);
-    used += (size_t)l;
-}
-
-static Void local insertChar(Char c) {
-    char s[2];
-    s[0] = c;
-    s[1] = '\0';
-    insert(s);
+    strcpy(p, "/include");
+    return s;
 }
 
 Void compileAndLink(String fn, String flags) {
-    char *i = fn;
+    Argv cmd;
+    String inc;
 
-    used = 0;
+    argvInit(&cmd);
 
 #if defined(MKDLL_VISUAL_STUDIO)
     /* find the location of fficuddles.bat */
@@ -1582,43 +1656,41 @@ Void compileAndLink(String fn, String flags) {
         strcpy(strrchr(Buffer, '.'), ".bat");
         GetShortPathName(Buffer, Buffer2, MAX_PATH);
 
-        insert(Buffer2);
-        insert(MKDLL_CMD);
+        argvWord(&cmd, Buffer2);
+        argvWords(&cmd, MKDLL_CMD);
     }
 #elif defined(MKDLL_CMD)
     /* The compile and link command */
-    insert(MKDLL_CMD);
+    argvWords(&cmd, MKDLL_CMD);
 #endif
 
     /* Identify ourselves */
-    insert(" -D__CUDDLES__");
+    argvWord(&cmd, "-D__CUDDLES__");
 
     /* the path to HsFFI.h */
-    insert(" \"-I");
-    insertPath(cuddlesdir());
-    insertChar('/');
-    insert("include\"");
+    inc = includeArg();
+    argvWord(&cmd, inc);
+    free(inc);
 
-    /* the output file */
-    insert(" -o ");
-    insertQuoted(mkFFIFilename2(i));
-
-    /* the file to compile */
-    insert(" ");
-    insertQuoted(mkFFIFilename(i));
+    /* the output file, then the file to compile */
+    argvWord(&cmd, "-o");
+    argvWord(&cmd, mkFFIFilename2(fn));
+    argvWord(&cmd, mkFFIFilename(fn));
 
     /* compiler and linker flags specified on Cuddles command line */
-    if (flags) {
-        insert(" ");
-        insert(flags);
-    }
+    if (flags)
+        argvWords(&cmd, flags);
 
-    if (shellEsc(buffer, TRUE, TRUE) != 0) {
+    if (argvRun(&cmd, TRUE) != 0) {
+        size_t i;
         errHead(0);
-        errPrintf("Error while running compilation command '%s'", buffer);
+        errPrintf("Error while running compilation command");
+        for (i = 0; i < cmd.used; i++)
+            errPrintf(" %s", cmd.vec[i]);
+        argvFree(&cmd);
         errFail();
     }
-    used = 0;
+    argvFree(&cmd);
 }
 
 /* --------------------------------------------------------------------------

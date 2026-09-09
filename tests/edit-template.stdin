@@ -6,3 +6,5 @@
 :edit edit-template.hs
 :set -E"fake-editor %s"
 :edit "evil$(echo INJECTED)`echo INJECTED`\"quoted.hs"
+:set -E"fake-editor $(echo_x) %s"
+:edit edit-template.hs

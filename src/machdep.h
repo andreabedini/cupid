@@ -50,8 +50,38 @@ extern String substPath(String, String);
 extern String uniqPath(String);
 extern Bool startEdit(Int, String); /* edit.c, linked into cuddles only */
 
-extern Int shellEsc(String, Bool, Bool);
-extern Int shellQuote(String, String);
+extern Int shellEsc(String);
+
+/* --------------------------------------------------------------------------
+ * Running an external program without a shell:
+ *
+ * Build the command as an argv - argvWord for one argument taken verbatim
+ * (a file name), argvWords for a configured string split on whitespace -
+ * and run it with argvRun, or with argvOpen/argvClose to read what it
+ * writes on its standard output.  Nothing is quoted because no shell sees
+ * it.  argvRun and argvClose return the program's exit status, or -1 if it
+ * could not be run or did not exit normally.
+ * ------------------------------------------------------------------------*/
+
+#if !IS_WINDOWS
+typedef pid_t ProcId;
+#else
+typedef intptr_t ProcId;
+#endif
+
+typedef struct {
+    String *vec; /* the argv itself, NULL-terminated                 */
+    size_t used; /* words in it, not counting the terminating NULL   */
+    size_t size; /* slots allocated                                  */
+} Argv;
+
+extern Void argvInit(Argv *);
+extern Void argvWord(Argv *, String);
+extern Void argvWords(Argv *, String);
+extern Void argvFree(Argv *);
+extern Int argvRun(Argv *, Bool);
+extern FILE *argvOpen(Argv *, ProcId *);
+extern Int argvClose(FILE *, ProcId);
 extern Int getTerminalWidth(Void);
 extern Void normalTerminal(Void);
 extern Bool getEchoTerminal(Int);

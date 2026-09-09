@@ -1,5 +1,4 @@
 #include "prelude.h"
-#include <math.h>
 #include "storage.h"
 #include "connect.h"
 #include "errors.h"
@@ -7,18 +6,94 @@
 #include "strutil.h"
 #include "machdep.h"
 
+/* Expand one word of the editor template, from *hep up to the next space,
+ * into a malloc'd string, and leave *hep on that space (or the NUL).
+ *
+ * The template is split into words before this runs, so a name that
+ * contains spaces or shell punctuation lands in one argv element and needs
+ * no quoting: `%s' is the whole word it expands to, whatever is in it.
+ * The word is measured on the first pass and written on the second.
+ */
+static String local expandWord(String *hep, String nm, String fullNm,
+                               String lineStr, Bool *expandedName) {
+    String out = NULL;
+    String o = NULL;
+    size_t need = 0;
+    Int pass;
+
+    for (pass = 0; pass < 2; pass++) {
+        String he = *hep;
+        o = out;
+        need = 0;
+        while (*he && !isspace((unsigned char)*he)) {
+            if (*he != '%') {
+                if (pass)
+                    *o++ = *he;
+                else
+                    need++;
+                he++;
+                continue;
+            }
+            he++;
+            if (*he == 's' || *he == 'f') {
+                String src = (*he == 's') ? nm : fullNm;
+                if (pass) {
+                    strcpy(o, src);
+                    o += strlen(src);
+                } else
+                    need += strlen(src);
+                *expandedName = TRUE;
+                he++;
+            } else if (*he == 'd') {
+                if (pass) {
+                    strcpy(o, lineStr);
+                    o += strlen(lineStr);
+                } else
+                    need += strlen(lineStr);
+                he++;
+            } else if (*he == '%') { /* %% is one % */
+                if (pass)
+                    *o++ = '%';
+                else
+                    need++;
+                he++;
+            } else if (*he == '\0') {
+                /* trailing '%' with nothing after it: keep it literally, and
+                 * don't step past the terminating NUL. */
+                if (pass)
+                    *o++ = '%';
+                else
+                    need++;
+            } else {
+                if (pass) {
+                    *o++ = '%';
+                    *o++ = *he;
+                } else
+                    need += 2;
+                he++;
+            }
+        }
+        if (pass) {
+            *o = '\0';
+            *hep = he;
+        } else if ((out = (String)malloc(need + 1)) == NULL) {
+            errHead(0);
+            errPrintf("Unable to start editor");
+            errFail();
+        }
+    }
+    return out;
+}
+
 Bool startEdit(Int line, String nm) /* Start editor on file name at    */
                                     /* given line.  Both name and line */
 {                                   /* or just line may be zero        */
-    String editorCmd;
+    Argv cmd;
     String fullNm;
+    String he;
     Bool expandedName = FALSE;
     Bool syncEdit = TRUE;
-    Bool useShell = FALSE;
-    String he;
-    String ec;
-    unsigned int roomReqd = 0;
-    unsigned int nmLen, lineLen, fullNmLen;
+    char lineStr[2 + 3 * sizeof(Int)];
 
     /* First off, check whether we have actually got a plausible editor
      * available. On a Mac, files have creator information, telling which
@@ -37,133 +112,49 @@ Bool startEdit(Int line, String nm) /* Start editor on file name at    */
     }
 
     fullNm = RealPath(nm);
-    fullNmLen = strlen(fullNm);
-    nmLen = strlen(nm);
-    lineLen = 1 + (line == 0 ? 0 : (unsigned int)log10((double)line));
+    sprintf(lineStr, "%d", (int)(line ? line : 1));
 
-    he = cuddlesEdit;
-
-    /* Compute the length of the expanded 'cuddlesEdit' string */
-    while (*he) {
-        if (*he++ == '%') {
-            if (*he == 's') {
-                /* assume quotes (shellQuote's) are always put around the name;
-           * this may over-allocate when they are not, but never under. */
-                roomReqd += (unsigned int)shellQuote(NULL, nm);
-                expandedName = TRUE;
-                he++;
-            } else if (*he == 'f') {
-                roomReqd += (unsigned int)shellQuote(NULL, fullNm);
-                expandedName = TRUE;
-                he++;
-            } else if (*he == 'd') {
-                roomReqd += lineLen;
-                he++;
-            } else if (*he == '%') {
-                /* %% is contracted to % in the expanded string */
-                roomReqd++;
-                he++;
-            } else if (*he == '\0') {
-                /* trailing '%' with nothing after it: keep it literally, and
-           * don't step past the terminating NUL. */
-                roomReqd++;
-            } else {
-                roomReqd += 2;
-                he++;
-            }
-        } else {
-            roomReqd++;
-        }
-    }
-
-    if (!expandedName) {
-        /* include room for the shell-quoted name and a leading space */
-        roomReqd += 1 + (unsigned int)shellQuote(NULL, nm);
-    }
-
-    editorCmd = (String)malloc(sizeof(char) * (roomReqd + 1));
-    if (editorCmd == NULL) {
-        Printf("Warning: Unable to start editor\n");
-        return FALSE;
-    }
-
-    /* Given a properly sized output buffer, perform the expansion */
-    expandedName = FALSE;
-    ec = editorCmd;
     he = cuddlesEdit;
 
     /* If the editor command is prefixed with '&', the editor is
      * started up asynchronously (the default is for Cuddles to block
      * and wait for the editor to exit).
-     *
-     * If the editor command is prefixed with '!', then the editor is
-     * invoked by going via the shell.
      */
-    while (1) {
-        if (*he == '&') {
-            syncEdit = FALSE;
-            he++;
-        } else if (*he == '!') {
-            useShell = TRUE;
-            he++;
-        } else {
-            break;
-        }
+    while (*he == '&') {
+        syncEdit = FALSE;
+        he++;
     }
 
+    /* The editor is run directly, so the words of the template are the
+     * argv: they are separated on whitespace and on nothing else. */
+    argvInit(&cmd);
     while (*he) {
-        if (*he == '%') {
-            if (*++he == 'd') {
-                sprintf(ec, "%d", (line ? line : 1));
-                ec += lineLen;
-                he++;
-            } else if (*he == 's' || *he == 'f') {
-                /* Shell-quote it (see shellQuote in machdep.c) if the %s
-           * occurrence is surrounded by wspace only; the start/end of the
-           * template counts as whitespace too, so he[-2] is only looked at
-           * when it is within cuddlesEdit. Quoting protects against the name
-           * (module- or user-supplied) containing shell metacharacters. */
-                Bool useQuotes = (he - cuddlesEdit < 2 || isspace(he[-2])) &&
-                                 (he[1] == '\0' || isspace(he[1]));
-                String src = (*he == 's') ? nm : fullNm;
-                if (useQuotes) {
-                    ec += shellQuote(ec, src);
-                } else {
-                    strcpy(ec, src);
-                    ec += (*he == 's') ? nmLen : fullNmLen;
-                }
-                expandedName = TRUE;
-                he++;
-            } else if (*he == '%') { /* Unescape % */
-                *ec++ = '%';
-                he++;
-            } else if (*he == '\0') {
-                /* trailing '%' with nothing after it: keep it literally, and
-           * don't step past the terminating NUL. */
-                *ec++ = '%';
-            } else {
-                *ec++ = '%';
-                *ec++ = *he++;
-            }
-        } else {
-            *ec++ = *he++;
-        }
+        String word;
+        while (*he && isspace((unsigned char)*he))
+            he++;
+        if (!*he)
+            break;
+        word = expandWord(&he, nm, fullNm, lineStr, &expandedName);
+        argvWord(&cmd, word);
+        free(word);
+    }
+
+    if (cmd.used == 0) { /* a template of nothing but spaces */
+        argvFree(&cmd);
+        errHead(0);
+        errPrintf("Cuddles is not configured to use an editor");
+        errFail();
     }
 
     if (!expandedName) { /* If file name was not included, add it. */
-        *ec++ = ' ';
-        /* Protect the filename with shell quoting */
-        ec += shellQuote(ec, nm);
+        argvWord(&cmd, nm);
     }
 
-    /* Terminate the string and go! */
-    *ec = '\0';
-
-    if (shellEsc(editorCmd, syncEdit /*sync*/, useShell /*sep console*/)) {
+    if (argvRun(&cmd, syncEdit)) {
         Printf("Warning: Editor terminated abnormally\n");
-        free(editorCmd);
+        argvFree(&cmd);
         return FALSE;
     }
-    free(editorCmd);
+    argvFree(&cmd);
     return syncEdit;
 }

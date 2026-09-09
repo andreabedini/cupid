@@ -172,6 +172,8 @@ Int column, startColumn; /* and the layout state the grammar */
                          /* rules consult                   */
 static int c0, c1;
 static FILE *inputStream = 0;
+static Bool inputIsPipe = FALSE; /* is inputStream a -F filter?          */
+static ProcId filterPid;         /* and if so, the filter's process id   */
 static Bool thisLiterate;
 static String nextStringChar; /* next char in string buffer       */
 
@@ -285,26 +287,19 @@ static Bool local fileInput(String nm,
     if (!readable(nm, FALSE)) {       /* file not there */
         inputStream = NULL;
     } else if (preprocessor) {
-        /* nm is a file name, so not trustworthy: shell-quote it (see
-         * shellQuote in machdep.c) rather than pasting it into the
-         * command unquoted, which would let a name like
-         * "x$(cmd).hs" run an arbitrary shell command.             */
-        Int qlen = shellQuote(NULL, nm);
-        Int reallen = strlen(preprocessor) + 1 + qlen;
-        char *cmd = malloc(reallen + 1);
-        if (cmd == NULL) {
-            errHead(0);
-            errPrintf("Unable to allocate memory for filter command.");
-
-            return FALSE;
-        }
-        strcpy(cmd, preprocessor);
-        strcat(cmd, " ");
-        shellQuote(cmd + strlen(cmd), nm);
-        inputStream = popen(cmd, "r");
-        free(cmd);
+        /* nm is a file name and so not trustworthy, but as one word of an
+         * argv it is one argument whatever punctuation it contains, and no
+         * shell is there to read anything into it. */
+        Argv cmd;
+        argvInit(&cmd);
+        argvWords(&cmd, preprocessor);
+        argvWord(&cmd, nm);
+        inputStream = argvOpen(&cmd, &filterPid);
+        inputIsPipe = (inputStream != NULL);
+        argvFree(&cmd);
     } else {
         inputStream = fopen(nm, FOPEN_MODE);
+        inputIsPipe = FALSE;
     }
     if (inputStream) {
         reading = SCRIPTFILE;
@@ -565,12 +560,13 @@ Void closeAnyInput() { /* Close input stream, if open,     */
     switch (reading) { /* or skip to end of console line   */
     case SCRIPTFILE:
         if (inputStream) {
-            if (preprocessor) {
-                pclose(inputStream);
+            if (inputIsPipe) {
+                argvClose(inputStream, filterPid);
             } else {
                 fclose(inputStream);
             }
             inputStream = 0;
+            inputIsPipe = FALSE;
         }
         break;
     case KEYBOARD:

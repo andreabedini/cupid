@@ -1007,7 +1007,7 @@ Bool doCommand() /* read and execute a command      */
         setOptions();
         break;
     case SYSTEM:
-        if (shellEsc(readLine(), TRUE, TRUE))
+        if (shellEsc(readLine()))
             Printf("Warning: Shell escape terminated abnormally\n");
         break;
     case CHGDIR:

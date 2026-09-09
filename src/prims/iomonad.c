@@ -646,7 +646,7 @@ primFun(primSystem) {              /* primSystem :: String -> IO Int  */
         IOFail(mkIOError(NULL, nameIllegal, "System.system",
                          "illegal system command string", &IOArg(1)));
     }
-    r = shellEsc(s, TRUE /*synchronous*/, TRUE /*use shell*/);
+    r = shellEsc(s);
     IOReturn(mkInt(WEXITSTATUS(r)));
 }
 

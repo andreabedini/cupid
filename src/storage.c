@@ -3176,7 +3176,14 @@ Void storage(Int what) {
             garbageCollect();
             fclose(profile);
 # if HAVE_HP2PS
-            system("hp2ps profile.hp");
+            {
+                Argv cmd;
+                argvInit(&cmd);
+                argvWord(&cmd, "hp2ps");
+                argvWord(&cmd, "profile.hp");
+                argvRun(&cmd, TRUE);
+                argvFree(&cmd);
+            }
 # endif
             profile = 0;
         }
