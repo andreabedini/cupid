@@ -205,6 +205,28 @@ static String matchFname(String s) {
     }
 }
 
+/* Peel a function type into its argument types and its result type: for
+ * `a -> b -> r' the list [a, b], with r left in *resultTy.  Every type that
+ * comes back has been through fullerExpand, so the caller sees no synonyms
+ * and no newtypes; a type that is not a function gives the empty list and
+ * itself as the result.  The three foreign declaration checks below all
+ * start this way.
+ *
+ * hasIOResultType in static.c has the same loop head but expands only the
+ * result, so it cannot share this: expanding the argument types too can
+ * raise an error on a polymorphic newtype, which it does not raise today. */
+static List peelArgTypes(Type t, Type *resultTy) {
+    List argTys = NIL;
+    while (getHead(t) == typeArrow && argCount == 2) {
+        Type ta = fullerExpand(arg(fun(t)));
+        Type tr = fullerExpand(arg(t));
+        argTys = cons(ta, argTys);
+        t = tr;
+    }
+    *resultTy = t;
+    return rev(argTys);
+}
+
 Void checkForeignImport(Name p) /* Check foreign import          */
 {
     Int line = nameRec(p)->line;
@@ -224,14 +246,7 @@ Void checkForeignImport(Name p) /* Check foreign import          */
         t = monotypeOf(t);
     }
     t = fullerExpand(t);
-    while (getHead(t) == typeArrow && argCount == 2) {
-        Type ta = fullerExpand(arg(fun(t)));
-        Type tr = fullerExpand(arg(t));
-        argTys = cons(ta, argTys);
-        t = tr;
-    }
-    argTys = rev(argTys);
-    /* argTys now holds the argument tys and t holds result type */
+    argTys = peelArgTypes(t, &t); /* the arguments; the result stays in t */
 
     /* What kind of import is this? */
     ext = skipSpaces(ext);
@@ -293,15 +308,7 @@ Void checkForeignImport(Name p) /* Check foreign import          */
         /* ToDo: check that hd(argTys) is the type t we just unwrapped */
 
         t = fullerExpand(t);
-        argTys = NIL;
-        while (getHead(t) == typeArrow && argCount == 2) {
-            Type ta = fullerExpand(arg(fun(t)));
-            Type tr = fullerExpand(arg(t));
-            argTys = cons(ta, argTys);
-            t = tr;
-        }
-        argTys = rev(argTys);
-        /* argTys now holds the argument tys and t holds result type */
+        argTys = peelArgTypes(t, &t); /* arguments; the result stays in t */
 
         if (getHead(t) == typeIO && argCount == 1) {
             isIO = TRUE;
@@ -433,13 +440,7 @@ Void checkForeignExport(Name p) /* Check foreign export      */
     t = nameRec(p)->type;
     t = fullerExpand(t);
 
-    while (getHead(t) == typeArrow && argCount == 2) {
-        Type ta = fullerExpand(arg(fun(t)));
-        Type tr = fullerExpand(arg(t));
-        argTys = cons(ta, argTys);
-        t = tr;
-    }
-    argTys = rev(argTys);
+    argTys = peelArgTypes(t, &t); /* the arguments; the result stays in t */
 
     if (getHead(t) == typeIO && argCount == 1) {
         t = fullerExpand(hd(getArgs(t)));
@@ -470,7 +471,6 @@ static Void local ffiInclude(Text);
 static Void local checkCEntity(Int, Text);
 static Void local ffiDeclare(Int, Type, String, Int);
 static Void local ffiDeclareList(Int, List, String);
-static Void local foreignType(Int, Type);
 static Void local ffiGetList(Int, List, String);
 static Void local ffiPutList(Int, List, String);
 static Void local ffiCallFun(Int, Text, List, List);
@@ -674,148 +674,113 @@ Void foreignFooter(String fn, Text mn, List is, List es) {
     }
 }
 
-static Void local foreignType(Int l, Type t) {
-    if (t == typeChar)
-        fprintf(out, "HsChar");
-    else if (t == typeInt)
-        fprintf(out, "HsInt");
-    else if (t == typeInt8)
-        fprintf(out, "HsInt8");
-    else if (t == typeInt16)
-        fprintf(out, "HsInt16");
-    else if (t == typeInt32)
-        fprintf(out, "HsInt32");
-    else if (t == typeInt64)
-        fprintf(out, "HsInt64");
-    else if (t == typeWord8)
-        fprintf(out, "HsWord8");
-    else if (t == typeWord16)
-        fprintf(out, "HsWord16");
-    else if (t == typeWord32)
-        fprintf(out, "HsWord32");
-    else if (t == typeWord64)
-        fprintf(out, "HsWord64");
-    else if (t == typeFloat)
-        fprintf(out, "HsFloat");
-    else if (t == typeDouble)
-        fprintf(out, "HsDouble");
-    else if (t == typeBool)
-        fprintf(out, "HsBool");
-    else if (t == typeAddr)
-        fprintf(out, "HsAddr");
-    else if (getHead(t) == typePtr)
-        fprintf(out, "HsPtr");
-    else if (getHead(t) == typeFunPtr)
-        fprintf(out, "HsFunPtr");
-    else if (getHead(t) == typeForeign)
-        fprintf(out, "CuddlesForeign");
-    else if (getHead(t) == typeStable)
-        fprintf(out, "HsStablePtr");
-    else {
-        errHead(l);
-        errPrintf("Illegal foreign type");
-        errPrintf(" \"");
-        errType(t);
-        errPrintf("\"");
-        errFail();
+/* --------------------------------------------------------------------------
+ * The types the stub generator can marshal.
+ *
+ * One row per type, replacing the three parallel if-chains foreignType,
+ * foreignGet and foreignPut used to be.  `ty' points at the global the type
+ * checker fills in when it links the Prelude, so the table holds the address
+ * of a type and not the type itself.  `applied' says the row matches the
+ * head of an application, as in `Ptr a', rather than the type itself; the
+ * plain rows come first, as they did in the chains.  `hsType' is the C type
+ * a value is declared with, and `marshal' names the pair get<marshal> and
+ * put<marshal> that carries it across.  The unit type is the odd one out: it
+ * has no C type, so foreignType rejects it, it is read with getUnit(), and
+ * writing it writes nothing.
+ * ------------------------------------------------------------------------*/
+
+struct ffiType {
+    const Type *ty; /* the type, or the head of the application */
+    Bool applied;   /* match getHead(t) rather than t           */
+    String hsType;  /* C type it is declared with, 0 for ()     */
+    String marshal; /* suffix of the get/put pair               */
+};
+
+static const struct ffiType ffiTypes[] = {
+    {&typeUnit, FALSE, 0, "Unit"},
+    {&typeChar, FALSE, "HsChar", "Char"},
+    {&typeInt, FALSE, "HsInt", "Int"},
+    {&typeInt8, FALSE, "HsInt8", "Int8"},
+    {&typeInt16, FALSE, "HsInt16", "Int16"},
+    {&typeInt32, FALSE, "HsInt32", "Int32"},
+    {&typeInt64, FALSE, "HsInt64", "Int64"},
+    {&typeWord8, FALSE, "HsWord8", "Word8"},
+    {&typeWord16, FALSE, "HsWord16", "Word16"},
+    {&typeWord32, FALSE, "HsWord32", "Word32"},
+    {&typeWord64, FALSE, "HsWord64", "Word64"},
+    {&typeFloat, FALSE, "HsFloat", "Float"},
+    {&typeDouble, FALSE, "HsDouble", "Double"},
+    {&typeBool, FALSE, "HsBool", "Bool"},
+    {&typeAddr, FALSE, "HsAddr", "Addr"},
+    {&typePtr, TRUE, "HsPtr", "Ptr"},
+    {&typeFunPtr, TRUE, "HsFunPtr", "FunPtr"},
+    {&typeForeign, TRUE, "CuddlesForeign", "Foreign"},
+    {&typeStable, TRUE, "HsStablePtr", "StablePtr4"},
+    {0, FALSE, 0, 0}};
+
+/* The row for t, or 0 if the stub generator cannot marshal it.  getHead is
+ * called at most once, and only if an application row is reached, so the
+ * argCount it leaves behind is the one the chains left. */
+static const struct ffiType *local ffiTypeOf(Type t) {
+    Type h = NIL;
+    Bool haveHead = FALSE;
+    const struct ffiType *r;
+
+    for (r = ffiTypes; r->ty; ++r) {
+        if (r->applied) {
+            if (!haveHead) {
+                h = getHead(t);
+                haveHead = TRUE;
+            }
+            if (h == *r->ty) {
+                return r;
+            }
+        } else if (t == *r->ty) {
+            return r;
+        }
     }
+    return 0;
+}
+
+/* The tail the three chains shared, under their three different headings. */
+static Void local ffiTypeError(Int l, String what, Type t) {
+    errHead(l);
+    errPrintf("%s", what);
+    errPrintf(" \"");
+    errType(t);
+    errPrintf("\"");
+    errFail();
+}
+
+static Void local foreignType(Int l, Type t) {
+    const struct ffiType *r = ffiTypeOf(t);
+    if (r == 0 || r->hsType == 0) { /* () is not a C type */
+        ffiTypeError(l, "Illegal foreign type", t);
+    }
+    fprintf(out, "%s", r->hsType);
 }
 
 static Void local foreignGet(Int l, Type t, String nm, Int num) {
-    if (t == typeUnit)
-        fprintf(out, "cuddles->getUnit();\n");
-    else if (t == typeChar)
-        fprintf(out, "%s%d = cuddles->getChar();\n", nm, num);
-    else if (t == typeInt)
-        fprintf(out, "%s%d = cuddles->getInt();\n", nm, num);
-    else if (t == typeInt8)
-        fprintf(out, "%s%d = cuddles->getInt8();\n", nm, num);
-    else if (t == typeInt16)
-        fprintf(out, "%s%d = cuddles->getInt16();\n", nm, num);
-    else if (t == typeInt32)
-        fprintf(out, "%s%d = cuddles->getInt32();\n", nm, num);
-    else if (t == typeInt64)
-        fprintf(out, "%s%d = cuddles->getInt64();\n", nm, num);
-    else if (t == typeWord8)
-        fprintf(out, "%s%d = cuddles->getWord8();\n", nm, num);
-    else if (t == typeWord16)
-        fprintf(out, "%s%d = cuddles->getWord16();\n", nm, num);
-    else if (t == typeWord32)
-        fprintf(out, "%s%d = cuddles->getWord32();\n", nm, num);
-    else if (t == typeWord64)
-        fprintf(out, "%s%d = cuddles->getWord64();\n", nm, num);
-    else if (t == typeFloat)
-        fprintf(out, "%s%d = cuddles->getFloat();\n", nm, num);
-    else if (t == typeDouble)
-        fprintf(out, "%s%d = cuddles->getDouble();\n", nm, num);
-    else if (t == typeBool)
-        fprintf(out, "%s%d = cuddles->getBool();\n", nm, num);
-    else if (t == typeAddr)
-        fprintf(out, "%s%d = cuddles->getAddr();\n", nm, num);
-    else if (getHead(t) == typePtr)
-        fprintf(out, "%s%d = cuddles->getPtr();\n", nm, num);
-    else if (getHead(t) == typeFunPtr)
-        fprintf(out, "%s%d = cuddles->getFunPtr();\n", nm, num);
-    else if (getHead(t) == typeForeign)
-        fprintf(out, "%s%d = cuddles->getForeign();\n", nm, num);
-    else if (getHead(t) == typeStable)
-        fprintf(out, "%s%d = cuddles->getStablePtr4();\n", nm, num);
-    else {
-        errHead(l);
-        errPrintf("Illegal outbound (away from Haskell) type");
-        errPrintf(" \"");
-        errType(t);
-        errPrintf("\"");
-        errFail();
+    const struct ffiType *r = ffiTypeOf(t);
+    if (r == 0) {
+        ffiTypeError(l, "Illegal outbound (away from Haskell) type", t);
+    }
+    if (r->hsType == 0) { /* () is read, but there is nothing to name */
+        fprintf(out, "cuddles->get%s();\n", r->marshal);
+    } else {
+        fprintf(out, "%s%d = cuddles->get%s();\n", nm, num, r->marshal);
     }
 }
 
 static Void local foreignPut(Int l, Type t, String nm, Int num) {
-    if (t == typeUnit)
+    const struct ffiType *r = ffiTypeOf(t);
+    if (r == 0) {
+        ffiTypeError(l, "Illegal inbound (coming into Haskell) type", t);
+    }
+    if (r->hsType == 0) { /* () is written by writing nothing */
         fprintf(out, "\n");
-    else if (t == typeChar)
-        fprintf(out, "cuddles->putChar(%s%d);\n", nm, num);
-    else if (t == typeInt)
-        fprintf(out, "cuddles->putInt(%s%d);\n", nm, num);
-    else if (t == typeInt8)
-        fprintf(out, "cuddles->putInt8(%s%d);\n", nm, num);
-    else if (t == typeInt16)
-        fprintf(out, "cuddles->putInt16(%s%d);\n", nm, num);
-    else if (t == typeInt32)
-        fprintf(out, "cuddles->putInt32(%s%d);\n", nm, num);
-    else if (t == typeInt64)
-        fprintf(out, "cuddles->putInt64(%s%d);\n", nm, num);
-    else if (t == typeWord8)
-        fprintf(out, "cuddles->putWord8(%s%d);\n", nm, num);
-    else if (t == typeWord16)
-        fprintf(out, "cuddles->putWord16(%s%d);\n", nm, num);
-    else if (t == typeWord32)
-        fprintf(out, "cuddles->putWord32(%s%d);\n", nm, num);
-    else if (t == typeWord64)
-        fprintf(out, "cuddles->putWord64(%s%d);\n", nm, num);
-    else if (t == typeFloat)
-        fprintf(out, "cuddles->putFloat(%s%d);\n", nm, num);
-    else if (t == typeDouble)
-        fprintf(out, "cuddles->putDouble(%s%d);\n", nm, num);
-    else if (t == typeBool)
-        fprintf(out, "cuddles->putBool(%s%d);\n", nm, num);
-    else if (t == typeAddr)
-        fprintf(out, "cuddles->putAddr(%s%d);\n", nm, num);
-    else if (getHead(t) == typePtr)
-        fprintf(out, "cuddles->putPtr(%s%d);\n", nm, num);
-    else if (getHead(t) == typeFunPtr)
-        fprintf(out, "cuddles->putFunPtr(%s%d);\n", nm, num);
-    else if (getHead(t) == typeForeign)
-        fprintf(out, "cuddles->putForeign(%s%d);\n", nm, num);
-    else if (getHead(t) == typeStable)
-        fprintf(out, "cuddles->putStablePtr4(%s%d);\n", nm, num);
-    else {
-        errHead(l);
-        errPrintf("Illegal inbound (coming into Haskell) type");
-        errPrintf(" \"");
-        errType(t);
-        errPrintf("\"");
-        errFail();
+    } else {
+        fprintf(out, "cuddles->put%s(%s%d);\n", r->marshal, nm, num);
     }
 }
 
@@ -983,7 +948,8 @@ static Void local ffiPrimProto(Text name, Int id) {
  * not be.
  */
 static Void local ffiPrimHeader(Text name, Int id) {
-    fprintf(out, "static void cuddlesprim_%s_%d(CuddlesStackPtr cuddles_root)\n",
+    fprintf(out,
+            "static void cuddlesprim_%s_%d(CuddlesStackPtr cuddles_root)\n",
             textToStr(name), id);
 }
 
@@ -1247,7 +1213,8 @@ Void implementForeignImportLabel(Int line, Int id, Text fn, Text cid, Text n,
     ffiPrimHeader(cid, id);
     fprintf(out, "{\n");
     if (getHead(ty) == typeFunPtr)
-        fprintf(out, "    cuddles->putFunPtr((HsFunPtr)&%s);\n", textToStr(cid));
+        fprintf(out, "    cuddles->putFunPtr((HsFunPtr)&%s);\n",
+                textToStr(cid));
     else
         fprintf(out, "    cuddles->putPtr(&%s);\n", textToStr(cid));
     fprintf(out, "}\n");

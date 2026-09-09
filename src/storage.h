@@ -106,26 +106,6 @@ CUDDLES_inline Syntax mkSyntax(Syntax a, Int p) {
 #define FFI_CCONV_CCALL 8
 #define FFI_CCONV_STDCALL 16
 
-#define FFI_TYPE_UNIT 0
-#define FFI_TYPE_CHAR 1
-#define FFI_TYPE_INT 2
-#define FFI_TYPE_INT8 3
-#define FFI_TYPE_INT16 4
-#define FFI_TYPE_INT32 5
-#define FFI_TYPE_INT64 6
-#define FFI_TYPE_WORD8 7
-#define FFI_TYPE_WORD16 8
-#define FFI_TYPE_WORD32 9
-#define FFI_TYPE_WORD64 10
-#define FFI_TYPE_FLOAT 11
-#define FFI_TYPE_DOUBLE 12
-#define FFI_TYPE_BOOL 13
-#define FFI_TYPE_ADDR 14
-#define FFI_TYPE_PTR 15
-#define FFI_TYPE_FUNPTR 16
-#define FFI_TYPE_FOREIGN 17
-#define FFI_TYPE_STABLE 18
-
 /* --------------------------------------------------------------------------
  * Primitive functions:
  * ------------------------------------------------------------------------*/
@@ -289,8 +269,8 @@ typedef enum CellTag {
 
     GUARDED = 54, /* GUARDED    snd :: [guarded exprs]     */
 
-    ARRAY = 55,        /* Array snd :: (Bounds,[Values])   */
-    MUTVAR = 56,       /* Mutvar        snd :: Cell                */
+    ARRAY = 55,         /* Array snd :: (Bounds,[Values])   */
+    MUTVAR = 56,        /* Mutvar        snd :: Cell                */
     CUDDLESOBJECT = 57, /* CUDDLESOBJECT  snd :: Cell                */
 
     STABLENAME = 58, /* Stable Nm  snd :: Cell             */
@@ -1131,8 +1111,8 @@ CUDDLES_inline Void toparg(Cell x) {
 extern char *cStackLimit;
 extern Void cStackCheck(Void);
 CUDDLES_inline Void stackCheck(Void) /* call at the top of a recursive  */
-{                                   /* function; inlined, so the probe */
-    char cStackProbe;               /* is in the caller's frame    */
+{                                    /* function; inlined, so the probe */
+    char cStackProbe;                /* is in the caller's frame    */
     if (&cStackProbe <= cStackLimit)
         cStackCheck();
 }
