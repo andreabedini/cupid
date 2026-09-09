@@ -91,7 +91,6 @@ static Cell local readHexChar(Void);
 static Int local readHexDigit(Char);
 static Cell local readDecChar(Void);
 
-static Void local skipWhitespace(Void);
 static Int local repeatLast(Void);
 
 static Void local parseInput(Int);
@@ -1257,49 +1256,6 @@ Bool canUnOffside() { /* Decide if unoffside permitted    */
  * Main tokeniser:
  * ------------------------------------------------------------------------*/
 
-static Void local skipWhitespace() { /* Skip over whitespace/comments    */
-    for (;;)                         /* Strictly speaking, this code is  */
-        if (c0 == EOF)               /* a little more liberal than the   */
-            return;                  /* report allows ...                */
-        else if (c0 == '\n')
-            newlineSkip();
-        else if (isIn(c0, SPACE))
-            skip();
-        else if (c0 == '{' &&
-                 c1 == '-') { /* (potentially) nested comment     */
-            Int nesting = 1;
-            Int origRow = row; /* Save original row number         */
-            skip();
-            skip();
-            while (nesting > 0 && c0 != EOF)
-                if (c0 == '{' && c1 == '-') {
-                    skip();
-                    skip();
-                    nesting++;
-                } else if (c0 == '-' && c1 == '}') {
-                    skip();
-                    skip();
-                    nesting--;
-                } else if (c0 == '\n')
-                    newlineSkip();
-                else
-                    skip();
-            if (nesting > 0) {
-                errHead(origRow);
-                errPrintf("Unterminated nested comment {- ...");
-                errFail();
-            }
-        } else if (c0 == '-' &&
-                   c1 == '-') { /* One line comment                */
-            do
-                skip();
-            while (c0 != '\n' && c0 != EOF);
-            if (c0 == '\n')
-                newlineSkip();
-        } else
-            return;
-}
-
 static Bool allDashes(char *s) {
     char *ptr = s;
     while (*ptr != '\0') {
@@ -1388,7 +1344,7 @@ Int yylex() { /* Read next input token ...        */
 
 #define lookAhead(t)                                                           \
     {                                                                          \
-        skipWhitespace();                                                      \
+        skipWhitespaceTok();                                                   \
         insertOpen = (c0 != '{');                                              \
         inADo = (t == DO);                                                     \
         return t;                                                              \
@@ -1451,7 +1407,8 @@ Int yylex() { /* Read next input token ...        */
      * Skip white space, and insert tokens to support layout rules as reqd.
      * --------------------------------------------------------------------*/
 
-    skipWhitespaceTok();
+    if (!foundDashedOp)      /* lookAhead may have read one already, and    */
+        skipWhitespaceTok(); /* skipping again would overwrite it        */
     startColumn = column;
     push(yylval = mkInt(row)); /* default token value is line no.  */
     /* subsequent changes to yylval must also set top() to the same value  */
