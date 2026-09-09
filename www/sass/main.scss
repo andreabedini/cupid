@@ -1,0 +1,285 @@
+// Cuddles — site styles.
+//
+// Warm paper, ink text, coral accent; monospace for anything that names the
+// project or shows code, a plain system sans for prose.  The palette is the
+// logo's, and nothing here needs a webfont.
+
+:root {
+  --paper:     #faf7f2;
+  --paper-2:   #f2ece2;
+  --ink:       #2b2340;
+  --ink-soft:  #5c5470;
+  --coral:     #d4512c;
+  --coral-lit: #ee6c4d;
+  --plum:      #5b3e8e;
+  --rule:      #e2d9cb;
+  --tile:      #2b2340;
+  --cream:     #fbeedb;
+
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+
+  --measure: 68ch;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper:     #1a1526;
+    --paper-2:   #241d33;
+    --ink:       #ece6f5;
+    --ink-soft:  #a99fc0;
+    --coral:     #ff8b6b;
+    --coral-lit: #ff8b6b;
+    --plum:      #b9a2e8;
+    --rule:      #362c4c;
+    --tile:      #241d33;
+    --cream:     #fbeedb;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 17px/1.65 var(--sans);
+  text-rendering: optimizeLegibility;
+}
+
+a { color: var(--coral); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { color: var(--ink); }
+
+.skip {
+  position: absolute; left: -9999px;
+  &:focus { left: 1rem; top: 1rem; background: var(--paper); padding: .5rem 1rem; z-index: 10; }
+}
+
+// ── chrome ────────────────────────────────────────────────────────────────
+
+.site-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+  padding: 1rem clamp(1rem, 4vw, 3rem);
+  border-bottom: 1px solid var(--rule);
+
+  .brand {
+    display: inline-flex; align-items: center; gap: .6rem;
+    font: 700 1.1rem/1 var(--mono);
+    color: var(--ink); text-decoration: none; letter-spacing: -.02em;
+    img { display: block; border-radius: 8px; }
+  }
+
+  nav {
+    display: flex; gap: clamp(.9rem, 3vw, 1.8rem);
+    font: 500 .95rem/1 var(--sans);
+    a { color: var(--ink-soft); text-decoration: none; }
+    a:hover { color: var(--coral); }
+  }
+}
+
+.site-foot {
+  border-top: 1px solid var(--rule);
+  margin-top: 5rem;
+  padding: 2rem clamp(1rem, 4vw, 3rem) 3rem;
+  color: var(--ink-soft);
+  font-size: .9rem;
+  p { max-width: var(--measure); margin: 0 0 .6rem; }
+}
+
+// ── home ──────────────────────────────────────────────────────────────────
+
+main { padding: 0 clamp(1rem, 4vw, 3rem); }
+
+.hero {
+  max-width: 46rem; margin: 0 auto; padding: clamp(3rem, 9vw, 6rem) 0 3rem;
+  text-align: center;
+
+  .hero-mark { border-radius: 24px; }
+
+  h1 {
+    font: 700 clamp(2.6rem, 9vw, 4rem)/1 var(--mono);
+    letter-spacing: -.04em; margin: 1.2rem 0 .4rem;
+  }
+
+  .tagline { font: 600 1.15rem/1.4 var(--sans); color: var(--coral); margin: 0 0 1.4rem; }
+  .lede { color: var(--ink-soft); margin: 0 auto; max-width: 38rem; }
+  .cta { margin-top: 2rem; display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
+}
+
+.button {
+  display: inline-block; padding: .7rem 1.4rem; border-radius: 999px;
+  background: var(--tile); color: var(--cream);
+  font: 600 .95rem/1 var(--sans); text-decoration: none;
+  border: 1px solid var(--tile);
+  &:hover { background: var(--coral-lit); border-color: var(--coral-lit); color: #2b2340; }
+  &.ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
+  &.ghost:hover { border-color: var(--coral); color: var(--coral); background: transparent; }
+}
+
+section.aim, section.start, section.quadrants {
+  max-width: 62rem; margin: 0 auto; padding: 3rem 0;
+  border-top: 1px solid var(--rule);
+
+  h2 { font: 600 .85rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+       color: var(--ink-soft); margin: 0 0 1.2rem; }
+  > p { max-width: var(--measure); }
+}
+
+.big { font: 500 clamp(1.4rem, 3.6vw, 1.9rem)/1.35 var(--sans); margin: 0 0 1.2rem; letter-spacing: -.015em; }
+
+.aside { color: var(--ink-soft); font-size: .95rem; max-width: var(--measure); }
+
+.cards {
+  display: grid; gap: 1rem; margin: 1.8rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+
+  article, .quadrant {
+    background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: 14px; padding: 1.2rem 1.3rem;
+    h3 { font: 700 1rem/1.3 var(--mono); margin: 0 0 .5rem; letter-spacing: -.02em; }
+    p { margin: 0; font-size: .95rem; color: var(--ink-soft); }
+  }
+
+  .quadrant {
+    text-decoration: none; color: var(--ink); display: block;
+    &:hover { border-color: var(--coral); }
+    .count { display: block; margin-top: .8rem; font: 500 .8rem/1 var(--mono); color: var(--coral); }
+  }
+}
+
+// ── code ──────────────────────────────────────────────────────────────────
+
+pre {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font: 400 .875rem/1.6 var(--mono);
+  max-width: 100%;
+}
+
+pre.session { background: var(--tile); color: var(--cream); border-color: var(--tile); }
+
+// The syntax themes bring their own background, which is a different white (and
+// a much deeper black) than the page.  Keep their token colours, drop the
+// background so code blocks sit on the same paper as everything else.
+pre.giallo.z-l-code, pre.giallo.z-d-code { background: var(--paper-2); }
+@media (prefers-color-scheme: dark) { pre.session { border-color: var(--rule); } }
+
+code { font-family: var(--mono); font-size: .9em; }
+
+:not(pre) > code {
+  background: var(--paper-2); border: 1px solid var(--rule);
+  border-radius: 5px; padding: .08em .34em;
+}
+
+// ── docs ──────────────────────────────────────────────────────────────────
+
+.docs {
+  display: grid;
+  grid-template-columns: 17rem minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  max-width: 78rem; margin: 0 auto; padding: 2.5rem 0 0;
+}
+
+.sidebar {
+  font-size: .92rem;
+  align-self: start;
+  position: sticky; top: 1.5rem;
+  max-height: calc(100vh - 3rem); overflow-y: auto;
+  padding-right: .5rem;
+
+  .sidebar-home {
+    display: block; font: 700 .85rem/1 var(--mono); letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-soft);
+    text-decoration: none; margin-bottom: 1rem;
+  }
+
+  details { border-top: 1px solid var(--rule); padding: .5rem 0; }
+  summary { cursor: pointer; font-weight: 600; padding: .25rem 0; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "▸ "; color: var(--ink-soft); }
+  details[open] > summary::before { content: "▾ "; }
+
+  ul { list-style: none; margin: .35rem 0 .5rem; padding: 0 0 0 1.1rem; }
+  li { margin: .1rem 0; }
+  li a {
+    display: block; padding: .2rem 0; color: var(--ink-soft); text-decoration: none;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  li a:hover { color: var(--coral); }
+  li a[aria-current="page"] { color: var(--coral); font-weight: 600; }
+}
+
+.doc {
+  min-width: 0;
+  max-width: var(--measure);
+  padding-bottom: 3rem;
+
+  h1 { font: 700 clamp(1.9rem, 5vw, 2.5rem)/1.2 var(--sans); letter-spacing: -.03em; margin: 0 0 1.2rem; }
+  h2 { font-size: 1.35rem; letter-spacing: -.02em; margin: 2.4rem 0 .7rem; padding-top: .4rem; border-top: 1px solid var(--rule); }
+  h3 { font-size: 1.1rem; margin: 1.8rem 0 .5rem; }
+  h4 { font-size: 1rem; margin: 1.4rem 0 .4rem; color: var(--ink-soft); }
+
+  p, ul, ol { max-width: var(--measure); }
+  li { margin: .3rem 0; }
+
+  blockquote {
+    margin: 1.2rem 0; padding: .2rem 0 .2rem 1.1rem;
+    border-left: 3px solid var(--coral); color: var(--ink-soft);
+  }
+
+  table {
+    border-collapse: collapse; width: 100%; margin: 1.2rem 0;
+    font-size: .93rem; display: block; overflow-x: auto;
+  }
+  th, td { border: 1px solid var(--rule); padding: .45rem .7rem; text-align: left; vertical-align: top; }
+  th { background: var(--paper-2); font-weight: 600; }
+
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 2.5rem 0; }
+
+  // insert_anchor_links = "heading" wraps the whole heading in a link, so it
+  // has to be styled back into looking like a heading.
+  a.zola-anchor {
+    color: inherit; text-decoration: none;
+    &:hover { color: var(--coral); }
+  }
+}
+
+.crumb { font: 500 .85rem/1 var(--mono); color: var(--ink-soft); margin: 0 0 .8rem;
+         a { color: var(--ink-soft); text-decoration: none; } a:hover { color: var(--coral); } }
+
+.blurb { color: var(--ink-soft); font-size: 1.05rem; }
+
+.toc {
+  background: var(--paper-2); border: 1px solid var(--rule); border-radius: 12px;
+  padding: .9rem 1.1rem; margin: 0 0 2rem; font-size: .9rem;
+  p { margin: 0 0 .4rem; font: 600 .75rem/1 var(--mono); letter-spacing: .1em;
+      text-transform: uppercase; color: var(--ink-soft); }
+  ul { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 1.5rem; }
+  li { margin: .15rem 0; break-inside: avoid; }
+  a { color: var(--ink-soft); text-decoration: none; }
+  a:hover { color: var(--coral); }
+}
+
+.page-list {
+  list-style: none; padding: 0; margin: 1.5rem 0;
+  li { border-top: 1px solid var(--rule); }
+  li:last-child { border-bottom: 1px solid var(--rule); }
+  a { display: block; padding: .7rem .2rem; text-decoration: none; color: var(--ink); font-weight: 500; }
+  a:hover { color: var(--coral); }
+}
+
+.edit { margin-top: 3rem; font-size: .88rem; color: var(--ink-soft);
+        a { color: var(--ink-soft); } a:hover { color: var(--coral); } }
+
+@media (max-width: 60rem) {
+  .docs { grid-template-columns: 1fr; }
+  .sidebar { position: static; max-height: none; border-bottom: 1px solid var(--rule); padding-bottom: 1rem; }
+  .toc ul { columns: 1; }
+}

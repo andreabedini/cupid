@@ -1,0 +1,17 @@
+{% extends "docs-base.html" %}
+{% block title %}{{ page.title }} — {{ config.title }}{% endblock %}
+{% block doc %}
+{% set parent = get_section(path=page.ancestors | last) %}
+<p class="crumb"><a href="{{ parent.permalink }}">{{ parent.title }}</a></p>
+<h1>{{ page.title }}</h1>
+{% if page.toc | length > 1 %}
+<nav class="toc" aria-label="On this page">
+  <p>On this page</p>
+  <ul>
+    {% for h in page.toc %}<li><a href="#{{ h.id }}">{{ h.title }}</a></li>{% endfor %}
+  </ul>
+</nav>
+{% endif %}
+{{ page.content | safe }}
+<p class="edit"><a href="{{ config.extra.repo_url }}/blob/master/docs/{{ page.relative_path | replace(from='docs/', to='') }}">Edit this page on GitHub</a></p>
+{% endblock %}

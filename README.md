@@ -1,161 +1,142 @@
-# Cuddles
+<p align="center">
+  <img src="assets/logo-wordmark.svg" alt="Cuddles" width="360">
+</p>
 
-Cuddles is a small interpreter for Haskell, written in C.  It is a fork
-of Hugs 98, the Haskell interpreter written by Mark P Jones and
-developed at Yale, OGI and by a group of volunteers between 1994 and
-2006, and it starts from the September 2006 release, the last one made.
+<p align="center">
+  <strong>A small Haskell interpreter, written in C.</strong><br>
+  <em>Hugs 98, taken apart and put back together so you can read it.</em>
+</p>
 
-Cuddles has one aim: a simpler, understandable Haskell implementation.
-Three things follow from it and will not change:
+---
 
-- **It is an interpreter written in C.**  Source text is compiled to
-  the code of a small abstract machine and run in the same process.
-- **It does not self-host.**  No part of the implementation is written
-  in Haskell except the libraries it ships.
-- **It stays small.**  The language is Haskell 2010 plus the
-  type-system extensions the libraries need (multi-parameter classes,
-  functional dependencies, existential and rank-n types), always
-  enabled.  Anything that does not serve the aim is deleted rather
-  than kept behind a flag.
+Cuddles is a fork of Hugs 98 — the interpreter Mark P Jones started in
+1994 and a group of volunteers kept alive until 2006.  It picks up from
+the September 2006 release, the last one that shipped, and takes it
+somewhere Hugs itself was not going.
 
-Much of the 2006 tree has already gone: the autoconf build, the
-flag-guarded extensions, the shared GHC/nhc98 library sources and their
-three-stage bootstrap, the dead platforms.
-[History](docs/explanation/history.md) tells where the code came from.
+The aim is one sentence: **a Haskell implementation you can sit down and
+read.**  Not the fastest one, not the most complete one.  The one where
+you can follow an expression from the characters you typed to the value
+that comes back, and never lose the thread.
 
-The code is standard C23 and builds with meson on 64-bit Linux, macOS and
-the BSDs.  Windows is supported by design but not yet verified; see
-[Build on Windows](docs/how-to/build-on-windows.md).
+Three things follow from that, and they don't change:
 
-## Building
+- **It is an interpreter written in C.**  Source text is compiled to the
+  code of a small abstract machine and run in the same process.  No
+  native code generation, no linker, no separate compilation step.
+- **It does not self-host.**  Nothing in the implementation is written in
+  Haskell except the libraries it ships.  You need a C compiler and
+  nothing else, and the thing you are reading is the thing that runs.
+- **It stays small.**  Haskell 2010, plus the type-system extensions the
+  libraries actually need — multi-parameter classes, functional
+  dependencies, existentials, rank-n types — always on.  Anything that
+  doesn't serve the aim gets deleted rather than parked behind a flag.
 
-You need:
+That third one does most of the work.  A flag is a promise to keep two
+code paths working forever, and a tree full of them is exactly the tree
+you can't read.  So when something has to go, it goes.
 
-- a C compiler: gcc or clang
-- meson 1.1 or later, and ninja
-- python3 (meson needs it anyway; the library build script uses it too)
-- optionally readline or libedit, for command-line editing at the prompt
+## Where it's at
 
-Then:
+A fair amount of the 2006 tree has already gone: the autoconf build, the
+flag-guarded extensions, the GHC/nhc98 shared library sources and the
+three-stage bootstrap that turned them into something Hugs could load,
+the platforms nobody has run this century.  If you want the
+longer story of where the code came from, that's
+[History](docs/explanation/history.md).
 
-```sh
-meson setup build
-ninja -C build
-```
+It builds and runs.  The code is standard C23 and builds with meson on
+64-bit Linux, macOS and the BSDs.  Windows is supported by design, but I
+haven't actually verified it — see
+[Build on Windows](docs/how-to/build-on-windows.md) if you'd like to.
 
-This compiles `cuddles`, `runcuddles` and `fficuddles` into `build/src`, then
-assembles the Haskell libraries into `build/libraries/cuddlesdir`.  The
-whole thing takes about a minute.  The source tree is never written to.
+## Quick start
 
-meson takes the compiler from `$CC`.  The same command is also baked
-into `fficuddles`, which runs it during the library step, and again at run
-time, to compile the C stubs of modules with foreign imports.  A compiler
-wrapper such as `sccache cc` can therefore break the library step even
-when the C sources compiled fine; the symptom is `fficuddles` reporting
-"Error while running compilation command".  Name the real compiler
-instead:
+You need a C compiler, meson 1.1 or later, ninja and python3.  Then:
 
 ```sh
 CC=gcc meson setup build
+ninja -C build
+CUDDLESDIR=build/libraries/cuddlesdir build/src/cuddles
 ```
 
-meson remembers the compiler it found, so to change it in an existing
-build directory use `CC=gcc meson setup --wipe build`.  A plain
-`--reconfigure` keeps the old one.
-
-### Running from the build tree
-
-The interpreter needs to know where the libraries are.  Either point
-`CUDDLESDIR` at the built library directory:
-
-```sh
-CUDDLESDIR=build/libraries/cuddlesdir build/src/cuddles
-Cuddles> [1..10]
+```
+Cuddles> map (*2) [1..10]
+[2,4,6,8,10,12,14,16,18,20]
 Cuddles> :quit
 ```
 
-or pass a search path to `runcuddles` for a script:
+The whole build takes about a minute and never writes to the source
+tree.  Two things worth knowing up front:
 
-```sh
-build/src/runcuddles -P'build/libraries/cuddlesdir/packages/*' Main.hs
-```
+- Name a **real** compiler in `$CC`.  meson bakes the command into
+  `fficuddles`, which runs it at library-build time and again at run time
+  to compile the C stubs of modules with foreign imports.  A wrapper like
+  `sccache cc` breaks that step even when the C sources compiled fine;
+  the symptom is `fficuddles` reporting "Error while running compilation
+  command".
+- meson remembers the compiler it found, so changing it in an existing
+  build directory needs `meson setup --wipe build`.  A plain
+  `--reconfigure` keeps the old one.
 
-### Testing
+Tests are `meson test -C build`, and installing is `ninja -C build
+install`.  [Build and install](docs/how-to/build-and-install.md) has the
+detail, and [Build options and install layout](docs/reference/build-options.md)
+lists every `-Dname=value` you can set.
 
-```sh
-meson test -C build
-```
+## Documentation
 
-runs the regression tests under `tests/`.  Each `NAME.hs` there is a
-program whose output is compared with `NAME.stdout`, or a session with
-the interpreter when `NAME.stdin` exists; the comment at the top of
-`tests/run-tests` describes the other files a test may have.  Add a
-test for every bug you fix.
+The docs follow [Diátaxis](https://diataxis.fr/), so where a page lives
+tells you what it's for.  [docs/README.md](docs/README.md) is the index;
+the useful starting points are:
 
-### Installing
-
-```sh
-ninja -C build install
-```
-
-The default prefix is `/usr/local`: binaries in `bin`, libraries in
-`lib/cuddles` (or `lib64/cuddles` where the distribution uses it), the manual
-page in `share/man`.  Set the prefix with `meson setup build
---prefix=DIR` and move the library directory with `-Dcuddlesdir=DIR`.
-`DESTDIR` is honoured for staged installs.  An installed `cuddles` finds
-its libraries without any environment variable.
-
-### Options
-
-Options are set with `-Dname=value` at setup time or later with
-`meson configure build`, which also lists them.  The useful ones:
-
-| Option | Default | Meaning |
-|---|---|---|
-| `readline` | `auto` | Command-line editing with readline or libedit |
-| `char-encoding` | `utf8` | Encoding for character I/O: `utf8`, `locale` or `none` |
-| `libraries` | `true` | Build the Haskell libraries |
-| `profiling` | `false` | Heap profiler; view `profile.hp` with hp2ps |
-| `debug-code` | `false` | Assertions and bytecode debugging |
-| `small-banner` | `false` | One-line startup banner |
-
-The full list, and more detail on every step, is in
-[Build and install](docs/how-to/build-and-install.md) and
-[Build options and install layout](docs/reference/build-options.md).
+- [Getting started](docs/tutorials/getting-started.md) — a first session,
+  from build to running a program.  About 20 minutes, most of it the build.
+- [How Cuddles runs a program](docs/explanation/how-cuddles-runs-a-program.md)
+  — source text to abstract machine, and where each piece lives.  Read
+  this before the source.
+- [Interpreter commands](docs/reference/commands.md) and
+  [Options](docs/reference/options.md) — what you can type at the prompt
+  and what you can set.
+- [The language Cuddles accepts](docs/reference/language.md) — Haskell 2010
+  conformance, and the deviations and bugs that are known.
+- [Call C functions from Haskell](docs/how-to/call-c-functions.md) — the
+  FFI and `fficuddles`.
 
 ## Layout
 
 - `src/` — the interpreter: lexer, parser (`parser.y`), type checker,
-  compiler to bytecode, evaluator, storage, and the `cuddles`, `runcuddles`
+  bytecode compiler, evaluator, storage, and the `cuddles`, `runcuddles`
   and `fficuddles` front ends
-- `libraries/` — the Haskell libraries Cuddles ships: `cuddles` (the
-  Prelude and interpreter-specific modules) and `base`,
-  all plain Haskell; `tools/` holds the build script and the generator
-  for the platform-dependent module `Cuddles.SysConfig`
-- `docs/` — the documentation: a tutorial, how-to guides, reference
-  and explanation pages, and the manual page
+- `libraries/` — the Haskell it ships: `cuddles` (the Prelude and the
+  interpreter-specific modules) and `base`, all plain Haskell.  `tools/`
+  holds the build script and the generator for `Cuddles.SysConfig`
+- `docs/` — tutorial, how-to guides, reference, explanation and the
+  manual page
 - `tests/` — the regression tests and the script that runs them
 - `demos/` — example programs, installed alongside the libraries
+- `www/` — the website, a [Zola](https://www.getzola.org/) site that
+  builds from `docs/`
 
-## Documentation
+Add a test for every bug you fix.  Each `tests/NAME.hs` is a program
+whose output is compared with `NAME.stdout`, or an interpreter session
+when `NAME.stdin` exists; the comment at the top of `tests/run-tests`
+describes the rest.
 
-- [docs/README.md](docs/README.md) — the index of the documentation
-- [Getting started](docs/tutorials/getting-started.md) — a first
-  session, from build to running a program
-- [How a program is run](docs/explanation/how-cuddles-runs-a-program.md)
-  — the pipeline from source text to the abstract machine
-- [Interpreter commands](docs/reference/commands.md) and
-  [Options](docs/reference/options.md)
-- [Call C functions from Haskell](docs/how-to/call-c-functions.md) —
-  the foreign function interface and `fficuddles`
+## About the name
+
+It's a fork of Hugs, so it needed a name in the same family.  Huggies is
+a trademark and belongs to a nappy company, which left Cuddles.
 
 ## Origin and license
 
-Cuddles is derived from Hugs 98.  Hugs 98 is Copyright (c) Mark P Jones,
+Cuddles is derived from Hugs 98, which is Copyright (c) Mark P Jones,
 Alastair Reid, the Yale Haskell Group, and the OGI School of Science &
-Engineering at OHSU, 1994-2005, and is distributed under the BSD-style
+Engineering at OHSU, 1994-2005, and distributed under the BSD-style
 license in [License](License).  Cuddles is distributed under the same
-license.  The people who built Hugs 98 are listed in
-[Credits](Credits); the design of the type checker, the abstract
-machine and the libraries is theirs, and this tree would not exist
-without their work.
+license.
+
+The people who built Hugs 98 are listed in [Credits](Credits).  The type
+checker, the abstract machine and the libraries are their design, and
+this tree would not exist without their work.  What's changed here is
+mostly subtraction.

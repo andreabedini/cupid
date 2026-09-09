@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% set here = current_path | default(value="") %}
+<div class="docs">
+
+<aside class="sidebar">
+  <a class="sidebar-home" href="{{ get_url(path='@/docs/_index.md') }}">Documentation</a>
+  {% for entry in config.extra.doc_sections %}
+    {% set sec = get_section(path=entry.path) %}
+    {# The section holding the current page starts open; the rest stay folded. #}
+    <details {% if sec.path in here %}open{% endif %}>
+      <summary>{{ entry.name }}</summary>
+      <ul>
+        {% for p in sec.pages %}
+          <li><a href="{{ p.permalink }}" title="{{ p.title }}"
+                 {% if here == p.path %}aria-current="page"{% endif %}>{{ p.title }}</a></li>
+        {% endfor %}
+      </ul>
+    </details>
+  {% endfor %}
+</aside>
+
+<article class="doc">
+  {% block doc %}{% endblock %}
+</article>
+
+</div>
+{% endblock %}

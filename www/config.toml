@@ -1,0 +1,37 @@
+# GitHub Pages for andreabedini/cuddles.  Change this if the site moves to a
+# custom domain; every URL on the site is built from it.
+base_url = "https://andreabedini.github.io/cuddles"
+
+title = "Cuddles"
+description = "A small Haskell interpreter, written in C.  A fork of Hugs 98 with one aim: an implementation you can read."
+
+compile_sass = true
+build_search_index = false
+generate_feeds = false
+
+taxonomies = []
+
+[markdown]
+insert_anchor_links = "heading"
+smart_punctuation = false
+
+[markdown.highlighting]
+# Emitted as CSS classes with a light and a dark theme, so code blocks follow
+# prefers-color-scheme like the rest of the page.
+style = "class"
+light_theme = "ayu-light"
+dark_theme = "ayu-dark"
+add_color_scheme = true
+
+[extra]
+repo_url = "https://github.com/andreabedini/cuddles"
+tagline = "A small Haskell interpreter, written in C."
+
+# The documentation sections, in navigation order.  sync-docs.py creates these
+# from docs/; keep the two lists in step.
+doc_sections = [
+  { path = "docs/tutorials/_index.md", name = "Tutorials" },
+  { path = "docs/how-to/_index.md", name = "How-to guides" },
+  { path = "docs/reference/_index.md", name = "Reference" },
+  { path = "docs/explanation/_index.md", name = "Explanation" },
+]

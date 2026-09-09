@@ -1,0 +1,6 @@
+{% extends "docs-base.html" %}
+{% block title %}{{ section.title }} — {{ config.title }}{% endblock %}
+{% block doc %}
+<h1>{{ section.title }}</h1>
+{{ section.content | safe }}
+{% endblock %}

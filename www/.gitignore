@@ -1,0 +1,6 @@
+# Built site
+public/
+
+# Mirrored from ../docs and ../assets by sync-docs.py
+content/docs/
+static/*.svg

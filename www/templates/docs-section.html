@@ -1,0 +1,15 @@
+{% extends "docs-base.html" %}
+{% block title %}{{ section.title }} — {{ config.title }}{% endblock %}
+{% block description %}{{ section.extra.blurb | default(value=config.description) }}{% endblock %}
+{% block doc %}
+<h1>{{ section.title }}</h1>
+{% if section.extra.blurb %}<p class="blurb">{{ section.extra.blurb }}</p>{% endif %}
+{{ section.content | safe }}
+{% if section.pages %}
+<ul class="page-list">
+  {% for p in section.pages %}
+    <li><a href="{{ p.permalink }}">{{ p.title }}</a></li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}
