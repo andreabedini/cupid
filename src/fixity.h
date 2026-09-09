@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * Infix resolution (fixity.c), as static.c sees it.
+ * Infix resolution (fixity.c), as the static analysis sees it.
  * ------------------------------------------------------------------------*/
 #ifndef __FIXITY_H__
 #define __FIXITY_H__

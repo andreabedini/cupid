@@ -21,7 +21,8 @@
 #include "subst.h"
 #include "module.h"
 #include "goal.h"
-#include "static.h"
+#include "tycon.h"
+#include "typeexp.h"
 #include "ffi.h"
 
 /* --------------------------------------------------------------------------
@@ -212,7 +213,7 @@ static String matchFname(String s) {
  * itself as the result.  The three foreign declaration checks below all
  * start this way.
  *
- * hasIOResultType in static.c has the same loop head but expands only the
+ * hasIOResultType in tycon.c has the same loop head but expands only the
  * result, so it cannot share this: expanding the argument types too can
  * raise an error on a polymorphic newtype, which it does not raise today. */
 static List peelArgTypes(Type t, Type *resultTy) {
@@ -792,7 +793,7 @@ static Void local ffiInclude(Text fn) /* Add #include  */
     }
 }
 
-/* checkForeignImport (static.c) only checks that the entity string of a
+/* checkForeignImport above only checks that the entity string of a
  * "static"/label foreign import parses into a [fname] [&] [cid]; cid, the
  * bit we treat as a C identifier below (and in implementForeignImport and
  * implementForeignImportLabel), is whatever text is left over - it could

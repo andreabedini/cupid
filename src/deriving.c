@@ -4,7 +4,7 @@
  * A "deriving" clause asks for an instance the programmer did not write.
  * This file decides what context such an instance needs, by iterating to a
  * fixed point over the requests, and then writes the bindings for it: Eq,
- * Ord, Enum, Ix, Show, Read and Bounded.  static.c collects the requests
+ * Ord, Enum, Ix, Show, Read and Bounded.  tycon.c collects the requests
  * and hands them over; nothing here is reached any other way.
  *
  * Split out of static.c.
@@ -27,7 +27,9 @@
 #include "module.h"
 #include "opts.h"
 #include "goal.h"
-#include "static.h"
+#include "kind.h"
+#include "tycon.h"
+#include "class.h"
 #include "deriving.h"
 
 static Void local deriveContexts(List);

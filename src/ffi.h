@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * The foreign function interface (ffi.c), as static.c sees it.
+ * The foreign function interface (ffi.c), as the static analysis sees it.
  *
  * ffi.c both checks foreign import and export declarations and writes the
  * C stubs for them; the checking moved here from static.c.

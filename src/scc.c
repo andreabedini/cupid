@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * Strongly connected components algorithm for static.c and type.c.
+ * Strongly connected components algorithm for depend.c and type.c.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,

@@ -20,7 +20,8 @@
 #include "errors.h"
 #include "output.h"
 #include "module.h"
-#include "static.h"
+#include "pattern.h"
+#include "depend.h"
 #include "fixity.h"
 
 static Pair local attachFixity(Int, Cell);

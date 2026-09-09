@@ -30,8 +30,9 @@ parser = custom_target('parser',
 # which the collector's scan of the stack would miss, so they are built
 # without optimisation.  The evaluator files are safe because they do not
 # assume conservative collection (see the notice in builtin.c).
-gc_sensitive = files('compiler.c', 'deriving.c', 'module.c', 'preds.c',
-  'scc.c', 'subst.c', 'static.c', 'type.c')
+gc_sensitive = files('binding.c', 'class.c', 'compiler.c', 'depend.c',
+  'deriving.c', 'kind.c', 'module.c', 'pattern.c', 'preds.c', 'scc.c',
+  'static.c', 'subst.c', 'tycon.c', 'type.c', 'typeexp.c')
 
 core = files(
   'char.c', 'errors.c', 'evaluator.c', 'ffi.c', 'fixity.c', 'goal.c',

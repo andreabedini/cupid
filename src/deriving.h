@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * Derived instances (deriving.c), as static.c sees them.
+ * Derived instances (deriving.c), as the static analysis sees them.
  * ------------------------------------------------------------------------*/
 #ifndef __DERIVING_H__
 #define __DERIVING_H__

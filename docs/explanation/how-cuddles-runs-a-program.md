@@ -19,11 +19,17 @@ representation.  Some desugaring happens in the parser itself.
 Pattern guards, for example, are turned into a hidden `Maybe` binding
 and a boolean guard before the rest of the system sees them.
 
-**Static analysis.**  `static.c` resolves names, checks that
-constructors and classes are used consistently, sorts bindings into
-dependency groups, and handles the `foreign` declarations.  `module.c`
-implements the module system: what a module exports, what an import
-brings into scope.
+**Static analysis.**  `static.c` is the driver: its `checkDefns` runs
+the checks over a script in the order they must happen.  Each stage is
+a file of its own.  `tycon.c` and `class.c` check the data, class,
+instance and default declarations, `typeexp.c` resolves the type
+expressions in them, `kind.c` infers their kinds, `pattern.c` turns
+parsed expressions into patterns, `binding.c` turns equations into
+bindings, and `depend.c` resolves names and sorts the bindings into
+dependency groups.  `deriving.c` writes the derived instances and
+`ffi.c` checks the `foreign` declarations.
+`module.c` implements the module system: what a module exports, what an
+import brings into scope.
 
 **Type checking.**  `type.c` infers types by Hindley-Milner inference
 with type classes, one binding group at a time in dependency order.
@@ -48,11 +54,12 @@ the interpreter starts, and is collected by a mark-and-sweep
 collector.
 
 The collector is conservative about the C stack: any word on it that
-looks like a cell pointer keeps that cell alive.  That is why five of
-the source files that hold cell pointers in C variables across
-allocations (`compiler.c`, `module.c`, `subst.c`, `static.c`, `type.c`)
-are compiled without optimisation.  An optimiser could keep only a
-derived pointer, which the scan would not recognise.
+looks like a cell pointer keeps that cell alive.  That is why the
+source files that hold cell pointers in C variables across allocations
+(the static analysis files, `compiler.c`, `module.c`, `preds.c`,
+`scc.c`, `subst.c` and `type.c`) are compiled without optimisation.  An
+optimiser could keep only a derived pointer, which the scan would not
+recognise.
 
 `builtin.c` holds the primitive functions the `Prelude` is built on:
 arithmetic, characters, arrays, the pieces of the FFI.  `iomonad.c`
