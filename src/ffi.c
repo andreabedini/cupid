@@ -406,7 +406,7 @@ Void checkForeignImport(Name p) /* Check foreign import          */
 cantparse:
     errHead(line);
     errPrintf("Can't parse external entity '");
-    errPrintf(ext);
+    errPrintf("%s", ext);
     errPrintf("'\n");
     errFail();
 

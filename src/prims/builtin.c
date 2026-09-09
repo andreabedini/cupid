@@ -871,7 +871,7 @@ IntInt2Bool(primTestInt, (x >> y) & 1)
 CAFWord(primMaxWord, MAXCUDDLESWORD)    /* maximum integer CAF              */
     WordWord2Word(primPlusWord, x + y)  /* Word addition primitive          */
     WordWord2Word(primMinusWord, x - y) /* Word subtraction primitive       */
-    Word2Word(primNegateWord, -(Int)x)  /* Word negation (modulo MAXWORD)   */
+    Word2Word(primNegateWord, 0u - x)   /* Word negation (modulo MAXWORD)   */
     WordWord2Word(primMulWord, x *y)    /* Word multiplication primitive    */
     WordWord2WordNonZero(primQuotWord,
                          x / y) /* Word division primitive; also    */
@@ -897,10 +897,20 @@ CAFWord(primMaxWord, MAXCUDDLESWORD)    /* maximum integer CAF              */
 
 WordWord2Word(primAndWord, x &y) WordWord2Word(primOrWord, x | y)
     WordWord2Word(primXorWord, (x & ~y) | (~x & y))
-        Word2Word(primComplementWord, ~x) Int2Word(primBitWord, 1 << x)
-            WordInt2Bool(primTestWord, (x >> y) & 1)
+        Word2Word(primComplementWord, ~x)
+            primFun(primBitWord) { /* Data.Bits.bit :: Int -> Word     */
+    Int x;
+    IntArg(x, 1);
+    /* 1<<x is undefined for x<0 or x>=bitsize(Word); Haskell's bit gives 0 */
+    if (x < 0 || x >= (Int)(sizeof(Unsigned) * 8)) {
+        WordResult(0);
+    } else {
+        WordResult((Unsigned)1 << x);
+    }
+}
+WordInt2Bool(primTestWord, (x >> y) & 1)
 
-                primFun(primShiftWord) {
+    primFun(primShiftWord) {
     Unsigned x;
     Int y;
     WordArg(x, 2);
