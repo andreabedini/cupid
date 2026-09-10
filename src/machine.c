@@ -1839,6 +1839,8 @@ Void machine(Int what) {
         if (dynMemory)
             freeDynTable(dynMemory);
         break;
+    default:
+        break;
     }
 }
 

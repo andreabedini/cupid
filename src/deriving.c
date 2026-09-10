@@ -1174,6 +1174,8 @@ Void derivingControl(Int what) {
         registerRoots(derivingRoots);
         derivingControl(RESET);
         break;
+    default:
+        break;
     }
 }
 

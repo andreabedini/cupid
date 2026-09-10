@@ -1889,6 +1889,8 @@ Void machdep(Int what) /* Handle machine specific         */
     case EXIT:
         normalTerminal();
         break;
+    default:
+        break;
     }
 }
 

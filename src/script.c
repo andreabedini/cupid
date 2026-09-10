@@ -349,5 +349,7 @@ Void script(Int what) {
         return;
     case BREAK:
         return;
+    default:
+        break;
     }
 }

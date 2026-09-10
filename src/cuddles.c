@@ -647,6 +647,8 @@ static Void local describe(Text t) /* describe an object              */
             printType(stdout, t);
             Printf(" = <restricted>");
             break;
+        default:
+            break;
         }
         Putchar('\n');
         if (nonNull(in = findFirstInst(tc))) {
@@ -761,6 +763,8 @@ static Void local printSyntax(Name nm) {
             Putchar('r');
             break;
         case NON_ASS:
+            break;
+        default:
             break;
         }
         Printf(" %i ", precOf(sy));
@@ -1031,6 +1035,8 @@ Bool doCommand() /* read and execute a command      */
         break;
     case MAIN:
         runmain();
+        break;
+    default:
         break;
     }
 #if WANT_TIMER

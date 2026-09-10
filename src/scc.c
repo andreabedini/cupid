@@ -103,6 +103,8 @@ Void sccControl(Int what) {
     case INSTALL:
         registerRoots(sccRoots);
         break;
+    default:
+        break;
     }
 }
 

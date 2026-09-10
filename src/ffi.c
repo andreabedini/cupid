@@ -502,6 +502,8 @@ Void ffi(Int what) {
     case INSTALL:
         registerRoots(ffiRoots);
         break;
+    default:
+        break;
     }
 }
 

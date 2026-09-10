@@ -2169,6 +2169,8 @@ Void builtIn(Int what) {
     case RESET:
         freeAllThunks();
         break;
+    default:
+        break;
     }
 }
 

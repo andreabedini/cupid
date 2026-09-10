@@ -90,6 +90,8 @@ static Void iomonadControl(Int what) {
         nameIOBind = predefName("primbindIO");
         namePutStr = predefName("putStr");
         break;
+    default:
+        break;
     }
 }
 
@@ -767,6 +769,8 @@ static int local getIOMode(Cell mode) /* From IOMode to internal form    */
             break;
         case 4:
             m = HREADWRITE;
+            break;
+        default:
             break;
         }
     return m;

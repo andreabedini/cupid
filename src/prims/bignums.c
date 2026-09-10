@@ -83,6 +83,8 @@ static Void bignumControl(Int what) {
         bn = NIL;
         bigRem = NIL;
         break;
+    default:
+        break;
     }
 }
 
@@ -407,6 +409,8 @@ primFun(primCmpInteger) { /* Integer comparison            */
     case 1:
         updateRoot(nameGT);
         break;
+    default:
+        break;
     }
 }
 
@@ -540,6 +544,8 @@ static Bignum local digitsSub(List xs,
     case 1:
         bn = pair(POSNUM, NIL);
         break; /* if xs>ys, return +(xs-ys)        */
+    default:
+        break;
     }
 
     nx = bn;   /* Now we can assume that xs>ys    */

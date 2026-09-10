@@ -123,6 +123,8 @@ identToStr(Cell v) /*find string corresp to given ident or qualified name*/
         text[pos] = '\0';
         return text + textHw;
     }
+    default:
+        break;
     }
     internal("identToStr2");
     return 0; /*NOTUSED*/
@@ -1786,6 +1788,8 @@ mc:
         *slot = c; /* c may have come through an      */
         return;    /* indirection chain               */
     }
+    default:
+        break;
     }
     *slot = c; /* the indirection chain above may have been resolved   */
                /* (possibly through several INDIRECT cells) before      */
@@ -3410,6 +3414,8 @@ Void storage(Int what) {
 
         /* Note: primInfoDef memory is freed in controlFuns() above */
 
+        break;
+    default:
         break;
     }
 }

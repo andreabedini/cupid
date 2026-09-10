@@ -1703,6 +1703,8 @@ Void substitution(Int what) {
     case EXIT:
         free(tyvars);
         break;
+    default:
+        break;
     }
 }
 

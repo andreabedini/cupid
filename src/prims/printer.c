@@ -71,6 +71,8 @@ static Void printerControl(Int what) {
     case RESET:
         out = NIL;
         break;
+    default:
+        break;
     }
 }
 

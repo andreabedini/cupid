@@ -45,6 +45,8 @@ static Void local internalControl(Int what) {
     case RESET:
         linkInternals();
         break;
+    default:
+        break;
     }
 }
 
@@ -350,6 +352,8 @@ primFun(primNameInfo) { /* Get arity and fixity of a Name   */
         break;
     case NON_ASS:
         assoc = 'N';
+        break;
+    default:
         break;
     }
     updapRoot(ap(ap(mkTuple(3), mkInt(nameRec(nm)->arity)), mkInt(precOf(syn))),

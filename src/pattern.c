@@ -290,6 +290,8 @@ Void patternControl(Int what) {
         registerRoots(patternRoots);
         patternControl(RESET);
         break;
+    default:
+        break;
     }
 }
 

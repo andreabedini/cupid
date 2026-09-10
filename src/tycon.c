@@ -690,6 +690,8 @@ Void tyconControl(Int what) {
         registerRoots(tyconRoots);
         tyconControl(RESET);
         break;
+    default:
+        break;
     }
 }
 

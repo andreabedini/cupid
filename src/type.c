@@ -2544,6 +2544,8 @@ Void typeChecker(Int what) {
         addPrimCfun(findText("EmptyRec"), 0, 0, typeUnit);
 
         break;
+    default:
+        break;
     }
 }
 

@@ -326,6 +326,8 @@ static Cell local transComp(Cell e, List qs,
 
         case BOOLQUAL:
             return ap(COND, triple(translate(snd(q)), transComp(e, qs1, l), l));
+        default:
+            break;
         }
     }
 
@@ -383,6 +385,8 @@ static Cell local transDo(Cell m, Cell e,
             return ap(COND, triple(translate(snd(q)), transDo(m, e, qs1),
                                    ap2(nameMFail, m,
                                        mkStr(findText("guard fails")))));
+        default:
+            break;
         }
     }
     return e;
@@ -1808,6 +1812,8 @@ Void compiler(Int what) {
         numExtraVars = 0;
         localOffset = 0;
         localArity = 0;
+        break;
+    default:
         break;
     }
 }

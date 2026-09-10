@@ -549,5 +549,7 @@ Void charOps(Int what) {
     case EXIT:
         freeConsCharTable();
         break;
+    default:
+        break;
     }
 }

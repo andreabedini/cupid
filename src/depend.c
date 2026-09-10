@@ -893,6 +893,8 @@ Void dependControl(Int what) {
         registerRoots(dependRoots);
         dependControl(RESET);
         break;
+    default:
+        break;
     }
 }
 

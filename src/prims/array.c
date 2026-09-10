@@ -69,6 +69,8 @@ static Void arrayControl(Int what) {
         setCurrModule(modulePrelude);
         nameEltUndef = predefPrim("_undefined_array_element", "eltUndef");
         break;
+    default:
+        break;
     }
 }
 

@@ -386,6 +386,8 @@ Void kindControl(Int what) {
         registerRoots(kindRoots);
         kindControl(RESET);
         break;
+    default:
+        break;
     }
 }
 

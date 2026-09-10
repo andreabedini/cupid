@@ -572,6 +572,8 @@ Void closeAnyInput() { /* Close input stream, if open,     */
         while (c0 != EOF)
             skip();
         break;
+    default:
+        break;
     }
     reading = NOTHING;
 }
@@ -1487,6 +1489,8 @@ Int yylex() { /* Read next input token ...        */
     case '\"':
         top() = yylval = readString();
         return STRINGLIT;
+    default:
+        break;
     }
 
     if (isConStart(c0)) {      /* Look for qualified name         */
@@ -1840,6 +1844,8 @@ Void input(Int what) {
     case BREAK:
         if (reading == KEYBOARD)
             c0 = EOF;
+        break;
+    default:
         break;
     }
 }

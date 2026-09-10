@@ -640,6 +640,8 @@ Void typeexpControl(Int what) {
         registerRoots(typeexpRoots);
         typeexpControl(RESET);
         break;
+    default:
+        break;
     }
 }
 
