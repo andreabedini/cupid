@@ -96,7 +96,6 @@
 # define HAVE_GETTIMEOFDAY 1
 # define HAVE_SELECT 1
 # define HAVE_TIMES 1
-# define HAVE_VALLOC 1            /* page-aligned heap, as before */
 # define HAVE_STRUCT_TM_TM_ZONE 1 /* tm_zone and tm_gmtoff */
 # define HAVE_BIN_SH 1
 # define DOS_FILENAMES 0 /* slash paths, ':'-separated PATHSEP, ".so" */

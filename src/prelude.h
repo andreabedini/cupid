@@ -312,11 +312,13 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  * Memory allocation
  *-------------------------------------------------------------------------*/
 
-#if HAVE_VALLOC
-# define farCalloc(n, s) (Void *)valloc(((size_t)(n)) * ((size_t)(s)))
-#else
-# define farCalloc(n, s) (Void *)calloc(((unsigned)n), ((unsigned)s))
-#endif
+/* Zeroed, as the name says.  This was valloc when HAVE_VALLOC, which does
+ * not zero: heapFst and heapSnd got away with it because storage(INSTALL)
+ * writes every cell onto the free list, but the profiler's heapThd has no
+ * pass of its own and every cell began with a garbage producer.  The page
+ * alignment bought nothing -- an allocation this size is mmap'd, and so
+ * page-aligned, either way. */
+#define farCalloc(n, s) (Void *)calloc((size_t)(n), (size_t)(s))
 
 /* bison-generated parsers like to have alloca - so try to define it */
 
