@@ -18,8 +18,7 @@
 #include "connect.h"
 #include "errors.h"
 #include "goal.h"
-#include "char.h"
-#include "output.h" /* needed for DEBUG_CODE */
+#include "output.h" /* IWYU pragma: keep -- printExp, under DEBUG_CODE */
 
 Addr inputCode;          /* Addr of compiled code for expr   */
 static Name currentName; /* Top level name being processed   */

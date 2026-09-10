@@ -27,12 +27,12 @@
 # endif
 #endif
 
-#include "platform.h"
+#include "platform.h" /* IWYU pragma: keep -- SIZEOF_* in the static assertions below */
 #include "sysdeps.h"
 #include "config.h"
 #include <stdio.h>
 
-#include <stdlib.h>
+#include <stdlib.h> /* IWYU pragma: keep -- the common preamble; farCalloc, and every caller of malloc */
 #include <sys/types.h>
 #if HAVE_UNISTD_H
 # include <unistd.h>
@@ -268,11 +268,11 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
     */
 # define ctrlbrk(bh)                                                           \
      do {                                                                      \
-         struct sigaction cuddles_sigbrk_sa;                                    \
-         cuddles_sigbrk_sa.sa_handler = (bh);                                   \
-         sigemptyset(&cuddles_sigbrk_sa.sa_mask);                               \
-         cuddles_sigbrk_sa.sa_flags = 0;                                        \
-         sigaction(SIGINT, &cuddles_sigbrk_sa, NULL);                           \
+         struct sigaction cuddles_sigbrk_sa;                                   \
+         cuddles_sigbrk_sa.sa_handler = (bh);                                  \
+         sigemptyset(&cuddles_sigbrk_sa.sa_mask);                              \
+         cuddles_sigbrk_sa.sa_flags = 0;                                       \
+         sigaction(SIGINT, &cuddles_sigbrk_sa, NULL);                          \
      } while (0)
 
 #endif
@@ -457,7 +457,7 @@ typedef void *Pointer;
 #endif
 
 /* The table and heap sizes, which are a group of their own */
-#include "sizes.h"
+#include "sizes.h" /* IWYU pragma: keep -- the common preamble; thirteen files take the table sizes from here */
 
 #if PROFILING
 # define DEF_PROFINTDIV 10 /* hpsize/this cells between samples*/
@@ -488,7 +488,7 @@ CUDDLES_inline Int placeInSet(Int n) /* n is a (negative) pair cell         */
     return (-n - 1) >> wordShift;
 }
 CUDDLES_inline unsigned maskInSet(Int n) /* unsigned: the shift can reach   */
-{                                       /* bit 31                          */
+{                                        /* bit 31                          */
     return 1u << ((-n - 1) & wordMask);
 }
 

@@ -14,12 +14,12 @@
 #include "prelude.h"
 #include "storage.h"
 #include "connect.h"
-#include "opts.h"
+#include "opts.h" /* IWYU pragma: keep -- declares profiling and profInterval, defined here under PROFILING */
 #include "errors.h"
 #include "machdep.h"
 #include "evaluator.h" /* everybody() proto only */
 #include "strutil.h"
-#include "output.h" /* needed for DEBUG_PRINTER|PROFILING */
+#include "output.h" /* IWYU pragma: keep -- printPred, under PROFILING */
 #include <setjmp.h>
 
 /*#define DEBUG_SHOWUSE*/

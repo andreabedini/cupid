@@ -17,7 +17,6 @@
 #include "connect.h"
 #include "errors.h"
 #include "output.h"
-#include "char.h"
 #include <ctype.h>
 
 #define DEPTH_LIMIT 15

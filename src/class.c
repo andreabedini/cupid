@@ -19,13 +19,10 @@
 #include "storage.h"
 #include "connect.h"
 #include "errors.h"
-#include "output.h"
 #include "subst.h"
-#include "module.h"
 #include "opts.h"
 #include "typeexp.h"
 #include "kind.h"
-#include "tycon.h"
 #include "binding.h"
 #include "class.h"
 

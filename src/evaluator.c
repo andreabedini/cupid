@@ -18,7 +18,7 @@
 #include "machdep.h"
 #include "evaluator.h"
 #include "scc.h"
-#include "timer.h"
+#include "timer.h" /* IWYU pragma: keep -- updateTimers, under WANT_TIMER */
 
 #if HAVE_WINDOWS_H
 # include <windows.h>
@@ -31,7 +31,7 @@
  *       of the UI used.
  *
  * ------------------------------------------------------------------------*/
-Int hpSize = DEFAULTHEAP;  /* Desired heap size               */
+Int hpSize = DEFAULTHEAP;   /* Desired heap size               */
 String cuddlesPath = 0;     /* String for file search path     */
 String cuddlesSuffixes = 0; /* Source filename suffixes        */
 

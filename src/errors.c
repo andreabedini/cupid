@@ -14,7 +14,6 @@
 #include "output.h"
 #include "opts.h"
 #include "goal.h"
-#include "char.h"
 #include "evaluator.h" /* everybody() proto only */
 #include <setjmp.h>
 

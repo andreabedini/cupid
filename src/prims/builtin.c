@@ -15,9 +15,7 @@
 #include "storage.h"
 #include "connect.h"
 #include "errors.h"
-#include "machdep.h"
 #include "char.h"
-#include <ctype.h>
 #include <math.h>
 #include <stdint.h> /* intptr_t, for the StablePtr conversions */
 
@@ -45,8 +43,6 @@
 #if HAVE_SYS_RESOURCE_H && !mingw32_HOST_OS
 # include <sys/resource.h>
 #endif
-
-#include <errno.h>
 
 #if HAVE_SYS_TIMEB_H
 # include <sys/timeb.h>

@@ -29,7 +29,6 @@
  * $Date: 2004/10/14 22:08:49 $
  * ------------------------------------------------------------------------*/
 
-#include "prelude.h"
 #include "timer.h"
 
 long userElapsed = 0, systElapsed = 0; /* microseconds, or clock ticks     */

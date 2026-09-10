@@ -15,7 +15,7 @@
 
 #include "prelude.h"
 #include "storage.h"
-#include "errors.h"
+#include "errors.h" /* IWYU pragma: keep -- internal(), in the CHECK_TAGS macros below */
 
 extern String evalName(Cell);
 extern Cell mkIOError(Cell *, Name, String, String, Cell *);

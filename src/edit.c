@@ -1,9 +1,6 @@
 #include "prelude.h"
-#include "storage.h"
-#include "connect.h"
 #include "errors.h"
 #include "opts.h"
-#include "strutil.h"
 #include "machdep.h"
 
 /* Expand one word of the editor template, from *hep up to the next space,

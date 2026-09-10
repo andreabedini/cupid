@@ -7,15 +7,12 @@
 #include "prelude.h"
 #include "storage.h"
 #include "connect.h"
-#include "errors.h"
-#include "machdep.h"
 #include "builtin.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #if HAVE_UNISTD_H
 # include <unistd.h>
 #endif
-#include <errno.h>
 #include <fcntl.h>
 #if HAVE_IO_H
 # include <io.h>

@@ -14,8 +14,6 @@
 #include "prelude.h"
 #include "storage.h"
 #include "connect.h"
-#include "errors.h"
-#include "machdep.h"
 #include "builtin.h"
 
 static Name nameEltUndef; /* undefined element in array    */

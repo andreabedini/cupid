@@ -18,10 +18,6 @@
 #include "storage.h"
 #include "connect.h"
 #include "errors.h"
-#include "output.h"
-#include "subst.h"
-#include "module.h"
-#include "opts.h"
 #include "typeexp.h"
 #include "binding.h"
 

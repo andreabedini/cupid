@@ -15,7 +15,6 @@
 #include "storage.h"
 #include "connect.h"
 #include "errors.h"
-#include "machdep.h"
 #include "builtin.h"
 #include <math.h>
 

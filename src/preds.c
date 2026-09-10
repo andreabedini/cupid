@@ -15,7 +15,7 @@
 #include "storage.h"
 #include "connect.h"
 #include "errors.h"
-#include "output.h"
+#include "output.h" /* IWYU pragma: keep -- printPred, under EXPLAIN_INSTANCE_RESOLUTION */
 #include "subst.h"
 #include "opts.h" /* allowOverlap, EXPLAIN_INSTANCE_RESOLUTION */
 #include "preds.h"

@@ -15,8 +15,7 @@
 #include "storage.h"
 #include "connect.h"
 #include "errors.h"
-#include "char.h"
-#include "opts.h" /* needed for DEBUG_CODE */
+#include "opts.h" /* IWYU pragma: keep -- declares debugCode, defined here under DEBUG_CODE */
 #if DEBUG_CODE
 # include "output.h" /* printExp, for the disassembler's headings */
 #endif

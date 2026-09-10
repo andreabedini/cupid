@@ -18,8 +18,6 @@
 #include "storage.h"
 #include "connect.h"
 #include "errors.h"
-#include "output.h"
-#include "module.h"
 #include "pattern.h"
 #include "depend.h"
 #include "fixity.h"

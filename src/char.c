@@ -15,7 +15,7 @@
 #include "errors.h"
 #include "char.h"
 #include "unitable.h"
-#include <errno.h>
+#include <errno.h> /* IWYU pragma: keep -- errno, under CHAR_ENCODING_LOCALE */
 
 /* --------------------------------------------------------------------------
  * Unicode character properties (cf http://www.unicode.org/ucd/)

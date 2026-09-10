@@ -23,7 +23,7 @@
 #include "machdep.h"
 #include "output.h"
 #include "module.h"
-#include "timer.h"
+#include "timer.h" /* IWYU pragma: keep -- updateTimers, under WANT_TIMER */
 #include <setjmp.h>
 #include <ctype.h>
 

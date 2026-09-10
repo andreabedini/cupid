@@ -2,8 +2,6 @@
  * Keeping track of progress towards a goal.
  */
 #include "prelude.h"
-#include "storage.h"
-#include "connect.h"
 #include "errors.h"
 #include "machdep.h"
 #include "opts.h"

@@ -4,7 +4,6 @@
 
 #include "prelude.h"
 #include "storage.h"
-#include "connect.h"
 #include "errors.h"
 #include "tagcheck.h"
 

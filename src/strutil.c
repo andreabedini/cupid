@@ -2,8 +2,6 @@
  * String utilities needed throughout the Cuddles codebase.
  */
 #include "prelude.h"
-#include "storage.h"
-#include "connect.h"
 #include "errors.h"
 #include "strutil.h"
 #include "char.h"

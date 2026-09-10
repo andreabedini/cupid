@@ -18,7 +18,6 @@
 #include "parser.h" /* tokens, yylval and yyparse, from parser.y */
 #include "command.h"
 #include "errors.h"
-#include "module.h"
 #include "script.h"
 #include "opts.h"
 #include "goal.h"

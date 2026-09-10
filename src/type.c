@@ -18,10 +18,10 @@
 #include "preds.h"
 #include "tagcheck.h"
 #include "errors.h"
-#include "output.h"
+#include "output.h" /* IWYU pragma: keep -- printPred, under EXPLAIN_INSTANCE_RESOLUTION */
 #include "subst.h"
 #include "goal.h"
-#include "opts.h" /* needed for EXPLAIN_INSTANCE_RESOLUTION */
+#include "opts.h" /* IWYU pragma: keep -- showInstRes, under EXPLAIN_INSTANCE_RESOLUTION */
 
 Bool catchAmbigs = FALSE; /* TRUE => functions with ambig.   */
                           /*       types produce error     */

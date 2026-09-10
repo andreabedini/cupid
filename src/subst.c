@@ -16,7 +16,6 @@
 #include "storage.h"
 #include "connect.h"
 #include "errors.h"
-#include "output.h"
 #include "opts.h"
 #include "subst.h"
 #include "tagcheck.h"

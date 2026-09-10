@@ -25,7 +25,6 @@
 #include "machdep.h"
 #include "builtin.h"
 #include "char.h"
-#include <ctype.h>
 #include <stdint.h> /* intptr_t, for the StablePtr conversions */
 #include <sys/types.h>
 #include <sys/stat.h>

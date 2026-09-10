@@ -21,7 +21,6 @@
 #include "opts.h"
 #include "strutil.h"
 #include "machdep.h"
-#include "char.h"
 #include "evaluator.h" /* everybody() proto only */
 
 /*#define DEBUG_SEARCH*/
