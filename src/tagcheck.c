@@ -69,8 +69,17 @@ Bool isPredList(Cell ps) {
 
 Void tagError(const char *what, const char *fn, Cell c) {
     static char msg[120];
-    snprintf(msg, sizeof(msg), "%s: not a %s (cell %d, tag %d)", fn, what,
-             (int)c, (int)whatIs(c));
+    /* c is by definition not the handle the caller expected, so it may be
+     * any value at all.  whatIs reads heapTopFst[c] for a negative cell and
+     * whatCode[c] for the rest, neither of which is bounds-checked, so ask
+     * for the tag only once c is known to be in range: a reporter that
+     * faults on a bad cell reports nothing. */
+    if (isGenPair(c) || (0 <= c && c < N_WHATCODE))
+        snprintf(msg, sizeof(msg), "%s: not a %s (cell %d, tag %d)", fn, what,
+                 (int)c, (int)whatIs(c));
+    else
+        snprintf(msg, sizeof(msg), "%s: not a %s (cell %d, out of range)", fn,
+                 what, (int)c);
     internal(msg);
 }
 
