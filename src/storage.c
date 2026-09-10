@@ -1185,7 +1185,9 @@ Void cuddlesStackOverflow() { /* Report stack overflow               */
             }
         }
     }
-    errPrintf("\n");
+    /* No newline here: each entry above opens with one, and errFail ends the
+     * message, so the two versions of this function print the same thing
+     * apart from the trace itself. */
     errFail();
 }
 
