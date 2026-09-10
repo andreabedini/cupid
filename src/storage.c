@@ -2080,7 +2080,7 @@ Void garbageCollect() {              /* Run garbage collector ...       */
             }
         }
         for (i = NAMEMIN; i < nameHw; i++)
-            if (nameRec(i)->count > 0)
+            if (nameRec(i)->count > 0) {
                 if (isPair(nameRec(i)->parent)) {
                     Pair p = nameRec(i)->parent;
                     Cell f = fst(p);
@@ -2100,6 +2100,7 @@ Void garbageCollect() {              /* Run garbage collector ...       */
                     fprintf(profile, "  %s %d\n", textToStr(nameRec(i)->text),
                             nameRec(i)->count);
                 }
+            }
         fprintf(profile, "END_SAMPLE %ld.00\n", numReductions);
     }
 #endif
