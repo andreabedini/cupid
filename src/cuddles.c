@@ -533,12 +533,16 @@ static String local objToStr(Module m, Cell c) {
 
     needed = strlen(unqual) + 1 + (qualifier ? strlen(qualifier) + 1 : 0);
     if (needed > newVarLen) {
-        newVar = realloc(newVar, needed);
-        if (!newVar) {
+        /* Into a temporary: errFail longjmps back to the command loop, so a
+         * failure here must leave newVar and newVarLen as they were rather
+         * than a null buffer still described by the old length. */
+        char *grown = realloc(newVar, needed);
+        if (!grown) {
             errHead(0);
             errPrintf("Cannot allocate name buffer");
             errFail();
         }
+        newVar = grown;
         newVarLen = needed;
     }
     if (qualifier)

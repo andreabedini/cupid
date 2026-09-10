@@ -1244,7 +1244,9 @@ primFun(primHWaitForInput) { /* Check whether a character can be read
 
         maxfd = fd + 1;
         tv.tv_sec = msecs / 1000;
-        tv.tv_usec = (msecs % 1000) * 1000; /* tv_usec counts microseconds */
+        /* tv_usec counts microseconds; the product is at most 999000, but
+         * widen before multiplying so the arithmetic is in the field's type */
+        tv.tv_usec = (suseconds_t)(msecs % 1000) * 1000;
 
         while ((ready = select(maxfd, &rfd, NULL, NULL, &tv)) < 0) {
             if (errno != EINTR) {
