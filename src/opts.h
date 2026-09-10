@@ -49,12 +49,12 @@ extern Bool displayIO;          /* TRUE => use printer for IO result */
 extern Bool
     printTypeUseDefaults; /* TRUE => use 'default'ing when printing types */
 
-extern Int cutoff;            /* Constraint Cutoff depth          */
-extern String prompt;         /* Prompt string                   */
-extern String repeatStr;      /* Repeat last expr                */
+extern Int cutoff;             /* Constraint Cutoff depth          */
+extern String prompt;          /* Prompt string                   */
+extern String repeatStr;       /* Repeat last expr                */
 extern String cuddlesPath;     /* String for file search path     */
 extern String cuddlesSuffixes; /* Source filename suffixes        */
-extern Int hpSize;            /* Desired heap size               */
+extern Int hpSize;             /* Desired heap size               */
 extern String cuddlesEdit;     /* String for editor command       */
 
 /* The rest are conditionally supported flags: */

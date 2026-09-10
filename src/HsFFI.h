@@ -122,8 +122,8 @@ typedef void (*CuddlesPrim)(CuddlesStackPtr); /* primitive function          */
 
 #ifndef __PRELUDE_H__
 struct cuddles_primitive { /* table of primitives                   */
-    char *ref;            /* primitive reference string    */
-    int arity;            /* primitive function arity      */
+    char *ref;             /* primitive reference string    */
+    int arity;             /* primitive function arity      */
     CuddlesPrim imp;       /* primitive implementation      */
 };
 
