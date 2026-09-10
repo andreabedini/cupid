@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+"""Build and test Cuddles in every configuration the feature options make.
+
+usage: tools/check-configurations [--build-root DIR] [--jobs N] [--list] [NAME...]
+
+`meson test` covers whichever configuration its build directory was set up
+with, which leaves the feature options of meson.options untested unless
+somebody thinks to try them.  Untested, they rot: when this was first
+tried, two of the ten were broken and the suite failed the same 17 tests
+every time, so a real failure among them said nothing.
+
+This runs the lot: the default configuration, each feature option on its
+own, and all of them at once.  The options come from the option_macros
+table in meson.build, so a new one joins the sweep as soon as it is added
+there.
+
+Build directories are kept and reused, so a second run only rebuilds what
+changed.  NAME... restricts the run to the configurations named; --list
+prints the names.
+
+CC is passed through, which is how to select a compiler:
+
+    CC=clang tools/check-configurations
+"""
+
+import argparse
+import concurrent.futures
+import os
+import re
+import subprocess
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def feature_options():
+    """The option names in meson.build's option_macros table, in order."""
+    text = open(os.path.join(ROOT, "meson.build"), encoding="utf-8").read()
+    m = re.search(r"^option_macros = \{(.*?)^\}", text, re.M | re.S)
+    if not m:
+        sys.exit("check-configurations: no option_macros table in meson.build")
+    names = re.findall(r"^\s*'([A-Za-z0-9-]+)'\s*:", m.group(1), re.M)
+    if not names:
+        sys.exit("check-configurations: option_macros table is empty")
+    return names
+
+
+def configurations():
+    options = feature_options()
+    configs = [("default", [])]
+    configs += [(o, ["-D%s=true" % o]) for o in options]
+    configs.append(("all", ["-D%s=true" % o for o in options]))
+    return configs
+
+
+def run(cmd, cwd=None):
+    return subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT, encoding="utf-8",
+                          errors="replace")
+
+
+def check_one(name, args, build_root):
+    builddir = os.path.join(build_root, name)
+    setup = ["meson", "setup"]
+    if os.path.exists(os.path.join(builddir, "build.ninja")):
+        setup.append("--reconfigure")
+    proc = run(setup + [builddir] + args, cwd=ROOT)
+    if proc.returncode:
+        return name, "setup", proc.stdout
+    proc = run(["ninja", "-C", builddir], cwd=ROOT)
+    if proc.returncode:
+        return name, "build", proc.stdout
+    proc = run(["meson", "test", "-C", builddir], cwd=ROOT)
+    if proc.returncode:
+        return name, "test", proc.stdout
+    return name, None, proc.stdout
+
+
+def main():
+    p = argparse.ArgumentParser(add_help=False)
+    p.add_argument("--build-root", default=os.path.join(ROOT, "build-configurations"))
+    p.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 4) // 4))
+    p.add_argument("--list", action="store_true")
+    p.add_argument("-h", "--help", action="store_true")
+    p.add_argument("names", nargs="*")
+    opts = p.parse_args()
+    if opts.help:
+        sys.exit(__doc__)
+
+    configs = configurations()
+    if opts.list:
+        for name, args in configs:
+            print("%-30s %s" % (name, " ".join(args) or "(no options)"))
+        return 0
+    if opts.names:
+        known = dict(configs)
+        unknown = [n for n in opts.names if n not in known]
+        if unknown:
+            sys.exit("check-configurations: no such configuration: "
+                     + ", ".join(unknown))
+        configs = [(n, known[n]) for n in opts.names]
+
+    os.makedirs(opts.build_root, exist_ok=True)
+    # meson drops a "*" .gitignore into each build directory it makes, but not
+    # into the one holding them, and a setup that fails leaves a directory
+    # behind without one.  Cover the root so nothing here reaches the repo.
+    ignore = os.path.join(opts.build_root, ".gitignore")
+    if not os.path.exists(ignore):
+        with open(ignore, "w", encoding="utf-8") as f:
+            f.write("*\n")
+    print("%d configurations, %d at a time, under %s\n"
+          % (len(configs), opts.jobs, os.path.relpath(opts.build_root, ROOT)))
+
+    failures = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=opts.jobs) as pool:
+        futures = [pool.submit(check_one, n, a, opts.build_root) for n, a in configs]
+        for future in concurrent.futures.as_completed(futures):
+            name, stage, output = future.result()
+            if stage:
+                failures.append((name, stage, output))
+                print("FAIL %-30s (%s)" % (name, stage))
+            else:
+                summary = [l for l in output.splitlines() if "tests," in l]
+                print("ok   %-30s %s" % (name, summary[-1] if summary else ""))
+
+    for name, stage, output in failures:
+        print("\n" + "=" * 70)
+        print("%s: %s failed" % (name, stage))
+        print("=" * 70)
+        print("\n".join(output.splitlines()[-40:]))
+
+    print("\n%d configurations, %d failed" % (len(configs), len(failures)))
+    return 1 if failures else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

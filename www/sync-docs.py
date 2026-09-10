@@ -45,6 +45,7 @@ PAGE_ORDER = {
         "add-a-library.md",
         "measure-time-and-memory.md",
         "run-clang-tidy.md",
+        "check-every-configuration.md",
     ],
     "reference": [
         "commands.md",

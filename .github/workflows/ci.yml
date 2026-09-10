@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  configurations:
+    # Every configuration the feature options make: the default, each option
+    # on its own, and all of them together.  The default build alone is not
+    # enough: an option nothing runs rots.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        cc: [gcc, clang]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build bison libreadline-dev
+
+      - name: Install build dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install meson ninja bison readline
+
+      - name: Build and test every configuration
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          # bison from Homebrew is not on PATH by default, and the one macOS
+          # ships is too old for the grammar.
+          if [ "$RUNNER_OS" = macOS ]; then
+            PATH="$(brew --prefix bison)/bin:$PATH"
+            export PATH
+          fi
+          tools/check-configurations
+
+  warnings:
+    # The tree builds without a compiler warning; -Werror says so rather
+    # than leaving it to be noticed in a log.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build bison libreadline-dev
+      - run: meson setup build --werror
+      - run: ninja -C build
+      - run: meson test -C build
+
+  format:
+    # The C sources are formatted by clang-format.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y clang-format
+      - run: clang-format --dry-run -Werror src/*.c src/*.h src/prims/*.c src/prims/*.h
