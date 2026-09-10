@@ -1511,7 +1511,7 @@ static HsAddr getAddr() {
 static char getChar4() {
     eval(pop());
     checkChar();
-    return charOf(whnfHead);
+    return (char)charOf(whnfHead);
 }
 static HsChar getChar() {
     eval(pop());
@@ -1530,12 +1530,12 @@ static HsBool getBool() {
 static HsInt8 getInt8() {
     eval(pop());
     checkInt();
-    return whnfInt;
+    return (HsInt8)whnfInt;
 }
 static HsInt16 getInt16() {
     eval(pop());
     checkInt();
-    return whnfInt;
+    return (HsInt16)whnfInt;
 }
 static HsInt32 getInt32() {
     eval(pop());
@@ -1659,7 +1659,8 @@ static void putWord32(HsWord32 x) {
     push(mkInt((int)x));
 }
 static void putWord64(HsWord64 x) {
-    push(pair(I64CELL, pair(mkInt(part1Int64(x)), mkInt(part2Int64(x)))));
+    push(pair(I64CELL, pair(mkInt(part1Int64((HsInt64)x)),
+                            mkInt(part2Int64((HsInt64)x)))));
 }
 static void putPtr(HsPtr x) {
     push(mkPtr(x));

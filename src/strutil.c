@@ -32,7 +32,7 @@ String strnCopy(String s, Int n) /* make malloced copy of a substring */
     if (s) {
         char *t;
         if ((Int)strlen(s) < n)
-            n = strlen(s);
+            n = (Int)strlen(s);
         if ((t = (char *)malloc(n + 1)) == 0) {
             errHead(0);
             errPrintf("String storage space exhausted");
@@ -67,7 +67,7 @@ Void splitQualString(String nm, String *pMod, String *pName) {
         *pName = nm;
     } else {
         /* The module portion consists of everything upto the last dot. */
-        *pMod = strnCopy(nm, dot - nm);
+        *pMod = strnCopy(nm, (Int)(dot - nm));
 
         /* Everything after the last '.' is the name string */
         *pName = dot + 1;

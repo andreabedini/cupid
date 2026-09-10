@@ -605,7 +605,7 @@ Void checkImportList(Bool isQual,
     if (isNull(es)) {
         /* Module not already present, add it. */
         moduleRec(currentModule)->modImports =
-            cons(pair(m, pair(isHidden, modImps)),
+            cons(pair(m, pair((Cell)isHidden, modImps)),
                  moduleRec(currentModule)->modImports);
     }
 }

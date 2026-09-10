@@ -260,7 +260,7 @@ Text findText(String s) /* Locate string in Text array      */
 static Int local saveText(Text t) /* Save text value in buffer       */
 {                                 /* at top of text table            */
     String s = textToStr(t);
-    Int l = strlen(s);
+    Int l = (Int)strlen(s);
 
     if (textHw + l + 1 > savedText) {
         errHead(0);

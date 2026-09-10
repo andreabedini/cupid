@@ -492,7 +492,7 @@ static String local expandVariable(String pathpt) {
         int i, len;
 
         for (i = 0; shell_var[i].var_name != NULL; i++) {
-            len = strlen(shell_var[i].var_name);
+            len = (int)strlen(shell_var[i].var_name);
             if (strncmp(pathpt + 1, shell_var[i].var_name, len) == 0 &&
                 pathpt[len + 1] == '}') {
                 return (*shell_var[i].var_value)();
@@ -547,7 +547,7 @@ String dirname(String filename) /* Return the directory part of the filename */
     if (!slash) {
         return strCopy(".");
     } else {
-        return strnCopy(filename, slash - filename);
+        return strnCopy(filename, (Int)(slash - filename));
     }
 #endif
 }
@@ -560,12 +560,12 @@ String dirname(String filename) /* Return the directory part of the filename */
 String local substPath(String new,
                        String sub) /* substitute sub path into new path*/
 {
-    Bool substituted = FALSE;               /*   only allow one replacement */
-    Int maxlen = strlen(sub) + strlen(new); /* safe upper bound */
-    String r = (String)malloc(maxlen + 1);  /* result string                */
-    String t = r;                           /* pointer into r               */
-    String next = new;                      /* next uncopied char in new    */
-    String start = next;                    /* start of last path component */
+    Bool substituted = FALSE; /*   only allow one replacement */
+    Int maxlen = (Int)(strlen(sub) + strlen(new)); /* safe upper bound */
+    String r = (String)malloc(maxlen + 1); /* result string                */
+    String t = r;                          /* pointer into r               */
+    String next = new;                     /* next uncopied char in new    */
+    String start = next;                   /* start of last path component */
     if (r == 0) {
         errHead(0);
         errPrintf("String storage space exhausted");

@@ -29,7 +29,7 @@ Void setGoal(String what, Target t) /* Set goal for what to be t        */
     currTarget = (t ? t : 1);
     aiming = TRUE;
     if (useDots) {
-        currPos = strlen(what);
+        currPos = (Int)strlen(what);
         maxPos = getTerminalWidth() - 1;
         Printf("%s", what);
     } else

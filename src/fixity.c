@@ -289,8 +289,9 @@ static Pair local attachFixity(Int line,
     if (sy == APPLIC) {
         sy = DEF_OPSYNTAX;
     }
-    return pair(mkInt(sy), pair(trop, op)); /* Pair fixity with (possibly) */
-                                            /* translated operator       */
+    return pair(mkInt((Int)sy),
+                pair(trop, op)); /* Pair fixity with (possibly) */
+                                 /* translated operator       */
 }
 
 /*-------------------------------------------------------------------------*/

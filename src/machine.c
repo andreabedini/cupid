@@ -1568,7 +1568,7 @@ static Void local evalString(Cell n) /* expand STRCELL at node n         */
     c = getStrChr(&s);
     push(n); /* protect n during mkStr           */
     fst(n) = consChar(c);
-    snd(n) = mkStr(t + (s - textToStr(t)));
+    snd(n) = mkStr(t + (Text)(s - textToStr(t)));
     drop();
 }
 

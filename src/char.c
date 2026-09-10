@@ -356,13 +356,13 @@ int fgetc_mb(FILE *f) {
 
 Void addc_mb(Char c, String *sp) {
     if (c < 0x80)
-        *(*sp)++ = c;
+        *(*sp)++ = (char)c;
     else {
         int i;
         int noct = utfcodelen(c);
         int cn = c;
         for (i = noct - 1; i >= 0; i--) {
-            (*sp)[i] = (cn % 64) | ((i == 0) ? UTFmask(noct) : 0x80);
+            (*sp)[i] = (char)((cn % 64) | ((i == 0) ? UTFmask(noct) : 0x80));
             cn /= 64;
         }
         *sp += noct;

@@ -344,7 +344,7 @@ Void checkForeignImport(Name p) /* Check foreign import          */
             ext = skipSpaces(e);
         }
         if ((e = matchFname(ext))) {
-            fn = subText(ext, e - ext);
+            fn = subText(ext, (Int)(e - ext));
             ext = skipSpaces(e);
         }
 
@@ -363,7 +363,7 @@ Void checkForeignImport(Name p) /* Check foreign import          */
         }
         if (*ext != '\0') {
             e = skipToSpace(ext);
-            cid = subText(ext, e - ext);
+            cid = subText(ext, (Int)(e - ext));
             ext = skipSpaces(e);
         } else {
             cid = nameRec(p)->text;
@@ -513,7 +513,7 @@ Void ffiSetFlags(String s) {
     if (s == 0)
         return;
     if (ffiFlags) {
-        Int l = strlen(ffiFlags);
+        Int l = (Int)strlen(ffiFlags);
         String t = (char *)realloc(ffiFlags, l + strlen(s) + 2);
         if (t == 0) { /* keep old ffiFlags on failure     */
             errHead(0);
@@ -533,9 +533,9 @@ static String cppDirectives = 0; /* extra C preprocessor directives */
 Void ffiAddCppInclude(String s) {
     Int l;
     String t;
-    Int needed = strlen(s) + 11;
+    Int needed = (Int)strlen(s) + 11;
     if (cppDirectives) {
-        l = strlen(cppDirectives);
+        l = (Int)strlen(cppDirectives);
         t = (char *)realloc(cppDirectives, l + needed);
     } else {
         l = 0;

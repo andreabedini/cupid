@@ -968,7 +968,7 @@ static Cell local readCtrlChar() { /* read escape sequence \^x         */
         errFail();
     }
     skip();
-    return mkChar(which - controls);
+    return mkChar((Int)(which - controls));
 }
 
 static Cell local readOctChar() { /* read octal character constant    */

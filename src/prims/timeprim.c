@@ -144,7 +144,7 @@ primFun(primGetCalTime) { /* Int   -> Int -> IO (.....) */
 #endif
 
 #if HAVE_STRUCT_TM_TM_ZONE
-    utcOff = tm->tm_gmtoff;
+    utcOff = (Int)tm->tm_gmtoff;
 #elif HAVE_DECL_TIMEZONE || HAVE_DECL__TIMEZONE
 # if HAVE_DECL_ALTZONE
     utcOff = (-(tm->tm_isdst ? altzone : timezone));
@@ -213,7 +213,7 @@ primFun(primMkTime) { /* Int{-year-}  -> Int{-month-} -> Int{-day-} ->
   */
     tz = -tz;
 #if HAVE_STRUCT_TM_TM_ZONE
-    tz += tm.tm_gmtoff;
+    tz += (Int)tm.tm_gmtoff;
 #elif HAVE_DECL_TIMEZONE || HAVE_DECL__TIMEZONE
 # if HAVE_DECL_ALTZONE
     tz += (-(tm.tm_isdst ? altzone : timezone));
@@ -290,10 +290,10 @@ CAFInt(primClockTicks, sysconf(_SC_CLK_TCK))
     struct rusage t;
 
     getrusage(RUSAGE_SELF, &t);
-    userSec = t.ru_utime.tv_sec;
-    userNSec = 1000 * t.ru_utime.tv_usec;
-    sysSec = t.ru_stime.tv_sec;
-    sysNSec = 1000 * t.ru_stime.tv_usec;
+    userSec = (int)t.ru_utime.tv_sec;
+    userNSec = (int)(1000 * t.ru_utime.tv_usec);
+    sysSec = (int)t.ru_stime.tv_sec;
+    sysNSec = (int)(1000 * t.ru_stime.tv_usec);
 
 #elif HAVE_TIMES
     struct tms t;

@@ -186,7 +186,7 @@ static Void local vBufferedPrintf(CuddlesStream *stream, const char *fmt,
 
 static Void local bufferedPutchar(CuddlesStream *stream, int c) {
     if (BufferSize - stream->next >= 2) {
-        stream->buffer[stream->next++] = c;
+        stream->buffer[stream->next++] = (char)c;
         stream->buffer[stream->next] = '\0';
     }
 }

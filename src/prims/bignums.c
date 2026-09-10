@@ -125,7 +125,7 @@ Bignum bigInt(Int n) /* convert Int to bignum      */
             bn = pair(POSNUM, NIL);
         }
         for (nx = bn; no > 0; no /= BIGBASE, nx = tl(nx)) {
-            tl(nx) = pair(mkDigit(no % BIGBASE), NIL);
+            tl(nx) = pair(mkDigit((Int)(no % BIGBASE)), NIL);
         }
         return bn;
     }
@@ -141,7 +141,7 @@ Bignum bigWord(Unsigned n) /* convert Word to bignum       */
         no = (unsigned long)(n);
         bn = pair(POSNUM, NIL);
         for (nx = bn; no > 0; no /= BIGBASE, nx = tl(nx)) {
-            tl(nx) = pair(mkDigit(no % BIGBASE), NIL);
+            tl(nx) = pair(mkDigit((Int)(no % BIGBASE)), NIL);
         }
         return bn;
     }
@@ -255,7 +255,7 @@ Bignum bigStr(String s) /* convert String to bignum        */
 
     if (*t == '-') /* look for leading minus       */
         t++;       /* and ignore for time being    */
-    if ((i = (size_t)strlen(t) % BIGEXP) != 0) {
+    if ((i = (Int)((size_t)strlen(t) % BIGEXP)) != 0) {
         Int d = 0;
         while (0 < i--)
             d = d * 10 + (*t++ - '0');

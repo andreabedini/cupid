@@ -29,9 +29,10 @@ extern unsigned char charTable[];
 #define MAXCHARVAL 0x10FFFF
 
 CUDDLES_inline Int isIn(Char c,
-                       unsigned x) /* c in the lexical classes x?          */
+                        unsigned x) /* c in the lexical classes x?          */
 {
-    return (unsigned)c < NUM_LAT1_CHARS ? (charTable[(unsigned char)c] & x) : 0;
+    return (unsigned)c < NUM_LAT1_CHARS ? (Int)(charTable[(unsigned char)c] & x)
+                                        : 0;
 }
 CUDDLES_inline Bool isLatin1(Char c) {
     return 0 <= c && c < NUM_LAT1_CHARS;

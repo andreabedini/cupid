@@ -228,9 +228,9 @@ static String local PUTStr_aux(String, Int *, Char, String);
 static String local PUTStr_aux(String next, Int *chLeft, Char c, String s) {
     Int charsLeft = *chLeft;
     Int len;
-    if (s && (len = strlen(s)) > 0) {
+    if (s && (len = (Int)strlen(s)) > 0) {
         String t = 0;
-        len = strlen(s);
+        len = (Int)strlen(s);
 
         if ((Int)(len + 10) > charsLeft) {
             *next = '\0';
@@ -241,7 +241,7 @@ static String local PUTStr_aux(String next, Int *chLeft, Char c, String s) {
         }
 
         *next++ = '-';
-        *next++ = c;
+        *next++ = (char)c;
         *next++ = '"';
         charsLeft -= 3;
         /* 

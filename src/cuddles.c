@@ -58,7 +58,7 @@ static Void local clearEvalModule(Void);
 /* --------------------------------------------------------------------------
  * Local data areas:
  * ------------------------------------------------------------------------*/
-static Text evalModule = 0;               /* Name of module we eval exprs in */
+static Text evalModule = 0;                /* Name of module we eval exprs in */
 static String defaultArgv[] = {"Cuddles"}; /* program name */
 
 /* --------------------------------------------------------------------------
@@ -818,7 +818,7 @@ static Void local listNames() { /* list names matching optional pat*/
     }
     for (termPos = 0; nonNull(names); names = tl(names)) {
         String s = objToStr(mod, hd(names));
-        Int l = strlen(s);
+        Int l = (Int)strlen(s);
         if (termPos + 1 + l > width) {
             Putchar('\n');
             termPos = 0;
@@ -844,7 +844,7 @@ Void promptForInput(String moduleName) {
     char promptBuffer[MAX_PROMPT_SIZE];
     char *fromPtr;
     char *toPtr;
-    int modLen = strlen(moduleName);
+    int modLen = (int)strlen(moduleName);
     int roomLeft = MAX_PROMPT_SIZE - 1;
 
     toPtr = promptBuffer;
