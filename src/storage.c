@@ -1674,7 +1674,7 @@ Void overwrite(Cell dst, Cell src) /* overwrite dst cell with src cell*/
         internal("overwrite");
 }
 
-static Int *marks;
+static unsigned *marks;
 static Int marksSize;
 
 /* --------------------------------------------------------------------------
@@ -1776,7 +1776,7 @@ mc:
         return;
     case WEAKCELL: {
         register int place = placeInSet(c);
-        register int mask = maskInSet(c);
+        register unsigned mask = maskInSet(c);
         if (!(marks[place] & mask)) {
             marks[place] |= mask;
             marks[placeInSet(snd(c))] |= maskInSet(snd(c));
@@ -1800,7 +1800,7 @@ mc:
 
     {
         register int place = placeInSet(c);
-        register int mask = maskInSet(c);
+        register unsigned mask = maskInSet(c);
         if (marks[place] & mask)
             return;
         else {
@@ -1883,7 +1883,7 @@ Void markWithoutMove(Cell n) /* Garbage collect cell at n, as if*/
         recordStackRoot();
         if (fst(n) == INDIRECT) { /* special case for indirections   */
             register int place = placeInSet(n);
-            register int mask = maskInSet(n);
+            register unsigned mask = maskInSet(n);
             marks[place] |= mask;
             recordMark();
             markSnd(n);
@@ -1895,7 +1895,7 @@ Void markWithoutMove(Cell n) /* Garbage collect cell at n, as if*/
 static Bool local isMarked(Cell c) {
     if (isGenPair(c)) {
         Int place = placeInSet(c);
-        Int mask = maskInSet(c);
+        unsigned mask = maskInSet(c);
         return (marks[place] & mask) != 0;
     } else {
         return TRUE;
@@ -1905,7 +1905,7 @@ static Bool local isMarked(Cell c) {
 Void garbageCollect() {              /* Run garbage collector ...       */
     Bool breakStat = breakOn(FALSE); /* disable break checking          */
     Int i, j;
-    register Int mask;
+    register unsigned mask;
     register Int place;
     Int recovered;
     jmp_buf regs; /* save registers on stack         */
@@ -1921,7 +1921,7 @@ Void garbageCollect() {              /* Run garbage collector ...       */
     for (i = 0; i < (Int)num_handles; ++i) /* release any unused handles      */
         if (nonNull(handles[i].hcell)) {
             register int place = placeInSet(handles[i].hcell);
-            register int mask = maskInSet(handles[i].hcell);
+            register unsigned mask = maskInSet(handles[i].hcell);
             if ((marks[place] & mask) == 0)
                 freeHandle(i);
         }
@@ -1929,7 +1929,7 @@ Void garbageCollect() {              /* Run garbage collector ...       */
          i--) { /* release any unused mallocptrs   */
         if (isPair(mallocPtrs[i].mpcell)) {
             register int place = placeInSet(mallocPtrs[i].mpcell);
-            register int mask = maskInSet(mallocPtrs[i].mpcell);
+            register unsigned mask = maskInSet(mallocPtrs[i].mpcell);
             if ((marks[place] & mask) == 0)
                 incMallocPtrRefCnt(i, -1);
         }
@@ -1946,7 +1946,7 @@ Void garbageCollect() {              /* Run garbage collector ...       */
         Cell ptr = derefWeakPtr(weakPtrs);
         if (isGenPair(ptr)) {
             Int place = placeInSet(ptr);
-            Int mask = maskInSet(ptr);
+            unsigned mask = maskInSet(ptr);
             if ((marks[place] & mask) == 0) {
                 /* printf("Zapping weak pointer %d\n", ptr); */
                 derefWeakPtr(weakPtrs) = NIL;
@@ -2050,9 +2050,7 @@ Void garbageCollect() {              /* Run garbage collector ...       */
         else
             sysCount++;
 #endif
-        mask = (Int)((Unsigned)mask << 1); /* shift as unsigned: mask may  */
-                                           /* reach bit 31, undefined for  */
-                                           /* a plain (signed) int shift   */
+        mask <<= 1;
         if (++j == bitsPerWord) {
             place++;
             mask = 1;
@@ -3338,7 +3336,7 @@ Void storage(Int what) {
         rsave = NIL;
 
         marksSize = bitArraySize(heapSize);
-        if ((marks = (Int *)calloc(marksSize, sizeof(Int))) == 0) {
+        if ((marks = (unsigned *)calloc(marksSize, sizeof(unsigned))) == 0) {
             errHead(0);
             errPrintf("Unable to allocate gc markspace");
             errFail();
