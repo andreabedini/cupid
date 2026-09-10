@@ -15,6 +15,7 @@
 
 #include "prelude.h"
 #include "storage.h"
+#include "errors.h"
 
 extern String evalName(Cell);
 extern Cell mkIOError(Cell *, Name, String, String, Cell *);
