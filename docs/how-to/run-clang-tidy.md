@@ -16,9 +16,8 @@ ninja -C build clang-tidy
 ```
 
 meson runs clang-tidy with the `.clang-tidy` file at the top of the
-tree, which enables exactly five checks:
+tree, which enables exactly four checks:
 
-- `performance-no-int-to-ptr`
 - `bugprone-suspicious-realloc-usage`
 - `bugprone-implicit-widening-of-multiplication-result`
 - `bugprone-narrowing-conversions`
