@@ -22,6 +22,7 @@
 #include "subst.h"
 #include "module.h"
 #include "opts.h"
+#include "tagcheck.h"
 #include "kind.h"
 
 /* --------------------------------------------------------------------------

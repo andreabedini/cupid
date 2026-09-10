@@ -5,6 +5,9 @@
 #ifndef __STATIC_H__
 #define __STATIC_H__
 
+#include "prelude.h"
+#include "storage.h"
+
 extern Void duplicateError(Int, Module, Text, String); /* two definitions */
 
 #endif /* __STATIC_H__ */

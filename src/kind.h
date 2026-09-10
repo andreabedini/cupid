@@ -4,6 +4,9 @@
 #ifndef __KIND_H__
 #define __KIND_H__
 
+#include "prelude.h"
+#include "storage.h"
+
 extern List unkindTypes; /* types still waiting for a kind annotation   */
 
 extern Void kindTCGroup(List);             /* kind a mutually recursive group */

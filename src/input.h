@@ -6,6 +6,9 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#include "prelude.h"
+#include "storage.h"
+
 extern Int yylex(Void);          /* next token; its value is in yylval */
 extern Int row;                  /* current input line, for errors     */
 extern Void closeAnyInput(Void); /* end of a module: close the source  */

@@ -7,6 +7,9 @@
 #ifndef __FFI_H__
 #define __FFI_H__
 
+#include "prelude.h"
+#include "storage.h"
+
 extern Void checkForeignImport(Name); /* check one foreign import          */
 extern Void checkForeignExport(Name); /* check one foreign export          */
 extern Void linkForeign(Name);        /* make the import callable          */

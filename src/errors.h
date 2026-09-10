@@ -13,6 +13,9 @@
 #ifndef __ERRORS_H__
 #define __ERRORS_H__
 
+#include "prelude.h"
+#include "storage.h"
+
 extern Void internal(String) CUDDLES_noreturn;
 extern Void fatal(String) CUDDLES_noreturn;
 extern Void stopAnyPrinting(Void);

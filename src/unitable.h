@@ -6,6 +6,8 @@
 #ifndef UNITABLE_H
 #define UNITABLE_H
 
+#include "prelude.h"
+
 /* Unicode general categories, listed in the same order as in the Unicode
  * standard -- this must be the same order as in Data.Char.
  */

@@ -12,6 +12,9 @@
 #ifndef __MODULE_H__
 #define __MODULE_H__
 
+#include "prelude.h"
+#include "storage.h"
+
 extern Void addQualImport(Text, Text, List);
 extern Void addUnqualImport(Text, Text, List);
 extern Void importName(Module, Name);

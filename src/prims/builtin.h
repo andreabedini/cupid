@@ -13,6 +13,9 @@
 #ifndef __BUILTIN_H__
 #define __BUILTIN_H__
 
+#include "prelude.h"
+#include "storage.h"
+
 extern String evalName(Cell);
 extern Cell mkIOError(Cell *, Name, String, String, Cell *);
 extern Cell followInd(Cell); /* builtin.c: skip indirections    */

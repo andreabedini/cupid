@@ -5,6 +5,9 @@
 #ifndef __DEPEND_H__
 #define __DEPEND_H__
 
+#include "prelude.h"
+#include "storage.h"
+
 extern Void clearScope(Void);    /* start with no bindings in scope          */
 extern Void withinScope(List);   /* enter the scope of a binding group       */
 extern Void leaveScope(Void);    /* and leave it                             */

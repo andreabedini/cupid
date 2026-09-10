@@ -4,6 +4,9 @@
 #ifndef __PATTERN_H__
 #define __PATTERN_H__
 
+#include "prelude.h"
+#include "storage.h"
+
 extern List patVars; /* variables bound by the pattern being checked       */
 
 extern Cell checkPat(Int, Cell); /* turn a parsed expression into a pattern */

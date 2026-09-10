@@ -6,6 +6,9 @@
 #ifndef SCC_H
 #define SCC_H
 
+#include "prelude.h"
+#include "storage.h"
+
 /* The graph is not materialised: the caller says how to read and write the
  * dependency field of a node.  Before sorting, the field of each node holds
  * the list of nodes it depends on; the sort uses the same field for its

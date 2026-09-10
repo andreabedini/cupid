@@ -11,6 +11,9 @@
 #ifndef __OUTPUT_H__
 #define __OUTPUT_H__
 
+#include "prelude.h"
+#include "storage.h"
+
 extern Void printExp(FILE *, Cell);
 extern Void printType(FILE *, Cell);
 extern Void printContext(FILE *, List);

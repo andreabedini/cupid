@@ -6,6 +6,9 @@
 #ifndef __TYCON_H__
 #define __TYCON_H__
 
+#include "prelude.h"
+#include "storage.h"
+
 extern List cfunSfuns; /* [(Cfun, [SelectorVar])], for Show and Read       */
 
 extern Void checkTyconDefn(Tycon); /* validate a declaration, all now read   */

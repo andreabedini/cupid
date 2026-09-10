@@ -6,6 +6,9 @@
 #ifndef __CLASS_H__
 #define __CLASS_H__
 
+#include "prelude.h"
+#include "storage.h"
+
 extern Void checkClassDefn(Class);  /* validate a class, first pass          */
 extern Void checkClassDefn2_(List); /* second pass over a kinded group       */
 extern Int visitClass(Class);       /* check the hierarchy is acyclic        */

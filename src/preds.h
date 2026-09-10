@@ -6,6 +6,9 @@
 #ifndef PREDS_H
 #define PREDS_H
 
+#include "prelude.h"
+#include "storage.h"
+
 extern List preds; /* Current predicate assignment         */
 
 extern Cell assumeEvid(Cell, Int);

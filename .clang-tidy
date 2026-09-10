@@ -8,10 +8,16 @@
 # macro-parentheses wraps the bytecode dispatch `goto` in parentheses, and
 # use-internal-linkage cannot see cross-file uses through headers.
 #
+# performance-no-int-to-ptr was also evaluated and dropped.  Every site it
+# flags is intrinsic to the interpreter rather than an oversight: the
+# `(char *)(-1)` sentinel for an unknown C stack limit in machine.c, the
+# StablePtr-to-Pointer conversions the FFI exists to perform in builtin.c
+# and iomonad.c, and a hand-rolled offsetof in builtin.c.  None can be
+# written without the cast, so the check only ever produced noise.
+#
 # Run with:  ninja -C build clang-tidy
 Checks: >
   -*,
-  performance-no-int-to-ptr,
   bugprone-suspicious-realloc-usage,
   bugprone-implicit-widening-of-multiplication-result,
   bugprone-narrowing-conversions,

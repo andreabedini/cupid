@@ -4,6 +4,9 @@
 #ifndef __DERIVING_H__
 #define __DERIVING_H__
 
+#include "prelude.h"
+#include "storage.h"
+
 extern Void checkDerive(Tycon, List, List, Cell); /* record a request       */
 extern List derivedInstances(Void); /* implement them and return the list    */
 extern Void derivingControl(Int);   /* RESET/INSTALL, called by everybody()  */

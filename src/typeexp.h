@@ -6,6 +6,9 @@
 #ifndef __TYPEEXP_H__
 #define __TYPEEXP_H__
 
+#include "prelude.h"
+#include "storage.h"
+
 extern List tcDeps; /* tycons and classes the declaration being checked uses */
 
 extern List typeVarsIn(Cell, List, List, List); /* tyvars of an expression  */

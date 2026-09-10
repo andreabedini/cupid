@@ -14,6 +14,7 @@
 #ifndef __STORAGE_H__
 #define __STORAGE_H__
 
+#include "prelude.h"
 #include <limits.h> /* UCHAR_MAX, for the assertions at the end */
 
 /* --------------------------------------------------------------------------
@@ -805,7 +806,11 @@ CUDDLES_inline Bool isSmall(Cell c) {
  * so a record does not move and the pointer stays good.
  * ------------------------------------------------------------------------*/
 
-#include "tagcheck.h"
+/* Reports a cell that is not the handle the accessor expected.  Defined in
+ * tagcheck.c and also used by the assert* macros in tagcheck.h; declared
+ * here rather than there because tagcheck.h needs Cell from this header,
+ * and only one of the two may depend on the other. */
+extern Void tagError(const char *, const char *, Cell) CUDDLES_noreturn;
 
 CUDDLES_inline struct strModule *moduleRec(Module m) {
 #if CHECK_TAGS

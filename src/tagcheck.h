@@ -14,6 +14,9 @@
 #ifndef TAGCHECK_H
 #define TAGCHECK_H
 
+#include "prelude.h"
+#include "storage.h"
+
 extern Bool isTypeExpr(Cell); /* a type (skeleton), possibly       */
                               /* qualified, quantified or rank-2 */
 extern Bool isKindExpr(Cell); /* a kind (skeleton)                 */
@@ -21,7 +24,6 @@ extern Bool isKindsSig(Cell); /* the kinds of a scheme's variables:*/
                               /* k1 -> .. -> kn -> *, or a list  */
 extern Bool isPredExpr(Cell); /* a class applied to types          */
 extern Bool isPredList(Cell); /* a list of those                   */
-extern Void tagError(const char *, const char *, Cell) CUDDLES_noreturn;
 
 #if CHECK_TAGS
 # define assertType(t)                                                         \
