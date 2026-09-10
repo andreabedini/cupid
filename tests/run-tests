@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the regression tests under tests/.
 
-usage: run-tests CUDDLES RUNCUDDLES PACKAGES TESTDIR [NAME...]
+usage: run-tests [--features=F,...] CUDDLES RUNCUDDLES PACKAGES TESTDIR [NAME...]
 
 Every NAME.hs in TESTDIR is one test (all of them when no NAME is given).
 The files that go with it, all optional except NAME.stdout:
@@ -19,14 +19,45 @@ The files that go with it, all optional except NAME.stdout:
 
 A test passes when the output and the exit status both match.  A process
 killed by a signal never matches, so a crash is always a failure.
+
+Several build options make the interpreter print more, or print it
+differently, and one expected output has to serve all of them.  --features
+names the ones meson turned on, and the output is normalised for each
+before it is compared:
+
+  timer                  drop the "Elapsed time" line after every command
+  stack-dumps            drop the "while evaluating:" trace after an error
+  path-canonicalization  write file names in messages back to how they were
+                         given, since the option reports the resolved path
+
+The banner is always dropped from a REPL session, in either the full or
+the -Dsmall-banner form, and whether or not the "Type :? for help" line
+that normally ends it was reached: a module that fails to load reports the
+failure before it.
 """
 
 import os
+import re
 import resource
 import subprocess
 import sys
 
-BANNER_END = "Type :? for help\n"
+# The banner, in both the full and the -Dsmall-banner form, with the help
+# line that usually but not always follows it.
+BANNER = re.compile(
+    r"\ACuddles [^\n]*\n"
+    r"(?:Derived from Hugs 98[^\n]*\n"
+    r"the Yale Haskell Group[^\n]*\n\n)?"
+    r"(?:Type :\? for help\n)?")
+
+FEATURE_FILTERS = {
+    # Not anchored: the line is printed after the next prompt has been
+    # written, so it usually follows "Main> " rather than starting a line.
+    "timer": re.compile(r"Elapsed time \(ms\): -?\d+ \(user\), -?\d+ \(system\)\n"),
+    # Each entry is emitted as a newline followed by the text, so take the
+    # pair: what is left is what the option-less build prints.
+    "stack-dumps": re.compile(r"\n(?:while evaluating: [^\n]*|\.\.\.)"),
+}
 
 
 def read(path, default=None):
@@ -37,7 +68,7 @@ def read(path, default=None):
         return default
 
 
-def run_one(cuddles, runcuddles, packages, testdir, name):
+def run_one(cuddles, runcuddles, packages, testdir, name, features):
     base = os.path.join(testdir, name)
     expected = read(base + ".stdout")
     if expected is None:
@@ -76,8 +107,27 @@ def run_one(cuddles, runcuddles, packages, testdir, name):
 
     out = proc.stdout.replace("\r\n", "\n")
     if stdin is not None:
-        # Drop the banner, which carries the version string
-        out = out[out.find(BANNER_END) + len(BANNER_END):]
+        # Drop the banner, which carries the version string.  Match it rather
+        # than searching for the line that ends it: that line is not printed
+        # when a module named on the command line fails to load, and a find()
+        # that returns -1 used to cut fourteen characters off the real output.
+        out = BANNER.sub("", out, count=1)
+    for feature in features:
+        pattern = FEATURE_FILTERS.get(feature)
+        if pattern:
+            out = pattern.sub("", out)
+    if "path-canonicalization" in features:
+        # The option reports the resolved path, so the spelling the test used
+        # cannot survive it -- "./ScriptAux.hs" comes back as the absolute
+        # path.  Reduce both sides to the bare name rather than pretend the
+        # expected output could describe both.
+        def bare(text):
+            for prefix in {testdir, os.path.realpath(testdir)}:
+                text = text.replace(prefix + os.sep, "")
+            return text.replace("." + os.sep, "")
+
+        out = bare(out)
+        expected = bare(expected)
     problems = []
     if proc.returncode < 0:
         problems.append("killed by signal %d" % -proc.returncode)
@@ -91,6 +141,13 @@ def run_one(cuddles, runcuddles, packages, testdir, name):
 
 
 def main(argv):
+    argv = list(argv)
+    features = set()
+    for i, arg in enumerate(argv):
+        if arg.startswith("--features="):
+            features = {f for f in arg[len("--features="):].split(",") if f}
+            del argv[i]
+            break
     if len(argv) < 5:
         sys.exit(__doc__)
     cuddles, runcuddles, packages, testdir = [os.path.abspath(a) for a in argv[1:5]]
@@ -98,7 +155,8 @@ def main(argv):
         f[:-3] for f in os.listdir(testdir) if f.endswith(".hs"))
     failed = 0
     for name in names:
-        ok, detail = run_one(cuddles, runcuddles, packages, testdir, name)
+        ok, detail = run_one(cuddles, runcuddles, packages, testdir, name,
+                             features)
         print(("PASS " if ok else "FAIL ") + name)
         if not ok:
             failed += 1
