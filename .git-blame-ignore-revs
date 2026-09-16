@@ -6,3 +6,6 @@
 
 # Format the C sources with clang-format
 63a64c573a6eac4b54c2bc71b60617412d4aa46e
+
+# Move the function comments above the brace and inline the type aliases
+ddeacb2de61d38bef48e5394c3500f57b3a57c32
