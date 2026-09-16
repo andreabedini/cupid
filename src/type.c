@@ -187,6 +187,8 @@ static void typeDefnGroup(List);
 static void typeForeignExport(Name);
 static Pair typeSel(Name);
 
+static void resetTypeChecker(void);
+
 static Name linkName(char *);
 static Tycon linkTycon(char *);
 static Class linkClass(char *);
@@ -2217,7 +2219,7 @@ Type typeCheckExp(bool useDefs) {
     List ctxt;
     int beta;
 
-    typeChecker(RESET);
+    resetTypeChecker();
     emptySubstitution();
     enterBindings();
     inputExpr = typeExpr(0, inputExpr);
@@ -2238,7 +2240,7 @@ Type typeCheckExp(bool useDefs) {
     ctxt = copyPreds(preds);
     type = generalize(ctxt, copyType(type, beta));
     inputExpr = qualifyExpr(0, preds, inputExpr);
-    typeChecker(RESET);
+    resetTypeChecker();
     emptySubstitution();
     return type;
 }
@@ -2250,7 +2252,7 @@ void typeCheckDefns(void) {
     Target i = 0;
     List gs;
 
-    typeChecker(RESET);
+    resetTypeChecker();
     emptySubstitution();
     enterScope();
     enterBindings();
@@ -2277,7 +2279,7 @@ void typeCheckDefns(void) {
         soFar(i++);
     }
 
-    typeChecker(RESET);
+    resetTypeChecker();
     emptySubstitution();
     done();
 }
@@ -2446,63 +2448,77 @@ static Cell *const typeRoots[] = {
     &predMonad,    &typeProgIO,
 };
 
+/* Reset the current type-checking mode, the predicates and pending
+ * scoped type variables collected so far, and the assumption stack. */
+static void resetTypeChecker(void) {
+    tcMode = EXPRESSION;
+    preds = NIL;
+    pendingBtyvs = NIL;
+    emptyAssumption();
+}
+
+/* Mark the scope stack; the rest of the module's state is in
+ * typeRoots. */
+static void markTypeChecker(void) {
+    int i = 0;                   /* the scope stack; the rest  */
+    for (; i < numScopes; i++) { /* is in typeRoots    */
+        mark(scopes[i].skolems);
+        mark(scopes[i].givens);
+        mark(scopes[i].savedPreds);
+    }
+}
+
+/* Register the roots, reset, and build the wired-in types and
+ * constructors every later phase depends on; done once, before the
+ * Prelude is read. */
+static void installTypeChecker(void) {
+    registerRoots(typeRoots);
+    resetTypeChecker();
+
+    dummyVar = inventVar();
+
+    modulePrelude = newModule(textPrelude);
+    moduleUserPrelude = 0;
+    setCurrModule(modulePrelude);
+
+    starToStar = simpleKind(1);
+
+    typeUnit = addPrimTycon(findText("()"), STAR, 0, DATATYPE, NIL);
+    typeArrow = addPrimTycon(findText("(->)"), simpleKind(2), 2, DATATYPE, NIL);
+    typeList = addPrimTycon(findText("[]"), starToStar, 1, DATATYPE, NIL);
+
+    arrow = fn(aVar, bVar);
+    listof = ap(typeList, aVar);
+    boundPair = ap(ap(mkTuple(2), aVar), aVar);
+
+    nameUnit = addPrimCfun(findText("()"), 0, 0, typeUnit);
+    tyconRec(typeUnit)->defn = singleton(nameUnit);
+
+    nameNil = addPrimCfun(findText("[]"), 0, 1, mkPolyType(starToStar, listof));
+    nameCons =
+        addPrimCfun(findText(":"), 2, 2,
+                    mkPolyType(starToStar, fn(aVar, fn(listof, listof))));
+    nameRec(nameCons)->syntax = mkSyntax(RIGHT_ASS, 5);
+
+    tyconRec(typeList)->defn = cons(nameNil, cons(nameCons, NIL));
+
+    typeVarToVar = fn(aVar, aVar);
+    /* bogus definitions to avoid changing the prelude */
+    addPrimCfun(findText("Rec"), 0, 0, typeUnit);
+    addPrimCfun(findText("EmptyRow"), 0, 0, typeUnit);
+    addPrimCfun(findText("EmptyRec"), 0, 0, typeUnit);
+}
+
 void typeChecker(int what) {
     switch (what) {
     case RESET:
-        tcMode = EXPRESSION;
-        preds = NIL;
-        pendingBtyvs = NIL;
-        emptyAssumption();
+        resetTypeChecker();
         break;
-
-    case MARK: {
-        int i = 0;                   /* the scope stack; the rest  */
-        for (; i < numScopes; i++) { /* is in typeRoots    */
-            mark(scopes[i].skolems);
-            mark(scopes[i].givens);
-            mark(scopes[i].savedPreds);
-        }
-    } break;
-
+    case MARK:
+        markTypeChecker();
+        break;
     case INSTALL:
-        registerRoots(typeRoots);
-        typeChecker(RESET);
-
-        dummyVar = inventVar();
-
-        modulePrelude = newModule(textPrelude);
-        moduleUserPrelude = 0;
-        setCurrModule(modulePrelude);
-
-        starToStar = simpleKind(1);
-
-        typeUnit = addPrimTycon(findText("()"), STAR, 0, DATATYPE, NIL);
-        typeArrow =
-            addPrimTycon(findText("(->)"), simpleKind(2), 2, DATATYPE, NIL);
-        typeList = addPrimTycon(findText("[]"), starToStar, 1, DATATYPE, NIL);
-
-        arrow = fn(aVar, bVar);
-        listof = ap(typeList, aVar);
-        boundPair = ap(ap(mkTuple(2), aVar), aVar);
-
-        nameUnit = addPrimCfun(findText("()"), 0, 0, typeUnit);
-        tyconRec(typeUnit)->defn = singleton(nameUnit);
-
-        nameNil =
-            addPrimCfun(findText("[]"), 0, 1, mkPolyType(starToStar, listof));
-        nameCons =
-            addPrimCfun(findText(":"), 2, 2,
-                        mkPolyType(starToStar, fn(aVar, fn(listof, listof))));
-        nameRec(nameCons)->syntax = mkSyntax(RIGHT_ASS, 5);
-
-        tyconRec(typeList)->defn = cons(nameNil, cons(nameCons, NIL));
-
-        typeVarToVar = fn(aVar, aVar);
-        /* bogus definitions to avoid changing the prelude */
-        addPrimCfun(findText("Rec"), 0, 0, typeUnit);
-        addPrimCfun(findText("EmptyRow"), 0, 0, typeUnit);
-        addPrimCfun(findText("EmptyRec"), 0, 0, typeUnit);
-
+        installTypeChecker();
         break;
     default:
         break;

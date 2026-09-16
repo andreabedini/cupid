@@ -334,23 +334,20 @@ void whatScripts(void) {
     Putchar('\n');
 }
 
+/* Discard every loaded script. */
+static void exitScript(void) {
+    stopScripts();
+}
+
 void script(int what) {
 
     /* not much to it..will be more when/if the local tables
    * become resizable.
    */
     switch (what) {
-    case RESET:
-        return;
-    case MARK:
-        return;
-    case INSTALL:
-        return;
     case EXIT:
-        stopScripts();
-        return;
-    case BREAK:
-        return;
+        exitScript();
+        break;
     default:
         break;
     }

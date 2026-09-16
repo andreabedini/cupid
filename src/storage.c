@@ -3112,8 +3112,28 @@ void growDynTable(DynTable *tab) {
     }
 }
 
-void controlFuns(int what) {
+/* Release every registered prim's DLL and free the primInfoDef list. */
+static void exitControlFuns(void) {
     int i;
+    struct primInfoDef *ptr, *tmp;
+
+    /* Release all primitive DLLs */
+    for (i = 0; i < scriptHw; i++) {
+        if (scriptRec(i)->marks.prims) {
+            freePrimInfo(scriptRec(i)->marks.prims);
+            scriptRec(i)->marks.prims = 0;
+        }
+    }
+
+    ptr = firstPrimInfo;
+    while (ptr) {
+        tmp = ptr->nextPrimInfoDef;
+        free(ptr);
+        ptr = tmp;
+    }
+}
+
+void controlFuns(int what) {
     struct primInfoDef *info_def = firstPrimInfo;
     for (; 0 != info_def; info_def = info_def->nextPrimInfoDef) {
         if (info_def->p_info->controlFun) {
@@ -3122,279 +3142,285 @@ void controlFuns(int what) {
     }
 
     if (EXIT == what) {
-        struct primInfoDef *ptr, *tmp;
-
-        /* Release all primitive DLLs */
-        for (i = 0; i < scriptHw; i++) {
-            if (scriptRec(i)->marks.prims) {
-                freePrimInfo(scriptRec(i)->marks.prims);
-                scriptRec(i)->marks.prims = 0;
-            }
-        }
-
-        ptr = firstPrimInfo;
-        while (ptr) {
-            tmp = ptr->nextPrimInfoDef;
-            free(ptr);
-            ptr = tmp;
-        }
+        exitControlFuns();
     }
 }
 
-void storage(int what) {
+/* Reset the heap pointers a longjmp may have clobbered, the standard
+ * handles, and the GC trigger; called before each script load or
+ * evaluation. */
+static void resetStorage(void) {
+    clearStack();
+
+    /* the next 2 statements are particularly important
+                    * if you are using GLOBALfst or GLOBALsnd since the
+                    * corresponding registers may be reset to their
+                    * uninitialised initial values by a longjump.
+                    */
+    heapTopFst = heapFst + heapSize;
+    heapTopSnd = heapSnd + heapSize;
+#if PROFILING
+    heapTopThd = heapThd + heapSize;
+    if (profile) {
+        garbageCollect();
+        fclose(profile);
+# if HAVE_HP2PS
+        {
+            Argv cmd;
+            argvInit(&cmd);
+            argvWord(&cmd, "hp2ps");
+            argvWord(&cmd, "profile.hp");
+            argvRun(&cmd, true);
+            argvFree(&cmd);
+        }
+# endif
+        profile = 0;
+    }
+#endif
+    handles[HSTDIN].hmode = HREAD;
+    handles[HSTDIN].hbufMode = HUNKNOWN_BUFFERING;
+    handles[HSTDOUT].hmode = HAPPEND;
+    handles[HSTDOUT].hbufMode = HUNKNOWN_BUFFERING;
+    handles[HSTDERR].hmode = HAPPEND;
+    handles[HSTDERR].hbufMode = HUNKNOWN_BUFFERING;
+#if CHAR_ENCODING
+    handles[HSTDIN].hLookAhead = -1;
+    handles[HSTDIN].hBinaryMode = false;
+    handles[HSTDOUT].hBinaryMode = false;
+    handles[HSTDERR].hBinaryMode = false;
+#endif /* CHAR_ENCODING */
+    consGC = true;
+    lsave = NIL;
+    rsave = NIL;
+    if (isNull(lastExprSaved))
+        savedText = NUM_TEXT;
+}
+
+/* Mark every cell reachable from the symbol tables (names, modules,
+ * tycons, classes, instances), the evaluator stack, stable pointers and
+ * the C stack. */
+static void markStorage(void) {
     int i;
 
+    start();
+    for (i = NAMEMIN; i < nameHw; ++i) {
+        mark(nameRec(i)->parent);
+        mark(nameRec(i)->defn);
+        mark(nameRec(i)->type);
+        mark(nameRec(i)->clashes);
+    }
+    end("Names", nameHw - NAMEMIN);
+    start();
+    for (i = MODMIN; i < moduleHw; ++i) {
+        mark(moduleRec(i)->tycons);
+        mark(moduleRec(i)->names);
+        mark(moduleRec(i)->classes);
+        mark(moduleRec(i)->exports);
+        mark(moduleRec(i)->modImports);
+        mark(moduleRec(i)->modAliases);
+        mark(moduleRec(i)->qualImports);
+    }
+    end("Modules", moduleHw - MODMIN);
+
+    start();
+    for (i = TYCMIN; i < tyconHw; ++i) {
+        mark(tyconRec(i)->defn);
+        mark(tyconRec(i)->kind);
+        mark(tyconRec(i)->what);
+        mark(tyconRec(i)->clashes);
+    }
+    end("Type constructors", tyconHw - TYCMIN);
+
+    start();
+    for (i = CLASSMIN; i < classHw; ++i) {
+        mark(cclassRec(i)->head);
+        mark(cclassRec(i)->tyvars);
+        mark(cclassRec(i)->kinds);
+        mark(cclassRec(i)->fds);
+        mark(cclassRec(i)->xfds);
+        mark(cclassRec(i)->dsels);
+        mark(cclassRec(i)->supers);
+        mark(cclassRec(i)->members);
+        mark(cclassRec(i)->defaults);
+        mark(cclassRec(i)->instances);
+        mark(cclassRec(i)->clashes);
+    }
+    mark(classes);
+    end("Classes", classHw - CLASSMIN);
+
+    start();
+    for (i = INSTMIN; i < instHw; ++i) {
+        mark(instRec(i)->head);
+        mark(instRec(i)->kinds);
+        mark(instRec(i)->specifics);
+        mark(instRec(i)->implements);
+    }
+    end("Instances", instHw - INSTMIN);
+
+    start();
+    for (i = 0; i <= sp; ++i)
+        mark(stack(i));
+    end("Stack", sp + 1);
+
+    start();
+    mark(lastExprSaved);
+    mark(lsave);
+    mark(rsave);
+    end("Last expression", 3);
+    start();
+    mark(handles[HSTDIN].hcell);
+    mark(handles[HSTDOUT].hcell);
+    mark(handles[HSTDERR].hcell);
+    end("Standard handles", 3);
+
+    start();
+    for (i = 0; i < NUM_STABLEPTRS; ++i)
+        mark(stablePtrTable[i]);
+    end("Stable pointers", NUM_STABLEPTRS);
+
+    mark(finalizers);
+
+    for (i = 0; i < mallocPtr_hw; ++i)
+        if (isPair(mallocPtrs[i].mpcell))
+            mark(mallocPtrs[i].finalizers);
+
+    if (consGC) {
+        start();
+        gcCStack();
+        end("C stack", stackRoots);
+    }
+}
+
+/* Allocate the two (or three, under profiling) heaps, the handle table
+ * and the GC mark bits, and set every table back to empty; done once,
+ * before the Prelude is read. */
+static void installStorage(void) {
+    int i;
+
+    heapFst = heapAlloc(heapSize);
+    heapSnd = heapAlloc(heapSize);
+
+    if (heapFst == (Heap)0 || heapSnd == (Heap)0) {
+        errHead(0);
+        errPrintf("Cannot allocate heap storage (%d cells)", heapSize);
+        errFail();
+    }
+
+    heapTopFst = heapFst + heapSize;
+    heapTopSnd = heapSnd + heapSize;
+#if PROFILING
+    heapThd = heapAlloc(heapSize);
+    if (heapThd == (Heap)0) {
+        errHead(0);
+        errPrintf("Cannot allocate profiler storage space");
+        errFail();
+    }
+    heapTopThd = heapThd + heapSize;
+    profile = 0;
+    if (0 == profInterval)
+        profInterval = heapSize / DEF_PROFINTDIV;
+#endif
+    for (i = 1; i < heapSize; ++i) {
+        fst(-i) = FREECELL;
+        snd(-i) = -(i + 1);
+    }
+    snd(-heapSize) = NIL;
+    freeList = -1;
+    numGcs = 0;
+    consGC = true;
+    lsave = NIL;
+    rsave = NIL;
+
+    marksSize = bitArraySize(heapSize);
+    if ((marks = (unsigned *)calloc(marksSize, sizeof(unsigned))) == 0) {
+        errHead(0);
+        errPrintf("Unable to allocate gc markspace");
+        errFail();
+    }
+
+    dynTabHandles = allocDynTable(sizeof(struct strHandle), 4, 0, "handles");
+    handles = (struct strHandle *)(dynTabHandles->data);
+    num_handles = dynTabHandles->maxIdx;
+    clearStack();
+    for (i = 0; i < (int)num_handles; i++)
+        handles[i].hcell = NIL;
+
+    handles[HSTDIN].hcell = ap(HANDCELL, HSTDIN);
+    handles[HSTDIN].hfp = stdin;
+    handles[HSTDOUT].hcell = ap(HANDCELL, HSTDOUT);
+    handles[HSTDOUT].hfp = stdout;
+    handles[HSTDERR].hcell = ap(HANDCELL, HSTDERR);
+    handles[HSTDERR].hfp = stderr;
+
+    textHw = 0;
+    nextNewText = NUM_TEXT;
+    nextNewDText = (-1);
+    lastExprSaved = NIL;
+    savedText = NUM_TEXT;
+    for (i = 0; i < TEXTHSZ; ++i)
+        textHash[i][0] = NOTEXT;
+
+    addrHw = 0;
+
+    moduleHw = MODMIN;
+
+    tyconHw = TYCMIN;
+    for (i = 0; i < TYCONHSZ; ++i)
+        tyconHash[i] = NIL;
+
+    finalizers = NIL;
+    liveWeakPtrs = NIL;
+    /* The high-water mark for the table points at the
+                    * next available slot in the table
+                    */
+    mallocPtr_hw = 0;
+    for (i = 0; i < NUM_MALLOCPTRS; i++)
+        mallocPtrs[i].mpcell = NIL;
+
+    resetStablePtrs();
+
+    nameHw = NAMEMIN;
+    for (i = 0; i < NAMEHSZ; ++i)
+        nameHash[i] = NIL;
+
+    classHw = CLASSMIN;
+    instHw = INSTMIN;
+
+    scriptHw = 0;
+
+    initFastWhat();
+}
+
+/* Free the heaps, the handle table and the GC mark bits; the
+ * primInfoDef list is freed by controlFuns(), called just before this. */
+static void exitStorage(void) {
+    if (heapFst)
+        free(heapFst);
+    if (heapSnd)
+        free(heapSnd);
+#if PROFILING
+    if (heapThd)
+        free(heapThd);
+#endif
+    if (dynTabHandles)
+        freeDynTable(dynTabHandles);
+    if (marks)
+        free(marks);
+}
+
+void storage(int what) {
     switch (what) {
     case RESET:
-        clearStack();
-
-        /* the next 2 statements are particularly important
-                        * if you are using GLOBALfst or GLOBALsnd since the
-                        * corresponding registers may be reset to their
-                        * uninitialised initial values by a longjump.
-                        */
-        heapTopFst = heapFst + heapSize;
-        heapTopSnd = heapSnd + heapSize;
-#if PROFILING
-        heapTopThd = heapThd + heapSize;
-        if (profile) {
-            garbageCollect();
-            fclose(profile);
-# if HAVE_HP2PS
-            {
-                Argv cmd;
-                argvInit(&cmd);
-                argvWord(&cmd, "hp2ps");
-                argvWord(&cmd, "profile.hp");
-                argvRun(&cmd, true);
-                argvFree(&cmd);
-            }
-# endif
-            profile = 0;
-        }
-#endif
-        handles[HSTDIN].hmode = HREAD;
-        handles[HSTDIN].hbufMode = HUNKNOWN_BUFFERING;
-        handles[HSTDOUT].hmode = HAPPEND;
-        handles[HSTDOUT].hbufMode = HUNKNOWN_BUFFERING;
-        handles[HSTDERR].hmode = HAPPEND;
-        handles[HSTDERR].hbufMode = HUNKNOWN_BUFFERING;
-#if CHAR_ENCODING
-        handles[HSTDIN].hLookAhead = -1;
-        handles[HSTDIN].hBinaryMode = false;
-        handles[HSTDOUT].hBinaryMode = false;
-        handles[HSTDERR].hBinaryMode = false;
-#endif /* CHAR_ENCODING */
-        consGC = true;
-        lsave = NIL;
-        rsave = NIL;
-        if (isNull(lastExprSaved))
-            savedText = NUM_TEXT;
+        resetStorage();
         break;
-
     case MARK:
-        start();
-        for (i = NAMEMIN; i < nameHw; ++i) {
-            mark(nameRec(i)->parent);
-            mark(nameRec(i)->defn);
-            mark(nameRec(i)->type);
-            mark(nameRec(i)->clashes);
-        }
-        end("Names", nameHw - NAMEMIN);
-        start();
-        for (i = MODMIN; i < moduleHw; ++i) {
-            mark(moduleRec(i)->tycons);
-            mark(moduleRec(i)->names);
-            mark(moduleRec(i)->classes);
-            mark(moduleRec(i)->exports);
-            mark(moduleRec(i)->modImports);
-            mark(moduleRec(i)->modAliases);
-            mark(moduleRec(i)->qualImports);
-        }
-        end("Modules", moduleHw - MODMIN);
-
-        start();
-        for (i = TYCMIN; i < tyconHw; ++i) {
-            mark(tyconRec(i)->defn);
-            mark(tyconRec(i)->kind);
-            mark(tyconRec(i)->what);
-            mark(tyconRec(i)->clashes);
-        }
-        end("Type constructors", tyconHw - TYCMIN);
-
-        start();
-        for (i = CLASSMIN; i < classHw; ++i) {
-            mark(cclassRec(i)->head);
-            mark(cclassRec(i)->tyvars);
-            mark(cclassRec(i)->kinds);
-            mark(cclassRec(i)->fds);
-            mark(cclassRec(i)->xfds);
-            mark(cclassRec(i)->dsels);
-            mark(cclassRec(i)->supers);
-            mark(cclassRec(i)->members);
-            mark(cclassRec(i)->defaults);
-            mark(cclassRec(i)->instances);
-            mark(cclassRec(i)->clashes);
-        }
-        mark(classes);
-        end("Classes", classHw - CLASSMIN);
-
-        start();
-        for (i = INSTMIN; i < instHw; ++i) {
-            mark(instRec(i)->head);
-            mark(instRec(i)->kinds);
-            mark(instRec(i)->specifics);
-            mark(instRec(i)->implements);
-        }
-        end("Instances", instHw - INSTMIN);
-
-        start();
-        for (i = 0; i <= sp; ++i)
-            mark(stack(i));
-        end("Stack", sp + 1);
-
-        start();
-        mark(lastExprSaved);
-        mark(lsave);
-        mark(rsave);
-        end("Last expression", 3);
-        start();
-        mark(handles[HSTDIN].hcell);
-        mark(handles[HSTDOUT].hcell);
-        mark(handles[HSTDERR].hcell);
-        end("Standard handles", 3);
-
-        start();
-        for (i = 0; i < NUM_STABLEPTRS; ++i)
-            mark(stablePtrTable[i]);
-        end("Stable pointers", NUM_STABLEPTRS);
-
-        mark(finalizers);
-
-        for (i = 0; i < mallocPtr_hw; ++i)
-            if (isPair(mallocPtrs[i].mpcell))
-                mark(mallocPtrs[i].finalizers);
-
-        if (consGC) {
-            start();
-            gcCStack();
-            end("C stack", stackRoots);
-        }
-
+        markStorage();
         break;
-
     case INSTALL:
-        heapFst = heapAlloc(heapSize);
-        heapSnd = heapAlloc(heapSize);
-
-        if (heapFst == (Heap)0 || heapSnd == (Heap)0) {
-            errHead(0);
-            errPrintf("Cannot allocate heap storage (%d cells)", heapSize);
-            errFail();
-        }
-
-        heapTopFst = heapFst + heapSize;
-        heapTopSnd = heapSnd + heapSize;
-#if PROFILING
-        heapThd = heapAlloc(heapSize);
-        if (heapThd == (Heap)0) {
-            errHead(0);
-            errPrintf("Cannot allocate profiler storage space");
-            errFail();
-        }
-        heapTopThd = heapThd + heapSize;
-        profile = 0;
-        if (0 == profInterval)
-            profInterval = heapSize / DEF_PROFINTDIV;
-#endif
-        for (i = 1; i < heapSize; ++i) {
-            fst(-i) = FREECELL;
-            snd(-i) = -(i + 1);
-        }
-        snd(-heapSize) = NIL;
-        freeList = -1;
-        numGcs = 0;
-        consGC = true;
-        lsave = NIL;
-        rsave = NIL;
-
-        marksSize = bitArraySize(heapSize);
-        if ((marks = (unsigned *)calloc(marksSize, sizeof(unsigned))) == 0) {
-            errHead(0);
-            errPrintf("Unable to allocate gc markspace");
-            errFail();
-        }
-
-        dynTabHandles =
-            allocDynTable(sizeof(struct strHandle), 4, 0, "handles");
-        handles = (struct strHandle *)(dynTabHandles->data);
-        num_handles = dynTabHandles->maxIdx;
-        clearStack();
-        for (i = 0; i < (int)num_handles; i++)
-            handles[i].hcell = NIL;
-
-        handles[HSTDIN].hcell = ap(HANDCELL, HSTDIN);
-        handles[HSTDIN].hfp = stdin;
-        handles[HSTDOUT].hcell = ap(HANDCELL, HSTDOUT);
-        handles[HSTDOUT].hfp = stdout;
-        handles[HSTDERR].hcell = ap(HANDCELL, HSTDERR);
-        handles[HSTDERR].hfp = stderr;
-
-        textHw = 0;
-        nextNewText = NUM_TEXT;
-        nextNewDText = (-1);
-        lastExprSaved = NIL;
-        savedText = NUM_TEXT;
-        for (i = 0; i < TEXTHSZ; ++i)
-            textHash[i][0] = NOTEXT;
-
-        addrHw = 0;
-
-        moduleHw = MODMIN;
-
-        tyconHw = TYCMIN;
-        for (i = 0; i < TYCONHSZ; ++i)
-            tyconHash[i] = NIL;
-
-        finalizers = NIL;
-        liveWeakPtrs = NIL;
-        /* The high-water mark for the table points at the
-                        * next available slot in the table
-                        */
-        mallocPtr_hw = 0;
-        for (i = 0; i < NUM_MALLOCPTRS; i++)
-            mallocPtrs[i].mpcell = NIL;
-
-        resetStablePtrs();
-
-        nameHw = NAMEMIN;
-        for (i = 0; i < NAMEHSZ; ++i)
-            nameHash[i] = NIL;
-
-        classHw = CLASSMIN;
-        instHw = INSTMIN;
-
-        scriptHw = 0;
-
-        initFastWhat();
+        installStorage();
         break;
     case EXIT:
-        /* Let go of dynamic storage */
-        if (heapFst)
-            free(heapFst);
-        if (heapSnd)
-            free(heapSnd);
-#if PROFILING
-        if (heapThd)
-            free(heapThd);
-#endif
-        if (dynTabHandles)
-            freeDynTable(dynTabHandles);
-        if (marks)
-            free(marks);
-
-        /* Note: primInfoDef memory is freed in controlFuns() above */
-
+        exitStorage();
         break;
     default:
         break;

@@ -12,6 +12,8 @@
 extern int yylex(void);          /* next token; its value is in yylval */
 extern int row;                  /* current input line, for errors     */
 extern void closeAnyInput(void); /* end of a module: close the source  */
+extern void resetInput(void);    /* clear the per-script definition lists */
+extern void breakInput(void);    /* make an interrupted keyboard read eof */
 
 /* The layout algorithm: the grammar's begin/end rules open and close
  * layout contexts, and can ask whether the current token may close one */

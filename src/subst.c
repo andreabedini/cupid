@@ -1624,40 +1624,62 @@ static Cell *const substRoots[] = {
     &genericVars,
 };
 
-void substitution(int what) {
+/* Clear the current substitution, the binding restriction and the
+ * explicitly-scoped type variables. */
+void resetSubstitution(void) {
+    emptySubstitution();
+    unrestrictBind();
+    btyvars = NIL;
+}
+
+/* Mark the tuple-constructor and kind caches, and every bound type
+ * variable; the rest of the module's roots are in substRoots. */
+static void markSubstitution(void) {
     int i;
 
+    for (i = 0; i < MAXTUPCON; ++i)
+        mark(tupleConTypes[i]);
+    for (i = 0; i < MAXKINDFUN; ++i) {
+        mark(simpleKindCache[i]);
+        mark(varKindCache[i]);
+    }
+    for (i = 0; i < numTyvars; ++i)
+        mark(tyvars[i].bound);
+}
+
+/* Register the roots, reset, and empty the tuple-constructor and kind
+ * caches; done once, before the Prelude is read. */
+static void installSubstitution(void) {
+    int i;
+
+    registerRoots(substRoots);
+    resetSubstitution();
+    for (i = 0; i < MAXTUPCON; ++i)
+        tupleConTypes[i] = NIL;
+    for (i = 0; i < MAXKINDFUN; ++i) {
+        simpleKindCache[i] = NIL;
+        varKindCache[i] = NIL;
+    }
+}
+
+/* Free the type-variable table. */
+static void exitSubstitution(void) {
+    free(tyvars);
+}
+
+void substitution(int what) {
     switch (what) {
     case RESET:
-        emptySubstitution();
-        unrestrictBind();
-        btyvars = NIL;
+        resetSubstitution();
         break;
-
     case MARK:
-        for (i = 0; i < MAXTUPCON; ++i)
-            mark(tupleConTypes[i]);
-        for (i = 0; i < MAXKINDFUN; ++i) {
-            mark(simpleKindCache[i]);
-            mark(varKindCache[i]);
-        }
-        for (i = 0; i < numTyvars; ++i)
-            mark(tyvars[i].bound);
+        markSubstitution();
         break;
-
     case INSTALL:
-        registerRoots(substRoots);
-        substitution(RESET);
-        for (i = 0; i < MAXTUPCON; ++i)
-            tupleConTypes[i] = NIL;
-        for (i = 0; i < MAXKINDFUN; ++i) {
-            simpleKindCache[i] = NIL;
-            varKindCache[i] = NIL;
-        }
+        installSubstitution();
         break;
-
     case EXIT:
-        free(tyvars);
+        exitSubstitution();
         break;
     default:
         break;

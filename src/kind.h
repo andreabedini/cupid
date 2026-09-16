@@ -14,6 +14,8 @@ extern void kindType(int, char *, Type);   /* check a type is well-kinded     */
 extern void kindPred(int, int, int, Cell); /* likewise for a predicate      */
 extern void fixKinds(void); /* write the inferred kinds into unkindTypes  */
 extern void kindInst(Inst, int); /* check the predicates of an instance     */
-extern void kindControl(int); /* RESET/INSTALL, called by staticAnalysis    */
+extern void resetKind(void);   /* clear unkindTypes                          */
+extern void installKind(void); /* register roots and reset; INSTALL only    */
+extern void kindControl(int);  /* RESET/INSTALL, called by staticAnalysis    */
 
 #endif /* __KIND_H__ */

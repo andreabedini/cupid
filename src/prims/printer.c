@@ -50,21 +50,32 @@ static Cell *const printerRoots[] = {
     &out,
 };
 
+/* Clear the GC'd variable the printer builds its result in. */
+static void resetPrinter(void) {
+    out = NIL;
+}
+
+/* Register the roots and predefine the printer's own primitives. */
+static void installPrinter(void) {
+    registerRoots(printerRoots);
+    setCurrModule(modulePrelude);
+    namePrint = predefPrim("_print", "print");
+    nameNPrint = predefPrim("_nprint", "nprint");
+    nameLPrint = predefPrim("_lprint", "lprint");
+    nameNLPrint = predefPrim("_nlprint", "nlprint");
+    nameSPrint = predefPrim("_sprint", "sprint");
+    nameNSPrint = predefPrim("_nsprint", "nsprint");
+}
+
 static void printerControl(int);
 static void printerControl(int what) {
     switch (what) {
     case INSTALL:
-        registerRoots(printerRoots);
-        setCurrModule(modulePrelude);
-        namePrint = predefPrim("_print", "print");
-        nameNPrint = predefPrim("_nprint", "nprint");
-        nameLPrint = predefPrim("_lprint", "lprint");
-        nameNLPrint = predefPrim("_nlprint", "nlprint");
-        nameSPrint = predefPrim("_sprint", "sprint");
-        nameNSPrint = predefPrim("_nsprint", "nsprint");
-        /* deliberate fall through */
+        installPrinter();
+        resetPrinter();
+        break;
     case RESET:
-        out = NIL;
+        resetPrinter();
         break;
     default:
         break;

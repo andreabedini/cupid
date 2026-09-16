@@ -73,17 +73,23 @@ static Cell *const iomonadRoots[] = {
     &cuddlesArgs,
 };
 
+/* Register the roots and predefine the names the IO monad's
+ * implementation runs on. */
+static void installIomonad(void) {
+    registerRoots(iomonadRoots);
+    setCurrModule(modulePrelude);
+    namePass = predefPrim("_pass", "passIO");
+    nameHreader = predefPrim("_hreader", "hreader");
+    nameIORun = predefName("cuddlesIORun");
+    nameIOBind = predefName("primbindIO");
+    namePutStr = predefName("putStr");
+}
+
 static void iomonadControl(int);
 static void iomonadControl(int what) {
     switch (what) {
     case INSTALL:
-        registerRoots(iomonadRoots);
-        setCurrModule(modulePrelude);
-        namePass = predefPrim("_pass", "passIO");
-        nameHreader = predefPrim("_hreader", "hreader");
-        nameIORun = predefName("cuddlesIORun");
-        nameIOBind = predefName("primbindIO");
-        namePutStr = predefName("putStr");
+        installIomonad();
         break;
     default:
         break;

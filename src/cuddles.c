@@ -13,6 +13,7 @@
 #include "connect.h"
 #include "errors.h"
 #include "script.h"
+#include "input.h"
 #include "opts.h"
 #include "strutil.h"
 #include "evaluator.h"
@@ -495,7 +496,7 @@ static void runmain(void) {
         free(args[i]);
 
     stringInput((char *)"main");
-    input(BREAK);
+    breakInput();
     doCommand();
 }
 

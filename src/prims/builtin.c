@@ -2129,78 +2129,90 @@ static void builtinControl(int what) {
 }
 static struct primInfo builtinPrims = {builtinControl, builtinPrimTable, 0};
 
+/* Register every primitive module, and predefine the primitive and
+ * derived names the rest of the interpreter refers to by global; done
+ * once, before the Prelude is read. */
+static void installBuiltIn(void) {
+    registerPrims(&builtinPrims);
+    registerPrims(&printerPrims);
+    registerPrims(&arrayPrims);
+    registerPrims(&bignumPrims);
+    registerPrims(&iomonadPrims);
+    registerPrims(&timePrims);
+    registerPrims(&dirPrims);
+#if INTERNAL_PRIMS
+    registerPrims(&internalPrims);
+#endif
+    setCurrModule(modulePrelude);
+    nameFatbar = predefPrim("_FATBAR", "fatbar");
+    nameFail = predefPrim("_FAIL", "fail");
+    nameIf = predefPrim("_IF", "if");
+    nameSel = predefPrim("_SEL", "sel");
+
+    nameConCmp = predefPrim("_concmp", "conCmp");
+    nameEnRange = predefPrim("_range", "enRange");
+    nameEnIndex = predefPrim("_index", "enIndex");
+    nameEnInRng = predefPrim("_inRange", "enInRng");
+    nameEnToEn = predefPrim("_toEnum", "enToEn");
+    nameEnFrEn = predefPrim("_frEnum", "enFrEn");
+    nameEnFrom = predefPrim("_from", "enFrom");
+    nameEnFrTo = predefPrim("_fromTo", "enFrTo");
+    nameEnFrTh = predefPrim("_fromThen", "enFrTh");
+
+    namePrimThrow = predefPrim("_throw", "primThrowException");
+    nameBlackHole = predefPrim("_Gc Black Hole", "gcBhole");
+    nameInd = predefPrim("_indirect", "dictIndirect");
+    nameRec(nameInd)->number = DFUNNAME;
+    nameNegate = predefName("negate");
+    nameFlip = predefName("flip");
+    nameFrom = predefName("enumFrom");
+    nameFromThen = predefName("enumFromThen");
+    nameFromTo = predefName("enumFromTo");
+    nameFromThenTo = predefName("enumFromThenTo");
+    nameFst = predefName("fst");
+    nameSnd = predefName("snd");
+    nameAnd = predefName("&&");
+    nameOr = predefName("||");
+    nameId = predefName("id");
+    nameOtherwise = predefName("otherwise");
+    nameComp = predefName(".");
+    nameApp = predefName("++");
+    nameShowField = predefName("showField");
+    nameShowParen = predefName("showParen");
+    nameReadField = predefName("readField");
+    nameReadParen = predefName("readParen");
+    nameLex = predefName("lex");
+    nameRangeSize = predefName("rangeSize");
+    nameCompAux = predefName("primCompAux");
+    namePmInt = predefName("primPmInt");
+    namePmInteger = predefName("primPmInteger");
+    namePmFlt = predefName("primPmFlt");
+    nameReturnIO = predefName("primretIO");
+    nameRationalToDouble = predefName("rationalToDouble");
+    nameRationalToFloat = predefName("rationalToFloat");
+    nameFloatToRational = predefName("floatToRational");
+    nameDoubleToRational = predefName("doubleToRational");
+    nameDoubleToRatio = predefName("doubleToRatio");
+    nameIntToRatio = predefName("intToRatio");
+    nameIntToFloat = predefName("primIntToFloat");
+    nameIntToDouble = predefName("primIntToDouble");
+    nameDoubleToFloat = predefName("primDoubleToFloat");
+    nameFloatToDouble = predefName("primFloatToDouble");
+}
+
+/* Free every thunk built while evaluating the previous script or
+ * expression. */
+static void resetBuiltIn(void) {
+    freeAllThunks();
+}
+
 void builtIn(int what) {
     switch (what) {
     case INSTALL:
-        registerPrims(&builtinPrims);
-        registerPrims(&printerPrims);
-        registerPrims(&arrayPrims);
-        registerPrims(&bignumPrims);
-        registerPrims(&iomonadPrims);
-        registerPrims(&timePrims);
-        registerPrims(&dirPrims);
-#if INTERNAL_PRIMS
-        registerPrims(&internalPrims);
-#endif
-        setCurrModule(modulePrelude);
-        nameFatbar = predefPrim("_FATBAR", "fatbar");
-        nameFail = predefPrim("_FAIL", "fail");
-        nameIf = predefPrim("_IF", "if");
-        nameSel = predefPrim("_SEL", "sel");
-
-        nameConCmp = predefPrim("_concmp", "conCmp");
-        nameEnRange = predefPrim("_range", "enRange");
-        nameEnIndex = predefPrim("_index", "enIndex");
-        nameEnInRng = predefPrim("_inRange", "enInRng");
-        nameEnToEn = predefPrim("_toEnum", "enToEn");
-        nameEnFrEn = predefPrim("_frEnum", "enFrEn");
-        nameEnFrom = predefPrim("_from", "enFrom");
-        nameEnFrTo = predefPrim("_fromTo", "enFrTo");
-        nameEnFrTh = predefPrim("_fromThen", "enFrTh");
-
-        namePrimThrow = predefPrim("_throw", "primThrowException");
-        nameBlackHole = predefPrim("_Gc Black Hole", "gcBhole");
-        nameInd = predefPrim("_indirect", "dictIndirect");
-        nameRec(nameInd)->number = DFUNNAME;
-        nameNegate = predefName("negate");
-        nameFlip = predefName("flip");
-        nameFrom = predefName("enumFrom");
-        nameFromThen = predefName("enumFromThen");
-        nameFromTo = predefName("enumFromTo");
-        nameFromThenTo = predefName("enumFromThenTo");
-        nameFst = predefName("fst");
-        nameSnd = predefName("snd");
-        nameAnd = predefName("&&");
-        nameOr = predefName("||");
-        nameId = predefName("id");
-        nameOtherwise = predefName("otherwise");
-        nameComp = predefName(".");
-        nameApp = predefName("++");
-        nameShowField = predefName("showField");
-        nameShowParen = predefName("showParen");
-        nameReadField = predefName("readField");
-        nameReadParen = predefName("readParen");
-        nameLex = predefName("lex");
-        nameRangeSize = predefName("rangeSize");
-        nameCompAux = predefName("primCompAux");
-        namePmInt = predefName("primPmInt");
-        namePmInteger = predefName("primPmInteger");
-        namePmFlt = predefName("primPmFlt");
-        nameReturnIO = predefName("primretIO");
-        nameRationalToDouble = predefName("rationalToDouble");
-        nameRationalToFloat = predefName("rationalToFloat");
-        nameFloatToRational = predefName("floatToRational");
-        nameDoubleToRational = predefName("doubleToRational");
-        nameDoubleToRatio = predefName("doubleToRatio");
-        nameIntToRatio = predefName("intToRatio");
-        nameIntToFloat = predefName("primIntToFloat");
-        nameIntToDouble = predefName("primIntToDouble");
-        nameDoubleToFloat = predefName("primDoubleToFloat");
-        nameFloatToDouble = predefName("primFloatToDouble");
+        installBuiltIn();
         break;
-
     case RESET:
-        freeAllThunks();
+        resetBuiltIn();
         break;
     default:
         break;

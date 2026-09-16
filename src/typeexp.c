@@ -614,15 +614,24 @@ static Cell *const typeexpRoots[] = {
     &tcDeps,
 };
 
+/* Clear the tycons and classes the declaration being checked uses. */
+void resetTypeexp(void) {
+    tcDeps = NIL;
+}
+
+/* Register the roots and reset; done once, before the Prelude is read. */
+void installTypeexp(void) {
+    registerRoots(typeexpRoots);
+    resetTypeexp();
+}
+
 void typeexpControl(int what) {
     switch (what) {
     case RESET:
-        tcDeps = NIL;
+        resetTypeexp();
         break;
-
     case INSTALL:
-        registerRoots(typeexpRoots);
-        typeexpControl(RESET);
+        installTypeexp();
         break;
     default:
         break;

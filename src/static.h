@@ -10,4 +10,7 @@
 
 extern void duplicateError(int, Module, Text, char *); /* two definitions */
 
+extern void installStaticAnalysis(void); /* register roots, then reset */
+extern void resetStaticAnalysis(void);   /* reset the six sub-modules  */
+
 #endif /* __STATIC_H__ */

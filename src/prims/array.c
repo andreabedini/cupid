@@ -56,12 +56,17 @@ static void outOfBounds(void) {
  * Array control:
  * ------------------------------------------------------------------------*/
 
+/* Predefine the name that stands for an undefined array element. */
+static void installArray(void) {
+    setCurrModule(modulePrelude);
+    nameEltUndef = predefPrim("_undefined_array_element", "eltUndef");
+}
+
 static void arrayControl(int);
 static void arrayControl(int what) {
     switch (what) {
     case INSTALL:
-        setCurrModule(modulePrelude);
-        nameEltUndef = predefPrim("_undefined_array_element", "eltUndef");
+        installArray();
         break;
     default:
         break;

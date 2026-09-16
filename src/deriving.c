@@ -1120,17 +1120,26 @@ static Cell *const derivingRoots[] = {
     &diVars,
 };
 
+/* Clear the list of derived instances still to implement. */
+void resetDeriving(void) {
+    derivedInsts = NIL;
+    diVars = NIL;
+    diNum = 0;
+}
+
+/* Register the roots and reset; done once, before the Prelude is read. */
+void installDeriving(void) {
+    registerRoots(derivingRoots);
+    resetDeriving();
+}
+
 void derivingControl(int what) {
     switch (what) {
     case RESET:
-        derivedInsts = NIL;
-        diVars = NIL;
-        diNum = 0;
+        resetDeriving();
         break;
-
     case INSTALL:
-        registerRoots(derivingRoots);
-        derivingControl(RESET);
+        installDeriving();
         break;
     default:
         break;

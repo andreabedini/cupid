@@ -1777,35 +1777,47 @@ void throwException(Cell ex) {
  * Machine control:
  * ------------------------------------------------------------------------*/
 
+/* Allocate the program memory and write out the FAIL every failing
+ * match branches to; done once, before the Prelude is read. */
+static void installMachine(void) {
+    /* prelude.h defines NUM_ADDRS; 0 is the upper bound (=> unbounded.) */
+    /* the elements are MemCells, not pointers to them */
+    dynMemory = allocDynTable(sizeof(MemCell), NUM_ADDRS, 0, "memory");
+    memory = (Memory)(dynMemory->data);
+    if (memory == 0)
+        fatal("Cannot allocate program memory");
+    /* the FAIL that every failing match branches to; it belongs to no
+     * code generation run, so it is written straight out             */
+    noMatch = getMem(1);
+    instrAt(noMatch) = iFAIL;
+}
+
+/* Clear the exception jump buffer and the evaluator's recursion and
+ * stack-dump depths. */
+static void resetMachine(void) {
+    evalError = 0;
+    evalDepth = 0;
+#if GIMME_STACK_DUMPS
+    rootsp = (-1);
+#endif
+}
+
+/* Free the program memory. */
+static void exitMachine(void) {
+    if (dynMemory)
+        freeDynTable(dynMemory);
+}
+
 void machine(int what) {
     switch (what) {
     case INSTALL:
-        /* prelude.h defines NUM_ADDRS; 0 is the upper bound (=> unbounded.) */
-        /* the elements are MemCells, not pointers to them */
-        dynMemory = allocDynTable(sizeof(MemCell), NUM_ADDRS, 0, "memory");
-        memory = (Memory)(dynMemory->data);
-        if (memory == 0)
-            fatal("Cannot allocate program memory");
-        /* the FAIL that every failing match branches to; it belongs to no
-         * code generation run, so it is written straight out             */
-        noMatch = getMem(1);
-        instrAt(noMatch) = iFAIL;
+        installMachine();
         break;
-
-    case MARK:
-        break;
-
     case RESET:
-        evalError = 0;
-        evalDepth = 0;
-#if GIMME_STACK_DUMPS
-        rootsp = (-1);
-#endif
+        resetMachine();
         break;
-
     case EXIT:
-        if (dynMemory)
-            freeDynTable(dynMemory);
+        exitMachine();
         break;
     default:
         break;

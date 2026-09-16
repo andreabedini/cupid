@@ -365,15 +365,24 @@ static Cell *const kindRoots[] = {
     &unkindTypes,
 };
 
+/* Clear the list of types still waiting for a kind annotation. */
+void resetKind(void) {
+    unkindTypes = NIL;
+}
+
+/* Register the roots and reset; done once, before the Prelude is read. */
+void installKind(void) {
+    registerRoots(kindRoots);
+    resetKind();
+}
+
 void kindControl(int what) {
     switch (what) {
     case RESET:
-        unkindTypes = NIL;
+        resetKind();
         break;
-
     case INSTALL:
-        registerRoots(kindRoots);
-        kindControl(RESET);
+        installKind();
         break;
     default:
         break;

@@ -267,15 +267,24 @@ static Cell *const patternRoots[] = {
     &patVars,
 };
 
+/* Clear the variables bound by the pattern being checked. */
+void resetPattern(void) {
+    patVars = NIL;
+}
+
+/* Register the roots and reset; done once, before the Prelude is read. */
+void installPattern(void) {
+    registerRoots(patternRoots);
+    resetPattern();
+}
+
 void patternControl(int what) {
     switch (what) {
     case RESET:
-        patVars = NIL;
+        resetPattern();
         break;
-
     case INSTALL:
-        registerRoots(patternRoots);
-        patternControl(RESET);
+        installPattern();
         break;
     default:
         break;

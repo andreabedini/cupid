@@ -1871,18 +1871,36 @@ static Cell *const machdepRoots[] = {
     &bdTemp,
 };
 
+/* Register the roots and install the platform's signal and terminal
+ * handlers. */
+static void installMachdep(void) {
+    registerRoots(machdepRoots);
+    installHandlers();
+}
+
+/* Clear the pending breakpoint buffer. */
+static void resetMachdep(void) {
+    bdTemp = NIL;
+}
+
+/* Put the terminal back into its normal (non-raw) mode. */
+static void exitMachdep(void) {
+    normalTerminal();
+}
+
 /* Handle machine specific initialisation etc.. */
 void machdep(int what) {
     switch (what) {
     case INSTALL:
-        registerRoots(machdepRoots);
-        installHandlers();
+        installMachdep();
         break;
     case RESET:
-        bdTemp = NIL;
+        resetMachdep();
+        exitMachdep(); /* RESET fell through to BREAK/EXIT's cleanup */
+        break;
     case BREAK:
     case EXIT:
-        normalTerminal();
+        exitMachdep();
         break;
     default:
         break;

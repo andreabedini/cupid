@@ -149,12 +149,12 @@ static Name addNewPrim(int l, Text vn, char *s, Cell t) {
 
 /* Top level static check on Expr */
 void checkExp(void) {
-    staticAnalysis(RESET);
+    resetStaticAnalysis();
     clearScope();     /* Analyse expression in the scope */
     withinScope(NIL); /* of no local bindings              */
     inputExpr = depExpr(0, inputExpr);
     leaveScope();
-    staticAnalysis(RESET);
+    resetStaticAnalysis();
 }
 
 #if EXPLAIN_INSTANCE_RESOLUTION
@@ -162,7 +162,7 @@ void checkExp(void) {
 void checkContext(void) {
     List vs, qs;
 
-    staticAnalysis(RESET);
+    resetStaticAnalysis();
     clearScope();     /* Analyse expression in the scope */
     withinScope(NIL); /* of no local bindings              */
     qs = inputContext;
@@ -171,7 +171,7 @@ void checkContext(void) {
     }
     map2Proc(depPredExp, 0, vs, inputContext);
     leaveScope();
-    staticAnalysis(RESET);
+    resetStaticAnalysis();
 }
 #endif
 
@@ -179,7 +179,7 @@ void checkContext(void) {
 void checkDefns(void) {
     List tcs;
     Module thisModule = lastModule();
-    staticAnalysis(RESET);
+    resetStaticAnalysis();
 
     setCurrModule(thisModule);
 
@@ -300,7 +300,7 @@ void checkDefns(void) {
      * effective imports until it is unloaded. This isn't done due to the
      * storage overhead imposed.
      */
-    staticAnalysis(RESET);
+    resetStaticAnalysis();
 }
 
 /* Add sigdecls from TYPE ... IN .. */
@@ -378,15 +378,41 @@ static void checkTypeIn(Pair cvs) {
  * Static Analysis control:
  * ------------------------------------------------------------------------*/
 
+/* Register the six sub-modules' roots and reset them; done once, before
+ * the Prelude is read. */
+void installStaticAnalysis(void) {
+    installKind();
+    installTycon();
+    installTypeexp();
+    installPattern();
+    installDepend();
+    installDeriving();
+}
+
+/* Reset the six sub-modules' per-script state together, as they always
+ * reset together. */
+void resetStaticAnalysis(void) {
+    resetKind();
+    resetTycon();
+    resetTypeexp();
+    resetPattern();
+    resetDepend();
+    resetDeriving();
+}
+
 /* The per-script state lives in the files that use it; each has a control
  * function of its own, and they reset together here as they always did. */
 void staticAnalysis(int what) {
-    kindControl(what);
-    tyconControl(what);
-    typeexpControl(what);
-    patternControl(what);
-    dependControl(what);
-    derivingControl(what);
+    switch (what) {
+    case INSTALL:
+        installStaticAnalysis();
+        break;
+    case RESET:
+        resetStaticAnalysis();
+        break;
+    default:
+        break;
+    }
 }
 
 /*-------------------------------------------------------------------------*/

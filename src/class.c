@@ -700,7 +700,7 @@ void insertInst(Inst in) {
         List ins1 = cclassRec(c)->instances;
         for (; nonNull(ins1); ins1 = tl(ins1)) {
             List fds = cclassRec(c)->fds;
-            substitution(RESET);
+            resetSubstitution();
             for (; nonNull(fds); fds = tl(fds)) {
                 int alpha = newKindedVars(instRec(in)->kinds);
                 int beta = newKindedVars(instRec(hd(ins1))->kinds);
@@ -739,7 +739,7 @@ void insertInst(Inst in) {
         }
     }
 
-    substitution(RESET);
+    resetSubstitution();
     while (nonNull(ins)) { /* Look for overlap w/ other insts */
         int alpha = newKindedVars(instRec(in)->kinds);
         int beta = newKindedVars(instRec(hd(ins))->kinds);
@@ -773,7 +773,7 @@ void insertInst(Inst in) {
         prev = ins;    /* No overlap detected, so move on */
         ins = tl(ins); /* to next instance                 */
     }
-    substitution(RESET);
+    resetSubstitution();
 
     if (nonNull(prev)) { /* Insert instance at this point   */
         tl(prev) = cons(in, ins);

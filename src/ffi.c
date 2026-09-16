@@ -480,17 +480,28 @@ static Cell *const ffiRoots[] = {
     &includes,
 };
 
+/* Close any stub file left open by an aborted run, and clear the list
+ * of headers already #included into the current one. */
+static void resetFfi(void) {
+    if (out) {
+        fclose(out);
+        out = NIL;
+    }
+    includes = NIL;
+}
+
+/* Register the roots; done once, before the Prelude is read. */
+static void installFfi(void) {
+    registerRoots(ffiRoots);
+}
+
 void ffi(int what) {
     switch (what) {
     case RESET:
-        if (out) {
-            fclose(out);
-            out = NIL;
-        }
-        includes = NIL;
+        resetFfi();
         break;
     case INSTALL:
-        registerRoots(ffiRoots);
+        installFfi();
         break;
     default:
         break;

@@ -95,13 +95,23 @@ static Cell *const sccRoots[] = {
     &daSccs,
 };
 
+/* Clear the list of strongly-connected components found so far. */
+static void resetScc(void) {
+    daSccs = NIL;
+}
+
+/* Register the roots; done once, before the Prelude is read. */
+static void installScc(void) {
+    registerRoots(sccRoots);
+}
+
 void sccControl(int what) {
     switch (what) {
     case RESET:
-        daSccs = NIL;
+        resetScc();
         break;
     case INSTALL:
-        registerRoots(sccRoots);
+        installScc();
         break;
     default:
         break;

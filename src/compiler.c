@@ -1644,13 +1644,15 @@ static Cell preCompOffset(int n) {
     }
 }
 
+static void resetCompiler(void);
+
 /* --------------------------------------------------------------------------
  * Main entry points to compiler:
  * ------------------------------------------------------------------------*/
 
 /* Compile input expression */
 void compileExp(void) {
-    compiler(RESET);
+    resetCompiler();
 
     currentName = NIL;
     inputExpr = lift(0, NIL, pmcTerm(0, NIL, translate(inputExpr)));
@@ -1694,7 +1696,7 @@ static void compileGlobalFunction(Pair bind) {
 
     if (isNull(n))
         internal("compileGlobalFunction");
-    compiler(RESET);
+    resetCompiler();
     currentName = n;
     defs = altsMatch(1, arity, NIL, defs);
     newGlobalFunction(n, arity, NIL, arity,
@@ -1707,7 +1709,7 @@ static void compileGenFunction(Name n) {
     List defs = nameRec(n)->defn;
     int arity = length(fst(hd(defs)));
 
-    compiler(RESET);
+    resetCompiler();
     currentName = n;
     mapProc(transAlt, defs);
     defs = altsMatch(1, arity, NIL, defs);
@@ -1724,7 +1726,7 @@ static Name compileSelFunction(Pair p) {
     List defs = snd(p);
     int arity = length(fst(hd(defs)));
 
-    compiler(RESET);
+    resetCompiler();
     mapProc(transAlt, defs);
     defs = altsMatch(1, arity, NIL, defs);
     newGlobalFunction(s, arity, NIL, arity,
@@ -1754,18 +1756,31 @@ static Cell *const compilerRoots[] = {
     &extraVars,
 };
 
+/* Clear the free-variable lists a lambda lift builds up, and the
+ * offset/arity state of the function currently being compiled. */
+static void resetCompiler(void) {
+    freeVars = NIL;
+    freeFuns = NIL;
+    freeBegin = mkOffset(0);
+    extraVars = NIL;
+    numExtraVars = 0;
+    localOffset = 0;
+    localArity = 0;
+}
+
+/* Register the roots; done once, before the Prelude is read. */
+static void installCompiler(void) {
+    registerRoots(compilerRoots);
+}
+
 void compiler(int what) {
     switch (what) {
     case INSTALL:
-        registerRoots(compilerRoots);
+        installCompiler();
+        resetCompiler();
+        break;
     case RESET:
-        freeVars = NIL;
-        freeFuns = NIL;
-        freeBegin = mkOffset(0);
-        extraVars = NIL;
-        numExtraVars = 0;
-        localOffset = 0;
-        localArity = 0;
+        resetCompiler();
         break;
     default:
         break;

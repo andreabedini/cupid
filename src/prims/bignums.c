@@ -68,15 +68,28 @@ static Cell *const bignumRoots[] = {
     &bigRem,
 };
 
+/* Clear the bignum accumulator and the quotient/remainder result. */
+static void resetBignum(void) {
+    bn = NIL;
+    bigRem = NIL;
+}
+
+/* Register the roots and predefine the name bignum arithmetic reports
+ * overflow through. */
+static void installBignum(void) {
+    registerRoots(bignumRoots);
+    nameIntToInteger = predefName("primIntToInteger");
+}
+
 static void bignumControl(int);
 static void bignumControl(int what) {
     switch (what) {
     case INSTALL:
-        registerRoots(bignumRoots);
-        nameIntToInteger = predefName("primIntToInteger");
+        installBignum();
+        resetBignum();
+        break;
     case RESET:
-        bn = NIL;
-        bigRem = NIL;
+        resetBignum();
         break;
     default:
         break;

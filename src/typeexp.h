@@ -25,6 +25,8 @@ extern List otvars(Cell, List);         /* likewise for a predicate         */
 extern List odiff(List, List);          /* difference of offset lists       */
 extern bool osubset(List, List);        /* subset test on offset lists      */
 extern List calcFunDeps(List);          /* fundeps of a context             */
-extern void typeexpControl(int); /* RESET/INSTALL, called by staticAnalysis */
+extern void resetTypeexp(void);   /* clear tcDeps                          */
+extern void installTypeexp(void); /* register roots and reset; INSTALL only*/
+extern void typeexpControl(int);  /* RESET/INSTALL, called by staticAnalysis */
 
 #endif /* __TYPEEXP_H__ */

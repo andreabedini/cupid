@@ -536,19 +536,33 @@ static void freeConsCharTable(void) {
     }
 }
 
+/* Build the character classification and cons-char tables; done once,
+ * before the Prelude is read. */
+static void installCharOps(void) {
+    initCharTab();
+    initConsCharTable();
+}
+
+/* Mark the cons-char table. */
+static void markCharOps(void) {
+    markConsCharTable();
+}
+
+/* Free the cons-char table. */
+static void exitCharOps(void) {
+    freeConsCharTable();
+}
+
 void charOps(int what) {
     switch (what) {
     case INSTALL:
-        initCharTab();
-        initConsCharTable();
+        installCharOps();
         break;
-
     case MARK:
-        markConsCharTable();
+        markCharOps();
         break;
-
     case EXIT:
-        freeConsCharTable();
+        exitCharOps();
         break;
     default:
         break;

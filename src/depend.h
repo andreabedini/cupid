@@ -19,6 +19,8 @@ extern Cell depQVar(int, Cell, bool);    /* resolve a qualified variable     */
 extern void checkNameAmbigName(int, Name, bool); /* error if imported twice  */
 extern List tcscc(List, List);    /* order tycons and classes by dependency   */
 extern Syntax lookupSyntax(Text); /* fixity from the enclosing bindings      */
+extern void resetDepend(void);    /* clear the scope stacks and dep. lists   */
+extern void installDepend(void);  /* register roots and reset; INSTALL only  */
 extern void dependControl(int);   /* RESET/INSTALL, called by staticAnalysis  */
 
 #endif /* __DEPEND_H__ */

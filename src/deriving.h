@@ -9,6 +9,8 @@
 
 extern void checkDerive(Tycon, List, List, Cell); /* record a request       */
 extern List derivedInstances(void); /* implement them and return the list    */
+extern void resetDeriving(void);    /* clear the derived-instance list       */
+extern void installDeriving(void);  /* register roots and reset; INSTALL only*/
 extern void derivingControl(int);   /* RESET/INSTALL, called by everybody()  */
 
 #endif /* __DERIVING_H__ */

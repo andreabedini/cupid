@@ -28,17 +28,27 @@ static void linkInternals(void);
  * rather than redeclaring them here.
  */
 
+/* Predefine the standard Left/Right data constructors this module
+ * links its primitives against. */
+static void installInternals(void) {
+    setCurrModule(modulePrelude);
+    nameLeft = predefName("Left");
+    nameRight = predefName("Right");
+}
+
+/* Re-resolve the primitives' internal name links for the new script. */
+static void resetInternals(void) {
+    linkInternals();
+}
+
 static void internalControl(int);
 static void internalControl(int what) {
     switch (what) {
     case INSTALL:
-        setCurrModule(modulePrelude);
-        nameLeft = predefName("Left");
-        nameRight = predefName("Right");
+        installInternals();
         break;
-
     case RESET:
-        linkInternals();
+        resetInternals();
         break;
     default:
         break;

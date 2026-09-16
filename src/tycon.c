@@ -667,15 +667,24 @@ static Cell *const tyconRoots[] = {
     &cfunSfuns,
 };
 
+/* Clear the list of constructors' selector variables. */
+void resetTycon(void) {
+    cfunSfuns = NIL;
+}
+
+/* Register the roots and reset; done once, before the Prelude is read. */
+void installTycon(void) {
+    registerRoots(tyconRoots);
+    resetTycon();
+}
+
 void tyconControl(int what) {
     switch (what) {
     case RESET:
-        cfunSfuns = NIL;
+        resetTycon();
         break;
-
     case INSTALL:
-        registerRoots(tyconRoots);
-        tyconControl(RESET);
+        installTycon();
         break;
     default:
         break;

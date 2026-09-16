@@ -1713,14 +1713,14 @@ static void parseInput(int startWith) {
 
 /* Read a script from a string buffer */
 void parseScriptString(char *buf) {
-    input(RESET);
+    resetInput();
     stringInput(buf);
     parseInput(SCRIPT);
 }
 
 /* Read a script Used to set a target for reading */
 bool parseScript(char *nm, long len) {
-    input(RESET);
+    resetInput();
     if (fileInput(nm, len)) {
         /* File successfully located, change 'scriptFile' so that error messages
         * are reported relative to this file.
@@ -1760,101 +1760,118 @@ static Cell *const inputRoots[] = {
     &varAsMod,      &varMain,        &conMain,        &imps,
 };
 
+/* Register the roots, intern the keyword and symbol texts the lexer
+ * and grammar compare against, and reset; done once, before the
+ * Prelude is read. */
+static void installInput(void) {
+    registerRoots(inputRoots);
+    textCase = findText("case");
+    textOfK = findText("of");
+    textData = findText("data");
+    textType = findText("type");
+    textIf = findText("if");
+    textThen = findText("then");
+    textElse = findText("else");
+    textWhere = findText("where");
+    textLet = findText("let");
+    textIn = findText("in");
+    textInfix = findText("infix");
+    textInfixl = findText("infixl");
+    textInfixr = findText("infixr");
+    textPrim = findText("primitive");
+    textNewtype = findText("newtype");
+    textDefault = findText("default");
+    textDeriving = findText("deriving");
+    textDo = findText("do");
+    textClass = findText("class");
+    textInstance = findText("instance");
+    textCoco = findText("::");
+    textEq = findText("=");
+    textUpto = findText("..");
+    textAs = findText("@");
+    textLambda = findText("\\");
+    textBar = findText("|");
+    textMinus = findText("-");
+    textPlus = findText("+");
+    textFrom = findText("<-");
+    textArrow = findText("->");
+    textLazy = findText("~");
+    textBang = findText("!");
+    textDot = findText(".");
+    textImplies = findText("=>");
+    textPrelude = findText(STD_PRELUDE_CUDDLES);
+    textUserPrelude = findText(STD_PRELUDE);
+    textNum = findText("Num");
+    textModule = findText("module");
+    textImport = findText("import");
+    textHiding = findText("hiding");
+    textQualified = findText("qualified");
+    textNeedPrims = findText("needPrims_cuddles");
+    textForeign = findText("foreign");
+    textExport = findText("export");
+    textCCall = findText("ccall");
+    textSafe = findText("safe");
+    textUnsafe = findText("unsafe");
+    textThreadsafe = findText("threadsafe");
+#if STDCALL_SUPPORTED
+    textStdcall = findText("stdcall");
+#endif
+    textAsMod = findText("as");
+    textWildcard = findText("_");
+    textAll = findText("forall");
+    varMinus = mkVar(textMinus);
+    varPlus = mkVar(textPlus);
+    varBang = mkVar(textBang);
+    varDot = mkVar(textDot);
+    varHiding = mkVar(textHiding);
+    varQualified = mkVar(textQualified);
+    varAsMod = mkVar(textAsMod);
+    conMain = mkCon(findText("Main"));
+    varMain = mkVar(findText("main"));
+    evalDefaults = NIL;
+
+    resetInput();
+}
+
+/* Clear every per-script definition list and close whatever the lexer
+ * had open. */
+void resetInput(void) {
+    tyconDefns = NIL;
+    typeInDefns = NIL;
+    valDefns = NIL;
+    classDefns = NIL;
+    instDefns = NIL;
+    selDefns = NIL;
+    genDefns = NIL;
+    primDefns = NIL;
+    unqualImports = NIL;
+    foreignCount = 0;
+    foreignImports = NIL;
+    foreignExports = NIL;
+    defaultDefns = NIL;
+    defaultLine = 0;
+    inputExpr = NIL;
+    imps = NIL;
+    closeAnyInput();
+}
+
+/* Force the lexer to see end-of-file, so an interrupted keyboard read
+ * unwinds instead of blocking. */
+void breakInput(void) {
+    if (reading == KEYBOARD)
+        c0 = EOF;
+}
+
 void input(int what) {
     switch (what) {
     case INSTALL:
-        registerRoots(inputRoots);
-        textCase = findText("case");
-        textOfK = findText("of");
-        textData = findText("data");
-        textType = findText("type");
-        textIf = findText("if");
-        textThen = findText("then");
-        textElse = findText("else");
-        textWhere = findText("where");
-        textLet = findText("let");
-        textIn = findText("in");
-        textInfix = findText("infix");
-        textInfixl = findText("infixl");
-        textInfixr = findText("infixr");
-        textPrim = findText("primitive");
-        textNewtype = findText("newtype");
-        textDefault = findText("default");
-        textDeriving = findText("deriving");
-        textDo = findText("do");
-        textClass = findText("class");
-        textInstance = findText("instance");
-        textCoco = findText("::");
-        textEq = findText("=");
-        textUpto = findText("..");
-        textAs = findText("@");
-        textLambda = findText("\\");
-        textBar = findText("|");
-        textMinus = findText("-");
-        textPlus = findText("+");
-        textFrom = findText("<-");
-        textArrow = findText("->");
-        textLazy = findText("~");
-        textBang = findText("!");
-        textDot = findText(".");
-        textImplies = findText("=>");
-        textPrelude = findText(STD_PRELUDE_CUDDLES);
-        textUserPrelude = findText(STD_PRELUDE);
-        textNum = findText("Num");
-        textModule = findText("module");
-        textImport = findText("import");
-        textHiding = findText("hiding");
-        textQualified = findText("qualified");
-        textNeedPrims = findText("needPrims_cuddles");
-        textForeign = findText("foreign");
-        textExport = findText("export");
-        textCCall = findText("ccall");
-        textSafe = findText("safe");
-        textUnsafe = findText("unsafe");
-        textThreadsafe = findText("threadsafe");
-#if STDCALL_SUPPORTED
-        textStdcall = findText("stdcall");
-#endif
-        textAsMod = findText("as");
-        textWildcard = findText("_");
-        textAll = findText("forall");
-        varMinus = mkVar(textMinus);
-        varPlus = mkVar(textPlus);
-        varBang = mkVar(textBang);
-        varDot = mkVar(textDot);
-        varHiding = mkVar(textHiding);
-        varQualified = mkVar(textQualified);
-        varAsMod = mkVar(textAsMod);
-        conMain = mkCon(findText("Main"));
-        varMain = mkVar(findText("main"));
-        evalDefaults = NIL;
-
-        input(RESET);
+        installInput();
         break;
-
     case RESET:
-        tyconDefns = NIL;
-        typeInDefns = NIL;
-        valDefns = NIL;
-        classDefns = NIL;
-        instDefns = NIL;
-        selDefns = NIL;
-        genDefns = NIL;
-        primDefns = NIL;
-        unqualImports = NIL;
-        foreignCount = 0;
-        foreignImports = NIL;
-        foreignExports = NIL;
-        defaultDefns = NIL;
-        defaultLine = 0;
-        inputExpr = NIL;
-        imps = NIL;
-        closeAnyInput();
+        resetInput();
         break;
-
     case BREAK:
-        if (reading == KEYBOARD)
-            c0 = EOF;
+        breakInput();
         break;
     default:
         break;

@@ -865,17 +865,26 @@ static Cell *const dependRoots[] = {
     &depends,
 };
 
+/* Clear the scope stacks and the dependency-analysis working lists. */
+void resetDepend(void) {
+    bounds = NIL;
+    bindings = NIL;
+    depends = NIL;
+}
+
+/* Register the roots and reset; done once, before the Prelude is read. */
+void installDepend(void) {
+    registerRoots(dependRoots);
+    resetDepend();
+}
+
 void dependControl(int what) {
     switch (what) {
     case RESET:
-        bounds = NIL;
-        bindings = NIL;
-        depends = NIL;
+        resetDepend();
         break;
-
     case INSTALL:
-        registerRoots(dependRoots);
-        dependControl(RESET);
+        installDepend();
         break;
     default:
         break;
