@@ -15,33 +15,33 @@
 /* --------------------------------------------------------------------------
  * Flags and options:
  * ------------------------------------------------------------------------*/
-Bool preludeLoaded = FALSE;
+bool preludeLoaded = false;
 
-Bool showStats = FALSE;   /* TRUE => print stats after eval  */
-Bool addType = FALSE;     /* TRUE => print type with value   */
-Bool useShow = TRUE;      /* TRUE => use Text/show printer   */
-Bool displayIO = FALSE;   /* TRUE => use printer for IO result*/
-Bool useDots = FALSE;     /* TRUE => use dots in progress    */
-Bool listScripts = FALSE; /* TRUE => list scripts after loading*/
-Bool quiet = TRUE;        /* TRUE => don't show progress     */
-Bool printing = FALSE;    /* TRUE => currently printing value*/
-String cuddlesEdit = 0;   /* String for editor command       */
-String prompt = 0;        /* Prompt string                   */
+bool showStats = false;   /* true => print stats after eval  */
+bool addType = false;     /* true => print type with value   */
+bool useShow = true;      /* true => use Text/show printer   */
+bool displayIO = false;   /* true => use printer for IO result*/
+bool useDots = false;     /* true => use dots in progress    */
+bool listScripts = false; /* true => list scripts after loading*/
+bool quiet = true;        /* true => don't show progress     */
+bool printing = false;    /* true => currently printing value*/
+char *cuddlesEdit = 0;    /* String for editor command       */
+char *prompt = 0;         /* Prompt string                   */
 
 #if EXPLAIN_INSTANCE_RESOLUTION
-Bool showInstRes = FALSE;
+bool showInstRes = false;
 #endif
 
-Bool printTypeUseDefaults = FALSE;
+bool printTypeUseDefaults = false;
 
 /* --------------------------------------------------------------------------
  * Keeping track of current file:
  * ------------------------------------------------------------------------*/
-static String lastEdit = 0; /* Name of script to edit (if any) */
-static Int lastLine = 0;    /* Editor line number (if possible)*/
+static char *lastEdit = 0; /* Name of script to edit (if any) */
+static int lastLine = 0;   /* Editor line number (if possible)*/
 
-Void setLastEdit(String fname, Int line) /* keep name of last file to edit */
-{
+/* Keep name of last file to edit */
+void setLastEdit(char *fname, int line) {
     if (lastEdit) {
         free(lastEdit);
     }
@@ -49,7 +49,7 @@ Void setLastEdit(String fname, Int line) /* keep name of last file to edit */
     lastLine = line;
 }
 
-String getLastEdit(Int *pLastLine) {
+char *getLastEdit(int *pLastLine) {
     if (pLastLine)
         *pLastLine = lastLine;
     return lastEdit;
@@ -61,8 +61,8 @@ String getLastEdit(Int *pLastLine) {
 
 #define Option(c, description, flag) {c, description, flag}
 
-static Void local toggleSet(Char, Bool);
-static Void local togglesIn(Bool);
+static void toggleSet(Char, bool);
+static void togglesIn(bool);
 
 struct options toggle[] =
     {/* List of command line toggles    */
@@ -90,10 +90,9 @@ struct options toggle[] =
 #endif
      Option(0, 0, 0)};
 
-Void setOptions(
-    Void) /* change command line options from Cuddles command line */
-{
-    String s;
+/* Change command line options from Cuddles command line */
+void setOptions(void) {
+    char *s;
     if ((s = readFilename()) != 0) {
         do {
             if (!processOption(s)) {
@@ -110,10 +109,9 @@ Void setOptions(
     }
 }
 
-static Void local toggleSet(Char c,
-                            Bool state) /* Set command line toggle         */
-{
-    Int i;
+/* Set command line toggle */
+static void toggleSet(Char c, bool state) {
+    int i;
     for (i = 0; toggle[i].c; ++i)
         if (toggle[i].c == c) {
             *toggle[i].flag = state;
@@ -122,10 +120,10 @@ static Void local toggleSet(Char c,
     Printf("Warning: unknown toggle `%c'; ignoring.\n", c);
 }
 
-static Void local togglesIn(Bool state) /* Print current list of toggles in*/
-{                                       /* given state                     */
-    Int count = 0;
-    Int i;
+/* Print current list of toggles in given state */
+static void togglesIn(bool state) {
+    int count = 0;
+    int i;
     for (i = 0; toggle[i].c; ++i)
         if (*toggle[i].flag == state) {
             if (count == 0)
@@ -137,10 +135,11 @@ static Void local togglesIn(Bool state) /* Print current list of toggles in*/
         Putchar(' ');
 }
 
-Void optionInfo(Void) {              /* Print information about command */
-    static String fmts = "%-5s%s\n"; /* line settings                   */
-    static String fmtc = "%-5c%s\n";
-    Int i;
+/* Print information about command line settings */
+void optionInfo(void) {
+    static char *fmts = "%-5s%s\n";
+    static char *fmtc = "%-5c%s\n";
+    int i;
 
     Printf("TOGGLES: groups begin with +/- to turn options on/off resp.\n");
     for (i = 0; toggle[i].c; ++i) {
@@ -162,8 +161,8 @@ Void optionInfo(Void) {              /* Print information about command */
 #endif
 
     Printf("\nCurrent settings: ");
-    togglesIn(TRUE);
-    togglesIn(FALSE);
+    togglesIn(true);
+    togglesIn(false);
     Printf("-h%d", heapSize);
     Printf(" -p");
     printString(prompt);
@@ -201,8 +200,8 @@ Void optionInfo(Void) {              /* Print information about command */
 
 #define PUTS(s)                                                                \
     do {                                                                       \
-        String sref = (s);                                                     \
-        Int len = strlen(sref);                                                \
+        char *sref = (s);                                                      \
+        int len = strlen(sref);                                                \
         if (charsLeft > len) {                                                 \
             strcpy(next, sref);                                                \
             next += len;                                                       \
@@ -214,7 +213,7 @@ Void optionInfo(Void) {              /* Print information about command */
 
 #define PUTInt(optc, i)                                                        \
     if (charsLeft > 20 /*conservative*/) {                                     \
-        Int n = sprintf(next, "-%c%d", optc, i);                               \
+        int n = snprintf(next, charsLeft, "-%c%d", optc, i);                   \
         next += n;                                                             \
         charsLeft -= n;                                                        \
     } else {                                                                   \
@@ -223,16 +222,16 @@ Void optionInfo(Void) {              /* Print information about command */
 
 #define PUTStr(c, s) next = PUTStr_aux(next, &charsLeft, c, s)
 
-static String local PUTStr_aux(String, Int *, Char, String);
+static char *PUTStr_aux(char *, int *, Char, char *);
 
-static String local PUTStr_aux(String next, Int *chLeft, Char c, String s) {
-    Int charsLeft = *chLeft;
-    Int len;
-    if (s && (len = (Int)strlen(s)) > 0) {
-        String t = 0;
-        len = (Int)strlen(s);
+static char *PUTStr_aux(char *next, int *chLeft, Char c, char *s) {
+    int charsLeft = *chLeft;
+    int len;
+    if (s && (len = (int)strlen(s)) > 0) {
+        char *t = 0;
+        len = (int)strlen(s);
 
-        if ((Int)(len + 10) > charsLeft) {
+        if ((int)(len + 10) > charsLeft) {
             *next = '\0';
             /* optionsToStr() will not to break off immediately,
              * but soon enough. 
@@ -257,7 +256,7 @@ static String local PUTStr_aux(String next, Int *chLeft, Char c, String s) {
             /* Explicitly bind result to a local to avoid 
              * duplicating work within PUTS() macro. Ugly.
              */
-            String strChar = unlexChar(ExtractChar(t), '"');
+            char *strChar = unlexChar(ExtractChar(t), '"');
             PUTS(strChar);
         }
         next += strlen(next);
@@ -267,12 +266,13 @@ static String local PUTStr_aux(String next, Int *chLeft, Char c, String s) {
     return next;
 }
 
-String optionsToStr() { /* convert options to string */
+/* Convert options to string */
+char *optionsToStr(void) {
     static char buffer[2000];
-    String next = buffer;
-    Int charsLeft = 2000;
+    char *next = buffer;
+    int charsLeft = 2000;
 
-    Int i;
+    int i;
     for (i = 0; toggle[i].c; ++i) {
         PUTC(*toggle[i].flag ? '+' : '-');
         PUTC(toggle[i].c);
@@ -307,8 +307,8 @@ String optionsToStr() { /* convert options to string */
  * Reading and processing option strings:
  * ------------------------------------------------------------------------*/
 
-Void readOptions(String options, Bool freeUp) /* read options from string */
-{
+/* Read options from string */
+void readOptions(char *options, bool freeUp) {
     if (!readOptions2(options)) {
         errHead(0);
         errPrintf("Option string must begin with `+' or `-'");
@@ -342,16 +342,16 @@ Void readOptions(String options, Bool freeUp) /* read options from string */
 #define MAX_OPTION_WORD 4000 /* longest word an option string may hold */
 
 struct optScan { /* the state of a scan over an option string */
-    String rest; /* the part of the string not read yet       */
+    char *rest;  /* the part of the string not read yet       */
     Char c;      /* the character at the scan position, or 0  */
                  /* at the end of the string                  */
-    String out;  /* where the next character of the word goes */
-    String word; /* the buffer the word is built in           */
+    char *out;   /* where the next character of the word goes */
+    char *word;  /* the buffer the word is built in           */
 };
 
-static Void local optSkip(struct optScan *sc) /* advance one character */
-{
-    String at = sc->rest;
+/* Advance one character */
+static void optSkip(struct optScan *sc) {
+    char *at = sc->rest;
     if (*at == '\0') { /* ExtractChar would step past the NUL */
         sc->c = '\0';
         return;
@@ -361,9 +361,8 @@ static Void local optSkip(struct optScan *sc) /* advance one character */
         sc->rest = at + 1;
 }
 
-static Void local optSave(struct optScan *sc,
-                          Char c) /* add a character to the word */
-{
+/* Add a character to the word */
+static void optSave(struct optScan *sc, Char c) {
     if (sc->out > sc->word + MAX_OPTION_WORD - MAX_CHAR_ENCODING) {
         errHead(0);
         errPrintf("Maximum option length (%d) exceeded", MAX_OPTION_WORD);
@@ -372,10 +371,9 @@ static Void local optSave(struct optScan *sc,
     AddChar(c, sc->out);
 }
 
-static String local
-optWord(struct optScan *sc) /* the next word of the option string, or   */
-{                           /* 0 when there are none left.  The word is */
-                            /* in the scan's buffer until the next call */
+/* The next word of the option string, or 0 when there are none left. The word
+ * is in the scan's buffer until the next call */
+static char *optWord(struct optScan *sc) {
     while (sc->c != '\0' && isIn(sc->c, SPACE))
         optSkip(sc);
     if (sc->c == '\0')
@@ -420,16 +418,16 @@ optWord(struct optScan *sc) /* the next word of the option string, or   */
     return sc->word;
 }
 
-Bool readOptions2(String options) /* read options from string */
-{
+/* Read options from string */
+bool readOptions2(char *options) {
     struct optScan sc;
-    String s;
-    Bool ok = TRUE;
+    char *s;
+    bool ok = true;
 
     if (options) {
         if (!charTabBuilt) /* optWord classifies with isIn() */
             initCharTab();
-        sc.word = (String)malloc(MAX_OPTION_WORD + 1);
+        sc.word = (char *)malloc(MAX_OPTION_WORD + 1);
         if (!sc.word) {
             errHead(0);
             errPrintf("Out of memory reading options");
@@ -439,22 +437,22 @@ Bool readOptions2(String options) /* read options from string */
         optSkip(&sc); /* prime the scan with the first character */
         while (ok && (s = optWord(&sc)) != 0)
             if (*s && !processOption(s))
-                ok = FALSE;
+                ok = false;
         free(sc.word);
     }
     return ok;
 }
 
-Bool processOption(String s) /* process string s for options,   */
-{                            /* return FALSE if none found.     */
-    Bool state;
+/* Process string s for options, return false if none found. */
+bool processOption(char *s) {
+    bool state;
 
     if (s[0] == '-')
-        state = FALSE;
+        state = false;
     else if (s[0] == '+')
-        state = TRUE;
+        state = true;
     else
-        return FALSE;
+        return false;
 
     while (*++s)
         switch (*s) {
@@ -464,7 +462,7 @@ Bool processOption(String s) /* process string s for options,   */
                     free(prompt);
                 prompt = strCopy(s + 1);
             }
-            return TRUE;
+            return true;
 
         case 'r':
             if (s[1]) {
@@ -472,16 +470,16 @@ Bool processOption(String s) /* process string s for options,   */
                     free(repeatStr);
                 repeatStr = strCopy(s + 1);
             }
-            return TRUE;
+            return true;
 
 #if PROFILING
         case 'd': { /* random choice of letter - ADR   */
-            Int i = argToInt(s + 1);
+            int i = argToInt(s + 1);
             if (i > 0) {
-                profiling = TRUE;
+                profiling = true;
                 profInterval = i;
             } else {
-                profiling = FALSE;
+                profiling = false;
                 /* To keep the profiling test efficient(?)
                                 * we dont actually disable the gathering
                                 * of profiling statistics - we just gather
@@ -490,12 +488,12 @@ Bool processOption(String s) /* process string s for options,   */
                 profInterval = MAXPOSINT;
             }
         }
-            return TRUE;
+            return true;
 #endif
 
         case 'P': {
-            String prelLoc;
-            String savedPath;
+            char *prelLoc;
+            char *savedPath;
 
             savedPath = cuddlesPath;
             if (*(s + 1) == '\0') {
@@ -516,11 +514,11 @@ Bool processOption(String s) /* process string s for options,   */
                 if (savedPath)
                     free(savedPath);
             }
-            return TRUE;
+            return true;
         }
 
         case 'S': {
-            String saveSuffixes = cuddlesSuffixes;
+            char *saveSuffixes = cuddlesSuffixes;
             if (*(s + 1) == '\0')
                 cuddlesSuffixes = strCopy(CUDDLESSUFFIXES);
             else
@@ -534,14 +532,14 @@ Bool processOption(String s) /* process string s for options,   */
             } else {
                 free(saveSuffixes);
             }
-            return TRUE;
+            return true;
         }
 
         case 'E':
             if (cuddlesEdit)
                 free(cuddlesEdit);
             cuddlesEdit = strCopy(s + 1);
-            return TRUE;
+            return true;
 
         case 'F':
             if (preprocessor)
@@ -551,11 +549,11 @@ Bool processOption(String s) /* process string s for options,   */
                 free(preprocessor);
                 preprocessor = NULL;
             }
-            return TRUE;
+            return true;
 
         case 'i':
             ffiAddCppInclude(s + 1);
-            return TRUE;
+            return true;
 
             /* re-parse options (useful with #!) */
         case 'X':
@@ -563,14 +561,14 @@ Bool processOption(String s) /* process string s for options,   */
 
         case 'h':
             setHeapSize(s + 1);
-            return TRUE;
+            return true;
 
         case 'c': {
-            Int cutcand = argToInt(s + 1);
+            int cutcand = argToInt(s + 1);
             if (cutcand >= 1 && cutcand <= 1024)
                 cutoff = cutcand;
         }
-            return TRUE;
+            return true;
 
             /* warnings about obsolete options */
 
@@ -581,31 +579,32 @@ Bool processOption(String s) /* process string s for options,   */
         case 'G':
             Printf("ERROR: ignoring obsolete %c%c option.\n", state ? '+' : '-',
                    *s);
-            return TRUE;
+            return true;
 
         case 'L':
             Printf(
                 "ERROR: +L is no longer supported for fficuddles - put the argument (without +L) *after* the module - ignoring it.\n");
-            return TRUE;
+            return true;
 
         default:
             if (strcmp("98", s) == 0) {
                 /* the extensions are always enabled now */
                 Printf("ERROR: ignoring obsolete %c98 option.\n",
                        state ? '+' : '-');
-                return TRUE;
+                return true;
             }
             toggleSet(*s, state);
             break;
         }
-    return TRUE;
+    return true;
 }
 
-Bool isOption(String s) { /* return TRUE if 's' looks like an option */
+/* Return true if 's' looks like an option */
+bool isOption(char *s) {
     return (s && (s[0] == '-' || s[0] == '+'));
 }
 
-Void setHeapSize(String s) {
+void setHeapSize(char *s) {
     if (s) {
         hpSize = argToInt(s);
         if (hpSize < MINIMUMHEAP)
@@ -628,10 +627,10 @@ Void setHeapSize(String s) {
     }
 }
 
-Int argToInt(String s) /* read integer from argument str  */
-{
-    Int n = 0;
-    String t = s;
+/* Read integer from argument str */
+int argToInt(char *s) {
+    int n = 0;
+    char *t = s;
 
     if (*s == '\0' || !isascii(*s) || !isdigit(*s)) {
         errHead(0);
@@ -640,7 +639,7 @@ Int argToInt(String s) /* read integer from argument str  */
     }
 
     do {
-        Int d = (*s++) - '0';
+        int d = (*s++) - '0';
         if (n > ((MAXPOSINT - d) / 10)) {
             errHead(0);
             errPrintf("Option setting \"%s\" is too large", t);
@@ -695,8 +694,8 @@ Int argToInt(String s) /* read integer from argument str  */
 /* --------------------------------------------------------------------------
  * Process the options entries in an argv-vector:
  * ------------------------------------------------------------------------*/
-Void processOptionVector(Int argc, String argv[]) {
-    Int i;
+void processOptionVector(int argc, char *argv[]) {
+    int i;
 
     for (i = 1; i < argc; ++i) { /* process command line arguments  */
         if (argv[i] && argv[i][0]) {
@@ -717,11 +716,11 @@ Void processOptionVector(Int argc, String argv[]) {
  *   - WinHugs GUI options.
  *
  */
-Void readOptionSettings() {
+void readOptionSettings(void) {
 
 #if USE_REGISTRY
     readOptions(
-        readRegString(HKEY_LOCAL_MACHINE, cuddlesRegRoot, "Options", ""), TRUE);
+        readRegString(HKEY_LOCAL_MACHINE, cuddlesRegRoot, "Options", ""), true);
     if (!fromEnv("IGNORE_USER_REGISTRY", NULL)) {
         /* If IGNORE_USER_REGISTRY exist as an env var, don't consult
        * the user portion of the Registry. Emergency workaround if it has
@@ -729,8 +728,8 @@ Void readOptionSettings() {
        */
         readOptions(
             readRegString(HKEY_CURRENT_USER, cuddlesRegRoot, "Options", ""),
-            TRUE);
+            true);
     }
 #endif /* USE_REGISTRY */
-    readOptions(fromEnv("CUDDLESFLAGS", ""), FALSE);
+    readOptions(fromEnv("CUDDLESFLAGS", ""), false);
 }

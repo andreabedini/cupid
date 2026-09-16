@@ -32,9 +32,9 @@
  * Directory control:
  * ------------------------------------------------------------------------*/
 
-static Void dirControl(Int);
+static void dirControl(int);
 
-static Void dirControl(Int what) {
+static void dirControl(int what) {
 }
 
 /* --------------------------------------------------------------------------
@@ -74,7 +74,7 @@ static struct primitive dirPrimTable[] = {
 
 struct primInfo dirPrims = {dirControl, dirPrimTable, 0};
 
-static Bool local isDirectory(String);
+static bool isDirectory(char *);
 
 #define ToBool(v) ((v) ? nameTrue : nameFalse)
 
@@ -109,9 +109,10 @@ static Bool local isDirectory(String);
  * Directory primitives:
  * ------------------------------------------------------------------------*/
 
-primFun(primCreateDirectory) { /* create a directory, :: String -> IO ()   */
+/* Create a directory, :: String -> IO () */
+primFun(primCreateDirectory) {
     int rc;
-    String s = evalName(IOArg(1));
+    char *s = evalName(IOArg(1));
 
     if (!s) {
         IOFail(mkIOError(NULL, nameIllegal, "Directory.createDirectory",
@@ -124,13 +125,14 @@ primFun(primCreateDirectory) { /* create a directory, :: String -> IO ()   */
     rc = mkdir(s, 0777);
 #endif
     if (rc != 0)
-        throwErrno("Directory.createDirectory", FALSE, NO_HANDLE, &IOArg(1));
+        throwErrno("Directory.createDirectory", false, NO_HANDLE, &IOArg(1));
     IOReturn(nameUnit);
 }
 
-primFun(primRemoveDirectory) { /* remove a directory       */
+/* Remove a directory */
+primFun(primRemoveDirectory) {
     int rc;
-    String s = evalName(IOArg(1));
+    char *s = evalName(IOArg(1));
 
     if (!s) {
         IOFail(mkIOError(NULL, nameIllegal, "Directory.removeDirectory",
@@ -140,13 +142,14 @@ primFun(primRemoveDirectory) { /* remove a directory       */
     rc = rmdir(s);
 
     if (rc != 0)
-        throwErrno("Directory.removeDirectory", FALSE, NO_HANDLE, &IOArg(1));
+        throwErrno("Directory.removeDirectory", false, NO_HANDLE, &IOArg(1));
     IOReturn(nameUnit);
 }
 
-primFun(primRemoveFile) { /* remove a file         */
+/* Remove a file */
+primFun(primRemoveFile) {
     int rc;
-    String s = evalName(IOArg(1));
+    char *s = evalName(IOArg(1));
 
     if (!s) {
         IOFail(mkIOError(NULL, nameIllegal, "Directory.removeFile",
@@ -156,19 +159,20 @@ primFun(primRemoveFile) { /* remove a file         */
     rc = unlink(s);
 
     if (rc != 0)
-        throwErrno("Directory.removeFile", TRUE, NO_HANDLE, &IOArg(1));
+        throwErrno("Directory.removeFile", true, NO_HANDLE, &IOArg(1));
     IOReturn(nameUnit);
 }
 
 /* Pair of macros for creating temporary strings */
-#define ALLOC_STRING(x) (String) malloc(sizeof(char) * (x + 1))
+#define ALLOC_STRING(x) (char *)malloc(sizeof(char) * (x + 1))
 #define FREE_STRING(x) free(x)
 
-primFun(primRenameDirectory) { /* rename a directory       */
+/* Rename a directory */
+primFun(primRenameDirectory) {
     int rc;
-    String tmpStr;
-    String to;
-    String from;
+    char *tmpStr;
+    char *to;
+    char *from;
 
     tmpStr = evalName(IOArg(1));
     if (!tmpStr) {
@@ -190,15 +194,16 @@ primFun(primRenameDirectory) { /* rename a directory       */
     FREE_STRING(to);
 
     if (rc != 0)
-        throwErrno("Directory.renameDirectory", FALSE, NO_HANDLE, &IOArg(1));
+        throwErrno("Directory.renameDirectory", false, NO_HANDLE, &IOArg(1));
     IOReturn(nameUnit);
 }
 
-primFun(primRenameFile) { /* rename a file         */
+/* Rename a file */
+primFun(primRenameFile) {
     int rc;
-    String tmpStr;
-    String to;
-    String from;
+    char *tmpStr;
+    char *to;
+    char *from;
 
     tmpStr = evalName(IOArg(1));
     if (!tmpStr) {
@@ -232,21 +237,23 @@ primFun(primRenameFile) { /* rename a file         */
     FREE_STRING(to);
 
     if (rc != 0)
-        throwErrno("Directory.renameFile", TRUE, NO_HANDLE, &IOArg(1));
+        throwErrno("Directory.renameFile", true, NO_HANDLE, &IOArg(1));
     IOReturn(nameUnit);
 }
 
-primFun(primGetDirectory) { /* IO String - get current directory. */
+/* IO String - get current directory. */
+primFun(primGetDirectory) {
     char buffer[FILENAME_MAX + 1];
     if ((char *)(getcwd(buffer, FILENAME_MAX)) == (char *)NULL)
-        throwErrno("Directory.getCurrentDirectory", FALSE, NO_HANDLE, NULL);
+        throwErrno("Directory.getCurrentDirectory", false, NO_HANDLE, NULL);
     pushString(buffer);
     IOReturn(pop());
 }
 
-primFun(primSetDirectory) { /* String -> IO () - set current directory. */
+/* String -> IO () - set current directory. */
+primFun(primSetDirectory) {
     int rc;
-    String s = evalName(IOArg(1));
+    char *s = evalName(IOArg(1));
 
     if (!s) {
         IOFail(mkIOError(NULL, nameIllegal, "Directory.setCurrentDirectory",
@@ -256,15 +263,15 @@ primFun(primSetDirectory) { /* String -> IO () - set current directory. */
     rc = chdir(s);
 
     if (rc != 0)
-        throwErrno("Directory.setCurrentDirectory", FALSE, NO_HANDLE,
+        throwErrno("Directory.setCurrentDirectory", false, NO_HANDLE,
                    &IOArg(1));
     IOReturn(nameUnit);
 }
 
-primFun(
-    primFileExist) { /* FilePath -> IO Bool - check to see if file exists. */
+/* FilePath -> IO Bool - check to see if file exists. */
+primFun(primFileExist) {
     int rc;
-    String s = evalName(IOArg(1));
+    char *s = evalName(IOArg(1));
     struct stat st;
 
     if (!s) {
@@ -277,9 +284,9 @@ primFun(
     IOBoolResult(rc == 0 && !S_ISDIR(st.st_mode));
 }
 
-primFun(
-    primDirExist) { /* FilePath -> IO Bool - check to see if directory exists. */
-    String s = evalName(IOArg(1));
+/* FilePath -> IO Bool - check to see if directory exists. */
+primFun(primDirExist) {
+    char *s = evalName(IOArg(1));
 
     if (!s) {
         IOFail(mkIOError(NULL, nameIllegal, "Directory.doesDirectoryExist",
@@ -288,7 +295,7 @@ primFun(
     IOBoolResult(isDirectory(s));
 }
 
-static Bool local isDirectory(String s) {
+static bool isDirectory(char *s) {
     int rc;
     struct stat st;
 #ifdef _WIN32
@@ -306,9 +313,10 @@ static Bool local isDirectory(String s) {
     return (rc == 0 && S_ISDIR(st.st_mode));
 }
 
-primFun(primGetPermissions) { /* FilePath -> IO (Bool,Bool,Bool,Bool) */
+/* FilePath -> IO (Bool,Bool,Bool,Bool) */
+primFun(primGetPermissions) {
     int rc;
-    String s = evalName(IOArg(1));
+    char *s = evalName(IOArg(1));
     struct stat st;
     int isR, isW, isX;
 
@@ -323,7 +331,7 @@ primFun(primGetPermissions) { /* FilePath -> IO (Bool,Bool,Bool,Bool) */
     rc = stat(s, &st);
 
     if (rc != 0)
-        throwErrno("Directory.getPermissions", FALSE, NO_HANDLE, &IOArg(1));
+        throwErrno("Directory.getPermissions", false, NO_HANDLE, &IOArg(1));
     IOReturn(ap(ap(ap(ap(mkTuple(4), ToBool(isR == 0)), ToBool(isW == 0)),
                    ToBool(isX == 0 && !S_ISDIR(st.st_mode))),
                 ToBool(isX == 0 && S_ISDIR(st.st_mode))));
@@ -332,9 +340,9 @@ primFun(primGetPermissions) { /* FilePath -> IO (Bool,Bool,Bool,Bool) */
 #define EVAL_BOOL(x, y)                                                        \
     eval(y);                                                                   \
     if (whnfHead == nameTrue) {                                                \
-        x = TRUE;                                                              \
+        x = true;                                                              \
     } else if (whnfHead == nameFalse) {                                        \
-        x = FALSE;                                                             \
+        x = false;                                                             \
     } else {                                                                   \
         IOFail(mkIOError(NULL, nameIllegal, "Directory.setPermissions",        \
                          "illegal flag", NULL));                               \
@@ -352,16 +360,16 @@ primFun(primGetPermissions) { /* FilePath -> IO (Bool,Bool,Bool,Bool) */
 
 #define SET_CHMOD_FLAG(x, y) (x ? y : 0)
 
-primFun(
-    primSetPermissions) { /* FilePath -> Bool -> Bool -> Bool -> Bool -> IO () */
+/* FilePath -> Bool -> Bool -> Bool -> Bool -> IO () */
+primFun(primSetPermissions) {
     int rc;
-    String str;
+    char *str;
     struct stat st;
 
-    Bool r;
-    Bool w;
-    Bool e;
-    Bool s;
+    bool r;
+    bool w;
+    bool e;
+    bool s;
 
     EVAL_BOOL(s, IOArg(1));
     EVAL_BOOL(e, IOArg(2));
@@ -383,7 +391,7 @@ primFun(
                             SET_CHMOD_FLAG(e || s, EXEC_FLAG));
 
     if (rc != 0)
-        throwErrno("Directory.setPermissions", TRUE, NO_HANDLE, &IOArg(5));
+        throwErrno("Directory.setPermissions", true, NO_HANDLE, &IOArg(5));
     IOReturn(nameUnit);
 }
 
@@ -393,7 +401,8 @@ primFun(
 #undef EXEC_FLAG
 #undef SET_CHMOD_FLAG
 
-primFun(primGetDirContents) { /* FilePath -> IO [FilePath] */
+/* FilePath -> IO [FilePath] */
+primFun(primGetDirContents) {
 #ifdef _MSC_VER
     /* The MS CRT doesn't provide opendir()/readdir(), but uses
      the 'std' MS find first/next/close group of functions for
@@ -404,7 +413,7 @@ primFun(primGetDirContents) { /* FilePath -> IO [FilePath] */
     char buffer[FILENAME_MAX + 20];
     struct stat st;
     Cell ls;
-    String fName = evalName(IOArg(1));
+    char *fName = evalName(IOArg(1));
 
     if (!fName) {
         IOFail(mkIOError(NULL, nameIllegal, "Directory.getDirectoryContents",
@@ -418,7 +427,7 @@ primFun(primGetDirContents) { /* FilePath -> IO [FilePath] */
 
     /* First, check whether the directory exists... */
     if (stat(fName, &st) < 0)
-        throwErrno("Directory.getDirectoryContents", FALSE, NO_HANDLE,
+        throwErrno("Directory.getDirectoryContents", false, NO_HANDLE,
                    &IOArg(1));
     if (!S_ISDIR(st.st_mode)) {
         IOFail(mkIOError(NULL, nameIllegal, "Directory.getDirectoryContents",
@@ -446,13 +455,13 @@ primFun(primGetDirContents) { /* FilePath -> IO [FilePath] */
         rc = _findnext(dirHandle, &fData);
     }
     if (errno != ENOENT)
-        throwErrno("Directory.getDirectoryContents", FALSE, NO_HANDLE,
+        throwErrno("Directory.getDirectoryContents", false, NO_HANDLE,
                    &IOArg(1));
 
     /* Close and release resources */
     rc = _findclose(dirHandle);
     if (rc == -1 && errno != ENOENT)
-        throwErrno("Directory.getDirectoryContents", FALSE, NO_HANDLE,
+        throwErrno("Directory.getDirectoryContents", false, NO_HANDLE,
                    &IOArg(1));
     IOReturn(ls);
 #elif HAVE_DIRENT_H
@@ -460,7 +469,7 @@ primFun(primGetDirContents) { /* FilePath -> IO [FilePath] */
     DIR *dir;
     struct dirent *pDir;
     Cell ls;
-    String fName = evalName(IOArg(1));
+    char *fName = evalName(IOArg(1));
 
     if (!fName) {
         IOFail(mkIOError(NULL, nameIllegal, "Directory.getDirectoryContents",
@@ -470,7 +479,7 @@ primFun(primGetDirContents) { /* FilePath -> IO [FilePath] */
     dir = opendir(fName);
 
     if (dir == NULL)
-        throwErrno("Directory.getDirectoryContents", FALSE, NO_HANDLE,
+        throwErrno("Directory.getDirectoryContents", false, NO_HANDLE,
                    &IOArg(1));
 
     ls = nameNil;
@@ -496,7 +505,7 @@ primFun(primGetDirContents) { /* FilePath -> IO [FilePath] */
         int rc = errno;
         closedir(dir);
         errno = rc;
-        throwErrno("Directory.getDirectoryContents", FALSE, NO_HANDLE,
+        throwErrno("Directory.getDirectoryContents", false, NO_HANDLE,
                    &IOArg(1));
     }
 
@@ -510,10 +519,10 @@ primFun(primGetDirContents) { /* FilePath -> IO [FilePath] */
 #endif
 }
 
-primFun(
-    primGetModTime) { /* FilePath -> IO Int{-time_t-} - get the mod. time of the file/directory. */
+/* FilePath -> IO Int{-time_t-} - get the mod. time of the file/directory. */
+primFun(primGetModTime) {
     int rc;
-    String s = evalName(IOArg(1));
+    char *s = evalName(IOArg(1));
     struct stat st;
 
     if (!s) {
@@ -524,6 +533,6 @@ primFun(
     rc = stat(s, &st);
 
     if (rc < 0)
-        throwErrno("Directory.getModificationTime", TRUE, NO_HANDLE, &IOArg(1));
+        throwErrno("Directory.getModificationTime", true, NO_HANDLE, &IOArg(1));
     IOReturn(mkInt(st.st_mtime));
 }

@@ -5,10 +5,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: input.c,v $
- * $Revision: 1.91 $
- * $Date: 2006/09/09 09:37:48 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -43,56 +39,56 @@ List selDefns = NIL;       /* list of selector lists          */
 List genDefns = NIL;       /* list of generated names      */
 List primDefns = NIL;      /* primitive definitions           */
 List unqualImports = NIL;  /* unqualified import list         */
-Int foreignCount = 0;      /* count of foreigns in this module*/
+int foreignCount = 0;      /* count of foreigns in this module*/
 List foreignImports = NIL; /* foreign import declarations     */
 List foreignExports = NIL; /* foreign export declarations     */
 List foreignLabels = NIL;  /* foreign label  declarations     */
 List defaultDefns = NIL;   /* default definitions (if any)    */
-Int defaultLine = 0;       /* line in which default defs occur*/
+int defaultLine = 0;       /* line in which default defs occur*/
 List evalDefaults = NIL;   /* defaults for evaluator          */
 
 Cell inputExpr = NIL;         /* input expression                */
 Cell inputContext = NIL;      /* input context                   */
-Bool literateScripts = FALSE; /* TRUE => default to lit scripts  */
+bool literateScripts = false; /* true => default to lit scripts  */
 
-String repeatStr = 0; /* Repeat last expr                */
+char *repeatStr = 0; /* Repeat last expr                */
 
-String preprocessor = 0;
+char *preprocessor = 0;
 
 /* --------------------------------------------------------------------------
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Bool local fileInput(String, Long);
-static Bool local literateMode(String);
-static Bool local linecmp(String, ShortChar *);
-static Int local nextLine(Void);
-static Void local skip(Void);
-static Void local thisLineIs(Int);
-static Void local newlineSkip(Void);
+static bool fileInput(char *, long);
+static bool literateMode(char *);
+static bool linecmp(char *, ShortChar *);
+static int nextLine(void);
+static void skip(void);
+static void thisLineIs(int);
+static void newlineSkip(void);
 
-static Void local endToken(Void);
-static Text local readOperator(Void);
-static Text local readIdent(Void);
-static Cell local readRadixNumber(Int);
-static Cell local readNumber(Void);
-static Cell local readChar(Void);
-static Cell local readString(Void);
-static Void local saveStrChr(Char);
-static Cell local readAChar(Bool);
+static void endToken(void);
+static Text readOperator(void);
+static Text readIdent(void);
+static Cell readRadixNumber(int);
+static Cell readNumber(void);
+static Cell readChar(void);
+static Cell readString(void);
+static void saveStrChr(Char);
+static Cell readAChar(bool);
 
-static Bool local lazyReadMatches(String);
-static Cell local readEscapeChar(Bool, Bool);
-static Void local skipGap(Void);
-static Cell local readCtrlChar(Void);
-static Cell local readOctChar(Void);
-static Cell local readHexChar(Void);
-static Int local readHexDigit(Char);
-static Cell local readDecChar(Void);
+static bool lazyReadMatches(char *);
+static Cell readEscapeChar(bool, bool);
+static void skipGap(void);
+static Cell readCtrlChar(void);
+static Cell readOctChar(void);
+static Cell readHexChar(void);
+static int readHexDigit(Char);
+static Cell readDecChar(void);
 
-static Int local repeatLast(Void);
+static int repeatLast(void);
 
-static Void local parseInput(Int);
+static void parseInput(int);
 
 /* --------------------------------------------------------------------------
  * Text values for reserved words and special symbols:
@@ -161,27 +157,27 @@ List imps; /* List of imports to be chased    */
 #define STRING 3     /* - string buffer?                 */
 #define NOKEYBOARD 4 /* - standard input, but not a tty  */
 
-static Int reading = NOTHING;
+static int reading = NOTHING;
 
 static Target readSoFar;
-Int row;                 /* current line, also used by the  */
+int row;                 /* current line, also used by the  */
                          /* parser to report errors         */
-Int column, startColumn; /* and the layout state the grammar */
+int column, startColumn; /* and the layout state the grammar */
                          /* rules consult                   */
 static int c0, c1;
 static FILE *inputStream = 0;
-static Bool inputIsPipe = FALSE; /* is inputStream a -F filter?          */
+static bool inputIsPipe = false; /* is inputStream a -F filter?          */
 static ProcId filterPid;         /* and if so, the filter's process id   */
-static Bool thisLiterate;
-static String nextStringChar; /* next char in string buffer       */
+static bool thisLiterate;
+static char *nextStringChar; /* next char in string buffer       */
 
 #if USE_READLINE           /* for command line editors         */
 # include READLINE_H       /* editline or GNU readline; the    */
 # ifdef READLINE_HISTORY_H /* build system says which headers  */
 #  include READLINE_HISTORY_H
 # endif
-static String currentLine;
-static String nextChar;
+static char *currentLine;
+static char *nextChar;
 # define nextConsoleChar() (*nextChar == '\0' ? '\n' : ExtractChar(nextChar))
 # if defined(RL_READLINE_VERSION) && RL_READLINE_VERSION >= 0x0500
 #  define HAVE_RL_EVENT_HOOK 1 /* GNU readline, not libedit        */
@@ -190,9 +186,9 @@ static String nextChar;
 # define nextConsoleChar() FGetChar(stdin)
 #endif
 
-static Int litLines; /* count defn lines in lit script   */
+static int litLines; /* count defn lines in lit script   */
 #define DEFNCHAR '>' /* definition lines begin with this */
-static Int lastLine; /* records type of last line read:  */
+static int lastLine; /* records type of last line read:  */
 #define STARTLINE 0  /* - at start of file, none read    */
 #define BLANKLINE 1  /* - blank (may preceed definition) */
 #define TEXTLINE 2   /* - text comment                   */
@@ -202,18 +198,18 @@ static Int lastLine; /* records type of last line read:  */
 #define BEGINCODE "\\begin{code}"
 #define ENDCODE "\\end{code}"
 
-Bool startsQual(Char c) {
+bool startsQual(Char c) {
     return isConStart(c);
 }
 
 #define LINEBUFFER_SIZE 1000
 static ShortChar lineBuffer[LINEBUFFER_SIZE];
 static int lineLength = 0;
-static int inCodeBlock = FALSE; /* Inside \begin{code}..\end{code} */
+static int inCodeBlock = false; /* Inside \begin{code}..\end{code} */
 static int linePtr = 0;
 
 #if HAVE_RL_EVENT_HOOK
-static int local readlineInterrupted(void) {
+static int readlineInterrupted(void) {
     /* Called by readline every tenth of a second while it waits for a
      * key.  The SIGINT handler only sets "broken" (see ctrlbrk in
      * prelude.h), so this is where a Ctrl-C at the prompt is acted on:
@@ -231,10 +227,10 @@ static int local readlineInterrupted(void) {
 }
 #endif
 
-Void consoleInput(String prompt) /* prepare to input characters from */
-{                                /* standard in (i.e. console/kbd)   */
-    reading = KEYBOARD;          /* keyboard input is Line oriented, */
-    c0 =                         /* i.e. input terminated by '\n'    */
+/* Prepare to input characters from standard in (i.e. console/kbd) */
+void consoleInput(char *prompt) {
+    reading = KEYBOARD; /* keyboard input is Line oriented, */
+    c0 =                /* i.e. input terminated by '\n'    */
         c1 = ' ';
     column = (-1);
     row = 0;
@@ -252,7 +248,7 @@ Void consoleInput(String prompt) /* prepare to input characters from */
      * avoids accidentally freeing currentLine twice. 
      */
     if (currentLine) {
-        String oldCurrentLine = currentLine;
+        char *oldCurrentLine = currentLine;
         currentLine = 0;      /* We may lose the space of currentLine */
         free(oldCurrentLine); /* if interrupted here - unlikely       */
     }
@@ -261,7 +257,7 @@ Void consoleInput(String prompt) /* prepare to input characters from */
 # endif
     currentLine = readline(prompt);
     if (broken) {                /* Ctrl-C while editing the line:  */
-        broken = FALSE;          /* drop the line and report it the */
+        broken = false;          /* drop the line and report it the */
         if (currentLine)         /* way an interrupted evaluation   */
             *currentLine = '\0'; /* is reported                     */
         Printf("{Interrupted!}\n");
@@ -278,11 +274,10 @@ Void consoleInput(String prompt) /* prepare to input characters from */
 #endif
 }
 
-static Bool local fileInput(String nm,
-                            Long len) /* prepare to input characters from*/
-                                      /* named file (specified length is */
-{                                     /* used to set target for reading) */
-    if (!readable(nm, FALSE)) {       /* file not there */
+/* Prepare to input characters from named file (specified length is used to set
+ * target for reading) */
+static bool fileInput(char *nm, long len) {
+    if (!readable(nm, false)) { /* file not there */
         inputStream = NULL;
     } else if (preprocessor) {
         /* nm is a file name and so not trustworthy, but as one word of an
@@ -297,7 +292,7 @@ static Bool local fileInput(String nm,
         argvFree(&cmd);
     } else {
         inputStream = fopen(nm, FOPEN_MODE);
-        inputIsPipe = FALSE;
+        inputIsPipe = false;
     }
     if (inputStream) {
         reading = SCRIPTFILE;
@@ -311,7 +306,7 @@ static Bool local fileInput(String nm,
         linePtr = 0;
         lineLength = 0;
         thisLiterate = literateMode(nm);
-        inCodeBlock = FALSE;
+        inCodeBlock = false;
 
         readSoFar = 0;
         setGoal("Parsing", (Target)len);
@@ -319,13 +314,13 @@ static Bool local fileInput(String nm,
         errHead(0);
         errPrintf("Unable to open file \"%s\"", nm);
 
-        return FALSE;
+        return false;
     }
-    return TRUE;
+    return true;
 }
 
-Void stringInput(String s) /* prepare to input characters from string */
-{
+/* Prepare to input characters from string */
+void stringInput(char *s) {
     reading = STRING;
     c0 = EOF;
     c1 = EOF;
@@ -341,18 +336,18 @@ Void stringInput(String s) /* prepare to input characters from string */
         initCharTab();
 }
 
-static Bool local literateMode(String nm) /* Select literate mode for file   */
-{
+/* Select literate mode for file */
+static bool literateMode(char *nm) {
     char *dot = strrchr(nm, '.'); /* look for last dot in file name  */
     if (dot) {
         if (filenamecmp(dot + 1, "hs") ==
             0) /* .hs files are never literate    */
-            return FALSE;
+            return false;
         if (filenamecmp(dot + 1, "lhs") ==
                 0 || /* .lhs, .verb files are always*/
             filenamecmp(dot + 1, "verb") ==
                 0) /* literate scripts              */
-            return TRUE;
+            return true;
     }
     return literateScripts; /* otherwise, use the default      */
 }
@@ -371,17 +366,15 @@ static Bool local literateMode(String nm) /* Select literate mode for file   */
  * take appropriate action. 
  */
 
-static Bool local linecmp(String s,
-                          ShortChar *line) /* compare string with line        */
-                                           /* line may end in whitespace      */
-{
-    Int i = 0;
+/* Compare string with line line may end in whitespace */
+static bool linecmp(char *s, ShortChar *line) {
+    int i = 0;
     while (s[i] != '\0' && s[i] == line[i]) {
         ++i;
     }
     /* s[0..i-1] == line[0..i-1] */
     if (s[i] != '\0') { /* check s `isPrefixOf` line       */
-        return FALSE;
+        return false;
     }
     while (isIn(line[i], SPACE)) { /* allow whitespace at end of line */
         ++i;
@@ -390,7 +383,7 @@ static Bool local linecmp(String s,
 }
 
 /* Returns line length (including \n) or 0 upon EOF. */
-static Int local nextLine() {
+static int nextLine(void) {
     int ch;
 
     for (lineLength = 0; lineLength < LINEBUFFER_SIZE - 1; lineLength++) {
@@ -422,7 +415,7 @@ static Int local nextLine() {
     } else if (thisLiterate) {
         if (linecmp(BEGINCODE, lineBuffer)) {
             if (!inCodeBlock) { /* Entered a code block        */
-                inCodeBlock = TRUE;
+                inCodeBlock = true;
                 lineBuffer[0] = '\n'; /* pretend it's a blank line */
                 lineBuffer[1] = '\0';
                 lineLength = 1;
@@ -433,7 +426,7 @@ static Int local nextLine() {
             }
         } else if (linecmp(ENDCODE, lineBuffer)) {
             if (inCodeBlock) { /* Finished code block         */
-                inCodeBlock = FALSE;
+                inCodeBlock = false;
                 lineBuffer[0] = '\n'; /* pretend it's a blank line */
                 lineBuffer[1] = '\0';
                 lineLength = 1;
@@ -447,9 +440,10 @@ static Int local nextLine() {
     return lineLength;
 }
 
-static Void local skip() { /* move forward one char in input  */
-    if (c0 != EOF) {       /* stream, updating c0, c1, ...    */
-        if (c0 == '\n') {  /* Adjusting cursor coords as nec. */
+/* Move forward one char in input stream, updating c0, c1, ... */
+static void skip(void) {
+    if (c0 != EOF) {
+        if (c0 == '\n') { /* Adjusting cursor coords as nec. */
             row++;
             column = 1;
             if (reading == SCRIPTFILE)
@@ -480,7 +474,7 @@ static Void local skip() { /* move forward one char in input  */
                  * fail - returning "-1" to indicate an error.
                  * This is one of the rare cases where "-1" does not mean EOF.
                  */
-                if (EOF == c1 && (!feof(stdin) || broken == TRUE)) {
+                if (EOF == c1 && (!feof(stdin) || broken == true)) {
                     c1 = ' ';
                 }
             }
@@ -506,8 +500,8 @@ static Void local skip() { /* move forward one char in input  */
     }
 }
 
-static Void local thisLineIs(Int kind) /* register kind of current line    */
-{                                      /* & check for literate script errs */
+/* Register kind of current line & check for literate script errs */
+static void thisLineIs(int kind) {
     if ((kind == DEFNLINE && lastLine == TEXTLINE) ||
         (kind == TEXTLINE && lastLine == DEFNLINE)) {
         errHead(row);
@@ -517,7 +511,8 @@ static Void local thisLineIs(Int kind) /* register kind of current line    */
     lastLine = kind;
 }
 
-static Void local newlineSkip() { /* skip `\n' (supports lit scripts) */
+/* Skip `\n' (supports lit scripts) */
+static void newlineSkip(void) {
     /* assert(c0=='\n'); */
     if (reading == SCRIPTFILE && thisLiterate) {
         do {
@@ -554,8 +549,9 @@ static Void local newlineSkip() { /* skip `\n' (supports lit scripts) */
     skip();
 }
 
-Void closeAnyInput() { /* Close input stream, if open,     */
-    switch (reading) { /* or skip to end of console line   */
+/* Close input stream, if open, or skip to end of console line */
+void closeAnyInput(void) {
+    switch (reading) {
     case SCRIPTFILE:
         if (inputStream) {
             if (inputIsPipe) {
@@ -564,7 +560,7 @@ Void closeAnyInput() { /* Close input stream, if open,     */
                 fclose(inputStream);
             }
             inputStream = 0;
-            inputIsPipe = FALSE;
+            inputIsPipe = false;
         }
         break;
     case KEYBOARD:
@@ -596,11 +592,12 @@ Void closeAnyInput() { /* Close input stream, if open,     */
 #define overflows(n, b, d, m) (n > ((m) - (d)) / (b))
 
 static char tokenStr[MAX_TOKEN + 1]; /* token buffer                     */
-static String tokPtr;                /* input position in buffer         */
-static Int identType;                /* identifier type: CONID / VARID   */
-static Int opType;                   /* operator type  : CONOP / VAROP   */
+static char *tokPtr;                 /* input position in buffer         */
+static int identType;                /* identifier type: CONID / VARID   */
+static int opType;                   /* operator type  : CONOP / VAROP   */
 
-static Void local endToken() { /* check for token overflow         */
+/* Check for token overflow */
+static void endToken(void) {
     if (tokPtr > tokenStr + MAX_TOKEN) {
         errHead(row);
         errPrintf("Maximum token length (%d) exceeded", MAX_TOKEN);
@@ -609,7 +606,8 @@ static Void local endToken() { /* check for token overflow         */
     *tokPtr = '\0';
 }
 
-static Text local readOperator() { /* read operator symbol             */
+/* Read operator symbol */
+static Text readOperator(void) {
     startToken();
     do {
         saveTokenChar(c0);
@@ -620,8 +618,9 @@ static Text local readOperator() { /* read operator symbol             */
     return findText(tokenStr);
 }
 
-static Text local readIdent() { /* read identifier                  */
-    Char first = c0;            /* remember the decoded first char  */
+/* Read identifier */
+static Text readIdent(void) {
+    Char first = c0; /* remember the decoded first char */
     startToken();
     do {
         saveTokenChar(c0);
@@ -632,15 +631,15 @@ static Text local readIdent() { /* read identifier                  */
     return findText(tokenStr);
 }
 
-static Cell local readRadixNumber(Int r) /* Read literal in specified radix  */
-{                                        /* from input of the form 0c{digs}  */
-    Int d;
+/* Read literal in specified radix from input of the form 0c{digs} */
+static Cell readRadixNumber(int r) {
+    int d;
     skip(); /* skip leading zero                */
     if ((d = readHexDigit(c1)) < 0 ||
         d >= r)          /* Special case; no digits, lex as  */
         return mkInt(0); /* if it had been written "0 c..."  */
     else {
-        Int n = 0;
+        int n = 0;
         Cell big = NIL;
         skip();
         do {
@@ -657,10 +656,11 @@ static Cell local readRadixNumber(Int r) /* Read literal in specified radix  */
     }
 }
 
-static Cell local readNumber() { /* read numeric constant           */
-    Int n = 0;
-    Bool intTooLarge = FALSE;
-    Bool floatingPt = FALSE; /* floating point literal?         */
+/* Read numeric constant */
+static Cell readNumber(void) {
+    int n = 0;
+    bool intTooLarge = false;
+    bool floatingPt = false; /* floating point literal?         */
 
     if (c0 == '0') {
         if (c1 == 'x' || c1 == 'X') /* Maybe a hexadecimal literal?    */
@@ -672,17 +672,17 @@ static Cell local readNumber() { /* read numeric constant           */
     startToken();
     do {
         if (overflows(n, 10, (c0 - '0'), MAXPOSINT))
-            intTooLarge = TRUE;
+            intTooLarge = true;
         /* n is discarded (in favour of bigStr(tokenStr)) once intTooLarge is
          * set, but it keeps accumulating regardless, which would overflow
          * signed int (undefined behaviour); do it in Unsigned instead.     */
-        n = (Int)(10 * (Unsigned)n + (Unsigned)(c0 - '0'));
+        n = (int)(10 * (unsigned)n + (unsigned)(c0 - '0'));
         saveTokenChar(c0);
         skip();
     } while (isLatin1(c0) && isIn(c0, DIGIT));
 
     if (c0 == '.' && isLatin1(c1) && isIn(c1, DIGIT)) { /* decimal part */
-        floatingPt = TRUE;
+        floatingPt = true;
         saveTokenChar(c0); /* save decimal point          */
         skip();
         do { /* process fractional part ... */
@@ -696,7 +696,7 @@ static Cell local readNumber() { /* read numeric constant           */
      */
     if ((c0 == 'e' || c0 == 'E') && isLatin1(c1) &&
         (isIn(c1, DIGIT) || c1 == '-' || c1 == '+')) {
-        floatingPt = TRUE;
+        floatingPt = true;
         saveTokenChar('e');
         skip();
         if (c0 == '-') {
@@ -727,7 +727,8 @@ static Cell local readNumber() { /* read numeric constant           */
         return mkInt(n);
 }
 
-static Cell local readChar() { /* read character constant          */
+/* Read character constant */
+static Cell readChar(void) {
     Cell charRead;
 
     skip(/* '\'' */);
@@ -737,7 +738,7 @@ static Cell local readChar() { /* read character constant          */
         errFail();
     }
 
-    charRead = readAChar(FALSE);
+    charRead = readAChar(false);
 
     if (c0 == '\'')
         skip(/* '\'' */);
@@ -749,13 +750,14 @@ static Cell local readChar() { /* read character constant          */
     return charRead;
 }
 
-static Cell local readString() { /* read string literal              */
+/* Read string literal */
+static Cell readString(void) {
     Cell c;
 
     startToken();
     skip(/* '\"' */);
     while (c0 != '\"' && c0 != '\n' && c0 != EOF) {
-        c = readAChar(TRUE);
+        c = readAChar(true);
         if (nonNull(c))
             saveStrChr(charOf(c));
     }
@@ -771,8 +773,8 @@ static Cell local readString() { /* read string literal              */
     return mkStr(findText(tokenStr));
 }
 
-static Void local saveStrChr(Char c) /* save character in string         */
-{
+/* Save character in string */
+static void saveStrChr(Char c) {
 #if UNICODE_CHARS && !CHAR_ENCODING_UTF8
     if (!charIsRepresentable(c)) {
         /* Kludge piled on kludge (using the external encoding for strings):
@@ -804,16 +806,16 @@ static Void local saveStrChr(Char c) /* save character in string         */
 }
 
 /* Extract a Char from a string built with saveStrChr(), advancing the ptr */
-Char getStrChr(String *sp) {
+Char getStrChr(char **sp) {
     Char c = ExtractChar(*sp);
     if (c == '\\') {
 #if UNICODE_CHARS && !CHAR_ENCODING_UTF8
-        Int b;
+        int b;
         b = *(*sp)++;
         if ((b & 0x80) == 0)
             c = b;
         else {
-            Int shift = 0;
+            int shift = 0;
             c = b & 0x7f;
             while ((b & 0x80) != 0) {
                 c |= (b & 0x7f) << shift;
@@ -831,13 +833,12 @@ Char getStrChr(String *sp) {
     return c;
 }
 
-static Cell local
-readAChar(Bool isStrLit) /* read single char constant        */
-{                        /* TRUE => enable \& and gaps       */
+/* Read single char constant true => enable \& and gaps */
+static Cell readAChar(bool isStrLit) {
     Cell c = mkChar(c0);
 
     if (c0 == '\\') { /* escape character?                */
-        return readEscapeChar(isStrLit, TRUE);
+        return readEscapeChar(isStrLit, true);
     }
     skip(); /* normal character?                */
     return c;
@@ -864,17 +865,17 @@ static struct { /* table of special escape codes    */
     {"FS", 28},   {"GS", 29},   {"RS", 30},   {"US", 31},
     {"SP", 32},   {"DEL", 127}, {0, 0}};
 
-static Int alreadyMatched;   /* Record portion of input stream   */
+static int alreadyMatched;   /* Record portion of input stream   */
 static char alreadyRead[10]; /* that has been read w/o a match   */
 
-static Bool local
-lazyReadMatches(String s) /* compare input stream with string */
-{                         /* possibly using characters that   */
-    int i;                /* have already been read           */
+/* Compare input stream with string possibly using characters that have already
+ * been read */
+static bool lazyReadMatches(char *s) {
+    int i;
 
     for (i = 0; i < alreadyMatched; ++i)
         if (alreadyRead[i] != s[i])
-            return FALSE;
+            return false;
 
     while (s[i] && s[i] == c0) {
         alreadyRead[alreadyMatched++] = (char)c0;
@@ -885,9 +886,8 @@ lazyReadMatches(String s) /* compare input stream with string */
     return s[i] == '\0';
 }
 
-static Cell local
-readEscapeChar(Bool isStrLit, Bool skipEsc) /* read escape character         */
-{
+/* Read escape character */
+static Cell readEscapeChar(bool isStrLit, bool skipEsc) {
     int i = 0;
 
     if (skipEsc)
@@ -941,8 +941,9 @@ readEscapeChar(Bool isStrLit, Bool skipEsc) /* read escape character         */
     return NIL; /*NOTREACHED*/
 }
 
-static Void local skipGap() { /* skip over gap in string literal  */
-    do                        /* (simplified in Haskell 1.1)      */
+/* Skip over gap in string literal (simplified in Haskell 1.1) */
+static void skipGap(void) {
+    do
         if (c0 == '\n')
             newlineSkip();
         else
@@ -956,9 +957,10 @@ static Void local skipGap() { /* skip over gap in string literal  */
     skip(/* '\\' */);
 }
 
-static Cell local readCtrlChar() { /* read escape sequence \^x         */
-    static String controls = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_";
-    String which;
+/* Read escape sequence \^x */
+static Cell readCtrlChar(void) {
+    static char *controls = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_";
+    char *which;
 
     skip(/* '^' */);
     if ((which = strchr(controls, c0)) == NULL) {
@@ -967,12 +969,13 @@ static Cell local readCtrlChar() { /* read escape sequence \^x         */
         errFail();
     }
     skip();
-    return mkChar((Int)(which - controls));
+    return mkChar((int)(which - controls));
 }
 
-static Cell local readOctChar() { /* read octal character constant    */
-    Int n = 0;
-    Int d;
+/* Read octal character constant */
+static Cell readOctChar(void) {
+    int n = 0;
+    int d;
 
     skip(/* 'o' */);
     if ((d = readHexDigit(c0)) < 0 || d >= 8) {
@@ -993,9 +996,10 @@ static Cell local readOctChar() { /* read octal character constant    */
     return mkChar(n);
 }
 
-static Cell local readHexChar() { /* read hex character constant      */
-    Int n = 0;
-    Int d;
+/* Read hex character constant */
+static Cell readHexChar(void) {
+    int n = 0;
+    int d;
 
     skip(/* 'x' */);
     if ((d = readHexDigit(c0)) < 0) {
@@ -1016,8 +1020,8 @@ static Cell local readHexChar() { /* read hex character constant      */
     return mkChar(n);
 }
 
-static Int local readHexDigit(Char c) /* read single hex digit            */
-{
+/* Read single hex digit */
+static int readHexDigit(Char c) {
     if ('0' <= c && c <= '9')
         return c - '0';
     if ('A' <= c && c <= 'F')
@@ -1027,8 +1031,9 @@ static Int local readHexDigit(Char c) /* read single hex digit            */
     return -1;
 }
 
-static Cell local readDecChar() { /* read decimal character constant  */
-    Int n = 0;
+/* Read decimal character constant */
+static Cell readDecChar(void) {
+    int n = 0;
 
     do {
         if (overflows(n, 10, (c0 - '0'), MAXCHARVAL)) {
@@ -1047,9 +1052,8 @@ static Cell local readDecChar() { /* read decimal character constant  */
  * Produce printable representation of character:
  * ------------------------------------------------------------------------*/
 
-String unlexChar(Char c, Char quote) /* return string representation of  */
-                                     /* character...                     */
-{                                    /* protect quote character          */
+/* Return string representation of character... protect quote character */
+char *unlexChar(Char c, Char quote) {
     static char buffer[12];
 
     assert(c >= 0);
@@ -1063,21 +1067,22 @@ String unlexChar(Char c, Char quote) /* return string representation of  */
             buffer[1] = '\0';
         }
     } else { /* look for escape code             */
-        Int escs;
+        int escs;
         for (escs = 0; escapes[escs].codename; escs++)
             if (escapes[escs].codenumber == c) {
-                sprintf(buffer, "\\%s", escapes[escs].codename);
+                snprintf(buffer, sizeof buffer, "\\%s", escapes[escs].codename);
                 return buffer;
             }
-        sprintf(buffer, "\\%d", c); /* otherwise use numeric escape     */
+        snprintf(buffer, sizeof buffer, "\\%d",
+                 c); /* otherwise use numeric escape     */
     }
     return buffer;
 }
 
-Void printString(String s) /* print string s, using quotes and */
-{                          /* escapes if any parts need them   */
+/* Print string s, using quotes and escapes if any parts need them */
+void printString(char *s) {
     if (s) {
-        String t = s;
+        char *t = s;
         Char c;
         while ((c = *t) != 0 && isLatin1(c) && isIn(c, PRINT) && c != '"' &&
                !isIn(c, SPACE)) {
@@ -1097,11 +1102,9 @@ Void printString(String s) /* print string s, using quotes and */
  * Handle special types of input for use in interpreter:
  * -----------------------------------------------------------------------*/
 
-Command readCommand(struct cmd *cmds, Char start,
-                    Char sys) /* read command at start of input   */
-                              /* line in interpreter              */
-                              /* characters introducing a cmd     */
-{                             /* character for shell escape       */
+/* Read command at start of input line in interpreter characters introducing a
+ * cmd character for shell escape */
+Command readCommand(struct cmd *cmds, Char start, Char sys) {
     while (c0 == ' ' || c0 == '\t')
         skip();
 
@@ -1136,7 +1139,8 @@ Command readCommand(struct cmd *cmds, Char start,
     return BADCMD;
 }
 
-String readFilename() { /* Read filename from input (if any)*/
+/* Read filename from input (if any) */
+char *readFilename(void) {
     while (c0 == ' ' || c0 == '\t')
         skip();
 
@@ -1172,7 +1176,7 @@ String readFilename() { /* Read filename from input (if any)*/
                         continue;
                     }
                 } else {
-                    c = readAChar(TRUE);
+                    c = readAChar(true);
                 }
                 if (nonNull(c)) {
                     saveTokenChar(charOf(c));
@@ -1186,7 +1190,7 @@ String readFilename() { /* Read filename from input (if any)*/
                 errFail();
             }
         } else {
-            Int savedChar = c0;
+            int savedChar = c0;
             skip();
             /* Handle escaped spaces - see above comment. */
             if (savedChar == '\\' && c0 == ' ') {
@@ -1201,8 +1205,9 @@ String readFilename() { /* Read filename from input (if any)*/
     return tokenStr;
 }
 
-String readLine() {                 /* Read command line from input     */
-    while (c0 == ' ' || c0 == '\t') /* skip leading whitespace          */
+/* Read command line from input */
+char *readLine(void) {
+    while (c0 == ' ' || c0 == '\t') /* skip leading whitespace */
         skip();
 
     startToken();
@@ -1231,12 +1236,12 @@ String readLine() {                 /* Read command line from input     */
  * ------------------------------------------------------------------------*/
 
 #define MAXINDENT 100             /* maximum nesting of layout rule   */
-static Int layout[MAXINDENT + 1]; /* indentation stack                */
+static int layout[MAXINDENT + 1]; /* indentation stack                */
 #define HARD (-1)                 /* indicates hard indentation       */
-static Int indentDepth = (-1);    /* current indentation nesting      */
+static int indentDepth = (-1);    /* current indentation nesting      */
 
-Void goOffside(Int col) /* insert offside marker            */
-{                       /* for specified column             */
+/* Insert offside marker for specified column */
+void goOffside(int col) {
     if (indentDepth >= MAXINDENT) {
         errHead(row);
         errPrintf("Too many levels of program nesting");
@@ -1245,11 +1250,13 @@ Void goOffside(Int col) /* insert offside marker            */
     layout[++indentDepth] = col;
 }
 
-Void unOffside() { /* leave layout rule area           */
+/* Leave layout rule area */
+void unOffside(void) {
     indentDepth--;
 }
 
-Bool canUnOffside() { /* Decide if unoffside permitted    */
+/* Decide if unoffside permitted */
+bool canUnOffside(void) {
     return indentDepth >= 0 && layout[indentDepth] != HARD;
 }
 
@@ -1257,17 +1264,17 @@ Bool canUnOffside() { /* Decide if unoffside permitted    */
  * Main tokeniser:
  * ------------------------------------------------------------------------*/
 
-static Bool allDashes(char *s) {
+static bool allDashes(char *s) {
     char *ptr = s;
     while (*ptr != '\0') {
         if (*ptr != '-')
-            return FALSE;
+            return false;
         ptr++;
     }
-    return TRUE;
+    return true;
 }
 
-static Bool foundDashedOp = FALSE;
+static bool foundDashedOp = false;
 
 /*
  * Haskell98 makes it harder to detect one-line comment markup,
@@ -1276,18 +1283,19 @@ static Bool foundDashedOp = FALSE;
  * anything that starts with "--" as an operator and check whether
  * the lexeme consists of all dashes or not.
  */
-static Void local skipWhitespaceTok() { /* Skip over whitespace/comments    */
-    for (;;)                            /* Strictly speaking, this code is  */
-        if (c0 == EOF)                  /* a little more liberal than the   */
-            return;                     /* report allows ...                */
+/* Skip over whitespace/comments */
+static void skipWhitespaceTok(void) {
+    for (;;)           /* Strictly speaking, this code is  */
+        if (c0 == EOF) /* a little more liberal than the   */
+            return;    /* report allows ...                */
         else if (c0 == '\n')
             newlineSkip();
         else if (isIn(c0, SPACE))
             skip();
         else if (c0 == '{' &&
                  c1 == '-') { /* (potentially) nested comment     */
-            Int nesting = 1;
-            Int origRow = row; /* Save original row number         */
+            int nesting = 1;
+            int origRow = row; /* Save original row number         */
             skip();
             skip();
             while (nesting > 0 && c0 != EOF)
@@ -1315,7 +1323,7 @@ static Void local skipWhitespaceTok() { /* Skip over whitespace/comments    */
             readOperator();
             if (!allDashes(tokenStr)) {
                 /* Yep, return (with the operator in the token buffer). */
-                foundDashedOp = TRUE;
+                foundDashedOp = true;
                 return;
             } else {
                 /* Reset token buffer */
@@ -1331,16 +1339,17 @@ static Void local skipWhitespaceTok() { /* Skip over whitespace/comments    */
             return;
 }
 
-static Bool firstToken;  /* Set to TRUE for first token      */
-static Int firstTokenIs; /* ... with token value stored here */
+static bool firstToken;  /* Set to true for first token      */
+static int firstTokenIs; /* ... with token value stored here */
 
-Int yylex() { /* Read next input token ...        */
-    static Bool insertOpen = FALSE;
-    static Bool insertClose = FALSE;
-    static Bool insertedToken = FALSE;
-    static Bool inADo = FALSE;
+/* Read next input token ... */
+int yylex(void) {
+    static bool insertOpen = false;
+    static bool insertClose = false;
+    static bool insertedToken = false;
+    static bool inADo = false;
     static Text textRepeat;
-    Bool readingRepeat =
+    bool readingRepeat =
         repeatStr && (reading == KEYBOARD || reading == STRING);
 
 #define lookAhead(t)                                                           \
@@ -1353,18 +1362,18 @@ Int yylex() { /* Read next input token ...        */
 
     if (firstToken) { /* Special case for first token     */
         indentDepth = (-1);
-        firstToken = FALSE;
-        insertOpen = FALSE;
-        insertedToken = FALSE;
-        inADo = FALSE;
+        firstToken = false;
+        insertOpen = false;
+        insertedToken = false;
+        inADo = false;
         if (readingRepeat)
             textRepeat = findText(repeatStr);
         return firstTokenIs;
     }
 
     if (insertOpen) { /* insert `soft' opening brace      */
-        insertOpen = FALSE;
-        insertedToken = TRUE;
+        insertOpen = false;
+        insertedToken = true;
         /* If the indentation of a nested layout context is
            not more indented than the current/enclosing, 
            empty braces are inserted.
@@ -1397,9 +1406,9 @@ Int yylex() { /* Read next input token ...        */
     }
 
     if (insertClose) {
-        insertOpen = FALSE;
-        insertClose = FALSE;
-        insertedToken = FALSE;
+        insertOpen = false;
+        insertClose = false;
+        insertedToken = false;
         push(yylval = mkInt(row));
         return '}';
     }
@@ -1416,13 +1425,13 @@ Int yylex() { /* Read next input token ...        */
 
     if (indentDepth >= 0) {        /* layout rule(s) active ?          */
         if (insertedToken) {       /* avoid inserting multiple `;'s    */
-            insertedToken = FALSE; /* or putting `;' after `{'         */
+            insertedToken = false; /* or putting `;' after `{'         */
         } else if (layout[indentDepth] != HARD) {
             if (column < layout[indentDepth]) {
                 unOffside();
                 return '}';
             } else if (column == layout[indentDepth] && c0 != EOF) {
-                insertedToken = TRUE;
+                insertedToken = true;
                 return ';';
             }
         }
@@ -1435,7 +1444,7 @@ Int yylex() { /* Read next input token ...        */
     if (foundDashedOp) {
         /* as it turns out, skipping whitespace turned up an operator. */
         top() = yylval = ap(VAROPCELL, findText(tokenStr));
-        foundDashedOp = FALSE;
+        foundDashedOp = false;
         return VAROP;
     }
 
@@ -1644,12 +1653,12 @@ Int yylex() { /* Read next input token ...        */
     return 0; /*NOTREACHED*/
 }
 
-Bool isModuleId(String s) {
+bool isModuleId(char *s) {
     Char c;
     do {
         c = ExtractChar(s);
         if (!isConStart(c))
-            return FALSE;
+            return false;
         do {
             c = ExtractChar(s);
         } while (isIdCont(c));
@@ -1657,7 +1666,8 @@ Bool isModuleId(String s) {
     return (c == '\0');
 }
 
-static Int local repeatLast() { /* Obtain last expression entered  */
+/* Obtain last expression entered */
+static int repeatLast(void) {
     if (isNull(yylval = getLastExpr())) {
         errHead(row);
         errPrintf("Cannot use %s without any previous input", repeatStr);
@@ -1666,15 +1676,15 @@ static Int local repeatLast() { /* Obtain last expression entered  */
     return REPEAT;
 }
 
-Syntax defaultSyntax(Text t) /* Find default syntax of var named*/
-{                            /* by t ...                           */
-    String s = textToStr(t);
+/* Find default syntax of var named by t ... */
+Syntax defaultSyntax(Text t) {
+    char *s = textToStr(t);
     Char c = ExtractChar(s);
     return isIn(c, SYMBOL) ? DEF_OPSYNTAX : APPLIC;
 }
 
-Syntax syntaxOf(Name n) /* Find syntax for name            */
-{
+/* Find syntax for name */
+Syntax syntaxOf(Name n) {
     if (nameRec(n)->syntax == NO_SYNTAX) /* Return default if no syntax set */
         return defaultSyntax(nameRec(n)->text);
     return nameRec(n)->syntax;
@@ -1684,10 +1694,10 @@ Syntax syntaxOf(Name n) /* Find syntax for name            */
  * main entry points to parser/lexer:
  * ------------------------------------------------------------------------*/
 
-static Void local
-parseInput(Int startWith) /* Parse input with given first tok,*/
-{                         /* determining whether to read a    */
-    firstToken = TRUE;    /* script or an expression          */
+/* Parse input with given first tok, determining whether to read a script or an
+ * expression */
+static void parseInput(int startWith) {
+    firstToken = true;
     firstTokenIs = startWith;
 
     clearStack();
@@ -1701,15 +1711,15 @@ parseInput(Int startWith) /* Parse input with given first tok,*/
         internal("parseInput");
 }
 
-Void parseScriptString(String buf) /* Read a script from a string buffer */
-{
+/* Read a script from a string buffer */
+void parseScriptString(char *buf) {
     input(RESET);
     stringInput(buf);
     parseInput(SCRIPT);
 }
 
-Bool parseScript(String nm, Long len) /* Read a script                    */
-{                                     /* Used to set a target for reading */
+/* Read a script Used to set a target for reading */
+bool parseScript(char *nm, long len) {
     input(RESET);
     if (fileInput(nm, len)) {
         /* File successfully located, change 'scriptFile' so that error messages
@@ -1717,18 +1727,20 @@ Bool parseScript(String nm, Long len) /* Read a script                    */
         */
         scriptFile = nm;
         parseInput(SCRIPT);
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
-Void parseExp() { /* Read an expression to evaluate   */
+/* Read an expression to evaluate */
+void parseExp(void) {
     parseInput(EXPR);
     setLastExpr(inputExpr);
 }
 
 #if EXPLAIN_INSTANCE_RESOLUTION
-Void parseContext() { /* Read a context to prove   */
+/* Read a context to prove */
+void parseContext(void) {
     parseInput(CTXT);
 }
 #endif
@@ -1748,7 +1760,7 @@ static Cell *const inputRoots[] = {
     &varAsMod,      &varMain,        &conMain,        &imps,
 };
 
-Void input(Int what) {
+void input(int what) {
     switch (what) {
     case INSTALL:
         registerRoots(inputRoots);

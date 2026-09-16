@@ -5,10 +5,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: storage.c,v $
- * $Revision: 1.86 $
- * $Date: 2004/01/06 19:45:11 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -28,23 +24,23 @@
  * local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Int local hash(String);
-static Int local saveText(Text);
-static Void local hashTycon(Tycon);
-static List local insertTycon(Tycon, List);
-static Void local hashName(Name);
-static List local insertName(Name, List);
-static Void local patternError(String);
-static Bool local stringMatch(String, String);
-static Bool local typeInvolves(Type, Type);
-static Cell local markCell(Cell);
-static Cell local markSnd(Cell);
-static Cell local indirectChain(Cell);
-static Bool local isMarked(Cell);
-static Cell local lowLevelLastIn(Cell);
-static Cell local lowLevelLastOut(Cell);
-static Void local freeHandle(Int);
-static Void local resetStablePtrs(Void);
+static int hash(char *);
+static int saveText(Text);
+static void hashTycon(Tycon);
+static List insertTycon(Tycon, List);
+static void hashName(Name);
+static List insertName(Name, List);
+static void patternError(char *);
+static bool stringMatch(char *, char *);
+static bool typeInvolves(Type, Type);
+static Cell markCell(Cell);
+static Cell markSnd(Cell);
+static Cell indirectChain(Cell);
+static bool isMarked(Cell);
+static Cell lowLevelLastIn(Cell);
+static Cell lowLevelLastOut(Cell);
+static void freeHandle(int);
+static void resetStablePtrs(void);
 
 /* --------------------------------------------------------------------------
  * Text storage:
@@ -81,22 +77,23 @@ static Text nextNewDText;                 /* Next new dict text value        */
 static char DEFTABLE(text, NUM_TEXT);     /* Storage of character strings    */
 static Text textHash[TEXTHSZ][NUM_TEXTH]; /* Hash table storage        */
 
-String textToStr(Text t) /* find string corresp to given Text*/
-{
+/* Find string corresp to given Text */
+char *textToStr(Text t) {
     static char newVar[16];
 
     if (0 <= t && t < NUM_TEXT) /* standard char string    */
         return text + t;
     if (t < 0)
-        sprintf(newVar, "d%d", -t); /* dictionary variable     */
+        snprintf(newVar, sizeof newVar, "d%d",
+                 -t); /* dictionary variable     */
     else
-        sprintf(newVar, "v%d", t - NUM_TEXT); /* normal variable         */
+        snprintf(newVar, sizeof newVar, "v%d",
+                 t - NUM_TEXT); /* normal variable         */
     return newVar;
 }
 
-String
-identToStr(Cell v) /*find string corresp to given ident or qualified name*/
-{
+/* Find string corresp to given ident or qualified name */
+char *identToStr(Cell v) {
     if (!isPair(v)) {
         internal("identToStr");
     }
@@ -130,25 +127,27 @@ identToStr(Cell v) /*find string corresp to given ident or qualified name*/
     return 0; /*NOTUSED*/
 }
 
-Text inventText() { /* return new unused variable name */
+/* Return new unused variable name */
+Text inventText(void) {
     return nextNewText++;
 }
 
-Text inventDictText() { /* return new unused dictvar name  */
+/* Return new unused dictvar name */
+Text inventDictText(void) {
     return nextNewDText--;
 }
 
-Bool inventedText(Text t) /* Signal TRUE if text has been    */
-{                         /* generated internally            */
+/* Signal true if text has been generated internally */
+bool inventedText(Text t) {
     return (t < 0 || t >= NUM_TEXT);
 }
 
 #define MAX_FIXLIT 100
-Text fixLitText(Text t) /* fix literal text that might include \ */
-{
-    String s = textToStr(t);
+/* Fix literal text that might include \ */
+Text fixLitText(Text t) {
+    char *s = textToStr(t);
     char p[MAX_FIXLIT];
-    Int i;
+    int i;
     for (i = 0; i < MAX_FIXLIT - 2 && *s; s++) {
         p[i++] = *s;
         if (*s == '\\') {
@@ -167,7 +166,7 @@ Text fixLitText(Text t) /* fix literal text that might include \ */
 #undef MAX_FIXLIT
 
 #define MAX_TEXTLEN 4000 /* cf. MAX_TOKEN in input.c */
-Text concatText(String s1, String s2) {
+Text concatText(char *s1, char *s2) {
     char s[MAX_TEXTLEN];
     int n = snprintf(s, MAX_TEXTLEN, "%s%s", s1, s2);
 
@@ -183,22 +182,22 @@ Text concatText(String s1, String s2) {
 }
 #undef MAX_TEXTLEN
 
-Text subText(String s, Int l) /* extract a substring and make it a Text */
-{
+/* Extract a substring and make it a Text */
+Text subText(char *s, int l) {
     /* 
      * This used to insert '\0' at s[l], do a lookup and then change s[l]
      * back to its old value.  This fails if the String happens to be the
      * result of textToStr so instead we make a copy, do the lookup and 
      * forget the copy.
      */
-    String t = strnCopy(s, l);
+    char *t = strnCopy(s, l);
     Text r = findText(t);
     free(t);
     return r;
 }
 
-static Int local hash(String s) /* Simple hash function on strings */
-{
+/* Simple hash function on strings */
+static int hash(char *s) {
     int v, j = 3;
 
     for (v = ((int)(*s)) * 8; *s; s++)
@@ -208,8 +207,8 @@ static Int local hash(String s) /* Simple hash function on strings */
     return (v % TEXTHSZ);
 }
 
-Text findText(String s) /* Locate string in Text array      */
-{
+/* Locate string in Text array */
+Text findText(char *s) {
     int h = hash(s);
     int hashno = 0;
     Text textPos = textHash[h][hashno];
@@ -217,7 +216,7 @@ Text findText(String s) /* Locate string in Text array      */
 #define TryMatch                                                               \
     {                                                                          \
         Text originalTextPos = textPos;                                        \
-        String t;                                                              \
+        char *t;                                                               \
         for (t = s; *t == text[textPos]; textPos++, t++)                       \
             if (*t == '\0')                                                    \
                 return originalTextPos;                                        \
@@ -241,7 +240,7 @@ Text findText(String s) /* Locate string in Text array      */
 #undef Skip
 
     textPos = textHw; /* if not found, save in array      */
-    if (textHw + (Int)strlen(s) + 1 > savedText) {
+    if (textHw + (int)strlen(s) + 1 > savedText) {
         errHead(0);
         errPrintf("Character string storage space exhausted");
         errFail();
@@ -257,10 +256,10 @@ Text findText(String s) /* Locate string in Text array      */
     return textPos;
 }
 
-static Int local saveText(Text t) /* Save text value in buffer       */
-{                                 /* at top of text table            */
-    String s = textToStr(t);
-    Int l = (Int)strlen(s);
+/* Save text value in buffer at top of text table */
+static int saveText(Text t) {
+    char *s = textToStr(t);
+    int l = (int)strlen(s);
 
     if (textHw + l + 1 > savedText) {
         errHead(0);
@@ -278,18 +277,18 @@ static Int local saveText(Text t) /* Save text value in buffer       */
 
 static Addr addrHw; /* next unused program location     */
 
-Addr getMem(Int n) /* Get some more memory             */
-{
+/* Get some more memory */
+Addr getMem(int n) {
     Addr newAddr = addrHw;
     addrHw += n;
-    while (addrHw >= (Int)(dynMemory->maxIdx)) {
+    while (addrHw >= (int)(dynMemory->maxIdx)) {
         growMemory();
     }
     return newAddr;
 }
 
-Void nextInstr(Addr a) /* Reset point to next instruction */
-{                      /* Currently does NO CHECKING      */
+/* Reset point to next instruction Currently does NO CHECKING */
+void nextInstr(Addr a) {
     addrHw = a;
 }
 
@@ -320,9 +319,9 @@ static Tycon tyconHw;                          /* next unused Tycon       */
 static Tycon DEFTABLE(tyconHash, TYCONHSZ);    /* Hash table storage      */
 struct strTycon DEFTABLE(tabTycon, NUM_TYCON); /* Tycon storage           */
 
-Tycon newTycon(Text t) /* add new tycon to tycon table    */
-{
-    Int h = tHash(t);
+/* Add new tycon to tycon table */
+Tycon newTycon(Text t) {
+    int h = tHash(t);
 
     if (tyconHw - TYCMIN >= NUM_TYCON) {
         errHead(0);
@@ -343,8 +342,8 @@ Tycon newTycon(Text t) /* add new tycon to tycon table    */
     return tyconHw++;
 }
 
-Tycon findTycon(Text t) /* locate Tycon in tycon table     */
-{
+/* Locate Tycon in tycon table */
+Tycon findTycon(Text t) {
     Tycon tc = tyconHash[tHash(t)];
 
     while (nonNull(tc) && tyconRec(tc)->text != t)
@@ -352,9 +351,8 @@ Tycon findTycon(Text t) /* locate Tycon in tycon table     */
     return tc;
 }
 
-Tycon addTycon(
-    Tycon tc) /* Insert Tycon in tycon table - if no clash is caused */
-{
+/* Insert Tycon in tycon table - if no clash is caused */
+Tycon addTycon(Tycon tc) {
     Tycon oldtc = findTycon(tyconRec(tc)->text);
     if (isNull(oldtc)) {
         hashTycon(tc);
@@ -365,18 +363,17 @@ Tycon addTycon(
         return oldtc;
 }
 
-static Void local hashTycon(Tycon tc) /* Insert Tycon into hash table    */
-{
+/* Insert Tycon into hash table */
+static void hashTycon(Tycon tc) {
     Text t = tyconRec(tc)->text;
-    Int h = tHash(t);
+    int h = tHash(t);
     tyconRec(tc)->nextTyconHash = tyconHash[h];
     tyconRec(tc)->clashes = NIL;
     tyconHash[h] = tc;
 }
 
-Tycon findQualTycon(
-    Cell id) /*locate (possibly qualified) Tycon in tycon table */
-{
+/* Locate (possibly qualified) Tycon in tycon table */
+Tycon findQualTycon(Cell id) {
     if (!isPair(id))
         internal("findQualTycon");
     switch (fst(id)) {
@@ -413,9 +410,8 @@ Tycon findQualTycon(
     return NIL; /*NOTUSED*/
 }
 
-Tycon addPrimTycon(Text t, Kind kind, Int ar, Cell what,
-                   Cell defn) /* add new primitive type constr   */
-{
+/* Add new primitive type constr */
+Tycon addPrimTycon(Text t, Kind kind, int ar, Cell what, Cell defn) {
     Tycon tc = newTycon(t);
     tyconRec(tc)->line = 0;
     tyconRec(tc)->kind = kind;
@@ -427,13 +423,11 @@ Tycon addPrimTycon(Text t, Kind kind, Int ar, Cell what,
     return tc;
 }
 
-static List local insertTycon(Tycon tc,
-                              List ts) /* insert tycon tc into sorted list*/
-                                       /* ts                              */
-{
+/* Insert tycon tc into sorted list ts */
+static List insertTycon(Tycon tc, List ts) {
     Cell prev = NIL;
     Cell curr = ts;
-    String s = textToStr(tyconRec(tc)->text);
+    char *s = textToStr(tyconRec(tc)->text);
 
     while (nonNull(curr) &&
            strCompare(s, textToStr(tyconRec(hd(curr))->text)) >= 0) {
@@ -449,11 +443,10 @@ static List local insertTycon(Tycon tc,
         return cons(tc, curr);
 }
 
-List addTyconsMatching(String pat,
-                       List ts) /* Add tycons matching pattern pat */
-                                /* to list of Tycons ts            */
-{                               /* Null pattern matches every tycon*/
-    Tycon tc;                   /* (Tycons with NIL kind excluded) */
+/* Add tycons matching pattern pat to list of Tycons ts Null pattern matches
+ * every tycon (Tycons with NIL kind excluded) */
+List addTyconsMatching(char *pat, List ts) {
+    Tycon tc;
     for (tc = TYCMIN; tc < tyconHw; ++tc)
         if (!pat || stringMatch(pat, textToStr(tyconRec(tc)->text)))
             if (nonNull(tyconRec(tc)->kind))
@@ -465,7 +458,7 @@ List addTyconsMatching(String pat,
  * Remove 'tc' from a module's 'tycons' list; used to implement 
  * local overrides of imported decls.
  */
-Void removeTycon(Tycon tc) {
+void removeTycon(Tycon tc) {
     List ls = moduleRec(currentModule)->tycons;
     List *prev = &(moduleRec(currentModule)->tycons);
 
@@ -497,9 +490,9 @@ static Name nameHw;                         /* next unused name        */
 static Name DEFTABLE(nameHash, NAMEHSZ);    /* Hash table storage      */
 struct strName DEFTABLE(tabName, NUM_NAME); /* Name table storage      */
 
-Name newName(Text t, Cell parent) /* Add new name to name table      */
-{
-    Int h = nHash(t);
+/* Add new name to name table */
+Name newName(Text t, Cell parent) {
+    int h = nHash(t);
 
     if (nameHw - NAMEMIN >= NUM_NAME) {
         errHead(0);
@@ -529,8 +522,8 @@ Name newName(Text t, Cell parent) /* Add new name to name table      */
     return nameHw++;
 }
 
-Name findName(Text t) /* Locate name in name table       */
-{
+/* Locate name in name table */
+Name findName(Text t) {
     Name n = nameHash[nHash(t)];
 
     while (nonNull(n) && nameRec(n)->text != t)
@@ -538,8 +531,8 @@ Name findName(Text t) /* Locate name in name table       */
     return n;
 }
 
-Name addName(Name nm) /* Insert Name in name table - if  */
-{                     /* no clash is caused                */
+/* Insert Name in name table - if no clash is caused */
+Name addName(Name nm) {
     Name oldnm = findName(nameRec(nm)->text);
     if (isNull(oldnm)) {
         hashName(nm);
@@ -550,10 +543,10 @@ Name addName(Name nm) /* Insert Name in name table - if  */
         return oldnm;
 }
 
-static Void local hashName(Name nm) /* Insert Name into hash table         */
-{
+/* Insert Name into hash table */
+static void hashName(Name nm) {
     Text t = nameRec(nm)->text;
-    Int h = nHash(t);
+    int h = nHash(t);
 
     nameRec(nm)->nextNameHash = nameHash[h];
     nameRec(nm)->clashes = NIL;
@@ -564,7 +557,7 @@ static Void local hashName(Name nm) /* Insert Name into hash table         */
  * Remove 'n' from a module's 'names' list; used to implement 
  * local overrides of imported decls.
  */
-Void removeName(Name n) {
+void removeName(Name n) {
     List ls = moduleRec(currentModule)->names;
     List *prev = &(moduleRec(currentModule)->names);
 
@@ -577,8 +570,8 @@ Void removeName(Name n) {
     }
 }
 
-Name findQualName(Cell id) /* Locate (possibly qualified) name*/
-{                          /* in name table                */
+/* Locate (possibly qualified) name in name table */
+Name findQualName(Cell id) {
     if (!isPair(id))
         internal("findQualName");
     switch (fst(id)) {
@@ -635,8 +628,8 @@ Name findQualName(Cell id) /* Locate (possibly qualified) name*/
     return NIL; /*NOTUSED*/
 }
 
-List findQualNames(Cell id) /* Locate (possibly qualified) names */
-{                           /* in name table                 */
+/* Locate (possibly qualified) names in name table */
+List findQualNames(Cell id) {
     if (!isPair(id))
         internal("findQualNames");
     switch (fst(id)) {
@@ -650,7 +643,7 @@ List findQualNames(Cell id) /* Locate (possibly qualified) names */
         Text aliasMod = qmodOf(id);
         List ms = findQualifiers(aliasMod);
         List res = NIL;
-        Bool fromHome = FALSE;
+        bool fromHome = false;
         if (isNull(ms))
             return NIL;
         while (nonNull(ms)) {
@@ -662,10 +655,10 @@ List findQualNames(Cell id) /* Locate (possibly qualified) names */
                */
             if (m == currentModule) {
                 es = moduleRec(m)->names;
-                fromHome = TRUE;
+                fromHome = true;
             } else {
                 es = getModuleImports(m);
-                fromHome = FALSE;
+                fromHome = false;
             }
             /* Chase down list looking for _unqual_ entity. */
             for (; nonNull(es); es = tl(es)) {
@@ -713,8 +706,8 @@ List findQualNames(Cell id) /* Locate (possibly qualified) names */
     return NIL; /*NOTUSED*/
 }
 
-Name findQualFun(Text m, Text v) /* Locate name in name table       */
-{
+/* Locate name in name table */
+Name findQualFun(Text m, Text v) {
     Module mod = findModule(m);
     List ns;
     if (isNull(mod)) {
@@ -735,7 +728,7 @@ Name findQualFun(Text m, Text v) /* Locate name in name table       */
 
 struct primInfoDef {
     Module prim_module; /* module that defined prim-table */
-    Bool prim_oldIO;    /* backwards compat: does the DLL's primop
+    bool prim_oldIO;    /* backwards compat: does the DLL's primop
                                         assume old IO rep? */
     void *prim_dll;     /* if in a dll, handle to it. */
     struct primInfo *p_info;
@@ -743,22 +736,22 @@ struct primInfoDef {
         *nextPrimInfoDef; /* subsumes nextPrimInfo (ToDo: nuke it) */
 };
 
-static Void local freePrimInfo(struct primInfoDef *);
+static void freePrimInfo(struct primInfoDef *);
 
 static struct primInfoDef *firstPrimInfo = 0; /* queue of primInfo structures */
 static struct primInfoDef *lastPrimInfo = 0;
 
 /* Nasty global flag - set prior to hoisting in a DLL */
-static Bool oldIO_dll = FALSE;
+static bool oldIO_dll = false;
 
-Bool setOldDLLFlag(Bool flg) {
-    Bool res = oldIO_dll;
+bool setOldDLLFlag(bool flg) {
+    bool res = oldIO_dll;
     oldIO_dll = flg;
     return res;
 }
 
-Void registerPrims(struct primInfo *info) /* register new primitives         */
-{
+/* Register new primitives */
+void registerPrims(struct primInfo *info) {
     struct primInfoDef *new_entry;
     /* ToDo: this is in all likelihood not the Approved Way of asking for mem. from the OS.
      *       Figure out what's the local idiom.      
@@ -790,7 +783,7 @@ struct primInfoDef *setPrimInfoDll(void *dll) {
     return lastPrimInfo;
 }
 
-static Void local freePrimInfo(struct primInfoDef *p) {
+static void freePrimInfo(struct primInfoDef *p) {
     struct primInfoDef *info = firstPrimInfo;
     struct primInfoDef *prev = 0;
 
@@ -817,11 +810,10 @@ static Void local freePrimInfo(struct primInfoDef *p) {
     }
 }
 
-Void addPrim(Int l, Name n, String s, Module mod,
-             Type ty) /* Add primitive function value    */
-{
+/* Add primitive function value */
+void addPrim(int l, Name n, char *s, Module mod, Type ty) {
     struct primInfoDef *info_def;
-    Bool lookInPrelude = TRUE;
+    bool lookInPrelude = true;
     nameRec(n)->line = l;
     nameRec(n)->defn = NIL;
     nameRec(n)->type = ty;
@@ -850,7 +842,7 @@ Void addPrim(Int l, Name n, String s, Module mod,
             if ((lookInPrelude && isPrelude(info_def->prim_module)) ||
                 mod == info_def->prim_module) {
                 struct primitive *prims = info_def->p_info->primFuns;
-                Int i = 0;
+                int i = 0;
                 for (; prims[i].ref; ++i)
                     if (strcmp(s, prims[i].ref) == 0) {
                         nameRec(n)->arity = prims[i].arity;
@@ -877,9 +869,8 @@ Void addPrim(Int l, Name n, String s, Module mod,
     errFail();
 }
 
-Name addPrimCfun(Text t, Int arity, Int no,
-                 Cell type) /* add primitive constructor func  */
-{
+/* Add primitive constructor func */
+Name addPrimCfun(Text t, int arity, int no, Cell type) {
     Name n = newName(t, NIL);
     nameRec(n)->arity = arity;
     nameRec(n)->number = cfunNo(no);
@@ -889,9 +880,8 @@ Name addPrimCfun(Text t, Int arity, Int no,
     return n;
 }
 
-Int sfunPos(Name s, Name c) /* Find position of field with     */
-                            /* selector s in constructor c.    */
-{
+/* Find position of field with selector s in constructor c. */
+int sfunPos(Name s, Name c) {
     List cns;
     cns = nameRec(s)->defn;
     for (; nonNull(cns); cns = tl(cns))
@@ -901,13 +891,11 @@ Int sfunPos(Name s, Name c) /* Find position of field with     */
     return 0; /*NOTREACHED*/
 }
 
-static List local insertName(Name nm,
-                             List ns) /* insert name nm into sorted list */
-                                      /* ns                              */
-{
+/* Insert name nm into sorted list ns */
+static List insertName(Name nm, List ns) {
     Cell prev = NIL;
     Cell curr = ns;
-    String s = textToStr(nameRec(nm)->text);
+    char *s = textToStr(nameRec(nm)->text);
 
     while (nonNull(curr) &&
            strCompare(s, textToStr(nameRec(hd(curr))->text)) >= 0) {
@@ -923,13 +911,13 @@ static List local insertName(Name nm,
         return cons(nm, curr);
 }
 
-List addNamesMatching(String pat, List ns) /* Add names matching pattern pat  */
-                                           /* to list of names ns             */
-{                                          /* Null pattern matches every name */
-    Name nm;                               /* (Names with NIL type, or hidden */
-    for (nm = NAMEMIN; nm < nameHw; ++nm)  /* or invented names are excluded) */
+/* Add names matching pattern pat to list of names ns Null pattern matches
+ * every name (Names with NIL type, or hidden or invented names are excluded) */
+List addNamesMatching(char *pat, List ns) {
+    Name nm;
+    for (nm = NAMEMIN; nm < nameHw; ++nm)
         if (!inventedText(nameRec(nm)->text) && nonNull(nameRec(nm)->type)) {
-            String str = textToStr(nameRec(nm)->text);
+            char *str = textToStr(nameRec(nm)->text);
             if (str[0] != '_' && (!pat || stringMatch(pat, str)))
                 ns = insertName(nm, ns);
         }
@@ -945,16 +933,15 @@ List addNamesMatching(String pat, List ns) /* Add names matching pattern pat  */
  *     c      matches the character c only
  * ------------------------------------------------------------------------*/
 
-static Void local patternError(String s) /* report error in pattern         */
-{
+/* Report error in pattern */
+static void patternError(char *s) {
     errHead(0);
     errPrintf("%s in pattern", s);
     errFail();
 }
 
-static Bool local stringMatch(String pat,
-                              String str) /* match string against pattern    */
-{
+/* Match string against pattern */
+static bool stringMatch(char *pat, char *str) {
 
     for (;;)
         switch (*pat) {
@@ -964,29 +951,29 @@ static Bool local stringMatch(String pat,
         case '*':
             do {
                 if (stringMatch(pat + 1, str))
-                    return TRUE;
+                    return true;
             } while (*str++);
-            return FALSE;
+            return false;
 
         case '?':
             if (*str++ == '\0')
-                return FALSE;
+                return false;
             pat++;
             break;
 
         case '[': {
-            Bool found = FALSE;
+            bool found = false;
             while (*++pat != '\0' && *pat != ']')
                 if (!found &&
                     (pat[0] == *str ||
                      (pat[1] == '-' && pat[2] != ']' && pat[2] != '\0' &&
                       pat[0] <= *str && pat[2] >= *str)))
 
-                    found = TRUE;
+                    found = true;
             if (*pat != ']')
                 patternError("missing `]'");
             if (!found)
-                return FALSE;
+                return false;
             pat++;
             str++;
         } break;
@@ -997,7 +984,7 @@ static Bool local stringMatch(String pat,
             /*fallthru!*/
         default:
             if (*pat++ != *str++)
-                return FALSE;
+                return false;
             break;
         }
 }
@@ -1013,8 +1000,8 @@ static Inst instHw;   /* next unused instance record      */
 struct strClass DEFTABLE(tabClass, NUM_CLASSES); /* Class storage        */
 struct strInst DEFTABLE(tabInst, NUM_INSTS);     /* Instance storage     */
 
-Class newClass(Text t) /* add new class to class table     */
-{
+/* Add new class to class table */
+Class newClass(Text t) {
     if (classHw - CLASSMIN >= NUM_CLASSES) {
         errHead(0);
         errPrintf("Class storage space exhausted");
@@ -1046,12 +1033,13 @@ Class newClass(Text t) /* add new class to class table     */
     return classHw++;
 }
 
-Class classMax() {  /* Return max Class in use ...     */
+/* Return max Class in use ... */
+Class classMax(void) {
     return classHw; /* This is a bit ugly, but it's not*/
 } /* worth a lot of effort right now */
 
-Class findClass(Text t) /* look for named class in table    */
-{
+/* Look for named class in table */
+Class findClass(Text t) {
     Class cl;
     List cs;
     for (cs = classes; nonNull(cs); cs = tl(cs)) {
@@ -1062,8 +1050,8 @@ Class findClass(Text t) /* look for named class in table    */
     return NIL;
 }
 
-Class addClass(Class c) /* Insert Class in class list      */
-{                       /*  - if no clash caused           */
+/* Insert Class in class list - if no clash caused */
+Class addClass(Class c) {
     Class oldc = findClass(cclassRec(c)->text);
     if (isNull(oldc)) {
         classes = cons(c, classes);
@@ -1074,8 +1062,8 @@ Class addClass(Class c) /* Insert Class in class list      */
         return oldc;
 }
 
-Class findQualClass(Cell c) /* Look for (possibly qualified)   */
-{                           /* class in class list                 */
+/* Look for (possibly qualified) class in class list */
+Class findQualClass(Cell c) {
     if (!isQualIdent(c)) {
         return findClass(textOf(c));
     } else {
@@ -1105,7 +1093,8 @@ Class findQualClass(Cell c) /* Look for (possibly qualified)   */
     return NIL;
 }
 
-Inst newInst() { /* Add new instance to table        */
+/* Add new instance to table */
+Inst newInst(void) {
     if (instHw - INSTMIN >= NUM_INSTS) {
         errHead(0);
         errPrintf("Instance storage space exhausted");
@@ -1120,14 +1109,13 @@ Inst newInst() { /* Add new instance to table        */
     return instHw++;
 }
 
-Inst findFirstInst(Tycon tc) /* look for 1st instance involving */
-{                            /* the type constructor tc         */
+/* Look for 1st instance involving the type constructor tc */
+Inst findFirstInst(Tycon tc) {
     return findNextInst(tc, INSTMIN - 1);
 }
 
-Inst findNextInst(Tycon tc, Inst in) /* look for next instance involving*/
-                                     /* the type constructor tc         */
-{                                    /* starting after instance in      */
+/* Look for the next instance after in that involves the type constructor tc */
+Inst findNextInst(Tycon tc, Inst in) {
     while (++in < instHw) {
         Cell pi = instRec(in)->head;
         for (; isAp(pi); pi = fun(pi))
@@ -1137,10 +1125,8 @@ Inst findNextInst(Tycon tc, Inst in) /* look for next instance involving*/
     return NIL;
 }
 
-static Bool local typeInvolves(Type ty,
-                               Type tc) /* Test to see if type ty involves */
-                                        /* type constructor/tuple tc.      */
-{
+/* Test to see if type ty involves type constructor/tuple tc. */
+static bool typeInvolves(Type ty, Type tc) {
     return (ty == tc) || (isAp(ty) && (typeInvolves(fun(ty), tc) ||
                                        typeInvolves(arg(ty), tc)));
 }
@@ -1160,14 +1146,15 @@ StackPtr sp;                         /* stack pointer                       */
 # define UPPER_DISP 5 /* # display entries on top of stack   */
 # define LOWER_DISP 5 /* # display entries on bottom of stack*/
 
-extern Int rootsp;
+extern int rootsp;
 extern Cell evalRoots[];
 
-Void cuddlesStackOverflow() { /* Report stack overflow               */
+/* Report stack overflow */
+void cuddlesStackOverflow(void) {
     errHead(0);
     errPrintf("Control stack overflow");
     if (rootsp >= 0) {
-        Int i;
+        int i;
         if (rootsp >= UPPER_DISP + LOWER_DISP) {
             for (i = 0; i < UPPER_DISP; i++) {
                 errPrintf("\nwhile evaluating: ");
@@ -1193,7 +1180,8 @@ Void cuddlesStackOverflow() { /* Report stack overflow               */
 
 #else /* !GIMME_STACK_DUMPS */
 
-Void cuddlesStackOverflow() { /* Report stack overflow               */
+/* Report stack overflow */
+void cuddlesStackOverflow(void) {
     errHead(0);
     errPrintf("Control stack overflow");
     errFail();
@@ -1226,13 +1214,13 @@ static Module moduleHw; /* next unused Module              */
 struct strModule DEFTABLE(tabModule, NUM_MODULE); /* Module storage         */
 Module currentModule; /* Module currently being processed*/
 
-Bool isValidModule(Module m) /* is m a legitimate module id?     */
-{
+/* Is m a legitimate module id? */
+bool isValidModule(Module m) {
     return (MODMIN <= m && m < moduleHw);
 }
 
-Module newModule(Text t) /* add new module to module table  */
-{
+/* Add new module to module table */
+Module newModule(Text t) {
     if (moduleHw - MODMIN >= NUM_MODULE) {
         errHead(0);
         errPrintf("Module storage space exhausted");
@@ -1249,8 +1237,8 @@ Module newModule(Text t) /* add new module to module table  */
     return moduleHw++;
 }
 
-Module findModule(Text t) /* locate Module in module table  */
-{
+/* Locate Module in module table */
+Module findModule(Text t) {
     Module m;
     for (m = MODMIN; m < moduleHw; ++m) {
         if (moduleRec(m)->text == t)
@@ -1259,8 +1247,8 @@ Module findModule(Text t) /* locate Module in module table  */
     return NIL;
 }
 
-Module findModid(Cell c) /* Find module by name or filename  */
-{
+/* Find module by name or filename */
+Module findModid(Cell c) {
     switch (whatIs(c)) {
     case STRCELL: {
         Script s = scriptThisFile(snd(c));
@@ -1275,8 +1263,8 @@ Module findModid(Cell c) /* Find module by name or filename  */
 }
 
 /* Don't use - use findQualifiers() instead */
-Module findQualifier(Text t) /* locate Module in alias list */
-{
+/* Locate Module in alias list */
+Module findQualifier(Text t) {
     Module ms;
     for (ms = moduleRec(currentModule)->modAliases; nonNull(ms); ms = tl(ms)) {
         if (textOf(fst(hd(ms))) == t) {
@@ -1294,8 +1282,8 @@ Module findQualifier(Text t) /* locate Module in alias list */
  * Notice that more than one module may map to the same local
  * alias.
  */
-List findQualifiers(Text t) /* locate Modules in alias list */
-{
+/* Locate Modules in alias list */
+List findQualifiers(Text t) {
     List ms;
     List res = NIL;
 
@@ -1311,8 +1299,8 @@ List findQualifiers(Text t) /* locate Modules in alias list */
     return res;
 }
 
-Text findModAlias(Text t) /* given a module name 't', locate its alias. */
-{
+/* Given a module name 't', locate its alias. */
+Text findModAlias(Text t) {
     List ms;
     for (ms = moduleRec(currentModule)->modAliases; nonNull(ms); ms = tl(ms)) {
         if (moduleRec(snd(hd(ms)))->text == t) {
@@ -1322,9 +1310,9 @@ Text findModAlias(Text t) /* given a module name 't', locate its alias. */
     return NIL;
 }
 
-Void setCurrModule(Module m) /* set lookup tables for current module */
-{
-    Int i;
+/* Set lookup tables for current module */
+void setCurrModule(Module m) {
+    int i;
     if (m != currentModule) {
         /* The effective module import list of a module
            is held onto until we switch to another. Ideally,
@@ -1350,9 +1338,8 @@ Void setCurrModule(Module m) /* set lookup tables for current module */
     }
 }
 
-List getModuleImports(
-    Module m) /* In 'currentModule', look up imports from 'm'. */
-{
+/* In 'currentModule', look up imports from 'm'. */
+List getModuleImports(Module m) {
     Module ms = moduleRec(currentModule)->modImports;
 
     for (; nonNull(ms); ms = tl(ms)) {
@@ -1384,8 +1371,8 @@ struct strScript DEFTABLE(tabScript, NUM_SCRIPTS); /* Script storage       */
 static Script scriptHw; /* number of scripts whose marks   */
                         /* have been recorded              */
 
-Script startNewScript(String f) /* start new script, keeping record */
-{                               /* of status for later restoration  */
+/* Start new script, keeping record of status for later restoration */
+Script startNewScript(char *f) {
     struct strScriptMarks *m;
 
     if (scriptHw >= NUM_SCRIPTS) {
@@ -1410,16 +1397,18 @@ Script startNewScript(String f) /* start new script, keeping record */
     return scriptHw++;
 }
 
-Bool isPreludeScript() { /* Test whether script 0 is being read */
+/* Test whether script 0 is being read */
+bool isPreludeScript(void) {
     return (scriptHw <= 1);
 }
 
-Bool moduleThisScript(Module m) /* Test if given module is defined */
-{                               /* in current script file          */
+/* Test if given module is defined in current script file */
+bool moduleThisScript(Module m) {
     return scriptHw < 1 || m >= scriptRec(scriptHw - 1)->marks.moduleHw;
 }
 
-Module lastModule() { /* Return module in current script file */
+/* Return module in current script file */
+Module lastModule(void) {
     return (moduleHw > MODMIN ? moduleHw - 1 : modulePrelude);
 }
 
@@ -1427,24 +1416,24 @@ Module lastModule() { /* Return module in current script file */
  * x is the last one whose mark for that table is at or below x; entries
  * below the first mark are built in and belong to the Prelude.
  */
-static Script local
-scriptThisMark(Cell x, Cell (*markOf)(const struct strScriptMarks *)) {
+static Script scriptThisMark(Cell x,
+                             Cell (*markOf)(const struct strScriptMarks *)) {
     Script s = 1;
     while (s < scriptHw && x >= markOf(&scriptRec(s)->marks))
         s++;
     return s - 1;
 }
 
-static Cell local markName(const struct strScriptMarks *m) {
+static Cell markName(const struct strScriptMarks *m) {
     return m->nameHw;
 }
-static Cell local markTycon(const struct strScriptMarks *m) {
+static Cell markTycon(const struct strScriptMarks *m) {
     return m->tyconHw;
 }
-static Cell local markInst(const struct strScriptMarks *m) {
+static Cell markInst(const struct strScriptMarks *m) {
     return m->instHw;
 }
-static Cell local markClass(const struct strScriptMarks *m) {
+static Cell markClass(const struct strScriptMarks *m) {
     return m->classHw;
 }
 
@@ -1468,7 +1457,7 @@ Module moduleOfScript(Script s) {
     return (s == 0) ? modulePrelude : scriptRec(s)->marks.moduleHw;
 }
 
-String fileOfModule(Module m) {
+char *fileOfModule(Module m) {
     Script s;
     if (m == modulePrelude) {
         return findMPathname(STD_PRELUDE_CUDDLES);
@@ -1494,8 +1483,8 @@ Script scriptThisFile(Text f) {
     return (-1);
 }
 
-Void dropAScript(Script sno) /* elide one script from the stack */
-{
+/* Elide one script from the stack */
+void dropAScript(Script sno) {
     Script i;
 
     if (sno < 0 || sno >= scriptHw)
@@ -1515,9 +1504,9 @@ Void dropAScript(Script sno) /* elide one script from the stack */
     scriptHw--;
 }
 
-Void dropScriptsFrom(Script sno)      /* Restore storage to state prior  */
-{                                     /* to reading script sno           */
-    if (sno >= 0 && sno < scriptHw) { /* is there anything to restore?   */
+/* Restore storage to state prior to reading script sno */
+void dropScriptsFrom(Script sno) {
+    if (sno >= 0 && sno < scriptHw) { /* is there anything to restore? */
         struct strScriptMarks *m = &scriptRec(sno)->marks;
         int i;
         textHw = m->textHw;
@@ -1572,8 +1561,8 @@ Void dropScriptsFrom(Script sno)      /* Restore storage to state prior  */
     }
 }
 
-Void setScriptPrims(void *p) /* set the current script's primitive record. */
-{
+/* Set the current script's primitive record. */
+void setScriptPrims(void *p) {
     scriptRec(scriptHw - 1)->marks.prims = (struct primInfoDef *)p;
     return;
 }
@@ -1584,24 +1573,24 @@ Void setScriptPrims(void *p) /* set the current script's primitive record. */
  * Provides a garbage collectable heap for storage of expressions etc.
  * ------------------------------------------------------------------------*/
 
-Int heapSize = DEFAULTHEAP; /* number of cells in heap         */
+int heapSize = DEFAULTHEAP; /* number of cells in heap         */
 Heap heapFst;               /* array of fst component of pairs */
 Heap heapSnd;               /* array of snd component of pairs */
 Heap heapTopFst;
 Heap heapTopSnd;
-Bool consGC = TRUE; /* Set to FALSE to turn off gc from*/
+bool consGC = true; /* Set to false to turn off gc from*/
                     /* C stack; use with extreme care! */
 #if PROFILING
 Heap heapThd, heapTopThd;     /* to keep record of producers     */
-Int sysCount;                 /* record unattached cells         */
+int sysCount;                 /* record unattached cells         */
 Name producer;                /* current producer, if any        */
-Bool profiling = FALSE;       /* should profiling be performed   */
-Int profInterval = MAXPOSINT; /* interval between samples        */
+bool profiling = false;       /* should profiling be performed   */
+int profInterval = MAXPOSINT; /* interval between samples        */
 FILE *profile = 0;            /* pointer to profiler log, if any */
 #endif
-Long numCells;
-Int numGcs;         /* number of garbage collections   */
-Int cellsRecovered; /* number of cells recovered       */
+long numCells;
+int numGcs;         /* number of garbage collections   */
+int cellsRecovered; /* number of cells recovered       */
 
 static Cell freeList;     /* free list of unused cells       */
 static Cell lsave, rsave; /* save components of pair         */
@@ -1625,7 +1614,7 @@ unsigned char whatCode[N_WHATCODE]; /* array of whatIs codes */
 
 #define fillWhatCode(code, from, to) memset(whatCode + from, code, to - from)
 
-static Void initFastWhat(Void) {
+static void initFastWhat(void) {
     int i;
 
     for (i = 0; i < TUPMIN; i++)
@@ -1643,9 +1632,9 @@ static Void initFastWhat(Void) {
 
 #undef fillWhatCode
 
-Cell pair(Cell l, Cell r) /* Allocate pair (l, r) from       */
-{                         /* heap, garbage collecting first  */
-    Cell c = freeList;    /* if necessary ...                */
+/* Allocate pair (l, r) from heap, garbage collecting first if necessary ... */
+Cell pair(Cell l, Cell r) {
+    Cell c = freeList;
 
     if (isNull(c)) {
         lsave = l;
@@ -1667,8 +1656,8 @@ Cell pair(Cell l, Cell r) /* Allocate pair (l, r) from       */
     return c;
 }
 
-Void overwrite(Cell dst, Cell src) /* overwrite dst cell with src cell*/
-{                                  /* both *MUST* be pairs            */
+/* Overwrite dst cell with src cell both *MUST* be pairs */
+void overwrite(Cell dst, Cell src) {
     if (isPair(dst) && isPair(src)) {
         fst(dst) = fst(src);
         snd(dst) = snd(src);
@@ -1677,7 +1666,7 @@ Void overwrite(Cell dst, Cell src) /* overwrite dst cell with src cell*/
 }
 
 static unsigned *marks;
-static Int marksSize;
+static int marksSize;
 
 /* --------------------------------------------------------------------------
  * Roots: the tables of static cells registered by the modules (see
@@ -1686,16 +1675,16 @@ static Int marksSize;
 
 struct rootTable {
     Cell *const *cells;
-    Int count;
+    int count;
 };
 
 static struct rootTable *rootTables = 0;
-static Int numRootTables = 0;
-static Int maxRootTables = 0;
+static int numRootTables = 0;
+static int maxRootTables = 0;
 
-Void gcRegisterRoots(Cell *const *cells, Int count) {
+void gcRegisterRoots(Cell *const *cells, int count) {
     if (numRootTables == maxRootTables) {
-        Int more = maxRootTables ? 2 * maxRootTables : 16;
+        int more = maxRootTables ? 2 * maxRootTables : 16;
         struct rootTable *grown = realloc(rootTables, more * sizeof(*grown));
         if (!grown) {
             errHead(0);
@@ -1710,15 +1699,15 @@ Void gcRegisterRoots(Cell *const *cells, Int count) {
     numRootTables++;
 }
 
-static Void local markRoots(Void) {
-    Int t, i;
+static void markRoots(void) {
+    int t, i;
     for (t = 0; t < numRootTables; t++)
         for (i = 0; i < rootTables[t].count; i++)
             *rootTables[t].cells[i] = markExpr(*rootTables[t].cells[i]);
 }
 
-Cell markExpr(Cell c) /* External interface to markCell  */
-{
+/* External interface to markCell */
+Cell markExpr(Cell c) {
     return isGenPair(c) ? markCell(c) : c;
 }
 
@@ -1738,14 +1727,13 @@ Cell markExpr(Cell c) /* External interface to markCell  */
  * ------------------------------------------------------------------------*/
 
 static Cell **markStack = 0;  /* malloc'd stack of pending Cell* slots*/
-static Int markStackSize = 0; /* capacity of markStack, in entries    */
-static Int markStackTop = 0;  /* number of entries currently in use   */
+static int markStackSize = 0; /* capacity of markStack, in entries    */
+static int markStackTop = 0;  /* number of entries currently in use   */
 
-static Void local growMarkStack(Void) /* Double the mark stack, reporting  */
-{                                     /* a fatal error if malloc fails --  */
-    Int newSize = markStackSize ? 2 * markStackSize : 1024;
-    /* longjmp'ing out of the collector  */
-    /* is not safe here.                 */
+/* Double the mark stack, reporting a fatal error if malloc fails --
+ * longjmp'ing out of the collector is not safe here. */
+static void growMarkStack(void) {
+    int newSize = markStackSize ? 2 * markStackSize : 1024;
     Cell **newStack = (Cell **)realloc(markStack, newSize * sizeof(Cell *));
     if (newStack == 0) {
         fatal("Cannot grow garbage collector mark stack");
@@ -1761,10 +1749,12 @@ static Void local growMarkStack(Void) /* Double the mark stack, reporting  */
         markStack[markStackTop++] = (slotp);                                   \
     } while (0)
 
-static Void local markSlot(Cell *slot) /* Mark whatever *slot refers to,  */
-{                   /* pushing whichever of its own fst/snd links     */
-    Cell c = *slot; /* still need marking.  Used for the fst and snd  */
-                    /* link of a cell, and for markCell's root arg.  */
+/* Mark whatever *slot refers to, pushing whichever of its own fst/snd links
+ * still need marking. Used for the fst and snd link of a cell, and for
+ * markCell's root arg. */
+static void markSlot(Cell *slot) {
+    Cell c = *slot;
+
     if (!isPair(c)) /* fst/snd links pushed here are not guaranteed  */
         return;     /* to be pairs (unlike markCell's root); a snd  */
                     /* link commonly terminates the chain here.      */
@@ -1825,10 +1815,9 @@ static Cell markCellRoot; /* Static (not stack) storage for markCell's own */
                           /* a slot that stays valid for the whole drain,  */
                           /* which a local variable's address is not.      */
 
-static Cell local markCell(Cell c) /* Traverse part of graph marking  */
-{                                  /* cells reachable from given root */
-                                   /* markCell(c) is only called if c */
-                                   /* is a pair                       */
+/* Traverse part of graph marking cells reachable from given root markCell(c)
+ * is only called if c is a pair */
+static Cell markCell(Cell c) {
     markCellRoot = c;
     pushMarkSlot(&markCellRoot);
     while (markStackTop > 0) {
@@ -1837,8 +1826,8 @@ static Cell local markCell(Cell c) /* Traverse part of graph marking  */
     return markCellRoot;
 }
 
-static Cell local markSnd(Cell c) /* Variant of markCell used to     */
-{                                 /* mark cells reachable from the snd       */
+/* Variant of markCell used to mark cells reachable from the snd */
+static Cell markSnd(Cell c) {
     /* link of c; c itself is assumed already  */
     /* marked.                                 */
     pushMarkSlot(&snd(c));
@@ -1848,9 +1837,9 @@ static Cell local markSnd(Cell c) /* Variant of markCell used to     */
     return c;
 }
 
-static Cell local indirectChain(Cell c) /* Scan chain of indirections      */
-{                                       /* Detecting loops of indirections */
-    Cell is = c;                        /* Uses pointer reversal ...       */
+/* Scan chain of indirections Detecting loops of indirections */
+static Cell indirectChain(Cell c) {
+    Cell is = c; /* Uses pointer reversal ...       */
     c = snd(is);
     snd(is) = NIL;
     fst(is) = INDIRECT1;
@@ -1876,11 +1865,10 @@ static Cell local indirectChain(Cell c) /* Scan chain of indirections      */
     return c;
 }
 
-Void markWithoutMove(Cell n) /* Garbage collect cell at n, as if*/
-{                            /* it was a cell ref, but don't    */
-                             /* move cell (i.e. retain INDIRECT */
-                             /* at top level) so we don't have  */
-                             /* to modify the stored value of n */
+/* Garbage collect cell at n, as if it was a cell ref, but don't move cell
+ * (i.e. retain INDIRECT at top level) so we don't have to modify the stored
+ * value of n */
+void markWithoutMove(Cell n) {
     if (isGenPair(n)) {
         recordStackRoot();
         if (fst(n) == INDIRECT) { /* special case for indirections   */
@@ -1894,22 +1882,23 @@ Void markWithoutMove(Cell n) /* Garbage collect cell at n, as if*/
     }
 }
 
-static Bool local isMarked(Cell c) {
+static bool isMarked(Cell c) {
     if (isGenPair(c)) {
-        Int place = placeInSet(c);
+        int place = placeInSet(c);
         unsigned mask = maskInSet(c);
         return (marks[place] & mask) != 0;
     } else {
-        return TRUE;
+        return true;
     }
 }
 
-Void garbageCollect() {              /* Run garbage collector ...       */
-    Bool breakStat = breakOn(FALSE); /* disable break checking          */
-    Int i, j;
+/* Run garbage collector ... */
+void garbageCollect(void) {
+    bool breakStat = breakOn(false); /* disable break checking          */
+    int i, j;
     register unsigned mask;
-    register Int place;
-    Int recovered;
+    register int place;
+    int recovered;
     jmp_buf regs; /* save registers on stack         */
     setjmp(regs);
 
@@ -1920,7 +1909,7 @@ Void garbageCollect() {              /* Run garbage collector ...       */
     everybody(MARK); /* Mark all components of system   */
     markRoots();     /* and the registered roots        */
 
-    for (i = 0; i < (Int)num_handles; ++i) /* release any unused handles      */
+    for (i = 0; i < (int)num_handles; ++i) /* release any unused handles      */
         if (nonNull(handles[i].hcell)) {
             register int place = placeInSet(handles[i].hcell);
             register unsigned mask = maskInSet(handles[i].hcell);
@@ -1947,7 +1936,7 @@ Void garbageCollect() {              /* Run garbage collector ...       */
     for (; nonNull(weakPtrs); weakPtrs = nextWeakPtr(weakPtrs)) {
         Cell ptr = derefWeakPtr(weakPtrs);
         if (isGenPair(ptr)) {
-            Int place = placeInSet(ptr);
+            int place = placeInSet(ptr);
             unsigned mask = maskInSet(ptr);
             if ((marks[place] & mask) == 0) {
                 /* printf("Zapping weak pointer %d\n", ptr); */
@@ -1962,13 +1951,13 @@ Void garbageCollect() {              /* Run garbage collector ...       */
     }
 
     if (nonNull(liveWeakPtrs) || nonNull(finalizers)) {
-        Bool anyMarked; /* Weak pointers with finalizers   */
+        bool anyMarked; /* Weak pointers with finalizers   */
         List wps;
         List newFins = NIL;
 
         /* Step 1: iterate until we've found out what is reachable         */
         do {
-            anyMarked = FALSE;
+            anyMarked = false;
             for (wps = liveWeakPtrs; nonNull(wps); wps = tl(wps)) {
                 Cell wp = hd(wps);
                 Cell k = fst(snd(wp));
@@ -1980,7 +1969,7 @@ Void garbageCollect() {              /* Run garbage collector ...       */
                     if (!isMarked(fst(vf)) || !isMarked(snd(vf))) {
                         mark(fst(vf));
                         mark(snd(vf));
-                        anyMarked = TRUE;
+                        anyMarked = true;
                     }
                 }
             }
@@ -2118,8 +2107,8 @@ Void garbageCollect() {              /* Run garbage collector ...       */
 }
 
 #if PROFILING
-Void profilerLog(String s) /* turn heap profiling on, saving log*/
-{                          /* in specified file                 */
+/* Turn heap profiling on, saving log in specified file */
+void profilerLog(char *s) {
     if ((profile = fopen(s, "w")) != NULL) {
         fprintf(profile, "JOB \"Cuddles Heap Profile\"\n");
         fprintf(profile, "DATE \"%s\"\n", timeString());
@@ -2144,18 +2133,18 @@ Void profilerLog(String s) /* turn heap profiling on, saving log*/
 
 static Cell lastExprSaved; /* last expression to be saved     */
 
-Void setLastExpr(Cell e) /* save expression for later recall*/
-{
+/* Save expression for later recall */
+void setLastExpr(Cell e) {
     lastExprSaved = NIL; /* in case attempt to save fails   */
     savedText = NUM_TEXT;
     lastExprSaved = lowLevelLastIn(e);
 }
 
-static Cell local lowLevelLastIn(Cell c) /* Duplicate expression tree (i.e. */
-{                                        /* acyclic graph) for later recall */
-    if (isPair(c))                       /* Duplicating any text strings    */
-        if (isBoxTag(fst(c)))            /* in case these are lost at some  */
-            switch (fst(c)) {            /* point before the expr is reused */
+/* Duplicate expression tree (i.e. acyclic graph) for later recall */
+static Cell lowLevelLastIn(Cell c) {
+    if (isPair(c))            /* Duplicating any text strings    */
+        if (isBoxTag(fst(c))) /* in case these are lost at some  */
+            switch (fst(c)) { /* point before the expr is reused */
             case VARIDCELL:
             case VAROPCELL:
             case DICTVAR:
@@ -2172,14 +2161,16 @@ static Cell local lowLevelLastIn(Cell c) /* Duplicate expression tree (i.e. */
         return c;
 }
 
-Cell getLastExpr() { /* recover previously saved expr   */
+/* Recover previously saved expr */
+Cell getLastExpr(void) {
     return lowLevelLastOut(lastExprSaved);
 }
 
-static Cell local lowLevelLastOut(Cell c) /* As with lowLevelLastIn() above  */
-{                                         /* except that Cells refering to   */
-    if (isPair(c))                        /* Text values are restored to     */
-        if (isBoxTag(fst(c)))             /* appropriate values              */
+/* As with lowLevelLastIn() above except that Cells refering to Text values are
+ * restored to appropriate values */
+static Cell lowLevelLastOut(Cell c) {
+    if (isPair(c))
+        if (isBoxTag(fst(c)))
             switch (fst(c)) {
             case VARIDCELL:
             case VAROPCELL:
@@ -2211,13 +2202,13 @@ static Cell local lowLevelLastOut(Cell c) /* As with lowLevelLastIn() above  */
  * robust and can be used on any data structure irrespective of
  * its type.
  */
-Void printList(List, Int);
-Void print(Cell, Int);
-Void print(Cell c, Int depth) {
+void printList(List, int);
+void print(Cell, int);
+void print(Cell c, int depth) {
     if (0 == depth) {
         Printf("...");
     } else {
-        Int tag = whatIs(c);
+        int tag = whatIs(c);
         switch (tag) {
         case AP:
             Putchar('(');
@@ -2340,8 +2331,8 @@ Void print(Cell c, Int depth) {
     FlushStdout();
 }
 
-Void printList(List l, Int depth) {
-    Int tag;
+void printList(List l, int depth) {
+    int tag;
     Cell n;
     Putchar('[');
     if ((tag = whatIs(l)) != NIL)
@@ -2362,87 +2353,87 @@ Void printList(List l, Int depth) {
 }
 #endif
 
-Bool isVar(Cell c) /* is cell a VARIDCELL/VAROPCELL ? */
-{                  /* also recognises DICTVAR cells   */
+/* Is cell a VARIDCELL/VAROPCELL ? also recognises DICTVAR cells */
+bool isVar(Cell c) {
     return isPair(c) &&
            (fst(c) == VARIDCELL || fst(c) == VAROPCELL || fst(c) == DICTVAR);
 }
 
-Bool isCon(Cell c) /* is cell a CONIDCELL/CONOPCELL ?  */
-{
+/* Is cell a CONIDCELL/CONOPCELL ? */
+bool isCon(Cell c) {
     return isPair(c) && (fst(c) == CONIDCELL || fst(c) == CONOPCELL);
 }
 
-Bool isQVar(Cell c) /* is cell a [un]qualified varop/id? */
-{
+/* Is cell a [un]qualified varop/id? */
+bool isQVar(Cell c) {
     if (!isPair(c))
-        return FALSE;
+        return false;
     switch (fst(c)) {
     case VARIDCELL:
     case VAROPCELL:
-        return TRUE;
+        return true;
 
     case QUALIDENT:
         return isVar(snd(snd(c)));
 
     default:
-        return FALSE;
+        return false;
     }
 }
 
-Bool isQCon(Cell c) /*is cell a [un]qualified conop/id? */
-{
+/* Is cell a [un]qualified conop/id? */
+bool isQCon(Cell c) {
     if (!isPair(c))
-        return FALSE;
+        return false;
     switch (fst(c)) {
     case CONIDCELL:
     case CONOPCELL:
-        return TRUE;
+        return true;
 
     case QUALIDENT:
         return isCon(snd(snd(c)));
 
     default:
-        return FALSE;
+        return false;
     }
 }
 
-Bool isQualIdent(Cell c) /* is cell a qualified identifier?  */
-{
+/* Is cell a qualified identifier? */
+bool isQualIdent(Cell c) {
     return isPair(c) && (fst(c) == QUALIDENT);
 }
 
-Bool isIdent(Cell c) /* is cell an identifier?           */
-{
+/* Is cell an identifier? */
+bool isIdent(Cell c) {
     if (!isPair(c))
-        return FALSE;
+        return false;
     switch (fst(c)) {
     case VARIDCELL:
     case VAROPCELL:
     case CONIDCELL:
     case CONOPCELL:
-        return TRUE;
+        return true;
 
     case QUALIDENT:
-        return TRUE;
+        return true;
 
     default:
-        return FALSE;
+        return false;
     }
 }
 
-Bool isInt(Cell c) /* cell holds integer value?        */
-{
+/* Cell holds integer value? */
+bool isInt(Cell c) {
     return isSmall(c) || (isPair(c) && fst(c) == INTCELL);
 }
 
-Int intOf(Cell c) /* find integer value of cell?      */
-{
-    return isPair(c) ? (Int)(snd(c)) : (Int)(c - INTZERO);
+/* Find integer value of cell? */
+int intOf(Cell c) {
+    return isPair(c) ? (int)(snd(c)) : (int)(c - INTZERO);
 }
 
-Cell mkInt(Int n) /* make cell representing integer   */
-{
+/* Make cell representing integer */
+Cell mkInt(int n) {
     return (MINSMALLINT <= n && n <= MAXSMALLINT) ? INTZERO + n
                                                   : pair(INTCELL, n);
 }
@@ -2457,39 +2448,39 @@ Cell mkInt(Int n) /* make cell representing integer   */
  * the UNICODE value of the character as snd.
  * ------------------------------------------------------------------------*/
 
-Bool isChar(Cell c) /* cell holds character value?      */
-{
+/* Cell holds character value? */
+bool isChar(Cell c) {
     return isShortChar(c) || (isPair(c) && fst(c) == CHARCELL);
 }
 
-Char charOf(Cell c) /* find character value of cell?    */
-{
+/* Find character value of cell? */
+Char charOf(Cell c) {
     return isPair(c) ? (Char)(snd(c)) : (Char)(c - CHARMIN);
 }
 
-Cell mkChar(Char c) /* make cell representing character */
-{
+/* Make cell representing character */
+Cell mkChar(Char c) {
     return (0 <= c && c < NUM_SHORT_CHARS) ? CHARMIN + c : pair(CHARCELL, c);
 }
 
-Bool isBignum(Cell c) /* cell holds bignum value?         */
-{
+/* Cell holds bignum value? */
+bool isBignum(Cell c) {
     return c == ZERONUM ||
            (isPair(c) && (fst(c) == POSNUM || fst(c) == NEGNUM));
 }
 
 #if SIZEOF_INTP == SIZEOF_INT
 typedef union {
-    Int i;
-    Pointer p;
+    int i;
+    void *p;
 } IntOrPointer;
-Cell mkPtr(Pointer p) {
+Cell mkPtr(void *p) {
     IntOrPointer x;
     x.p = p;
     return pair(PTRCELL, x.i);
 }
 
-Pointer ptrOf(Cell c) {
+void *ptrOf(Cell c) {
     IntOrPointer x;
     assert(fst(c) == PTRCELL);
     x.i = snd(c);
@@ -2498,18 +2489,18 @@ Pointer ptrOf(Cell c) {
 #elif SIZEOF_INTP == 2 * SIZEOF_INT
 typedef union {
     struct {
-        Int i1;
-        Int i2;
+        int i1;
+        int i2;
     } i;
-    Pointer p;
+    void *p;
 } IntOrPointer;
-Cell mkPtr(Pointer p) {
+Cell mkPtr(void *p) {
     IntOrPointer x;
     x.p = p;
     return pair(PTRCELL, pair(mkInt(x.i.i1), mkInt(x.i.i2)));
 }
 
-Pointer ptrOf(Cell c) {
+void *ptrOf(Cell c) {
     IntOrPointer x;
     assert(fst(c) == PTRCELL);
     x.i.i1 = intOf(fst(snd(c)));
@@ -2518,13 +2509,13 @@ Pointer ptrOf(Cell c) {
 }
 #else
 # warning "type Ptr not supported on this architecture - don't use it"
-Cell mkPtr(Pointer p) {
+Cell mkPtr(void *p) {
     errHead(0);
     errPrintf("mkPtr: type Ptr not supported on this architecture");
     errFail();
 }
 
-Pointer ptrOf(Cell c) {
+void *ptrOf(Cell c) {
     errHead(0);
     errPrintf("ptrOf: type Ptr not supported on this architecture");
     errFail();
@@ -2535,16 +2526,16 @@ Pointer ptrOf(Cell c) {
  * List operations:
  * ------------------------------------------------------------------------*/
 
-Int length(List xs) /* calculate length of list xs      */
-{
-    Int n = 0;
+/* Calculate length of list xs */
+int length(List xs) {
+    int n = 0;
     for (; nonNull(xs); ++n)
         xs = tl(xs);
     return n;
 }
 
-List appendOnto(List xs, List ys) /* Destructively prepend xs onto    */
-{                                 /* ys by modifying xs ...           */
+/* Destructively prepend xs onto ys by modifying xs ... */
+List appendOnto(List xs, List ys) {
     if (isNull(xs))
         return ys;
     else {
@@ -2556,32 +2547,31 @@ List appendOnto(List xs, List ys) /* Destructively prepend xs onto    */
     }
 }
 
-List dupOnto(List xs,
-             List ys) /* non-destructively prepend xs backwards onto ys */
-{
+/* Non-destructively prepend xs backwards onto ys */
+List dupOnto(List xs, List ys) {
     for (; nonNull(xs); xs = tl(xs))
         ys = cons(hd(xs), ys);
     return ys;
 }
 
-List dupList(List xs) /* Duplicate spine of list xs       */
-{
+/* Duplicate spine of list xs */
+List dupList(List xs) {
     List ys = NIL;
     for (; nonNull(xs); xs = tl(xs))
         ys = cons(hd(xs), ys);
     return rev(ys);
 }
 
-List dupUpto(List xs, Cell c) /* Duplicate spine of list xs       */
-{
+/* Duplicate spine of list xs */
+List dupUpto(List xs, Cell c) {
     List ys = NIL;
     for (; nonNull(xs) && hd(xs) != c; xs = tl(xs))
         ys = cons(hd(xs), ys);
     return rev(ys);
 }
 
-List revOnto(List xs, List ys) /* Destructively reverse elements of*/
-{                              /* list xs onto list ys...          */
+/* Destructively reverse elements of list xs onto list ys... */
+List revOnto(List xs, List ys) {
     Cell zs;
 
     while (nonNull(xs)) {
@@ -2609,18 +2599,16 @@ List intersect(List xs, List ys) {
     return zs;
 }
 
-Cell varIsMember(Text t, List xs) /* Test if variable is a member of  */
-                                  /* given list of variables          */
-{
+/* Test if variable is a member of given list of variables */
+Cell varIsMember(Text t, List xs) {
     for (; nonNull(xs); xs = tl(xs))
         if (t == textOf(hd(xs)))
             return hd(xs);
     return NIL;
 }
 
-Name nameIsMember(Text t, List ns) /* Test if name with text t is a   */
-                                   /* member of list of names xs           */
-{
+/* Test if name with text t is a member of list of names xs */
+Name nameIsMember(Text t, List ns) {
     for (; nonNull(ns); ns = tl(ns)) {
         if (t == nameRec(hd(ns))->text) {
             return hd(ns);
@@ -2631,12 +2619,11 @@ Name nameIsMember(Text t, List ns) /* Test if name with text t is a   */
 
 /* Locating entities in import/export lists */
 
-Name nameInIEList(Name nm, List ns) /* Test if Name is a member of */
-                                    /* of import/export list xs.   */
-{
+/* Test if Name is a member of of import/export list xs. */
+Name nameInIEList(Name nm, List ns) {
     Text t = nameRec(nm)->text;
-    Bool isMethod = isClass(nameRec(nm)->parent);
-    Bool isDCon = isTycon(nameRec(nm)->parent) && !findTycon(nameRec(nm)->text);
+    bool isMethod = isClass(nameRec(nm)->parent);
+    bool isDCon = isTycon(nameRec(nm)->parent) && !findTycon(nameRec(nm)->text);
 
     for (; nonNull(ns); ns = tl(ns)) {
         if (isName(hd(ns)) && t == nameRec(hd(ns))->text) {
@@ -2663,9 +2650,8 @@ Name nameInIEList(Name nm, List ns) /* Test if Name is a member of */
     return NIL;
 }
 
-Tycon tyconInIEList(Text t, List ns) /* Test if Tycon with text t is a  */
-                                     /* member of import/export list xs */
-{
+/* Test if Tycon with text t is a member of import/export list xs */
+Tycon tyconInIEList(Text t, List ns) {
     for (; nonNull(ns); ns = tl(ns)) {
         if (isTycon(hd(ns)) && t == tyconRec(hd(ns))->text) {
             return hd(ns);
@@ -2677,9 +2663,8 @@ Tycon tyconInIEList(Text t, List ns) /* Test if Tycon with text t is a  */
     return NIL;
 }
 
-Class classInIEList(Text t, List ns) /* Test if Class with text t is a  */
-                                     /* member of import/export list xs */
-{
+/* Test if Class with text t is a member of import/export list xs */
+Class classInIEList(Text t, List ns) {
     for (; nonNull(ns); ns = tl(ns)) {
         if (isClass(hd(ns)) && t == cclassRec(hd(ns))->text) {
             return hd(ns);
@@ -2692,8 +2677,8 @@ Class classInIEList(Text t, List ns) /* Test if Class with text t is a  */
     return NIL;
 }
 
-List nubList(List ls) /* (non-destructively) remove duplicates from list */
-{
+/* (non-destructively) remove duplicates from list */
+List nubList(List ls) {
     List res = NIL;
 
     while (nonNull(ls)) {
@@ -2705,52 +2690,50 @@ List nubList(List ls) /* (non-destructively) remove duplicates from list */
     return res;
 }
 
-Cell intIsMember(Int n, List xs) /* Test if integer n is member of   */
-                                 /* given list of integers           */
-{
+/* Test if integer n is member of given list of integers */
+Cell intIsMember(int n, List xs) {
     for (; nonNull(xs); xs = tl(xs))
         if (n == intOf(hd(xs)))
             return hd(xs);
     return NIL;
 }
 
-Cell cellIsMember(Cell x, List xs) /* Test for membership of specific  */
-                                   /* cell x in list xs                */
-{
+/* Test for membership of specific cell x in list xs */
+Cell cellIsMember(Cell x, List xs) {
     for (; nonNull(xs); xs = tl(xs))
         if (x == hd(xs))
             return hd(xs);
     return NIL;
 }
 
-Cell cellAssoc(Cell c, List xs) /* Lookup cell in association list  */
-{
+/* Lookup cell in association list */
+Cell cellAssoc(Cell c, List xs) {
     for (; nonNull(xs); xs = tl(xs))
         if (c == fst(hd(xs)))
             return hd(xs);
     return NIL;
 }
 
-Cell cellRevAssoc(Cell c, List xs) /* Lookup cell in range of          */
-                                   /* association lists            */
-{
+/* Lookup cell in range of association lists */
+Cell cellRevAssoc(Cell c, List xs) {
     for (; nonNull(xs); xs = tl(xs))
         if (c == snd(hd(xs)))
             return hd(xs);
     return NIL;
 }
 
-List replicate(Int n, Cell x) /* create list of n copies of x      */
-{
+/* Create list of n copies of x */
+List replicate(int n, Cell x) {
     List xs = NIL;
     while (0 < n--)
         xs = cons(x, xs);
     return xs;
 }
 
-List diffList(List from, List take) /* list difference: from\take       */
-{                                   /* result contains all elements of  */
-    List result = NIL;              /* `from' not appearing in `take'   */
+/* List difference: from\take result contains all elements of `from' not
+ * appearing in `take' */
+List diffList(List from, List take) {
+    List result = NIL;
 
     while (nonNull(from)) {
         List next = tl(from);
@@ -2763,8 +2746,8 @@ List diffList(List from, List take) /* list difference: from\take       */
     return rev(result);
 }
 
-List deleteCell(List xs, Cell y) /* copy xs deleting pointers to y  */
-{
+/* Copy xs deleting pointers to y */
+List deleteCell(List xs, Cell y) {
     List result = NIL;
     for (; nonNull(xs); xs = tl(xs)) {
         Cell x = hd(xs);
@@ -2775,9 +2758,8 @@ List deleteCell(List xs, Cell y) /* copy xs deleting pointers to y  */
     return rev(result);
 }
 
-List take(Int n, List xs) /* destructively truncate list to  */
-                          /* specified length                */
-{
+/* Destructively truncate list to specified length */
+List take(int n, List xs) {
     List ys = xs;
 
     if (n == 0)
@@ -2789,16 +2771,16 @@ List take(Int n, List xs) /* destructively truncate list to  */
     return ys;
 }
 
-List splitAt(Int n, List xs) /* drop n things from front of list*/
-{
+/* Drop n things from front of list */
+List splitAt(int n, List xs) {
     for (; n > 0; --n) {
         xs = tl(xs);
     }
     return xs;
 }
 
-Cell nth(Int n, List xs) /* extract n'th element of list    */
-{
+/* Extract n'th element of list */
+Cell nth(int n, List xs) {
     for (; n > 0 && nonNull(xs); --n, xs = tl(xs)) {
     }
     if (isNull(xs))
@@ -2806,9 +2788,8 @@ Cell nth(Int n, List xs) /* extract n'th element of list    */
     return hd(xs);
 }
 
-List removeCell(Cell x, List xs) /* destructively remove cell from  */
-                                 /* list                            */
-{
+/* Destructively remove cell from list */
+List removeCell(Cell x, List xs) {
     if (nonNull(xs)) {
         if (hd(xs) == x)
             return tl(xs); /* element at front of list        */
@@ -2829,43 +2810,43 @@ List removeCell(Cell x, List xs) /* destructively remove cell from  */
  * Operations on applications:
  * ------------------------------------------------------------------------*/
 
-Int argCount; /* number of args in application    */
+int argCount; /* number of args in application    */
 
-Cell getHead(Cell e) /* get head cell of application     */
-{                    /* set number of args in argCount   */
+/* Get head cell of application set number of args in argCount */
+Cell getHead(Cell e) {
     for (argCount = 0; isAp(e); e = fun(e))
         argCount++;
     return e;
 }
 
-List getArgs(Cell e) /* get list of arguments in function*/
-{                    /* application:                     */
-    List as;         /* getArgs(f e1 .. en) = [e1,..,en] */
+/* Get list of arguments in function application: getArgs(f e1 .. en) =
+ * [e1,..,en] */
+List getArgs(Cell e) {
+    List as;
 
     for (as = NIL; isAp(e); e = fun(e))
         as = cons(arg(e), as);
     return as;
 }
 
-Cell nthArg(Int n, Cell e) /* return nth arg in application    */
-                           /* of function to m args (m>=n)     */
-{                          /* nthArg n (f x0 x1 ... xm) = xn   */
+/* Return nth arg in application of function to m args (m>=n) nthArg n (f x0 x1
+ * ... xm) = xn */
+Cell nthArg(int n, Cell e) {
     for (n = numArgs(e) - n - 1; n > 0; n--)
         e = fun(e);
     return arg(e);
 }
 
-Int numArgs(Cell e) /* find number of arguments to expr */
-{
-    Int n;
+/* Find number of arguments to expr */
+int numArgs(Cell e) {
+    int n;
     for (n = 0; isAp(e); e = fun(e))
         n++;
     return n;
 }
 
-Cell applyToArgs(Cell f, List args) /* destructively apply list of args */
-                                    /* to function f                    */
-{
+/* Destructively apply list of args to function f */
+Cell applyToArgs(Cell f, List args) {
     while (nonNull(args)) {
         Cell temp = tl(args);
         tl(args) = hd(args);
@@ -2888,9 +2869,9 @@ unsigned long num_handles = 0;
 /* --------------------------------------------------------------------------
  * Freeing a handle.
  * ------------------------------------------------------------------------*/
-static Void local freeHandle(Int n) /* release handle storage when no  */
-{                                   /* heap references to it remain    */
-    if (0 <= n && n < (Int)num_handles && nonNull(handles[n].hcell)) {
+/* Release handle storage when no heap references to it remain */
+static void freeHandle(int n) {
+    if (0 <= n && n < (int)num_handles && nonNull(handles[n].hcell)) {
         if (n > HSTDERR && handles[n].hmode != HCLOSED && handles[n].hfp) {
             fclose(handles[n].hfp);
             handles[n].hfp = 0;
@@ -2913,9 +2894,9 @@ int mallocPtr_hw;
  * unstable pointers.  
  * (It happens that we never use it with unstable pointers.)
  */
-Cell newMallocPtr(Pointer ptr) /* create a new malloc pointer     */
-{
-    Int i;
+/* Create a new malloc pointer */
+Cell newMallocPtr(void *ptr) {
+    int i;
     for (i = 0; i < NUM_MALLOCPTRS && mallocPtrs[i].refCount != 0; ++i)
         ;                      /* Search for unused entry */
     if (i >= NUM_MALLOCPTRS) { /* If at first we don't    */
@@ -2939,20 +2920,19 @@ Cell newMallocPtr(Pointer ptr) /* create a new malloc pointer     */
     return (mallocPtrs[i].mpcell = ap(MPCELL, i));
 }
 
-Cell mkMallocPtr(Pointer ptr,
-                 CFinalizer cleanup) /* create a new malloc pointer    */
-{
+/* Create a new malloc pointer */
+Cell mkMallocPtr(void *ptr, CFinalizer cleanup) {
     Cell mp;
-    Int i;
+    int i;
     mp = newMallocPtr(ptr);
     i = mpOf(mp);
     mallocPtrs[i].finalizers =
-        cons(mkPtr((Pointer)cleanup), mallocPtrs[i].finalizers);
+        cons(mkPtr((void *)cleanup), mallocPtrs[i].finalizers);
     return mp;
 }
 
-Void incMallocPtrRefCnt(Int n, Int i) /* change ref count of MallocPtr */
-{
+/* Change ref count of MallocPtr */
+void incMallocPtrRefCnt(int n, int i) {
     if (!(0 <= n && n < NUM_MALLOCPTRS && mallocPtrs[n].refCount > 0))
         internal("freeMallocPtr");
     mallocPtrs[n].refCount += i;
@@ -3000,52 +2980,52 @@ Void incMallocPtrRefCnt(Int n, Int i) /* change ref count of MallocPtr */
  * It follows that stable pointers are strictly positive (>0).
  */
 static Cell stablePtrTable[NUM_STABLEPTRS];
-static Bool stablePtrFree[NUM_STABLEPTRS]; /* whether slot sp is on the    */
+static bool stablePtrFree[NUM_STABLEPTRS]; /* whether slot sp is on the    */
                                            /* free list, to catch double  */
                                            /* frees (the free list link   */
                                            /* and a live Cell share the   */
                                            /* same slot, so there's no    */
                                            /* other way to tell them apart*/
-static Int sptFreeList;
+static int sptFreeList;
 #define SPT(sp) stablePtrTable[(sp) - 1]
 #define SPTFREE(sp) stablePtrFree[(sp) - 1]
 
-static Void local resetStablePtrs() {
-    Int i;
+static void resetStablePtrs(void) {
+    int i;
     /* It would be easier to build the free list in the other direction
      * but, when debugging, it's way easier to understand if the first
      * pointer allocated is "1".
      */
     for (i = 1; i < NUM_STABLEPTRS; ++i) {
         SPT(i) = i + 1;
-        SPTFREE(i) = TRUE;
+        SPTFREE(i) = true;
     }
     SPT(NUM_STABLEPTRS) = 0;
-    SPTFREE(NUM_STABLEPTRS) = TRUE;
+    SPTFREE(NUM_STABLEPTRS) = true;
     sptFreeList = 1;
 }
 
-Int mkStablePtr(Cell c) /* Create a stable pointer            */
-{
-    Int i = sptFreeList;
+/* Create a stable pointer */
+int mkStablePtr(Cell c) {
+    int i = sptFreeList;
     if (i == 0)
         return 0;
     sptFreeList = SPT(i);
     SPT(i) = c;
-    SPTFREE(i) = FALSE;
+    SPTFREE(i) = false;
     return i;
 }
 
-Cell derefStablePtr(Int p) /* Dereference a stable pointer       */
-{
+/* Dereference a stable pointer */
+Cell derefStablePtr(int p) {
     if (!(1 <= p && p <= NUM_STABLEPTRS)) {
         internal("derefStablePtr");
     }
     return SPT(p);
 }
 
-Void freeStablePtr(Int i) /* Free a stable pointer             */
-{
+/* Free a stable pointer */
+void freeStablePtr(int i) {
     if (!(1 <= i && i <= NUM_STABLEPTRS)) {
         internal("freeStablePtr");
     }
@@ -3053,7 +3033,7 @@ Void freeStablePtr(Int i) /* Free a stable pointer             */
         return;     /* same as C's free(); it must not corrupt the    */
                     /* free list by threading it into itself           */
     SPT(i) = sptFreeList;
-    SPTFREE(i) = TRUE;
+    SPTFREE(i) = true;
     sptFreeList = i;
 }
 
@@ -3132,8 +3112,8 @@ void growDynTable(DynTable *tab) {
     }
 }
 
-Void controlFuns(Int what) {
-    Int i;
+void controlFuns(int what) {
+    int i;
     struct primInfoDef *info_def = firstPrimInfo;
     for (; 0 != info_def; info_def = info_def->nextPrimInfoDef) {
         if (info_def->p_info->controlFun) {
@@ -3161,8 +3141,8 @@ Void controlFuns(Int what) {
     }
 }
 
-Void storage(Int what) {
-    Int i;
+void storage(int what) {
+    int i;
 
     switch (what) {
     case RESET:
@@ -3186,7 +3166,7 @@ Void storage(Int what) {
                 argvInit(&cmd);
                 argvWord(&cmd, "hp2ps");
                 argvWord(&cmd, "profile.hp");
-                argvRun(&cmd, TRUE);
+                argvRun(&cmd, true);
                 argvFree(&cmd);
             }
 # endif
@@ -3201,11 +3181,11 @@ Void storage(Int what) {
         handles[HSTDERR].hbufMode = HUNKNOWN_BUFFERING;
 #if CHAR_ENCODING
         handles[HSTDIN].hLookAhead = -1;
-        handles[HSTDIN].hBinaryMode = FALSE;
-        handles[HSTDOUT].hBinaryMode = FALSE;
-        handles[HSTDERR].hBinaryMode = FALSE;
+        handles[HSTDIN].hBinaryMode = false;
+        handles[HSTDOUT].hBinaryMode = false;
+        handles[HSTDERR].hBinaryMode = false;
 #endif /* CHAR_ENCODING */
-        consGC = TRUE;
+        consGC = true;
         lsave = NIL;
         rsave = NIL;
         if (isNull(lastExprSaved))
@@ -3334,7 +3314,7 @@ Void storage(Int what) {
         snd(-heapSize) = NIL;
         freeList = -1;
         numGcs = 0;
-        consGC = TRUE;
+        consGC = true;
         lsave = NIL;
         rsave = NIL;
 
@@ -3350,7 +3330,7 @@ Void storage(Int what) {
         handles = (struct strHandle *)(dynTabHandles->data);
         num_handles = dynTabHandles->maxIdx;
         clearStack();
-        for (i = 0; i < (Int)num_handles; i++)
+        for (i = 0; i < (int)num_handles; i++)
             handles[i].hcell = NIL;
 
         handles[HSTDIN].hcell = ap(HANDCELL, HSTDIN);

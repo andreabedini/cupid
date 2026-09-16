@@ -5,10 +5,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: type.c,v $
- * $Revision: 1.81 $
- * $Date: 2005/12/10 11:25:13 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -23,7 +19,7 @@
 #include "goal.h"
 #include "opts.h" /* IWYU pragma: keep -- showInstRes, under EXPLAIN_INSTANCE_RESOLUTION */
 
-Bool catchAmbigs = FALSE; /* TRUE => functions with ambig.   */
+bool catchAmbigs = false; /* true => functions with ambig.   */
                           /*       types produce error     */
 
 Type typeArrow, typeList; /* Important primitive types     */
@@ -121,79 +117,79 @@ Name nameUndefinedElement;
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local emptyAssumption(Void);
-static Void local enterBindings(Void);
-static Void local leaveBindings(Void);
-static Int local defType(Cell);
-static Type local useType(Cell);
-static Void local markAssumList(List);
-static Cell local findAssum(Text);
-static Pair local findInAssumList(Text, List);
-static List local intsIntersect(List, List);
-static List local genvarAllAss(List);
-static List local genvarAnyAss(List);
-static Int local newVarsBind(Cell);
-static Void local newDefnBind(Cell, Type);
+static void emptyAssumption(void);
+static void enterBindings(void);
+static void leaveBindings(void);
+static int defType(Cell);
+static Type useType(Cell);
+static void markAssumList(List);
+static Cell findAssum(Text);
+static Pair findInAssumList(Text, List);
+static List intsIntersect(List, List);
+static List genvarAllAss(List);
+static List genvarAnyAss(List);
+static int newVarsBind(Cell);
+static void newDefnBind(Cell, Type);
 
-static Void local enterPendingBtyvs(Void);
-static Void local leavePendingBtyvs(Void);
-static Cell local patBtyvs(Cell);
-static Void local doneBtyvs(Int);
-static Void local enterScope(Void);
-static Void local leaveScope(Int, Type, Int, Int);
+static void enterPendingBtyvs(void);
+static void leavePendingBtyvs(void);
+static Cell patBtyvs(Cell);
+static void doneBtyvs(int);
+static void enterScope(void);
+static void leaveScope(int, Type, int, int);
 
-static Void local typeError(Int, Cell, Cell, String, Type, Int);
-static Void local reportTypeError(Int, Cell, Cell, String, Type, Type);
-static Void local cantEstablish(Int, String, Cell, Type, List);
-static Void local tooGeneral(Int, Cell, Type, Type);
+static void typeError(int, Cell, Cell, char *, Type, int);
+static void reportTypeError(int, Cell, Cell, char *, Type, Type);
+static void cantEstablish(int, char *, Cell, Type, List);
+static void tooGeneral(int, Cell, Type, Type);
 
-static Cell local typeExpr(Int, Cell);
+static Cell typeExpr(int, Cell);
 
-static Cell local typeAp(Int, Cell);
-static Type local typeExpected(Int, String, Cell, Type, Int, Int, Bool);
-static Void local typeAlt(String, Cell, Cell, Type, Int, Int);
-static Int local funcType(Int);
-static Void local typeCase(Int, Int, Cell);
-static Void local typeComp(Int, Type, Cell, List);
-static Cell local typeMonadComp(Int, Cell);
-static Void local typeDo(Int, Cell);
-static Void local typeConFlds(Int, Cell);
-static Void local typeUpdFlds(Int, Cell);
-static Cell local typeFreshPat(Int, Cell);
+static Cell typeAp(int, Cell);
+static Type typeExpected(int, char *, Cell, Type, int, int, bool);
+static void typeAlt(char *, Cell, Cell, Type, int, int);
+static int funcType(int);
+static void typeCase(int, int, Cell);
+static void typeComp(int, Type, Cell, List);
+static Cell typeMonadComp(int, Cell);
+static void typeDo(int, Cell);
+static void typeConFlds(int, Cell);
+static void typeUpdFlds(int, Cell);
+static Cell typeFreshPat(int, Cell);
 
-static Void local typeBindings(List);
-static Void local removeTypeSigs(Cell);
+static void typeBindings(List);
+static void removeTypeSigs(Cell);
 
-static Void local monorestrict(List);
-static Void local restrictedBindAss(Cell);
-static Void local restrictedAss(Int, Cell, Type);
+static void monorestrict(List);
+static void restrictedBindAss(Cell);
+static void restrictedAss(int, Cell, Type);
 
-static Void local unrestricted(List);
-static List local itbscc(List);
-static Void local addEvidParams(List, Cell);
+static void unrestricted(List);
+static List itbscc(List);
+static void addEvidParams(List, Cell);
 
-static Void local typeClassDefn(Class);
-static Void local typeInstDefn(Inst);
-static Void local typeMember(String, Name, Cell, List, Cell, Int);
+static void typeClassDefn(Class);
+static void typeInstDefn(Inst);
+static void typeMember(char *, Name, Cell, List, Cell, int);
 
-static Void local typeBind(Cell);
-static Void local typeDefAlt(Int, Cell, Pair);
-static Cell local typeRhs(Cell);
-static Void local guardedType(Int, Cell);
+static void typeBind(Cell);
+static void typeDefAlt(int, Cell, Pair);
+static Cell typeRhs(Cell);
+static void guardedType(int, Cell);
 
-static Void local genBind(List, Cell);
-static Void local genAss(Int, List, Cell, Type);
-static Type local genTest(Int, Cell, List, Type, Type, Int);
-static Type local generalize(List, Type);
-static Bool local equalTypes(Type, Type);
+static void genBind(List, Cell);
+static void genAss(int, List, Cell, Type);
+static Type genTest(int, Cell, List, Type, Type, int);
+static Type generalize(List, Type);
+static bool equalTypes(Type, Type);
 
-static Void local typeDefnGroup(List);
-static Void local typeForeignExport(Name);
-static Pair local typeSel(Name);
+static void typeDefnGroup(List);
+static void typeForeignExport(Name);
+static Pair typeSel(Name);
 
-static Name local linkName(String);
-static Tycon local linkTycon(String);
-static Class local linkClass(String);
+static Name linkName(char *);
+static Tycon linkTycon(char *);
+static Class linkClass(char *);
 
 /* --------------------------------------------------------------------------
  * Frequently used type skeletons:
@@ -253,56 +249,60 @@ typedef struct {
 } TcScope;
 
 static TcScope *scopes = 0; /* the open scopes, innermost last */
-static Int numScopes = 0;
-static Int maxScopes = 0;
+static int numScopes = 0;
+static int maxScopes = 0;
 
 #define scope() (scopes + numScopes - 1) /* the innermost open scope       */
 
 #define addVarAssump(v, t) hd(varsBounds) = cons(pair(v, t), hd(varsBounds))
 #define findTopBinding(v) findInAssumList(textOf(v), hd(defnBounds))
 
-static Void local emptyAssumption() { /* set empty type assumption         */
+/* Set empty type assumption */
+static void emptyAssumption(void) {
     defnBounds = NIL;
     varsBounds = NIL;
     depends = NIL;
     numScopes = 0;
 }
 
-static Void local enterBindings() { /* Add new level to assumption sets */
+/* Add new level to assumption sets */
+static void enterBindings(void) {
     defnBounds = cons(NIL, defnBounds);
     varsBounds = cons(NIL, varsBounds);
     depends = cons(NIL, depends);
 }
 
-static Void local leaveBindings() { /* Drop one level of assumptions    */
+/* Drop one level of assumptions */
+static void leaveBindings(void) {
     defnBounds = tl(defnBounds);
     varsBounds = tl(varsBounds);
     depends = tl(depends);
 }
 
-static Int local defType(Cell a) /* Return type for defining occ.   */
-{                                /* of a var from assumption pair  */
+/* Return type for defining occ. of a var from assumption pair */
+static int defType(Cell a) {
     return (isPair(a) && fst(a) == POLYREC) ? fst(snd(a)) : a;
 }
 
-static Type local useType(Cell a) /* Return type for use of a var          */
-{                                 /* defined in an assumption      */
+/* Return type for use of a var defined in an assumption */
+static Type useType(Cell a) {
     return (isPair(a) && fst(a) == POLYREC) ? snd(snd(a)) : a;
 }
 
-static Void local markAssumList(List as) /* Mark all types in assumption set*/
-{                                        /* :: [(Var, Type)]               */
-    for (; nonNull(as); as = tl(as)) {   /* No need to mark generic types;  */
-        Type t = defType(snd(hd(as)));   /* the only free variables in those*/
-        if (!isPolyType(t))              /* must have been free earlier too */
+/* Mark all types in assumption set :: [(Var, Type)] */
+static void markAssumList(List as) {
+    for (; nonNull(as); as = tl(as)) { /* No need to mark generic types;  */
+        Type t = defType(snd(hd(as))); /* the only free variables in those*/
+        if (!isPolyType(t))            /* must have been free earlier too */
             markType(t, 0);
     }
 }
 
-static Cell local findAssum(Text t) /* Find most recent assumption about*/
-{                                   /* variable named t, if any    */
-    List defnBounds1 = defnBounds;  /* return translated variable, with */
-    List varsBounds1 = varsBounds;  /* type in typeIs              */
+/* Find most recent assumption about variable named t, if any return translated
+ * variable, with type in typeIs */
+static Cell findAssum(Text t) {
+    List defnBounds1 = defnBounds;
+    List varsBounds1 = varsBounds;
     List depends1 = depends;
 
     while (nonNull(defnBounds1)) {
@@ -335,20 +335,17 @@ static Cell local findAssum(Text t) /* Find most recent assumption about*/
     return NIL;
 }
 
-static Pair local
-findInAssumList(Text t, List as) /* Search for assumption for var    */
-                                 /* named t in list of assumptions as*/
-{
+/* Search for assumption for var named t in list of assumptions as */
+static Pair findInAssumList(Text t, List as) {
     for (; nonNull(as); as = tl(as))
         if (textOf(fst(hd(as))) == t)
             return hd(as);
     return NIL;
 }
 
-static List local intsIntersect(List as,
-                                List bs) /* calculate intersection of lists */
-{                                        /* of integers (as sets)          */
-    List ts = NIL;                       /* destructively modifies as      */
+/* Calculate intersection of lists of integers (as sets) */
+static List intsIntersect(List as, List bs) {
+    List ts = NIL; /* destructively modifies as      */
     while (nonNull(as))
         if (intIsMember(intOf(hd(as)), bs)) {
             List temp = tl(as);
@@ -360,34 +357,32 @@ static List local intsIntersect(List as,
     return ts;
 }
 
-static List local genvarAllAss(List as) /* calculate generic vars that are */
-{                                       /* in every type in assumptions as */
+/* Calculate generic vars that are in every type in assumptions as */
+static List genvarAllAss(List as) {
     List vs = genvarTyvar(intOf(defType(snd(hd(as)))), NIL);
     for (as = tl(as); nonNull(as) && nonNull(vs); as = tl(as))
         vs = intsIntersect(vs, genvarTyvar(intOf(defType(snd(hd(as)))), NIL));
     return vs;
 }
 
-static List local genvarAnyAss(List as) /* calculate generic vars that are */
-{                                       /* in any type in assumptions as   */
+/* Calculate generic vars that are in any type in assumptions as */
+static List genvarAnyAss(List as) {
     List vs = genvarTyvar(intOf(defType(snd(hd(as)))), NIL);
     for (as = tl(as); nonNull(as); as = tl(as))
         vs = genvarTyvar(intOf(defType(snd(hd(as)))), vs);
     return vs;
 }
 
-static Int local newVarsBind(Cell v) /* make new assump for pattern var  */
-{
-    Int beta = newTyvars(1);
+/* Make new assump for pattern var */
+static int newVarsBind(Cell v) {
+    int beta = newTyvars(1);
     addVarAssump(v, mkInt(beta));
     return beta;
 }
 
-static Void local newDefnBind(Cell v,
-                              Type type) /* make new assump for defn var     */
-                                         /* and set type if given (nonNull)  */
-{
-    Int beta = newTyvars(1);
+/* Make new assump for defn var and set type if given (nonNull) */
+static void newDefnBind(Cell v, Type type) {
+    int beta = newTyvars(1);
     Cell ta = mkInt(beta);
     instantiate(type);
     if (nonNull(type) && isPolyType(type))
@@ -402,18 +397,18 @@ static Void local newDefnBind(Cell v,
 
 static List pendingBtyvs = NIL;
 
-static Void local enterPendingBtyvs() {
+static void enterPendingBtyvs(void) {
     enterBtyvs();
     pendingBtyvs = cons(NIL, pendingBtyvs);
 }
 
-static Void local leavePendingBtyvs() {
+static void leavePendingBtyvs(void) {
     List pts = hd(pendingBtyvs);
     pendingBtyvs = tl(pendingBtyvs);
     for (; nonNull(pts); pts = tl(pts)) {
-        Int line = intOf(fst(hd(pts)));
+        int line = intOf(fst(hd(pts)));
         List vs = snd(hd(pts));
-        Int i = 0;
+        int i = 0;
         clearMarks();
         for (; nonNull(vs); vs = tl(vs)) {
             Cell v = fst(hd(vs));
@@ -428,7 +423,7 @@ static Void local leavePendingBtyvs() {
                 errFail();
             } else if (offsetOf(t) != i) {
                 List us = snd(hd(pts));
-                Int j = offsetOf(t);
+                int j = offsetOf(t);
                 if (j >= i)
                     internal("leavePendingBtyvs");
                 for (; j > 0; j--)
@@ -447,12 +442,12 @@ static Void local leavePendingBtyvs() {
     leaveBtyvs();
 }
 
-static Cell local patBtyvs(Cell p) /* Strip bound type vars from pat  */
-{
+/* Strip bound type vars from pat */
+static Cell patBtyvs(Cell p) {
     if (whatIs(p) == BIGLAM) {
         List bts = hd(btyvars) = fst(snd(p));
         for (p = snd(snd(p)); nonNull(bts); bts = tl(bts)) {
-            Int beta = newTyvars(1);
+            int beta = newTyvars(1);
             tyvar(beta)->kind = snd(hd(bts));
             snd(hd(bts)) = mkInt(beta);
         }
@@ -460,7 +455,7 @@ static Cell local patBtyvs(Cell p) /* Strip bound type vars from pat  */
     return p;
 }
 
-static Void local doneBtyvs(Int l) {
+static void doneBtyvs(int l) {
     if (nonNull(hd(btyvars))) { /* Save bound tyvars               */
         hd(pendingBtyvs) = cons(pair(mkInt(l), hd(btyvars)), hd(pendingBtyvs));
         hd(btyvars) = NIL;
@@ -483,10 +478,10 @@ static Void local doneBtyvs(Int l) {
  * one, so they are kept apart.
  * ------------------------------------------------------------------------*/
 
-static Void local enterScope() {
+static void enterScope(void) {
     TcScope *sc;
     if (numScopes == maxScopes) {
-        Int more = maxScopes ? 2 * maxScopes : 64;
+        int more = maxScopes ? 2 * maxScopes : 64;
         TcScope *grown = realloc(scopes, more * sizeof(TcScope));
         if (!grown) {
             errHead(0);
@@ -503,7 +498,7 @@ static Void local enterScope() {
     preds = NIL;
 }
 
-static Void local leaveScope(Int l, Type t, Int o, Int m) {
+static void leaveScope(int l, Type t, int o, int m) {
     TcScope *sc = scope();
 
     if (nonNull(sc->givens)) { /* Check for local predicates       */
@@ -524,7 +519,7 @@ static Void local leaveScope(Int l, Type t, Int o, Int m) {
 
     if (nonNull(sc->skolems)) { /* Check that Skolem vars do not   */
         List vs;                /* escape their scope              */
-        Int i = 0;
+        int i = 0;
 
         clearMarks();      /* Look for occurences in the           */
         for (; i < m; i++) /* inferred type                */
@@ -532,7 +527,7 @@ static Void local leaveScope(Int l, Type t, Int o, Int m) {
         markType(t, o);
 
         for (vs = sc->skolems; nonNull(vs); vs = tl(vs)) {
-            Int vn = intOf(fst(hd(vs)));
+            int vn = intOf(fst(hd(vs)));
             if (tyvar(vn)->offs == FIXED_TYVAR) {
                 Cell tv = copyTyvar(vn);
                 Type ty = liftRank2(t, o, m);
@@ -556,7 +551,7 @@ static Void local leaveScope(Int l, Type t, Int o, Int m) {
         mapProc(markPred, preds);
 
         for (vs = sc->skolems; nonNull(vs); vs = tl(vs)) {
-            Int vn = intOf(fst(hd(vs)));
+            int vn = intOf(fst(hd(vs)));
             if (tyvar(vn)->offs == FIXED_TYVAR) {
                 errHead(l);
                 errPrintf(
@@ -575,13 +570,10 @@ static Void local leaveScope(Int l, Type t, Int o, Int m) {
  * Type errors:
  * ------------------------------------------------------------------------*/
 
-static Void local typeError(Int l, Cell e, Cell in, String wh, Type t, Int o)
-/* line number near type error     */
-/* source of error                 */
-/* context if any (NIL if not)     */
-/* place in which error occurs     */
-/* should be of type (t,o)         */
-{ /* type inferred is (typeIs,typeOff) */
+/* Line number near type error source of error context if any (NIL if not)
+ * place in which error occurs should be of type (t,o) type inferred is
+ * (typeIs,typeOff) */
+static void typeError(int l, Cell e, Cell in, char *wh, Type t, int o) {
 
     clearMarks(); /* types printed here are monotypes  */
                   /* use marking to give sensible names*/
@@ -589,10 +581,9 @@ static Void local typeError(Int l, Cell e, Cell in, String wh, Type t, Int o)
     reportTypeError(l, e, in, wh, copyType(typeIs, typeOff), copyType(t, o));
 }
 
-static Void local reportTypeError(Int l, Cell e, Cell in, String wh, Type inft,
-                                  Type expt)
-/* Error printing part of typeError*/
-{
+/* Error printing part of typeError */
+static void reportTypeError(int l, Cell e, Cell in, char *wh, Type inft,
+                            Type expt) {
     errHead(l);
     errPrintf("Type error in %s", wh);
     if (nonNull(in)) {
@@ -612,24 +603,22 @@ static Void local reportTypeError(Int l, Cell e, Cell in, String wh, Type inft,
     errFail();
 }
 
-static Void local shouldBe(Int l, Cell e, Cell in, String where, Type t,
-                           Int o) { /* unify the inferred type with (t,o) */
+/* Unify the inferred type with (t,o) */
+static void shouldBe(int l, Cell e, Cell in, char *where, Type t, int o) {
     if (!unify(typeIs, typeOff, t, o))
         typeError(l, e, in, where, t, o);
 }
 
-static Cell local check(Int l, Cell e, Cell in, String where, Type t,
-                        Int o) { /* type check e against (t,o); returns */
-    e = typeExpr(l, e);          /* the translated e               */
+/* Type check e against (t,o); returns the translated e */
+static Cell check(int l, Cell e, Cell in, char *where, Type t, int o) {
+    e = typeExpr(l, e);
     shouldBe(l, e, in, where, t, o);
     return e;
 }
 
-static Void local cantEstablish(Int line, String wh, Cell e, Type t, List ps)
-/* Complain when declared preds    */
-/* are not sufficient to discharge */
-/* or defer the inferred context.  */
-{
+/* Complain when declared preds are not sufficient to discharge or defer the
+ * inferred context. */
+static void cantEstablish(int line, char *wh, Cell e, Type t, List ps) {
     errHead(line);
     errPrintf("Cannot justify constraints in %s", wh);
     errPrintf("\n*** Expression    : ");
@@ -644,9 +633,8 @@ static Void local cantEstablish(Int line, String wh, Cell e, Type t, List ps)
     errFail();
 }
 
-static Void local tooGeneral(Int l, Cell e, Type dt,
-                             Type it) /* explicit type sig. too general  */
-{
+/* Explicit type sig. too general */
+static void tooGeneral(int l, Cell e, Type dt, Type it) {
     errHead(l);
     errPrintf("Inferred type is not general enough");
     errPrintf("\n*** Expression    : ");
@@ -668,15 +656,15 @@ static Void local tooGeneral(Int l, Cell e, Type dt,
 #define OLD_PATTERN 2 /* pattern, involving bound vars   */
 static int tcMode = EXPRESSION;
 
-static Cell local typeExpr(Int l, Cell e) /* Determine type of expr/pattern  */
-{
+/* Determine type of expr/pattern */
+static Cell typeExpr(int l, Cell e) {
     stackCheck();
-    static String cond = "conditional";
-    static String list = "list";
-    static String discr = "case discriminant";
-    static String aspat = "as (@) pattern";
-    static String typeSig = "type annotation";
-    static String lambda = "lambda expression";
+    static char *cond = "conditional";
+    static char *list = "list";
+    static char *discr = "case discriminant";
+    static char *aspat = "as (@) pattern";
+    static char *typeSig = "type annotation";
+    static char *lambda = "lambda expression";
 
     switch (whatIs(e)) {
 
@@ -695,18 +683,18 @@ static Cell local typeExpr(Int l, Cell e) /* Determine type of expr/pattern  */
     case POSNUM:
     case ZERONUM:
     case NEGNUM: {
-        Int alpha = newTyvars(1);
+        int alpha = newTyvars(1);
         inferType(aVar, alpha);
         return ap(ap(nameFromInteger, assumeEvid(predNum, alpha)), e);
     }
     case INTCELL: {
-        Int alpha = newTyvars(1);
+        int alpha = newTyvars(1);
         inferType(aVar, alpha);
         return ap(ap(nameFromInt, assumeEvid(predNum, alpha)), e);
     }
 
     case DOUBLECELL: {
-        Int alpha = newTyvars(1);
+        int alpha = newTyvars(1);
         inferType(aVar, alpha);
         return ap(ap(nameFromDouble, assumeEvid(predFractional, alpha)), e);
     }
@@ -725,7 +713,7 @@ static Cell local typeExpr(Int l, Cell e) /* Determine type of expr/pattern  */
 
     case ESIGN:
         snd(snd(e)) = localizeBtyvs(snd(snd(e)));
-        return typeExpected(l, typeSig, fst(snd(e)), snd(snd(e)), 0, 0, FALSE);
+        return typeExpected(l, typeSig, fst(snd(e)), snd(snd(e)), 0, 0, false);
 
         /* The following cases can only occur in expr mode                 */
 
@@ -734,7 +722,7 @@ static Cell local typeExpr(Int l, Cell e) /* Determine type of expr/pattern  */
         break;
 
     case COND: {
-        Int beta = newTyvars(1);
+        int beta = newTyvars(1);
         fst3(snd(e)) = check(l, fst3(snd(e)), e, cond, typeBool, 0);
         snd3(snd(e)) = check(l, snd3(snd(e)), e, cond, aVar, beta);
         thd3(snd(e)) = check(l, thd3(snd(e)), e, cond, aVar, beta);
@@ -751,7 +739,7 @@ static Cell local typeExpr(Int l, Cell e) /* Determine type of expr/pattern  */
         break;
 
     case FINLIST: {
-        Int beta = newTyvars(1);
+        int beta = newTyvars(1);
         List xs;
         for (xs = snd(e); nonNull(xs); xs = tl(xs)) {
             hd(xs) = check(l, hd(xs), e, list, aVar, beta);
@@ -767,14 +755,14 @@ static Cell local typeExpr(Int l, Cell e) /* Determine type of expr/pattern  */
         return typeMonadComp(l, e);
 
     case CASE: {
-        Int beta = newTyvars(2); /* discr result */
+        int beta = newTyvars(2); /* discr result */
         fst(snd(e)) = check(l, fst(snd(e)), NIL, discr, aVar, beta);
         map2Proc(typeCase, l, beta, snd(snd(e)));
         tyvarType(beta + 1);
     } break;
 
     case LAMBDA: {
-        Int beta = newTyvars(1);
+        int beta = newTyvars(1);
         enterPendingBtyvs();
         typeAlt(lambda, e, snd(e), aVar, beta, 1);
         leavePendingBtyvs();
@@ -788,7 +776,7 @@ static Cell local typeExpr(Int l, Cell e) /* Determine type of expr/pattern  */
         break;
 
     case ASPAT: {
-        Int beta = newTyvars(1);
+        int beta = newTyvars(1);
         snd(snd(e)) = typeExpr(l, snd(snd(e)));
         bindTv(beta, typeIs, typeOff);
         fst(snd(e)) = check(l, fst(snd(e)), e, aspat, aVar, beta);
@@ -810,15 +798,15 @@ static Cell local typeExpr(Int l, Cell e) /* Determine type of expr/pattern  */
  * Typing rules for particular special forms:
  * ------------------------------------------------------------------------*/
 
-static Cell local typeAp(Int l, Cell e) /* Type check application, which   */
-                                        /* may be headed with a variable   */
-{                                       /* requires polymorphism, qualified*/
-    static String app = "application";  /* types, and possible rank2 args. */
+/* Type check application, which may be headed with a variable requires
+ * polymorphism, qualified types, and possible rank2 args. */
+static Cell typeAp(int l, Cell e) {
+    static char *app = "application";
     Cell h = getHead(e);
-    Int n = argCount;
+    int n = argCount;
     Cell p = NIL;
     Cell a = e;
-    Int i;
+    int i;
 
     switch (whatIs(h)) {
     case NAME:
@@ -878,12 +866,12 @@ static Cell local typeAp(Int l, Cell e) /* Type check application, which   */
     }
 
     if (whatIs(typeIs) == EXIST) { /* Deal with existential arguments */
-        Int n = intOf(fst(snd(typeIs)));
+        int n = intOf(fst(snd(typeIs)));
         typeIs = snd(snd(typeIs));
         if (!isCfun(getHead(h)) || n > typeFree) {
             internal("typeAp2");
         } else if (tcMode != EXPRESSION) {
-            Int alpha = typeOff + typeFree;
+            int alpha = typeOff + typeFree;
             for (; n > 0; n--) {
                 bindTv(alpha - n, SKOLEM, 0);
                 scope()->skolems =
@@ -893,12 +881,12 @@ static Cell local typeAp(Int l, Cell e) /* Type check application, which   */
     }
 
     if (whatIs(typeIs) == RANK2) { /* Deal with rank 2 arguments           */
-        Int alpha = typeOff;
-        Int m = typeFree;
-        Int nr2 = intOf(fst(snd(typeIs)));
+        int alpha = typeOff;
+        int m = typeFree;
+        int nr2 = intOf(fst(snd(typeIs)));
         Type body = snd(snd(typeIs));
         List as = e;
-        Bool added = FALSE;
+        bool added = false;
 
         if (n < nr2) { /* Must have enough arguments       */
             errHead(l);
@@ -921,7 +909,7 @@ static Cell local typeAp(Int l, Cell e) /* Type check application, which   */
             if (isPolyOrQualType(expect)) {
                 if (tcMode == EXPRESSION) /* poly/qual type in expr  */
                     hd(as) =
-                        typeExpected(l, app, hd(as), expect, alpha, m, TRUE);
+                        typeExpected(l, app, hd(as), expect, alpha, m, true);
                 else if (hd(as) != WILDCARD) { /* Pattern binding/match   */
                     if (!isVar(hd(as))) {
                         errHead(l);
@@ -936,7 +924,7 @@ static Cell local typeAp(Int l, Cell e) /* Type check application, which   */
                         if (m > 0 && !added) {
                             for (i = 0; i < m; i++)
                                 addVarAssump(dummyVar, mkInt(alpha + i));
-                            added = TRUE;
+                            added = true;
                         }
                         addVarAssump(hd(as), expect);
                     } else { /* Pattern binding    */
@@ -967,7 +955,7 @@ static Cell local typeAp(Int l, Cell e) /* Type check application, which   */
     }
 
     if (n > 0) {                /* Deal with remaining args        */
-        Int beta = funcType(n); /* check h::t1->t2->...->tn->rn+1  */
+        int beta = funcType(n); /* check h::t1->t2->...->tn->rn+1  */
         shouldBe(l, h, e, app, aVar, beta);
         for (i = n; i > 0; --i) { /* check e_i::t_i for each i     */
             arg(a) = check(l, arg(a), e, app, aVar, beta + 2 * i - 1);
@@ -985,19 +973,16 @@ static Cell local typeAp(Int l, Cell e) /* Type check application, which   */
     return e;
 }
 
-static Cell local typeExpected(Int l, String wh, Cell e, Type reqd, Int alpha,
-                               Int n, Bool addEvid)
-/* Type check expression e in wh   */
-/* at line l, expecting type reqd, */
-/* and treating vars alpha through */
-/* (alpha+n-1) as fixed.           */
-{ /* TRUE => add \ev -> ...        */
+/* Type check expression e in wh at line l, expecting type reqd, and treating
+ * vars alpha through (alpha+n-1) as fixed. true => add \ev -> ... */
+static Cell typeExpected(int l, char *wh, Cell e, Type reqd, int alpha, int n,
+                         bool addEvid) {
     List savePreds = preds;
     Type t;
-    Int o;
-    Int m;
+    int o;
+    int m;
     List ps;
-    Int i;
+    int i;
 
     instantiate(reqd);
     t = typeIs;
@@ -1030,7 +1015,7 @@ static Cell local typeExpected(Int l, String wh, Cell e, Type reqd, Int alpha,
 
     normPreds(l);
     savePreds = elimPredsUsing(ps, savePreds);
-    if (nonNull(preds) && resolveDefs(genvarType(t, o, NIL), FALSE))
+    if (nonNull(preds) && resolveDefs(genvarType(t, o, NIL), false))
         savePreds = elimPredsUsing(ps, savePreds);
     elimTauts();
     if (nonNull(preds)) {
@@ -1057,17 +1042,15 @@ static Cell local typeExpected(Int l, String wh, Cell e, Type reqd, Int alpha,
     return e;
 }
 
-static Void local typeAlt(String wh, Cell e, Cell a, Type t, Int o,
-                          Int m) /* Type check abstraction (Alt)           */
-                                 /* a = ( [p1, ..., pn], rhs )     */
-{
+/* Type check abstraction (Alt) a = ( [p1, ..., pn], rhs ) */
+static void typeAlt(char *wh, Cell e, Cell a, Type t, int o, int m) {
     Type origt = t;
     List ps = fst(a) = patBtyvs(fst(a));
-    Int n = length(ps);
-    Int l = rhsLine(snd(a));
-    Int nr2 = 0;
+    int n = length(ps);
+    int l = rhsLine(snd(a));
+    int nr2 = 0;
     List as = NIL;
-    Bool added = FALSE;
+    bool added = false;
 
     List savedVars = hd(varsBounds);
     enterScope();
@@ -1094,10 +1077,10 @@ static Void local typeAlt(String wh, Cell e, Cell a, Type t, Int o,
                     errFail();
                 }
                 if (m > 0 && !added) {
-                    Int i = 0;
+                    int i = 0;
                     for (; i < m; i++)
                         addVarAssump(dummyVar, mkInt(o + i));
-                    added = TRUE;
+                    added = true;
                 }
                 addVarAssump(hd(ps), ta);
             }
@@ -1114,8 +1097,8 @@ static Void local typeAlt(String wh, Cell e, Cell a, Type t, Int o,
     if (n == 0)
         snd(a) = typeRhs(snd(a));
     else {
-        Int beta = funcType(n);
-        Int i = 0;
+        int beta = funcType(n);
+        int i = 0;
         for (; i < n; ++i) {
             hd(ps) = typeFreshPat(l, hd(ps));
             bindTv(beta + 2 * i + 1, typeIs, typeOff);
@@ -1141,22 +1124,21 @@ static Void local typeAlt(String wh, Cell e, Cell a, Type t, Int o,
     leaveScope(l, origt, o, m);
 }
 
-static Int local funcType(Int n)     /*return skeleton for function type*/
-{                                    /*with n arguments, taking the form*/
-    Int beta = newTyvars(2 * n + 1); /*    r1 t1 r2 t2 ... rn tn rn+1   */
-    Int i;                           /* with r_i := t_i -> r_i+1           */
+/* Return skeleton for function type with n arguments, taking the form r1 t1 r2
+ * t2 ... rn tn rn+1 with r_i := t_i -> r_i+1 */
+static int funcType(int n) {
+    int beta = newTyvars(2 * n + 1);
+    int i;
     for (i = 0; i < n; ++i)
         bindTv(beta + 2 * i, arrow, beta + 2 * i + 1);
     return beta;
 }
 
-static Void local typeCase(Int l, Int beta,
-                           Cell c) /* type check case: pat -> rhs          */
-                                   /* (case given by c == (pat,rhs))   */
-                                   /* need:  pat :: (var,beta)     */
-{                                  /*    rhs :: (var,beta+1)       */
-    static String casePat = "case pattern";
-    static String caseExpr = "case expression";
+/* Type check case: pat -> rhs (case given by c == (pat,rhs)) need: pat ::
+ * (var,beta) rhs :: (var,beta+1) */
+static void typeCase(int l, int beta, Cell c) {
+    static char *casePat = "case pattern";
+    static char *caseExpr = "case expression";
 
     List savedVars = hd(varsBounds);
     enterScope();
@@ -1170,12 +1152,10 @@ static Void local typeCase(Int l, Int beta,
     leaveScope(l, typeIs, typeOff, 0);
 }
 
-static Void local typeComp(Int l, Type m, Cell e,
-                           List qs) /* type check comprehension    */
-                                    /* monad (mkOffset(0))                 */
-{
-    static String boolQual = "boolean qualifier";
-    static String genQual = "generator";
+/* Type check comprehension monad (mkOffset(0)) */
+static void typeComp(int l, Type m, Cell e, List qs) {
+    static char *boolQual = "boolean qualifier";
+    static char *genQual = "generator";
 
     stackCheck();
     if (isNull(qs)) { /* no qualifiers left                */
@@ -1199,7 +1179,7 @@ static Void local typeComp(Int l, Type m, Cell e,
             break;
 
         case FROMQUAL: {
-            Int beta = newTyvars(1);
+            int beta = newTyvars(1);
             List savedVars = hd(varsBounds);
             enterPendingBtyvs();
             snd(snd(q)) = check(l, snd(snd(q)), NIL, genQual, m, beta);
@@ -1222,11 +1202,10 @@ static Void local typeComp(Int l, Type m, Cell e,
     }
 }
 
-static Cell local typeMonadComp(Int l,
-                                Cell e) /* type check monad comprehension  */
-{
-    Int alpha = newTyvars(1);
-    Int beta = newTyvars(1);
+/* Type check monad comprehension */
+static Cell typeMonadComp(int l, Cell e) {
+    int alpha = newTyvars(1);
+    int beta = newTyvars(1);
     Cell mon = ap(mkInt(beta), aVar);
     Cell m = assumeEvid(predMonad, beta);
     tyvar(beta)->kind = starToStar;
@@ -1239,11 +1218,11 @@ static Cell local typeMonadComp(Int l,
     return ap(MONADCOMP, pair(m, snd(e)));
 }
 
-static Void local typeDo(Int l, Cell e) /* type check do-notation          */
-{
-    static String finGen = "final generator";
-    Int alpha = newTyvars(1);
-    Int beta = newTyvars(1);
+/* Type check do-notation */
+static void typeDo(int l, Cell e) {
+    static char *finGen = "final generator";
+    int alpha = newTyvars(1);
+    int beta = newTyvars(1);
     Cell mon = ap(mkInt(beta), aVar);
     Cell m = assumeEvid(predMonad, beta);
     tyvar(beta)->kind = starToStar;
@@ -1253,16 +1232,15 @@ static Void local typeDo(Int l, Cell e) /* type check do-notation          */
     snd(e) = pair(m, snd(e));
 }
 
-static Void local typeConFlds(Int l,
-                              Cell e) /* Type check a construction         */
-{
-    static String conExpr = "value construction";
+/* Type check a construction */
+static void typeConFlds(int l, Cell e) {
+    static char *conExpr = "value construction";
     Name c = fst(snd(e));
     List fs = snd(snd(e));
     Type tc;
-    Int to;
-    Int tf;
-    Int i;
+    int to;
+    int tf;
+    int i;
 
     instantiate(nameRec(c)->type);
     for (; nonNull(predsAre); predsAre = tl(predsAre))
@@ -1280,7 +1258,7 @@ static Void local typeConFlds(Int l,
         t = dropRank1(arg(fun(t)), to, tf);
         if (isPolyOrQualType(t))
             snd(hd(fs)) =
-                typeExpected(l, conExpr, snd(hd(fs)), t, to, tf, TRUE);
+                typeExpected(l, conExpr, snd(hd(fs)), t, to, tf, true);
         else {
             snd(hd(fs)) = check(l, snd(hd(fs)), e, conExpr, t, to);
         }
@@ -1290,17 +1268,16 @@ static Void local typeConFlds(Int l,
     inferType(tc, to);
 }
 
-static Void local typeUpdFlds(Int line,
-                              Cell e) /* Type check an update              */
-                                      /* (Written in what might seem a   */
-{                                     /* bizarre manner for the benefit  */
-    static String update = "update";  /* of as yet unreleased extensions)*/
-    List cs = snd3(snd(e));           /* List of constructors              */
-    List fs = thd3(snd(e));           /* List of field specifications      */
-    List ts = NIL;                    /* List of types for fields          */
-    Int n = length(fs);
-    Int alpha = newTyvars(2 + n);
-    Int i;
+/* Type check an update (Written in what might seem a bizarre manner for the
+ * benefit of as yet unreleased extensions) */
+static void typeUpdFlds(int line, Cell e) {
+    static char *update = "update";
+    List cs = snd3(snd(e)); /* List of constructors              */
+    List fs = thd3(snd(e)); /* List of field specifications      */
+    List ts = NIL;          /* List of types for fields          */
+    int n = length(fs);
+    int alpha = newTyvars(2 + n);
+    int i;
     List fs1;
 
     /* Calculate type and translation for each expr in the field list      */
@@ -1329,7 +1306,7 @@ static Void local typeUpdFlds(Int line,
         Name c = hd(cs);
         List ta = replicate(nameRec(c)->arity, NIL);
         Type td, tr;
-        Int od, or ;
+        int od, or ;
 
         tcMode = NEW_PATTERN; /* Domain type                       */
         instantiate(nameRec(c)->type);
@@ -1353,7 +1330,7 @@ static Void local typeUpdFlds(Int line,
             tr = snd(snd(tr));
 
         for (fs1 = fs, i = 1; nonNull(fs1); fs1 = tl(fs1), i++) {
-            Int n = sfunPos(fst(hd(fs1)), c);
+            int n = sfunPos(fst(hd(fs1)), c);
             Cell ta1 = ta;
             for (; n > 1; n--)
                 ta1 = tl(ta1);
@@ -1362,7 +1339,7 @@ static Void local typeUpdFlds(Int line,
 
         for (; nonNull(ta); ta = tl(ta)) { /* For each cfun arg    */
             if (nonNull(hd(ta))) {         /* Field to updated?    */
-                Int n = intOf(hd(ta));
+                int n = intOf(hd(ta));
                 Cell f = fs;
                 Cell t = ts;
                 for (; n-- > 1; f = tl(f), t = tl(t))
@@ -1395,10 +1372,9 @@ static Void local typeUpdFlds(Int line,
     /* (typeIs,typeOff) still carry the result type when we exit the loop  */
 }
 
-static Cell local typeFreshPat(Int l,
-                               Cell p) /* find type of pattern, assigning  */
-                                       /* fresh type variables to each var */
-{                                      /* bound in the pattern             */
+/* Find type of pattern, assigning fresh type variables to each var bound in
+ * the pattern */
+static Cell typeFreshPat(int l, Cell p) {
     tcMode = NEW_PATTERN;
     p = typeExpr(l, p);
     tcMode = EXPRESSION;
@@ -1409,10 +1385,10 @@ static Cell local typeFreshPat(Int l,
  * Type check group of bindings:
  * ------------------------------------------------------------------------*/
 
-static Void local typeBindings(List bs) /* type check a binding group      */
-{
-    Bool usesPatBindings = FALSE; /* TRUE => pattern binding in bs   */
-    Bool usesUntypedVar = FALSE;  /* TRUE => var bind w/o type decl  */
+/* Type check a binding group */
+static void typeBindings(List bs) {
+    bool usesPatBindings = false; /* true => pattern binding in bs   */
+    bool usesUntypedVar = false;  /* true => var bind w/o type decl  */
     List bs1;
 
     /* The following loop is used to determine whether the monomorphism    */
@@ -1422,10 +1398,10 @@ static Void local typeBindings(List bs) /* type check a binding group      */
     for (bs1 = bs; nonNull(bs1); bs1 = tl(bs1)) { /* Analyse binding group    */
         Cell b = hd(bs1);
         if (!isVar(fst(b)))
-            usesPatBindings = TRUE;
+            usesPatBindings = true;
         else if (isNull(fst(hd(snd(snd(b)))))       /* no arguments        */
                  && whatIs(fst(snd(b))) == IMPDEPS) /* implicitly typed*/
-            usesUntypedVar = TRUE;
+            usesUntypedVar = true;
     }
 
     if (usesPatBindings || usesUntypedVar)
@@ -1444,8 +1420,8 @@ static Void local typeBindings(List bs) /* type check a binding group      */
     hd(depends) = NIL;
 }
 
-static Void local removeTypeSigs(Cell b) /* Remove type info from a binding  */
-{
+/* Remove type info from a binding */
+static void removeTypeSigs(Cell b) {
     snd(b) = snd(snd(b));
 }
 
@@ -1453,10 +1429,10 @@ static Void local removeTypeSigs(Cell b) /* Remove type info from a binding  */
  * Type check a restricted binding group:
  * ------------------------------------------------------------------------*/
 
-static Void local monorestrict(List bs) /* Type restricted binding group   */
-{
+/* Type restricted binding group */
+static void monorestrict(List bs) {
     List savePreds = preds;
-    Int line = isVar(fst(hd(bs))) ? rhsLine(snd(hd(snd(snd(hd(bs))))))
+    int line = isVar(fst(hd(bs))) ? rhsLine(snd(hd(snd(snd(hd(bs))))))
                                   : rhsLine(snd(snd(snd(hd(bs)))));
     hd(defnBounds) = NIL;
     hd(depends) = NODEPENDS; /* No need for dependents here        */
@@ -1477,14 +1453,14 @@ static Void local monorestrict(List bs) /* Type restricted binding group   */
 
     if (isNull(tl(defnBounds))) { /* Top-level may need defaulting   */
         normPreds(line);
-        if (nonNull(preds) && resolveDefs(genvarAnyAss(hd(defnBounds)), FALSE))
+        if (nonNull(preds) && resolveDefs(genvarAnyAss(hd(defnBounds)), false))
             elimTauts();
 
         clearMarks();
         reducePreds();
         improve(line, NIL, preds);
         if (nonNull(preds))
-            resolveDefs(NIL, FALSE); /* Nearly Haskell 1.4?                */
+            resolveDefs(NIL, false); /* Nearly Haskell 1.4?                */
         elimTauts();
 
         if (nonNull(preds)) { /* Look for unresolved overloading */
@@ -1510,9 +1486,8 @@ static Void local monorestrict(List bs) /* Type restricted binding group   */
     map1Proc(genBind, NIL, bs); /* Generalize types of def'd vars  */
 }
 
-static Void local
-restrictedBindAss(Cell b) /* Make assums for vars in binding */
-{                         /* gp with restricted overloading  */
+/* Make assums for vars in binding gp with restricted overloading */
+static void restrictedBindAss(Cell b) {
 
     if (isVar(fst(b))) { /* function-binding?              */
         Cell t = fst(snd(b));
@@ -1524,7 +1499,7 @@ restrictedBindAss(Cell b) /* Make assums for vars in binding */
     } else { /* pattern-binding?                   */
         List vs = fst(b);
         List ts = fst(snd(b));
-        Int line = rhsLine(snd(snd(snd(b))));
+        int line = rhsLine(snd(snd(snd(b))));
 
         for (; nonNull(vs); vs = tl(vs)) {
             if (nonNull(ts)) {
@@ -1537,11 +1512,9 @@ restrictedBindAss(Cell b) /* Make assums for vars in binding */
     }
 }
 
-static Void local restrictedAss(Int l, Cell v,
-                                Type t) /* Assume that type of binding var v*/
-                                        /* is t (if nonNull) in restricted  */
-                                        /* binding group                   */
-{
+/* Assume that type of binding var v is t (if nonNull) in restricted binding
+ * group */
+static void restrictedAss(int l, Cell v, Type t) {
     newDefnBind(v, t);
     if (nonNull(predsAre)) {
         errHead(l);
@@ -1556,8 +1529,8 @@ static Void local restrictedAss(Int l, Cell v,
  * Unrestricted binding group:
  * ------------------------------------------------------------------------*/
 
-static Void local unrestricted(List bs) /* Type unrestricted binding group */
-{
+/* Type unrestricted binding group */
+static void unrestricted(List bs) {
     List savePreds = preds;
     List imps = NIL; /* Implicitly typed bindings          */
     List exps = NIL; /* Explicitly typed bindings          */
@@ -1612,7 +1585,7 @@ static Void local unrestricted(List bs) /* Type unrestricted binding group */
 
     for (; nonNull(imps); imps = tl(imps)) {
         Cell b = hd(hd(imps));
-        Int line = isVar(fst(b)) ? rhsLine(snd(hd(snd(snd(b)))))
+        int line = isVar(fst(b)) ? rhsLine(snd(hd(snd(snd(b)))))
                                  : rhsLine(snd(snd(snd(b))));
         hd(defnBounds) = NIL;
         hd(depends) = NIL;
@@ -1632,7 +1605,7 @@ static Void local unrestricted(List bs) /* Type unrestricted binding group */
         normPreds(line);
         savePreds = elimOuterPreds(savePreds);
         if (nonNull(preds) &&
-            resolveDefs(genvarAllAss(hd(defnBounds)), FALSE)) {
+            resolveDefs(genvarAllAss(hd(defnBounds)), false)) {
             savePreds = elimOuterPreds(savePreds);
         }
 
@@ -1651,13 +1624,13 @@ static Void local unrestricted(List bs) /* Type unrestricted binding group */
      * --------------------------------------------------------------------*/
 
     for (; nonNull(exps); exps = tl(exps)) {
-        static String extbind = "explicitly typed binding";
+        static char *extbind = "explicitly typed binding";
         Cell b = hd(exps);
         List alts = snd(snd(b));
-        Int line = rhsLine(snd(hd(alts)));
+        int line = rhsLine(snd(hd(alts)));
         Type t;
-        Int o;
-        Int m;
+        int o;
+        int m;
         List ps;
 
         hd(defnBounds) = NIL;
@@ -1689,16 +1662,16 @@ static Void local unrestricted(List bs) /* Type unrestricted binding group */
         savePreds = elimPredsUsing(ps, savePreds);
         if (nonNull(preds)) {
             List vs = NIL;
-            Int i = 0;
+            int i = 0;
             for (; i < m; ++i)
                 vs = cons(mkInt(o + i), vs);
-            if (resolveDefs(vs, FALSE)) {
+            if (resolveDefs(vs, false)) {
                 savePreds = elimPredsUsing(ps, savePreds);
             }
             if (nonNull(preds)) {
                 clearMarks();
                 reducePreds();
-                if (nonNull(preds) && resolveDefs(vs, FALSE))
+                if (nonNull(preds) && resolveDefs(vs, false))
                     savePreds = elimPredsUsing(ps, savePreds);
             }
         }
@@ -1718,24 +1691,23 @@ static Void local unrestricted(List bs) /* Type unrestricted binding group */
     hd(defnBounds) = NIL;
 }
 
-static Cell local itbDepends(Cell t) /* dependency list of an implicitly*/
-{                                    /* typed binding              */
+/* Dependency list of an implicitly typed binding */
+static Cell itbDepends(Cell t) {
     return fst(snd(t));
 }
 
-static Void local itbSetDepends(Cell t, Cell v) {
+static void itbSetDepends(Cell t, Cell v) {
     fst(snd(t)) = v;
 }
 
-static List local itbscc(List bs) /* scc for implicitly typed binds  */
-{
+/* Scc for implicitly typed binds */
+static List itbscc(List bs) {
     return sccSort(bs, NIL, itbDepends, itbSetDepends);
 }
 
-static Void local addEvidParams(List qs,
-                                Cell v) /* overwrite VARID/OPCELL v with    */
-                                        /* application of variable to evid. */
-{                                       /* parameters given by qs           */
+/* Overwrite VARID/OPCELL v with application of variable to evid. parameters
+ * given by qs */
+static void addEvidParams(List qs, Cell v) {
     if (nonNull(qs)) {
         Cell nv;
 
@@ -1753,22 +1725,22 @@ static Void local addEvidParams(List qs,
  * Type check bodies of class and instance declarations:
  * ------------------------------------------------------------------------*/
 
-static Void local typeClassDefn(Class c) /* Type check implementations of   */
-{ /* defaults for class c                   */
+/* Type check implementations of defaults for class c */
+static void typeClassDefn(Class c) {
 
     /* ----------------------------------------------------------------------
      * Generate code for default dictionary builder functions:
      * --------------------------------------------------------------------*/
 
-    Int beta = newKindedVars(cclassRec(c)->kinds);
+    int beta = newKindedVars(cclassRec(c)->kinds);
     Cell d = inventDictVar();
     List dparam = singleton(triple(cclassRec(c)->head, mkInt(beta), d));
     List mems = cclassRec(c)->members;
     List defs = cclassRec(c)->defaults;
     List dsels = cclassRec(c)->dsels;
     Cell pat = cclassRec(c)->dcon;
-    Int width = cclassRec(c)->numSupers + cclassRec(c)->numMembers;
-    Int i = 0;
+    int width = cclassRec(c)->numSupers + cclassRec(c)->numMembers;
+    int i = 0;
 
     if (isNull(defs) && nonNull(mems)) {
         defs = cclassRec(c)->defaults = cons(NIL, NIL);
@@ -1788,7 +1760,7 @@ static Void local typeClassDefn(Class c) /* Type check implementations of   */
                    ap(namePrimThrow, ap(nameNoMethodError, mkStr(member))))));
         } else { /* User supplied default defn     */
             List alts = snd(hd(defs));
-            Int line = rhsLine(snd(hd(alts)));
+            int line = rhsLine(snd(hd(alts)));
 
             typeMember("default member binding", hd(mems), alts, dparam,
                        cclassRec(c)->head, beta);
@@ -1830,8 +1802,8 @@ static Void local typeClassDefn(Class c) /* Type check implementations of   */
     }
 }
 
-static Void local typeInstDefn(Inst in) /* Type check implementations of   */
-{                                       /* member functions for instance in*/
+/* Type check implementations of member functions for instance in */
+static void typeInstDefn(Inst in) {
 
     /* ----------------------------------------------------------------------
      * Generate code for instance specific dictionary builder function:
@@ -1853,9 +1825,9 @@ static Void local typeInstDefn(Inst in) /* Type check implementations of   */
      * the default implementation, partially applied to d.
      * --------------------------------------------------------------------*/
 
-    Int alpha = newKindedVars(cclassRec(instRec(in)->c)->kinds);
+    int alpha = newKindedVars(cclassRec(instRec(in)->c)->kinds);
     List supers = makePredAss(cclassRec(instRec(in)->c)->supers, alpha);
-    Int beta = newKindedVars(instRec(in)->kinds);
+    int beta = newKindedVars(instRec(in)->kinds);
     List params = makePredAss(instRec(in)->specifics, beta);
     Cell d = inventDictVar();
     /* A previous comment indicated that evids may be wrong
@@ -1949,17 +1921,14 @@ static Void local typeInstDefn(Inst in) /* Type check implementations of   */
     genDefns = cons(instRec(in)->builder, genDefns);
 }
 
-static Void local typeMember(String wh, Name mem, Cell alts, List evids,
-                             Cell head, Int beta)
-/* Type check alternatives alts of */
-/* member mem for inst type head   */
-/* at offset beta using predicate  */
-/* assignment evids                */
-{
-    Int line = rhsLine(snd(hd(alts)));
+/* Type check alternatives alts of member mem for inst type head at offset beta
+ * using predicate assignment evids */
+static void typeMember(char *wh, Name mem, Cell alts, List evids, Cell head,
+                       int beta) {
+    int line = rhsLine(snd(hd(alts)));
     Type t;
-    Int o;
-    Int m;
+    int o;
+    int m;
     List ps;
     List qs;
     Type rt;
@@ -1990,7 +1959,7 @@ static Void local typeMember(String wh, Name mem, Cell alts, List evids,
     clearMarks();
     normPreds(line);
     qs = elimPredsUsing(evids, NIL);
-    if (nonNull(preds) && resolveDefs(genvarType(t, o, NIL), FALSE))
+    if (nonNull(preds) && resolveDefs(genvarType(t, o, NIL), false))
         qs = elimPredsUsing(evids, qs);
     if (nonNull(qs)) {
         errHead(line);
@@ -2019,11 +1988,11 @@ static Void local typeMember(String wh, Name mem, Cell alts, List evids,
  * Type check bodies of bindings:
  * ------------------------------------------------------------------------*/
 
-static Void local typeBind(Cell b) /* Type check binding                   */
-{
+/* Type check binding */
+static void typeBind(Cell b) {
     if (isVar(fst(b))) { /* function binding */
         Cell ass = findTopBinding(fst(b));
-        Int beta;
+        int beta;
 
         if (isNull(ass))
             internal("typeBind");
@@ -2033,11 +2002,11 @@ static Void local typeBind(Cell b) /* Type check binding                   */
         map2Proc(typeDefAlt, beta, fst(b), snd(snd(b)));
         leavePendingBtyvs();
     } else { /* pattern binding  */
-        static String lhsPat = "lhs pattern";
-        static String rhs = "right hand side";
-        Int beta = newTyvars(1);
+        static char *lhsPat = "lhs pattern";
+        static char *rhs = "right hand side";
+        int beta = newTyvars(1);
         Pair pb = snd(snd(b));
-        Int l = rhsLine(snd(pb));
+        int l = rhsLine(snd(pb));
 
         tcMode = OLD_PATTERN;
         enterPendingBtyvs();
@@ -2051,18 +2020,17 @@ static Void local typeBind(Cell b) /* Type check binding                   */
     }
 }
 
-static Void local typeDefAlt(Int beta, Cell v,
-                             Pair a) /* type check alt in func. binding  */
-{
-    static String valDef = "function binding";
+/* Type check alt in func. binding */
+static void typeDefAlt(int beta, Cell v, Pair a) {
+    static char *valDef = "function binding";
     typeAlt(valDef, v, a, aVar, beta, 0);
 }
 
-static Cell local typeRhs(Cell e) /* check type of rhs of definition  */
-{
+/* Check type of rhs of definition */
+static Cell typeRhs(Cell e) {
     switch (whatIs(e)) {
     case GUARDED: {
-        Int beta = newTyvars(1);
+        int beta = newTyvars(1);
         map1Proc(guardedType, beta, snd(e));
         tyvarType(beta);
     } break;
@@ -2089,21 +2057,19 @@ static Cell local typeRhs(Cell e) /* check type of rhs of definition  */
     return e;
 }
 
-static Void local guardedType(Int beta,
-                              Cell gded) /* check type of guard (li,(gd,ex))*/
-                                         /* should have gd :: Bool,        */
-{                                        /*           ex :: (var,beta)     */
-    static String guarded = "guarded expression";
-    static String guard = "guard";
-    Int line = intOf(fst(gded));
+/* Check type of guard (li,(gd,ex)) should have gd :: Bool, ex :: (var,beta) */
+static void guardedType(int beta, Cell gded) {
+    static char *guarded = "guarded expression";
+    static char *guard = "guard";
+    int line = intOf(fst(gded));
 
     gded = snd(gded);
     fst(gded) = check(line, fst(gded), NIL, guard, typeBool, 0);
     snd(gded) = check(line, snd(gded), NIL, guarded, aVar, beta);
 }
 
-Cell rhsExpr(Cell rhs) /* find first expression on a rhs   */
-{
+/* Find first expression on a rhs */
+Cell rhsExpr(Cell rhs) {
     stackCheck();
     switch (whatIs(rhs)) {
     case GUARDED:
@@ -2117,8 +2083,8 @@ Cell rhsExpr(Cell rhs) /* find first expression on a rhs   */
     }
 }
 
-Int rhsLine(Cell rhs) /* find line number associated with */
-{                     /* a right hand side                 */
+/* Find line number associated with a right hand side */
+int rhsLine(Cell rhs) {
     stackCheck();
     switch (whatIs(rhs)) {
     case GUARDED:
@@ -2136,16 +2102,16 @@ Int rhsLine(Cell rhs) /* find line number associated with */
  * Calculate generalization of types and compare with declared type schemes:
  * ------------------------------------------------------------------------*/
 
-static Void local genBind(List ps, Cell b) /* Generalize the type of each var */
-                                           /* defined in binding b, qualifying*/
-{                                          /* each with the predicates in ps. */
+/* Generalize the type of each var defined in binding b, qualifying each with
+ * the predicates in ps. */
+static void genBind(List ps, Cell b) {
     Cell v = fst(b);
     Cell t = fst(snd(b));
 
     if (isVar(fst(b)))
         genAss(rhsLine(snd(hd(snd(snd(b))))), ps, v, t);
     else {
-        Int line = rhsLine(snd(snd(snd(b))));
+        int line = rhsLine(snd(snd(snd(b))));
         for (; nonNull(v); v = tl(v)) {
             Type ty = NIL;
             if (nonNull(t)) {
@@ -2157,11 +2123,9 @@ static Void local genBind(List ps, Cell b) /* Generalize the type of each var */
     }
 }
 
-static Void local genAss(Int l, List ps, Cell v,
-                         Type dt) /* Calculate inferred type of v and*/
-                                  /* compare with declared type, dt, */
-                                  /* if given & check for ambiguity. */
-{
+/* Calculate inferred type of v and compare with declared type, dt, if given &
+ * check for ambiguity. */
+static void genAss(int l, List ps, Cell v, Type dt) {
     Cell ass = findTopBinding(v);
 
     if (isNull(ass))
@@ -2170,11 +2134,9 @@ static Void local genAss(Int l, List ps, Cell v,
     snd(ass) = genTest(l, v, ps, dt, aVar, intOf(defType(snd(ass))));
 }
 
-static Type local genTest(Int l, Cell v, List ps, Type dt, Type t,
-                          Int o) /* Generalize and test inferred           */
-                                 /* type (t,o) with context ps     */
-                                 /* against declared type dt for v. */
-{
+/* Generalize and test inferred type (t,o) with context ps against declared
+ * type dt for v. */
+static Type genTest(int l, Cell v, List ps, Type dt, Type t, int o) {
     Type bt = NIL; /* Body of inferred type        */
     Type it = NIL; /* Full inferred type                   */
 
@@ -2194,10 +2156,9 @@ static Type local genTest(Int l, Cell v, List ps, Type dt, Type t,
     return it;
 }
 
-static Type local generalize(List qs,
-                             Type t) /* calculate generalization of t   */
-                                     /* having already marked fixed vars*/
-{                                    /* with qualifying preds qs           */
+/* Calculate generalization of t having already marked fixed vars with
+ * qualifying preds qs */
+static Type generalize(List qs, Type t) {
     assertPredList(qs);
     assertType(t);
     if (nonNull(qs))
@@ -2215,13 +2176,12 @@ static Type local generalize(List qs,
     return t;
 }
 
-static Bool local equalTypes(Type t1,
-                             Type t2) /* Compare simple types for equality*/
-{
+/* Compare simple types for equality */
+static bool equalTypes(Type t1, Type t2) {
     stackCheck();
 et:
     if (whatIs(t1) != whatIs(t2))
-        return FALSE;
+        return false;
 
     switch (whatIs(t1)) {
     case TYCON:
@@ -2238,24 +2198,24 @@ et:
             t2 = arg(t2);
             goto et;
         }
-        return FALSE;
+        return false;
 
     default:
         internal("equalTypes");
     }
 
-    return TRUE; /*NOTREACHED*/
+    return true; /*NOTREACHED*/
 }
 
 /* --------------------------------------------------------------------------
  * Entry points to type checker:
  * ------------------------------------------------------------------------*/
 
-Type typeCheckExp(Bool useDefs) /* Type check top level expression */
-{                               /* using defaults if reqd          */
+/* Type check top level expression using defaults if reqd */
+Type typeCheckExp(bool useDefs) {
     Type type;
     List ctxt;
-    Int beta;
+    int beta;
 
     typeChecker(RESET);
     emptySubstitution();
@@ -2271,7 +2231,7 @@ Type typeCheckExp(Bool useDefs) /* Type check top level expression */
     if (useDefs && nonNull(preds)) {
         clearMarks();
         reducePreds();
-        if (nonNull(preds) && resolveDefs(NIL, TRUE)) /* Nearly Haskell 1.4? */
+        if (nonNull(preds) && resolveDefs(NIL, true)) /* Nearly Haskell 1.4? */
             elimTauts();
     }
     resetGenerics();
@@ -2283,7 +2243,8 @@ Type typeCheckExp(Bool useDefs) /* Type check top level expression */
     return type;
 }
 
-Void typeCheckDefns() { /* Type check top level bindings    */
+/* Type check top level bindings */
+void typeCheckDefns(void) {
     Target t = length(selDefns) + length(valDefns) + length(instDefns) +
                length(classDefns);
     Target i = 0;
@@ -2321,8 +2282,8 @@ Void typeCheckDefns() { /* Type check top level bindings    */
     done();
 }
 
-static Void local typeDefnGroup(List bs) /* type check group of value defns */
-{                                        /* (one top level scc)            */
+/* Type check group of value defns (one top level scc) */
+static void typeDefnGroup(List bs) {
     List as;
 
     emptySubstitution();
@@ -2334,7 +2295,7 @@ static Void local typeDefnGroup(List bs) /* type check group of value defns */
     if (nonNull(preds)) {
         Cell v = fst(hd(hd(varsBounds)));
         Name n = findName(textOf(v));
-        Int l = nonNull(n) ? nameRec(n)->line : 0;
+        int l = nonNull(n) ? nameRec(n)->line : 0;
         preds = scSimplify(preds);
         errHead(l);
         errPrintf("Instance%s of ", (length(preds) == 1 ? "" : "s"));
@@ -2348,7 +2309,7 @@ static Void local typeDefnGroup(List bs) /* type check group of value defns */
     if (nonNull(scope()->skolems)) {
         Cell b = hd(bs);
         Name n = findName(isVar(fst(b)) ? textOf(fst(b)) : textOf(hd(fst(b))));
-        Int l = nonNull(n) ? nameRec(n)->line : 0;
+        int l = nonNull(n) ? nameRec(n)->line : 0;
         leaveScope(l, typeUnit, 0, 0);
         enterScope();
     }
@@ -2363,39 +2324,38 @@ static Void local typeDefnGroup(List bs) /* type check group of value defns */
     hd(varsBounds) = NIL;
 }
 
-static Void local
-typeForeignExport(Name n) /* Typecheck a foreign export decl */
-{
-    Int line = nameRec(n)->line;
+/* Typecheck a foreign export decl */
+static void typeForeignExport(Name n) {
+    int line = nameRec(n)->line;
     /* todo */
     errHead(line);
     errPrintf("Foreign export not implemented yet.");
     errFail();
 }
 
-static Pair local typeSel(Name s) /* Calculate a suitable type for a */
-{                                 /* particular selector, s.       */
+/* Calculate a suitable type for a particular selector, s. */
+static Pair typeSel(Name s) {
     List cns = nameRec(s)->defn;
-    Int line = nameRec(s)->line;
+    int line = nameRec(s)->line;
     Type dom = NIL; /* Inferred domain             */
     Type rng = NIL; /* Inferred range              */
     Cell nv = inventVar();
     List alts = NIL;
-    Int o;
-    Int m;
+    int o;
+    int m;
 
     emptySubstitution();
     preds = NIL;
 
     for (; nonNull(cns); cns = tl(cns)) {
         Name c = fst(hd(cns));
-        Int n = intOf(snd(hd(cns)));
-        Int a = nameRec(c)->arity;
+        int n = intOf(snd(hd(cns)));
+        int a = nameRec(c)->arity;
         Cell pat = c;
         Type dom1;
         Type rng1;
-        Int o1;
-        Int m1;
+        int o1;
+        int m1;
 
         instantiate(
             nameRec(c)->type); /* Instantiate constructor type         */
@@ -2486,7 +2446,7 @@ static Cell *const typeRoots[] = {
     &predMonad,    &typeProgIO,
 };
 
-Void typeChecker(Int what) {
+void typeChecker(int what) {
     switch (what) {
     case RESET:
         tcMode = EXPRESSION;
@@ -2496,7 +2456,7 @@ Void typeChecker(Int what) {
         break;
 
     case MARK: {
-        Int i = 0;                   /* the scope stack; the rest  */
+        int i = 0;                   /* the scope stack; the rest  */
         for (; i < numScopes; i++) { /* is in typeRoots    */
             mark(scopes[i].skolems);
             mark(scopes[i].givens);
@@ -2549,7 +2509,7 @@ Void typeChecker(Int what) {
     }
 }
 
-static Name local linkName(String s) {
+static Name linkName(char *s) {
     Name n = findName(findText(s));
     if (isNull(n)) {
         errHead(0);
@@ -2559,7 +2519,7 @@ static Name local linkName(String s) {
     return n;
 }
 
-static Tycon local linkTycon(String s) {
+static Tycon linkTycon(char *s) {
     Tycon tc = findTycon(findText(s));
     if (isNull(tc)) {
         errHead(0);
@@ -2569,7 +2529,7 @@ static Tycon local linkTycon(String s) {
     return tc;
 }
 
-static Class local linkClass(String s) {
+static Class linkClass(char *s) {
     Class cc = findClass(findText(s));
     if (isNull(cc)) {
         errHead(0);
@@ -2579,9 +2539,10 @@ static Class local linkClass(String s) {
     return cc;
 }
 
-Void linkPreludeTC() {      /* Hook to tycons and classes in   */
-    if (isNull(typeBool)) { /* prelude when first loaded           */
-        Int i;
+/* Hook to tycons and classes in prelude when first loaded */
+void linkPreludeTC(void) {
+    if (isNull(typeBool)) {
+        int i;
 
         typeInt = linkTycon("Int");
         typeInt8 = linkTycon("Int8");
@@ -2666,8 +2627,9 @@ Void linkPreludeTC() {      /* Hook to tycons and classes in   */
     }
 }
 
-Void linkPreludeCM() {       /* Hook to cfuns and mfuns in         */
-    if (isNull(nameFalse)) { /* prelude when first loaded          */
+/* Hook to cfuns and mfuns in prelude when first loaded */
+void linkPreludeCM(void) {
+    if (isNull(nameFalse)) {
         nameFalse = linkName("False");
         nameTrue = linkName("True");
         nameJust = linkName("Just");
@@ -2732,7 +2694,7 @@ Void linkPreludeCM() {       /* Hook to cfuns and mfuns in         */
     }
 }
 
-Void linkPreludeFuns() { /* Hook to cfuns and mfuns in     */
-                         /* prelude when first loaded      */
+/* Hook to cfuns and mfuns in prelude when first loaded */
+void linkPreludeFuns(void) {
 }
 /*-------------------------------------------------------------------------*/

@@ -6,10 +6,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: printer.c,v $
- * $Revision: 1.15 $
- * $Date: 2006/09/05 22:43:44 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -21,16 +17,16 @@
 
 #include <inttypes.h>
 
-static Void local printer(Name, Int);
-static Void local outName(Name);
-static Void local outVar(Name);
-static Void local outOp(Name);
-static Void local outStr(String);
-static Void local outPr(Name, Int, Cell);
-static Void local outLPr(Name, Cell);
-static Void local outException(Cell);
-static Void local outBadRedex(Cell);
-static Cell local printDException(Cell);
+static void printer(Name, int);
+static void outName(Name);
+static void outVar(Name);
+static void outOp(Name);
+static void outStr(char *);
+static void outPr(Name, int, Cell);
+static void outLPr(Name, Cell);
+static void outException(Cell);
+static void outBadRedex(Cell);
+static Cell printDException(Cell);
 
 static Name nameLPrint, nameNLPrint; /* list printing primitives           */
 static Name nameSPrint, nameNSPrint; /* string printing primitives         */
@@ -54,8 +50,8 @@ static Cell *const printerRoots[] = {
     &out,
 };
 
-static Void printerControl(Int);
-static Void printerControl(Int what) {
+static void printerControl(int);
+static void printerControl(int what) {
     switch (what) {
     case INSTALL:
         registerRoots(printerRoots);
@@ -101,9 +97,10 @@ struct primInfo printerPrims = {printerControl, printerPrimTable, 0};
 
 /*-------------------------------------------------------------------------*/
 
-primFun(primPrint) { /* Evaluate and print term    */
-    Cell temp;       /*    :: Int->Expr->[Char]->[Char] */
-    Int d;
+/* Evaluate and print term */
+primFun(primPrint) {
+    Cell temp; /*    :: Int->Expr->[Char]->[Char] */
+    int d;
     eval(primArg(3));
     d = whnfInt;
     temp = evalWithNoError(primArg(2));
@@ -116,9 +113,11 @@ primFun(primPrint) { /* Evaluate and print term    */
     updOutRoot(primArg(1));
 }
 
-primFun(primBPrint) { /* Eval and print value of basic   */
-    Int d;            /* type -- Int, Integer, Float, or */
-    eval(primArg(3)); /* Double -- as a string.    */
+/* Eval and print value of basic type -- Int, Integer, Float, or Double -- as a
+ * string. */
+primFun(primBPrint) {
+    int d;
+    eval(primArg(3));
     d = whnfInt;
     eval(primArg(2));      /* Differs from primPrint only in  */
     out = NIL;             /* its use of weaker error handling*/
@@ -126,8 +125,9 @@ primFun(primBPrint) { /* Eval and print value of basic   */
     updOutRoot(primArg(1));
 }
 
-primFun(primNPrint) { /* print term without evaluation   */
-    Int d;            /*     :: Int->Expr->[Char]->[Char] */
+/* Print term without evaluation */
+primFun(primNPrint) {
+    int d; /*     :: Int->Expr->[Char]->[Char] */
     eval(primArg(3));
     d = whnfInt;
     unwind(primArg(2));
@@ -136,10 +136,10 @@ primFun(primNPrint) { /* print term without evaluation   */
     updOutRoot(primArg(1));
 }
 
-static Void local printer(Name pr, Int d) /* Main part: primPrint/primNPrint */
-/* printer to use on components          */
-{                 /* precedence level              */
-    Int used = 0; /* Output, in reverse, to "out"          */
+/* Main part: primPrint/primNPrint printer to use on components precedence
+ * level */
+static void printer(Name pr, int d) {
+    int used = 0; /* Output, in reverse, to "out"          */
 
     allowBreak();
 
@@ -154,7 +154,7 @@ static Void local printer(Name pr, Int d) /* Main part: primPrint/primNPrint */
         /* don't print dictionary arguments */
         while (used < whnfArgs) {
             Cell h;
-            Int w;
+            int w;
             h = pushed(used);
             for (;;) {
                 w = whatIs(h);
@@ -227,7 +227,7 @@ static Void local printer(Name pr, Int d) /* Main part: primPrint/primNPrint */
             used++;
         } else if (whnfArgs - used >= 2 && sy != APPLIC) { /* e1+e2 */
             Syntax a = assocOf(sy);
-            Int p = precOf(sy);
+            int p = precOf(sy);
             if (whnfArgs - used > 2 || d > p)
                 outCh('(');
             outPr(pr, (a == LEFT_ASS ? p : 1 + p), pushed(used));
@@ -251,7 +251,7 @@ static Void local printer(Name pr, Int d) /* Main part: primPrint/primNPrint */
         break;
 
     case INTCELL: {
-        Int digit;
+        int digit;
 
         if (intOf(whnfHead) < 0 && d >= UMINUS_PREC)
             outCh(')');
@@ -274,21 +274,22 @@ static Void local printer(Name pr, Int d) /* Main part: primPrint/primNPrint */
     } break;
 
     case PTRCELL: {
-        Pointer p = ptrOf(whnfHead);
+        void *p = ptrOf(whnfHead);
         char buffer[32];
         /* Fall into line with how GHC shows Addrs.
                              * (long)p truncated a 64-bit address on LP64
                              * platforms where %x only takes 32 bits from
                              * the vararg; use PRIxPTR/uintptr_t instead. */
-        sprintf(buffer, "0x%0*" PRIxPTR, (SIZEOF_INTP) * 2, (uintptr_t)p);
+        snprintf(buffer, sizeof buffer, "0x%0*" PRIxPTR, (SIZEOF_INTP) * 2,
+                 (uintptr_t)p);
         outStr(buffer);
         pr = nameNPrint;
     } break;
 
     case TUPLE: {
-        Int tn = tupleOf(whnfHead);
-        Int punc = '(';
-        Int i;
+        int tn = tupleOf(whnfHead);
+        int punc = '(';
+        int i;
 
         used = tn < whnfArgs ? tn : whnfArgs;
         for (i = 0; i < used; ++i) {
@@ -372,7 +373,8 @@ static Void local printer(Name pr, Int d) /* Main part: primPrint/primNPrint */
  * List printing primitives:
  * ------------------------------------------------------------------------*/
 
-primFun(primLPrint) { /* evaluate and print list           */
+/* Evaluate and print list */
+primFun(primLPrint) {
     Cell temp = evalWithNoError(primArg(2));
     out = NIL;
     if (nonNull(temp)) {
@@ -392,7 +394,8 @@ primFun(primLPrint) { /* evaluate and print list           */
     updOutRoot(primArg(1));
 }
 
-primFun(primNLPrint) { /* print list without evaluation   */
+/* Print list without evaluation */
+primFun(primNLPrint) {
     unwind(primArg(2));
     out = NIL;
     if (whnfHead == nameCons && whnfArgs == 2) {
@@ -408,7 +411,8 @@ primFun(primNLPrint) { /* print list without evaluation   */
     updOutRoot(primArg(1));
 }
 
-primFun(primSPrint) { /* evaluate and print string         */
+/* Evaluate and print string */
+primFun(primSPrint) {
     Cell temp = evalWithNoError(primArg(2));
     out = NIL;
     if (nonNull(temp)) {
@@ -440,7 +444,8 @@ primFun(primSPrint) { /* evaluate and print string         */
     updOutRoot(primArg(1));
 }
 
-primFun(primNSPrint) { /* print string without eval        */
+/* Print string without eval */
+primFun(primNSPrint) {
     unwind(primArg(2));
     out = NIL;
     if (whnfHead == nameCons && whnfArgs == 2) {
@@ -466,9 +471,8 @@ primFun(primNSPrint) { /* print string without eval        */
  * Auxiliary functions for printer(s):
  * ------------------------------------------------------------------------*/
 
-static Void local
-outName(Name nm) /* output nm using parent field if possible */
-{
+/* Output nm using parent field if possible */
+static void outName(Name nm) {
     Cell p = nameRec(nm)->parent;
     switch (whatIs(p)) {
 
@@ -482,9 +486,9 @@ outName(Name nm) /* output nm using parent field if possible */
     outStr(textToStr(nameRec(nm)->text));
 }
 
-static Void local outVar(Name nm) /* output nm as function symbol          */
-{
-    String s = textToStr(nameRec(nm)->text);
+/* Output nm as function symbol */
+static void outVar(Name nm) {
+    char *s = textToStr(nameRec(nm)->text);
     if ((isascii(*s) && isalpha(*s)) || *s == '_' || *s == '[' || *s == '(')
         outName(nm);
     else {
@@ -494,9 +498,9 @@ static Void local outVar(Name nm) /* output nm as function symbol          */
     }
 }
 
-static Void local outOp(Name nm) /* output nm as operator symbol           */
-{
-    String s = textToStr(nameRec(nm)->text);
+/* Output nm as operator symbol */
+static void outOp(Name nm) {
+    char *s = textToStr(nameRec(nm)->text);
     if (isascii(s[0]) && isalpha(s[0])) {
         outCh('`');
         outName(nm);
@@ -505,29 +509,27 @@ static Void local outOp(Name nm) /* output nm as operator symbol           */
         outName(nm);
 }
 
-static Void local outStr(String s) /* output string s              */
-{
+/* Output string s */
+static void outStr(char *s) {
     while (*s)
         outCh(ExtractChar(s));
 }
 
-static Void local outPr(Name pr, Int d,
-                        Cell e) /* output expr e with printer pr,  */
-                                /* precedence d                    */
-{
+/* Output expr e with printer pr, precedence d */
+static void outPr(Name pr, int d, Cell e) {
     out = ap(NIL, out);
     fst(out) = ap(NIL, e);
     fst(fst(out)) = ap(pr, mkInt(d));
 }
 
-static Void local outLPr(Name pr, Cell xs) /* output list xs with printer pr  */
-{
+/* Output list xs with printer pr */
+static void outLPr(Name pr, Cell xs) {
     out = ap(NIL, out);
     fst(out) = ap(pr, xs);
 }
 
-static Void local outException(Cell ex) /* Produce expr to print exception */
-{
+/* Produce expr to print exception */
+static void outException(Cell ex) {
     outCh('{');
     if (isAp(ex) && fun(ex) == nameErrorCall) {
         outStr("error ");
@@ -539,30 +541,30 @@ static Void local outException(Cell ex) /* Produce expr to print exception */
     outCh('}');
 }
 
-static Void local outBadRedex(Cell rx) /* Produce expr to print bad redex */
-{
+/* Produce expr to print bad redex */
+static void outBadRedex(Cell rx) {
     outCh('{');
     outPr(nameNPrint, MIN_PREC, rx);
     outCh('}');
 }
 
-static Cell local printDException(Cell ex) /* Produce expression for exception*/
-{                                          /* with special handling        */
+/* Produce expression for exception with special handling */
+static Cell printDException(Cell ex) {
     if (isAp(ex) && fun(ex) == nameErrorCall) /* of {error str} exceptions    */
         return arg(ex);
     else
         return printException(ex, nameNil);
 }
 
-Cell printException(Cell ex, Cell rs) /* produce expression for exception*/
-{
+/* Produce expression for exception */
+Cell printException(Cell ex, Cell rs) {
     out = NIL;
     outException(ex);
     return revOnto(out, rs);
 }
 
-Void abandon(String what, Cell ex) /* abandon computation                  */
-{
+/* Abandon computation */
+void abandon(char *what, Cell ex) {
     push(printDException(ex));
     out = NIL;
     outCh('\n');

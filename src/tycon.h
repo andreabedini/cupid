@@ -11,10 +11,10 @@
 
 extern List cfunSfuns; /* [(Cfun, [SelectorVar])], for Show and Read       */
 
-extern Void checkTyconDefn(Tycon); /* validate a declaration, all now read   */
-extern Void checkSynonyms(List);   /* check the synonyms for cycles          */
-extern Int userArity(Name);     /* arity of a constructor, strictness aside */
+extern void checkTyconDefn(Tycon); /* validate a declaration, all now read   */
+extern void checkSynonyms(List);   /* check the synonyms for cycles          */
+extern int userArity(Name);     /* arity of a constructor, strictness aside */
 extern Type fullerExpand(Type); /* expand synonyms and newtypes           */
-extern Void tyconControl(Int);  /* RESET/INSTALL, called by staticAnalysis */
+extern void tyconControl(int);  /* RESET/INSTALL, called by staticAnalysis */
 
 #endif /* __TYCON_H__ */

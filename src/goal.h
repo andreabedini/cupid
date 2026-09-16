@@ -7,9 +7,9 @@
 #include "prelude.h"
 
 typedef long Target;
-extern Void setGoal(String, Target);
-extern Void soFar(Target);
-extern Void done(Void);
-extern Void failed(Void);
+extern void setGoal(char *, Target);
+extern void soFar(Target);
+extern void done(void);
+extern void failed(void);
 
 #endif /* __GOAL_H__ */

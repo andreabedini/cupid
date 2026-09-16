@@ -5,10 +5,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: errors.h,v $
- * $Revision: 1.13 $
- * $Date: 2005/09/01 14:57:50 $
  * ------------------------------------------------------------------------*/
 #ifndef __ERRORS_H__
 #define __ERRORS_H__
@@ -16,9 +12,9 @@
 #include "prelude.h"
 #include "storage.h"
 
-extern Void internal(String) CUDDLES_noreturn;
-extern Void fatal(String) CUDDLES_noreturn;
-extern Void stopAnyPrinting(Void);
+extern void internal(char *) CUDDLES_noreturn;
+extern void fatal(char *) CUDDLES_noreturn;
+extern void stopAnyPrinting(void);
 
 /*---------------------------------------------------------------------------
  * Compiler output
@@ -26,15 +22,15 @@ extern Void stopAnyPrinting(Void);
  * effect on output of Haskell programs (which should use hPutStr and friends).
  *-------------------------------------------------------------------------*/
 
-extern Void cuddlesPrintf(const char *, ...);
-extern Void cuddlesPutchar(int);
-extern Void cuddlesFlushStdout(Void);
-extern Void cuddlesEnableOutput(Bool);
-extern String cuddlesClearOutputBuffer(Void);
+extern void cuddlesPrintf(const char *, ...);
+extern void cuddlesPutchar(int);
+extern void cuddlesFlushStdout(void);
+extern void cuddlesEnableOutput(bool);
+extern char *cuddlesClearOutputBuffer(void);
 
-extern Void cuddlesFFlush(FILE *);
-extern Void cuddlesFPrintf(FILE *, const char *, ...);
-extern Void cuddlesPutc(int, FILE *);
+extern void cuddlesFFlush(FILE *);
+extern void cuddlesFPrintf(FILE *, const char *, ...);
+extern void cuddlesPutc(int, FILE *);
 
 #define Printf cuddlesPrintf
 #define Putchar cuddlesPutchar
@@ -55,30 +51,30 @@ extern Void cuddlesPutc(int, FILE *);
  * returns to the command loop.  (Before this the same sequence was written
  * with the ERRMSG/ETHEN/EEND macros, whose parentheses did not balance
  * within a line.) */
-extern Void errHead(Int); /* ERROR "file":line -  */
-extern Void errPrintf(const char *, ...) CUDDLES_printf(1, 2);
-extern Void errExpr(Cell);
-extern Void errType(Type);
-extern Void errContext(List);
-extern Void errPred(Cell);
-extern Void errKind(Kind);
-extern Void errKinds(Kinds);
-extern Void errFD(Cell);
-extern Void errFail(Void) CUDDLES_noreturn;
-extern Void errAbort(Void);
+extern void errHead(int); /* ERROR "file":line -  */
+extern void errPrintf(const char *, ...) CUDDLES_printf(1, 2);
+extern void errExpr(Cell);
+extern void errType(Type);
+extern void errContext(List);
+extern void errPred(Cell);
+extern void errKind(Kind);
+extern void errKinds(Kinds);
+extern void errFD(Cell);
+extern void errFail(void) CUDDLES_noreturn;
+extern void errAbort(void);
 
 extern sigProto(breakHandler);
 extern volatile sig_atomic_t broken; /* set by the interrupt handler;   */
                                      /* see the note in prelude.h          */
-CUDDLES_inline Void allowBreak(Void) /* act on an interrupt, if one came*/
-{
+/* Act on an interrupt, if one came */
+CUDDLES_inline void allowBreak(void) {
     if (broken) {
-        broken = FALSE;
+        broken = false;
         sigRaise(breakHandler);
     }
 }
 
-extern Bool breakOn(Bool); /* in machdep.c         */
+extern bool breakOn(bool); /* in machdep.c         */
 
 #include <setjmp.h>
 extern jmp_buf catch_error; /* jump buffer for error trapping  */

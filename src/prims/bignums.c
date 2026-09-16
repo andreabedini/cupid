@@ -5,10 +5,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: bignums.c,v $
- * $Revision: 1.15 $
- * $Date: 2004/10/29 12:43:09 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -72,8 +68,8 @@ static Cell *const bignumRoots[] = {
     &bigRem,
 };
 
-static Void bignumControl(Int);
-static Void bignumControl(Int what) {
+static void bignumControl(int);
+static void bignumControl(int what) {
     switch (what) {
     case INSTALL:
         registerRoots(bignumRoots);
@@ -93,21 +89,21 @@ struct primInfo bignumPrims = {bignumControl, bignumPrimTable, 0};
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Int local digitsCmp(List, List);
-static Bignum local bigAdd(Bignum, Bignum);
-static Bignum local bigSub(Bignum, Bignum);
-static Bignum local digitsAdd(Cell, List, List);
-static Bignum local digitsSub(List, List);
-static Bignum local bigMul(Bignum, Bignum);
-static Bignum local bigQrm(Bignum, Bignum);
-static List local digitsQrm(List, List);
+static int digitsCmp(List, List);
+static Bignum bigAdd(Bignum, Bignum);
+static Bignum bigSub(Bignum, Bignum);
+static Bignum digitsAdd(Cell, List, List);
+static Bignum digitsSub(List, List);
+static Bignum bigMul(Bignum, Bignum);
+static Bignum bigQrm(Bignum, Bignum);
+static List digitsQrm(List, List);
 
 /*---------------------------------------------------------------------------
  * Simple bignum primitives:
  *-------------------------------------------------------------------------*/
 
-Bignum bigInt(Int n) /* convert Int to bignum      */
-{
+/* Convert Int to bignum */
+Bignum bigInt(int n) {
     if (n == 0)
         return ZERONUM;
     else {
@@ -117,21 +113,21 @@ Bignum bigInt(Int n) /* convert Int to bignum      */
             /* -n overflows in Int arithmetic when n==MINNEGINT; negate the
              * unsigned reinterpretation instead, which wraps to the same
              * (correct) magnitude without relying on signed overflow.     */
-            no = (unsigned long)(0u - (Unsigned)n);
+            no = (unsigned long)(0u - (unsigned)n);
             bn = pair(NEGNUM, NIL);
         } else {
             no = (unsigned long)(n);
             bn = pair(POSNUM, NIL);
         }
         for (nx = bn; no > 0; no /= BIGBASE, nx = tl(nx)) {
-            tl(nx) = pair(mkDigit((Int)(no % BIGBASE)), NIL);
+            tl(nx) = pair(mkDigit((int)(no % BIGBASE)), NIL);
         }
         return bn;
     }
 }
 
-Bignum bigWord(Unsigned n) /* convert Word to bignum       */
-{
+/* Convert Word to bignum */
+Bignum bigWord(unsigned n) {
     if (n == 0)
         return ZERONUM;
     else {
@@ -140,14 +136,14 @@ Bignum bigWord(Unsigned n) /* convert Word to bignum       */
         no = (unsigned long)(n);
         bn = pair(POSNUM, NIL);
         for (nx = bn; no > 0; no /= BIGBASE, nx = tl(nx)) {
-            tl(nx) = pair(mkDigit((Int)(no % BIGBASE)), NIL);
+            tl(nx) = pair(mkDigit((int)(no % BIGBASE)), NIL);
         }
         return bn;
     }
 }
 
-Bignum bigInt64(HsInt64 n) /* convert 64-bit int to bignum */
-{
+/* Convert 64-bit int to bignum */
+Bignum bigInt64(HsInt64 n) {
     if (n == 0)
         return ZERONUM;
     else {
@@ -163,14 +159,14 @@ Bignum bigInt64(HsInt64 n) /* convert 64-bit int to bignum */
             bn = pair(POSNUM, NIL);
         }
         for (nx = bn; no > 0; no /= BIGBASE, nx = tl(nx)) {
-            tl(nx) = pair(mkDigit((Int)(no % BIGBASE)), NIL);
+            tl(nx) = pair(mkDigit((int)(no % BIGBASE)), NIL);
         }
         return bn;
     }
 }
 
-Bignum bigDouble(double a) /* convert double to bignum     */
-{
+/* Convert double to bignum */
+Bignum bigDouble(double a) {
     if (a == 0) {
         return ZERONUM;
     } else {
@@ -189,7 +185,7 @@ Bignum bigDouble(double a) /* convert double to bignum     */
             throwException(ap(nameArithException, nameOverflow));
         for (nx = bn; b > 0; nx = tl(nx)) {
             double n = fmod(b, (double)(BIGBASE));
-            Int d = (Int)n;
+            int d = (int)n;
             if (d < 0) /* happens on IEEE inf and -inf */
                 throwException(ap(nameArithException, nameOverflow));
             tl(nx) = pair(mkDigit(d), NIL);
@@ -211,27 +207,27 @@ Bignum bigDouble(double a) /* convert double to bignum     */
  * can, e.g. when MINNEGINT-m itself overflows).
  */
 
-Cell bigToInt(Bignum n) /* convert bignum to Int, wrapping*/
-{
+/* Convert bignum to Int, wrapping */
+Cell bigToInt(Bignum n) {
     if (n != ZERONUM) {
         List ds = snd(n);
         if (nonNull(ds)) {
-            Unsigned m = 0;
-            Unsigned b = 1;
+            unsigned m = 0;
+            unsigned b = 1;
             for (; nonNull(ds); ds = tl(ds)) {
-                m += b * (Unsigned)digitOf(hd(ds));
+                m += b * (unsigned)digitOf(hd(ds));
                 b *= BIGBASE;
             }
             if (fst(n) == NEGNUM)
                 m = 0u - m;
-            return mkInt((Int)m);
+            return mkInt((int)m);
         }
     }
     return mkInt(0);
 }
 
-double bigToDouble(Bignum n) /* convert bignum to double          */
-{
+/* Convert bignum to double */
+double bigToDouble(Bignum n) {
     if (n == ZERONUM)
         return 0.0;
     else {
@@ -246,23 +242,24 @@ double bigToDouble(Bignum n) /* convert bignum to double          */
     }
 }
 
-Bignum bigStr(String s) /* convert String to bignum        */
-{                       /* Surprisingly, this is GC safe   */
-    List ds = NIL;      /* because ds is the only variable */
-    String t = s;       /* that needs marking, and always  */
-    Int i;              /* appears as the snd of each cons */
+/* Convert String to bignum Surprisingly, this is GC safe because ds is the
+ * only variable that needs marking, and always appears as the snd of each cons */
+Bignum bigStr(char *s) {
+    List ds = NIL;
+    char *t = s;
+    int i;
 
     if (*t == '-') /* look for leading minus       */
         t++;       /* and ignore for time being    */
-    if ((i = (Int)((size_t)strlen(t) % BIGEXP)) != 0) {
-        Int d = 0;
+    if ((i = (int)((size_t)strlen(t) % BIGEXP)) != 0) {
+        int d = 0;
         while (0 < i--)
             d = d * 10 + (*t++ - '0');
         if (d)
             ds = cons(mkDigit(d), NIL);
     }
     while (*t) { /* now scan rest of string        */
-        Int d = 0;
+        int d = 0;
         for (i = BIGEXP; i > 0; i--)
             d = d * 10 + (*t++ - '0');
         if (nonNull(ds) || d)
@@ -272,24 +269,23 @@ Bignum bigStr(String s) /* convert String to bignum        */
     return isNull(ds) ? ZERONUM : pair((*s == '-' ? NEGNUM : POSNUM), ds);
 }
 
-Cell bigOut(Bignum a, Cell s, Bool b) /* bignum output, prepend digits to*/
-                                      /* stream s                          */
-                                      /* GC safe; s is snd in each cons  */
-{                                     /* TRUE => wrap neg int in parens  */
+/* Bignum output, prepend digits to stream s GC safe; s is snd in each cons
+ * true => wrap neg int in parens */
+Cell bigOut(Bignum a, Cell s, bool b) {
     if (a == ZERONUM)
         return ap(consChar('0'), s);
     else {
-        Bool isNeg = fst(a) == NEGNUM; /* keep record of sign              */
+        bool isNeg = fst(a) == NEGNUM; /* keep record of sign              */
         bn = snd(a);                   /* list of digits                   */
 
         if (b && isNeg) /* print closing paren             */
             s = ap(consChar(')'), s);
 
         for (;;) {
-            Int d = digitOf(hd(bn)); /* get next digit             */
+            int d = digitOf(hd(bn)); /* get next digit             */
             bn = tl(bn);             /* move to next digit                 */
             if (nonNull(bn)) {       /* more digits to come after this  */
-                Int i = BIGEXP;
+                int i = BIGEXP;
                 for (; i > 0; i--, d /= 10)
                     s = ap(consChar('0' + (d % 10)), s);
             } else { /* leading (non-zero) digits          */
@@ -308,11 +304,9 @@ Cell bigOut(Bignum a, Cell s, Bool b) /* bignum output, prepend digits to*/
     }
 }
 
-Bignum bigShift(Bignum big, Int c,
-                Int mult) /* Digits 0 <= c, mult < BIGBASE   */
-                          /* Calculate big*mult+c, if big>=0 */
-                          /*           big*mult-c, if big<0  */
-{                         /* UPDATE big, DESTRUCTIVELY!    */
+/* Digits 0 <= c, mult < BIGBASE Calculate big*mult+c, if big>=0 big*mult-c, if
+ * big<0 UPDATE big, DESTRUCTIVELY! */
+Bignum bigShift(Bignum big, int c, int mult) {
     if (big == ZERONUM)
         return (c == 0) ? ZERONUM : pair(POSNUM, singleton(mkDigit(c)));
     else {
@@ -333,12 +327,14 @@ Bignum bigShift(Bignum big, Int c,
  * Simple Bignum operations:
  *-------------------------------------------------------------------------*/
 
-primFun(primIntToInteger) { /* Conversion :: Int -> Integer        */
+/* Conversion :: Int -> Integer */
+primFun(primIntToInteger) {
     eval(primArg(1));
     updateRoot(bigInt(whnfInt));
 }
 
-primFun(primIntegerToInt) { /* Conversion :: Integer -> Int        */
+/* Conversion :: Integer -> Int */
+primFun(primIntegerToInt) {
     /* Optimisation: we try to short-circuit trivial conversions */
     Cell x = followInd(primArg(1));
     if (isAp(x) && followInd(fun(x)) == nameIntToInteger) {
@@ -350,33 +346,38 @@ primFun(primIntegerToInt) { /* Conversion :: Integer -> Int        */
     }
 }
 
-primFun(primWordToInteger) { /* Conversion :: Word -> Integer   */
+/* Conversion :: Word -> Integer */
+primFun(primWordToInteger) {
     eval(primArg(1));
     updateRoot(bigWord(whnfInt));
 }
 
-primFun(primIntegerToWord) { /* Conversion :: Integer -> Word   */
+/* Conversion :: Integer -> Word */
+primFun(primIntegerToWord) {
     eval(primArg(1));
     updateRoot(bigToInt(whnfHead));
 }
 
-primFun(primIntegerToFloat) { /* Conversion :: Integer -> Float  */
+/* Conversion :: Integer -> Float */
+primFun(primIntegerToFloat) {
     eval(primArg(1));
     updateRoot(mkFloat((FloatPro)bigToDouble(whnfHead)));
 }
 
-primFun(primIntegerToDouble) { /* Conversion :: Integer -> Double */
+/* Conversion :: Integer -> Double */
+primFun(primIntegerToDouble) {
     eval(primArg(1));
     updateRoot(mkDouble((DoublePro)bigToDouble(whnfHead)));
 }
 
-primFun(primNegInteger) { /* Integer unary negate                  */
+/* Integer unary negate */
+primFun(primNegInteger) {
     eval(primArg(1));
     updateRoot(bigNeg(whnfHead));
 }
 
-Bignum bigNeg(Bignum a) /* unary negation                  */
-{
+/* Unary negation */
+Bignum bigNeg(Bignum a) {
     if (a == ZERONUM)
         return ZERONUM;
     else
@@ -387,14 +388,16 @@ Bignum bigNeg(Bignum a) /* unary negation                  */
  * Bignum comparison routines:
  *-------------------------------------------------------------------------*/
 
-primFun(primEqInteger) { /* Integer equality test          */
+/* Integer equality test */
+primFun(primEqInteger) {
     eval(primArg(2));
     primArg(2) = whnfHead;
     eval(primArg(1));
     updateRoot(bigCmp(primArg(2), whnfHead) == 0 ? nameTrue : nameFalse);
 }
 
-primFun(primCmpInteger) { /* Integer comparison            */
+/* Integer comparison */
+primFun(primCmpInteger) {
     eval(primArg(2));
     primArg(2) = whnfHead;
     eval(primArg(1));
@@ -413,8 +416,8 @@ primFun(primCmpInteger) { /* Integer comparison            */
     }
 }
 
-Int bigCmp(Bignum a, Bignum b) /* Compare bignums returning:       */
-{                              /* -1 if a<b,  +1 if a>b,  0 o/w   */
+/* Compare bignums returning: -1 if a<b, +1 if a>b, 0 o/w */
+int bigCmp(Bignum a, Bignum b) {
     if (a == ZERONUM)
         return (b == ZERONUM) ? 0 : ((fst(b) == POSNUM) ? (-1) : 1);
     else if (fst(a) == NEGNUM)
@@ -428,13 +431,12 @@ Int bigCmp(Bignum a, Bignum b) /* Compare bignums returning:       */
         return digitsCmp(snd(a), snd(b));
 }
 
-static Int local digitsCmp(List xs,
-                           List ys) /* Compare positive digit streams  */
-{                                   /* -1 if xs<ys, +1 if xs>ys, 0 if= */
-    Int s = 0;
+/* Compare positive digit streams -1 if xs<ys, +1 if xs>ys, 0 if= */
+static int digitsCmp(List xs, List ys) {
+    int s = 0;
     for (; nonNull(xs) && nonNull(ys); xs = tl(xs), ys = tl(ys)) {
-        Int x = hd(xs);
-        Int y = hd(ys);
+        int x = hd(xs);
+        int y = hd(ys);
         if (x < y)
             s = (-1);
         else if (x > y)
@@ -447,8 +449,8 @@ static Int local digitsCmp(List xs,
  * Addition and subtraction:
  *-------------------------------------------------------------------------*/
 
-static Bignum local bigAdd(Bignum a, Bignum b) /* Bignum addition            */
-{
+/* Bignum addition */
+static Bignum bigAdd(Bignum a, Bignum b) {
     if (a == ZERONUM)
         return b;
     else if (b == ZERONUM)
@@ -465,9 +467,8 @@ static Bignum local bigAdd(Bignum a, Bignum b) /* Bignum addition            */
             return digitsSub(snd(b), snd(a));
 }
 
-static Bignum local bigSub(Bignum a,
-                           Bignum b) /* Bignum subtraction                 */
-{
+/* Bignum subtraction */
+static Bignum bigSub(Bignum a, Bignum b) {
     if (a == ZERONUM)
         return bigNeg(b);
     else if (b == ZERONUM)
@@ -484,11 +485,10 @@ static Bignum local bigSub(Bignum a,
             return digitsSub(snd(b), snd(a));
 }
 
-static Bignum local digitsAdd(Cell sign, List xs,
-                              List ys) /* Addition of digit streams        */
-{
+/* Addition of digit streams */
+static Bignum digitsAdd(Cell sign, List xs, List ys) {
     Cell nx = bn = pair(sign, NIL);
-    Int c = 0;
+    int c = 0;
     for (;;) {
         if (nonNull(xs)) { /* Add any digits to carry */
             if (nonNull(ys)) {
@@ -522,12 +522,11 @@ static Bignum local digitsAdd(Cell sign, List xs,
     return bn;
 }
 
-static Bignum local digitsSub(List xs,
-                              List ys) /* Subtraction of digit streams    */
-{
+/* Subtraction of digit streams */
+static Bignum digitsSub(List xs, List ys) {
     Cell nx;
-    Int b = 0;
-    Int lz = 0;
+    int b = 0;
+    int lz = 0;
 
     switch (digitsCmp(xs, ys)) {
     case (-1):
@@ -549,7 +548,7 @@ static Bignum local digitsSub(List xs,
 
     nx = bn;   /* Now we can assume that xs>ys    */
     for (;;) { /* Scan each digit                  */
-        Int y = b;
+        int y = b;
         if (nonNull(ys)) {
             y += digitOf(hd(xs)) - digitOf(hd(ys));
             xs = tl(xs);
@@ -587,8 +586,8 @@ static Bignum local digitsSub(List xs,
  * Multiplication:
  *-------------------------------------------------------------------------*/
 
-static Bignum local bigMul(Bignum a, Bignum b) /* Bignum multiply            */
-{
+/* Bignum multiply */
+static Bignum bigMul(Bignum a, Bignum b) {
     if (a == ZERONUM || b == ZERONUM) /* if either operand is zero, then */
         return ZERONUM;               /* so is the result ...              */
     else {                            /* otherwise, use rule of signs:   */
@@ -596,8 +595,8 @@ static Bignum local bigMul(Bignum a, Bignum b) /* Bignum multiply            */
         for (; nonNull(b = tl(b)); nx = tl(nx)) { /* loop through digits of b*/
             List as = nx;           /* At each stage of the loop, add  */
             List xs = tl(a);        /* y * xs to the value in result,  */
-            Int y = digitOf(hd(b)); /* using c as carry            */
-            Int c = 0;
+            int y = digitOf(hd(b)); /* using c as carry            */
+            int c = 0;
             for (; nonNull(xs); xs = tl(xs)) { /* loop through digits of a*/
                 c += digitOf(hd(xs)) * y;
                 if (nonNull(tl(as))) {
@@ -620,9 +619,8 @@ static Bignum local bigMul(Bignum a, Bignum b) /* Bignum multiply            */
  * Division:
  *-------------------------------------------------------------------------*/
 
-static Cell local bigQrm(Bignum a,
-                         Bignum b) /* bignum quotient and remainder   */
-{
+/* Bignum quotient and remainder */
+static Cell bigQrm(Bignum a, Bignum b) {
     if (b == ZERONUM) /* division by zero?                 */
         return NIL;
     else if (a == ZERONUM) /* 0 `div` x == 0 `mod` x == 0          */
@@ -644,20 +642,19 @@ static Cell local bigQrm(Bignum a,
     }
 }
 
-static List local digitsQrm(List us,
-                            List vs) /* digits quotient and remainder   */
-{
-    Bool gc = consGC;
-    consGC = TRUE;
+/* Digits quotient and remainder */
+static List digitsQrm(List us, List vs) {
+    bool gc = consGC;
+    consGC = true;
     if (isNull(tl(vs))) { /* single digit divisor                  */
-        Int v = digitOf(hd(vs));
-        Int r = 0;
+        int v = digitOf(hd(vs));
+        int r = 0;
         List us1 = NIL; /* first, copy and reverse us      */
         for (; nonNull(us); us = tl(us))
             us1 = cons(hd(us), us1);
         while (nonNull(us1)) { /* then do division, MSD first      */
             Cell tmp = tl(us1);
-            Int u = r * BIGBASE + digitOf(hd(us1));
+            int u = r * BIGBASE + digitOf(hd(us1));
             r = u % v;
             u = u / v;
             if (nonNull(us) || u) { /* output quotient digit       */
@@ -681,11 +678,11 @@ static List local digitsQrm(List us,
         List us1 = NIL;
         List vs1 = NIL;
         List ds = us;
-        Int v1 = 0, v2 = 0;
-        Int uj = 0, uj1 = 0, uj2 = 0;
-        Int n = 0;
+        int v1 = 0, v2 = 0;
+        int uj = 0, uj1 = 0, uj2 = 0;
+        int n = 0;
         List qs = NIL;
-        Int sc;
+        int sc;
 
         while (nonNull(us) && nonNull(vs)) {
             v2 = v1;
@@ -744,7 +741,7 @@ static List local digitsQrm(List us,
 
         sc = BIGBASE / (v1 + 1);
         if (sc != 1) { /* Scale numerator and denominator */
-            Int c = 0;
+            int c = 0;
             v1 = v2 = 0;
             for (vs1 = vs; nonNull(vs1); vs1 = tl(vs1)) {
                 v2 = v1;
@@ -779,8 +776,8 @@ static List local digitsQrm(List us,
          */
 
         while (nonNull(ds)) {
-            Int nd, c; /* Guess a value for quotient digit*/
-            Int qhat = (uj == v1) ? (BIGBASE - 1) : (uj * BIGBASE + uj1) / v1;
+            int nd, c; /* Guess a value for quotient digit*/
+            int qhat = (uj == v1) ? (BIGBASE - 1) : (uj * BIGBASE + uj1) / v1;
             while (v2 * qhat > (uj * BIGBASE + uj1 - qhat * v1) * BIGBASE + uj2)
                 qhat--; /* and then try to improve it      */
 
@@ -844,7 +841,7 @@ static List local digitsQrm(List us,
         us = NIL;
         uj = 0; /* reuse variable uj as a carry    */
         while (nonNull(us1)) {
-            Int y = uj * BIGBASE + digitOf(hd(us1));
+            int y = uj * BIGBASE + digitOf(hd(us1));
             uj = y % sc;
             y /= sc;
             if (nonNull(us) || y) {

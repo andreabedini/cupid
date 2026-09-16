@@ -22,7 +22,7 @@
 #include "depend.h"
 #include "fixity.h"
 
-static Pair local attachFixity(Int, Cell);
+static Pair attachFixity(int, Cell);
 
 /* --------------------------------------------------------------------------
  * Dealing with infix operators:
@@ -105,11 +105,11 @@ static Pair local attachFixity(Int, Cell);
  * value APPLIC is used to indicate that the syntax value is unknown.
  * ------------------------------------------------------------------------*/
 
-Cell tidyInfix(Int line, Cell e) /* Convert infixExp to Exp     */
-{                                /* :: OpExp                    */
-    Cell s = NIL;                /* :: [(Op,Exp)]               */
-    Syntax sye = APPLIC;         /* Syntax of op in e (init unknown)*/
-    Syntax sys = APPLIC;         /* Syntax of op in s (init unknown)*/
+/* Convert infixExp to Exp :: OpExp */
+Cell tidyInfix(int line, Cell e) {
+    Cell s = NIL;        /* :: [(Op,Exp)]               */
+    Syntax sye = APPLIC; /* Syntax of op in e (init unknown)*/
+    Syntax sys = APPLIC; /* Syntax of op in s (init unknown)*/
     Cell d = e;
 
     while (fst(d) != ONLY) { /* Attach fixities to operators    */
@@ -168,7 +168,7 @@ Cell tidyInfix(Int line, Cell e) /* Convert infixExp to Exp     */
             {
                 Cell prev = e; /* e := tidyNeg e  */
                 Cell temp = arg(prev);
-                Int nneg = 1;
+                int nneg = 1;
                 for (; whatIs(temp) == NEG; nneg++) {
                     fun(prev) = nameNegate;
                     prev = temp;
@@ -243,10 +243,8 @@ Cell tidyInfix(Int line, Cell e) /* Convert infixExp to Exp     */
         }
 }
 
-static Pair local attachFixity(Int line,
-                               Cell op) /* Attach fixity to operator in an */
-                                        /* infix expression                */
-{
+/* Attach fixity to operator in an infix expression */
+static Pair attachFixity(int line, Cell op) {
     Syntax sy = DEF_OPSYNTAX;
     Cell trop = op;
 
@@ -267,7 +265,7 @@ static Pair local attachFixity(Int line,
 
     case CONOPCELL:
     case CONIDCELL:
-        sy = syntaxOf(trop = conDefined(line, op, FALSE));
+        sy = syntaxOf(trop = conDefined(line, op, false));
         break;
 
     case QUALIDENT: {
@@ -287,7 +285,7 @@ static Pair local attachFixity(Int line,
     if (sy == APPLIC) {
         sy = DEF_OPSYNTAX;
     }
-    return pair(mkInt((Int)sy),
+    return pair(mkInt((int)sy),
                 pair(trop, op)); /* Pair fixity with (possibly) */
                                  /* translated operator       */
 }

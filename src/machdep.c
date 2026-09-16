@@ -9,10 +9,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: machdep.c,v $
- * $Revision: 1.140 $
- * $Date: 2006/05/11 15:14:11 $
  * ------------------------------------------------------------------------*/
 #include "prelude.h"
 #include "storage.h"
@@ -75,34 +71,32 @@
 
 /* where have we hidden things in the registry? */
 
-extern String readRegString(HKEY, String, String, String);
+extern char *readRegString(HKEY, char *, char *, char *);
 
-static Bool local createKey(HKEY, String, PHKEY, REGSAM);
-static Bool local queryValue(HKEY, String, String, LPDWORD, LPBYTE, DWORD);
-static Bool local queryString(HKEY, String, String, String *);
-static Bool local setValue(HKEY, String, String, DWORD, LPBYTE, DWORD);
+static bool createKey(HKEY, char *, PHKEY, REGSAM);
+static bool queryValue(HKEY, char *, char *, LPDWORD, LPBYTE, DWORD);
+static bool queryString(HKEY, char *, char *, char **);
+static bool setValue(HKEY, char *, char *, DWORD, LPBYTE, DWORD);
 #endif
 
 /* --------------------------------------------------------------------------
  * Find information about a file:
  * ------------------------------------------------------------------------*/
 
-Void getFileInfo(String f, Time *tm,
-                 Long *sz) /* find time stamp and size of file*/
-{
+/* Find time stamp and size of file */
+void getFileInfo(char *f, Time *tm, long *sz) {
     struct stat scbuf;
     if (!stat(f, &scbuf)) {
         *tm = scbuf.st_mtime;
-        *sz = (Long)(scbuf.st_size);
+        *sz = (long)(scbuf.st_size);
     } else {
         *tm = 0;
         *sz = 0;
     }
 }
 
-Bool readable(String f,
-              Bool isReg) /* is f readable (and also, a regular file?) */
-{
+/* Is f readable (and also, a regular file?) */
+bool readable(char *f, bool isReg) {
     struct stat scbuf;
     return (!stat(f, &scbuf) && (scbuf.st_mode & S_IREAD) /* readable     */
             && (!isReg || (scbuf.st_mode & S_IFREG))      /* regular file */
@@ -113,22 +107,22 @@ Bool readable(String f,
  * Search for script files on the CUDDLES path:
  * ------------------------------------------------------------------------*/
 
-static String local homeDir(void);
+static char *homeDir(void);
 
-static String local normPath(String);
-static Void local searchChr(Int);
-static Void local searchStr(String);
-static Bool local tryEndings(Void);
-static Bool local find1(String);
-static Bool local find2(String);
-static String local expandVariable(String);
-static String local skipVariable(String);
-static String local nextPath(String);
-static Bool local samePath(String, String);
+static char *normPath(char *);
+static void searchChr(int);
+static void searchStr(char *);
+static bool tryEndings(void);
+static bool find1(char *);
+static bool find2(char *);
+static char *expandVariable(char *);
+static char *skipVariable(char *);
+static char *nextPath(char *);
+static bool samePath(char *, char *);
 #if DOS_FILENAMES
-static Bool local isPathSep(String);
+static bool isPathSep(char *);
 #endif
-static Bool local scanSubDirs(String);
+static bool scanSubDirs(char *);
 
 #if DOS_FILENAMES
 # define SLASH '\\'
@@ -146,32 +140,33 @@ static Bool local scanSubDirs(String);
 
 #if HAVE_GETMODULEFILENAME
 static HMODULE cuddlesModule = (HMODULE)0;
-static String cuddlesRoot = 0;
+static char *cuddlesRoot = 0;
 
-extern Void setCuddlesModule(HMODULE);
-extern Bool setCuddlesRoot(String);
+extern void setCuddlesModule(HMODULE);
+extern bool setCuddlesRoot(char *);
 
-Void setCuddlesModule(HMODULE hmod) {
+void setCuddlesModule(HMODULE hmod) {
     cuddlesModule = hmod;
 }
 
-Bool setCuddlesRoot(String s) {
-    String newRoot = malloc(strlen(s) + 1);
+bool setCuddlesRoot(char *s) {
+    char *newRoot = malloc(strlen(s) + 1);
 
     if (!newRoot)
-        return FALSE;
+        return false;
 
     strcpy(newRoot, s);
 
     if (cuddlesRoot)
         free(cuddlesRoot);
     cuddlesRoot = newRoot;
-    return TRUE;
+    return true;
 }
 
 #endif
 
-String cuddlesdir() { /* directory containing libraries/Prelude.hs */
+/* Directory containing libraries/Prelude.hs */
+char *cuddlesdir(void) {
 #if HAVE_GETMODULEFILENAME
     /* On Windows, we can find the binary we're running and it's
      * conventional to put the libraries in the same place.
@@ -182,7 +177,7 @@ String cuddlesdir() { /* directory containing libraries/Prelude.hs */
         return cuddlesRoot;
 
     if (dir[0] == '\0') { /* not initialised yet */
-        String slash = NIL;
+        char *slash = NIL;
         char *cuddlesdir = getenv("CUDDLESDIR");
 
         if (cuddlesdir) {
@@ -210,12 +205,12 @@ String cuddlesdir() { /* directory containing libraries/Prelude.hs */
 #endif
 }
 
-static String homeDir() {
+static char *homeDir(void) {
     return getenv("HOME");
 }
 
-String local RealPath(String s) /* Find absolute pathname of file  */
-{
+/* Find absolute pathname of file */
+char *RealPath(char *s) {
 #if HAVE__FULLPATH /* Windows */
     static char path[FILENAME_MAX + 1];
     _fullpath(path, s, FILENAME_MAX + 1);
@@ -240,11 +235,11 @@ String local RealPath(String s) /* Find absolute pathname of file  */
     return path;
 }
 
-static String local
-normPath(String s) /* Try, as much as possible, to normalize  */
-{                  /* a pathname in some appropriate manner.  */
+/* Try, as much as possible, to normalize a pathname in some appropriate
+ * manner. */
+static char *normPath(char *s) {
 #if PATH_CANONICALIZATION
-    String path = RealPath(s);
+    char *path = RealPath(s);
 # if CASE_INSENSITIVE_FILENAMES
     strlwr(path); /* and convert to lowercase        */
 # endif
@@ -255,30 +250,29 @@ normPath(String s) /* Try, as much as possible, to normalize  */
 }
 
 static char searchBuf[FILENAME_MAX + 1];
-static Int searchPos;
+static int searchPos;
 
 #define searchReset(n) searchBuf[searchPos = (n)] = '\0'
 
-static Void local searchChr(Int c) /* Add single character to search buffer   */
-{
+/* Add single character to search buffer */
+static void searchChr(int c) {
     if (searchPos < FILENAME_MAX) {
         searchBuf[searchPos++] = (char)c;
         searchBuf[searchPos] = '\0';
     }
 }
 
-static Void local
-searchStr(String s) /* Add string to search buffer             */
-{
+/* Add string to search buffer */
+static void searchStr(char *s) {
     while (*s && searchPos < FILENAME_MAX)
         searchBuf[searchPos++] = *s++;
     searchBuf[searchPos] = '\0';
 }
 
-static Bool local tryEndings() /* Try each of the listed endings          */
-{
-    Int save;
-    String sp;
+/* Try each of the listed endings */
+static bool tryEndings(void) {
+    int save;
+    char *sp;
 
     save = searchPos;
     sp = cuddlesSuffixes;
@@ -287,19 +281,18 @@ static Bool local tryEndings() /* Try each of the listed endings          */
             if (searchPos < FILENAME_MAX)
                 searchBuf[searchPos++] = *sp;
         searchBuf[searchPos] = '\0';
-        if (readable(searchBuf, TRUE))
-            return TRUE;
+        if (readable(searchBuf, true))
+            return true;
         if (*sp)
             sp++;
         searchReset(save);
     }
-    return FALSE;
+    return false;
 }
 
 #if DOS_FILENAMES
-static Bool
-    local isPathSep(String sep) /* does 'sep' mark the end of a valid path? */
-{
+/* Does 'sep' mark the end of a valid path? */
+static bool isPathSep(char *sep) {
     /* ';' is always a separator */
     /* ':' is a separator iff it is not followed by a backslash */
     /* (should test for <x>:\ but that seems too difficult) */
@@ -313,13 +306,13 @@ static Bool
 
    input: searchbuf contains base directory (not SLASH terminated)
               argument name contains the module name
-   output: TRUE: searchBuf contains the full filename
-           FALSE: searchBuf is garbage, file not found
+   output: true: searchBuf contains the full filename
+           false: searchBuf is garbage, file not found
 */
 
 #if HAVE_DIRENT_H
 
-static Bool scanSubDirs(String s) {
+static bool scanSubDirs(char *s) {
     DIR *dir;
     struct dirent *entry;
     struct stat statb;
@@ -337,19 +330,19 @@ static Bool scanSubDirs(String s) {
                     searchChr(SLASH);
                     if (find2(s)) {
                         closedir(dir);
-                        return TRUE;
+                        return true;
                     }
                 }
                 searchReset(save);
             }
         closedir(dir);
     }
-    return FALSE;
+    return false;
 }
 
 #elif HAVE_WINDOWS_H
 
-static Bool scanSubDirs(String s) {
+static bool scanSubDirs(char *s) {
     struct _finddata_t findInfo;
     long handle;
     int save;
@@ -362,7 +355,7 @@ static Bool scanSubDirs(String s) {
     handle = _findfirst(searchBuf, &findInfo);
     if (handle == -1) {
         errno = 0;
-        return FALSE;
+        return false;
     }
 
     /* search all subdirectories */
@@ -375,19 +368,19 @@ static Bool scanSubDirs(String s) {
             searchChr(SLASH);
             if (find2(s)) {
                 _findclose(handle);
-                return TRUE;
+                return true;
             }
         }
     } while (_findnext(handle, &findInfo) == 0);
 
     _findclose(handle);
-    return FALSE;
+    return false;
 }
 
 #else
 
-static Bool scanSubDirs(String name) {
-    return FALSE;
+static bool scanSubDirs(char *name) {
+    return false;
 }
 
 #endif /* HAVE_WINDOWS_H || HAVE_DIRENT_H || (__MWERKS__ && macintosh) */
@@ -395,8 +388,8 @@ static Bool scanSubDirs(String name) {
 /* Variables that may be substituted in the path */
 
 struct shellVariable {
-    String var_name;
-    String (*var_value)(Void);
+    char *var_name;
+    char *(*var_value)(void);
 };
 
 static struct shellVariable shell_var[] = {
@@ -406,12 +399,12 @@ static struct shellVariable shell_var[] = {
     findPathname nm = [ nm ++ e | e <- "" : cuddlesSuffixes ]
 */
 
-String
-findPathname(String filename) /* Look for a file, trying various extensions */
-{                             /* Return ***input name*** if no file was found */
+/* Look for a file, trying various extensions Return ***input name*** if no
+ * file was found */
+char *findPathname(char *filename) {
     searchReset(0);
     searchStr(filename);
-    if (!readable(searchBuf, TRUE) && !tryEndings())
+    if (!readable(searchBuf, true) && !tryEndings())
         searchStr("");
     return normPath(searchBuf);
 }
@@ -429,10 +422,8 @@ findPathname(String filename) /* Look for a file, trying various extensions */
         dot2slash c   = if c=='.' then slash else c
 */
 
-String findMInDir(String dir,
-                  String nm) /* Look for a module in the suggested dir */
-                             /* Return NULL if no file was found       */
-{
+/* Look for a module in the suggested dir Return NULL if no file was found */
+char *findMInDir(char *dir, char *nm) {
     searchReset(0);
     searchStr(dir);
     searchChr(SLASH);
@@ -443,8 +434,8 @@ String findMInDir(String dir,
     }
 }
 
-String findMPathname(String name) /* Look for a module                      */
-{                                 /* Return NULL if no file was found       */
+/* Look for a module Return NULL if no file was found */
+char *findMPathname(char *name) {
     if (find1(name)) {
         return normPath(searchBuf);
     } else {
@@ -452,10 +443,10 @@ String findMPathname(String name) /* Look for a module                      */
     }
 }
 
-static Bool find1(String name) /* Search each directory of the path */
-{
-    String pathpt = cuddlesPath;
-    String value;
+/* Search each directory of the path */
+static bool find1(char *name) {
+    char *pathpt = cuddlesPath;
+    char *value;
 
     searchReset(0); /* look along the CUDDLESPATH */
     if (pathpt) {
@@ -472,21 +463,21 @@ static Bool find1(String name) /* Search each directory of the path */
                 searchPos -= 2;
                 searchBuf[searchPos] = '\0';
                 if (scanSubDirs(name))
-                    return TRUE;
+                    return true;
             } else {
                 searchChr(SLASH);
                 if (find2(name))
-                    return TRUE;
+                    return true;
             }
             if (isPATHSEP(pathpt))
                 pathpt++;
         }
     }
-    return FALSE;
+    return false;
 }
 
 /* Expansion of initial MPW-style "shell-variables" of the form {varname} */
-static String local expandVariable(String pathpt) {
+static char *expandVariable(char *pathpt) {
     if (*pathpt == '{') {
         int i, len;
 
@@ -502,19 +493,19 @@ static String local expandVariable(String pathpt) {
 }
 
 /* Assuming expandVariable(pathpt) succeeded, skip past the variable */
-static String local skipVariable(String pathpt) {
+static char *skipVariable(char *pathpt) {
     return strchr(pathpt + 1, '}') + 1;
 }
 
-static Bool local find2(String s) /* Turn module name into a filename */
-{
-    String sp;
+/* Turn module name into a filename */
+static bool find2(char *s) {
+    char *sp;
 
     /* replace all dots in the module name with slashes */
     for (sp = s; *sp; sp++) {
         if (searchPos >= FILENAME_MAX) { /* module name (plus whatever was  */
             searchBuf[searchPos] = '\0'; /* already in searchBuf) too long  */
-            return FALSE;                /* to fit: fail instead of         */
+            return false;                /* to fit: fail instead of         */
         } /* overrunning searchBuf           */
         searchBuf[searchPos++] = *sp == '.' ? SLASH : *sp;
     }
@@ -522,13 +513,13 @@ static Bool local find2(String s) /* Turn module name into a filename */
     return tryEndings();
 }
 
-String dirname(String filename) /* Return the directory part of the filename */
-{                               /* or "." if no directory.                   */
+/* Return the directory part of the filename or "." if no directory. */
+char *dirname(char *filename) {
 
 #if DOS_FILENAMES
     /* Allow both / and \\ as delimiters */
     /* So we cannot make use of strrchr() */
-    String slash;
+    char *slash;
 
     slash = filename + strlen(filename) - 1;
     while (slash > filename) {
@@ -542,11 +533,11 @@ String dirname(String filename) /* Return the directory part of the filename */
         return strnCopy(filename, slash - filename);
     }
 #else
-    String slash = strrchr(filename, SLASH);
+    char *slash = strrchr(filename, SLASH);
     if (!slash) {
         return strCopy(".");
     } else {
-        return strnCopy(filename, (Int)(slash - filename));
+        return strnCopy(filename, (int)(slash - filename));
     }
 #endif
 }
@@ -556,15 +547,14 @@ String dirname(String filename) /* Return the directory part of the filename */
  * eg substPath("a:b:c::d:e","x:y:z") = "a:b:c:x:y:z:d:e"
  * ------------------------------------------------------------------------*/
 
-String local substPath(String new,
-                       String sub) /* substitute sub path into new path*/
-{
-    Bool substituted = FALSE; /*   only allow one replacement */
-    Int maxlen = (Int)(strlen(sub) + strlen(new)); /* safe upper bound */
-    String r = (String)malloc(maxlen + 1); /* result string                */
-    String t = r;                          /* pointer into r               */
-    String next = new;                     /* next uncopied char in new    */
-    String start = next;                   /* start of last path component */
+/* Substitute sub path into new path */
+char *substPath(char *new, char *sub) {
+    bool substituted = false; /*   only allow one replacement */
+    int maxlen = (int)(strlen(sub) + strlen(new)); /* safe upper bound */
+    char *r = (char *)malloc(maxlen + 1); /* result string                */
+    char *t = r;                          /* pointer into r               */
+    char *next = new;                     /* next uncopied char in new    */
+    char *start = next;                   /* start of last path component */
     if (r == 0) {
         errHead(0);
         errPrintf("String storage space exhausted");
@@ -573,11 +563,11 @@ String local substPath(String new,
     do {
         if (isPATHSEP(next) || *next == '\0') {
             if (!substituted && next == start) {
-                String s = sub;
+                char *s = sub;
                 for (; *s != '\0'; ++s) {
                     *t++ = *s;
                 }
-                substituted = TRUE;
+                substituted = true;
             }
             start = next + 1;
         }
@@ -586,7 +576,7 @@ String local substPath(String new,
 }
 
 /* Remove duplicates from the path */
-String uniqPath(String path) {
+char *uniqPath(char *path) {
     char *pp;
     for (pp = path; *pp;) {
         char *prev;
@@ -608,7 +598,7 @@ String uniqPath(String path) {
 }
 
 /* Advance to the start of the next entry in the path list */
-static String local nextPath(String pp) {
+static char *nextPath(char *pp) {
     while (*pp && !isPATHSEP(pp))
         pp++;
     if (*pp)
@@ -616,7 +606,7 @@ static String local nextPath(String pp) {
     return pp;
 }
 
-static Bool local samePath(String pp1, String pp2) {
+static bool samePath(char *pp1, char *pp2) {
     char *ppsave1, *ppsave2;
     char *value;
 
@@ -634,7 +624,7 @@ static Bool local samePath(String pp1, String pp2) {
 
     while (*pp1 && !isPATHSEP(pp1) && *pp2 && !isPATHSEP(pp2)) {
         if (*pp1 != *pp2)
-            return FALSE;
+            return false;
         if (*++pp1 == '\0' && ppsave1 != 0) { /* end of substitution */
             pp1 = ppsave1;
             ppsave1 = 0;
@@ -651,11 +641,10 @@ static Bool local samePath(String pp1, String pp2) {
  * Read value from environment variable or registry:
  * ------------------------------------------------------------------------*/
 
-String fromEnv(String var,
-               String def) /* return value of:                        */
-                           /*     environment variable named by var   */
-{                          /* or: default value given by def          */
-    String s = getenv(var);
+/* Return value of: environment variable named by var or: default value given
+ * by def */
+char *fromEnv(char *var, char *def) {
+    char *s = getenv(var);
     return (s ? s : def);
 }
 
@@ -664,8 +653,9 @@ String fromEnv(String var,
  * ------------------------------------------------------------------------*/
 
 #if PROFILING
-String timeString() { /* return time&date string         */
-    time_t clock;     /* must end with '\n' character    */
+/* Return time&date string must end with '\n' character */
+char *timeString(void) {
+    time_t clock;
     time(&clock);
     return (ctime(&clock));
 }
@@ -675,24 +665,26 @@ String timeString() { /* return time&date string         */
  * Garbage collection notification:
  * ------------------------------------------------------------------------*/
 
-Bool gcMessages = FALSE; /* TRUE => print GC messages       */
+bool gcMessages = false; /* true => print GC messages       */
 
-Void gcStarted() { /* Notify garbage collector start  */
+/* Notify garbage collector start */
+void gcStarted(void) {
     if (gcMessages) {
         Printf("{{Gc");
         FlushStdout();
     }
 }
 
-Void gcScanning() { /* Notify garbage collector scans  */
+/* Notify garbage collector scans */
+void gcScanning(void) {
     if (gcMessages) {
         Putchar(':');
         FlushStdout();
     }
 }
 
-Void gcRecovered(Int recovered) /* Notify garbage collection done  */
-{
+/* Notify garbage collection done */
+void gcRecovered(int recovered) {
     if (gcMessages) {
         Printf("%d}}", recovered);
         FlushStdout();
@@ -701,7 +693,8 @@ Void gcRecovered(Int recovered) /* Notify garbage collection done  */
 
 Cell *CStackBase; /* Retain start of C control stack */
 
-Void gcCStack() {        /* Garbage collect elements off    */
+/* Garbage collect elements off */
+void gcCStack(void) {
     Cell stackTop = NIL; /* C stack                         */
     Cell *ptr = &stackTop;
     if (((long)(ptr) - (long)(CStackBase)) & 3)
@@ -760,27 +753,28 @@ typedef struct termios TermParams;
      tp.c_cc[VEOF] = '\04';                                                    \
      tp.c_cc[VEOL] = '\0';
 
-static Bool messedWithTerminal = FALSE;
+static bool messedWithTerminal = false;
 static TermParams originalSettings;
 
-Void normalTerminal() { /* restore terminal initial state  */
+/* Restore terminal initial state */
+void normalTerminal(void) {
     if (messedWithTerminal)
         setTerminal(fileno(stdin), originalSettings);
 }
 
-Bool getEchoTerminal(Int fd) {
+bool getEchoTerminal(int fd) {
     TermParams settings;
 
     getTerminal(fd, settings);
     return getEcho(settings);
 }
 
-Void setEchoTerminal(Int fd, Bool echo) {
+void setEchoTerminal(int fd, bool echo) {
     TermParams settings;
 
     if (fd == 0 && !messedWithTerminal) {
         getTerminal(0, originalSettings);
-        messedWithTerminal = TRUE;
+        messedWithTerminal = true;
     }
     getTerminal(fd, settings);
     if (echo) {
@@ -791,19 +785,19 @@ Void setEchoTerminal(Int fd, Bool echo) {
     setTerminal(fd, settings);
 }
 
-Bool getBuffTerminal(Int fd) {
+bool getBuffTerminal(int fd) {
     TermParams settings;
 
     getTerminal(fd, settings);
     return getEcho(settings);
 }
 
-Void setBuffTerminal(Int fd, Bool buffered) {
+void setBuffTerminal(int fd, bool buffered) {
     TermParams settings;
 
     if (fd == 0 && !messedWithTerminal) {
         getTerminal(0, originalSettings);
-        messedWithTerminal = TRUE;
+        messedWithTerminal = true;
     }
     getTerminal(fd, settings);
     if (buffered) {
@@ -814,7 +808,8 @@ Void setBuffTerminal(Int fd, Bool buffered) {
     setTerminal(fd, settings);
 }
 
-Int getTerminalWidth() { /* determine width of terminal     */
+/* Determine width of terminal */
+int getTerminalWidth(void) {
 # ifdef TIOCGWINSZ
     static struct winsize terminalSize;
     ioctl(fileno(stdout), TIOCGWINSZ, &terminalSize);
@@ -826,24 +821,25 @@ Int getTerminalWidth() { /* determine width of terminal     */
 
 #elif IS_WINDOWS
 
-static Bool messedWithTerminal = FALSE;
+static bool messedWithTerminal = false;
 static DWORD originalSettings;
 
-Int getTerminalWidth() {
+int getTerminalWidth(void) {
     return 80;
 }
 
-Void normalTerminal() { /* restore terminal initial state  */
+/* Restore terminal initial state */
+void normalTerminal(void) {
     if (messedWithTerminal) {
         HANDLE hIn;
 
         hIn = GetStdHandle(STD_INPUT_HANDLE);
         SetConsoleMode(hIn, originalSettings);
-        messedWithTerminal = FALSE;
+        messedWithTerminal = false;
     }
 }
 
-Bool getEchoTerminal(Int fd) {
+bool getEchoTerminal(int fd) {
     if (fd == 0) {
         DWORD mo;
         HANDLE hIn;
@@ -852,10 +848,10 @@ Bool getEchoTerminal(Int fd) {
         GetConsoleMode(hIn, &mo);
         return (mo & ENABLE_ECHO_INPUT) != 0;
     } else
-        return FALSE;
+        return false;
 }
 
-Void setEchoTerminal(Int fd, Bool echo) {
+void setEchoTerminal(int fd, bool echo) {
     if (fd == 0) {
         DWORD mo;
         HANDLE hIn;
@@ -864,7 +860,7 @@ Void setEchoTerminal(Int fd, Bool echo) {
         GetConsoleMode(hIn, &mo);
         if (!messedWithTerminal) {
             originalSettings = mo;
-            messedWithTerminal = TRUE;
+            messedWithTerminal = true;
         }
         if (echo)
             mo |= ENABLE_ECHO_INPUT;
@@ -874,7 +870,7 @@ Void setEchoTerminal(Int fd, Bool echo) {
     }
 }
 
-Bool getBuffTerminal(Int fd) {
+bool getBuffTerminal(int fd) {
     if (fd == 0) {
         DWORD mo;
         HANDLE hIn;
@@ -883,10 +879,10 @@ Bool getBuffTerminal(Int fd) {
         GetConsoleMode(hIn, &mo);
         return (mo & ENABLE_LINE_INPUT) != 0;
     } else
-        return FALSE;
+        return false;
 }
 
-Void setBuffTerminal(Int fd, Bool buffered) {
+void setBuffTerminal(int fd, bool buffered) {
     if (fd == 0) {
         DWORD mo;
         HANDLE hIn;
@@ -895,7 +891,7 @@ Void setBuffTerminal(Int fd, Bool buffered) {
         GetConsoleMode(hIn, &mo);
         if (!messedWithTerminal) {
             originalSettings = mo;
-            messedWithTerminal = TRUE;
+            messedWithTerminal = true;
         }
         if (buffered)
             mo |= ENABLE_LINE_INPUT;
@@ -911,24 +907,24 @@ Void setBuffTerminal(Int fd, Bool buffered) {
  * Interrupt handling:
  * ------------------------------------------------------------------------*/
 
-volatile sig_atomic_t broken = FALSE; /* pending break to be handled     */
+volatile sig_atomic_t broken = false; /* pending break to be handled     */
                                       /* only ever set from the SIGINT   */
                                       /* handler, so it must stay        */
                                       /* sig_atomic_t, not Bool          */
-static Bool breakReqd = FALSE;        /* currently trapping breaks       */
-static Bool trapBreak = FALSE;        /* ever asked to trap breaks       */
+static bool breakReqd = false;        /* currently trapping breaks       */
+static bool trapBreak = false;        /* ever asked to trap breaks       */
 static sigProto(ignoreBreak);
-static Void local installHandlers(Void);
+static void installHandlers(void);
 
-Bool breakOn(Bool reqd) /* set break trapping on if reqd,  */
-{                       /* or off otherwise, returning old */
-    Bool old = breakReqd;
+/* Set break trapping on if reqd, or off otherwise, returning old */
+bool breakOn(bool reqd) {
+    bool old = breakReqd;
 
     breakReqd = reqd;
     if (reqd) {
-        trapBreak = TRUE;
+        trapBreak = true;
         if (broken) {       /* repond to break signal received */
-            broken = FALSE; /* whilst break trap disabled      */
+            broken = false; /* whilst break trap disabled      */
             sigRaise(breakHandler);
             /* not reached */
         }
@@ -941,12 +937,13 @@ Bool breakOn(Bool reqd) /* set break trapping on if reqd,  */
     return old;
 }
 
-static sigHandler(ignoreBreak) { /* record but don't respond to break*/
+/* Record but don't respond to break */
+static sigHandler(ignoreBreak) {
     /* async-signal-safe: only sets the flag, nothing else.  ctrlbrk()   */
     /* installs this handler with sigaction() on POSIX, so (unlike the   */
     /* old signal()-based scheme) it does not need to be reinstalled     */
     /* here to survive delivery.                                        */
-    broken = TRUE;
+    broken = true;
     sigResume;
 }
 
@@ -962,8 +959,9 @@ static sigHandler(ignoreBreak) { /* record but don't respond to break*/
 static char panicStack[PANIC_STACK_SIZE];
 
 static sigProto(panic);
-static sigHandler(panic) { /* exit in a panic, on receipt of  */
-    everybody(EXIT);       /* an unexpected signal            */
+/* Exit in a panic, on receipt of an unexpected signal */
+static sigHandler(panic) {
+    everybody(EXIT);
     fprintf(stderr, "\nUnexpected signal\n");
     exit(1);
     sigResume; /*NOTREACHED*/
@@ -976,14 +974,14 @@ BOOL WINAPI consoleHandler(DWORD dwCtrlType) {
     case CTRL_CLOSE_EVENT: /* from the window's close menu.   */
         ExitProcess(0);
     }
-    return FALSE;
+    return false;
 }
 #endif
 
-static Void local installHandlers() { /* Install handlers for all fatal    */
-                                      /* signals except SIGINT and SIGBREAK*/
+/* Install handlers for all fatal signals except SIGINT and SIGBREAK */
+static void installHandlers(void) {
 #if IS_WINDOWS
-    SetConsoleCtrlHandler(consoleHandler, TRUE);
+    SetConsoleCtrlHandler(consoleHandler, true);
 #endif
 #if !DONT_PANIC
     {
@@ -1051,16 +1049,16 @@ static Void local installHandlers() { /* Install handlers for all fatal    */
  * quotes, `$' and backticks in one are ordinary characters now.
  * ------------------------------------------------------------------------*/
 
-Void argvInit(Argv *a) {
+void argvInit(Argv *a) {
     a->vec = NULL;
     a->used = 0;
     a->size = 0;
 }
 
-static Void local argvPush(Argv *a, String w) {
+static void argvPush(Argv *a, char *w) {
     if (a->used + 2 > a->size) {
         size_t n = a->size ? 2 * a->size : 8;
-        String *p = (String *)realloc(a->vec, n * sizeof(String));
+        char **p = (char **)realloc(a->vec, n * sizeof(char *));
         if (!p) {
             errHead(0);
             errPrintf("Unable to build a command");
@@ -1073,13 +1071,13 @@ static Void local argvPush(Argv *a, String w) {
     a->vec[a->used] = NULL;
 }
 
-Void argvWord(Argv *a, String s) {
+void argvWord(Argv *a, char *s) {
     argvPush(a, strCopy(s));
 }
 
-Void argvWords(Argv *a, String s) {
+void argvWords(Argv *a, char *s) {
     for (;;) {
-        String start;
+        char *start;
         while (*s && isspace((unsigned char)*s))
             s++;
         if (!*s)
@@ -1087,11 +1085,11 @@ Void argvWords(Argv *a, String s) {
         start = s;
         while (*s && !isspace((unsigned char)*s))
             s++;
-        argvPush(a, strnCopy(start, (Int)(s - start)));
+        argvPush(a, strnCopy(start, (int)(s - start)));
     }
 }
 
-Void argvFree(Argv *a) {
+void argvFree(Argv *a) {
     size_t i;
     for (i = 0; i < a->used; i++)
         free(a->vec[i]);
@@ -1108,7 +1106,7 @@ Void argvFree(Argv *a) {
  * shield, because pclose() did not either.  Setting the dispositions after
  * the fork keeps them out of the child, and exec resets a handled signal to
  * its default there anyway. */
-static Int local argvWait(ProcId pid, Bool shield) {
+static int argvWait(ProcId pid, bool shield) {
     int status;
     void (*oldInt)(int) = NULL;
     void (*oldQuit)(int) = NULL;
@@ -1135,7 +1133,7 @@ static Int local argvWait(ProcId pid, Bool shield) {
 /* Fork and exec a->vec.  outFd, when it is not -1, becomes the child's
  * standard output; shutFd, when it is not -1, is closed in the child so
  * that the program does not inherit the other end of a pipe. */
-static ProcId local argvStart(Argv *a, int outFd, int shutFd) {
+static ProcId argvStart(Argv *a, int outFd, int shutFd) {
     ProcId pid;
     if (a->used == 0)
         return -1;
@@ -1155,13 +1153,13 @@ static ProcId local argvStart(Argv *a, int outFd, int shutFd) {
     return pid;
 }
 
-Int argvRun(Argv *a, Bool sync) {
+int argvRun(Argv *a, bool sync) {
     ProcId pid;
     /* sync is ignored, as it was when this went through system() */
     (void)sync;
     if ((pid = argvStart(a, -1, -1)) < 0)
         return -1;
-    return argvWait(pid, TRUE);
+    return argvWait(pid, true);
 }
 
 FILE *argvOpen(Argv *a, ProcId *pidp) {
@@ -1178,23 +1176,23 @@ FILE *argvOpen(Argv *a, ProcId *pidp) {
     }
     if ((f = fdopen(fd[0], "r")) == NULL) {
         close(fd[0]);
-        argvWait(pid, FALSE);
+        argvWait(pid, false);
         return NULL;
     }
     *pidp = pid;
     return f;
 }
 
-Int argvClose(FILE *f, ProcId pid) {
+int argvClose(FILE *f, ProcId pid) {
     fclose(f);
-    return argvWait(pid, FALSE);
+    return argvWait(pid, false);
 }
 
 #else /* IS_WINDOWS: the same three entry points on _spawnvp.  Like the
        * rest of the Windows support here, this is written to the
        * documented interface but is not verified on a Windows host. */
 
-Int argvRun(Argv *a, Bool sync) {
+int argvRun(Argv *a, bool sync) {
     intptr_t r;
     if (a->used == 0)
         return -1;
@@ -1203,7 +1201,7 @@ Int argvRun(Argv *a, Bool sync) {
                  (const char *const *)a->vec);
     if (r < 0)
         return -1;
-    return sync ? (Int)r : 0;
+    return sync ? (int)r : 0;
 }
 
 FILE *argvOpen(Argv *a, ProcId *pidp) {
@@ -1231,7 +1229,7 @@ FILE *argvOpen(Argv *a, ProcId *pidp) {
     return f;
 }
 
-Int argvClose(FILE *f, ProcId pid) {
+int argvClose(FILE *f, ProcId pid) {
     int status;
     fclose(f);
     if (_cwait(&status, (intptr_t)pid, 0) < 0)
@@ -1241,8 +1239,8 @@ Int argvClose(FILE *f, ProcId pid) {
 
 #endif /* IS_WINDOWS */
 
-Int shellEsc(String cmd) /* run cmd, or a shell, through the shell   */
-{
+/* Run cmd, or a shell, through the shell */
+int shellEsc(char *cmd) {
 #if HAVE_BIN_SH
     if (cmd[0] == '\0') {
         cmd = fromEnv("SHELL", "/bin/sh");
@@ -1270,17 +1268,18 @@ FloatPro floatOf(Cell c) {
     return fudgeCoerce.flVal;
 }
 
-String floatToString(FloatPro fl) /* Make sure that floating    */
-{                                 /* point values print out in  */
-    static char buffer1[32];      /* a form in which they could */
-    static char buffer2[32];      /* also be entered as floats  */
-    Int i = 0, j = 0;
+/* Make sure that floating point values print out in a form in which they could
+ * also be entered as floats */
+char *floatToString(FloatPro fl) {
+    static char buffer1[32];
+    static char buffer2[32];
+    int i = 0, j = 0;
 
-    sprintf(buffer1, FloatFMT, fl);
+    snprintf(buffer1, sizeof buffer1, FloatFMT, fl);
     while (buffer1[i] && strchr("eE.", buffer1[i]) == 0)
         buffer2[j++] = buffer1[i++];
     if (buffer1[i] == '\0') {
-        sprintf(buffer1, "%.1f", fl);
+        snprintf(buffer1, sizeof buffer1, "%.1f", fl);
         i = j = 0;
     } else if (buffer1[i] != '.') {
         buffer2[j++] = '.';
@@ -1332,17 +1331,18 @@ DoublePro doubleOf(Cell c) {
     return fudgeDCoerce.dblVal;
 }
 
-String doubleToString(DoublePro dbl) /* Make sure that floating    */
-{                                    /* point values print out in  */
-    static char buffer1[32];         /* a form in which they could */
-    static char buffer2[32];         /* also be entered as doubles */
-    Int i = 0, j = 0;
+/* Make sure that floating point values print out in a form in which they could
+ * also be entered as doubles */
+char *doubleToString(DoublePro dbl) {
+    static char buffer1[32];
+    static char buffer2[32];
+    int i = 0, j = 0;
 
-    sprintf(buffer1, DoubleFMT, dbl);
+    snprintf(buffer1, sizeof buffer1, DoubleFMT, dbl);
     while (buffer1[i] && strchr("eE.", buffer1[i]) == 0)
         buffer2[j++] = buffer1[i++];
     if (buffer1[i] == '\0') {
-        sprintf(buffer1, "%.1f", dbl);
+        snprintf(buffer1, sizeof buffer1, "%.1f", dbl);
         i = j = 0;
     } else if (buffer1[i] != '.') {
         buffer2[j++] = '.';
@@ -1353,7 +1353,7 @@ String doubleToString(DoublePro dbl) /* Make sure that floating    */
     return buffer2;
 }
 
-DoublePro stringToDouble(String s) {
+DoublePro stringToDouble(char *s) {
     return atof(s);
 }
 
@@ -1361,15 +1361,15 @@ DoublePro stringToDouble(String s) {
  * Int64-related operations:
  *-------------------------------------------------------------------------*/
 
-Int part1Int64(HsInt64 i) {
-    return (Int)(i >> 32);
+int part1Int64(HsInt64 i) {
+    return (int)(i >> 32);
 }
 
-Int part2Int64(HsInt64 i) {
-    return (Int)(i);
+int part2Int64(HsInt64 i) {
+    return (int)(i);
 }
 
-HsInt64 int64FromParts(Int c1, Int c2) {
+HsInt64 int64FromParts(int c1, int c2) {
     return ((HsInt64)c1 << 32) | (HsInt64)((HsWord32)c2);
 }
 
@@ -1381,17 +1381,17 @@ HsInt64 int64FromParts(Int c1, Int c2) {
  * Dynamic loading:
  * ------------------------------------------------------------------------*/
 
-static void *local getModDLL(String);
-static void *local getDLL(String);
-static void *local getDLLSymbol(void *, String);
+static void *getModDLL(char *);
+static void *getDLL(char *);
+static void *getDLLSymbol(void *, char *);
 
 #if HAVE_DLFCN_H /* eg LINUX, SOLARIS, ULTRIX */
 
 # include <stdio.h>
 # include <dlfcn.h>
 
-static void *local getDLL(String dll) /* load dll */
-{
+/* Load dll */
+static void *getDLL(char *dll) {
     void *instance = dlopen(dll, 0
 # if defined(RTLD_LAZY) /* eg SunOS4 doesn't have RTLD_NOW */
                                      | RTLD_LAZY
@@ -1414,9 +1414,8 @@ static void *local getDLL(String dll) /* load dll */
     return instance;
 }
 
-static void *local getDLLSymbol(void *instance,
-                                String symbol) /* lookup dll symbol */
-{
+/* Lookup dll symbol */
+static void *getDLLSymbol(void *instance, char *symbol) {
     void *sym;
 
     if ((sym = dlsym(instance, symbol)) == 0) {
@@ -1428,8 +1427,8 @@ static void *local getDLLSymbol(void *instance,
     return sym;
 }
 
-void freeDLL(void *dll) /* free up DLL */
-{
+/* Free up DLL */
+void freeDLL(void *dll) {
     if (dll) {
         /* No error checking done. */
         dlclose(dll);
@@ -1439,8 +1438,8 @@ void freeDLL(void *dll) /* free up DLL */
 
 #elif HAVE_WINDOWS_H
 
-static void *local getDLL(String dll) /* load dll */
-{
+/* Load dll */
+static void *getDLL(char *dll) {
     HINSTANCE instance = LoadLibrary(dll);
     if (NULL == instance) {
         /* GetLastError allegedly provides more detail - in practice,
@@ -1454,13 +1453,12 @@ static void *local getDLL(String dll) /* load dll */
     return instance;
 }
 
-static void *local getDLLSymbol(void *instance,
-                                String symbol) /* lookup dll symbol */
-{
+/* Lookup dll symbol */
+static void *getDLLSymbol(void *instance, char *symbol) {
     return (void *)GetProcAddress((HINSTANCE)instance, symbol);
 }
 
-Void freeDLL(void *dll) {
+void freeDLL(void *dll) {
     if (dll) {
         /* fprintf(stderr, "Freeing DLL 0x%p\n",dll); fflush(stderr); */
         FreeLibrary(dll);
@@ -1470,46 +1468,47 @@ Void freeDLL(void *dll) {
 
 #else /* Dynamic loading not available */
 
-static void *local getDLL(String dll) /* load dll */
-{
+/* Load dll */
+static void *getDLL(char *dll) {
     return 0;
 }
-static void *local getDLLSymbol(void *dll,
-                                String symbol) /* load dll and lookup symbol */
-{
+/* Load dll and lookup symbol */
+static void *getDLLSymbol(void *dll, char *symbol) {
     return 0;
 }
 
-Void freeDLL(void *dll) {
+void freeDLL(void *dll) {
 }
 
 #endif /* Dynamic loading not available */
 
-static String local lastExtDot(String path) /* strrchr(path,'.'), but only  */
-{                           /* within the last path component:   */
-    String base = path;     /* a '.' in a directory name (e.g.   */
-    String s;               /* "../dir/Foo" or "./Foo") must not */
-    for (s = path; *s; s++) /* be mistaken for a file extension  */
+/* Strrchr(path,'.'), but only within the last path component: a '.' in a
+ * directory name (e.g. "../dir/Foo" or "./Foo") must not be mistaken for a
+ * file extension */
+static char *lastExtDot(char *path) {
+    char *base = path;
+    char *s;
+    for (s = path; *s; s++)
         if (isSLASH(*s))
             base = s + 1;
     return strrchr(base, '.');
 }
 
-static void *local getModDLL(String file) /* load DLL for module     */
-{
+/* Load DLL for module */
+static void *getModDLL(char *file) {
 #if HAVE_REALPATH && !HAVE__FULLPATH
     char dllPath[MAXPATHLEN + 1];
 #else
     char dllPath[FILENAME_MAX + 1];
 #endif
-    String dot;
-    String s;
+    char *dot;
+    char *s;
     for (s = file; *s && !isSLASH(*s); s++)
         ;
     if (*s)
         strcpy(dllPath, file); /* pathname for module     */
     else /* if in this directory, prefix ./ so search won't use the path   */
-        sprintf(dllPath, ".%c%s", SLASH, file);
+        snprintf(dllPath, sizeof dllPath, ".%c%s", SLASH, file);
     dot = lastExtDot(dllPath); /* patch file extension    */
     if (dot == NULL || dot == file) {
         dot = dllPath + strlen(dllPath);
@@ -1518,13 +1517,13 @@ static void *local getModDLL(String file) /* load DLL for module     */
     return getDLL(dllPath);
 }
 
-String mkFFIFilename2(String file) {
+char *mkFFIFilename2(char *file) {
 #if HAVE_REALPATH && !HAVE__FULLPATH
     static char path[MAXPATHLEN + 1];
 #else
     static char path[FILENAME_MAX + 1];
 #endif
-    String dot = lastExtDot(file); /* patch file extension    */
+    char *dot = lastExtDot(file); /* patch file extension    */
     if (dot == NULL)
         dot = file + strlen(file);
     strcpy(path, file);
@@ -1532,14 +1531,14 @@ String mkFFIFilename2(String file) {
     return path;
 }
 
-String mkFFIFilename(String file) /* get DLL path for module */
-{
+/* Get DLL path for module */
+char *mkFFIFilename(char *file) {
 #if HAVE_REALPATH && !HAVE__FULLPATH
     static char path[MAXPATHLEN + 1];
 #else
     static char path[FILENAME_MAX + 1];
 #endif
-    String dot = lastExtDot(file); /* patch file extension    */
+    char *dot = lastExtDot(file); /* patch file extension    */
     if (dot == NULL)
         dot = file + strlen(file);
     strcpy(path, file);
@@ -1550,9 +1549,8 @@ String mkFFIFilename(String file) /* get DLL path for module */
 #define INIT_MODULE_FUN "initModule"
 #define API_VERSION_FUN "CuddlesAPIVersion"
 
-Void needPrims(Int version,
-               void *dll) /* Load dll containing prims for current module */
-{
+/* Load dll containing prims for current module */
+void needPrims(int version, void *dll) {
     /* Version 2-5: the Haskell module specifies what module to expect
      *              (via a needPrims_cuddles decl).
      *
@@ -1567,7 +1565,7 @@ Void needPrims(Int version,
             dll = getModDLL(scriptFile);
         initModule = (InitModuleFun4)getDLLSymbol(dll, INIT_MODULE_FUN);
         if (initModule) {
-            Bool flg = setOldDLLFlag(TRUE);
+            bool flg = setOldDLLFlag(true);
             (*initModule)(cuddlesAPI4());
             setScriptPrims(setPrimInfoDll(dll));
             setOldDLLFlag(flg);
@@ -1581,7 +1579,7 @@ Void needPrims(Int version,
             dll = getModDLL(scriptFile);
         initModule = (InitModuleFun5)getDLLSymbol(dll, INIT_MODULE_FUN);
         if (initModule) {
-            Bool flg = setOldDLLFlag(FALSE);
+            bool flg = setOldDLLFlag(false);
             (*initModule)(cuddlesAPI5());
             setScriptPrims(setPrimInfoDll(dll));
             setOldDLLFlag(flg);
@@ -1591,7 +1589,7 @@ Void needPrims(Int version,
     }
     case 0: {
         APIVersionFun versionFun;
-        Int version = 5;
+        int version = 5;
 
         dll = getModDLL(scriptFile);
         versionFun = (APIVersionFun)getDLLSymbol(dll, API_VERSION_FUN);
@@ -1620,10 +1618,10 @@ Void needPrims(Int version,
 
 /* "-I<cuddlesdir>/include", with the separators turned into the '/' every
  * supported compiler accepts. */
-static String local includeArg(Void) {
-    String dir = cuddlesdir();
-    String s = (String)malloc(strlen(dir) + sizeof("-I/include"));
-    String p;
+static char *includeArg(void) {
+    char *dir = cuddlesdir();
+    char *s = (char *)malloc(strlen(dir) + sizeof("-I/include"));
+    char *p;
     if (!s) {
         errHead(0);
         errPrintf("Unable to build compilation command");
@@ -1639,9 +1637,9 @@ static String local includeArg(Void) {
     return s;
 }
 
-Void compileAndLink(String fn, String flags) {
+void compileAndLink(char *fn, char *flags) {
     Argv cmd;
-    String inc;
+    char *inc;
 
     argvInit(&cmd);
 
@@ -1680,7 +1678,7 @@ Void compileAndLink(String fn, String flags) {
     if (flags)
         argvWords(&cmd, flags);
 
-    if (argvRun(&cmd, TRUE) != 0) {
+    if (argvRun(&cmd, true) != 0) {
         size_t i;
         errHead(0);
         errPrintf("Error while running compilation command");
@@ -1698,20 +1696,20 @@ Void compileAndLink(String fn, String flags) {
 
 #if USE_REGISTRY
 
-static Bool local createKey(HKEY hKey, String regPath, PHKEY phRootKey,
-                            REGSAM samDesired) {
+static bool createKey(HKEY hKey, char *regPath, PHKEY phRootKey,
+                      REGSAM samDesired) {
     DWORD dwDisp;
     return RegCreateKeyEx(hKey, regPath, 0, "", REG_OPTION_NON_VOLATILE,
                           samDesired, NULL, phRootKey,
                           &dwDisp) == ERROR_SUCCESS;
 }
 
-static Bool local queryValue(HKEY hKey, String regPath, String var,
-                             LPDWORD type, LPBYTE buf, DWORD bufSize) {
+static bool queryValue(HKEY hKey, char *regPath, char *var, LPDWORD type,
+                       LPBYTE buf, DWORD bufSize) {
     HKEY hRootKey;
 
     if (!createKey(hKey, regPath, &hRootKey, KEY_READ)) {
-        return FALSE;
+        return false;
     } else {
         LONG res = RegQueryValueEx(hRootKey, var, NULL, type, buf, &bufSize);
         RegCloseKey(hRootKey);
@@ -1725,23 +1723,22 @@ static Bool local queryValue(HKEY hKey, String regPath, String var,
  * is then returned to the callee (along with the resp. to free the
  * buffer.)
  */
-static Bool local queryString(HKEY hKey, String regPath, String var,
-                              String *pString) {
+static bool queryString(HKEY hKey, char *regPath, char *var, char **pString) {
     HKEY hRootKey;
     LONG rc;
     DWORD bufSize;
     DWORD valType = REG_SZ;
-    Bool res = FALSE;
+    bool res = false;
 
     if (!createKey(hKey, regPath, &hRootKey, KEY_READ)) {
-        return FALSE;
+        return false;
     } else {
         /* Determine the length of the entry */
         rc = RegQueryValueEx(hRootKey, var, NULL, &valType, NULL, &bufSize);
 
         if (rc == ERROR_SUCCESS && valType == REG_SZ) {
             /* Got the length, now allocate the buffer and retrieve the string. */
-            if ((*pString = (String)malloc(sizeof(char) * (bufSize + 1))) !=
+            if ((*pString = (char *)malloc(sizeof(char) * (bufSize + 1))) !=
                 NULL) {
                 rc = RegQueryValueEx(hRootKey, var, NULL, &valType,
                                      (LPBYTE)*pString, &bufSize);
@@ -1754,12 +1751,12 @@ static Bool local queryString(HKEY hKey, String regPath, String var,
     }
 }
 
-static Bool local setValue(HKEY hKey, String regPath, String var, DWORD type,
-                           LPBYTE buf, DWORD bufSize) {
+static bool setValue(HKEY hKey, char *regPath, char *var, DWORD type,
+                     LPBYTE buf, DWORD bufSize) {
     HKEY hRootKey;
 
     if (!createKey(hKey, regPath, &hRootKey, KEY_WRITE)) {
-        return FALSE;
+        return false;
     } else {
         LONG res = RegSetValueEx(hRootKey, var, 0, type, buf, bufSize);
         RegCloseKey(hRootKey);
@@ -1767,14 +1764,13 @@ static Bool local setValue(HKEY hKey, String regPath, String var, DWORD type,
     }
 }
 
-String readRegString(HKEY key, String regPath, String var,
-                     String def) /* read String from registry */
-{
+/* Read String from registry */
+char *readRegString(HKEY key, char *regPath, char *var, char *def) {
     char *stringVal;
 
     if (queryString(key, regPath, var, &stringVal)) {
         /* The callee is responsible for freeing the returned string */
-        return (String)stringVal;
+        return (char *)stringVal;
     } else {
         /* Create a *copy* of the default string, so that it can be freed
            without worry. */
@@ -1782,14 +1778,14 @@ String readRegString(HKEY key, String regPath, String var,
             return NULL;
         } else {
             strcpy(stringVal, def);
-            return (String)stringVal;
+            return (char *)stringVal;
         }
     }
 }
 
-Bool writeRegString(String var, String val) /* write String to registry */
-{
-    String realVal = ((NULL == val) ? "" : val);
+/* Write String to registry */
+bool writeRegString(char *var, char *val) {
+    char *realVal = ((NULL == val) ? "" : val);
 
     return setValue(HKEY_CURRENT_USER, cuddlesRegRoot, var, REG_SZ,
                     (LPBYTE)realVal, lstrlen(realVal) + 1);
@@ -1798,17 +1794,17 @@ Bool writeRegString(String var, String val) /* write String to registry */
 /* concatenate together all strings from registry of the form regPath\\*\\var,
  * separated by PATHSEP.
  */
-String readRegChildStrings(HKEY key, String regPath, String var, String def) {
+char *readRegChildStrings(HKEY key, char *regPath, char *var, char *def) {
     HKEY baseKey;
     ULONG ulResult;
     int done = 0;
     DWORD dwIndex = 0;
     char subKeyName[256];
     DWORD subKeyLen;
-    BOOL addedPath = FALSE;
+    BOOL addedPath = false;
 
     char *resPath = NULL; /* result path, returned to caller */
-    String component;
+    char *component;
     FILETIME ft; /* just to satisfy RegEnumKeyEx() */
     char sepString[2];
     StringBuilder *builder = newStringBuilder(0);
@@ -1835,7 +1831,7 @@ String readRegChildStrings(HKEY key, String regPath, String var, String def) {
             if (addedPath) {
                 appendString(builder, sepString);
             }
-            addedPath = TRUE;
+            addedPath = true;
             appendString(builder, component);
             free(
                 component); /* readRegString() dynamically allocated it, so let go. */
@@ -1858,11 +1854,11 @@ String readRegChildStrings(HKEY key, String regPath, String var, String def) {
 /* --------------------------------------------------------------------------
  * Platform initialisation 
  * ------------------------------------------------------------------------*/
-extern Bool initSystem(Void);
-Bool local initSystem() {
+extern bool initSystem(void);
+bool initSystem(void) {
     /* Called right away by main()  */
     setlocale(LC_CTYPE, "");
-    return TRUE;
+    return true;
 }
 
 /* --------------------------------------------------------------------------
@@ -1875,8 +1871,8 @@ static Cell *const machdepRoots[] = {
     &bdTemp,
 };
 
-Void machdep(Int what) /* Handle machine specific         */
-{                      /* initialisation etc..            */
+/* Handle machine specific initialisation etc.. */
+void machdep(int what) {
     switch (what) {
     case INSTALL:
         registerRoots(machdepRoots);

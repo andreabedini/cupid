@@ -33,10 +33,10 @@
 #endif
 #define VERSION_STRING CUDDLES_VERSION
 
-String versionString = VERSION_STRING;
+char *versionString = VERSION_STRING;
 
 #if USE_REGISTRY
 # define CUDDLESROOT ("SOFTWARE\\Haskell\\Cuddles\\" VERSION_STRING "\\")
 
-String cuddlesRegRoot = CUDDLESROOT;
+char *cuddlesRegRoot = CUDDLESROOT;
 #endif

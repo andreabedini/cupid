@@ -31,24 +31,24 @@
  * ------------------------------------------------------------------------*/
 
 static List daSccs = NIL;  /* SCCs found so far (a GC root)   */
-static Int daCount;        /* next depth first search number  */
+static int daCount;        /* next depth first search number  */
 static SccDepends depends; /* accessors for the current sort  */
 static SccSetDepends setDepends;
 
 #define visited(d) (isInt(depends(d))) /* node already visited?    */
 
-static Int local sccMin(Int, Int);
-static Int local lowlink(Cell);
+static int sccMin(int, int);
+static int lowlink(Cell);
 
-static Int local sccMin(Int x, Int y) /* calculate minimum of x,y          */
-{                                     /* (unless y is zero)                */
+/* Calculate minimum of x,y (unless y is zero) */
+static int sccMin(int x, int y) {
     return (x <= y || y == 0) ? x : y;
 }
 
-static Int local lowlink(Cell v) /* calculate `lowlink' of v       */
-{
-    Int low = daCount;
-    Int dfn = daCount;    /* depth first search no. of v           */
+/* Calculate `lowlink' of v */
+static int lowlink(Cell v) {
+    int low = daCount;
+    int dfn = daCount;    /* depth first search no. of v           */
     List ws = depends(v); /* adjacency list for v                  */
 
     setDepends(v, mkInt(daCount++)); /* push v onto stack                  */
@@ -72,9 +72,9 @@ static Int local lowlink(Cell v) /* calculate `lowlink' of v       */
     return low;
 }
 
-List sccSort(List bs, List cs, SccDepends d,
-             SccSetDepends s) { /* sort lists with added dependency*/
-    depends = d;                /* info into SCCs                  */
+/* Sort lists with added dependency info into SCCs */
+List sccSort(List bs, List cs, SccDepends d, SccSetDepends s) {
+    depends = d;
     setDepends = s;
     clearStack();
     daSccs = NIL; /* clear current list of SCCs    */
@@ -95,7 +95,7 @@ static Cell *const sccRoots[] = {
     &daSccs,
 };
 
-Void sccControl(Int what) {
+void sccControl(int what) {
     switch (what) {
     case RESET:
         daSccs = NIL;

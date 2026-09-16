@@ -27,38 +27,36 @@
 /* --------------------------------------------------------------------------
  * local function prototypes:
  * ------------------------------------------------------------------------*/
-static Name local lookupName(Text, List);
-static Module local modOfEntity(Cell);
-static Void local reportAmbigEntity(Text, Text, List);
-static List local checkSubentities(List, List, List, String, Text);
-static Void local checkExportDistinct(List, Bool, Cell);
-static List local checkExportTycon(List, Text, Bool, Cell, Tycon);
-static List local checkExportClass(List, Text, Bool, Cell, Class);
-static List local checkExportModule(List, Text, Cell);
-static List local checkExport(List, Text, Cell);
-static List local checkImportEntity(List, Module, Bool, Cell);
-static List local resolveImportList(Module, Cell, Bool);
-static Cell local entityIsMember(Cell, List);
-static List local augmentEntity(Bool, Cell, Cell, List);
-static List local addEntity(Cell, Cell, List);
-static List local addEntityPair(Cell, List);
-static List local mergeImportLists(List, List);
-static List local getIEOrphans(List);
-static List local fixupIEList(List);
-static List local allMethodsOrDCons(List, Cell, Module, Bool);
+static Name lookupName(Text, List);
+static Module modOfEntity(Cell);
+static void reportAmbigEntity(Text, Text, List);
+static List checkSubentities(List, List, List, char *, Text);
+static void checkExportDistinct(List, bool, Cell);
+static List checkExportTycon(List, Text, bool, Cell, Tycon);
+static List checkExportClass(List, Text, bool, Cell, Class);
+static List checkExportModule(List, Text, Cell);
+static List checkExport(List, Text, Cell);
+static List checkImportEntity(List, Module, bool, Cell);
+static List resolveImportList(Module, Cell, bool);
+static Cell entityIsMember(Cell, List);
+static List augmentEntity(bool, Cell, Cell, List);
+static List addEntity(Cell, Cell, List);
+static List addEntityPair(Cell, List);
+static List mergeImportLists(List, List);
+static List getIEOrphans(List);
+static List fixupIEList(List);
+static List allMethodsOrDCons(List, Cell, Module, bool);
 
-static Cell local importEntity(Module, Cell);
-static Void local importTycon(Module, Tycon);
-static Void local importClass(Module, Class);
+static Cell importEntity(Module, Cell);
+static void importTycon(Module, Tycon);
+static void importClass(Module, Class);
 
-static Void local browseName(Name);
-static Void local browseEntity(Cell);
+static void browseName(Name);
+static void browseEntity(Cell);
 
-Void addQualImport(Cell orig, Cell new,
-                   List entities) /* Add to qualified import list       */
-/* Original name of module                                */
-/* Name module is called within this module (or NIL)      */
-{ /* List of entity names */
+/* Add to qualified import list Original name of module Name module is called
+ * within this module (or NIL) List of entity names */
+void addQualImport(Cell orig, Cell new, List entities) {
     /* Record the entities imported */
     moduleRec(currentModule)->qualImports =
         addEntity(orig, entities, moduleRec(currentModule)->qualImports);
@@ -68,11 +66,8 @@ Void addQualImport(Cell orig, Cell new,
              moduleRec(currentModule)->modAliases);
 }
 
-Void addUnqualImport(Cell mod, Cell new,
-                     List entities) /* An unqualified import            */
-/* Name of module                                        */
-/* Local alias                                           */
-{ /* List of entity names                                  */
+/* An unqualified import Name of module Local alias List of entity names */
+void addUnqualImport(Cell mod, Cell new, List entities) {
     /* Add to unqualified import list */
     unqualImports = addEntity(mod, entities, unqualImports);
     /* Record the module --> alias mapping */
@@ -81,9 +76,8 @@ Void addUnqualImport(Cell mod, Cell new,
              moduleRec(currentModule)->modAliases);
 }
 
-static Name local lookupName(Text t,
-                             List nms) /* find text t in list of Names     */
-{                                      /* :: [Name] */
+/* Find text t in list of Names :: [Name] */
+static Name lookupName(Text t, List nms) {
     for (; nonNull(nms); nms = tl(nms)) {
         if (t == nameRec(hd(nms))->text) {
             return hd(nms);
@@ -92,12 +86,10 @@ static Name local lookupName(Text t,
     return NIL;
 }
 
-static List local checkSubentities(List imports, List named, List wanted,
-                                   String description, Text textParent)
-/* :: [ Q?(Var|Con)(Id|Op) ]                  */
-/* :: [Name]                                  */
-/* "<constructor>|<member> of <type>|<class>" */
-{
+/* :: [ Q?(Var|Con)(Id|Op) ] :: [Name] "<constructor>|<member> of
+ * <type>|<class>" */
+static List checkSubentities(List imports, List named, List wanted,
+                             char *description, Text textParent) {
     for (; nonNull(named); named = tl(named)) {
         Pair x = hd(named);
         /* ToDo: ignores qualifier; doesn't check that entity is in scope */
@@ -114,9 +106,8 @@ static List local checkSubentities(List imports, List named, List wanted,
     return imports;
 }
 
-static List
-getIEOrphans(List ieList) /* locate methods/dcons appearing on their */
-{                         /* own in an import/export list.           */
+/* Locate methods/dcons appearing on their own in an import/export list. */
+static List getIEOrphans(List ieList) {
     List orphans = NIL;
     List xs;
 
@@ -168,13 +159,13 @@ static List fixupIEList(List ieList) {
        and not removing the orphan from the IE list if it
        can be floated inside its parent.) */
         for (xs = orphans; nonNull(xs); xs = tl(xs)) {
-            ieList = augmentEntity(FALSE, fst(hd(xs)), snd(hd(xs)), ieList);
+            ieList = augmentEntity(false, fst(hd(xs)), snd(hd(xs)), ieList);
         }
     }
     return ieList;
 }
 
-Void fixupImportExports(List ls) {
+void fixupImportExports(List ls) {
     List xs;
     for (xs = ls; nonNull(xs); xs = tl(xs)) {
         if (isPair(hd(xs)) && !fst(snd(hd(xs)))) {
@@ -183,21 +174,20 @@ Void fixupImportExports(List ls) {
     }
 }
 
-static List local checkImportEntity(List imports, Module exporter,
-                                    Bool isHidden, Cell entity)
-/* Accumulated list of things to import */
-{ /* Entry from import/hiding list */
-    Bool impFound = FALSE;
-    Bool isId = isIdent(entity);
+/* Accumulated list of things to import Entry from import/hiding list */
+static List checkImportEntity(List imports, Module exporter, bool isHidden,
+                              Cell entity) {
+    bool impFound = false;
+    bool isId = isIdent(entity);
     Cell subEntities = !isId ? snd(entity) : NIL;
     Text t = isId ? textOf(entity) : textOf(fst(entity));
     List es = moduleRec(exporter)->exports;
-    Bool lookForVar = isVar(entity);
+    bool lookForVar = isVar(entity);
 
     /* In H98, a data con may be named in a 'hiding' list, so we
      * have to grovel around inside each tycon looking for it.
      */
-    Bool lookForDataCon =
+    bool lookForDataCon =
         isHidden && subEntities == NONE && isCon(isId ? entity : fst(entity));
 
     /* The use of NONE heralds a dcon */
@@ -209,7 +199,7 @@ static List local checkImportEntity(List imports, Module exporter,
             Cell f = fst(e);
             if (isTycon(f)) {
                 if (tyconRec(f)->text == t) {
-                    impFound = TRUE;
+                    impFound = true;
                     if (!isId) {
                         switch (tyconRec(f)->what) {
                         case NEWTYPE:
@@ -262,7 +252,7 @@ static List local checkImportEntity(List imports, Module exporter,
                     while (nonNull(dcons)) {
                         if (isName(hd(dcons)) &&
                             nameRec(hd(dcons))->text == t) {
-                            impFound = TRUE;
+                            impFound = true;
                             imports = addEntity(hd(dcons), NIL, imports);
                             break;
                         }
@@ -280,7 +270,7 @@ static List local checkImportEntity(List imports, Module exporter,
                     }
                 }
                 if (cclassRec(f)->text == t) {
-                    impFound = TRUE;
+                    impFound = true;
                     if (!isId) {
                         if (DOTDOT == subEntities) {
                             imports = addEntity(f, sigs, imports);
@@ -301,7 +291,7 @@ static List local checkImportEntity(List imports, Module exporter,
                     List xs = sigs;
                     while (nonNull(xs)) {
                         if (isName(hd(xs)) && nameRec(hd(xs))->text == t) {
-                            impFound = TRUE;
+                            impFound = true;
                             imports = cons(hd(xs), imports);
                             break;
                         }
@@ -313,14 +303,14 @@ static List local checkImportEntity(List imports, Module exporter,
             }
         } else if (isName(e)) {
             if (isId && nameRec(e)->text == t) {
-                impFound = TRUE;
+                impFound = true;
                 imports = cons(e, imports);
                 if (!lookForDataCon)
                     break;
             }
         } else if (isTycon(e)) {
             if (isId && tyconRec(e)->text == t) {
-                impFound = TRUE;
+                impFound = true;
                 imports = addEntity(e, NIL, imports);
                 if (!lookForDataCon)
                     break;
@@ -339,9 +329,8 @@ static List local checkImportEntity(List imports, Module exporter,
     return imports;
 }
 
-static List local resolveImportList(Module m, Cell impList, Bool isHidden)
-/* exporting module */
-{
+/* Exporting module */
+static List resolveImportList(Module m, Cell impList, bool isHidden) {
     List imports = NIL;
     if (DOTDOT == impList) {
         List es = moduleRec(m)->exports;
@@ -387,20 +376,18 @@ static List local resolveImportList(Module m, Cell impList, Bool isHidden)
     return imports;
 }
 
-Void checkQualImportList(Pair importSpec) {
+void checkQualImportList(Pair importSpec) {
     /* checkQualImport() has verified that the module has already been loaded;
    * just locate the Module for it here & update the qualImports.
    */
     Module m = findModid(fst(importSpec));
     fst(importSpec) = m;
 
-    checkImportList(TRUE, importSpec);
+    checkImportList(true, importSpec);
 }
 
-static List local
-addEntityPair(Cell e, List is) /* For pair (e,ls) add ls to the 'is' */
-                               /* import/export list.                   */
-{
+/* For pair (e,ls) add ls to the 'is' import/export list. */
+static List addEntityPair(Cell e, List is) {
     if (isPair(e)) {
         return addEntity(fst(e), snd(e), is);
     } else if (isName(e)) {
@@ -418,11 +405,9 @@ addEntityPair(Cell e, List is) /* For pair (e,ls) add ls to the 'is' */
     return addEntity(e, NIL, is);
 }
 
-static List local augmentEntity(Bool addNew, Cell e, Cell ls, List is)
-/* For entity e, add 'ls' to the 'is'   */
-/* import/export list,combining it with */
-/* previous entries (if any.)           */
-{
+/* For entity e, add 'ls' to the 'is' import/export list,combining it with
+ * previous entries (if any.) */
+static List augmentEntity(bool addNew, Cell e, Cell ls, List is) {
 
     Cell ms = entityIsMember(e, is);
 
@@ -451,14 +436,12 @@ static List local augmentEntity(Bool addNew, Cell e, Cell ls, List is)
     }
 }
 
-static List local addEntity(Cell e, Cell ls, List is) {
-    return augmentEntity(TRUE, e, ls, is);
+static List addEntity(Cell e, Cell ls, List is) {
+    return augmentEntity(true, e, ls, is);
 }
 
-static Cell local entityIsMember(Cell x,
-                                 List xs) /* Test for membership of specific  */
-/* entity x in import/export list xs  */
-{
+/* Test for membership of specific entity x in import/export list xs */
+static Cell entityIsMember(Cell x, List xs) {
     for (; nonNull(xs); xs = tl(xs)) {
         if (x == hd(xs))
             return xs;
@@ -468,7 +451,7 @@ static Cell local entityIsMember(Cell x,
     return NIL;
 }
 
-static List local mergeImportLists(List ls1, List ls2) {
+static List mergeImportLists(List ls1, List ls2) {
     List xs;
 
     for (xs = ls1; nonNull(xs); xs = tl(xs)) {
@@ -477,9 +460,8 @@ static List local mergeImportLists(List ls1, List ls2) {
     return ls2;
 }
 
-Void checkImportList(Bool isQual,
-                     Pair importSpec) /*Import a module (un)qualified*/
-{
+/* Import a module (un)qualified */
+void checkImportList(bool isQual, Pair importSpec) {
     Module m = fst(importSpec);
     Cell impList = snd(importSpec);
 
@@ -488,7 +470,7 @@ Void checkImportList(Bool isQual,
 
     List modImps = NIL; /* The effective import list */
     List es = NIL;
-    Bool isHidden = (isPair(impList) && HIDDEN == fst(impList));
+    bool isHidden = (isPair(impList) && HIDDEN == fst(impList));
 
     if (!isQual && moduleThisScript(m)) {
         errHead(0);
@@ -501,8 +483,8 @@ Void checkImportList(Bool isQual,
         /* Somewhat inefficient - but obviously correct:
          * imports = importsOf("module Foo") `setDifference` hidden;
          */
-        hidden = fixupIEList(resolveImportList(m, snd(impList), TRUE));
-        imports = resolveImportList(m, DOTDOT, FALSE);
+        hidden = fixupIEList(resolveImportList(m, snd(impList), true));
+        imports = resolveImportList(m, DOTDOT, false);
 
         /* Get the lone method/field/dcons that appear in the hiding list. */
         orphans = getIEOrphans(hidden);
@@ -577,7 +559,7 @@ Void checkImportList(Bool isQual,
         }
 
     } else { /* the more common case, no hidings. */
-        imports = resolveImportList(m, impList, FALSE);
+        imports = resolveImportList(m, impList, false);
         if (isQual) {
             modImps = imports;
         } else {
@@ -597,7 +579,7 @@ Void checkImportList(Bool isQual,
      */
     for (es = moduleRec(currentModule)->modImports; nonNull(es); es = tl(es)) {
         if (isPair(hd(es)) && fst(hd(es)) == m) {
-            fst(snd(hd(es))) = FALSE; /* => perform fixup at the end. */
+            fst(snd(hd(es))) = false; /* => perform fixup at the end. */
             snd(snd(hd(es))) = mergeImportLists(modImps, snd(snd(hd(es))));
             break;
         }
@@ -610,7 +592,7 @@ Void checkImportList(Bool isQual,
     }
 }
 
-static Cell local importEntity(Module source, Cell e) {
+static Cell importEntity(Module source, Cell e) {
     Cell ent = e;
     Cell cs = NIL;
 
@@ -651,7 +633,7 @@ static Cell local importEntity(Module source, Cell e) {
     }
 }
 
-Void importName(Module source, Name n) {
+void importName(Module source, Name n) {
     Name clash = addName(n);
     if (nonNull(clash) &&
         clash != n
@@ -667,7 +649,7 @@ Void importName(Module source, Name n) {
     }
 }
 
-static Void local importTycon(Module source, Tycon tc) {
+static void importTycon(Module source, Tycon tc) {
     Tycon clash = addTycon(tc);
     Class cc;
     if (nonNull(clash) &&
@@ -681,7 +663,7 @@ static Void local importTycon(Module source, Tycon tc) {
     }
 }
 
-static Void local importClass(Module source, Class c) {
+static void importClass(Module source, Class c) {
     Class clash = addClass(c);
     if (nonNull(clash) &&
         clash != c
@@ -697,9 +679,8 @@ static Void local importClass(Module source, Class c) {
     }
 }
 
-static Module local
-modOfEntity(Cell ent) /* get at the module of name/tycon/class */
-{
+/* Get at the module of name/tycon/class */
+static Module modOfEntity(Cell ent) {
     if (isName(ent)) {
         return nameRec(ent)->mod;
     } else if (isTycon(ent)) {
@@ -710,7 +691,7 @@ modOfEntity(Cell ent) /* get at the module of name/tycon/class */
     return NIL;
 }
 
-static Void local reportAmbigEntity(Text mt, Text t, List clashes) {
+static void reportAmbigEntity(Text mt, Text t, List clashes) {
     if (nonNull(clashes)) {
         /* Unqualified name is ambiguous, report this. */
         Module m1;
@@ -731,13 +712,13 @@ static Void local reportAmbigEntity(Text mt, Text t, List clashes) {
 }
 
 /* verify that the entity is unique in unqualified form */
-static Void local checkExportDistinct(List exports, Bool ambigCheck, Cell ent) {
+static void checkExportDistinct(List exports, bool ambigCheck, Cell ent) {
     Name clashNm;
     Tycon clashTc;
     Class clashCc;
     Module mod1, mod2;
     Text txt;
-    Bool inConflict = FALSE;
+    bool inConflict = false;
     List clashes = NIL;
 
     if (isName(ent)) {
@@ -748,7 +729,7 @@ static Void local checkExportDistinct(List exports, Bool ambigCheck, Cell ent) {
         if ((clashNm = nameInIEList(ent, exports)) &&
             (nameRec(clashNm)->mod != nameRec(ent)->mod)) {
             mod2 = nameRec(clashNm)->mod;
-            inConflict = TRUE;
+            inConflict = true;
         }
     } else if (isTycon(ent)) {
         clashes = tyconRec(ent)->clashes;
@@ -758,7 +739,7 @@ static Void local checkExportDistinct(List exports, Bool ambigCheck, Cell ent) {
         if ((clashTc = tyconInIEList(tyconRec(ent)->text, exports)) &&
             (tyconRec(clashTc)->mod != tyconRec(ent)->mod)) {
             mod2 = tyconRec(clashTc)->mod;
-            inConflict = TRUE;
+            inConflict = true;
         }
     } else if (isClass(ent)) {
         clashes = cclassRec(ent)->clashes;
@@ -768,7 +749,7 @@ static Void local checkExportDistinct(List exports, Bool ambigCheck, Cell ent) {
         if ((clashCc = classInIEList(cclassRec(ent)->text, exports)) &&
             (cclassRec(clashCc)->mod != cclassRec(ent)->mod)) {
             mod2 = cclassRec(clashCc)->mod;
-            inConflict = TRUE;
+            inConflict = true;
         }
     } else if (isPair(ent)) {
         List subs = NIL;
@@ -807,8 +788,8 @@ static Void local checkExportDistinct(List exports, Bool ambigCheck, Cell ent) {
     }
 }
 
-static List local checkExportTycon(List exports, Text mt, Bool viaModExport,
-                                   Cell spec, Tycon tc) {
+static List checkExportTycon(List exports, Text mt, bool viaModExport,
+                             Cell spec, Tycon tc) {
     checkExportDistinct(exports, !viaModExport, pair(tc, spec));
     if (DOTDOT == spec || SYNONYM == tyconRec(tc)->what) {
         return addEntity(tc, DOTDOT, exports);
@@ -817,8 +798,8 @@ static List local checkExportTycon(List exports, Text mt, Bool viaModExport,
     }
 }
 
-static List local checkExportClass(List exports, Text mt, Bool viaModExport,
-                                   Cell spec, Class cl) {
+static List checkExportClass(List exports, Text mt, bool viaModExport,
+                             Cell spec, Class cl) {
     checkExportDistinct(exports, !viaModExport, pair(cl, spec));
     if (DOTDOT == spec) {
         return addEntity(cl, DOTDOT, exports);
@@ -827,7 +808,7 @@ static List local checkExportClass(List exports, Text mt, Bool viaModExport,
     }
 }
 
-static List local checkExportModule(List exports, Text mt, Cell e) {
+static List checkExportModule(List exports, Text mt, Cell e) {
     /* The name refers to the module alias; get at the modules it refers to */
     Text alias = textOf(snd(e));
     List mods = findQualifiers(alias);
@@ -849,18 +830,18 @@ static List local checkExportModule(List exports, Text mt, Cell e) {
             for (xs = moduleRec(m)->classes; nonNull(xs); xs = tl(xs)) {
                 if (cclassRec(hd(xs))->mod == m)
                     exports =
-                        checkExportClass(exports, mt, TRUE, DOTDOT, hd(xs));
+                        checkExportClass(exports, mt, true, DOTDOT, hd(xs));
             }
             for (xs = moduleRec(m)->tycons; nonNull(xs); xs = tl(xs)) {
                 if (tyconRec(hd(xs))->mod == m)
                     exports =
-                        checkExportTycon(exports, mt, TRUE, DOTDOT, hd(xs));
+                        checkExportTycon(exports, mt, true, DOTDOT, hd(xs));
             }
             for (xs = moduleRec(m)->names; nonNull(xs); xs = tl(xs)) {
                 if (nameRec(hd(xs))->mod == m &&
                     /* don't add dcons or class members */
                     (!isCfun(hd(xs)) && !isClass(nameRec(hd(xs))->parent))) {
-                    checkExportDistinct(exports, FALSE, hd(xs));
+                    checkExportDistinct(exports, false, hd(xs));
                     exports = cons(hd(xs), exports);
                 }
             }
@@ -939,7 +920,7 @@ static List local checkExportModule(List exports, Text mt, Cell e) {
                      (nonNull((cclassRec(ent)->clashes)) ||
                       cclassRec(ent)->mod == cclassRec(cc)->mod))) {
 
-                    checkExportDistinct(exports, FALSE, hd(ents));
+                    checkExportDistinct(exports, false, hd(ents));
                     exports = cons(hd(ents), exports);
                 }
             }
@@ -948,8 +929,8 @@ static List local checkExportModule(List exports, Text mt, Cell e) {
     return exports;
 }
 
-static List local allMethodsOrDCons(List imps, Cell nm, Module mod,
-                                    Bool wantMethods) {
+static List allMethodsOrDCons(List imps, Cell nm, Module mod,
+                              bool wantMethods) {
     /* For a non-local tycon / class exported using (..), locate
    * the list of dcons/methods that are in scope.
    *
@@ -984,20 +965,19 @@ static List local allMethodsOrDCons(List imps, Cell nm, Module mod,
     return resList;
 }
 
-static List local checkExport(List exports, Text mt,
-                              Cell e) /* Process entry in export list */
-{
+/* Process entry in export list */
+static List checkExport(List exports, Text mt, Cell e) {
     if (isIdent(e)) {
         Name export;
-        Bool expFound = FALSE;
+        bool expFound = false;
 
         if (isQCon(e) && nonNull(export = findQualTycon(e))) {
-            expFound = TRUE;
-            exports = checkExportTycon(exports, mt, FALSE, NIL, export);
+            expFound = true;
+            exports = checkExportTycon(exports, mt, false, NIL, export);
         } else if (isQCon(e) && nonNull(export = findQualClass(e))) {
             /* opaque class export */
-            expFound = TRUE;
-            exports = checkExportClass(exports, mt, FALSE, NIL, export);
+            expFound = true;
+            exports = checkExportClass(exports, mt, false, NIL, export);
         } else if (nonNull(export = findQualName(e))) {
             /* Data constructors cannot appear in export lists,
              * so flag an error if they do.
@@ -1016,7 +996,7 @@ static List local checkExport(List exports, Text mt,
                           textToStr(nameRec(export)->text));
                 errFail();
             }
-            expFound = TRUE;
+            expFound = true;
             /* Re-use static analysis code to verify that 
            * a qualified export isn't ambiguous. Unqualified
            * ones are better handled by checkExportDistinct().
@@ -1069,7 +1049,7 @@ static List local checkExport(List exports, Text mt,
                         exports = addEntity(
                             nm,
                             allMethodsOrDCons(moduleRec(thisModule)->modImports,
-                                              nm, tyconRec(nm)->mod, FALSE),
+                                              nm, tyconRec(nm)->mod, false),
                             exports);
                     }
                 } else {
@@ -1092,7 +1072,7 @@ static List local checkExport(List exports, Text mt,
                     exports = addEntity(
                         nm,
                         allMethodsOrDCons(moduleRec(thisModule)->modImports, nm,
-                                          cclassRec(nm)->mod, TRUE),
+                                          cclassRec(nm)->mod, true),
                         exports);
                 }
             } else {
@@ -1140,9 +1120,9 @@ List checkExports(List exports) {
  * Browsing module exports
  * ------------------------------------------------------------------------*/
 
-Void browseModule(Module mod,
-                  Bool all) { /* include all names in scope in the module? */
-    List exports = resolveImportList(mod, DOTDOT, FALSE);
+/* Include all names in scope in the module? */
+void browseModule(Module mod, bool all) {
+    List exports = resolveImportList(mod, DOTDOT, false);
     Printf("module %s where\n", textToStr(moduleRec(mod)->text));
     if (all) {
         List all_names = dupList(moduleRec(mod)->names);
@@ -1152,7 +1132,8 @@ Void browseModule(Module mod,
     }
 }
 
-static Void local browseEntity(Cell entity) { /* Entity | (Entity,[Entity]) */
+/* Entity | (Entity,[Entity]) */
+static void browseEntity(Cell entity) {
     if (isName(entity)) {
         browseName(entity);
     } else { /* (Entity,[Entity]) */
@@ -1160,7 +1141,7 @@ static Void local browseEntity(Cell entity) { /* Entity | (Entity,[Entity]) */
     }
 }
 
-static Void local browseName(Name nm) {
+static void browseName(Name nm) {
     /* unwanted artifacts, like lambda lifted values,
        are in the list of names, but have no types */
     if (nonNull(nameRec(nm)->type)) {

@@ -5,10 +5,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: array.c,v $
- * $Revision: 1.10 $
- * $Date: 2004/01/06 10:02:51 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -51,8 +47,8 @@ static struct primitive arrayPrimTable[] = {
     {"IOArrEq", 2, primIOArrEq},
     {0, 0, 0}};
 
-static Void outOfBounds(void);
-static void outOfBounds() {
+static void outOfBounds(void);
+static void outOfBounds(void) {
     throwException(ap(nameArrayException, ap(nameIndexOutOfBounds, nameNil)));
 }
 
@@ -60,8 +56,8 @@ static void outOfBounds() {
  * Array control:
  * ------------------------------------------------------------------------*/
 
-static Void arrayControl(Int);
-static Void arrayControl(Int what) {
+static void arrayControl(int);
+static void arrayControl(int what) {
     switch (what) {
     case INSTALL:
         setCurrModule(modulePrelude);
@@ -155,14 +151,14 @@ struct primInfo arrayPrims = {arrayControl, arrayPrimTable, 0};
 
 #define declArr                                                                \
     StackPtr arrPos = sp + 1;                                                  \
-    [[maybe_unused]] Int alen;                                                 \
+    [[maybe_unused]] int alen;                                                 \
     push(NIL)
 #define arr stack(arrPos)
 
 #define aNewNil(b, s) aNewSet(b, s, NIL)
 #define aNewSet(b, s, v)                                                       \
     {                                                                          \
-        Int i;                                                                 \
+        int i;                                                                 \
         eval(primArg(s));                                                      \
         alen = (whnfInt > 0) ? whnfInt : 0;                                    \
         for (arr = NIL, i = alen; i > 0; i--)                                  \
@@ -280,7 +276,8 @@ struct primInfo arrayPrims = {arrayControl, arrayPrimTable, 0};
 
 /* Finally, we come to the implementation of the Haskell array primitives: */
 
-primFun(primArray) {     /* :: (a,a)                       */
+/* :: (a,a) */
+primFun(primArray) {
     declArr;             /*    -> Int                      */
     aNewNil(3, 2);       /*      -> [(Int,b)]              */
     aAssocs(1, aSetElt); /*         -> Array a b           */
@@ -288,51 +285,58 @@ primFun(primArray) {     /* :: (a,a)                       */
     updarrRoot();
 }
 
-primFun(primUpdate) { /* :: [(Int,b)]                      */
-    declArr;          /*    -> Array a b                   */
-    aEvalModel(1);    /*       -> Array a b                */
+/* :: [(Int,b)] */
+primFun(primUpdate) {
+    declArr;       /*    -> Array a b                   */
+    aEvalModel(1); /*       -> Array a b                */
     aNewLike(1, NIL);
     aAssocs(2, aSetElt);
     aCopyNull(1);
     updarrRoot();
 }
 
-primFun(primAccum) { /* :: [(Int,c)] -> Array a b          */
-    declArr;         /*    -> (b -> c -> b)                */
-    aEvalModel(2);   /*  -> Array a b              */
+/* :: [(Int,c)] -> Array a b */
+primFun(primAccum) {
+    declArr;       /*    -> (b -> c -> b)                */
+    aEvalModel(2); /*  -> Array a b              */
     aNewCopy(2);
     aAssocs(3, aAddElt(1));
     updarrRoot();
 }
 
-primFun(primAccumArray) {      /* :: (a,a) -> Int                  */
+/* :: (a,a) -> Int */
+primFun(primAccumArray) {
     declArr;                   /*    -> (b -> c -> b) -> b         */
     aNewSet(5, 4, primArg(2)); /*        -> [(Int,c)]              */
     aAssocs(1, aAddElt(3));    /*           -> Array a b           */
     updarrRoot();
 }
 
-primFun(primAmap) { /* :: (a -> b)                         */
-    declArr;        /*    -> Array c a             */
-    aEvalModel(1);  /*       -> Array c b                  */
+/* :: (a -> b) */
+primFun(primAmap) {
+    declArr;       /*    -> Array c a             */
+    aEvalModel(1); /*       -> Array c b                  */
     aNewCopy(1);
     aMapElts(2);
     updarrRoot();
 }
 
-primFun(primSubscript) { /* :: Array a b -> Int -> b        */
+/* :: Array a b -> Int -> b */
+primFun(primSubscript) {
     aEvalModel(2);
     eval(primArg(1));
     aGetElt(2);
     updateRoot(top());
 }
 
-primFun(primBounds) { /* :: Array a b -> (a,a)     */
+/* :: Array a b -> (a,a) */
+primFun(primBounds) {
     aEvalModel(1);
     updateRoot(aGetBounds(1));
 }
 
-primFun(primElems) { /* :: Array a b -> [b]                */
+/* :: Array a b -> [b] */
+primFun(primElems) {
     aEvalModel(1);
     aElems(1);
     updateRoot(revOnto(top(), nameNil));
@@ -342,36 +346,41 @@ primFun(primEltUndef) {
     throwException(ap(nameArrayException, ap(nameUndefinedElement, nameNil)));
 }
 
-primFun(primIONewArr) { /* :: (a,a)                        */
-    declArr;            /*    -> Int                       */
+/* :: (a,a) */
+primFun(primIONewArr) {
+    declArr; /*    -> Int                       */
     aNewSet(3 + IOArity, 2 + IOArity,
             IOArg(1)); /*        -> b                      */
     aRetForIO();       /*           -> IO (IOArray a b)    */
 }
 
-primFun(primIOReadArr) { /* :: IOArray a b -> Int -> IO b   */
+/* :: IOArray a b -> Int -> IO b */
+primFun(primIOReadArr) {
     aEvalModel(2 + IOArity);
     eval(primArg(1 + IOArity));
     aGetElt(2 + IOArity);
     IOReturn(top());
 }
 
-primFun(primIOWriteArr) {    /* :: IOArray a b -> Int -> b         */
+/* :: IOArray a b -> Int -> b */
+primFun(primIOWriteArr) {
     aEvalModel(3 + IOArity); /*    -> IO ()                        */
     eval(primArg(2 + IOArity));
     aPutElt(3 + IOArity, IOArg(1));
     IOReturn(nameUnit);
 }
 
-primFun(primIOFreeze) { /* :: IOArray a b                  */
-    declArr;            /*    -> IO (Array a b)            */
+/* :: IOArray a b */
+primFun(primIOFreeze) {
+    declArr; /*    -> IO (Array a b)            */
     aEvalModel(1 + IOArity);
     aNewCopy(1 + IOArity);
     aRetForIO();
 }
 
-primFun(primIOArrEq) { /* :: IOArray a b                 */
-    aEvalModel(1);     /*    -> IOArray a b -> Bool      */
+/* :: IOArray a b */
+primFun(primIOArrEq) {
+    aEvalModel(1); /*    -> IOArray a b -> Bool      */
     aEvalModel(2);
     BoolResult(primArg(1) == primArg(2));
 }

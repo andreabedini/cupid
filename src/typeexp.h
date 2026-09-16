@@ -12,19 +12,19 @@
 extern List tcDeps; /* tycons and classes the declaration being checked uses */
 
 extern List typeVarsIn(Cell, List, List, List); /* tyvars of an expression  */
-extern Type checkSigType(Int, String, Cell, Type); /* check a signature     */
-extern Void checkOptQuantVars(Int, List, List); /* forall vars are all used */
-extern Type depTopType(Int, List, Type);  /* resolve a type, rank-2 allowed */
-extern Type depCompType(Int, List, Type); /* resolve a constructor argument */
-extern Type depTypeExp(Int, List, Type);  /* resolve a monotype             */
-extern Type depTypeVar(Int, List, Text);  /* resolve one type variable      */
-extern Cell depPredExp(Int, List, Cell);  /* resolve a predicate            */
-extern List checkQuantVars(Int, List, List, Cell); /* check a forall        */
+extern Type checkSigType(int, char *, Cell, Type); /* check a signature     */
+extern void checkOptQuantVars(int, List, List); /* forall vars are all used */
+extern Type depTopType(int, List, Type);  /* resolve a type, rank-2 allowed */
+extern Type depCompType(int, List, Type); /* resolve a constructor argument */
+extern Type depTypeExp(int, List, Type);  /* resolve a monotype             */
+extern Type depTypeVar(int, List, Text);  /* resolve one type variable      */
+extern Cell depPredExp(int, List, Cell);  /* resolve a predicate            */
+extern List checkQuantVars(int, List, List, Cell); /* check a forall        */
 extern List offsetTyvarsIn(Type, List); /* offsets of the tyvars in a type  */
 extern List otvars(Cell, List);         /* likewise for a predicate         */
 extern List odiff(List, List);          /* difference of offset lists       */
-extern Bool osubset(List, List);        /* subset test on offset lists      */
+extern bool osubset(List, List);        /* subset test on offset lists      */
 extern List calcFunDeps(List);          /* fundeps of a context             */
-extern Void typeexpControl(Int); /* RESET/INSTALL, called by staticAnalysis */
+extern void typeexpControl(int); /* RESET/INSTALL, called by staticAnalysis */
 
 #endif /* __TYPEEXP_H__ */

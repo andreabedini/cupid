@@ -12,10 +12,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: static.c,v $
- * $Revision: 1.180 $
- * $Date: 2006/08/30 18:46:22 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -40,21 +36,21 @@
  * local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local checkQualImport(Pair);
-static Void local checkUnqualImport(Pair);
-static List local checkPrimDefn(Triple);
-static Name local addNewPrim(Int, Text, String, Cell);
-static Void local addRSsigdecls(Pair);
-static Void local allNoPrevDef(Cell);
-static Void local noPrevDef(Int, Cell);
-static Void local checkTypeIn(Pair);
+static void checkQualImport(Pair);
+static void checkUnqualImport(Pair);
+static List checkPrimDefn(Triple);
+static Name addNewPrim(int, Text, char *, Cell);
+static void addRSsigdecls(Pair);
+static void allNoPrevDef(Cell);
+static void noPrevDef(int, Cell);
+static void checkTypeIn(Pair);
 
 /* --------------------------------------------------------------------------
  * Static analysis of modules:
  * ------------------------------------------------------------------------*/
 
-Void startModule(Cell nm) /* switch to a new module */
-{
+/* Switch to a new module */
+void startModule(Cell nm) {
     Module m;
     Text t = textOf(nm);
     if (!isCon(nm))
@@ -73,13 +69,13 @@ Void startModule(Cell nm) /* switch to a new module */
     setCurrModule(m);
 }
 
-Void setExportList(List exps) /* Add export list to current module */
-{
+/* Add export list to current module */
+void setExportList(List exps) {
     moduleRec(currentModule)->exports = exps;
 }
 
-static Void local checkQualImport(Pair i) /* Process qualified import         */
-{
+/* Process qualified import */
+static void checkQualImport(Pair i) {
     Module m = findModid(snd(i));
     if (isNull(m)) {
         errHead(0);
@@ -90,9 +86,8 @@ static Void local checkQualImport(Pair i) /* Process qualified import         */
     snd(i) = m;
 }
 
-static Void local
-checkUnqualImport(Pair i) /* Process unqualified import       */
-{
+/* Process unqualified import */
+static void checkUnqualImport(Pair i) {
     Module m = findModid(fst(i));
     if (isNull(m)) {
         errHead(0);
@@ -111,35 +106,31 @@ checkUnqualImport(Pair i) /* Process unqualified import       */
  * name with a string (which identifies a built-in primitive) and a type.
  * ------------------------------------------------------------------------*/
 
-Void primDefn(Cell line, List prims,
-              Cell type) /* Handle primitive definitions           */
-{
+/* Handle primitive definitions */
+void primDefn(Cell line, List prims, Cell type) {
     primDefns = cons(triple(line, prims, type), primDefns);
 }
 
-static List local
-checkPrimDefn(Triple pd) /* Check primitive definition           */
-{
-    Int line = intOf(fst3(pd));
+/* Check primitive definition */
+static List checkPrimDefn(Triple pd) {
+    int line = intOf(fst3(pd));
     List prims = snd3(pd);
     Type type = thd3(pd);
     emptySubstitution();
     type = checkSigType(line, "primitive declaration", fst(hd(prims)), type);
     for (; nonNull(prims); prims = tl(prims)) {
         Cell p = hd(prims);
-        Bool same = isVar(p);
+        bool same = isVar(p);
         Text pt = textOf(same ? p : fst(p));
-        String pr = textToStr(textOf(same ? p : snd(p)));
+        char *pr = textToStr(textOf(same ? p : snd(p)));
         hd(prims) = addNewPrim(line, pt, pr, type);
     }
     return snd3(pd);
 }
 
-static Name local addNewPrim(Int l, Text vn, String s,
-                             Cell t) /* make binding of variable vn to  */
-                                     /* primitive function referred        */
-                                     /* to by s, with given type t         */
-{
+/* Make binding of variable vn to primitive function referred to by s, with
+ * given type t */
+static Name addNewPrim(int l, Text vn, char *s, Cell t) {
     Name n = findName(vn);
 
     if (isNull(n)) {
@@ -156,7 +147,8 @@ static Name local addNewPrim(Int l, Text vn, String s,
  * Main static analysis:
  * ------------------------------------------------------------------------*/
 
-Void checkExp() { /* Top level static check on Expr  */
+/* Top level static check on Expr */
+void checkExp(void) {
     staticAnalysis(RESET);
     clearScope();     /* Analyse expression in the scope */
     withinScope(NIL); /* of no local bindings              */
@@ -166,7 +158,8 @@ Void checkExp() { /* Top level static check on Expr  */
 }
 
 #if EXPLAIN_INSTANCE_RESOLUTION
-Void checkContext() { /* Top level static check on Expr  */
+/* Top level static check on Expr */
+void checkContext(void) {
     List vs, qs;
 
     staticAnalysis(RESET);
@@ -182,7 +175,8 @@ Void checkContext() { /* Top level static check on Expr  */
 }
 #endif
 
-Void checkDefns() { /* Top level static analysis           */
+/* Top level static analysis */
+void checkDefns(void) {
     List tcs;
     Module thisModule = lastModule();
     staticAnalysis(RESET);
@@ -199,7 +193,7 @@ Void checkDefns() { /* Top level static analysis           */
                             moduleRec(thisModule)->modAliases))) {
         addUnqualImport(moduleUserPrelude, mkCon(textUserPrelude), DOTDOT);
     }
-    map1Proc(checkImportList, FALSE, unqualImports);
+    map1Proc(checkImportList, false, unqualImports);
     mapProc(checkQualImportList, moduleRec(thisModule)->qualImports);
 
     /* And,  finally, fix-up the effective import lists. */
@@ -247,7 +241,7 @@ Void checkDefns() { /* Top level static analysis           */
          * Otherwise, we try to load a C file and look for those
          * primitives.
          */
-        Bool need_stubs = foreignNeedStubs(foreignImports, foreignExports);
+        bool need_stubs = foreignNeedStubs(foreignImports, foreignExports);
 
         if (generate_ffi && need_stubs) {
             foreignHeader(scriptFile);
@@ -309,8 +303,8 @@ Void checkDefns() { /* Top level static analysis           */
     staticAnalysis(RESET);
 }
 
-static Void local addRSsigdecls(Pair pr) /* add sigdecls from TYPE ... IN ..*/
-{
+/* Add sigdecls from TYPE ... IN .. */
+static void addRSsigdecls(Pair pr) {
     List vs = snd(pr); /* get list of variables    */
     for (; nonNull(vs); vs = tl(vs)) {
         if (fst(hd(vs)) == SIGDECL) { /* find a sigdecl                   */
@@ -320,20 +314,18 @@ static Void local addRSsigdecls(Pair pr) /* add sigdecls from TYPE ... IN ..*/
     }
 }
 
-static Void local allNoPrevDef(Cell b) /* ensure no previous bindings for*/
-{                                      /* variables in new binding         */
+/* Ensure no previous bindings for variables in new binding */
+static void allNoPrevDef(Cell b) {
     if (isVar(fst(b))) {
         noPrevDef(rhsLine(snd(hd(snd(snd(b))))), fst(b));
     } else {
-        Int line = rhsLine(snd(snd(snd(b))));
+        int line = rhsLine(snd(snd(snd(b))));
         map1Proc(noPrevDef, line, fst(b));
     }
 }
 
-static Void local noPrevDef(Int line,
-                            Cell v) /* ensure no previous binding for */
-                                    /* new variable                */
-{
+/* Ensure no previous binding for new variable */
+static void noPrevDef(int line, Cell v) {
     Name n = findName(textOf(v));
 
     if (isNull(n)) {
@@ -353,9 +345,8 @@ static Void local noPrevDef(Int line,
     nameRec(n)->line = line;
 }
 
-Void duplicateError(Int line, Module mod, Text t,
-                    String kind) /* report duplicate defn */
-{
+/* Report duplicate defn */
+void duplicateError(int line, Module mod, Text t, char *kind) {
     if (mod == currentModule) {
         errHead(line);
         errPrintf("Multiple declarations for %s \"%s\"", kind, textToStr(t));
@@ -368,8 +359,8 @@ Void duplicateError(Int line, Module mod, Text t,
     }
 }
 
-static Void local checkTypeIn(Pair cvs) /* Check that vars in restricted   */
-{                                       /* synonym are defined             */
+/* Check that vars in restricted synonym are defined */
+static void checkTypeIn(Pair cvs) {
     Tycon c = fst(cvs);
     List vs = snd(cvs);
 
@@ -389,7 +380,7 @@ static Void local checkTypeIn(Pair cvs) /* Check that vars in restricted   */
 
 /* The per-script state lives in the files that use it; each has a control
  * function of its own, and they reset together here as they always did. */
-Void staticAnalysis(Int what) {
+void staticAnalysis(int what) {
     kindControl(what);
     tyconControl(what);
     typeexpControl(what);

@@ -15,13 +15,13 @@
  * bookkeeping and leaves an Int in it afterwards.
  */
 typedef Cell (*SccDepends)(Cell);
-typedef Void (*SccSetDepends)(Cell, Cell);
+typedef void (*SccSetDepends)(Cell, Cell);
 
 /* Sort the nodes of bs, then those of cs (which may be NIL), into a list of
  * strongly connected components, each a list of nodes, in which every
  * component comes after the ones it depends on.
  */
 extern List sccSort(List, List, SccDepends, SccSetDepends);
-extern Void sccControl(Int);
+extern void sccControl(int);
 
 #endif /* SCC_H */

@@ -30,16 +30,16 @@
  * local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local checkClassDefn2(Class);
-static Void local checkMems(Class, List, Cell);
-static Void local checkMems2(Class, Cell);
-static Name local newMember(Int, Int, Cell, Type, Class);
-static Name local newDSel(Class, Int);
-static Text local generateText(String, Class);
-static Name local memberName(Class, Text);
-static List local numInsert(Int, Cell, List);
-static Bool local instCompare(Inst, Inst);
-static List local inheritFundeps(Class, Cell, Int);
+static void checkClassDefn2(Class);
+static void checkMems(Class, List, Cell);
+static void checkMems2(Class, Cell);
+static Name newMember(int, int, Cell, Type, Class);
+static Name newDSel(Class, int);
+static Text generateText(char *, Class);
+static Name memberName(Class, Text);
+static List numInsert(int, Cell, List);
+static bool instCompare(Inst, Inst);
+static List inheritFundeps(Class, Cell, int);
 
 /* --------------------------------------------------------------------------
  * Static analysis of class declarations:
@@ -60,14 +60,11 @@ static List local inheritFundeps(Class, Cell, Int);
  *   stages of static analysis.
  * ------------------------------------------------------------------------*/
 
-Void classDefn(Int line, Cell head, List ms,
-               List fds) /* process new class definition           */
-                         /* definition line number         */
-                         /* class header :: ([Supers],Class) */
-                         /* class definition body                  */
-{                        /* functional dependencies        */
+/* Process new class definition definition line number class header ::
+ * ([Supers],Class) class definition body functional dependencies */
+void classDefn(int line, Cell head, List ms, List fds) {
     Text ct = textOf(getHead(snd(head)));
-    Int arity = argCount;
+    int arity = argCount;
 
     if (nonNull(findClass(ct))) {
         errHead(line);
@@ -116,8 +113,8 @@ Void classDefn(Int line, Cell head, List ms,
  * - check that extended class hierarchy does not contain any cycles
  * ------------------------------------------------------------------------*/
 
-Void checkClassDefn(Class c) /* validate class definition       */
-{
+/* Validate class definition */
+void checkClassDefn(Class c) {
     List tyvars = NIL;
     Cell temp = cclassRec(c)->head;
     List fs = NIL;
@@ -190,7 +187,7 @@ Void checkClassDefn(Class c) /* validate class definition       */
     if (cclassRec(c)->arity == 0) {
         cclassRec(c)->head = c;
     } else {
-        Int args = cclassRec(c)->arity - 1;
+        int args = cclassRec(c)->arity - 1;
         for (temp = cclassRec(c)->head; args > 0; temp = fun(temp), args--) {
             arg(temp) = mkOffset(args);
         }
@@ -213,14 +210,13 @@ Void checkClassDefn(Class c) /* validate class definition       */
     tcDeps = NIL;
 }
 
-Void checkClassDefn2_(List cs) {
+void checkClassDefn2_(List cs) {
     mapProc(checkClassDefn2, cs);
 }
 
-static Void local checkClassDefn2(Class c) /* validate class definition, pt 2 */
-{                                          /* can only finish this job after  */
-                                           /* we've inherited fds             */
-                                           /* and are in dependency order     */
+/* Validate class definition, pt 2 can only finish this job after we've
+ * inherited fds and are in dependency order */
+static void checkClassDefn2(Class c) {
     if (!isTycon(c)) {
         List tvts = offsetTyvarsIn(cclassRec(c)->head, NIL);
         List tvps = offsetTyvarsIn(cclassRec(c)->supers, NIL);
@@ -266,8 +262,8 @@ static Void local checkClassDefn2(Class c) /* validate class definition, pt 2 */
  * Self-improvement (of a C with a C, or a D with a D) is treated as a
  * special case of an inherited dependency.
  * ------------------------------------------------------------------------*/
-static List local inheritFundeps(Class c, Cell pi, Int o) {
-    Int alpha = newKindedVars(cclassRec(c)->kinds);
+static List inheritFundeps(Class c, Cell pi, int o) {
+    int alpha = newKindedVars(cclassRec(c)->kinds);
     List scs = cclassRec(c)->supers;
     List xfds = NIL;
     Cell this = NIL;
@@ -308,8 +304,8 @@ static List local inheritFundeps(Class c, Cell pi, Int o) {
     return xfds;
 }
 
-Void extendFundeps(Class c) {
-    Int alpha;
+void extendFundeps(Class c) {
+    int alpha;
     emptySubstitution();
     alpha = newKindedVars(cclassRec(c)->kinds);
     cclassRec(c)->xfds = inheritFundeps(c, cclassRec(c)->head, alpha);
@@ -318,10 +314,9 @@ Void extendFundeps(Class c) {
     map1Proc(checkMems2, c, fst(cclassRec(c)->members));
 }
 
-static Void local checkMems(Class c, List tyvars,
-                            Cell m) /* check member function details   */
-{
-    Int line = intOf(fst3(m));
+/* Check member function details */
+static void checkMems(Class c, List tyvars, Cell m) {
+    int line = intOf(fst3(m));
     Type t = thd3(m);
     List sig = NIL;
     List tvs = NIL;
@@ -357,10 +352,9 @@ static Void local checkMems(Class c, List tyvars,
     take(cclassRec(c)->arity, tyvars); /* Delete extra type vars  */
 }
 
-static Void local checkMems2(Class c,
-                             Cell m) /* check member function details   */
-{
-    Int line = intOf(fst3(m));
+/* Check member function details */
+static void checkMems2(Class c, Cell m) {
+    int line = intOf(fst3(m));
     List vs = snd3(m);
     Type t = thd3(m);
 
@@ -369,12 +363,12 @@ static Void local checkMems2(Class c,
     }
 }
 
-Void addMembers(Class c) /* Add definitions of member funs  */
-{                        /* and other parts of class struct.*/
+/* Add definitions of member funs and other parts of class struct. */
+void addMembers(Class c) {
     List ms = fst(cclassRec(c)->members);
     List fs = snd(cclassRec(c)->members);
     List ns = NIL; /* List of names                */
-    Int mno;       /* Member function number       */
+    int mno;       /* Member function number       */
 
     for (mno = 0; mno < cclassRec(c)->numSupers; mno++) {
         ns = cons(newDSel(c, mno), ns);
@@ -382,7 +376,7 @@ Void addMembers(Class c) /* Add definitions of member funs  */
     cclassRec(c)->dsels = rev(ns); /* Save dictionary selectors        */
 
     for (mno = 1, ns = NIL; nonNull(ms); ms = tl(ms)) {
-        Int line = intOf(fst3(hd(ms)));
+        int line = intOf(fst3(hd(ms)));
         List vs = rev(snd3(hd(ms)));
         Type t = thd3(hd(ms));
         for (; nonNull(vs); vs = tl(vs)) {
@@ -394,7 +388,7 @@ Void addMembers(Class c) /* Add definitions of member funs  */
     cclassRec(c)->numMembers = length(cclassRec(c)->members);
 
     for (; nonNull(fs); fs = tl(fs)) { /* fixity declarations              */
-        Int line = intOf(fst3(hd(fs)));
+        int line = intOf(fst3(hd(fs)));
         List ops = snd3(hd(fs));
         Syntax s = intOf(thd3(hd(fs)));
         for (; nonNull(ops); ops = tl(ops)) {
@@ -429,9 +423,8 @@ Void addMembers(Class c) /* Add definitions of member funs  */
     cclassRec(c)->defaults = classBindings("class", c, cclassRec(c)->defaults);
 }
 
-static Name local newMember(Int l, Int no, Cell v, Type t, Class parent)
-/* Make definition for member fn   */
-{
+/* Make definition for member fn */
+static Name newMember(int l, int no, Cell v, Type t, Class parent) {
     Name m = findName(textOf(v));
 
     if (isNull(m)) {
@@ -459,12 +452,12 @@ static Name local newMember(Int l, Int no, Cell v, Type t, Class parent)
     return m;
 }
 
-static Name local newDSel(Class c, Int no) /* Make definition for dict selectr*/
-{
+/* Make definition for dict selectr */
+static Name newDSel(Class c, int no) {
     Name s;
     char buf[16];
 
-    sprintf(buf, "_sc%d_%s", no, "%s");
+    snprintf(buf, sizeof buf, "_sc%d_%s", no, "%s");
     s = newName(generateText(buf, c), c);
     nameRec(s)->line = cclassRec(c)->line;
     nameRec(s)->arity = 1;
@@ -474,11 +467,9 @@ static Name local newDSel(Class c, Int no) /* Make definition for dict selectr*/
 
 #define MAX_GEN 128
 
-static Text local generateText(String sk,
-                               Class c) /* We need to generate names for   */
-                                        /* certain objects corresponding   */
-{                                       /* to each class.                  */
-    String cname = textToStr(cclassRec(c)->text);
+/* We need to generate names for certain objects corresponding to each class. */
+static Text generateText(char *sk, Class c) {
+    char *cname = textToStr(cclassRec(c)->text);
     char buffer[MAX_GEN + 1];
 
     if ((strlen(sk) + strlen(cname)) >= MAX_GEN) {
@@ -486,23 +477,23 @@ static Text local generateText(String sk,
         errPrintf("Please use a shorter name for class \"%s\"", cname);
         errFail();
     }
-    sprintf(buffer, sk, cname);
+    snprintf(buffer, sizeof buffer, sk, cname);
     return findText(buffer);
 }
 
-Int visitClass(Class c)            /* visit class defn to check that  */
-{                                  /* class hierarchy is acyclic         */
-    if (cclassRec(c)->level < 0) { /* already visiting this class?       */
+/* Visit class defn to check that class hierarchy is acyclic */
+int visitClass(Class c) {
+    if (cclassRec(c)->level < 0) { /* already visiting this class? */
         errHead(cclassRec(c)->line);
         errPrintf("Superclass relation for \"%s\" is cyclic",
                   textToStr(cclassRec(c)->text));
         errFail();
     } else if (cclassRec(c)->level == 0) { /* visiting class for first time   */
         List scs = cclassRec(c)->supers;
-        Int lev = 0;
+        int lev = 0;
         cclassRec(c)->level = (-1);
         for (; nonNull(scs); scs = tl(scs)) {
-            Int l = visitClass(getHead(hd(scs)));
+            int l = visitClass(getHead(hd(scs)));
             if (l > lev)
                 lev = l;
         }
@@ -515,10 +506,9 @@ Int visitClass(Class c)            /* visit class defn to check that  */
  * Process class and instance declaration binding groups:
  * ------------------------------------------------------------------------*/
 
-List classBindings(String where, Class c, List bs)
-/* Check validity of bindings bs   */
-/* for class c (or an inst of c)   */
-{ /* sort into approp. member order  */
+/* Check validity of bindings bs for class c (or an inst of c) sort into
+ * approp. member order */
+List classBindings(char *where, Class c, List bs) {
     List nbs = NIL;
     Text nm;
 
@@ -547,10 +537,9 @@ List classBindings(String where, Class c, List bs)
     return nbs;
 }
 
-static Name local memberName(Class c,
-                             Text t) /* return name of member function  */
-                                     /* with name t in class c     */
-{                                    /* return NIL if not a member         */
+/* Return name of member function with name t in class c return NIL if not a
+ * member */
+static Name memberName(Class c, Text t) {
     List ms = cclassRec(c)->members;
     for (; nonNull(ms); ms = tl(ms)) {
         if (t == nameRec(hd(ms))->text) {
@@ -560,10 +549,8 @@ static Name local memberName(Class c,
     return NIL;
 }
 
-static List local numInsert(Int n, Cell x,
-                            List xs) /* insert x at nth position in xs,  */
-                                     /* filling gaps with NIL            */
-{
+/* Insert x at nth position in xs, filling gaps with NIL */
+static List numInsert(int n, Cell x, List xs) {
     List start = isNull(xs) ? cons(NIL, NIL) : xs;
 
     for (xs = start; 0 < n--; xs = tl(xs)) {
@@ -586,11 +573,9 @@ static List local numInsert(Int n, Cell x,
  *   stages of static analysis.
  * ------------------------------------------------------------------------*/
 
-Void instDefn(Int line, Cell head,
-              List ms) /* process new instance definition  */
-                       /* definition line number           */
-                       /* inst header :: (context,Class)   */
-{                      /* instance members                 */
+/* Process new instance definition definition line number inst header ::
+ * (context,Class) instance members */
+void instDefn(int line, Cell head, List ms) {
     Inst nw = newInst();
     instRec(nw)->line = line;
     instRec(nw)->specifics = fst(head);
@@ -615,15 +600,15 @@ Void instDefn(Int line, Cell head,
  * - No top level type signature declarations
  * ------------------------------------------------------------------------*/
 
-Bool allowOverlap = FALSE;       /* TRUE => allow overlapping insts */
-Bool allowUnsafeOverlap = FALSE; /* TRUE => in addition, allow      */
+bool allowOverlap = false;       /* true => allow overlapping insts */
+bool allowUnsafeOverlap = false; /* true => in addition, allow      */
                                  /* potentially inconsistent        */
                                  /* overlapping instances           */
 Name nameListMonad = NIL;        /* builder function for List Monad */
 
-Void checkInstDefn(Inst in) /* Validate instance declaration   */
-{
-    Int line = instRec(in)->line;
+/* Validate instance declaration */
+void checkInstDefn(Inst in) {
+    int line = instRec(in)->line;
     List tyvars = typeVarsIn(instRec(in)->head, NIL, NIL, NIL);
     List tvps = NIL, tvts = NIL;
     List fds = NIL;
@@ -704,8 +689,8 @@ Void checkInstDefn(Inst in) /* Validate instance declaration   */
     }
 }
 
-Void insertInst(Inst in) /* Insert instance into class        */
-{
+/* Insert instance into class */
+void insertInst(Inst in) {
     Class c = instRec(in)->c;
     List ins = cclassRec(c)->instances;
     List prev = NIL;
@@ -717,18 +702,18 @@ Void insertInst(Inst in) /* Insert instance into class        */
             List fds = cclassRec(c)->fds;
             substitution(RESET);
             for (; nonNull(fds); fds = tl(fds)) {
-                Int alpha = newKindedVars(instRec(in)->kinds);
-                Int beta = newKindedVars(instRec(hd(ins1))->kinds);
+                int alpha = newKindedVars(instRec(in)->kinds);
+                int beta = newKindedVars(instRec(hd(ins1))->kinds);
                 List as = fst(hd(fds));
-                Bool same = TRUE;
+                bool same = true;
                 for (; same && nonNull(as); as = tl(as)) {
-                    Int n = offsetOf(hd(as));
+                    int n = offsetOf(hd(as));
                     same &= unify(nthArg(n, instRec(in)->head), alpha,
                                   nthArg(n, instRec(hd(ins1))->head), beta);
                 }
                 if (isNull(as) && same) {
                     for (as = snd(hd(fds)); same && nonNull(as); as = tl(as)) {
-                        Int n = offsetOf(hd(as));
+                        int n = offsetOf(hd(as));
                         same &=
                             sameType(nthArg(n, instRec(in)->head), alpha,
                                      nthArg(n, instRec(hd(ins1))->head), beta);
@@ -756,13 +741,13 @@ Void insertInst(Inst in) /* Insert instance into class        */
 
     substitution(RESET);
     while (nonNull(ins)) { /* Look for overlap w/ other insts */
-        Int alpha = newKindedVars(instRec(in)->kinds);
-        Int beta = newKindedVars(instRec(hd(ins))->kinds);
+        int alpha = newKindedVars(instRec(in)->kinds);
+        int beta = newKindedVars(instRec(hd(ins))->kinds);
         if (unifyPred(instRec(in)->head, alpha, instRec(hd(ins))->head, beta)) {
             Cell pi = copyPred(instRec(in)->head, alpha);
             if (allowOverlap || allowUnsafeOverlap) {
-                Bool bef = instCompare(in, hd(ins));
-                Bool aft = instCompare(hd(ins), in);
+                bool bef = instCompare(in, hd(ins));
+                bool aft = instCompare(hd(ins), in);
                 if (bef && !aft) { /* in comes strictly before hd(ins)*/
                     break;
                 }
@@ -797,16 +782,15 @@ Void insertInst(Inst in) /* Insert instance into class        */
     }
 }
 
-static Bool local instCompare(Inst ia,
-                              Inst ib) /* See if ia is an instance of ib  */
-{
-    Int alpha = newKindedVars(instRec(ia)->kinds);
-    Int beta = newKindedVars(instRec(ib)->kinds);
+/* See if ia is an instance of ib */
+static bool instCompare(Inst ia, Inst ib) {
+    int alpha = newKindedVars(instRec(ia)->kinds);
+    int beta = newKindedVars(instRec(ib)->kinds);
     return matchPred(instRec(ia)->head, alpha, instRec(ib)->head, beta);
 }
 
-Name newInstImp(Inst in) /* Make definition for inst builder*/
-{
+/* Make definition for inst builder */
+Name newInstImp(Inst in) {
     Name b = newName(inventText(), in);
     nameRec(b)->line = instRec(in)->line;
     nameRec(b)->arity = instRec(in)->numSpecifics;
@@ -820,8 +804,8 @@ Name newInstImp(Inst in) /* Make definition for inst builder*/
  * default will be used where necessary.
  * ------------------------------------------------------------------------*/
 
-Void defaultDefn(Int line, List defs) /* Handle default types definition */
-{
+/* Handle default types definition */
+void defaultDefn(int line, List defs) {
     if (defaultLine != 0) {
         errHead(line);
         errPrintf("Multiple default declarations are not permitted in");
@@ -832,8 +816,9 @@ Void defaultDefn(Int line, List defs) /* Handle default types definition */
     defaultLine = line;
 }
 
-Void checkDefaultDefns() { /* check that default types are    */
-    List ds = NIL;         /* well-kinded instances of Num    */
+/* Check that default types are well-kinded instances of Num */
+void checkDefaultDefns(void) {
+    List ds = NIL;
 
     if (defaultLine != 0) {
         map2Over(depTypeExp, defaultLine, NIL, defaultDefns);

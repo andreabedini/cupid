@@ -5,10 +5,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: connect.h,v $
- * $Revision: 1.92 $
- * $Date: 2005/12/02 12:42:27 $
  * ------------------------------------------------------------------------*/
 #ifndef __CONNECT_H__
 #define __CONNECT_H__
@@ -21,7 +17,7 @@
  * ------------------------------------------------------------------------*/
 
 extern Module modulePrelude;
-CUDDLES_inline Bool isPrelude(Module m) {
+CUDDLES_inline bool isPrelude(Module m) {
     return m == modulePrelude;
 }
 extern Module moduleUserPrelude;
@@ -128,11 +124,11 @@ extern Text textPrelude;
 extern Text textUserPrelude;
 extern Text textNum; /* used to process default decls   */
 
-extern String versionString; /* String containing version name  */
+extern char *versionString; /* String containing version name  */
 #if USE_REGISTRY
-extern String cuddlesRegRoot; /* Root in registry for windows    */
+extern char *cuddlesRegRoot; /* Root in registry for windows    */
 #endif
-extern String scriptFile; /* Name of current script (if any) */
+extern char *scriptFile; /* Name of current script (if any) */
 
 extern Type typeArrow; /* Builtin type constructors        */
 extern Type typeList;
@@ -192,23 +188,23 @@ extern List genDefns;      /* list of generated defns      */
 extern List primDefns;     /* list of primitive definitions   */
 extern List unqualImports; /* unqualified import list         */
 extern List defaultDefns;  /* default definitions (if any)         */
-extern Int defaultLine;    /* line in which default defs occur*/
+extern int defaultLine;    /* line in which default defs occur*/
 extern List evalDefaults;  /* defaults for evaluator       */
 extern Cell inputExpr;     /* evaluator input expression      */
 extern Cell inputContext;  /* evaluator input expression      */
 extern Addr inputCode;     /* Code for compiled input expr    */
 
-extern Int whnfArgs;                 /* number of args of term in whnf  */
+extern int whnfArgs;                 /* number of args of term in whnf  */
 extern Cell whnfHead;                /* head of term in whnf            */
-extern Int whnfInt;                  /* integer value of term in whnf   */
+extern int whnfInt;                  /* integer value of term in whnf   */
 extern Float whnfFloat;              /* float value of term in whnf        */
 extern Double whnfDouble;            /* double value of term in whnf       */
-extern Long numReductions;           /* number of reductions used       */
-extern Long numCells;                /* number of cells allocated       */
-extern Int numGcs;                   /* number of garbage collections   */
+extern long numReductions;           /* number of reductions used       */
+extern long numCells;                /* number of cells allocated       */
+extern int numGcs;                   /* number of garbage collections   */
 extern volatile sig_atomic_t broken; /* indicates interrupt received;   */
                                      /* set only from a signal handler  */
-extern Bool preludeLoaded;           /* TRUE => prelude has been loaded */
+extern bool preludeLoaded;           /* true => prelude has been loaded */
 
 /* --------------------------------------------------------------------------
  * Function prototypes etc...
@@ -220,169 +216,169 @@ extern Bool preludeLoaded;           /* TRUE => prelude has been loaded */
 #define BREAK 5   /* Take action after program break       */
 
 /* cuddles.c exports: */
-extern Void shutdownCuddles(Void);
-extern Void promptForInput(String);
+extern void shutdownCuddles(void);
+extern void promptForInput(char *);
 /* The next three are required only by winhugs */
-extern Bool doCommand(Void);
-extern Void runEditor(Void);
-extern Module findEvalModule(Void);
+extern bool doCommand(void);
+extern void runEditor(void);
+extern Module findEvalModule(void);
 
-extern Void storage(Int);
+extern void storage(int);
 
-extern Bool startsQual(Char);
-extern Void input(Int);
-extern Void consoleInput(String);
-extern Void stringInput(String);
-extern Bool parseScript(String, Long);
-extern Void parseScriptString(String);
-extern Void parseExp(Void);
+extern bool startsQual(Char);
+extern void input(int);
+extern void consoleInput(char *);
+extern void stringInput(char *);
+extern bool parseScript(char *, long);
+extern void parseScriptString(char *);
+extern void parseExp(void);
 #if EXPLAIN_INSTANCE_RESOLUTION
-extern Void parseContext(Void);
+extern void parseContext(void);
 #endif
-extern String readFilename(Void);
-extern String readLine(Void);
-extern Bool isModuleId(String);
+extern char *readFilename(void);
+extern char *readLine(void);
+extern bool isModuleId(char *);
 extern Syntax defaultSyntax(Text);
 extern Syntax syntaxOf(Name);
-extern String unlexChar(Char, Char);
-extern Void printString(String);
-extern Char getStrChr(String *);
+extern char *unlexChar(Char, Char);
+extern void printString(char *);
+extern Char getStrChr(char **);
 
-extern Void substitution(Int);
+extern void substitution(int);
 
-extern Void staticAnalysis(Int);
-extern Void startModule(Cell);
-extern Void setExportList(List);
-extern Void setExports(List);
-extern Void tyconDefn(Int, Cell, Cell, Cell);
-extern Void setTypeIns(List);
-extern Void clearTypeIns(Void);
+extern void staticAnalysis(int);
+extern void startModule(Cell);
+extern void setExportList(List);
+extern void setExports(List);
+extern void tyconDefn(int, Cell, Cell, Cell);
+extern void setTypeIns(List);
+extern void clearTypeIns(void);
 extern Type fullExpand(Type);
-extern Bool isAmbiguous(Type);
-extern Void ambigError(Int, String, Cell, Type);
-extern Void classDefn(Int, Cell, List, List);
-extern Void instDefn(Int, Cell, Cell);
-extern Void addTupInst(Class, Int);
-extern Bool hasIOResultType(Type);
+extern bool isAmbiguous(Type);
+extern void ambigError(int, char *, Cell, Type);
+extern void classDefn(int, Cell, List, List);
+extern void instDefn(int, Cell, Cell);
+extern void addTupInst(Class, int);
+extern bool hasIOResultType(Type);
 extern List oclose(List, List);
 extern List zonkTyvarsIn(Type, List);
-extern Type zonkTyvar(Int);
-extern Type zonkType(Type, Int);
-extern Void primDefn(Cell, List, Cell);
-extern Void defaultDefn(Int, List);
-extern Void checkExp(Void);
+extern Type zonkTyvar(int);
+extern Type zonkType(Type, int);
+extern void primDefn(Cell, List, Cell);
+extern void defaultDefn(int, List);
+extern void checkExp(void);
 #if EXPLAIN_INSTANCE_RESOLUTION
-extern Void checkContext(Void);
+extern void checkContext(void);
 #endif
-extern Void checkDefns(Void);
-extern Cell depExpr(Int, Cell);
+extern void checkDefns(void);
+extern Cell depExpr(int, Cell);
 
-extern Void foreignImport(Cell, Cell, Cell, Cell, Cell, Type);
-extern Void foreignExport(Cell, Cell, Cell, Cell, Cell, Type);
-extern Int foreignCount;
+extern void foreignImport(Cell, Cell, Cell, Cell, Cell, Type);
+extern void foreignExport(Cell, Cell, Cell, Cell, Cell, Type);
+extern int foreignCount;
 extern List foreignImports; /* foreign import declarations     */
 extern List foreignExports; /* foreign export declarations     */
 
-extern Void ffi(Int);
-extern Void foreignHeader(String);
-extern Void foreignFooter(String, Text, List, List);
-extern Void ffiSetFlags(String);
-extern Void ffiAddCppInclude(String);
-extern Void implementForeignImport(Int, Name, Int, Text, Text, Bool, Text, List,
-                                   Bool, Type);
-extern Void implementForeignImportDynamic(Int, Int, Text, List, Bool, Type);
-extern Void implementForeignImportWrapper(Int, Int, Text, List, Bool, Type);
-extern Void implementForeignImportLabel(Int, Int, Text, Text, Text, Type);
-extern Void implementForeignExport(Int, Int, Text, List, Bool, Type);
-extern Bool foreignNeedStubs(List, List);
-extern Bool generateFFI;  /* running fficuddles? */
-extern Bool generate_ffi; /* generate FFI for the current module? */
+extern void ffi(int);
+extern void foreignHeader(char *);
+extern void foreignFooter(char *, Text, List, List);
+extern void ffiSetFlags(char *);
+extern void ffiAddCppInclude(char *);
+extern void implementForeignImport(int, Name, int, Text, Text, bool, Text, List,
+                                   bool, Type);
+extern void implementForeignImportDynamic(int, int, Text, List, bool, Type);
+extern void implementForeignImportWrapper(int, int, Text, List, bool, Type);
+extern void implementForeignImportLabel(int, int, Text, Text, Text, Type);
+extern void implementForeignExport(int, int, Text, List, bool, Type);
+extern bool foreignNeedStubs(List, List);
+extern bool generateFFI;  /* running fficuddles? */
+extern bool generate_ffi; /* generate FFI for the current module? */
 
-extern Void typeChecker(Int);
-extern Type typeCheckExp(Bool);
-extern Void typeCheckDefns(Void);
+extern void typeChecker(int);
+extern Type typeCheckExp(bool);
+extern void typeCheckDefns(void);
 extern Cell provePred(Kinds, List, Cell);
 extern Cell resolvePred(Kinds, Cell);
-extern List simpleContext(List, Int);
+extern List simpleContext(List, int);
 extern Cell rhsExpr(Cell);
-extern Int rhsLine(Cell);
+extern int rhsLine(Cell);
 extern Cell getProgType(List, Type);
 extern Cell superEvid(Cell, Class, Class);
-extern Void linkPreludeTC(Void);
-extern Void linkPreludeCM(Void);
-extern Void linkPreludeFuns(Void);
+extern void linkPreludeTC(void);
+extern void linkPreludeCM(void);
+extern void linkPreludeFuns(void);
 
-extern Void compiler(Int);
-extern Void compileDefns(Void);
-extern Void compileExp(Void);
-extern Bool failFree(Cell);
-extern Int discrArity(Cell);
+extern void compiler(int);
+extern void compileDefns(void);
+extern void compileExp(void);
+extern bool failFree(Cell);
+extern int discrArity(Cell);
 
-extern Void machine(Int);
-extern Addr codeGen(Name, Int, Cell);
-extern Void implementCfun(Name, List);
-extern Void addCfunTable(Tycon);
+extern void machine(int);
+extern Addr codeGen(Name, int, Cell);
+extern void implementCfun(Name, List);
+extern void addCfunTable(Tycon);
 extern Name succCfun(Name);
 extern Name nextCfun(Name, Name);
-extern Name cfunByNum(Name, Int);
-extern Void unwind(Cell);
-extern Void run(Addr, StackPtr);
+extern Name cfunByNum(Name, int);
+extern void unwind(Cell);
+extern void run(Addr, StackPtr);
 extern DynTable *dynMemory;
-extern void growMemory(Void);
+extern void growMemory(void);
 
-extern Void eval(Cell);
+extern void eval(Cell);
 extern Cell evalWithNoError(Cell);
-extern Void evalFails(StackPtr);
-extern Void throwException(Cell) CUDDLES_noreturn;
+extern void evalFails(StackPtr);
+extern void throwException(Cell) CUDDLES_noreturn;
 
 #if BYTECODE_PRIMS
-extern Int IntAt(Addr);
+extern int IntAt(Addr);
 extern Float FloatAt(Addr);
 extern Double DoubleAt(Addr);
 extern Cell CellAt(Addr);
 extern Text TextAt(Addr);
 extern Addr AddrAt(Addr);
-extern Int InstrAt(Addr);
+extern int InstrAt(Addr);
 #endif /* BYTECODE_PRIMS */
 
-extern Void builtIn(Int);
-extern Void abandon(String, Cell);
-extern Void outputString(FILE *);
-extern Void dialogue(Cell);
+extern void builtIn(int);
+extern void abandon(char *, Cell);
+extern void outputString(FILE *);
+extern void dialogue(Cell);
 extern Cell consChar(Char);
-extern Bignum bigInt(Int);
+extern Bignum bigInt(int);
 extern Bignum bigInt64(HsInt64);
-extern Bignum bigWord(Unsigned);
+extern Bignum bigWord(unsigned);
 extern Bignum bigDouble(double);
 extern Bignum bigNeg(Bignum);
 extern Cell bigToInt(Bignum);
 extern double bigToDouble(Bignum);
-extern Bignum bigStr(String);
-extern Cell bigOut(Bignum, Cell, Bool);
-extern Bignum bigShift(Bignum, Int, Int);
-extern Int bigCmp(Bignum, Bignum);
-extern Void setCuddlesArgs(Int, String[]);
+extern Bignum bigStr(char *);
+extern Cell bigOut(Bignum, Cell, bool);
+extern Bignum bigShift(Bignum, int, int);
+extern int bigCmp(Bignum, Bignum);
+extern void setCuddlesArgs(int, char *[]);
 
-extern Void machdep(Int);
-extern String findPathname(String);
-extern String findMPathname(String);
-extern String findMInDir(String, String);
-extern Bool readable(String, Bool);
+extern void machdep(int);
+extern char *findPathname(char *);
+extern char *findMPathname(char *);
+extern char *findMInDir(char *, char *);
+extern bool readable(char *, bool);
 #if PROFILING
-extern String timeString(Void);
+extern char *timeString(void);
 #endif
-extern String cuddlesdir(Void);
-extern String mkFFIFilename(String);
-extern String mkFFIFilename2(String);
-extern Void freeDLL(void *);
-extern Void compileAndLink(String, String);
+extern char *cuddlesdir(void);
+extern char *mkFFIFilename(char *);
+extern char *mkFFIFilename2(char *);
+extern void freeDLL(void *);
+extern void compileAndLink(char *, char *);
 
 extern List calcFunDepsPreds(List);
-extern Inst findInstFor(Cell, Int);
+extern Inst findInstFor(Cell, int);
 
-extern Void charOps(Int);
+extern void charOps(int);
 
-extern Void pushString(String);
+extern void pushString(char *);
 
 /*-------------------------------------------------------------------------*/
 

@@ -22,19 +22,18 @@ typedef Char ShortChar;
  * Character classification and other primitives.
  * ------------------------------------------------------------------------*/
 
-extern Bool charTabBuilt;
+extern bool charTabBuilt;
 extern unsigned char charTable[];
 
 /* cf HS_CHAR_MAX in HsFFI.h */
 #define MAXCHARVAL 0x10FFFF
 
-CUDDLES_inline Int isIn(Char c,
-                        unsigned x) /* c in the lexical classes x?          */
-{
-    return (unsigned)c < NUM_LAT1_CHARS ? (Int)(charTable[(unsigned char)c] & x)
+/* C in the lexical classes x? */
+CUDDLES_inline int isIn(Char c, unsigned x) {
+    return (unsigned)c < NUM_LAT1_CHARS ? (int)(charTable[(unsigned char)c] & x)
                                         : 0;
 }
-CUDDLES_inline Bool isLatin1(Char c) {
+CUDDLES_inline bool isLatin1(Char c) {
     return 0 <= c && c < NUM_LAT1_CHARS;
 }
 
@@ -55,11 +54,11 @@ CUDDLES_inline Bool isLatin1(Char c) {
 #define isAlphaNumLat1(c) (isIn((c), IDAFTER) && (c) != '_' && (c) != '\'')
 #define isPrintLat1(c) isIn((c), PRINT)
 
-extern Bool isLower(Char);
-extern Bool isUpper(Char);
-extern Bool isAlpha(Char);
-extern Bool isAlphaNum(Char);
-extern Bool isPrint(Char);
+extern bool isLower(Char);
+extern bool isUpper(Char);
+extern bool isAlpha(Char);
+extern bool isAlphaNum(Char);
+extern bool isPrint(Char);
 
 /* Lexical classification of a decoded Char that may lie outside the
  * Latin-1 range: use the (table-driven) Lat1 classes when the value fits
@@ -70,11 +69,11 @@ extern Bool isPrint(Char);
 #define isIdStart(c) (isLatin1(c) ? isIn((c), (SMALL | LARGE)) : isAlpha(c))
 #define isIdCont(c) (isLatin1(c) ? isIn((c), IDAFTER) : isAlphaNum(c))
 
-extern Void initCharTab(void);
+extern void initCharTab(void);
 extern Char toUpper(Char);
 extern Char toLower(Char);
 extern Char toTitle(Char);
-extern Int uni_gencat(Char);
+extern int uni_gencat(Char);
 
 /* --------------------------------------------------------------------------
  * Encoding of Chars as sequences of bytes.
@@ -139,8 +138,8 @@ extern Int uni_gencat(Char);
 #if CHAR_ENCODING
 extern int fputc_mb(Char, FILE *);
 extern int fgetc_mb(FILE *);
-extern Void addc_mb(Char, String *);
-extern Char extc_mb(String *);
+extern void addc_mb(Char, char **);
+extern Char extc_mb(char **);
 
 # define FPutChar(c, f) fputc_mb(c, f)
 # define FGetChar(f) fgetc_mb(f)
@@ -148,9 +147,9 @@ extern Char extc_mb(String *);
 # define ExtractChar(s) extc_mb(&s)
 
 # if CHAR_ENCODING_UTF8
-#  define charIsRepresentable(c) TRUE
+#  define charIsRepresentable(c) true
 # else
-extern Bool charIsRepresentable(Char);
+extern bool charIsRepresentable(Char);
 # endif
 
 #else /* !CHAR_ENCODING */

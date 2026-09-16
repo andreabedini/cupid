@@ -7,8 +7,8 @@
 #include "prelude.h"
 #include "storage.h"
 
-extern Void checkDerive(Tycon, List, List, Cell); /* record a request       */
-extern List derivedInstances(Void); /* implement them and return the list    */
-extern Void derivingControl(Int);   /* RESET/INSTALL, called by everybody()  */
+extern void checkDerive(Tycon, List, List, Cell); /* record a request       */
+extern List derivedInstances(void); /* implement them and return the list    */
+extern void derivingControl(int);   /* RESET/INSTALL, called by everybody()  */
 
 #endif /* __DERIVING_H__ */

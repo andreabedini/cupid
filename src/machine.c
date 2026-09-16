@@ -5,10 +5,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: machine.c,v $
- * $Revision: 1.26 $
- * $Date: 2006/02/14 16:12:19 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -22,10 +18,10 @@
 #include <setjmp.h>
 
 #if DEBUG_CODE
-Bool debugCode = FALSE; /* TRUE => print G-code to screen  */
+bool debugCode = false; /* true => print G-code to screen  */
 #endif
 
-Int evalDepth; /* depth of nested eval()'s        */
+int evalDepth; /* depth of nested eval()'s        */
 
 /* --------------------------------------------------------------------------
  * C stack overflow detection:
@@ -68,12 +64,12 @@ Int evalDepth; /* depth of nested eval()'s        */
 char *cStackLimit = (char *)(-1); /* lowest address considered safe; */
                                   /* see STACK_CHECK in storage.h    */
 
-static Void local initCStackLimit(Void) {
-    Unsigned usable = FALLBACK_C_STACK;
+static void initCStackLimit(void) {
+    unsigned usable = FALLBACK_C_STACK;
 #if HAVE_SYS_RESOURCE_H
     struct rlimit rl;
     if (getrlimit(RLIMIT_STACK, &rl) == 0 && rl.rlim_cur != RLIM_INFINITY) {
-        usable = (Unsigned)rl.rlim_cur;
+        usable = (unsigned)rl.rlim_cur;
     }
 #endif
     if (usable <= STACK_MARGIN) {     /* absurdly small rlimit; keep */
@@ -82,7 +78,8 @@ static Void local initCStackLimit(Void) {
     cStackLimit = (char *)CStackBase - (usable - STACK_MARGIN);
 }
 
-Void cStackCheck(Void) { /* slow path of STACK_CHECK        */
+/* Slow path of STACK_CHECK */
+void cStackCheck(void) {
     char here;
     if (cStackLimit == (char *)(-1)) {
         initCStackLimit();
@@ -105,16 +102,16 @@ Void cStackCheck(Void) { /* slow path of STACK_CHECK        */
  * offset regardless of which caller produced it.
  * ------------------------------------------------------------------------*/
 
-Void tooManyTupleComponents(Void) /* mkTuple(n) with n>=NUM_TUPLES    */
-{
+/* MkTuple(n) with n>=NUM_TUPLES */
+void tooManyTupleComponents(void) {
     errHead(0);
     errPrintf("Tuples with more than %d components are not supported",
               NUM_TUPLES);
     errFail();
 }
 
-Void tooManyOffsets(Void) /* mkOffset(o) with o>=NUM_OFFSETS  */
-{
+/* MkOffset(o) with o>=NUM_OFFSETS */
+void tooManyOffsets(void) {
     errHead(0);
     errPrintf("Compiled code too complex");
     errFail();
@@ -141,10 +138,10 @@ Void tooManyOffsets(Void) /* mkOffset(o) with o>=NUM_OFFSETS  */
 typedef enum { INSTRLIST } Instr;
 #undef Ins
 
-typedef Int Label;
+typedef int Label;
 
 typedef union {
-    Int mint;
+    int mint;
     Float mfloat;
     Cell cell;
     Text text;
@@ -191,7 +188,7 @@ void growMemory(void) {
 
 #if BYTECODE_PRIMS
 
-Int IntAt(Addr m) {
+int IntAt(Addr m) {
     return intAt(m);
 }
 
@@ -215,7 +212,7 @@ Addr AddrAt(Addr m) {
     return addrAt(m);
 }
 
-Int InstrAt(Addr m) {
+int InstrAt(Addr m) {
     return instrAt(m);
 }
 
@@ -227,70 +224,70 @@ Int InstrAt(Addr m) {
 
 typedef struct CodeGen CodeGen;
 
-static Void local instrNone(CodeGen *, Instr);
-static Void local instrInt(CodeGen *, Instr, Int);
-static Void local instrDouble(CodeGen *, Instr, DoublePro);
-static Void local instrCell(CodeGen *, Instr, Cell);
-static Void local instrText(CodeGen *, Instr, Text);
-static Void local instrLab(CodeGen *, Instr, Label);
-static Void local instrCellLab(CodeGen *, Instr, Cell, Label);
+static void instrNone(CodeGen *, Instr);
+static void instrInt(CodeGen *, Instr, int);
+static void instrDouble(CodeGen *, Instr, DoublePro);
+static void instrCell(CodeGen *, Instr, Cell);
+static void instrText(CodeGen *, Instr, Text);
+static void instrLab(CodeGen *, Instr, Label);
+static void instrCellLab(CodeGen *, Instr, Cell, Label);
 
-static Void local atLabel(CodeGen *, Label);
-static Void local endLabel(CodeGen *, Label, Label);
-static Void local fixAddr(CodeGen *, Addr);
-static Void local asSTART(CodeGen *);
-static Label local newLabel(CodeGen *, Label);
-static Void local asEND(CodeGen *);
-static Void local asINTEGER(CodeGen *, Int);
-static Void local asDOUBLE(CodeGen *, DoublePro);
-static Void local asSTRING(CodeGen *, Text);
-static Void local asCHAR(CodeGen *, Int);
-static Void local asLOAD(CodeGen *, Int);
-static Void local asALLOC(CodeGen *, Int);
-static Void local asROOT(CodeGen *, Int);
-static Void local asSETSTK(CodeGen *, Int);
-static Void local asSTAP(CodeGen *);
-static Void local asRETURN(CodeGen *);
-static Void local asCELL(CodeGen *, Cell);
-static Void local asEVAL(CodeGen *);
-static Void local asTEST(CodeGen *, Cell, Label);
-static Void local asSLIDE(CodeGen *, Int);
-static Void local asMKAP(CodeGen *, Int);
-static Void local asUPDATE(CodeGen *, Int);
-static Void local asRUPDATE(CodeGen *);
-static Void local asGOTO(CodeGen *, Label);
+static void atLabel(CodeGen *, Label);
+static void endLabel(CodeGen *, Label, Label);
+static void fixAddr(CodeGen *, Addr);
+static void asSTART(CodeGen *);
+static Label newLabel(CodeGen *, Label);
+static void asEND(CodeGen *);
+static void asINTEGER(CodeGen *, int);
+static void asDOUBLE(CodeGen *, DoublePro);
+static void asSTRING(CodeGen *, Text);
+static void asCHAR(CodeGen *, int);
+static void asLOAD(CodeGen *, int);
+static void asALLOC(CodeGen *, int);
+static void asROOT(CodeGen *, int);
+static void asSETSTK(CodeGen *, int);
+static void asSTAP(CodeGen *);
+static void asRETURN(CodeGen *);
+static void asCELL(CodeGen *, Cell);
+static void asEVAL(CodeGen *);
+static void asTEST(CodeGen *, Cell, Label);
+static void asSLIDE(CodeGen *, int);
+static void asMKAP(CodeGen *, int);
+static void asUPDATE(CodeGen *, int);
+static void asRUPDATE(CodeGen *);
+static void asGOTO(CodeGen *, Label);
 
 #if DEBUG_CODE
-static Void local dissassemble(Addr, Addr);
-static Addr local dissInstr(Addr);
-static Void local printCell(Cell);
-static Addr local dissNone(Addr, String);
-static Addr local dissInt(Addr, String);
-static Addr local dissDouble(Addr, String);
-static Addr local dissCell(Addr, String);
-static Addr local dissText(Addr, String);
-static Addr local dissAddr(Addr, String);
-static Addr local dissCellAddr(Addr, String);
+static void dissassemble(Addr, Addr);
+static Addr dissInstr(Addr);
+static void printCell(Cell);
+static Addr dissNone(Addr, char *);
+static Addr dissInt(Addr, char *);
+static Addr dissDouble(Addr, char *);
+static Addr dissCell(Addr, char *);
+static Addr dissText(Addr, char *);
+static Addr dissAddr(Addr, char *);
+static Addr dissCellAddr(Addr, char *);
 #endif
 
-static Void local build(CodeGen *, Cell, Int);
-static Void local buildGuards(CodeGen *, List, Int);
-static Int local buildLoc(CodeGen *, List, Int);
-static Void local buildBignum(CodeGen *, Bignum);
+static void build(CodeGen *, Cell, int);
+static void buildGuards(CodeGen *, List, int);
+static int buildLoc(CodeGen *, List, int);
+static void buildBignum(CodeGen *, Bignum);
 
-static Void local make(CodeGen *, Cell, Int, Label, Label);
-static Void local makeCond(CodeGen *, Cell, Cell, Cell, Int, Label, Label);
-static Void local makeNumcase(CodeGen *, Triple, Int, Label, Label);
-static Void local testGuard(CodeGen *, Pair, Int, Label, Label, Label);
-static Void local testCase(CodeGen *, Pair, Int, Label, Label, Label);
-static Void local makeTests(CodeGen *,
-                            Void (*)(CodeGen *, Cell, Int, Label, Label, Label),
-                            List, Int, Label, Label);
+static void make(CodeGen *, Cell, int, Label, Label);
+static void makeCond(CodeGen *, Cell, Cell, Cell, int, Label, Label);
+static void makeNumcase(CodeGen *, Triple, int, Label, Label);
+static void testGuard(CodeGen *, Pair, int, Label, Label, Label);
+static void testCase(CodeGen *, Pair, int, Label, Label, Label);
+static void makeTests(CodeGen *,
+                      void (*)(CodeGen *, Cell, int, Label, Label, Label), List,
+                      int, Label, Label);
 
-static Void local analyseAp(CodeGen *, Cell);
-static Void local buildAp(CodeGen *, Cell, Int, Label, Bool);
+static void analyseAp(CodeGen *, Cell);
+static void buildAp(CodeGen *, Cell, int, Label, bool);
 
-static Void local evalString(Cell);
+static void evalString(Cell);
 
 /* --------------------------------------------------------------------------
  * Assembler: (Low level, instruction code storage)
@@ -305,87 +302,80 @@ struct CodeGen {
     Addr startInstr;           /* first instruction after START   */
     Addr lastInstr;            /* last instr written (for peephole*/
                                /* optimisations etc.)             */
-    Bool newBasicBlock;        /* lastInstr ends a basic block    */
+    bool newBasicBlock;        /* lastInstr ends a basic block    */
                                /* (so no peeping at lastInstr)    */
-    Int srsp;                  /* simulated runtime stack pointer */
-    Int offsPosn[NUM_OFFSETS]; /* mapping from logical to physical*/
+    int srsp;                  /* simulated runtime stack pointer */
+    int offsPosn[NUM_OFFSETS]; /* mapping from logical to physical*/
                                /* offset positions                */
     Label nextLab;             /* next label number to allocate   */
     Addr fixups[NUM_FIXUPS];   /* fixup table maps Label -> Addr  */
-    Int nonRoots;              /* #args which can't get from root */
-    Int rootPortion;           /* portion of root used ...        */
+    int nonRoots;              /* #args which can't get from root */
+    int rootPortion;           /* portion of root used ...        */
     Name definingName;         /* name of func being defined,if any*/
-    Int definingArity;         /* arity of definingName           */
+    int definingArity;         /* arity of definingName           */
 };
 
 static Addr noMatch; /* address of a single FAIL instr  */
 
-static Void local instrNone(CodeGen *cg,
-                            Instr opc) /* Opcode with no operands */
-{
+/* Opcode with no operands */
+static void instrNone(CodeGen *cg, Instr opc) {
     cg->lastInstr = getMem(1);
     instrAt(cg->lastInstr) = opc;
-    cg->newBasicBlock = FALSE;
+    cg->newBasicBlock = false;
 }
 
-static Void local instrInt(CodeGen *cg, Instr opc,
-                           Int n) /* Opcode with integer operand     */
-{
+/* Opcode with integer operand */
+static void instrInt(CodeGen *cg, Instr opc, int n) {
     cg->lastInstr = getMem(2);
     instrAt(cg->lastInstr) = opc;
     intAt(cg->lastInstr + 1) = n;
-    cg->newBasicBlock = FALSE;
+    cg->newBasicBlock = false;
 }
 
-static Void local instrDouble(CodeGen *cg, Instr opc,
-                              DoublePro fl) /* Opcode with Double operand     */
-{
+/* Opcode with Double operand */
+static void instrDouble(CodeGen *cg, Instr opc, DoublePro fl) {
     cg->lastInstr = getMem(3);
     instrAt(cg->lastInstr) = opc;
     cellAt(cg->lastInstr + 1) = part1Double(fl);
     cellAt(cg->lastInstr + 2) = part2Double(fl);
-    cg->newBasicBlock = FALSE;
+    cg->newBasicBlock = false;
 }
 
-static Void local instrCell(CodeGen *cg, Instr opc,
-                            Cell c) /* Opcode with Cell operand        */
-{
+/* Opcode with Cell operand */
+static void instrCell(CodeGen *cg, Instr opc, Cell c) {
     cg->lastInstr = getMem(2);
     instrAt(cg->lastInstr) = opc;
     cellAt(cg->lastInstr + 1) = c;
-    cg->newBasicBlock = FALSE;
+    cg->newBasicBlock = false;
 }
 
-static Void local instrText(CodeGen *cg, Instr opc,
-                            Text t) /* Opcode with Text operand        */
-{
+/* Opcode with Text operand */
+static void instrText(CodeGen *cg, Instr opc, Text t) {
     cg->lastInstr = getMem(2);
     instrAt(cg->lastInstr) = opc;
     textAt(cg->lastInstr + 1) = t;
-    cg->newBasicBlock = FALSE;
+    cg->newBasicBlock = false;
 }
 
-static Void local instrLab(CodeGen *cg, Instr opc,
-                           Label l) /* Opcode with label operand       */
-{
+/* Opcode with label operand */
+static void instrLab(CodeGen *cg, Instr opc, Label l) {
     cg->lastInstr = getMem(2);
     instrAt(cg->lastInstr) = opc;
     labAt(cg->lastInstr + 1) = l;
     if (l < 0)
         internal("bad Label");
-    cg->newBasicBlock = FALSE;
+    cg->newBasicBlock = false;
 }
 
-static Void local instrCellLab(CodeGen *cg, Instr opc, Cell c,
-                               Label l) /* Opcode with cell, label operands*/
-{
+/* Opcode with cell, label operands */
+static void instrCellLab(CodeGen *cg, Instr opc, Cell c, Label l) {
     cg->lastInstr = getMem(3);
     instrAt(cg->lastInstr) = opc;
     cellAt(cg->lastInstr + 1) = c;
     labAt(cg->lastInstr + 2) = l;
     if (l < 0)
         internal("bad Label");
-    cg->newBasicBlock = FALSE;
+    cg->newBasicBlock = false;
 }
 
 /* --------------------------------------------------------------------------
@@ -403,30 +393,30 @@ static Void local instrCellLab(CodeGen *cg, Instr opc, Cell c,
 #define UPDRET (-3)
 #define VALRET (-4)
 
-static Void local atLabel(CodeGen *cg, Label n) /* label n is here          */
-{
-    cg->newBasicBlock = TRUE;
+/* Label n is here */
+static void atLabel(CodeGen *cg, Label n) {
+    cg->newBasicBlock = true;
     cg->fixups[n] = getMem(0);
 }
 
-static Void local endLabel(CodeGen *cg, Label d,
-                           Label l) /* l is where code falling out the */
-{                                   /* bottom of a construction lands  */
+/* L is where code falling out the bottom of a construction lands */
+static void endLabel(CodeGen *cg, Label d, Label l) {
     if (d == RUNON)
         atLabel(cg, l);
 }
 
-static Void local fixAddr(CodeGen *cg, Addr a) /* resolve the label at a   */
-{
+/* Resolve the label at a */
+static void fixAddr(CodeGen *cg, Addr a) {
     setAddrAt(a, cg->fixups[labAt(a)]);
 }
 
-static Void local asSTART(CodeGen *cg) { /* initialise assembler             */
+/* Initialise assembler */
+static void asSTART(CodeGen *cg) {
     cg->fixups[0] = noMatch;
     cg->nextLab = 1;
     cg->startInstr = getMem(0);
     cg->lastInstr = cg->startInstr - 1;
-    cg->newBasicBlock = TRUE;
+    cg->newBasicBlock = true;
     cg->srsp = 0;
     cg->offsPosn[0] = 0;
     cg->nonRoots = 0;
@@ -435,8 +425,8 @@ static Void local asSTART(CodeGen *cg) { /* initialise assembler             */
     cg->definingArity = 0;
 }
 
-static Label local newLabel(CodeGen *cg, Label d) /* allocate new label     */
-{
+/* Allocate new label */
+static Label newLabel(CodeGen *cg, Label d) {
     if (d == RUNON) {
         if (cg->nextLab >= NUM_FIXUPS) {
             errHead(0);
@@ -448,7 +438,8 @@ static Label local newLabel(CodeGen *cg, Label d) /* allocate new label     */
     return d;
 }
 
-static Void local asEND(CodeGen *cg) { /* Fix addresses in assembled code  */
+/* Fix addresses in assembled code */
+static void asEND(CodeGen *cg) {
     Addr pc = cg->startInstr;
 
     while (pc <= cg->lastInstr)
@@ -501,62 +492,62 @@ static Void local asEND(CodeGen *cg) { /* Fix addresses in assembled code  */
  * simulated runtime stack pointer.
  * ------------------------------------------------------------------------*/
 
-static Void local asINTEGER(CodeGen *cg, Int n) {
+static void asINTEGER(CodeGen *cg, int n) {
     instrInt(cg, iINT, n);
     cg->srsp++;
 }
 
-static Void local asDOUBLE(CodeGen *cg, DoublePro fl) {
+static void asDOUBLE(CodeGen *cg, DoublePro fl) {
     instrDouble(cg, iDOUBLE, fl);
     cg->srsp++;
 }
 
-static Void local asSTRING(CodeGen *cg, Text t) {
+static void asSTRING(CodeGen *cg, Text t) {
     instrText(cg, iSTRING, t);
     cg->srsp++;
 }
 
-static Void local asCHAR(CodeGen *cg, Int n) {
+static void asCHAR(CodeGen *cg, int n) {
     instrInt(cg, iCHAR, n);
     cg->srsp++;
 }
 
-static Void local asLOAD(CodeGen *cg, Int n) {
+static void asLOAD(CodeGen *cg, int n) {
     instrInt(cg, iLOAD, n);
     cg->srsp++;
 }
 
-static Void local asALLOC(CodeGen *cg, Int n) {
+static void asALLOC(CodeGen *cg, int n) {
     instrInt(cg, iALLOC, n);
     cg->srsp += n;
 }
 
-static Void local asROOT(CodeGen *cg, Int n) {
+static void asROOT(CodeGen *cg, int n) {
     instrInt(cg, iROOT, n);
     cg->srsp++;
 }
 
-static Void local asSETSTK(CodeGen *cg, Int n) {
+static void asSETSTK(CodeGen *cg, int n) {
     instrInt(cg, iSETSTK, n);
     cg->srsp = n;
 }
 
-static Void local asSTAP(CodeGen *cg) {
+static void asSTAP(CodeGen *cg) {
     instrNone(cg, iSTAP);
     cg->srsp--;
 }
 
-static Void local asRETURN(CodeGen *cg) {
+static void asRETURN(CodeGen *cg) {
     instrNone(cg, iRETURN);
 }
 
-static Void local asCELL(CodeGen *cg, Cell c) {
+static void asCELL(CodeGen *cg, Cell c) {
     instrCell(cg, iCELL, c);
     cg->srsp++;
 }
 
 /* Peephole optimisations are unsafe if we're at the start of a new
-   'basic block' (newBasicBlock is TRUE) -- e.g.,
+   'basic block' (newBasicBlock is true) -- e.g.,
 
         f a b = if (if a then True else b) then foo else bar
 
@@ -566,7 +557,8 @@ static Void local asCELL(CodeGen *cg, Cell c) {
    peephole the EVAL into an LEVAL.
 */
 
-static Void local asEVAL(CodeGen *cg) { /* load and eval stack element     */
+/* Load and eval stack element */
+static void asEVAL(CodeGen *cg) {
     if (!cg->newBasicBlock && instrAt(cg->lastInstr) == iLOAD)
         /* Peephole optimisation:          */
         instrAt(cg->lastInstr) = iLEVAL; /* LOAD n; EVAL ===> LEVAL n       */
@@ -575,9 +567,8 @@ static Void local asEVAL(CodeGen *cg) { /* load and eval stack element     */
     cg->srsp--;
 }
 
-static Void local asTEST(CodeGen *cg, Cell c,
-                         Label l) /* test whnf and branch on mismatch*/
-{
+/* Test whnf and branch on mismatch */
+static void asTEST(CodeGen *cg, Cell c, Label l) {
     switch (whatIs(c)) {
     case TUPLE:
         return; /* typing guarantees that tags will*/
@@ -591,8 +582,8 @@ static Void local asTEST(CodeGen *cg, Cell c,
     instrCellLab(cg, iTEST, c, l);
 }
 
-static Void local asSLIDE(CodeGen *cg, Int n) /* Slide results down stack  */
-{
+/* Slide results down stack */
+static void asSLIDE(CodeGen *cg, int n) {
     if (!cg->newBasicBlock && instrAt(cg->lastInstr) == iSLIDE)
         /* Peephole optimisation:          */
         intAt(cg->lastInstr + 1) += n; /* SLIDE n;SLIDE m ===> SLIDE (n+m)*/
@@ -601,8 +592,8 @@ static Void local asSLIDE(CodeGen *cg, Int n) /* Slide results down stack  */
     cg->srsp -= n;
 }
 
-static Void local asMKAP(CodeGen *cg, Int n) /* Make application nodes ... */
-{
+/* Make application nodes ... */
+static void asMKAP(CodeGen *cg, int n) {
     if (!cg->newBasicBlock && instrAt(cg->lastInstr) == iMKAP)
         /* Peephole optimisation:          */
         intAt(cg->lastInstr + 1) += n; /* MKAP n; MKAP m  ===> MKAP (n+m) */
@@ -611,10 +602,10 @@ static Void local asMKAP(CodeGen *cg, Int n) /* Make application nodes ... */
     cg->srsp -= n;
 }
 
-static Void local asUPDATE(CodeGen *cg, Int n) /* Update node ...          */
-{
+/* Update node ... */
+static void asUPDATE(CodeGen *cg, int n) {
     if (!cg->newBasicBlock && instrAt(cg->lastInstr) == iMKAP) {
-        Int m = intAt(cg->lastInstr + 1); /* Peephole optimisations:     */
+        int m = intAt(cg->lastInstr + 1); /* Peephole optimisations:     */
         nextInstr(cg->lastInstr);
         if (m == 1) /* MKAP 1; UPDATE p ===> UPDAP p   */
             instrInt(cg, iUPDAP, n);
@@ -627,9 +618,10 @@ static Void local asUPDATE(CodeGen *cg, Int n) /* Update node ...          */
     cg->srsp--;
 }
 
-static Void local asRUPDATE(CodeGen *cg) { /* Update node and return ...   */
+/* Update node and return ... */
+static void asRUPDATE(CodeGen *cg) {
     if (!cg->newBasicBlock && instrAt(cg->lastInstr) == iMKAP) {
-        Int m = intAt(cg->lastInstr + 1); /* Peephole optimisations:     */
+        int m = intAt(cg->lastInstr + 1); /* Peephole optimisations:     */
         nextInstr(cg->lastInstr);
         if (m == 1) /* MKAP 1; RUPDATE ===> RUPDAP     */
             instrNone(cg, iRUPDAP);
@@ -641,9 +633,9 @@ static Void local asRUPDATE(CodeGen *cg) { /* Update node and return ...   */
         instrNone(cg, iRUPDATE);
 }
 
-static Void local asGOTO(CodeGen *cg, Label l) /* End evaluation of expr in*/
-{                                              /* manner indicated by l    */
-    switch (l) {                               /* inaccurate srsp */
+/* End evaluation of expr in manner indicated by l */
+static void asGOTO(CodeGen *cg, Label l) {
+    switch (l) { /* inaccurate srsp */
     case UPDRET:
         asRUPDATE(cg);
         break;
@@ -664,12 +656,12 @@ static Void local asGOTO(CodeGen *cg, Label l) /* End evaluation of expr in*/
  * produce derived instances.
  * ------------------------------------------------------------------------*/
 
-Void addCfunTable(Tycon tc) /* Add a constructor fun table to  */
-{                           /* constructors for tycon tc       */
+/* Add a constructor fun table to constructors for tycon tc */
+void addCfunTable(Tycon tc) {
     if (isTycon(tc) && tyconRec(tc)->what == DATATYPE) {
         List cs = tyconRec(tc)->defn;
         if (hasCfun(cs) && hasCfun(tl(cs)) && nameRec(hd(cs))->code <= 0) {
-            Int l = length(cs);
+            int l = length(cs);
             Addr a = getMem(2 + l);
             instrAt(a) = iTABLE;
             intAt(a + 1) = l;
@@ -681,31 +673,31 @@ Void addCfunTable(Tycon tc) /* Add a constructor fun table to  */
     }
 }
 
-Name succCfun(Name n) /* get next constructor in sequence*/
-{                     /* or NIL, if none                 */
+/* Get next constructor in sequence or NIL, if none */
+Name succCfun(Name n) {
     if (cfunOf(n) == 0)
         return NIL;
     else {
-        Int d = cfunOf(n) + 1;
+        int d = cfunOf(n) + 1;
         Addr a = nameRec(n)->code;
         return (d > intAt(a + 1)) ? NIL : cellAt(a + d + 1);
     }
 }
 
-Name nextCfun(Name n1, Name n2) /* get next constructor in series  */
-{                               /* or NIL, if none                 */
-    if (cfunOf(n1) == 0)        /* For product constructors, the   */
-        return n1;              /* only possibility is n1 == n2    */
+/* Get next constructor in series or NIL, if none */
+Name nextCfun(Name n1, Name n2) {
+    if (cfunOf(n1) == 0) /* For product constructors, the   */
+        return n1;       /* only possibility is n1 == n2    */
     else {
-        Int d = 2 * cfunOf(n2) - cfunOf(n1);
+        int d = 2 * cfunOf(n2) - cfunOf(n1);
         Addr a = nameRec(n1)->code;
         return (d <= 0 || d > intAt(a + 1)) ? NIL : cellAt(a + d + 1);
     }
 }
 
-Name cfunByNum(Name n, Int i) /* get ith constructor (0<=i<m)    */
-                              /* for enumerated datatype with a  */
-{                             /* representative cfun n           */
+/* Get ith constructor (0<=i<m) for enumerated datatype with a representative
+ * cfun n */
+Name cfunByNum(Name n, int i) {
     if (cfunOf(n) == 0)
         return i == 0 ? n : NIL;
     else {
@@ -721,9 +713,8 @@ Name cfunByNum(Name n, Int i) /* get ith constructor (0<=i<m)    */
 #if DEBUG_CODE
 # define printAddr(a) Printf("0x%04X", a) /* printable representation of Addr */
 
-static Void local dissassemble(Addr pc,
-                               Addr end) /* print dissassembly of code    */
-{
+/* Print dissassembly of code */
+static void dissassemble(Addr pc, Addr end) {
     while (pc <= end) {
         printAddr(pc);
         Printf("\t");
@@ -731,8 +722,8 @@ static Void local dissassemble(Addr pc,
     }
 }
 
-static Addr local dissInstr(Addr pc) /* print dissassembly of instruction */
-{
+/* Print dissassembly of instruction */
+static Addr dissInstr(Addr pc) {
     switch (instrAt(pc)) {
     case iLOAD:
         pc = dissInt(pc, "LOAD");
@@ -810,64 +801,57 @@ static Addr local dissInstr(Addr pc) /* print dissassembly of instruction */
     return pc;
 }
 
-static Void local printCell(Cell c) /* printable representation of Cell */
-{
+/* Printable representation of Cell */
+static void printCell(Cell c) {
     if (isName(c))
         Printf("%s", textToStr(nameRec(c)->text));
     else
         Printf("$%d", c);
 }
 
-static Addr local dissNone(Addr pc,
-                           String s) /* dissassemble instr no args       */
-{
+/* Dissassemble instr no args */
+static Addr dissNone(Addr pc, char *s) {
     Printf("%s\n", s);
     return pc + 1;
 }
 
-static Addr local dissInt(Addr pc,
-                          String s) /* dissassemble instr with Int arg  */
-{
+/* Dissassemble instr with Int arg */
+static Addr dissInt(Addr pc, char *s) {
     Printf("%s\t%d\n", s, intAt(pc + 1));
     return pc + 2;
 }
 
-static Addr local dissDouble(Addr pc,
-                             String s) /* dissassemble instr with Double arg*/
-{
+/* Dissassemble instr with Double arg */
+static Addr dissDouble(Addr pc, char *s) {
     Printf("%s\t%s\n", s,
            doubleToString(doubleFromParts(cellAt(pc + 1), cellAt(pc + 2))));
     return pc + 3;
 }
 
-static Addr local dissCell(Addr pc,
-                           String s) /* dissassemble instr with Cell arg */
-{
+/* Dissassemble instr with Cell arg */
+static Addr dissCell(Addr pc, char *s) {
     Printf("%s\t", s);
     printCell(cellAt(pc + 1));
     Printf("\n");
     return pc + 2;
 }
 
-static Addr local dissText(Addr pc,
-                           String s) /* dissassemble instr with Text arg */
-{
+/* Dissassemble instr with Text arg */
+static Addr dissText(Addr pc, char *s) {
     Printf("%s\t%s\n", s, textToStr(textAt(pc + 1)));
     return pc + 2;
 }
 
-static Addr local dissAddr(Addr pc,
-                           String s) /* dissassemble instr with Addr arg */
-{
+/* Dissassemble instr with Addr arg */
+static Addr dissAddr(Addr pc, char *s) {
     Printf("%s\t", s);
     printAddr(addrAt(pc + 1));
     Printf("\n");
     return pc + 2;
 }
 
-static Addr local dissCellAddr(Addr pc,
-                               String s) /* dissassemble instr with Cell/Addr*/
-{
+/* Dissassemble instr with Cell/Addr */
+static Addr dissCellAddr(Addr pc, char *s) {
     Printf("%s\t", s);
     printCell(cellAt(pc + 1));
     Printf("\t");
@@ -882,11 +866,10 @@ static Addr local dissCellAddr(Addr pc,
  * evaluation.
  * ------------------------------------------------------------------------*/
 
-static Void local build(CodeGen *cg, Cell e,
-                        Int co) /* Generate code which will build  */
-                                /* instance of given expression but*/
-{                               /* perform no evaluation           */
-    Int n;
+/* Generate code which will build instance of given expression but perform no
+ * evaluation */
+static void build(CodeGen *cg, Cell e, int co) {
+    int n;
 
     stackCheck();
     switch (whatIs(e)) {
@@ -917,7 +900,7 @@ static Void local build(CodeGen *cg, Cell e,
         break;
 
     case AP:
-        buildAp(cg, e, co, SHOULDNTFAIL, FALSE);
+        buildAp(cg, e, co, SHOULDNTFAIL, false);
         break;
 
     case TUPLE:
@@ -956,10 +939,9 @@ static Void local build(CodeGen *cg, Cell e,
     }
 }
 
-static Void local buildGuards(CodeGen *cg, List gs,
-                              Int co) /* Generate code to compile list   */
-                                      /* of guards to a conditional expr */
-{                                     /* without evaluation              */
+/* Generate code to compile list of guards to a conditional expr without
+ * evaluation */
+static void buildGuards(CodeGen *cg, List gs, int co) {
     if (isNull(gs)) {
         asCELL(cg, nameFail);
     } else {
@@ -971,12 +953,10 @@ static Void local buildGuards(CodeGen *cg, List gs,
     }
 }
 
-static Int local buildLoc(CodeGen *cg, List vs,
-                          Int co) /* Generate code to build local var*/
-                                  /* bindings on stack,  with no eval*/
-{
-    Int n = length(vs);
-    Int i;
+/* Generate code to build local var bindings on stack, with no eval */
+static int buildLoc(CodeGen *cg, List vs, int co) {
+    int n = length(vs);
+    int i;
 
     for (i = 1; i <= n; i++)
         cg->offsPosn[co + i] = cg->srsp + i;
@@ -989,9 +969,8 @@ static Int local buildLoc(CodeGen *cg, List vs,
     return n;
 }
 
-static Void local buildBignum(CodeGen *cg,
-                              Bignum b) /* Generate code to build bignum   */
-{
+/* Generate code to build bignum */
+static void buildBignum(CodeGen *cg, Bignum b) {
     if (b == ZERONUM) {
         asCELL(cg, ZERONUM);
     } else {
@@ -1015,15 +994,14 @@ static Void local buildBignum(CodeGen *cg,
 /* Code for a list of alternatives, ct being what compiles one of them:
  * each but the last lands on the next one when its test fails.
  */
-static Void local makeTests(CodeGen *cg,
-                            Void (*ct)(CodeGen *, Cell, Int, Label, Label,
-                                       Label),
-                            List tests, Int co, Label f, Label d) {
+static void makeTests(CodeGen *cg,
+                      void (*ct)(CodeGen *, Cell, int, Label, Label, Label),
+                      List tests, int co, Label f, Label d) {
     Label l1 = newLabel(cg, d);
     List xs = tests;
     while (nonNull(tl(xs))) {
         Label l2 = newLabel(cg, RUNON);
-        Int savesp = cg->srsp;
+        int savesp = cg->srsp;
         ct(cg, hd(xs), co, f, l2, l1);
         atLabel(cg, l2);
         cg->srsp = savesp;
@@ -1033,16 +1011,14 @@ static Void local makeTests(CodeGen *cg,
     endLabel(cg, d, l1);
 }
 
-static Void local make(CodeGen *cg, Cell e, Int co, Label f,
-                       Label d) /* Construct code to build e, given */
-                                /* current offset co, and branch    */
-                                /* to f on failure, d on completion */
-{
+/* Construct code to build e, given current offset co, and branch to f on
+ * failure, d on completion */
+static void make(CodeGen *cg, Cell e, int co, Label f, Label d) {
     stackCheck();
     switch (whatIs(e)) {
 
     case LETREC: {
-        Int n = buildLoc(cg, fst(snd(e)), co);
+        int n = buildLoc(cg, fst(snd(e)), co);
         if (d == UPDRET || d == VALRET)
             make(cg, snd(snd(e)), co + n, f, d);
         else {
@@ -1055,7 +1031,7 @@ static Void local make(CodeGen *cg, Cell e, Int co, Label f,
     case FATBAR: {
         Label l1 = newLabel(cg, RUNON);
         Label l2 = newLabel(cg, d);
-        Int savesp = cg->srsp;
+        int savesp = cg->srsp;
 
         make(cg, fst(snd(e)), co, l1, l2);
 
@@ -1097,7 +1073,7 @@ static Void local make(CodeGen *cg, Cell e, Int co, Label f,
             break;
         }
     }
-        buildAp(cg, e, co, f, TRUE);
+        buildAp(cg, e, co, f, true);
         asGOTO(cg, d);
         break;
 
@@ -1144,12 +1120,12 @@ static Void local make(CodeGen *cg, Cell e, Int co, Label f,
     }
 }
 
-static Void local makeCond(CodeGen *cg, Cell i, Cell t, Cell e, Int co, Label f,
-                           Label d) /* Build code for conditional      */
-{
+/* Build code for conditional */
+static void makeCond(CodeGen *cg, Cell i, Cell t, Cell e, int co, Label f,
+                     Label d) {
     Label l1 = newLabel(cg, RUNON);
     Label l2 = newLabel(cg, d);
-    Int savesp;
+    int savesp;
 
     make(cg, i, co, f, RUNON);
     asEVAL(cg);
@@ -1165,9 +1141,8 @@ static Void local makeCond(CodeGen *cg, Cell i, Cell t, Cell e, Int co, Label f,
     endLabel(cg, d, l2);
 }
 
-static Void local makeNumcase(CodeGen *cg, Triple nc, Int co, Label f,
-                              Label d) /* Build code for numcase          */
-{
+/* Build code for numcase */
+static void makeNumcase(CodeGen *cg, Triple nc, int co, Label f, Label d) {
     Cell discr = snd3(nc);
     Cell h = getHead(discr);
     make(cg, fst3(nc), co, SHOULDNTFAIL, RUNON);
@@ -1196,9 +1171,8 @@ static Void local makeNumcase(CodeGen *cg, Triple nc, Int co, Label f,
     }
 }
 
-static Void local testGuard(CodeGen *cg, Pair g, Int co, Label f, Label cf,
-                            Label d) /* Produce code for guard          */
-{
+/* Produce code for guard */
+static void testGuard(CodeGen *cg, Pair g, int co, Label f, Label cf, Label d) {
     if (fst(g) != nameTrue) {
         make(cg, fst(g), co, SHOULDNTFAIL, RUNON);
         asEVAL(cg);
@@ -1207,14 +1181,11 @@ static Void local testGuard(CodeGen *cg, Pair g, Int co, Label f, Label cf,
     make(cg, snd(g), co, f, d);
 }
 
-static Void local testCase(CodeGen *cg, Pair c, Int co, Label f, Label cf,
-                           Label d) /* Produce code for guard          */
-                                    /* labels determine where to go if:*/
-                                    /* match succeeds, but rest fails  */
-                                    /* this match fails                */
-{
-    Int n = discrArity(fst(c));
-    Int i;
+/* Produce code for guard labels determine where to go if: match succeeds, but
+ * rest fails this match fails */
+static void testCase(CodeGen *cg, Pair c, int co, Label f, Label cf, Label d) {
+    int n = discrArity(fst(c));
+    int i;
     asTEST(cg, fst(c), cf);
     for (i = 1; i <= n; i++)
         cg->offsPosn[co + i] = ++cg->srsp;
@@ -1234,10 +1205,10 @@ static Void local testCase(CodeGen *cg, Pair c, Int co, Label f, Label cf,
  * The following functions implement this optimisation.
  * ------------------------------------------------------------------------*/
 
-static Void local analyseAp(CodeGen *cg,
-                            Cell e) /* Determine if any portion of an   */
-{                                   /* application can be built using a */
-    if (isAp(e)) {                  /* portion of the root              */
+/* Determine if any portion of an application can be built using a portion of
+ * the root */
+static void analyseAp(CodeGen *cg, Cell e) {
+    if (isAp(e)) {
         analyseAp(cg, fun(e));
         if (cg->nonRoots == 0 && cg->rootPortion > 1 && isOffset(arg(e)) &&
             offsetOf(arg(e)) == cg->rootPortion - 1)
@@ -1250,11 +1221,9 @@ static Void local analyseAp(CodeGen *cg,
         cg->rootPortion = 0;
 }
 
-static Void local buildAp(CodeGen *cg, Cell e, Int co, Label f,
-                          Bool str) /* Build application, making use of */
-                                    /* root optimisation if poss.       */
-{
-    Int nr, rp, i;
+/* Build application, making use of root optimisation if poss. */
+static void buildAp(CodeGen *cg, Cell e, int co, Label f, bool str) {
+    int nr, rp, i;
 
     cg->nonRoots = 0;
     analyseAp(cg, e);
@@ -1282,10 +1251,9 @@ static Void local buildAp(CodeGen *cg, Cell e, Int co, Label f,
  * Code generator entry points:
  * ------------------------------------------------------------------------*/
 
-Addr codeGen(Name n, Int arity, Cell e) /* Generate code for expression e,  */
-                                        /* treating return value of CAFs    */
-                                        /* differently to functs with args  */
-{
+/* Generate code for expression e, treating return value of CAFs differently to
+ * functs with args */
+Addr codeGen(Name n, int arity, Cell e) {
     CodeGen state;
     CodeGen *cg = &state;
 
@@ -1304,7 +1272,7 @@ Addr codeGen(Name n, Int arity, Cell e) /* Generate code for expression e,  */
     cg->definingName = n;
     cg->definingArity = arity;
     if (nonNull(n)) {
-        Int i;
+        int i;
         for (i = 1; i <= arity; i++)
             cg->offsPosn[i] = ++cg->srsp;
         make(cg, e, arity, noMatch, (arity > 0 ? UPDRET : VALRET));
@@ -1324,17 +1292,17 @@ Addr codeGen(Name n, Int arity, Cell e) /* Generate code for expression e,  */
     return cg->startInstr;
 }
 
-Void implementCfun(Name c, List scs) /* Build implementation for constr */
-                                     /* fun c.  scs lists integers (1..)*/
-{                                    /* in incr order of strict comps.  */
-    Int a = nameRec(c)->arity;
+/* Build implementation for constr fun c. scs lists integers (1..) in incr
+ * order of strict comps. */
+void implementCfun(Name c, List scs) {
+    int a = nameRec(c)->arity;
     if (a == 0 || isNull(scs))
         nameRec(c)->defn = c; /* Name ==> no special imp.        */
     else {
         CodeGen state;
         CodeGen *cg = &state;
         Name n = newName(inventText(), c);
-        Int i = 1;
+        int i = 1;
         nameRec(c)->defn = pair(scs, n); /* (scs,n) => strict components    */
         nameRec(n)->arity = a;           /* Initialize name data as approp. */
 
@@ -1367,12 +1335,12 @@ Void implementCfun(Name c, List scs) /* Build implementation for constr */
  * Evaluator:
  * ------------------------------------------------------------------------*/
 
-Int whnfArgs;       /* number of arguments of whnf term*/
+int whnfArgs;       /* number of arguments of whnf term*/
 Cell whnfHead;      /* head cell of term in whnf       */
-Int whnfInt;        /* value of INTCELL (in whnf)      */
+int whnfInt;        /* value of INTCELL (in whnf)      */
 Float whnfFloat;    /* value of FLOATCELL (in whnf)    */
 Double whnfDouble;  /* value of DOUBLECELL (in whnf)   */
-Long numReductions; /* number of reductions counted    */
+long numReductions; /* number of reductions counted    */
 #if PROFILING
 # define saveProducer(n)                                                       \
      {                                                                         \
@@ -1392,14 +1360,14 @@ static Cell exception;         /* Exception thrown                */
 static jmp_buf *evalError = 0; /* jump buffer for eval errors     */
 
 #if GIMME_STACK_DUMPS
-Int rootsp = (-1);
+int rootsp = (-1);
 Cell evalRoots[NUM_STACK];
 #endif
 
-Void eval(Cell n) /* Graph reduction evaluator       */
-{
+/* Graph reduction evaluator */
+void eval(Cell n) {
     StackPtr base = sp;
-    Int ar;
+    int ar;
 
     stackCheck();
     if (++evalDepth >= MAX_EVAL_DEPTH)
@@ -1516,10 +1484,11 @@ unw:
     evalDepth--;
 }
 
-Void unwind(Cell n) /* unwind spine of application;     */
-{                   /* like eval except that we always  */
-    whnfArgs = 0;   /* treat the expression n as if it  */
-                    /* were already in whnf.            */
+/* Unwind spine of application; like eval except that we always treat the
+ * expression n as if it were already in whnf. */
+void unwind(Cell n) {
+    whnfArgs = 0;
+
 unw:
     switch (whatIs(n)) {
     case AP:
@@ -1554,10 +1523,10 @@ unw:
     whnfHead = n;
 }
 
-static Void local evalString(Cell n) /* expand STRCELL at node n         */
-{
+/* Expand STRCELL at node n */
+static void evalString(Cell n) {
     Text t = textOf(n);
-    String s = textToStr(t);
+    char *s = textToStr(t);
     Char c;
     if (*s == 0) {
         fst(n) = INDIRECT;
@@ -1571,9 +1540,9 @@ static Void local evalString(Cell n) /* expand STRCELL at node n         */
     drop();
 }
 
-Void run(Addr start, StackPtr root) /* execute code beginning at given  */
-                                    /* address with local stack starting*/
-{                                   /* at given root offset             */
+/* Execute code beginning at given address with local stack starting at given
+ * root offset */
+void run(Addr start, StackPtr root) {
     register Memory pc = memory + start;
 
 #if !DEBUG_CODE && HAVE_LABELS_AS_VALUES
@@ -1638,7 +1607,7 @@ Void run(Addr start, StackPtr root) /* execute code beginning at given  */
     Continue;
 
     Case(iMKAP) : {
-        Int i = pc->mint; /* make AP nodes  */
+        int i = pc->mint; /* make AP nodes  */
         while (0 < i--) {
             pushed(1) = ap(pushed(0), pushed(1));
             drop();
@@ -1714,7 +1683,7 @@ Void run(Addr start, StackPtr root) /* execute code beginning at given  */
     Continue;
 
     Case(iALLOC) : {
-        Int i = pc->mint; /* alloc loc vars */
+        int i = pc->mint; /* alloc loc vars */
         chkStack(i);
         while (0 < i--)
             onto(ap(NIL, NIL));
@@ -1724,7 +1693,7 @@ Void run(Addr start, StackPtr root) /* execute code beginning at given  */
 
     Case(iROOT) : {
         Cell t = stack(root); /* partial root   */
-        Int i = pc->mint;
+        int i = pc->mint;
         while (fst(t) == INDIRECT) {
             allowBreak();
             t = arg(t);
@@ -1756,14 +1725,14 @@ Void run(Addr start, StackPtr root) /* execute code beginning at given  */
 #undef EndDispatch
 }
 
-Cell evalWithNoError(Cell e) /* Evaluate expression, returning   */
-{                            /* NIL if successful,               */
-    Cell caughtEx;           /* Exception value if not...        */
+/* Evaluate expression, returning NIL if successful, Exception value if not... */
+Cell evalWithNoError(Cell e) {
+    Cell caughtEx;
     jmp_buf *oldCatch = evalError;
-    Int savedDepth = evalDepth; /* throwException() longjmps straight*/
+    int savedDepth = evalDepth; /* throwException() longjmps straight*/
     StackPtr savedSp = sp;      /* past eval()'s own bookkeeping, so */
 #if GIMME_STACK_DUMPS           /* an exception caught here must undo   */
-    Int savedRootsp = rootsp;   /* whatever the aborted evaluation left */
+    int savedRootsp = rootsp;   /* whatever the aborted evaluation left */
 #endif                          /* behind: eval() only decrements       */
                                 /* evalDepth, and restores sp/rootsp,   */
                                 /* along its normal return path.        */
@@ -1786,8 +1755,8 @@ Cell evalWithNoError(Cell e) /* Evaluate expression, returning   */
     return caughtEx;
 }
 
-Void evalFails(StackPtr root) /* Eval of current redex fails     */
-{
+/* Eval of current redex fails */
+void evalFails(StackPtr root) {
     Cell errorRedex = stack(root); /* get error & bypass indirections */
     while (isPair(errorRedex) && fst(errorRedex) == INDIRECT)
         errorRedex = snd(errorRedex);
@@ -1796,7 +1765,7 @@ Void evalFails(StackPtr root) /* Eval of current redex fails     */
            ap(ap(ap(nameNPrint, mkInt(MIN_PREC)), errorRedex), nameNil)));
 }
 
-Void throwException(Cell ex) {
+void throwException(Cell ex) {
     exception = ex;
     if (evalError)
         longjmp(*evalError, 1);
@@ -1808,7 +1777,7 @@ Void throwException(Cell ex) {
  * Machine control:
  * ------------------------------------------------------------------------*/
 
-Void machine(Int what) {
+void machine(int what) {
     switch (what) {
     case INSTALL:
         /* prelude.h defines NUM_ADDRS; 0 is the upper bound (=> unbounded.) */

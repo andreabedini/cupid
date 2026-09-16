@@ -5,10 +5,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: builtin.h,v $
- * $Revision: 1.7 $
- * $Date: 2004/09/30 16:49:04 $
  * ------------------------------------------------------------------------*/
 #ifndef __BUILTIN_H__
 #define __BUILTIN_H__
@@ -17,14 +13,14 @@
 #include "storage.h"
 #include "errors.h" /* IWYU pragma: keep -- internal(), in the CHECK_TAGS macros below */
 
-extern String evalName(Cell);
-extern Cell mkIOError(Cell *, Name, String, String, Cell *);
+extern char *evalName(Cell);
+extern Cell mkIOError(Cell *, Name, char *, char *, Cell *);
 extern Cell followInd(Cell); /* builtin.c: skip indirections    */
-extern Void throwErrno(String, Bool, Int,
+extern void throwErrno(char *, bool, int,
                        Cell *);         /* iomonad.c: raise an IOError  */
 extern Cell printException(Cell, Cell); /* printer.c: exception -> String*/
-extern Name predefPrim(String, String); /* builtin.c: name + primitive  */
-extern Name predefName(String);         /* builtin.c: name to be defined*/
+extern Name predefPrim(char *, char *); /* builtin.c: name + primitive  */
+extern Name predefName(char *);         /* builtin.c: name to be defined*/
 
 /* The primitive tables of the other units in this directory, registered
  * by builtIn(INSTALL) in builtin.c */
@@ -38,11 +34,11 @@ extern struct primInfo internalPrims;
  * Macros used to define primitives:
  * ------------------------------------------------------------------------*/
 
-#define PROTO_PRIM(name) static Void name(StackPtr)
-#define EXT_PROTO_PRIM(name) extern Void name(StackPtr)
-#define primFun(name) static Void name(StackPtr root)
-#define extPrimFun(name) Void name(StackPtr root)
-#define primCAF(name) static Void name(StackPtr root CUDDLES_unused)
+#define PROTO_PRIM(name) static void name(StackPtr)
+#define EXT_PROTO_PRIM(name) extern void name(StackPtr)
+#define primFun(name) static void name(StackPtr root)
+#define extPrimFun(name) void name(StackPtr root)
+#define primCAF(name) static void name(StackPtr root CUDDLES_unused)
 #define primArg(n) stack(root + n)
 
 /* IMPORTANT: the second element of an update must be written first.
@@ -102,7 +98,7 @@ extern struct primInfo internalPrims;
 /* e is a constant expression                     */
 #define CAFPtr(nm, e)                                                          \
     primCAF(nm) {                                                              \
-        Pointer r = e;                                                         \
+        void *r = e;                                                           \
         push(mkPtr(r));                                                        \
     }
 
@@ -118,8 +114,8 @@ extern struct primInfo internalPrims;
 /* e is an expression with free variables x and y */
 #define PtrInt2Ptr(nm, e)                                                      \
     primFun(nm) {                                                              \
-        Pointer x, r;                                                          \
-        Int y;                                                                 \
+        void *x, *r;                                                           \
+        int y;                                                                 \
         PtrArg(x, 2);                                                          \
         IntArg(y, 1);                                                          \
         r = e;                                                                 \
@@ -129,8 +125,8 @@ extern struct primInfo internalPrims;
 /* e is an expression with free variables x */
 #define Ptr2Int(nm, e)                                                         \
     primFun(nm) {                                                              \
-        Pointer x;                                                             \
-        Int r;                                                                 \
+        void *x;                                                               \
+        int r;                                                                 \
         PtrArg(x, 1);                                                          \
         r = e;                                                                 \
         IntResult(r);                                                          \
@@ -139,7 +135,7 @@ extern struct primInfo internalPrims;
 /* e is a constant expression                     */
 #define CAFInt(nm, e)                                                          \
     primCAF(nm) {                                                              \
-        Int r = e;                                                             \
+        int r = e;                                                             \
         push(mkInt(r));                                                        \
     }
 
@@ -156,8 +152,8 @@ extern struct primInfo internalPrims;
    If you use an expression, reevaluation might occur */
 #define IntIntResult(e1, e2)                                                   \
     do {                                                                       \
-        Int _arg1 = e1;                                                        \
-        Int _arg2 = e2;                                                        \
+        int _arg1 = e1;                                                        \
+        int _arg2 = e2;                                                        \
         push(mkInt(_arg1));                                                    \
         topfun(mkTuple(2));                                                    \
         updapRoot(top(), mkInt(_arg2));                                        \
@@ -166,14 +162,14 @@ extern struct primInfo internalPrims;
 /* e is a constant expression                     */
 #define CAFWord(nm, e)                                                         \
     primCAF(nm) {                                                              \
-        Unsigned r = e;                                                        \
+        unsigned r = e;                                                        \
         push(mkInt(r));                                                        \
     }
 
 #define WordArg(nm, offset)                                                    \
     eval(primArg(offset));                                                     \
     checkWord();                                                               \
-    nm = (Unsigned)whnfInt
+    nm = (unsigned)whnfInt
 
 /* nm should be a variable in which result is stored.
    If you use an expression, reevaluation might occur */
@@ -183,8 +179,8 @@ extern struct primInfo internalPrims;
    If you use an expression, reevaluation might occur */
 #define WordWordResult(e1, e2)                                                 \
     do {                                                                       \
-        Unsigned _arg1 = e1;                                                   \
-        Unsigned _arg2 = e2;                                                   \
+        unsigned _arg1 = e1;                                                   \
+        unsigned _arg2 = e2;                                                   \
         push(mkInt(_arg1));                                                    \
         topfun(mkTuple(2));                                                    \
         updapRoot(top(), mkInt(_arg2));                                        \
@@ -224,7 +220,7 @@ extern struct primInfo internalPrims;
 /* e is an expression with free variables x and y */
 #define IntInt2Int(nm, e)                                                      \
     primFun(nm) {                                                              \
-        Int x, y, r;                                                           \
+        int x, y, r;                                                           \
         IntArg(x, 2);                                                          \
         IntArg(y, 1);                                                          \
         r = e;                                                                 \
@@ -234,7 +230,7 @@ extern struct primInfo internalPrims;
 /* e is a predicate with free variables x and y   */
 #define PtrPtr2Bool(nm, e)                                                     \
     primFun(nm) {                                                              \
-        Pointer x, y;                                                          \
+        void *x, *y;                                                           \
         PtrArg(x, 2);                                                          \
         PtrArg(y, 1);                                                          \
         BoolResult(e);                                                         \
@@ -243,8 +239,8 @@ extern struct primInfo internalPrims;
 /* e is an expression with free variables x and y */
 #define PtrPtr2Int(nm, e)                                                      \
     primFun(nm) {                                                              \
-        Pointer x, y;                                                          \
-        Int r;                                                                 \
+        void *x, *y;                                                           \
+        int r;                                                                 \
         PtrArg(x, 2);                                                          \
         PtrArg(y, 1);                                                          \
         r = e;                                                                 \
@@ -255,7 +251,7 @@ extern struct primInfo internalPrims;
 /* y must be non-zero                             */
 #define IntInt2IntNonZero(nm, e)                                               \
     primFun(nm) {                                                              \
-        Int x, y, r;                                                           \
+        int x, y, r;                                                           \
         IntArg(x, 2);                                                          \
         IntArg(y, 1);                                                          \
         if (y == 0)                                                            \
@@ -267,7 +263,7 @@ extern struct primInfo internalPrims;
 /* e is an expression with free variable x        */
 #define Int2Int(nm, e)                                                         \
     primFun(nm) {                                                              \
-        Int x, r;                                                              \
+        int x, r;                                                              \
         IntArg(x, 1);                                                          \
         r = e;                                                                 \
         IntResult(r);                                                          \
@@ -276,7 +272,7 @@ extern struct primInfo internalPrims;
 /* e is a predicate with free variables x and y   */
 #define IntInt2Bool(nm, e)                                                     \
     primFun(nm) {                                                              \
-        Int x, y;                                                              \
+        int x, y;                                                              \
         IntArg(x, 2);                                                          \
         IntArg(y, 1);                                                          \
         BoolResult(e);                                                         \
@@ -285,7 +281,7 @@ extern struct primInfo internalPrims;
 /* e is a predicate with free variable x          */
 #define Int2Bool(nm, e)                                                        \
     primFun(nm) {                                                              \
-        Int x;                                                                 \
+        int x;                                                                 \
         IntArg(x, 1);                                                          \
         BoolResult(e);                                                         \
     }
@@ -293,7 +289,7 @@ extern struct primInfo internalPrims;
 /* e is an expression with free variables x and y */
 #define WordWord2Word(nm, e)                                                   \
     primFun(nm) {                                                              \
-        Unsigned x, y, r;                                                      \
+        unsigned x, y, r;                                                      \
         WordArg(x, 2);                                                         \
         WordArg(y, 1);                                                         \
         r = e;                                                                 \
@@ -304,7 +300,7 @@ extern struct primInfo internalPrims;
 /* y must be non-zero                             */
 #define WordWord2WordNonZero(nm, e)                                            \
     primFun(nm) {                                                              \
-        Unsigned x, y, r;                                                      \
+        unsigned x, y, r;                                                      \
         WordArg(x, 2);                                                         \
         WordArg(y, 1);                                                         \
         if (y == 0)                                                            \
@@ -316,7 +312,7 @@ extern struct primInfo internalPrims;
 /* e is an expression with free variable x        */
 #define Word2Word(nm, e)                                                       \
     primFun(nm) {                                                              \
-        Unsigned x, r;                                                         \
+        unsigned x, r;                                                         \
         WordArg(x, 1);                                                         \
         r = e;                                                                 \
         WordResult(r);                                                         \
@@ -325,7 +321,7 @@ extern struct primInfo internalPrims;
 /* e is a predicate with free variables x and y   */
 #define WordWord2Bool(nm, e)                                                   \
     primFun(nm) {                                                              \
-        Unsigned x, y;                                                         \
+        unsigned x, y;                                                         \
         WordArg(x, 2);                                                         \
         WordArg(y, 1);                                                         \
         BoolResult(e);                                                         \
@@ -334,8 +330,8 @@ extern struct primInfo internalPrims;
 /* e is a predicate with free variables x and y   */
 #define WordInt2Bool(nm, e)                                                    \
     primFun(nm) {                                                              \
-        Unsigned x;                                                            \
-        Int y;                                                                 \
+        unsigned x;                                                            \
+        int y;                                                                 \
         WordArg(x, 2);                                                         \
         IntArg(y, 1);                                                          \
         BoolResult(e);                                                         \
@@ -344,9 +340,9 @@ extern struct primInfo internalPrims;
 /* e is a predicate with free variables x and y   */
 #define WordInt2Word(nm, e)                                                    \
     primFun(nm) {                                                              \
-        Unsigned x;                                                            \
-        Int y;                                                                 \
-        Unsigned r;                                                            \
+        unsigned x;                                                            \
+        int y;                                                                 \
+        unsigned r;                                                            \
         WordArg(x, 2);                                                         \
         IntArg(y, 1);                                                          \
         r = e;                                                                 \
@@ -356,8 +352,8 @@ extern struct primInfo internalPrims;
 /* e is a predicate with free variable x          */
 #define Int2Word(nm, e)                                                        \
     primFun(nm) {                                                              \
-        Int x;                                                                 \
-        Unsigned r;                                                            \
+        int x;                                                                 \
+        unsigned r;                                                            \
         IntArg(x, 1);                                                          \
         r = e;                                                                 \
         WordResult(r);                                                         \
@@ -366,7 +362,7 @@ extern struct primInfo internalPrims;
 /* e is a predicate with free variable x          */
 #define Word2Bool(nm, e)                                                       \
     primFun(nm) {                                                              \
-        Unsigned x;                                                            \
+        unsigned x;                                                            \
         WordArg(x, 1);                                                         \
         BoolResult(e);                                                         \
     }
@@ -407,7 +403,7 @@ extern struct primInfo internalPrims;
 #define Float2Int(nm, e)                                                       \
     primFun(nm) {                                                              \
         Float x;                                                               \
-        Int r;                                                                 \
+        int r;                                                                 \
         FloatArg(x, 1);                                                        \
         r = e;                                                                 \
         IntResult(r);                                                          \
@@ -417,7 +413,7 @@ extern struct primInfo internalPrims;
 #define Float2Bool(nm, e)                                                      \
     primFun(nm) {                                                              \
         Float x;                                                               \
-        Bool r;                                                                \
+        bool r;                                                                \
         FloatArg(x, 1);                                                        \
         r = e;                                                                 \
         BoolResult(r);                                                         \
@@ -472,7 +468,7 @@ extern struct primInfo internalPrims;
 #define Double2Int(nm, e)                                                      \
     primFun(nm) {                                                              \
         Double x;                                                              \
-        Int r;                                                                 \
+        int r;                                                                 \
         DoubleArg(x, 1);                                                       \
         r = e;                                                                 \
         IntResult(r);                                                          \
@@ -482,7 +478,7 @@ extern struct primInfo internalPrims;
 #define Double2Bool(nm, e)                                                     \
     primFun(nm) {                                                              \
         Double x;                                                              \
-        Bool r;                                                                \
+        bool r;                                                                \
         DoubleArg(x, 1);                                                       \
         r = e;                                                                 \
         BoolResult(r);                                                         \

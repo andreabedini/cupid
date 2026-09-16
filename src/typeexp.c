@@ -27,9 +27,9 @@
  * local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static List local maybeAppendVar(Cell, List);
-static List local otvarsZonk(Cell, List, Int);
-static Cell local checkTyconAmbig(Int, Text, Cell);
+static List maybeAppendVar(Cell, List);
+static List otvarsZonk(Cell, List, int);
+static Cell checkTyconAmbig(int, Text, Cell);
 List tcDeps = NIL; /* list of dependent tycons/classes*/
 
 /* --------------------------------------------------------------------------
@@ -39,12 +39,9 @@ List tcDeps = NIL; /* list of dependent tycons/classes*/
  * occur in the type expression when read from left to right.
  * ------------------------------------------------------------------------*/
 
-List typeVarsIn(Cell ty, List us, List ws,
-                List vs) /*Calculate list of type variables*/
-                         /* used in type expression, reading*/
-                         /* from left to right ignoring any */
-                         /* listed in us.             */
-{                        /* ws = explicitly quantified vars */
+/* Calculate list of type variables used in type expression, reading from left
+ * to right ignoring any listed in us. ws = explicitly quantified vars */
+List typeVarsIn(Cell ty, List us, List ws, List vs) {
     switch (whatIs(ty)) {
     case AP:
         return typeVarsIn(snd(ty), us, ws, typeVarsIn(fst(ty), us, ws, vs));
@@ -82,10 +79,8 @@ List typeVarsIn(Cell ty, List us, List ws,
     return vs;
 }
 
-static List local maybeAppendVar(Cell v,
-                                 List vs) /* append variable to list if not   */
-                                          /* already included              */
-{
+/* Append variable to list if not already included */
+static List maybeAppendVar(Cell v, List vs) {
     Text t = textOf(v);
     List p = NIL;
     List c = vs;
@@ -114,10 +109,8 @@ static List local maybeAppendVar(Cell v,
  *   - ensure that the type is well-kinded.
  * ------------------------------------------------------------------------*/
 
-Type checkSigType(Int line, String where, Cell e, Type type)
-/* Check validity of type expr in  */
-/* explicit type signature         */
-{
+/* Check validity of type expr in explicit type signature */
+Type checkSigType(int line, char *where, Cell e, Type type) {
     List tvs = NIL;
     List sunk = NIL;
     List xtvs = NIL;
@@ -162,9 +155,8 @@ Type checkSigType(Int line, String where, Cell e, Type type)
     return type;
 }
 
-Void checkOptQuantVars(Int line, List xtvs, List tvs)
-/* Explicitly quantified vars      */
-{ /* Implicitly quantified vars    */
+/* Explicitly quantified vars Implicitly quantified vars */
+void checkOptQuantVars(int line, List xtvs, List tvs) {
     if (nonNull(xtvs)) {
         List vs = tvs;
         for (; nonNull(vs); vs = tl(vs)) {
@@ -192,12 +184,12 @@ Void checkOptQuantVars(Int line, List xtvs, List tvs)
     }
 }
 
-Type depTopType(Int l, List tvs, Type t) /* Check top-level of type sig     */
-{
+/* Check top-level of type sig */
+Type depTopType(int l, List tvs, Type t) {
     Type prev = NIL;
     Type t1 = t;
-    Int nr2 = 0;
-    Int i = 1;
+    int nr2 = 0;
+    int i = 1;
     for (; getHead(t1) == typeArrow && argCount == 2; ++i) {
         arg(fun(t1)) = depCompType(l, tvs, arg(fun(t1)));
         if (isPolyOrQualType(arg(fun(t1)))) {
@@ -219,9 +211,9 @@ Type depTopType(Int l, List tvs, Type t) /* Check top-level of type sig     */
     return t;
 }
 
-Type depCompType(Int l, List tvs, Type t) /* Check component type for constr */
-{
-    Int ntvs = length(tvs);
+/* Check component type for constr */
+Type depCompType(int l, List tvs, Type t) {
+    int ntvs = length(tvs);
     List nfr = NIL;
     if (isPolyType(t)) {
         List vs = fst(snd(t));
@@ -250,7 +242,7 @@ Type depCompType(Int l, List tvs, Type t) /* Check component type for constr */
     return mkPolyType(nfr, t);
 }
 
-Type depTypeExp(Int line, List tyvars, Type type) {
+Type depTypeExp(int line, List tyvars, Type type) {
     switch (whatIs(type)) {
     case AP:
         fst(type) = depTypeExp(line, tyvars, fst(type));
@@ -293,9 +285,9 @@ Type depTypeExp(Int line, List tyvars, Type type) {
     return type;
 }
 
-Type depTypeVar(Int line, List tyvars, Text tv) {
-    Int offset = 0;
-    Int found = (-1);
+Type depTypeVar(int line, List tyvars, Text tv) {
+    int offset = 0;
+    int found = (-1);
 
     for (; nonNull(tyvars); offset++) {
         if (tv == textOf(hd(tyvars))) {
@@ -315,10 +307,9 @@ Type depTypeVar(Int line, List tyvars, Text tv) {
     return mkOffset(found);
 }
 
-List checkQuantVars(Int line, List vs, List tvs, Cell body)
-/* variables to quantify over      */
-/* variables already in scope      */
-{ /* type/constr for scope of vars   */
+/* Variables to quantify over variables already in scope type/constr for scope
+ * of vars */
+List checkQuantVars(int line, List vs, List tvs, Cell body) {
     if (nonNull(vs)) {
         List bvs = typeVarsIn(body, NIL, NIL, NIL);
         List us = vs;
@@ -346,9 +337,8 @@ List checkQuantVars(Int line, List vs, List tvs, Cell body)
  * A type  Preds => type  is ambiguous if not (TV(P) `subset` TV(type))
  * ------------------------------------------------------------------------*/
 
-List offsetTyvarsIn(Type t, List vs) /* add list of offset tyvars in t  */
-                                     /* to list vs                    */
-{
+/* Add list of offset tyvars in t to list vs */
+List offsetTyvarsIn(Type t, List vs) {
     switch (whatIs(t)) {
     case AP:
         return offsetTyvarsIn(fun(t), offsetTyvarsIn(arg(t), vs));
@@ -395,19 +385,18 @@ List zonkTyvarsIn(Type t, List vs) {
     }
 }
 
-List otvars(Cell pi, List os) /* os is a list of offsets that         */
-                              /* refer to the arguments of pi;   */
-{                             /* find list of offsets in those   */
-    List us = NIL;            /* positions                    */
+/* Os is a list of offsets that refer to the arguments of pi; find list of
+ * offsets in those positions */
+List otvars(Cell pi, List os) {
+    List us = NIL;
     for (; nonNull(os); os = tl(os)) {
         us = offsetTyvarsIn(nthArg(offsetOf(hd(os)), pi), us);
     }
     return us;
 }
 
-static List local otvarsZonk(Cell pi, List os,
-                             Int o) /* same as above, but zonks    */
-{
+/* Same as above, but zonks */
+static List otvarsZonk(Cell pi, List os, int o) {
     List us = NIL;
     for (; nonNull(os); os = tl(os)) {
         Type t = zonkType(nthArg(offsetOf(hd(os)), pi), o);
@@ -423,20 +412,20 @@ List odiff(List us, List vs) {
     return us;
 }
 
-Bool osubset(List us, List vs) /* Determine whether us is subset  */
-{                              /* of vs                        */
+/* Determine whether us is subset of vs */
+bool osubset(List us, List vs) {
     while (nonNull(us) && cellIsMember(hd(us), vs)) {
         us = tl(us);
     }
     return isNull(us);
 }
 
-List oclose(List fds, List vs) /* Compute closure of vs wrt to fds*/
-{
-    Bool changed = TRUE;
+/* Compute closure of vs wrt to fds */
+List oclose(List fds, List vs) {
+    bool changed = true;
     while (changed) {
         List fds1 = NIL;
-        changed = FALSE;
+        changed = false;
         while (nonNull(fds)) {
             Cell fd = hd(fds);
             List next = tl(fds);
@@ -445,7 +434,7 @@ List oclose(List fds, List vs) /* Compute closure of vs wrt to fds*/
                 for (; nonNull(os); os = tl(os)) {
                     if (!cellIsMember(hd(os), vs)) {
                         vs = cons(hd(os), vs);
-                        changed = TRUE;
+                        changed = true;
                     }
                 }
             } else { /* Didn't apply this time, so keep */
@@ -459,8 +448,8 @@ List oclose(List fds, List vs) /* Compute closure of vs wrt to fds*/
     return vs;
 }
 
-Bool isAmbiguous(Type type) /* Determine whether type is           */
-{                           /* ambiguous                           */
+/* Determine whether type is ambiguous */
+bool isAmbiguous(Type type) {
     if (isPolyType(type)) {
         type = monotypeOf(type);
     }
@@ -473,7 +462,7 @@ Bool isAmbiguous(Type type) /* Determine whether type is           */
         tvts = oclose(fds, tvts); /* Close tvts under fds                  */
         return !osubset(tvps, tvts);
     }
-    return FALSE;
+    return false;
 }
 
 List calcFunDeps(List ps) {
@@ -502,7 +491,7 @@ List calcFunDepsPreds(List ps) {
         Cell pi3 = hd(ps);
         Cell pi = fst3(pi3);
         Cell c = getHead(pi);
-        Int o = intOf(snd3(pi3));
+        int o = intOf(snd3(pi3));
         if (isClass(c)) {
             List xfs = cclassRec(c)->xfds;
             for (; nonNull(xfs); xfs = tl(xfs)) {
@@ -518,10 +507,8 @@ List calcFunDepsPreds(List ps) {
     return fds;
 }
 
-Void ambigError(Int line, String where, Cell e,
-                Type type) /* produce error message for    */
-                           /* ambiguity                    */
-{
+/* Produce error message for ambiguity */
+void ambigError(int line, char *where, Cell e, Type type) {
     errHead(line);
     errPrintf("Ambiguous type signature in %s", where);
     errPrintf("\n*** ambiguous type : ");
@@ -534,8 +521,8 @@ Void ambigError(Int line, String where, Cell e,
     errFail();
 }
 
-Cell depPredExp(Int line, List tyvars, Cell pred) {
-    Int args = 0;
+Cell depPredExp(int line, List tyvars, Cell pred) {
+    int args = 0;
     Cell prev = NIL;
     Cell h = pred;
     for (; isAp(h); args++) {
@@ -589,7 +576,7 @@ Cell depPredExp(Int line, List tyvars, Cell pred) {
 
 /* A type constructor that several imports bring into scope unqualified is
  * ambiguous, and only an error until it is qualified. */
-static Cell local checkTyconAmbig(Int line, Text t, Cell e) {
+static Cell checkTyconAmbig(int line, Text t, Cell e) {
     Tycon tc;
 
     if (isTycon(e)) {
@@ -627,7 +614,7 @@ static Cell *const typeexpRoots[] = {
     &tcDeps,
 };
 
-Void typeexpControl(Int what) {
+void typeexpControl(int what) {
     switch (what) {
     case RESET:
         tcDeps = NIL;

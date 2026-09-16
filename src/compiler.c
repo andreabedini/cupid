@@ -7,10 +7,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: compiler.c,v $
- * $Revision: 1.25 $
- * $Date: 2003/12/04 13:53:50 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -27,64 +23,64 @@ static Name currentName; /* Top level name being processed   */
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Cell local translate(Cell);
-static Void local transPair(Pair);
-static Void local transTriple(Triple);
-static Void local transAlt(Cell);
-static Void local transCase(Cell);
-static List local transBinds(List);
-static Cell local transRhs(Cell);
-static Cell local mkConsList(List);
-static Cell local expandLetrec(Cell);
-static Cell local transComp(Cell, List, Cell);
-static Cell local transDo(Cell, Cell, List);
-static Cell local transConFlds(Cell, List);
-static Cell local transUpdFlds(Cell, List, List);
+static Cell translate(Cell);
+static void transPair(Pair);
+static void transTriple(Triple);
+static void transAlt(Cell);
+static void transCase(Cell);
+static List transBinds(List);
+static Cell transRhs(Cell);
+static Cell mkConsList(List);
+static Cell expandLetrec(Cell);
+static Cell transComp(Cell, List, Cell);
+static Cell transDo(Cell, Cell, List);
+static Cell transConFlds(Cell, List);
+static Cell transUpdFlds(Cell, List, List);
 
-static Cell local refutePat(Cell);
-static Cell local refutePatAp(Cell);
-static Cell local matchPat(Cell);
-static List local remPat(Cell, Cell, List);
-static List local remPat1(Cell, Cell, List);
+static Cell refutePat(Cell);
+static Cell refutePatAp(Cell);
+static Cell matchPat(Cell);
+static List remPat(Cell, Cell, List);
+static List remPat1(Cell, Cell, List);
 
-static Cell local pmcTerm(Int, List, Cell);
-static Cell local pmcPair(Int, List, Pair);
-static Cell local pmcTriple(Int, List, Triple);
-static Cell local pmcVar(List, Text);
-static Void local pmcLetrec(Int, List, Pair);
-static Cell local pmcVarDef(Int, List, List);
-static Void local pmcFunDef(Int, List, Triple);
-static List local altsMatch(Int, Int, List, List);
-static Cell local match(Int, List);
-static Cell local joinMas(Int, List);
-static Bool local canFail(Cell);
-static List local addConTable(Cell, Cell, List);
-static Void local advance(Int, Int, Cell);
-static Bool local emptyMatch(Cell);
-static Cell local maDiscr(Cell);
-static Bool local isNumDiscr(Cell);
-static Bool local eqNumDiscr(Cell, Cell);
+static Cell pmcTerm(int, List, Cell);
+static Cell pmcPair(int, List, Pair);
+static Cell pmcTriple(int, List, Triple);
+static Cell pmcVar(List, Text);
+static void pmcLetrec(int, List, Pair);
+static Cell pmcVarDef(int, List, List);
+static void pmcFunDef(int, List, Triple);
+static List altsMatch(int, int, List, List);
+static Cell match(int, List);
+static Cell joinMas(int, List);
+static bool canFail(Cell);
+static List addConTable(Cell, Cell, List);
+static void advance(int, int, Cell);
+static bool emptyMatch(Cell);
+static Cell maDiscr(Cell);
+static bool isNumDiscr(Cell);
+static bool eqNumDiscr(Cell, Cell);
 
-static Cell local lift(Int, List, Cell);
-static Void local liftPair(Int, List, Pair);
-static Void local liftTriple(Int, List, Triple);
-static Void local liftAlt(Int, List, Cell);
-static Void local liftNumcase(Int, List, Triple);
-static Cell local liftVar(List, Cell);
-static Cell local liftLetrec(Int, List, Cell);
-static Void local liftFundef(Int, List, Triple);
-static Void local solve(List);
+static Cell lift(int, List, Cell);
+static void liftPair(int, List, Pair);
+static void liftTriple(int, List, Triple);
+static void liftAlt(int, List, Cell);
+static void liftNumcase(int, List, Triple);
+static Cell liftVar(List, Cell);
+static Cell liftLetrec(int, List, Cell);
+static void liftFundef(int, List, Triple);
+static void solve(List);
 
-static Cell local preComp(Cell);
-static Cell local preCompPair(Pair);
-static Cell local preCompTriple(Triple);
-static Void local preCompCase(Pair);
-static Cell local preCompOffset(Int);
+static Cell preComp(Cell);
+static Cell preCompPair(Pair);
+static Cell preCompTriple(Triple);
+static void preCompCase(Pair);
+static Cell preCompOffset(int);
 
-static Void local compileGlobalFunction(Pair);
-static Void local compileGenFunction(Name);
-static Name local compileSelFunction(Pair);
-static Void local newGlobalFunction(Name, Int, List, Int, Cell);
+static void compileGlobalFunction(Pair);
+static void compileGenFunction(Name);
+static Name compileSelFunction(Pair);
+static void newGlobalFunction(Name, int, List, int, Cell);
 
 /* --------------------------------------------------------------------------
  * Translation:    Convert input expressions into a less complex language
@@ -92,8 +88,8 @@ static Void local newGlobalFunction(Name, Int, List, Int, Cell);
  *                 Also remove pattern definitions on lhs of eqns.
  * ------------------------------------------------------------------------*/
 
-static Cell local translate(Cell e) /* Translate expression:            */
-{
+/* Translate expression */
+static Cell translate(Cell e) {
     stackCheck();
     switch (whatIs(e)) {
     case LETREC:
@@ -186,33 +182,33 @@ static Cell local translate(Cell e) /* Translate expression:            */
     return e;
 }
 
-static Void local transPair(Pair pr) /* Translate each component in a    */
-{                                    /* pair of expressions.             */
+/* Translate each component in a pair of expressions. */
+static void transPair(Pair pr) {
     fst(pr) = translate(fst(pr));
     snd(pr) = translate(snd(pr));
 }
 
-static Void local transTriple(Triple tr) /* Translate each component in a    */
-{                                        /* triple of expressions.           */
+/* Translate each component in a triple of expressions. */
+static void transTriple(Triple tr) {
     fst3(tr) = translate(fst3(tr));
     snd3(tr) = translate(snd3(tr));
     thd3(tr) = translate(thd3(tr));
 }
 
-static Void local transAlt(Cell e) /* Translate alt:                   */
-{                                  /* ([Pat], Rhs) ==> ([Pat], Rhs')   */
+/* Translate alt: ([Pat], Rhs) ==> ([Pat], Rhs') */
+static void transAlt(Cell e) {
     snd(e) = transRhs(snd(e));
 }
 
-static Void local transCase(Cell c) /* Translate case:                  */
-{                                   /* (Pat, Rhs) ==> ([Pat], Rhs')     */
+/* Translate case: (Pat, Rhs) ==> ([Pat], Rhs') */
+static void transCase(Cell c) {
     fst(c) = singleton(fst(c));
     snd(c) = transRhs(snd(c));
 }
 
-static List local transBinds(List bs) /* Translate list of bindings:     */
-{                                     /* eliminating pattern matching on */
-    List newBinds = NIL;              /* lhs of bindings.                */
+/* Translate list of bindings: eliminating pattern matching on lhs of bindings. */
+static List transBinds(List bs) {
+    List newBinds = NIL;
     for (; nonNull(bs); bs = tl(bs)) {
         if (isVar(fst(hd(bs)))) {
             mapProc(transAlt, snd(hd(bs)));
@@ -225,8 +221,8 @@ static List local transBinds(List bs) /* Translate list of bindings:     */
     return newBinds;
 }
 
-static Cell local transRhs(Cell rhs) /* Translate rhs: removing line nos */
-{
+/* Translate rhs: removing line nos */
+static Cell transRhs(Cell rhs) {
     switch (whatIs(rhs)) {
     case LETREC:
         snd(snd(rhs)) = transRhs(snd(snd(rhs)));
@@ -242,10 +238,11 @@ static Cell local transRhs(Cell rhs) /* Translate rhs: removing line nos */
     }
 }
 
-static Cell local mkConsList(List es) /* Construct expression for list es */
-{                                     /* using nameNil and nameCons       */
-    Cell head = nameNil;              /* iterative: a long literal list  */
-    Cell prev = NIL;                  /* must not recurse once per elem  */
+/* Construct expression for list es using nameNil and nameCons iterative: a
+ * long literal list must not recurse once per elem */
+static Cell mkConsList(List es) {
+    Cell head = nameNil;
+    Cell prev = NIL;
 
     for (; nonNull(es); es = tl(es)) {
         Cell node = ap(ap(nameCons, hd(es)), nameNil);
@@ -258,9 +255,9 @@ static Cell local mkConsList(List es) /* Construct expression for list es */
     return head;
 }
 
-static Cell local expandLetrec(Cell root) /* translate LETREC with list of    */
-{                                         /* groups of bindings (from depend. */
-    Cell e = snd(snd(root));              /* analysis) to use nested LETRECs  */
+/* Translate LETREC with list of groups of bindings (from depend. */
+static Cell expandLetrec(Cell root) {
+    Cell e = snd(snd(root)); /* analysis) to use nested LETRECs  */
     List bss = fst(snd(root));
     Cell temp;
 
@@ -293,9 +290,8 @@ static Cell local expandLetrec(Cell root) /* translate LETREC with list of    */
  * transComp e (decls:qs)   l => LETREC decls IN transComp e qs l
  * ------------------------------------------------------------------------*/
 
-static Cell local transComp(Cell e, List qs,
-                            Cell l) /* Translate [e | qs] ++ l          */
-{
+/* Translate [e | qs] ++ l */
+static Cell transComp(Cell e, List qs, Cell l) {
     if (nonNull(qs)) {
         Cell q = hd(qs);
         Cell qs1 = tl(qs);
@@ -347,9 +343,8 @@ static Cell local transComp(Cell e, List qs,
  * where m :: Monad f
  * ------------------------------------------------------------------------*/
 
-static Cell local transDo(Cell m, Cell e,
-                          List qs) /* Translate do { qs ; e }         */
-{
+/* Translate do { qs ; e } */
+static Cell transDo(Cell m, Cell e, List qs) {
     if (nonNull(qs)) {
         Cell q = hd(qs);
         Cell qs1 = tl(qs);
@@ -435,12 +430,11 @@ static Cell local transDo(Cell m, Cell e,
  * constructors {C,D,...}.
  * ------------------------------------------------------------------------*/
 
-static Cell local transConFlds(Name c,
-                               List flds) /* Translate C{flds}               */
-{
+/* Translate C{flds} */
+static Cell transConFlds(Name c, List flds) {
     Cell e = c;
-    Int m = nameRec(c)->arity;
-    Int i;
+    int m = nameRec(c)->arity;
+    int i;
     Text t = nameRec(c)->text;
     Cell tStr = mkStr(t);
     Cell empty = ap(namePrimThrow, ap(nameRecConError, tStr));
@@ -457,10 +451,8 @@ static Cell local transConFlds(Name c,
     return e;
 }
 
-static Cell local transUpdFlds(Cell e, List cs,
-                               List flds) /* Translate e{flds}              */
-                                          /* (cs is corresp list of constrs) */
-{
+/* Translate e{flds} (cs is corresp list of constrs) */
+static Cell transUpdFlds(Cell e, List cs, List flds) {
     Cell nv = inventVar();
     Cell body = ap(nv, translate(e));
     List fs = flds;
@@ -478,8 +470,8 @@ static Cell local transUpdFlds(Cell e, List cs,
         Cell pat = c;
         Cell rhs = c;
         List as = args;
-        Int m = nameRec(c)->arity;
-        Int i;
+        int m = nameRec(c)->arity;
+        int i;
 
         for (i = m; i > 0; i--) { /* pat  = C a1 ... am              */
             Cell a = inventVar(); /* rhs  = C a1 ... am              */
@@ -516,8 +508,8 @@ static Cell local transUpdFlds(Cell e, List cs,
  * a newtype construction.
  * ------------------------------------------------------------------------*/
 
-Bool failFree(Cell pat) /* is pattern failure free?              */
-{                       /* (can we omit the default case?)       */
+/* Is pattern failure free? (can we omit the default case?) */
+bool failFree(Cell pat) {
     Cell c = getHead(pat);
 
     switch (whatIs(c)) {
@@ -526,39 +518,38 @@ Bool failFree(Cell pat) /* is pattern failure free?              */
 
     case NAME:
         if (!isCfun(c) || cfunOf(c) != 0)
-            return FALSE;
+            return false;
         /*intentional fall-thru*/
     case TUPLE:
         for (; isAp(pat); pat = fun(pat))
             if (!failFree(arg(pat)))
-                return FALSE;
+                return false;
         /*intentional fall-thru*/
     case LAZYPAT:
     case VAROPCELL:
     case VARIDCELL:
     case DICTVAR:
     case WILDCARD:
-        return TRUE;
+        return true;
 
     case CONFLDS:
         if (cfunOf(fst(snd(c))) == 0) {
             List fs = snd(snd(c));
             for (; nonNull(fs); fs = tl(fs))
                 if (!failFree(snd(hd(fs))))
-                    return FALSE;
-            return TRUE;
+                    return false;
+            return true;
         }
         /*intentional fall-thru*/
     default:
-        return FALSE;
+        return false;
     }
 }
 
-static Cell local
-refutePat(Cell pat) /* find pattern to refute in conformality*/
-{                   /* test with pat.                        */
-                    /* e.g. refPat  (x:y) == (_:_)           */
-                    /*      refPat ~(x:y) == _      etc..    */
+/* Find pattern to refute in conformality test with pat. */
+static Cell refutePat(Cell pat) {
+    /* e.g. refPat  (x:y) == (_:_)           */
+    /*      refPat ~(x:y) == _      etc..    */
 
     switch (whatIs(pat)) {
     case ASPAT:
@@ -604,9 +595,8 @@ refutePat(Cell pat) /* find pattern to refute in conformality*/
     }
 }
 
-static Cell local
-refutePatAp(Cell p) /* find pattern to refute in conformality*/
-{
+/* Find pattern to refute in conformality */
+static Cell refutePatAp(Cell p) {
     Cell h = getHead(p);
     if (h == nameFromInt || h == nameFromInteger || h == nameFromDouble)
         return p;
@@ -617,10 +607,9 @@ refutePatAp(Cell p) /* find pattern to refute in conformality*/
     }
 }
 
-static Cell local
-matchPat(Cell pat) /* find pattern to match against           */
-{                  /* replaces parts of pattern that do not   */
-    /* include variables with wildcards        */
+/* Find pattern to match against; replaces parts of pattern that do not include
+ * variables with wildcards */
+static Cell matchPat(Cell pat) {
     switch (whatIs(pat)) {
     case ASPAT: {
         Cell p = matchPat(snd(snd(pat)));
@@ -644,12 +633,12 @@ matchPat(Cell pat) /* find pattern to match against           */
         Cell ps = NIL;
         Name c = fst(snd(pat));
         Cell fs = snd(snd(pat));
-        Bool avar = FALSE;
+        bool avar = false;
         for (; nonNull(fs); fs = tl(fs)) {
             Cell p = matchPat(snd(hd(fs)));
             ps = cons(pair(fst(hd(fs)), p), ps);
             if (p != WILDCARD)
-                avar = TRUE;
+                avar = true;
         }
         return avar ? pair(CONFLDS, pair(c, rev(ps))) : WILDCARD;
     }
@@ -677,11 +666,11 @@ matchPat(Cell pat) /* find pattern to match against           */
             return WILDCARD;
         else {
             List args = NIL;
-            Bool avar = FALSE;
+            bool avar = false;
             for (; isAp(pat); pat = fun(pat)) {
                 Cell p = matchPat(arg(pat));
                 if (p != WILDCARD)
-                    avar = TRUE;
+                    avar = true;
                 args = cons(p, args);
             }
             return avar ? applyToArgs(pat, args) : WILDCARD;
@@ -696,10 +685,9 @@ matchPat(Cell pat) /* find pattern to match against           */
 
 #define addEqn(v, val, lds) cons(pair(v, singleton(pair(NIL, val))), lds)
 
-static List local remPat(Cell pat, Cell expr, List lds)
-/* Produce list of definitions for eqn   */
-/* pat = expr, including a conformality  */
-{ /* check if required.                    */
+/* Produce list of definitions for eqn pat = expr, including a conformality
+ * check if required. */
+static List remPat(Cell pat, Cell expr, List lds) {
     Cell refPat = refutePat(pat);
     Cell varPat = matchPat(pat);
 
@@ -741,10 +729,8 @@ static List local remPat(Cell pat, Cell expr, List lds)
     return remPat1(varPat, expr, lds);
 }
 
-static List local remPat1(Cell pat, Cell expr, List lds)
-/* Add definitions for: pat = expr to    */
-/* list of local definitions in lds.     */
-{
+/* Add definitions for: pat = expr to list of local definitions in lds. */
+static List remPat1(Cell pat, Cell expr, List lds) {
     Cell c = getHead(pat);
 
     switch (whatIs(c)) {
@@ -775,10 +761,10 @@ static List local remPat1(Cell pat, Cell expr, List lds)
 
     case CONFLDS: {
         Name h = fst(snd(pat));
-        Int m = nameRec(h)->arity;
+        int m = nameRec(h)->arity;
         Cell p = h;
         List fs = snd(snd(pat));
-        Int i = m;
+        int i = m;
         while (0 < i--)
             p = ap(p, WILDCARD);
         for (; nonNull(fs); fs = tl(fs)) {
@@ -812,7 +798,7 @@ static List local remPat1(Cell pat, Cell expr, List lds)
 
         if (nonNull(ps)) {
             Cell nv, sel;
-            Int i;
+            int i;
 
             if (isVar(expr) || isName(expr))
                 nv = expr;
@@ -855,11 +841,9 @@ static Offset freeBegin; /* only variables with offset <= freeBegin are of */
 static List freeVars;    /* interest as `free' variables                   */
 static List freeFuns;    /* List of `free' local functions                 */
 
-static Cell local pmcTerm(Int co, List sc,
-                          Cell e) /* apply pattern matching compiler  */
-                                  /* co = current offset              */
-                                  /* sc = scope                       */
-{                                 /* e  = expr to transform           */
+/* Apply pattern matching compiler co = current offset sc = scope e = expr to
+ * transform */
+static Cell pmcTerm(int co, List sc, Cell e) {
     stackCheck();
     switch (whatIs(e)) {
     case GUARDED:
@@ -899,24 +883,19 @@ static Cell local pmcTerm(Int co, List sc,
     return e;
 }
 
-static Cell local pmcPair(Int co, List sc,
-                          Pair pr) /* apply pattern matching compiler  */
-                                   /* to a pair of exprs               */
-{
+/* Apply pattern matching compiler to a pair of exprs */
+static Cell pmcPair(int co, List sc, Pair pr) {
     return pair(pmcTerm(co, sc, fst(pr)), pmcTerm(co, sc, snd(pr)));
 }
 
-static Cell local pmcTriple(Int co, List sc,
-                            Triple tr) /* apply pattern matching compiler  */
-                                       /* to a triple of exprs             */
-{
+/* Apply pattern matching compiler to a triple of exprs */
+static Cell pmcTriple(int co, List sc, Triple tr) {
     return triple(pmcTerm(co, sc, fst3(tr)), pmcTerm(co, sc, snd3(tr)),
                   pmcTerm(co, sc, thd3(tr)));
 }
 
-static Cell local pmcVar(List sc, Text t) /* find translation of variable     */
-                                          /* in current scope                 */
-{
+/* Find translation of variable in current scope */
+static Cell pmcVar(List sc, Text t) {
     List xs;
     Name n;
 
@@ -942,18 +921,15 @@ static Cell local pmcVar(List sc, Text t) /* find translation of variable     */
     return n;
 }
 
-static Void local pmcLetrec(Int co, List sc,
-                            Pair e) /* apply pattern matching compiler  */
-                                    /* to LETREC, splitting decls into  */
-                                    /* two sections                     */
-{
+/* Apply pattern matching compiler to LETREC, splitting decls into two sections */
+static void pmcLetrec(int co, List sc, Pair e) {
     List fs = NIL; /* local function definitions       */
     List vs = NIL; /* local variable definitions       */
     List ds;
 
     for (ds = fst(e); nonNull(ds); ds = tl(ds)) { /* Split decls into two */
         Cell v = fst(hd(ds));
-        Int arity = length(fst(hd(snd(hd(ds)))));
+        int arity = length(fst(hd(snd(hd(ds)))));
 
         if (arity == 0) { /* Variable declaration */
             vs = cons(snd(hd(ds)), vs);
@@ -972,24 +948,21 @@ static Void local pmcLetrec(Int co, List sc,
     freeFuns = diffList(freeFuns, fs); /* Delete any `freeFuns' bound in fs*/
 }
 
-static Cell local pmcVarDef(Int co, List sc,
-                            List vd) /* apply pattern matching compiler  */
-                                     /* to variable definition           */
-{                                    /* vd :: [ ([], rhs) ]              */
+/* Apply pattern matching compiler to variable definition vd :: [ ([], rhs) ] */
+static Cell pmcVarDef(int co, List sc, List vd) {
     Cell d = snd(hd(vd));
     if (nonNull(tl(vd)) && canFail(d))
         return ap(FATBAR, pair(pmcTerm(co, sc, d), pmcVarDef(co, sc, tl(vd))));
     return pmcTerm(co, sc, d);
 }
 
-static Void local pmcFunDef(Int co, List sc,
-                            Triple fd) /* apply pattern matching compiler  */
-                                       /* to function definition           */
-{                                      /* fd :: (Var, Arity, [Alt])        */
+/* Apply pattern matching compiler to function definition fd :: (Var, Arity,
+ * [Alt]) */
+static void pmcFunDef(int co, List sc, Triple fd) {
     Offset saveFreeBegin = freeBegin;
     List saveFreeVars = freeVars;
     List saveFreeFuns = freeFuns;
-    Int arity = intOf(snd3(fd));
+    int arity = intOf(snd3(fd));
     Cell temp = altsMatch(co + 1, arity, sc, thd3(fd));
     Cell xs;
 
@@ -1046,11 +1019,9 @@ static Void local pmcFunDef(Int co, List sc,
 #define maRhs(ma) snd(snd(ma))
 #define extSc(v, o, ma) maSc(ma) = cons(pair(v, o), maSc(ma))
 
-static List local altsMatch(Int co, Int n, List sc,
-                            List as) /* Make a list of matches from list*/
-                                     /* of Alts, with initial offsets   */
-                                     /* reverse (take n [co..])         */
-{
+/* Make a list of matches from list of Alts, with initial offsets reverse (take
+ * n [co..]) */
+static List altsMatch(int co, int n, List sc, List as) {
     List mas = NIL;
     List us = NIL;
     for (; n > 0; n--)
@@ -1060,12 +1031,11 @@ static List local altsMatch(Int co, Int n, List sc,
     return rev(mas);
 }
 
-static Cell local match(Int co,
-                        List mas) /* Generate case statement for Matches mas */
-                                  /* at current offset co                    */
-{                                 /* N.B. Assumes nonNull(mas).              */
-    Cell srhs = NIL;              /* Rhs for selected matches                */
-    List smas = mas;              /* List of selected matches                */
+/* Generate case statement for Matches mas at current offset co N.B. Assumes
+ * nonNull(mas). */
+static Cell match(int co, List mas) {
+    Cell srhs = NIL; /* Rhs for selected matches                */
+    List smas = mas; /* List of selected matches                */
     mas = tl(mas);
     tl(smas) = NIL;
 
@@ -1078,10 +1048,10 @@ static Cell local match(Int co,
         }
         srhs = joinMas(co, rev(smas));
     } else { /* Non-empty match                 */
-        Int o = offsetOf(hd(maOffs(hd(smas))));
+        int o = offsetOf(hd(maOffs(hd(smas))));
         Cell d = maDiscr(hd(smas));
         if (isNumDiscr(d)) { /* Numeric match                   */
-            Int da = discrArity(d);
+            int da = discrArity(d);
             Cell d1 = pmcTerm(co, maSc(hd(smas)), d);
             while (nonNull(mas) && !emptyMatch(hd(mas)) &&
                    o == offsetOf(hd(maOffs(hd(mas)))) &&
@@ -1096,7 +1066,7 @@ static Cell local match(Int co,
             srhs = ap(NUMCASE, triple(mkOffset(o), d1, match(co + da, smas)));
         } else { /* Constructor match               */
             List tab = addConTable(d, hd(smas), NIL);
-            Int da;
+            int da;
             while (nonNull(mas) && !emptyMatch(hd(mas)) &&
                    o == offsetOf(hd(maOffs(hd(mas)))) &&
                    !isNumDiscr(d = maDiscr(hd(mas)))) {
@@ -1116,10 +1086,9 @@ static Cell local match(Int co,
     return nonNull(mas) ? ap(FATBAR, pair(srhs, match(co, mas))) : srhs;
 }
 
-static Cell local joinMas(Int co,
-                          List mas) /* Combine list of matches into rhs*/
-                                    /* using FATBARs as necessary      */
-{                                   /* Non-empty list of empty matches */
+/* Combine list of matches into rhs using FATBARs as necessary Non-empty list
+ * of empty matches */
+static Cell joinMas(int co, List mas) {
     Cell ma = hd(mas);
     Cell rhs = pmcTerm(co, maSc(ma), maRhs(ma));
     if (nonNull(tl(mas)) && canFail(rhs))
@@ -1128,15 +1097,15 @@ static Cell local joinMas(Int co,
         return rhs;
 }
 
-static Bool local canFail(Cell rhs) /* Determine if expression (as rhs) */
-{                                   /* might ever be able to fail       */
+/* Determine if expression (as rhs) might ever be able to fail */
+static bool canFail(Cell rhs) {
     switch (whatIs(rhs)) {
     case LETREC:
         return canFail(snd(snd(rhs)));
     case GUARDED:
-        return TRUE; /* could get more sophisticated ..? */
+        return true; /* could get more sophisticated ..? */
     default:
-        return FALSE;
+        return false;
     }
 }
 
@@ -1149,9 +1118,8 @@ static Bool local canFail(Cell rhs) /* Determine if expression (as rhs) */
  *              | otherwise  = (n,sws):addTable x y zs
  */
 
-static List local addConTable(Cell x, Cell y,
-                              List tab) /* add element (x,y) to table       */
-{
+/* Add element (x,y) to table */
+static List addConTable(Cell x, Cell y, List tab) {
     if (isNull(tab))
         return singleton(pair(x, singleton(y)));
     else if (fst(hd(tab)) == x)
@@ -1162,11 +1130,8 @@ static List local addConTable(Cell x, Cell y,
     return tab;
 }
 
-static Void local advance(Int co, Int a,
-                          Cell ma) /* Advance non-empty match by      */
-                                   /* processing head pattern         */
-                                   /* discriminator arity             */
-{
+/* Advance non-empty match by processing head pattern discriminator arity */
+static void advance(int co, int a, Cell ma) {
     Cell p = hd(maPats(ma));
     List ps = tl(maPats(ma));
     List us = tl(maOffs(ma));
@@ -1196,9 +1161,8 @@ static Void local advance(Int co, Int a,
  * Normalize and test for empty match:
  * ------------------------------------------------------------------------*/
 
-static Bool local
-emptyMatch(Cell ma) /* Normalize and test to see if a given    */
-{                   /* match, ma, is empty.                    */
+/* Normalize and test to see if a given match, ma, is empty. */
+static bool emptyMatch(Cell ma) {
 
     while (nonNull(maPats(ma))) {
         Cell p;
@@ -1232,15 +1196,15 @@ emptyMatch(Cell ma) /* Normalize and test to see if a given    */
 
         case FINLIST:
             hd(maPats(ma)) = mkConsList(snd(p));
-            return FALSE;
+            return false;
 
         case STRCELL: {
-            String s = textToStr(textOf(p));
+            char *s = textToStr(textOf(p));
             for (p = NIL; *s != '\0';)
                 p = ap(consChar(getStrChr(&s)), p);
             hd(maPats(ma)) = revOnto(p, nameNil);
         }
-            return FALSE;
+            return false;
 
         case AP:
             if (isName(fun(p)) && isCfun(fun(p)) && cfunOf(fun(p)) == 0 &&
@@ -1252,21 +1216,21 @@ emptyMatch(Cell ma) /* Normalize and test to see if a given    */
         case CHARCELL:
         case NAME:
         case CONFLDS:
-            return FALSE;
+            return false;
 
         default:
             internal("emptyMatch");
         }
     }
-    return TRUE;
+    return true;
 }
 
 /* --------------------------------------------------------------------------
  * Discriminators:
  * ------------------------------------------------------------------------*/
 
-static Cell local maDiscr(Cell ma) /* Get the discriminator for a non-empty   */
-{                                  /* match, ma.                              */
+/* Get the discriminator for a non-empty match, ma. */
+static Cell maDiscr(Cell ma) {
     Cell p = hd(maPats(ma));
     Cell h = getHead(p);
     switch (whatIs(h)) {
@@ -1284,17 +1248,16 @@ static Cell local maDiscr(Cell ma) /* Get the discriminator for a non-empty   */
     return h;
 }
 
-static Bool local
-isNumDiscr(Cell d) /* TRUE => numeric discriminator           */
-{
+/* true => numeric discriminator */
+static bool isNumDiscr(Cell d) {
     switch (whatIs(d)) {
     case NAME:
     case TUPLE:
     case CHARCELL:
-        return FALSE;
+        return false;
 
     case AP:
-        return TRUE; /* must be a literal or (n+k)      */
+        return true; /* must be a literal or (n+k)      */
     default:
         break;
     }
@@ -1302,8 +1265,8 @@ isNumDiscr(Cell d) /* TRUE => numeric discriminator           */
     return 0; /*NOTREACHED*/
 }
 
-Int discrArity(Cell d) /* Find arity of discriminator      */
-{
+/* Find arity of discriminator */
+int discrArity(Cell d) {
     switch (whatIs(d)) {
     case NAME:
         return nameRec(d)->arity;
@@ -1320,9 +1283,8 @@ Int discrArity(Cell d) /* Find arity of discriminator      */
     return 0; /*NOTREACHED*/
 }
 
-static Bool local eqNumDiscr(Cell d1,
-                             Cell d2) /* Determine whether two numeric   */
-{                                     /* descriptors have same value     */
+/* Determine whether two numeric descriptors have same value */
+static bool eqNumDiscr(Cell d1, Cell d2) {
     if (isInt(arg(d1)))
         return isInt(arg(d2)) && intOf(arg(d1)) == intOf(arg(d2));
     if (isDouble(arg(d1)))
@@ -1330,7 +1292,7 @@ static Bool local eqNumDiscr(Cell d1,
     if (isBignum(arg(d1)))
         return isBignum(arg(d2)) && bigCmp(arg(d1), arg(d2)) == 0;
     internal("eqNumDiscr");
-    return FALSE; /*NOTREACHED*/
+    return false; /*NOTREACHED*/
 }
 
 /* --------------------------------------------------------------------------
@@ -1338,9 +1300,8 @@ static Bool local eqNumDiscr(Cell d1,
  *                   functions.  Based on Johnsson's algorithm.
  * ------------------------------------------------------------------------*/
 
-static Cell local lift(Int co, List tr,
-                       Cell e) /* lambda lift term                 */
-{
+/* Lambda lift term */
+static Cell lift(int co, List tr, Cell e) {
     stackCheck();
     switch (whatIs(e)) {
     case GUARDED:
@@ -1394,38 +1355,33 @@ static Cell local lift(Int co, List tr,
     return e;
 }
 
-static Void local liftPair(Int co, List tr,
-                           Pair pr) /* lift pair of terms               */
-{
+/* Lift pair of terms */
+static void liftPair(int co, List tr, Pair pr) {
     fst(pr) = lift(co, tr, fst(pr));
     snd(pr) = lift(co, tr, snd(pr));
 }
 
-static Void local liftTriple(Int co, List tr,
-                             Triple e) /* lift triple of terms             */
-{
+/* Lift triple of terms */
+static void liftTriple(int co, List tr, Triple e) {
     fst3(e) = lift(co, tr, fst3(e));
     snd3(e) = lift(co, tr, snd3(e));
     thd3(e) = lift(co, tr, thd3(e));
 }
 
-static Void local liftAlt(Int co, List tr,
-                          Cell pr) /* lift (discr,case) pair           */
-{                                  /* pr :: (discr,case)               */
+/* Lift (discr,case) pair pr :: (discr,case) */
+static void liftAlt(int co, List tr, Cell pr) {
     snd(pr) = lift(co + discrArity(fst(pr)), tr, snd(pr));
 }
 
-static Void local liftNumcase(Int co, List tr,
-                              Triple nc) /* lift (offset,discr,case)         */
-{
-    Int da = discrArity(snd3(nc));
+/* Lift (offset,discr,case) */
+static void liftNumcase(int co, List tr, Triple nc) {
+    int da = discrArity(snd3(nc));
     snd3(nc) = lift(co, tr, snd3(nc));
     thd3(nc) = lift(co + da, tr, thd3(nc));
 }
 
-static Cell local liftVar(List tr,
-                          Cell e) /* lift variable                    */
-{
+/* Lift variable */
+static Cell liftVar(List tr, Cell e) {
     Text t = textOf(e);
     while (nonNull(tr) && textOf(fst(hd(tr))) != t)
         tr = tl(tr);
@@ -1434,9 +1390,8 @@ static Cell local liftVar(List tr,
     return snd(hd(tr));
 }
 
-static Cell local liftLetrec(Int co, List tr,
-                             Cell e) /* lift letrec term                 */
-{
+/* Lift letrec term */
+static Cell liftLetrec(int co, List tr, Cell e) {
     List vs = fst(fst(snd(e)));
     List fs = snd(fst(snd(e)));
     List fds;
@@ -1466,10 +1421,9 @@ static Cell local liftLetrec(Int co, List tr,
     return e;
 }
 
-static Void local liftFundef(Int co, List tr,
-                             Triple fd) /* lift function definition         */
-{
-    Int arity = intOf(snd3(fd));
+/* Lift function definition */
+static void liftFundef(int co, List tr, Triple fd) {
+    int arity = intOf(snd3(fd));
     newGlobalFunction(
         fst3(fd),                              /* name           */
         arity,                                 /* arity          */
@@ -1498,9 +1452,9 @@ static Void local liftFundef(Int co, List tr,
  */
 
 #if DEBUG_CODE
-extern Void dumpFundefs(List);
+extern void dumpFundefs(List);
 
-Void dumpFundefs(List fs) {
+void dumpFundefs(List fs) {
     Printf("Dumping Fundefs:\n");
     for (; nonNull(fs); fs = tl(fs)) {
         Cell t = hd(fs);
@@ -1522,9 +1476,9 @@ Void dumpFundefs(List fs) {
 }
 #endif
 
-static Void local solve(List fs) /* Solve eqns for lambda-lifting   */
-{                                /* of local function definitions   */
-    Bool hasChanged;
+/* Solve eqns for lambda-lifting of local function definitions */
+static void solve(List fs) {
+    bool hasChanged;
     List fs0, fs1;
 
     /* initial pass distinguishes between those functions defined in fs and
@@ -1556,7 +1510,7 @@ static Void local solve(List fs) /* Solve eqns for lambda-lifting   */
      */
 
     do {
-        hasChanged = FALSE;
+        hasChanged = false;
         for (fs0 = fs; nonNull(fs0); fs0 = tl(fs0)) {
             List fvs0 = fst3(thd3(hd(fs0)));
             for (fs1 = snd3(thd3(hd(fs0))); nonNull(fs1); fs1 = tl(fs1))
@@ -1564,7 +1518,7 @@ static Void local solve(List fs) /* Solve eqns for lambda-lifting   */
                     List fvs1 = fst3(thd3(hd(fs1)));
                     for (; nonNull(fvs1); fvs1 = tl(fvs1))
                         if (!cellIsMember(hd(fvs1), fvs0)) {
-                            hasChanged = TRUE;
+                            hasChanged = true;
                             fvs0 = cons(hd(fvs1), fvs0);
                         }
                 }
@@ -1580,9 +1534,9 @@ static Void local solve(List fs) /* Solve eqns for lambda-lifting   */
  * ------------------------------------------------------------------------*/
 
 static List extraVars;   /* List of additional vars to add to function   */
-static Int numExtraVars; /* Length of extraVars                          */
-static Int localOffset;  /* offset value used in original definition     */
-static Int localArity;   /* arity of function being compiled w/o extras  */
+static int numExtraVars; /* Length of extraVars                          */
+static int localOffset;  /* offset value used in original definition     */
+static int localArity;   /* arity of function being compiled w/o extras  */
 
 /* --------------------------------------------------------------------------
  * Arrangement of arguments on stack prior to call of
@@ -1608,8 +1562,8 @@ static Int localArity;   /* arity of function being compiled w/o extras  */
  * offsets in STACKPART2, adjusting offset values as necessary.
  * ------------------------------------------------------------------------*/
 
-static Cell local preComp(Cell e) /* Adjust output from compiler to  */
-{                                 /* include extra parameters      */
+/* Adjust output from compiler to include extra parameters */
+static Cell preComp(Cell e) {
     stackCheck();
     switch (whatIs(e)) {
     case GUARDED:
@@ -1658,23 +1612,23 @@ static Cell local preComp(Cell e) /* Adjust output from compiler to  */
     return e;
 }
 
-static Cell local preCompPair(Pair e) /* Apply preComp to pair of Exprs   */
-{
+/* Apply preComp to pair of Exprs */
+static Cell preCompPair(Pair e) {
     return pair(preComp(fst(e)), preComp(snd(e)));
 }
 
-static Cell local preCompTriple(Triple e) /* Apply preComp to triple of Exprs */
-{
+/* Apply preComp to triple of Exprs */
+static Cell preCompTriple(Triple e) {
     return triple(preComp(fst3(e)), preComp(snd3(e)), preComp(thd3(e)));
 }
 
-static Void local preCompCase(Pair e) /* Apply preComp to (Discr,Expr)    */
-{
+/* Apply preComp to (Discr,Expr) */
+static void preCompCase(Pair e) {
     snd(e) = preComp(snd(e));
 }
 
-static Cell local preCompOffset(Int n) /* Determine correct offset value  */
-{                                      /* for local variable/function arg.*/
+/* Determine correct offset value for local variable/function arg. */
+static Cell preCompOffset(int n) {
     if (n > localOffset - localArity)
         if (n > localOffset) /* STACKPART3  */
             return mkOffset(n - localOffset + localArity + numExtraVars);
@@ -1682,7 +1636,7 @@ static Cell local preCompOffset(Int n) /* Determine correct offset value  */
             return mkOffset(n - localOffset + localArity);
     else { /* STACKPART2  */
         List fvs = extraVars;
-        Int i = localArity + numExtraVars;
+        int i = localArity + numExtraVars;
 
         for (; nonNull(fvs) && offsetOf(hd(fvs)) != n; --i)
             fvs = tl(fvs);
@@ -1694,7 +1648,8 @@ static Cell local preCompOffset(Int n) /* Determine correct offset value  */
  * Main entry points to compiler:
  * ------------------------------------------------------------------------*/
 
-Void compileExp() { /* compile input expression    */
+/* Compile input expression */
+void compileExp(void) {
     compiler(RESET);
 
     currentName = NIL;
@@ -1708,7 +1663,8 @@ Void compileExp() { /* compile input expression    */
     inputExpr = NIL;
 }
 
-Void compileDefns() { /* compile script definitions        */
+/* Compile script definitions */
+void compileDefns(void) {
     Target t = length(valDefns) + length(genDefns) + length(selDefns);
     Target i = 0;
 
@@ -1731,10 +1687,10 @@ Void compileDefns() { /* compile script definitions        */
     done();
 }
 
-static Void local compileGlobalFunction(Pair bind) {
+static void compileGlobalFunction(Pair bind) {
     Name n = findName(textOf(fst(bind)));
     List defs = snd(bind);
-    Int arity = length(fst(hd(defs)));
+    int arity = length(fst(hd(defs)));
 
     if (isNull(n))
         internal("compileGlobalFunction");
@@ -1746,11 +1702,10 @@ static Void local compileGlobalFunction(Pair bind) {
     nameRec(n)->defn = NIL;
 }
 
-static Void local
-compileGenFunction(Name n) /* Produce code for internally          */
-{                          /* generated function                   */
+/* Produce code for internally generated function */
+static void compileGenFunction(Name n) {
     List defs = nameRec(n)->defn;
-    Int arity = length(fst(hd(defs)));
+    int arity = length(fst(hd(defs)));
 
     compiler(RESET);
     currentName = n;
@@ -1761,12 +1716,13 @@ compileGenFunction(Name n) /* Produce code for internally          */
     nameRec(n)->defn = NIL;
 }
 
-static Name local
-compileSelFunction(Pair p)             /* Produce code for selector func  */
-{                                      /* Should be merged with genDefns, */
-    Name s = fst(p);                   /* but the nameRec(_)->defn field is   */
-    List defs = snd(p);                /* already used for other purposes */
-    Int arity = length(fst(hd(defs))); /* in selector functions.           */
+/* Produce code for selector func Should be merged with genDefns, but the
+ * nameRec(_)->defn field is already used for other purposes in selector
+ * functions. */
+static Name compileSelFunction(Pair p) {
+    Name s = fst(p);
+    List defs = snd(p);
+    int arity = length(fst(hd(defs)));
 
     compiler(RESET);
     mapProc(transAlt, defs);
@@ -1776,8 +1732,7 @@ compileSelFunction(Pair p)             /* Produce code for selector func  */
     return s;
 }
 
-static Void local newGlobalFunction(Name n, Int arity, List fvs, Int co,
-                                    Cell e) {
+static void newGlobalFunction(Name n, int arity, List fvs, int co, Cell e) {
     extraVars = fvs;
     numExtraVars = length(extraVars);
     localOffset = co;
@@ -1799,7 +1754,7 @@ static Cell *const compilerRoots[] = {
     &extraVars,
 };
 
-Void compiler(Int what) {
+void compiler(int what) {
     switch (what) {
     case INSTALL:
         registerRoots(compilerRoots);

@@ -5,10 +5,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: ffi.c,v $
- * $Revision: 1.40 $
- * $Date: 2005/06/21 11:17:48 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -28,21 +24,21 @@
  * Foreign export declarations provide the address of a C symbol.
  * ------------------------------------------------------------------------*/
 
-/* When using the FFI, you first run Cuddles with generateFFI == TRUE
+/* When using the FFI, you first run Cuddles with generateFFI == true
  * to generate C files for any modules which contain foreign import/export
  * declarations.  You then compile and partially link the C files and run
- * Cuddles with generateFFI == FALSE to load the object files and lookup
+ * Cuddles with generateFFI == false to load the object files and lookup
  * the appropriate helper functions in the object files.
  * Only when you run Cuddles in the second mode can you actually execute code.
  */
-Bool generateFFI = FALSE;
+bool generateFFI = false;
 
-Bool generate_ffi = FALSE; /* generate FFI for the current module? */
+bool generate_ffi = false; /* generate FFI for the current module? */
 
-static Int checkCallConv(Int, Text);
+static int checkCallConv(int, Text);
 
 /* Checking if the calling convention is supported */
-static Int checkCallConv(Int line, Text t) {
+static int checkCallConv(int line, Text t) {
     if (t == textCCall)
         return FFI_CCONV_CCALL;
 #if STDCALL_SUPPORTED
@@ -59,15 +55,14 @@ static Int checkCallConv(Int line, Text t) {
  * are unique within each module.  This is done using the foreignCount
  * variable.
  */
-Void foreignImport(Cell l, Cell callconv, Cell safety, Cell ext, Cell intName,
-                   Cell type)
-/* Handle foreign imports    */
-{
+/* Handle foreign imports */
+void foreignImport(Cell l, Cell callconv, Cell safety, Cell ext, Cell intName,
+                   Cell type) {
     Text t = textOf(intName);
     Name n = findName(t);
-    Int sfty;
-    Int cconv;
-    Int line = intOf(l);
+    int sfty;
+    int cconv;
+    int line = intOf(l);
 
     if (isNull(n)) {
         n = newName(t, NIL);
@@ -104,10 +99,9 @@ Void foreignImport(Cell l, Cell callconv, Cell safety, Cell ext, Cell intName,
     foreignImports = cons(n, foreignImports);
 }
 
-Void foreignExport(Cell l, Cell v, Cell callconv, Cell ext, Cell intName,
-                   Cell type)
-/* Handle foreign exports    */
-{
+/* Handle foreign exports */
+void foreignExport(Cell l, Cell v, Cell callconv, Cell ext, Cell intName,
+                   Cell type) {
     /*
      * Export attaches to an existing name in the symbol table.
      * We generate a new name whose definition is
@@ -125,8 +119,8 @@ Void foreignExport(Cell l, Cell v, Cell callconv, Cell ext, Cell intName,
      * invented Text so we generate the text by adding a prefix
      * to the start which cannot conflict with normal identifiers.
      */
-    Int line = intOf(l);
-    Int cconv;
+    int line = intOf(l);
+    int cconv;
     Text t = concatText("--FFI_", textToStr(textOf(ext)));
     Name n = newName(t, NIL);
 
@@ -154,34 +148,34 @@ Void foreignExport(Cell l, Cell v, Cell callconv, Cell ext, Cell intName,
     foreignExports = cons(n, foreignExports);
 }
 
-static String skipSpaces(String);
-static String matchToken(String, String);
-static String skipToSpace(String);
-static String skipToChar(String, int);
-static String matchFname(String);
+static char *skipSpaces(char *);
+static char *matchToken(char *, char *);
+static char *skipToSpace(char *);
+static char *skipToChar(char *, int);
+static char *matchFname(char *);
 
-static String skipSpaces(String s) {
+static char *skipSpaces(char *s) {
     while (isspace(*s)) {
         ++s;
     }
     return s;
 }
 
-static String skipToSpace(String s) {
+static char *skipToSpace(char *s) {
     while (*s != '\0' && !isspace(*s)) {
         ++s;
     }
     return s;
 }
 
-static String skipToChar(String s, int c) {
+static char *skipToChar(char *s, int c) {
     while (*s != '\0' && *s != c) {
         ++s;
     }
     return s;
 }
 
-static String matchToken(String t, String s) {
+static char *matchToken(char *t, char *s) {
     while (*t != '\0' && *t == *s) {
         ++t;
         ++s;
@@ -193,8 +187,8 @@ static String matchToken(String t, String s) {
     }
 }
 
-static String matchFname(String s) {
-    String t = skipToSpace(s);
+static char *matchFname(char *s) {
+    char *t = skipToSpace(s);
     if (t - s >= 3 && t[-2] == '.' && t[-1] == 'h') {
         return t;
     } else {
@@ -224,15 +218,15 @@ static List peelArgTypes(Type t, Type *resultTy) {
     return rev(argTys);
 }
 
-Void checkForeignImport(Name p) /* Check foreign import          */
-{
-    Int line = nameRec(p)->line;
-    String ext = textToStr(nameRec(p)->extFun);
-    String e = 0;
+/* Check foreign import */
+void checkForeignImport(Name p) {
+    int line = nameRec(p)->line;
+    char *ext = textToStr(nameRec(p)->extFun);
+    char *e = 0;
     Type t = NIL;
     List argTys = NIL;
 
-    Bool generate_stub = generate_ffi;
+    bool generate_stub = generate_ffi;
 
     emptySubstitution();
     nameRec(p)->type = checkSigType(
@@ -249,7 +243,7 @@ Void checkForeignImport(Name p) /* Check foreign import          */
     ext = skipSpaces(ext);
     if ((e = matchToken("dynamic", ext))) { /* dynamic import */
         Type ta = NIL;
-        Bool isIO = FALSE;
+        bool isIO = false;
 
         e = skipSpaces(e);
         if (*e != '\0')
@@ -273,7 +267,7 @@ Void checkForeignImport(Name p) /* Check foreign import          */
         /* ToDo: check that ta == argTys -> t and check it's a valid type */
 
         if (getHead(t) == typeIO && argCount == 1) {
-            isIO = TRUE;
+            isIO = true;
             t = fullerExpand(hd(getArgs(t)));
         }
 
@@ -285,7 +279,7 @@ Void checkForeignImport(Name p) /* Check foreign import          */
         }
 
     } else if ((e = matchToken("wrapper", ext))) { /* thunk builder */
-        Bool isIO = FALSE;
+        bool isIO = false;
 
         e = skipSpaces(e);
         if (*e != '\0')
@@ -308,7 +302,7 @@ Void checkForeignImport(Name p) /* Check foreign import          */
         argTys = peelArgTypes(t, &t); /* arguments; the result stays in t */
 
         if (getHead(t) == typeIO && argCount == 1) {
-            isIO = TRUE;
+            isIO = true;
             t = fullerExpand(hd(getArgs(t)));
         }
         t = fullerExpand(t);
@@ -330,22 +324,22 @@ Void checkForeignImport(Name p) /* Check foreign import          */
          *  ['static'] ['ctor' | 'field' | 'method' ] ['[' lib ']'] [cid]
          *
          */
-        Bool isStatic = FALSE;
+        bool isStatic = false;
         Text fn = -1;
         Text cid = -1;
-        Bool isLabel = FALSE;
+        bool isLabel = false;
 
         if ((e = matchToken("static", ext))) {
-            isStatic = TRUE;
+            isStatic = true;
             ext = skipSpaces(e);
         }
         if ((e = matchFname(ext))) {
-            fn = subText(ext, (Int)(e - ext));
+            fn = subText(ext, (int)(e - ext));
             ext = skipSpaces(e);
         }
 
         if ((e = matchToken("&", ext))) {
-            isLabel = TRUE;
+            isLabel = true;
             ext = skipSpaces(e);
         }
 
@@ -359,7 +353,7 @@ Void checkForeignImport(Name p) /* Check foreign import          */
         }
         if (*ext != '\0') {
             e = skipToSpace(ext);
-            cid = subText(ext, (Int)(e - ext));
+            cid = subText(ext, (int)(e - ext));
             ext = skipSpaces(e);
         } else {
             cid = nameRec(p)->text;
@@ -382,10 +376,10 @@ Void checkForeignImport(Name p) /* Check foreign import          */
                 nameRec(p)->extFun = cid;
             }
         } else {
-            Bool isIO = FALSE;
+            bool isIO = false;
 
             if (getHead(t) == typeIO && argCount == 1) {
-                isIO = TRUE;
+                isIO = true;
                 t = fullerExpand(hd(getArgs(t)));
             }
 
@@ -423,13 +417,13 @@ labelerr:
     errFail();
 }
 
-Void checkForeignExport(Name p) /* Check foreign export      */
-{
-    Int line = nameRec(p)->line;
+/* Check foreign export */
+void checkForeignExport(Name p) {
+    int line = nameRec(p)->line;
     Text ext = nameRec(p)->extFun;
     Type t;
     List argTys = NIL;
-    Bool isIO = FALSE;
+    bool isIO = false;
 
     emptySubstitution();
     nameRec(p)->type =
@@ -441,7 +435,7 @@ Void checkForeignExport(Name p) /* Check foreign export      */
 
     if (getHead(t) == typeIO && argCount == 1) {
         t = fullerExpand(hd(getArgs(t)));
-        isIO = TRUE;
+        isIO = true;
     }
 
     if (generate_ffi) {
@@ -451,8 +445,8 @@ Void checkForeignExport(Name p) /* Check foreign export      */
     }
 }
 
-Void linkForeign(Name p) /* Link an ffi-generated primitive */
-{
+/* Link an ffi-generated primitive */
+void linkForeign(Name p) {
     addPrim(nameRec(p)->line, p, textToStr(nameRec(p)->text), nameRec(p)->mod,
             nameRec(p)->type);
 }
@@ -461,21 +455,21 @@ Void linkForeign(Name p) /* Link an ffi-generated primitive */
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local foreignType(Int, Type);
-static Void local foreignGet(Int, Type, String, Int);
-static Void local foreignPut(Int, Type, String, Int);
-static Void local ffiInclude(Text);
-static Void local checkCEntity(Int, Text);
-static Void local ffiDeclare(Int, Type, String, Int);
-static Void local ffiDeclareList(Int, List, String);
-static Void local ffiGetList(Int, List, String);
-static Void local ffiPutList(Int, List, String);
-static Void local ffiCallFun(Int, Text, List, List);
-static Void local ffiDeclareFun(Int, Text, Bool, Bool, List, Type);
-static Void local ffiFunTypeCast(Int, List, Type);
-static Void local ffiPrimProto(Text, Int);
-static Void local ffiPrimHeader(Text, Int);
-static Void local ffiReturn(Type, String, Int);
+static void foreignType(int, Type);
+static void foreignGet(int, Type, char *, int);
+static void foreignPut(int, Type, char *, int);
+static void ffiInclude(Text);
+static void checkCEntity(int, Text);
+static void ffiDeclare(int, Type, char *, int);
+static void ffiDeclareList(int, List, char *);
+static void ffiGetList(int, List, char *);
+static void ffiPutList(int, List, char *);
+static void ffiCallFun(int, Text, List, List);
+static void ffiDeclareFun(int, Text, bool, bool, List, Type);
+static void ffiFunTypeCast(int, List, Type);
+static void ffiPrimProto(Text, int);
+static void ffiPrimHeader(Text, int);
+static void ffiReturn(Type, char *, int);
 
 static FILE *out = NIL;     /* file we're generating code into */
 static List includes = NIL; /* files already #included         */
@@ -486,7 +480,7 @@ static Cell *const ffiRoots[] = {
     &includes,
 };
 
-Void ffi(Int what) {
+void ffi(int what) {
     switch (what) {
     case RESET:
         if (out) {
@@ -503,14 +497,14 @@ Void ffi(Int what) {
     }
 }
 
-static String ffiFlags = 0; /* extra flags for compilation command line */
+static char *ffiFlags = 0; /* extra flags for compilation command line */
 
-Void ffiSetFlags(String s) {
+void ffiSetFlags(char *s) {
     if (s == 0)
         return;
     if (ffiFlags) {
-        Int l = (Int)strlen(ffiFlags);
-        String t = (char *)realloc(ffiFlags, l + strlen(s) + 2);
+        int l = (int)strlen(ffiFlags);
+        char *t = (char *)realloc(ffiFlags, l + strlen(s) + 2);
         if (t == 0) { /* keep old ffiFlags on failure     */
             errHead(0);
             errPrintf("String storage space exhausted");
@@ -524,14 +518,14 @@ Void ffiSetFlags(String s) {
     }
 }
 
-static String cppDirectives = 0; /* extra C preprocessor directives */
+static char *cppDirectives = 0; /* extra C preprocessor directives */
 
-Void ffiAddCppInclude(String s) {
-    Int l;
-    String t;
-    Int needed = (Int)strlen(s) + 11;
+void ffiAddCppInclude(char *s) {
+    int l;
+    char *t;
+    int needed = (int)strlen(s) + 11;
     if (cppDirectives) {
-        l = (Int)strlen(cppDirectives);
+        l = (int)strlen(cppDirectives);
         t = (char *)realloc(cppDirectives, l + needed);
     } else {
         l = 0;
@@ -543,15 +537,15 @@ Void ffiAddCppInclude(String s) {
         errFail();
     }
     cppDirectives = t;
-    sprintf(cppDirectives + l, "#include %s\n", s);
+    snprintf(cppDirectives + l, needed, "#include %s\n", s);
 }
 
-Bool foreignNeedStubs(List imps, List exps) {
+bool foreignNeedStubs(List imps, List exps) {
     return (nonNull(imps) || nonNull(exps));
 }
 
-Void foreignHeader(String fn) {
-    String fnm = mkFFIFilename(fn);
+void foreignHeader(char *fn) {
+    char *fnm = mkFFIFilename(fn);
     FILE *f = fopen(fnm, "w");
     if (f == NULL) {
         errHead(0);
@@ -568,7 +562,7 @@ Void foreignHeader(String fn) {
     fprintf(out, "static CuddlesAPI5 *cuddles = 0;\n");
 }
 
-Void foreignFooter(String fn, Text mn, List is, List es) {
+void foreignFooter(char *fn, Text mn, List is, List es) {
     List xs = NIL;
     fprintf(out, "\n");
 
@@ -584,7 +578,7 @@ Void foreignFooter(String fn, Text mn, List is, List es) {
     for (xs = es; nonNull(xs); xs = tl(xs)) {
         Name n = hd(xs);
         Text ext = nameRec(n)->extFun;
-        Bool dynamic = inventedText(ext);
+        bool dynamic = inventedText(ext);
         if (dynamic) {
             fprintf(out, "    {\"%s\", 3, ", textToStr(nameRec(n)->text));
             fprintf(out, "cuddlesprim_%s},\n", textToStr(nameRec(n)->extFun));
@@ -608,7 +602,7 @@ Void foreignFooter(String fn, Text mn, List is, List es) {
     for (xs = es; nonNull(xs); xs = tl(xs)) {
         Name n = hd(xs);
         Text ext = nameRec(n)->extFun;
-        Bool dynamic = inventedText(ext);
+        bool dynamic = inventedText(ext);
         if (!dynamic) {
             fprintf(out, "        cuddles_stable_for_%s = ", textToStr(ext));
             fprintf(out, "cuddles->lookupName(");
@@ -629,8 +623,8 @@ Void foreignFooter(String fn, Text mn, List is, List es) {
     fprintf(out, "#ifdef STATIC_LINKAGE\n");
     fprintf(out, "#define initModule init");
     {
-        String s = textToStr(mn);
-        String next;
+        char *s = textToStr(mn);
+        char *next;
         while ((next = strchr(s, '.')) != NULL) {
             fprintf(out, "%c", s[0]);
             s = next + 1;
@@ -690,46 +684,46 @@ Void foreignFooter(String fn, Text mn, List is, List es) {
 
 struct ffiType {
     const Type *ty; /* the type, or the head of the application */
-    Bool applied;   /* match getHead(t) rather than t           */
-    String hsType;  /* C type it is declared with, 0 for ()     */
-    String marshal; /* suffix of the get/put pair               */
+    bool applied;   /* match getHead(t) rather than t           */
+    char *hsType;   /* C type it is declared with, 0 for ()     */
+    char *marshal;  /* suffix of the get/put pair               */
 };
 
 static const struct ffiType ffiTypes[] = {
-    {&typeUnit, FALSE, 0, "Unit"},
-    {&typeChar, FALSE, "HsChar", "Char"},
-    {&typeInt, FALSE, "HsInt", "Int"},
-    {&typeInt8, FALSE, "HsInt8", "Int8"},
-    {&typeInt16, FALSE, "HsInt16", "Int16"},
-    {&typeInt32, FALSE, "HsInt32", "Int32"},
-    {&typeInt64, FALSE, "HsInt64", "Int64"},
-    {&typeWord8, FALSE, "HsWord8", "Word8"},
-    {&typeWord16, FALSE, "HsWord16", "Word16"},
-    {&typeWord32, FALSE, "HsWord32", "Word32"},
-    {&typeWord64, FALSE, "HsWord64", "Word64"},
-    {&typeFloat, FALSE, "HsFloat", "Float"},
-    {&typeDouble, FALSE, "HsDouble", "Double"},
-    {&typeBool, FALSE, "HsBool", "Bool"},
-    {&typeAddr, FALSE, "HsAddr", "Addr"},
-    {&typePtr, TRUE, "HsPtr", "Ptr"},
-    {&typeFunPtr, TRUE, "HsFunPtr", "FunPtr"},
-    {&typeForeign, TRUE, "CuddlesForeign", "Foreign"},
-    {&typeStable, TRUE, "HsStablePtr", "StablePtr4"},
-    {0, FALSE, 0, 0}};
+    {&typeUnit, false, 0, "Unit"},
+    {&typeChar, false, "HsChar", "Char"},
+    {&typeInt, false, "HsInt", "Int"},
+    {&typeInt8, false, "HsInt8", "Int8"},
+    {&typeInt16, false, "HsInt16", "Int16"},
+    {&typeInt32, false, "HsInt32", "Int32"},
+    {&typeInt64, false, "HsInt64", "Int64"},
+    {&typeWord8, false, "HsWord8", "Word8"},
+    {&typeWord16, false, "HsWord16", "Word16"},
+    {&typeWord32, false, "HsWord32", "Word32"},
+    {&typeWord64, false, "HsWord64", "Word64"},
+    {&typeFloat, false, "HsFloat", "Float"},
+    {&typeDouble, false, "HsDouble", "Double"},
+    {&typeBool, false, "HsBool", "Bool"},
+    {&typeAddr, false, "HsAddr", "Addr"},
+    {&typePtr, true, "HsPtr", "Ptr"},
+    {&typeFunPtr, true, "HsFunPtr", "FunPtr"},
+    {&typeForeign, true, "CuddlesForeign", "Foreign"},
+    {&typeStable, true, "HsStablePtr", "StablePtr4"},
+    {0, false, 0, 0}};
 
 /* The row for t, or 0 if the stub generator cannot marshal it.  getHead is
  * called at most once, and only if an application row is reached, so the
  * argCount it leaves behind is the one the chains left. */
-static const struct ffiType *local ffiTypeOf(Type t) {
+static const struct ffiType *ffiTypeOf(Type t) {
     Type h = NIL;
-    Bool haveHead = FALSE;
+    bool haveHead = false;
     const struct ffiType *r;
 
     for (r = ffiTypes; r->ty; ++r) {
         if (r->applied) {
             if (!haveHead) {
                 h = getHead(t);
-                haveHead = TRUE;
+                haveHead = true;
             }
             if (h == *r->ty) {
                 return r;
@@ -742,7 +736,7 @@ static const struct ffiType *local ffiTypeOf(Type t) {
 }
 
 /* The tail the three chains shared, under their three different headings. */
-static Void local ffiTypeError(Int l, String what, Type t) {
+static void ffiTypeError(int l, char *what, Type t) {
     errHead(l);
     errPrintf("%s", what);
     errPrintf(" \"");
@@ -751,7 +745,7 @@ static Void local ffiTypeError(Int l, String what, Type t) {
     errFail();
 }
 
-static Void local foreignType(Int l, Type t) {
+static void foreignType(int l, Type t) {
     const struct ffiType *r = ffiTypeOf(t);
     if (r == 0 || r->hsType == 0) { /* () is not a C type */
         ffiTypeError(l, "Illegal foreign type", t);
@@ -759,7 +753,7 @@ static Void local foreignType(Int l, Type t) {
     fprintf(out, "%s", r->hsType);
 }
 
-static Void local foreignGet(Int l, Type t, String nm, Int num) {
+static void foreignGet(int l, Type t, char *nm, int num) {
     const struct ffiType *r = ffiTypeOf(t);
     if (r == 0) {
         ffiTypeError(l, "Illegal outbound (away from Haskell) type", t);
@@ -771,7 +765,7 @@ static Void local foreignGet(Int l, Type t, String nm, Int num) {
     }
 }
 
-static Void local foreignPut(Int l, Type t, String nm, Int num) {
+static void foreignPut(int l, Type t, char *nm, int num) {
     const struct ffiType *r = ffiTypeOf(t);
     if (r == 0) {
         ffiTypeError(l, "Illegal inbound (coming into Haskell) type", t);
@@ -783,8 +777,8 @@ static Void local foreignPut(Int l, Type t, String nm, Int num) {
     }
 }
 
-static Void local ffiInclude(Text fn) /* Add #include  */
-{
+/* Add #include */
+static void ffiInclude(Text fn) {
     if (fn != -1 && !varIsMember(fn, includes)) {
         fprintf(out, "#include \"%s\"\n", textToStr(fn));
         includes = cons(mkVar(fn), includes);
@@ -801,10 +795,10 @@ static Void local ffiInclude(Text fn) /* Add #include  */
  * uncompilable C and a C compiler error instead of a Cuddles one; catch that
  * here instead.
  */
-static Void local checkCEntity(Int line, Text cid) {
-    String s = textToStr(cid);
-    String p = s;
-    Bool ok =
+static void checkCEntity(int line, Text cid) {
+    char *s = textToStr(cid);
+    char *p = s;
+    bool ok =
         (*p == '_' || (*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z'));
     for (++p; ok && *p; p++)
         ok = (*p == '_' || (*p >= 'A' && *p <= 'Z') ||
@@ -817,9 +811,8 @@ static Void local checkCEntity(Int line, Text cid) {
     }
 }
 
-static Void local ffiDeclare(Int line, Type ty, String prefix,
-                             Int i) /* Declare variable  */
-{
+/* Declare variable */
+static void ffiDeclare(int line, Type ty, char *prefix, int i) {
     if (ty != typeUnit) {
         fprintf(out, "    ");
         foreignType(line, ty);
@@ -827,9 +820,8 @@ static Void local ffiDeclare(Int line, Type ty, String prefix,
     }
 }
 
-static Void local ffiReturn(Type ty, String prefix,
-                            Int i) /* Return variable  */
-{
+/* Return variable */
+static void ffiReturn(Type ty, char *prefix, int i) {
     if (ty != typeUnit) {
         fprintf(out, "    return %s%d;\n", prefix, i);
     } else {
@@ -837,40 +829,36 @@ static Void local ffiReturn(Type ty, String prefix,
     }
 }
 
-static Void local ffiDeclareList(Int line, List tys,
-                                 String prefix) /* Declare variables */
-{
-    Int i;
+/* Declare variables */
+static void ffiDeclareList(int line, List tys, char *prefix) {
+    int i;
     for (i = 1; nonNull(tys); tys = tl(tys), ++i) {
         ffiDeclare(line, hd(tys), prefix, i);
     }
 }
 
-static Void local ffiGetList(Int line, List tys,
-                             String prefix) /* Get values from Haskell */
-{
-    Int i;
+/* Get values from Haskell */
+static void ffiGetList(int line, List tys, char *prefix) {
+    int i;
     for (i = 1; nonNull(tys); tys = tl(tys), ++i) {
         fprintf(out, "    ");
         foreignGet(line, hd(tys), prefix, i);
     }
 }
 
-static Void local ffiPutList(Int line, List tys,
-                             String prefix) /* Put values to Haskell */
-{
-    Int i;
+/* Put values to Haskell */
+static void ffiPutList(int line, List tys, char *prefix) {
+    int i;
     for (i = 1; nonNull(tys); tys = tl(tys), ++i) {
         fprintf(out, "    ");
         foreignPut(line, hd(tys), prefix, i);
     }
 }
 
-static Void local ffiDeclareFun(Int line, Text n, Bool indirect, Bool extraArg,
-                                List argTys, List resultTy)
 /* Add a StablePtr argument? */
-{
-    Int i;
+static void ffiDeclareFun(int line, Text n, bool indirect, bool extraArg,
+                          List argTys, List resultTy) {
+    int i;
     if (resultTy == typeUnit) {
         fprintf(out, "void");
     } else {
@@ -898,7 +886,7 @@ static Void local ffiDeclareFun(Int line, Text n, Bool indirect, Bool extraArg,
     fprintf(out, ")");
 }
 
-static Void local ffiFunTypeCast(Int line, List argTys, List resultTy) {
+static void ffiFunTypeCast(int line, List argTys, List resultTy) {
     fprintf(out, "(");
     if (resultTy == typeUnit) {
         fprintf(out, "void");
@@ -915,8 +903,8 @@ static Void local ffiFunTypeCast(Int line, List argTys, List resultTy) {
     fprintf(out, "))");
 }
 
-static Void local ffiCallFun(Int line, Text e, List argTys, Type resultTy) {
-    Int i;
+static void ffiCallFun(int line, Text e, List argTys, Type resultTy) {
+    int i;
     fprintf(out, "    ");
     if (resultTy != typeUnit) {
         fprintf(out, "res1 = ");
@@ -936,7 +924,7 @@ static Void local ffiCallFun(Int line, Text e, List argTys, Type resultTy) {
  * that name is a valid C identifier whereas the Haskell name may
  * not be.
  */
-static Void local ffiPrimProto(Text name, Int id) {
+static void ffiPrimProto(Text name, int id) {
     fprintf(out, "\nstatic void cuddlesprim_%s_%d(CuddlesStackPtr);\n",
             textToStr(name), id);
 }
@@ -946,7 +934,7 @@ static Void local ffiPrimProto(Text name, Int id) {
  * that name is a valid C identifier whereas the Haskell name may
  * not be.
  */
-static Void local ffiPrimHeader(Text name, Int id) {
+static void ffiPrimHeader(Text name, int id) {
     fprintf(out,
             "static void cuddlesprim_%s_%d(CuddlesStackPtr cuddles_root)\n",
             textToStr(name), id);
@@ -976,12 +964,10 @@ static Void local ffiPrimHeader(Text name, Int id) {
  *     }
  * 
  */
-Void implementForeignImport(Int line, Name n, Int id, Text fn, Text cid,
-                            Bool isStatic, Text libName, List argTys, Bool isIO,
-                            Type resultTy)
-/* Include file */
-/* Function name */
-{
+/* Include file Function name */
+void implementForeignImport(int line, Name n, int id, Text fn, Text cid,
+                            bool isStatic, Text libName, List argTys, bool isIO,
+                            Type resultTy) {
 
     checkCEntity(line, cid);
     ffiInclude(fn);
@@ -1008,15 +994,15 @@ Void implementForeignImport(Int line, Name n, Int id, Text fn, Text cid,
     fprintf(out, "}\n");
 }
 
-Void implementForeignImportDynamic(Int line, Int id, Text e, List argTys,
-                                   Bool isIO, Type resultTy) {
+void implementForeignImportDynamic(int line, int id, Text e, List argTys,
+                                   bool isIO, Type resultTy) {
     ffiPrimProto(e, id);
     ffiPrimHeader(e, id);
     fprintf(out, "{\n");
 
     /* Declare arguments and result */
     fprintf(out, "    ");
-    ffiDeclareFun(line, e, TRUE, FALSE, argTys, resultTy);
+    ffiDeclareFun(line, e, true, false, argTys, resultTy);
     fprintf(out, ";\n");
 
     ffiDeclareList(line, argTys, "arg");
@@ -1067,16 +1053,16 @@ Void implementForeignImportDynamic(Int line, Int id, Text e, List argTys,
  *         cuddles->returnIO(cuddles_root,1);
  *     }
  */
-Void implementForeignImportWrapper(Int line, Int id, Text e, List argTys,
-                                   Bool isIO, Type resultTy) {
+void implementForeignImportWrapper(int line, int id, Text e, List argTys,
+                                   bool isIO, Type resultTy) {
     /* Prototype for function we're generating */
     fprintf(out, "\nstatic ");
-    ffiDeclareFun(line, e, FALSE, TRUE, argTys, resultTy);
+    ffiDeclareFun(line, e, false, true, argTys, resultTy);
     fprintf(out, ";\n");
 
     /* The function wrapper */
     fprintf(out, "static ");
-    ffiDeclareFun(line, e, FALSE, TRUE, argTys, resultTy);
+    ffiDeclareFun(line, e, false, true, argTys, resultTy);
     fprintf(out, "\n{\n");
     ffiDeclare(line, resultTy, "res", 1);
 
@@ -1137,19 +1123,19 @@ Void implementForeignImportWrapper(Int line, Int id, Text e, List argTys,
  *     }
  *
  */
-Void implementForeignExport(Int line, Int id, Text e, List argTys, Bool isIO,
+void implementForeignExport(int line, int id, Text e, List argTys, bool isIO,
                             Type resultTy) {
 
     /* Prototype for function we're generating */
     fprintf(out, "\nextern ");
-    ffiDeclareFun(line, e, FALSE, FALSE, argTys, resultTy);
+    ffiDeclareFun(line, e, false, false, argTys, resultTy);
     fprintf(out, ";\n");
 
     fprintf(out, "static CuddlesStablePtr cuddles_stable_for_%s = -1;\n",
             textToStr(e));
 
     /* The function wrapper */
-    ffiDeclareFun(line, e, FALSE, FALSE, argTys, resultTy);
+    ffiDeclareFun(line, e, false, false, argTys, resultTy);
     fprintf(out, "\n{\n");
     ffiDeclare(line, resultTy, "res", 1);
 
@@ -1194,12 +1180,9 @@ Void implementForeignExport(Int line, Int id, Text e, List argTys, Bool isIO,
  *         cuddles_returnId(1);
  *     }
  */
-Void implementForeignImportLabel(Int line, Int id, Text fn, Text cid, Text n,
-                                 Type ty)
-/* Include file */
-/* Function name */
-/* Haskell name */
-{
+/* Include file Function name Haskell name */
+void implementForeignImportLabel(int line, int id, Text fn, Text cid, Text n,
+                                 Type ty) {
     checkCEntity(line, cid);
     ffiInclude(fn);
 

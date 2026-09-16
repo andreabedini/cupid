@@ -17,7 +17,7 @@
 #include "evaluator.h" /* everybody() proto only */
 #include <setjmp.h>
 
-static Void local cuddlesVFPrintf(FILE *, const char *, va_list);
+static void cuddlesVFPrintf(FILE *, const char *, va_list);
 
 jmp_buf catch_error; /* jump buffer for error trapping  */
 
@@ -25,9 +25,11 @@ jmp_buf catch_error; /* jump buffer for error trapping  */
  * Error handling:
  * ------------------------------------------------------------------------*/
 
-Void stopAnyPrinting() {  /* terminate printing of expression,*/
-    if (printing) {       /* after successful termination or  */
-        printing = FALSE; /* runtime error (e.g. interrupt)   */
+/* Terminate printing of expression, after successful termination or runtime
+ * error (e.g. interrupt) */
+void stopAnyPrinting(void) {
+    if (printing) {
+        printing = false;
         Putchar('\n');
         if (showStats) {
 #define plural(v) v, (v == 1 ? "" : "s")
@@ -43,8 +45,8 @@ Void stopAnyPrinting() {  /* terminate printing of expression,*/
     }
 }
 
-Void errHead(Int l) /* print start of error message     */
-{
+/* Print start of error message */
+void errHead(int l) {
     failed(); /* failed to reach target ...       */
     stopAnyPrinting();
     FPrintf(errorStream, "ERROR");
@@ -65,50 +67,53 @@ Void errHead(Int l) /* print start of error message     */
     FFlush(errorStream);
 }
 
-Void errFail() {             /* terminate error message and     */
-    Putc('\n', errorStream); /* produce exception to return to  */
-    FFlush(errorStream);     /* main command loop               */
+/* Terminate error message and produce exception to return to main command loop */
+void errFail(void) {
+    Putc('\n', errorStream);
+    FFlush(errorStream);
     longjmp(catch_error, 1);
 }
 
-Void errPrintf(const char *fmt, ...) /* part of an error message           */
-{
+/* Part of an error message */
+void errPrintf(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     cuddlesVFPrintf(errorStream, fmt, ap);
     va_end(ap);
 }
 
-Void errExpr(Cell e) {
+void errExpr(Cell e) {
     printExp(errorStream, e);
 }
-Void errType(Type t) {
+void errType(Type t) {
     printType(errorStream, t);
 }
-Void errContext(List qs) {
+void errContext(List qs) {
     printContext(errorStream, qs);
 }
-Void errPred(Cell pi) {
+void errPred(Cell pi) {
     printPred(errorStream, pi);
 }
-Void errKind(Kind k) {
+void errKind(Kind k) {
     printKind(errorStream, k);
 }
-Void errKinds(Kinds ks) {
+void errKinds(Kinds ks) {
     printKinds(errorStream, ks);
 }
-Void errFD(Cell fd) {
+void errFD(Cell fd) {
     printFD(errorStream, fd);
 }
 
-Void errAbort() {      /* altern. form of error handling  */
-    failed();          /* used when suitable error message*/
-    stopAnyPrinting(); /* has already been printed        */
+/* Altern. form of error handling used when suitable error message has already
+ * been printed */
+void errAbort(void) {
+    failed();
+    stopAnyPrinting();
     errFail();
 }
 
-Void internal(String msg) /* handle internal error           */
-{
+/* Handle internal error */
+void internal(char *msg) {
     failed();
     stopAnyPrinting();
     Printf("INTERNAL ERROR: %s\n", msg);
@@ -119,8 +124,8 @@ Void internal(String msg) /* handle internal error           */
     longjmp(catch_error, 1);
 }
 
-Void fatal(String msg) /* handle fatal error              */
-{
+/* Handle fatal error */
+void fatal(char *msg) {
     FlushStdout();
     Printf("\nFATAL ERROR: %s\n", msg);
     everybody(EXIT);
@@ -136,9 +141,10 @@ Void fatal(String msg) /* handle fatal error              */
  * safe point.  So the Printf/longjmp/etc below run in normal control flow,
  * not signal context, on every platform.
  */
-sigHandler(breakHandler) { /* respond to break interrupt      */
+/* Respond to break interrupt */
+sigHandler(breakHandler) {
     Printf("{Interrupted!}\n");
-    breakOn(TRUE); /* reinstall break trapping (in case breakOn(FALSE) ran */
+    breakOn(true); /* reinstall break trapping (in case breakOn(false) ran */
                    /* while this break was pending)                        */
     everybody(BREAK);
     failed();
@@ -155,7 +161,7 @@ sigHandler(breakHandler) { /* respond to break interrupt      */
  * tweaking these functions.
  * ------------------------------------------------------------------------*/
 
-static Bool disableOutput = FALSE; /* redirect output to buffer?      */
+static bool disableOutput = false; /* redirect output to buffer?      */
 
 #include <stdarg.h>
 
@@ -165,32 +171,32 @@ static Bool disableOutput = FALSE; /* redirect output to buffer?      */
 
 typedef struct _CuddlesStream {
     char buffer[BufferSize]; /* buffer for redirected output      */
-    Int next;                /* next space in buffer              */
+    int next;                /* next space in buffer              */
 } CuddlesStream;
 
-static Void local vBufferedPrintf(CuddlesStream *, const char *, va_list);
-static Void local bufferedPutchar(CuddlesStream *, int);
-static String local bufferClear(CuddlesStream *stream);
+static void vBufferedPrintf(CuddlesStream *, const char *, va_list);
+static void bufferedPutchar(CuddlesStream *, int);
+static char *bufferClear(CuddlesStream *stream);
 
-static Void local vBufferedPrintf(CuddlesStream *stream, const char *fmt,
-                                  va_list ap) {
-    Int spaceLeft = BufferSize - stream->next;
+static void vBufferedPrintf(CuddlesStream *stream, const char *fmt,
+                            va_list ap) {
+    int spaceLeft = BufferSize - stream->next;
     char *p = &stream->buffer[stream->next];
-    Int charsAdded = vsnprintf(p, spaceLeft, fmt, ap);
+    int charsAdded = vsnprintf(p, spaceLeft, fmt, ap);
     if (0 <= charsAdded && charsAdded < spaceLeft)
         stream->next += charsAdded;
     else
         stream->next = 0;
 }
 
-static Void local bufferedPutchar(CuddlesStream *stream, int c) {
+static void bufferedPutchar(CuddlesStream *stream, int c) {
     if (BufferSize - stream->next >= 2) {
         stream->buffer[stream->next++] = (char)c;
         stream->buffer[stream->next] = '\0';
     }
 }
 
-static String local bufferClear(CuddlesStream *stream) {
+static char *bufferClear(CuddlesStream *stream) {
     if (stream->next == 0) {
         return "";
     } else {
@@ -206,15 +212,15 @@ static CuddlesStream outputStream;
  * We rely on standard C semantics to initialise outputStream.next to 0.
  */
 
-Void cuddlesEnableOutput(Bool f) {
+void cuddlesEnableOutput(bool f) {
     disableOutput = !f;
 }
 
-String cuddlesClearOutputBuffer() {
+char *cuddlesClearOutputBuffer(void) {
     return bufferClear(&outputStream);
 }
 
-Void cuddlesPrintf(const char *fmt, ...) {
+void cuddlesPrintf(const char *fmt, ...) {
     va_list ap;        /* pointer into argument list           */
     va_start(ap, fmt); /* make ap point to first arg after fmt */
     if (!disableOutput) {
@@ -225,7 +231,7 @@ Void cuddlesPrintf(const char *fmt, ...) {
     va_end(ap); /* clean up                             */
 }
 
-Void cuddlesPutchar(int c) {
+void cuddlesPutchar(int c) {
     if (!disableOutput) {
         putchar(c);
     } else {
@@ -233,19 +239,19 @@ Void cuddlesPutchar(int c) {
     }
 }
 
-Void cuddlesFlushStdout() {
+void cuddlesFlushStdout(void) {
     if (!disableOutput) {
         fflush(stdout);
     }
 }
 
-Void cuddlesFFlush(FILE *fp) {
+void cuddlesFFlush(FILE *fp) {
     if (!disableOutput) {
         fflush(fp);
     }
 }
 
-static Void local cuddlesVFPrintf(FILE *fp, const char *fmt, va_list ap) {
+static void cuddlesVFPrintf(FILE *fp, const char *fmt, va_list ap) {
     if (!disableOutput) {
         vfprintf(fp, fmt, ap);
     } else {
@@ -253,14 +259,14 @@ static Void local cuddlesVFPrintf(FILE *fp, const char *fmt, va_list ap) {
     }
 }
 
-Void cuddlesFPrintf(FILE *fp, const char *fmt, ...) {
+void cuddlesFPrintf(FILE *fp, const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     cuddlesVFPrintf(fp, fmt, ap);
     va_end(ap);
 }
 
-Void cuddlesPutc(int c, FILE *fp) {
+void cuddlesPutc(int c, FILE *fp) {
     if (!disableOutput) {
         fputc(c, fp);
     } else {

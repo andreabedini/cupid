@@ -5,10 +5,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: preds.c,v $
- * $Revision: 1.36 $
- * $Date: 2003/11/01 17:02:47 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -25,16 +21,16 @@
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local overEvid(Cell, Cell);
+static void overEvid(Cell, Cell);
 
-static Void local cutoffExceeded(Cell, Int, List);
-static Cell local scFind(Cell, Cell, Int, Cell, Int, Int);
-static Cell local entail(List, Cell, Int, Int);
+static void cutoffExceeded(Cell, int, List);
+static Cell scFind(Cell, Cell, int, Cell, int, int);
+static Cell entail(List, Cell, int, int);
 
-static Bool local anyGenerics(Type, Int);
+static bool anyGenerics(Type, int);
 
-static Bool local resolveVar(Int, Bool);
-static Class local classConstraining(Int, Cell, Int);
+static bool resolveVar(int, bool);
+static Class classConstraining(int, Cell, int);
 
 /* --------------------------------------------------------------------------
  * Predicate assignments:
@@ -49,18 +45,17 @@ static Class local classConstraining(Int, Cell, Int);
 
 List preds; /* Current predicate assignment        */
 
-Cell assumeEvid(Cell pi, Int o) /* Add predicate pi (offset o) to  */
-                                /* preds with new dict var nd      */
-{
+/* Add predicate pi (offset o) to preds with new dict var nd */
+Cell assumeEvid(Cell pi, int o) {
     assertPred(pi);
     Cell nd = inventDictVar();
     preds = cons(triple(pi, mkInt(o), nd), preds);
     return nd;
 }
 
-List makePredAss(List qs, Int o) /* Make list of predicate assumps. */
-                                 /* from qs (offset o), w/ new dict */
-{                                /* vars for each predicate        */
+/* Make list of predicate assumps. from qs (offset o), w/ new dict vars for
+ * each predicate */
+List makePredAss(List qs, int o) {
     assertPredList(qs);
     List result = NIL;
     for (; nonNull(qs); qs = tl(qs))
@@ -68,8 +63,8 @@ List makePredAss(List qs, Int o) /* Make list of predicate assumps. */
     return rev(result);
 }
 
-List copyPreds(List qs) /* Copy list of predicates         */
-{
+/* Copy list of predicates */
+List copyPreds(List qs) {
     List result = NIL;
     for (; nonNull(qs); qs = tl(qs)) {
         Cell pi = hd(qs);
@@ -78,25 +73,23 @@ List copyPreds(List qs) /* Copy list of predicates         */
     return rev(result);
 }
 
-Void qualify(List qs, Cell alt) /* Add extra dictionary args to    */
-                                /* qualify alt by predicates in qs */
-{                               /* :: ([Pat],Rhs)                  */
+/* Add extra dictionary args to qualify alt by predicates in qs :: ([Pat],Rhs) */
+void qualify(List qs, Cell alt) {
     List ds;
     for (ds = NIL; nonNull(qs); qs = tl(qs))
         ds = cons(thd3(hd(qs)), ds);
     fst(alt) = revOnto(ds, fst(alt));
 }
 
-Void qualifyBinding(List qs, Cell b) /* Add extra dict args to each        */
-                                     /* alternative in function binding */
-{
+/* Add extra dict args to each alternative in function binding */
+void qualifyBinding(List qs, Cell b) {
     if (!isVar(fst(b))) /* check for function binding      */
         internal("qualifyBinding");
     map1Proc(qualify, qs, snd(snd(b)));
 }
 
-Cell qualifyExpr(Int l, List ps, Cell e) /* Add dictionary params to expr   */
-{
+/* Add dictionary params to expr */
+Cell qualifyExpr(int l, List ps, Cell e) {
     if (nonNull(ps)) {           /* Qualify input expression with   */
         if (whatIs(e) != LAMBDA) /* additional dictionary params           */
             e = ap(LAMBDA, pair(NIL, pair(mkInt(l), e)));
@@ -105,10 +98,8 @@ Cell qualifyExpr(Int l, List ps, Cell e) /* Add dictionary params to expr   */
     return e;
 }
 
-static Void local overEvid(Cell dv,
-                           Cell ev) /* Overwrite dict var dv with          */
-                                    /* evidence ev                         */
-{
+/* Overwrite dict var dv with evidence ev */
+static void overEvid(Cell dv, Cell ev) {
     fst(dv) = nameInd;
     snd(dv) = ev;
 }
@@ -165,11 +156,10 @@ static Void local overEvid(Cell dv,
  *
  * ------------------------------------------------------------------------*/
 
-Int cutoff = 40; /* Used to limit depth of recursion*/
+int cutoff = 40; /* Used to limit depth of recursion*/
 
-static Void local cutoffExceeded(Cell pi, Int o, List ps)
-/* Display error msg when cutoff   */
-{
+/* Display error msg when cutoff */
+static void cutoffExceeded(Cell pi, int o, List ps) {
     clearMarks();
     errHead(0);
     errPrintf(
@@ -188,11 +178,9 @@ static Void local cutoffExceeded(Cell pi, Int o, List ps)
     errFail();
 }
 
-static Cell local scFind(Cell e, Cell pi1, Int o1, Cell pi, Int o,
-                         Int d) /* Use superclass entailment to   */
-                                /* find evidence for (pi,o) using  */
-                                /* the evidence e for (pi1,o1).    */
-{
+/* Use superclass entailment to find evidence for (pi,o) using the evidence e
+ * for (pi1,o1). */
+static Cell scFind(Cell e, Cell pi1, int o1, Cell pi, int o, int d) {
     Class h1 = getHead(pi1);
     Class h = getHead(pi);
     Cell ev = NIL;
@@ -202,7 +190,7 @@ static Cell local scFind(Cell e, Cell pi1, Int o1, Cell pi, Int o,
 
     if (isClass(h1) &&
         (!isClass(h) || cclassRec(h)->level < cclassRec(h1)->level)) {
-        Int beta = newKindedVars(cclassRec(h1)->kinds);
+        int beta = newKindedVars(cclassRec(h1)->kinds);
         List scs = cclassRec(h1)->supers;
         List dsels = cclassRec(h1)->dsels;
         List ps = NIL;
@@ -240,10 +228,8 @@ static Cell local scFind(Cell e, Cell pi1, Int o1, Cell pi, Int o,
     return NIL;
 }
 
-Cell scEntail(List ps, Cell pi, Int o,
-              Int d) /* Calc evidence for (pi,o) from ps*/
-                     /* Using superclasses and equality.*/
-{
+/* Calc evidence for (pi,o) from ps Using superclasses and equality. */
+Cell scEntail(List ps, Cell pi, int o, int d) {
     if (d++ >= cutoff)
         cutoffExceeded(pi, o, ps);
 
@@ -304,11 +290,9 @@ Cell scEntail(List ps, Cell pi, Int o,
  * to cause any further concern, except in pathological cases.)
  * ------------------------------------------------------------------------*/
 
-static Cell local entail(List ps, Cell pi, Int o,
-                         Int d) /* Calc evidence for (pi,o) from ps*/
-                                /* Uses superclasses, equality,    */
-                                /* tautology, and construction     */
-{
+/* Calc evidence for (pi,o) from ps Uses superclasses, equality, tautology, and
+ * construction */
+static Cell entail(List ps, Cell pi, int o, int d) {
     assertPred(pi);
     Cell ev = NIL;
 
@@ -349,11 +333,8 @@ static Cell local entail(List ps, Cell pi, Int o,
     return ev;
 }
 
-Cell inEntail(List ps, Cell pi, Int o,
-              Int d) /* Calc evidence for (pi,o) from ps*/
-                     /* using a top-level instance         */
-                     /* entailment                         */
-{
+/* Calc evidence for (pi,o) from ps using a top-level instance entailment */
+Cell inEntail(List ps, Cell pi, int o, int d) {
 #if EXPLAIN_INSTANCE_RESOLUTION
     int i;
 #endif
@@ -364,7 +345,7 @@ Cell inEntail(List ps, Cell pi, Int o,
 
     in = findInstFor(pi, o); /* Class predicates                   */
     if (nonNull(in)) {
-        Int beta = typeOff;
+        int beta = typeOff;
         Cell e = instRec(in)->builder;
         List es = instRec(in)->specifics;
         List fs = NIL;
@@ -408,13 +389,12 @@ Cell inEntail(List ps, Cell pi, Int o,
     return NIL;
 }
 
-Cell provePred(Kinds ks, List ps, Cell pi) /* Find evidence for predicate pi  */
-                                           /* assuming ps.  If ps is null,    */
-                                           /* then we get to decide whether   */
-{                                          /* is tautological, and we can use */
+/* Find evidence for predicate pi assuming ps. If ps is null, then we get to
+ * decide whether is tautological, and we can use */
+Cell provePred(Kinds ks, List ps, Cell pi) {
     assertKinds(ks);
     assertPred(pi);
-    Int beta; /* the evidence as a dictionary.   */
+    int beta; /* the evidence as a dictionary.   */
     Cell ev;
     emptySubstitution();
     beta = newKindedVars(ks);   /* (ks provides kinds for any      */
@@ -424,12 +404,12 @@ Cell provePred(Kinds ks, List ps, Cell pi) /* Find evidence for predicate pi  */
     return ev;
 }
 
-Cell resolvePred(Kinds ks, Cell pi) /* Find evidence for predicate pi. */
-                                    /* Unlike `provePred', also uses   */
-{                                   /* desparate measures like context */
+/* Find evidence for predicate pi. Unlike `provePred', also uses desparate
+ * measures like context */
+Cell resolvePred(Kinds ks, Cell pi) {
     assertKinds(ks);
     assertPred(pi);
-    Int beta; /* reduction and defaulting.       */
+    int beta; /* reduction and defaulting.       */
     List qs;
 
     emptySubstitution();
@@ -437,7 +417,7 @@ Cell resolvePred(Kinds ks, Cell pi) /* Find evidence for predicate pi. */
     qs = makePredAss(cons(pi, NIL), beta);
     preds = qs;
     elimTauts();
-    if (resolveDefs(NIL, TRUE))
+    if (resolveDefs(NIL, true))
         elimTauts();
     emptySubstitution();
     return (nonNull(preds) ? NIL : thd3(hd(qs)));
@@ -449,9 +429,9 @@ Cell resolvePred(Kinds ks, Cell pi) /* Find evidence for predicate pi. */
  * Calculate a minimal equivalent subset of a given set of predicates.
  * ------------------------------------------------------------------------*/
 
-List scSimplify(List qs) /* Simplify predicates in qs,      */
-{                        /* returning equiv minimal subset  */
-    Int n = length(qs);
+/* Simplify predicates in qs, returning equiv minimal subset */
+List scSimplify(List qs) {
+    int n = length(qs);
 
     while (0 < n--) {
         Cell pi = hd(qs);
@@ -482,9 +462,9 @@ List scSimplify(List qs) /* Simplify predicates in qs,      */
     return qs;
 }
 
-List simpleContext(List ps, Int o) /* Simplify context of skeletons   */
-                                   /* skeletons, offset o, using           */
-{                                  /* superclass hierarchy                 */
+/* Simplify context of skeletons skeletons, offset o, using superclass
+ * hierarchy */
+List simpleContext(List ps, int o) {
     return copyPreds(scSimplify(makePredAss(ps, o)));
 }
 
@@ -492,7 +472,8 @@ List simpleContext(List ps, Int o) /* Simplify context of skeletons   */
  * Context splitting --- tautological and locally tautological predicates:
  * ------------------------------------------------------------------------*/
 
-Void elimTauts() { /* Remove tautological constraints */
+/* Remove tautological constraints */
+void elimTauts(void) {
     if (!allowOverlap && !allowUnsafeOverlap) { /* from preds              */
         reducePreds(); /* Context reduction to head normal*/
     } else {           /* form is unsound with overlapping*/
@@ -516,14 +497,12 @@ Void elimTauts() { /* Remove tautological constraints */
     }
 }
 
-static Int numFixedVars = 0; /* Number of fixed vars found         */
+static int numFixedVars = 0; /* Number of fixed vars found         */
 
-static Bool local anyGenerics(Type t,
-                              Int o) /* Test for generic vars, and count*/
-                                     /* fixed variables            */
-{
+/* Test for generic vars, and count fixed variables */
+static bool anyGenerics(Type t, int o) {
     Type h = getDerefHead(t, o); /* This code is careful to expand  */
-    Int a = argCount;            /* synonyms; mark* & copy* do not. */
+    int a = argCount;            /* synonyms; mark* & copy* do not. */
     if (isSynonym(h) && a >= tyconRec(h)->arity) {
         expandSyn(h, a, &t, &o);
         return anyGenerics(t, o);
@@ -532,22 +511,22 @@ static Bool local anyGenerics(Type t,
         for (; 0 < a--; t = fun(t)) { /* cycle through any arguments       */
             tyv = deRef(&t, &o);
             if (anyGenerics(arg(t), o))
-                return TRUE;
+                return true;
         }
         tyv = deRef(&t, &o);
         if (tyv)
             if (tyv->offs == FIXED_TYVAR) {
                 numFixedVars++;
-                return FALSE;
+                return false;
             } else
-                return TRUE;
+                return true;
         else
-            return FALSE;
+            return false;
     }
 }
 
-List elimOuterPreds(List sps) /* Simplify and defer any remaining*/
-{                             /* preds that contain no generics. */
+/* Simplify and defer any remaining preds that contain no generics. */
+List elimOuterPreds(List sps) {
     List qs = NIL;
     elimTauts();
     for (preds = scSimplify(preds); nonNull(preds);) {
@@ -566,14 +545,14 @@ List elimOuterPreds(List sps) /* Simplify and defer any remaining*/
     return sps;
 }
 
-List elimPredsUsing(List ps, List sps) /* Try to discharge or defer preds,*/
-                                       /* splitting if necessary to match */
-{                                      /* context ps.  sps = savePreds.   */
+/* Try to discharge or defer preds, splitting if necessary to match context ps.
+ * sps = savePreds. */
+List elimPredsUsing(List ps, List sps) {
     List rems = NIL;
     while (nonNull(preds)) { /* Pick a predicate from preds        */
         Cell p = preds;
         Cell pi = fst3(hd(p));
-        Int o = intOf(snd3(hd(p)));
+        int o = intOf(snd3(hd(p)));
         Cell ev = entail(ps, pi, o, 0);
         preds = tl(preds);
 
@@ -599,12 +578,13 @@ List elimPredsUsing(List ps, List sps) /* Try to discharge or defer preds,*/
     return sps;
 }
 
-Void reducePreds() {         /* Context reduce predicates: uggh!*/
+/* Context reduce predicates: uggh! */
+void reducePreds(void) {
     List rems = NIL;         /* (A last resort for defaulting)  */
     while (nonNull(preds)) { /* Pick a predicate from preds        */
         Cell p = preds;
         Cell pi = fst3(hd(p));
-        Int o = intOf(snd3(hd(p)));
+        int o = intOf(snd3(hd(p)));
         Inst in = NIL;
         in = findInstFor(pi, o);
         preds = tl(preds);
@@ -622,31 +602,30 @@ Void reducePreds() {         /* Context reduce predicates: uggh!*/
     preds = scSimplify(rems); /* Return any remaining predicates */
 }
 
-Void normPreds(Int line) /* Normalize each element of preds */
-{                        /* in some appropriate manner     */
+/* Normalize each element of preds in some appropriate manner */
+void normPreds(int line) {
 }
 
 /* --------------------------------------------------------------------------
  * Mechanisms for dealing with defaults:
  * ------------------------------------------------------------------------*/
 
-Bool resolveDefs(List vs, Bool interactive) /* Attempt to resolve defaults */
-                                            /* for variables vs subject to  */
-{ /* constraints in preds             */
+/* Attempt to resolve defaults for variables vs subject to constraints in preds */
+bool resolveDefs(List vs, bool interactive) {
     List pvs = NIL;
     List qs = preds;
-    Bool defaulted = FALSE;
+    bool defaulted = false;
 
     resetGenerics(); /* find type variables in ps       */
     for (; nonNull(qs); qs = tl(qs)) {
         Cell pi = fst3(hd(qs));
-        Int o = intOf(snd3(hd(qs)));
+        int o = intOf(snd3(hd(qs)));
         for (; isAp(pi); pi = fun(pi))
             pvs = genvarType(arg(pi), o, pvs);
     }
 
     for (; nonNull(pvs); pvs = tl(pvs)) { /* now try defaults           */
-        Int vn = intOf(hd(pvs));
+        int vn = intOf(hd(pvs));
 
         if (!intIsMember(vn, vs))
             defaulted |= resolveVar(vn, interactive);
@@ -655,21 +634,20 @@ Bool resolveDefs(List vs, Bool interactive) /* Attempt to resolve defaults */
     return defaulted;
 }
 
-static Bool local resolveVar(Int vn,
-                             Bool interactive) /* Determine whether an ambig. */
-/* variable vn can be resolved  */
-{ /* by default in the context of */
+/* Determine whether an ambig. variable vn can be resolved by default in the
+ * context of the predicates in ps */
+static bool resolveVar(int vn, bool interactive) {
     List ps = preds;
-    List cs = NIL; /* the predicates in ps              */
-    Bool aNumClass = FALSE;
+    List cs = NIL;
+    bool aNumClass = false;
 
     if (tyvar(vn)->bound == SKOLEM)
-        return FALSE;
+        return false;
 
     /* According to the Haskell definition, we can only default an ambiguous
      * variable if the set of classes that constrain it:
      *   (a) includes at least one numeric class.
-     *       (However if interactive is TRUE, we also allow Show, Eq or Ord)
+     *       (However if interactive is true, we also allow Show, Eq or Ord)
      *   (b) includes only numeric or standard classes.
      * In addition, we will not allow a variable to be defaulted unless it
      * appears only in predicates of the form (Class var).
@@ -684,19 +662,19 @@ static Bool local resolveVar(Int vn,
                 c == classIntegral || c == classNum ||
                 (interactive &&
                  (c == classEq || c == classOrd || c == classShow)))
-                aNumClass = TRUE;
+                aNumClass = true;
             else if (c != classEq && c != classOrd && c != classShow &&
                      c != classRead && c != classIx && c != classEnum &&
                      c != classBounded)
-                return FALSE;
+                return false;
 
             {
                 Type t = arg(fst3(pi)); /* Check for single var as arg     */
-                Int o = intOf(snd3(pi));
+                int o = intOf(snd3(pi));
                 Tyvar *tyv;
                 tyv = deRef(&t, &o);
                 if (!tyv || tyvNum(tyv) != vn)
-                    return FALSE;
+                    return false;
             }
             if (!cellIsMember(c, cs))
                 cs = cons(c, cs);
@@ -719,18 +697,17 @@ static Bool local resolveVar(Int vn,
                 cs1 = tl(cs1);
             if (isNull(cs1)) {
                 bindTv(vn, hd(ds), 0);
-                return TRUE;
+                return true;
             }
         }
     }
 
-    return FALSE;
+    return false;
 }
 
-static Class local classConstraining(Int vn, Cell pi, Int o)
-/* Return class constraining var*/
-/* vn in predicate pi, or NIL if*/
-{ /* vn is not involved         */
+/* Return class constraining var vn in predicate pi, or NIL if vn is not
+ * involved */
+static Class classConstraining(int vn, Cell pi, int o) {
     for (; isAp(pi); pi = fun(pi))
         if (!doesntOccurIn(tyvar(vn), arg(pi), o))
             return getHead(pi);

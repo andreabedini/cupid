@@ -25,12 +25,12 @@
  * local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static List local getPatVars(Int, Cell, List);
-static List local addPatVar(Int, Cell, List);
-static Void local notDefined(Int, List, Cell);
-static Cell local getAttr(List, Cell);
-static Void local addSigdecl(List, Cell);
-static Void local addFixdecl(List, List, List, List, Triple);
+static List getPatVars(int, Cell, List);
+static List addPatVar(int, Cell, List);
+static void notDefined(int, List, Cell);
+static Cell getAttr(List, Cell);
+static void addSigdecl(List, Cell);
+static void addFixdecl(List, List, List, List, Triple);
 
 /* --------------------------------------------------------------------------
  * Before processing value and type signature declarations, all data and
@@ -78,14 +78,14 @@ static Void local addFixdecl(List, List, List, List, Triple);
 #define bindingAttr(b) fst(snd(b)) /* type(s)/fixity(ies) for binding  */
 #define fbindAlts(b) snd(snd(b))   /* alternatives for function binding*/
 
-List extractSigdecls(List es) /* Extract the SIGDECLS from list   */
-{                             /* of equations                         */
-    List sigdecls = NIL;      /* :: [(Line,[Var],Type)]       */
+/* Extract the SIGDECLS from list of equations */
+List extractSigdecls(List es) {
+    List sigdecls = NIL; /* :: [(Line,[Var],Type)]       */
 
     for (; nonNull(es); es = tl(es)) {
         if (fst(hd(es)) == SIGDECL) { /* type-declaration?  */
             Pair sig = snd(hd(es));
-            Int line = intOf(fst3(sig));
+            int line = intOf(fst3(sig));
             List vs = snd3(sig);
             for (; nonNull(vs); vs = tl(vs)) {
                 if (isQualIdent(hd(vs))) {
@@ -102,9 +102,9 @@ List extractSigdecls(List es) /* Extract the SIGDECLS from list   */
     return sigdecls;
 }
 
-List extractFixdecls(List es) /* Extract the FIXDECLS from list  */
-{                             /* of equations                         */
-    List fixdecls = NIL;      /* :: [(Line,SyntaxInt,[Op])]           */
+/* Extract the FIXDECLS from list of equations */
+List extractFixdecls(List es) {
+    List fixdecls = NIL; /* :: [(Line,SyntaxInt,[Op])]           */
 
     for (; nonNull(es); es = tl(es)) {
         if (fst(hd(es)) == FIXDECL) {               /* fixity declaration?*/
@@ -114,17 +114,17 @@ List extractFixdecls(List es) /* Extract the FIXDECLS from list  */
     return fixdecls;
 }
 
-List extractBindings(List ds) /* extract untyped bindings from   */
-{                             /* given list of equations      */
-    Cell lastVar = NIL;       /* = var def'd in last eqn (if any)*/
-    Int lastArity = 0;        /* = number of args in last defn   */
-    List bs = NIL;            /* :: [Binding]                         */
+/* Extract untyped bindings from given list of equations */
+List extractBindings(List ds) {
+    Cell lastVar = NIL; /* = var def'd in last eqn (if any)*/
+    int lastArity = 0;  /* = number of args in last defn   */
+    List bs = NIL;      /* :: [Binding]                         */
 
     for (; nonNull(ds); ds = tl(ds)) {
         Cell d = hd(ds);
         if (fst(d) == FUNBIND) { /* Function bindings              */
             Cell rhs = snd(snd(d));
-            Int line = rhsLine(rhs);
+            int line = rhsLine(rhs);
             Cell lhs = fst(snd(d));
             Cell v = getHead(lhs);
             Cell newAlt = pair(getArgs(lhs), rhs);
@@ -148,7 +148,7 @@ List extractBindings(List ds) /* extract untyped bindings from   */
 
         } else if (fst(d) == PATBIND) { /* Pattern bindings                */
             Cell rhs = snd(snd(d));
-            Int line = rhsLine(rhs);
+            int line = rhsLine(rhs);
             Cell pat = fst(snd(d));
             while (whatIs(pat) == ESIGN) { /* Move type annotations to rhs   */
                 Cell p = fst(snd(pat));
@@ -178,10 +178,8 @@ List extractBindings(List ds) /* extract untyped bindings from   */
     return bs;
 }
 
-static List local getPatVars(Int line, Cell p,
-                             List vs) /* Find list of variables bound in */
-                                      /* pattern p                         */
-{
+/* Find list of variables bound in pattern p */
+static List getPatVars(int line, Cell p, List vs) {
     switch (whatIs(p)) {
     case AP:
         do {
@@ -243,10 +241,8 @@ static List local getPatVars(Int line, Cell p,
     return vs;
 }
 
-static List local addPatVar(Int line, Cell v,
-                            List vs) /* Add var to list of previously   */
-                                     /* encountered variables      */
-{
+/* Add var to list of previously encountered variables */
+static List addPatVar(int line, Cell v, List vs) {
     if (varIsMember(textOf(v), vs)) {
         errHead(line);
         errPrintf("Repeated use of variable \"%s\" in pattern binding",
@@ -256,20 +252,16 @@ static List local addPatVar(Int line, Cell v,
     return cons(v, vs);
 }
 
-List eqnsToBindings(List es, List ts, List cs, List ps)
-/* Convert list of equations to    */
-/* list of typed bindings          */
-{
+/* Convert list of equations to list of typed bindings */
+List eqnsToBindings(List es, List ts, List cs, List ps) {
     List bs = extractBindings(es);
     map1Proc(addSigdecl, bs, extractSigdecls(es));
     map4Proc(addFixdecl, bs, ts, cs, ps, extractFixdecls(es));
     return bs;
 }
 
-static Void local notDefined(Int line, List bs,
-                             Cell v) /* check if name already defined in */
-                                     /* list of bindings                   */
-{
+/* Check if name already defined in list of bindings */
+static void notDefined(int line, List bs, Cell v) {
     if (nonNull(findBinding(textOf(v), bs))) {
         errHead(line);
         errPrintf("\"%s\" multiply defined", textToStr(textOf(v)));
@@ -277,9 +269,8 @@ static Void local notDefined(Int line, List bs,
     }
 }
 
-Cell findBinding(Text t, List bs) /* look for binding for variable t  */
-                                  /* in list of bindings bs           */
-{
+/* Look for binding for variable t in list of bindings bs */
+Cell findBinding(Text t, List bs) {
     for (; nonNull(bs); bs = tl(bs)) {
         if (isVar(fst(hd(bs)))) { /* function-binding? */
             if (textOf(fst(hd(bs))) == t) {
@@ -292,9 +283,8 @@ Cell findBinding(Text t, List bs) /* look for binding for variable t  */
     return NIL;
 }
 
-static Cell local getAttr(List bs, Cell v) /* Locate type/fixity attribute    */
-                                           /* for variable v in bindings bs   */
-{
+/* Locate type/fixity attribute for variable v in bindings bs */
+static Cell getAttr(List bs, Cell v) {
     Text t = textOf(v);
     Cell b = findBinding(t, bs);
 
@@ -327,11 +317,9 @@ static Cell local getAttr(List bs, Cell v) /* Locate type/fixity attribute    */
     }
 }
 
-static Void local addSigdecl(List bs,
-                             Cell sigdecl) /* add type information to bindings*/
-/* :: [Binding]                         */
-{ /* :: (Line,[Var],Type)                 */
-    Int l = intOf(fst3(sigdecl));
+/* Add type information to bindings :: [Binding] :: (Line,[Var],Type) */
+static void addSigdecl(List bs, Cell sigdecl) {
+    int l = intOf(fst3(sigdecl));
     List vs = snd3(sigdecl);
     Type type = checkSigType(l, "type declaration", hd(vs), thd3(sigdecl));
 
@@ -353,9 +341,8 @@ static Void local addSigdecl(List bs,
     }
 }
 
-static Void local addFixdecl(List bs, List ts, List cs, List ps,
-                             Triple fixdecl) {
-    Int line = intOf(fst3(fixdecl));
+static void addFixdecl(List bs, List ts, List cs, List ps, Triple fixdecl) {
+    int line = intOf(fst3(fixdecl));
     List ops = snd3(fixdecl);
     Cell sy = thd3(fixdecl);
 
@@ -397,15 +384,15 @@ static Void local addFixdecl(List bs, List ts, List cs, List ps,
     }
 }
 
-Void dupFixity(Int line, Text t) /* Report repeated fixity decl         */
-{
+/* Report repeated fixity decl */
+void dupFixity(int line, Text t) {
     errHead(line);
     errPrintf("Multiple fixity declarations for operator \"%s\"", textToStr(t));
     errFail();
 }
 
-Void missFixity(Int line, Text t) /* Report missing op for fixity       */
-{
+/* Report missing op for fixity */
+void missFixity(int line, Text t) {
     errHead(line);
     errPrintf("Cannot find binding for operator \"%s\" in fixity declaration",
               textToStr(t));

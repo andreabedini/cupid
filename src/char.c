@@ -28,13 +28,13 @@ static const struct CharProperties null_properties = {GENCAT_Cn, 0, 0, 0};
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local initConsCharTable(Void);
-static Void local markConsCharTable(Void);
-static Void local freeConsCharTable(Void);
-static const struct CharProperties *local get_properties(Char);
+static void initConsCharTable(void);
+static void markConsCharTable(void);
+static void freeConsCharTable(void);
+static const struct CharProperties *get_properties(Char);
 #if CHAR_ENCODING_UTF8
-static Int local utfseqlen(Int);
-static Int local utfcodelen(Char);
+static int utfseqlen(int);
+static int utfcodelen(Char);
 #endif
 
 /* --------------------------------------------------------------------------
@@ -47,13 +47,14 @@ static Int local utfcodelen(Char);
  * because ASCII is just a subset of the Latin-1 character set.
  * ------------------------------------------------------------------------*/
 
-Bool charTabBuilt;
+bool charTabBuilt;
 unsigned char charTable[NUM_LAT1_CHARS];
 
-Void initCharTab() { /* Initialize char decode table    */
+/* Initialize char decode table */
+void initCharTab(void) {
 #define setRange(x, f, t)                                                      \
     {                                                                          \
-        Int i = f;                                                             \
+        int i = f;                                                             \
         while (i <= t)                                                         \
             charTable[i++] |= x;                                               \
     }
@@ -62,11 +63,11 @@ Void initCharTab() { /* Initialize char decode table    */
     {                                                                          \
         char *p = s;                                                           \
         while (*p)                                                             \
-            charTable[(Int) * p++] |= x;                                       \
+            charTable[(int)*p++] |= x;                                         \
     }
 #define setCopy(x, c)                                                          \
     {                                                                          \
-        Int i;                                                                 \
+        int i;                                                                 \
         for (i = 0; i < NUM_LAT1_CHARS; ++i)                                   \
             if (isIn(i, c))                                                    \
                 charTable[i] |= x;                                             \
@@ -107,7 +108,7 @@ Void initCharTab() { /* Initialize char decode table    */
 #undef setChars
 #undef setCopy
 
-    charTabBuilt = TRUE;
+    charTabBuilt = true;
 }
 
 /* --------------------------------------------------------------------------
@@ -116,27 +117,27 @@ Void initCharTab() { /* Initialize char decode table    */
 
 #define UPPER_MASK ((1 << GENCAT_Lu) | (1 << GENCAT_Lt))
 
-Bool isLower(Char c) {
+bool isLower(Char c) {
     return isLatin1(c) ? isLowerLat1(c)
                        : get_properties(c)->category == GENCAT_Ll;
 }
 
-Bool isUpper(Char c) {
+bool isUpper(Char c) {
     return isLatin1(c) ? isUpperLat1(c)
                        : ((1 << get_properties(c)->category) & UPPER_MASK) != 0;
 }
 
-Bool isAlpha(Char c) {
+bool isAlpha(Char c) {
     return isLatin1(c) ? isAlphaLat1(c)
                        : (get_properties(c)->category <= GENCAT_Lo);
 }
 
-Bool isAlphaNum(Char c) {
+bool isAlphaNum(Char c) {
     return isLatin1(c) ? isAlphaNumLat1(c)
                        : get_properties(c)->category <= GENCAT_No;
 }
 
-Bool isPrint(Char c) {
+bool isPrint(Char c) {
     return isLatin1(c) ? isPrintLat1(c)
                        : get_properties(c)->category <= GENCAT_Zs;
 }
@@ -153,13 +154,13 @@ Char toTitle(Char c) {
     return c + get_properties(c)->title_offset;
 }
 
-Int uni_gencat(Char c) {
+int uni_gencat(Char c) {
     return get_properties(c)->category;
 }
 
 /* binary search of the properties table */
-static const struct CharProperties *local get_properties(Char c) {
-    Int lo, hi, mid;
+static const struct CharProperties *get_properties(Char c) {
+    int lo, hi, mid;
     lo = 0;
     hi = unicode_block_count - 1;
     while (lo != hi) {
@@ -185,7 +186,7 @@ static const struct CharProperties *local get_properties(Char c) {
 #if CHAR_ENCODING
 int fputc_mb(Char c, FILE *f) {
     char buf[MAX_CHAR_ENCODING];
-    String s = buf;
+    char *s = buf;
     addc_mb(c, &s);
     return fwrite(buf, s - buf, 1, f) == 1 ? c : EOF;
 }
@@ -199,13 +200,13 @@ int fputc_mb(Char c, FILE *f) {
  * ourselves using mbrtowc/wcrtomb.
  */
 
-Bool charIsRepresentable(Char c) {
+bool charIsRepresentable(Char c) {
     char buf[MAX_CHAR_ENCODING];
     size_t n;
     wchar_t wc;
     mbstate_t st;
     if (c == '\0')
-        return TRUE;
+        return true;
     memset(&st, 0, sizeof(st));
     n = wcrtomb(buf, c, &st);
     if (n == (size_t)(-1))
@@ -215,14 +216,14 @@ Bool charIsRepresentable(Char c) {
         if (mbrtowc(&wc, buf, n, &st) == n)
             return wc == c;
     }
-    return FALSE;
+    return false;
 }
 
 /* Read a Char encoded as a multi-byte sequence.
  */
 int fgetc_mb(FILE *f) {
     char buf[MAX_CHAR_ENCODING];
-    Int n = 0;
+    int n = 0;
     size_t size;
     wchar_t wc;
     mbstate_t st;
@@ -258,7 +259,7 @@ int fgetc_mb(FILE *f) {
 }
 
 /* Add a Char to a multi-byte encoded string, moving the pointer. */
-Void addc_mb(Char c, String *sp) {
+void addc_mb(Char c, char **sp) {
     size_t size;
     mbstate_t st;
     memset(&st, 0, sizeof(st));
@@ -271,7 +272,7 @@ Void addc_mb(Char c, String *sp) {
 }
 
 /* Get a Char from a multi-byte encoded string, moving the pointer. */
-Char extc_mb(String *sp) {
+Char extc_mb(char **sp) {
     wchar_t c = '\0';
     size_t size;
     mbstate_t st;
@@ -323,9 +324,9 @@ Char extc_mb(String *sp) {
  */
 
 int fgetc_mb(FILE *f) {
-    Int b;
+    int b;
     Char c;
-    Int size, i;
+    int size, i;
     if ((b = fgetc(f)) == EOF)
         return EOF;
     if (b < 0x80) /* ASCII character */
@@ -354,7 +355,7 @@ int fgetc_mb(FILE *f) {
     return c;
 }
 
-Void addc_mb(Char c, String *sp) {
+void addc_mb(Char c, char **sp) {
     if (c < 0x80)
         *(*sp)++ = (char)c;
     else {
@@ -369,7 +370,7 @@ Void addc_mb(Char c, String *sp) {
     }
 }
 
-Char extc_mb(String *sp) {
+Char extc_mb(char **sp) {
     Char c = *(unsigned char *)*sp;
     if (c < 0x80)
         (*sp)++;
@@ -379,7 +380,7 @@ Char extc_mb(String *sp) {
         int i, size = utfseqlen(c); /* how many octets to expect */
         c &= ~UTFmask(size);
         for (i = 1; i < size; i++) {
-            Int b = (*sp)[i];
+            int b = (*sp)[i];
             if (!UTFtail(b))
                 return BAD_CHAR;
             c = (c << 6) | (b & 0x3F);
@@ -395,8 +396,8 @@ Char extc_mb(String *sp) {
 }
 
 /* length of a UTF-8 sequence with first byte b */
-static Int local utfseqlen(Int b) {
-    Int n;
+static int utfseqlen(int b) {
+    int n;
     if (b < 0x80)
         return 1;
     for (n = MAX_CHAR_ENCODING; (b & UTFmask(n)) != UTFmask(n); n--)
@@ -405,7 +406,7 @@ static Int local utfseqlen(Int b) {
 }
 
 /* length of the shortest UTF-8 sequence encoding the Char c */
-static Int local utfcodelen(Char c) {
+static int utfcodelen(Char c) {
     return c < 0x80        ? 1
            : c < 0x800     ? 2
            : c < 0x10000   ? 3
@@ -453,7 +454,7 @@ static Cell **consCharTable[NUM_LEVEL1];
 static Cell *consCharTable_0[NUM_LEVEL2];
 static Cell consCharTable_0_0[NUM_LEVEL3];
 
-static void local initConsCharTable() {
+static void initConsCharTable(void) {
     Char c;
 
     consCharTable[0] = consCharTable_0;
@@ -466,9 +467,9 @@ static void local initConsCharTable() {
  * Get a character cons: follow the three-level lookup table.
  * If a level does not exist, allocate it.
  * ------------------------------------------------------------------------*/
-Cell consChar(Char c) /* return application (:) c */
-{
-    Int i, j, k;
+/* Return application (:) c */
+Cell consChar(Char c) {
+    int i, j, k;
     Cell **consCharTable_i;
     Cell *consCharTable_i_j;
 
@@ -507,7 +508,7 @@ Cell consChar(Char c) /* return application (:) c */
     return consCharTable_i_j[k];
 }
 
-static void local markConsCharTable() {
+static void markConsCharTable(void) {
     int i, j, k;
 
     for (i = 0; i < NUM_LEVEL1; i++)
@@ -518,7 +519,7 @@ static void local markConsCharTable() {
                         mark(consCharTable[i][j][k]);
 }
 
-static void local freeConsCharTable() {
+static void freeConsCharTable(void) {
     int i, j;
 
     if (consCharTable[0]) { /* only if the table has been initialized */
@@ -535,7 +536,7 @@ static void local freeConsCharTable() {
     }
 }
 
-Void charOps(Int what) {
+void charOps(int what) {
     switch (what) {
     case INSTALL:
         initCharTab();

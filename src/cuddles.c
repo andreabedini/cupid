@@ -5,10 +5,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2005, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: cuddles.c,v $
- * $Revision: 1.150 $
- * $Date: 2006/08/05 15:49:59 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -33,41 +29,41 @@
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local interpreter(Int, String[]);
-static Void local initInterpreter(Void);
-static Void local menu(Void);
-static Void local guidance(Void);
-static Void local forHelp(Void);
-static Void local changeDir(Void);
-static Void local load(Void);
-static Void local editor(Void);
-static Void local find(Void);
-static Void local setModule(Void);
-static Void local showtype(Void);
-static String local objToStr(Module, Cell);
-static Void local info(Void);
-static Void local printSyntax(Name);
-static Void local showInst(Inst);
-static Void local describe(Text);
-static Void local listNames(Void);
-static Void local expandPath(String, String, unsigned int);
-static Void local browse(Void);
-static Void local initialize(Int, String[]);
-static Void local clearEvalModule(Void);
+static void interpreter(int, char *[]);
+static void initInterpreter(void);
+static void menu(void);
+static void guidance(void);
+static void forHelp(void);
+static void changeDir(void);
+static void load(void);
+static void editor(void);
+static void find(void);
+static void setModule(void);
+static void showtype(void);
+static char *objToStr(Module, Cell);
+static void info(void);
+static void printSyntax(Name);
+static void showInst(Inst);
+static void describe(Text);
+static void listNames(void);
+static void expandPath(char *, char *, unsigned int);
+static void browse(void);
+static void initialize(int, char *[]);
+static void clearEvalModule(void);
 
 /* --------------------------------------------------------------------------
  * Local data areas:
  * ------------------------------------------------------------------------*/
-static Text evalModule = 0;                /* Name of module we eval exprs in */
-static String defaultArgv[] = {"Cuddles"}; /* program name */
+static Text evalModule = 0;               /* Name of module we eval exprs in */
+static char *defaultArgv[] = {"Cuddles"}; /* program name */
 
 /* --------------------------------------------------------------------------
  * UI interpreter initalization:
  * ------------------------------------------------------------------------*/
-static Void local initialize(Int argc, String argv[]) {
+static void initialize(int argc, char *argv[]) {
     startEvaluator();
 
-    setLastEdit((String)0, 0);
+    setLastEdit((char *)0, 0);
 
 #if HAVE_WINDOWS_H
 # define DEFAULT_EDITOR "\\notepad.exe"
@@ -105,7 +101,7 @@ static Void local initialize(Int argc, String argv[]) {
     cuddlesEdit = strCopy(fromEnv("EDITOR", NULL));
 #endif
 
-    readOptions("-p\"%s> \" -r$$", FALSE);
+    readOptions("-p\"%s> \" -r$$", false);
     readOptionSettings();
     processOptionVector(argc, argv);
 
@@ -113,7 +109,7 @@ static Void local initialize(Int argc, String argv[]) {
     loadPrelude();
 
     /* Add an empty module as the default, to avoid being inside the Prelude */
-    addScriptName(STD_EMPTY_MODULE, TRUE);
+    addScriptName(STD_EMPTY_MODULE, true);
 
     /* We record the number of scripts that loading the Prelude
      * brought about, so that when the user comes to clear the module
@@ -132,9 +128,9 @@ static Void local initialize(Int argc, String argv[]) {
 /* --------------------------------------------------------------------------
  * Printing the banner
  * ------------------------------------------------------------------------*/
-static Void printBanner(Void);
+static void printBanner(void);
 
-static Void printBanner() {
+static void printBanner(void) {
 #if SMALL_BANNER
     Printf("Cuddles %s\n", versionString);
 #else
@@ -152,7 +148,7 @@ static Void printBanner() {
  * Cuddles entry point:
  * ------------------------------------------------------------------------*/
 
-int main(Int, String[]); /* now every func has a prototype  */
+int main(int, char *[]); /* now every func has a prototype  */
 
 int main(int argc, char *argv[]) {
 
@@ -176,14 +172,14 @@ int main(int argc, char *argv[]) {
 /* --------------------------------------------------------------------------
  * Shutdown interpreter.
  * ------------------------------------------------------------------------*/
-Void shutdownCuddles() {
+void shutdownCuddles(void) {
     /* Let go of dynamic storage */
     if (cuddlesEdit) {
         free(cuddlesEdit);
         cuddlesEdit = 0;
     }
     /* empties lastEdit state (and frees it up.) */
-    setLastEdit((String)0, 0);
+    setLastEdit((char *)0, 0);
     stopEvaluator();
 }
 
@@ -203,7 +199,7 @@ static struct cmd cmds[] = {
 #endif
     {":version", PNTVER}, {"", EVAL},       {0, 0}};
 
-static Void local menu() {
+static void menu(void) {
     Printf("LIST OF COMMANDS:  Any command may be abbreviated to :c where\n");
     Printf("c is the first character in the full name.\n\n");
     Printf(":load <filenames>   load modules from specified files\n");
@@ -233,12 +229,12 @@ static Void local menu() {
     Printf(":quit               exit Cuddles interpreter\n");
 }
 
-static Void local guidance() {
+static void guidance(void) {
     Printf("Command not recognised.  ");
     forHelp();
 }
 
-static Void local forHelp() {
+static void forHelp(void) {
     Printf("Type :? for help\n");
 }
 
@@ -252,8 +248,8 @@ static Void local forHelp() {
  * NUL; a path (or its expansion) that does not fit is a clean error, not
  * a truncated copy.
  */
-static Void local expandPath(String origPath, String expandedPath,
-                             unsigned int maxLen) {
+static void expandPath(char *origPath, char *expandedPath,
+                       unsigned int maxLen) {
 
     if (!origPath) {
         return;
@@ -261,7 +257,7 @@ static Void local expandPath(String origPath, String expandedPath,
 
     /* If the original path starts with "~/", expand it. */
     if (*origPath == '~' && *(origPath + 1) == '/') {
-        String home = getenv("HOME");
+        char *home = getenv("HOME");
         if (!home) {
             errHead(0);
             errPrintf(
@@ -283,8 +279,9 @@ static Void local expandPath(String origPath, String expandedPath,
     }
 }
 
-static Void local changeDir() { /* change directory                */
-    String path = readFilename();
+/* Change directory */
+static void changeDir(void) {
+    char *path = readFilename();
     char expandedPath[FILENAME_MAX + 1];
     expandPath(path, expandedPath, sizeof(expandedPath));
     if (path && chdir(expandedPath)) {
@@ -298,12 +295,14 @@ static Void local changeDir() { /* change directory                */
  * Commands for loading and removing script files:
  * ------------------------------------------------------------------------*/
 
-static Void local load() { /* read filenames from command line   */
-    String s;              /* and add to list of scripts waiting */
-                           /* to be read                         */
+/* Read filenames from command line and add to list of scripts waiting to be
+ * read */
+static void load(void) {
+    char *s;
+
     clearEvalModule();
     while ((s = readFilename()) != 0) {
-        addScriptName(s, TRUE);
+        addScriptName(s, true);
     }
     readScripts(1);
 }
@@ -312,8 +311,9 @@ static Void local load() { /* read filenames from command line   */
  * Access to external editor:
  * ------------------------------------------------------------------------*/
 
-static Void local editor() { /* interpreter-editor interface    */
-    String newFile = readFilename();
+/* Interpreter-editor interface */
+static void editor(void) {
+    char *newFile = readFilename();
     if (newFile) {
         setLastEdit(newFile, 0);
         if (readFilename()) {
@@ -325,8 +325,9 @@ static Void local editor() { /* interpreter-editor interface    */
     runEditor();
 }
 
-static Void local find() {      /* edit file containing definition */
-    String nm = readFilename(); /* of specified name               */
+/* Edit file containing definition of specified name */
+static void find(void) {
+    char *nm = readFilename();
     if (!nm) {
         errHead(0);
         errPrintf("No name specified");
@@ -357,10 +358,11 @@ static Void local find() {      /* edit file containing definition */
     }
 }
 
-Void runEditor() { /* run editor on script lastEdit   */
-    String fileToEdit;
-    Int lastLine;
-    String lastEdit = getLastEdit(&lastLine);
+/* Run editor on script lastEdit */
+void runEditor(void) {
+    char *fileToEdit;
+    int lastLine;
+    char *lastEdit = getLastEdit(&lastLine);
 
     if (lastEdit == NULL) {
         fileToEdit = fileOfModule(lastModule());
@@ -377,8 +379,9 @@ Void runEditor() { /* run editor on script lastEdit   */
  * Read and evaluate an expression:
  * ------------------------------------------------------------------------*/
 
-static Void local setModule() { /*set module in which to evaluate expressions*/
-    String s = readFilename();
+/* Set module in which to evaluate expressions */
+static void setModule(void) {
+    char *s = readFilename();
     if (s != 0) { /* Locate named module                           */
         Text t = findText(s);
         Module m = findModule(t);
@@ -396,14 +399,15 @@ static Void local setModule() { /*set module in which to evaluate expressions*/
     }
 }
 
-Module findEvalModule() { /*Module in which to eval expressions*/
+/* Module in which to eval expressions */
+Module findEvalModule(void) {
     Module m = findModule(evalModule);
     if (isNull(m))
         m = lastModule();
     return m;
 }
 
-static Void local clearEvalModule() {
+static void clearEvalModule(void) {
     evalModule = findText("");
 }
 
@@ -411,7 +415,8 @@ static Void local clearEvalModule() {
  * Print type of input expression:
  * ------------------------------------------------------------------------*/
 
-static Void local showtype() { /* print type of expression (if any)*/
+/* Print type of expression (if any) */
+static void showtype(void) {
     Cell type;
 
     setCurrModule(findEvalModule());
@@ -427,16 +432,17 @@ static Void local showtype() { /* print type of expression (if any)*/
     Putchar('\n');
 }
 
-static Void local browse() { /* browse modules                  */
-    Int count = 0;           /* or current module               */
-    String s;
-    Bool all = FALSE;
+/* Browse modules or current module */
+static void browse(void) {
+    int count = 0;
+    char *s;
+    bool all = false;
 
     setCurrModule(findEvalModule());
     startNewScript(0); /* for recovery of storage         */
     while ((s = readFilename()) != 0)
         if (strcmp(s, "all") == 0) {
-            all = TRUE;
+            all = true;
         } else {
             Module mod = findModule(findText(s));
             if (isNull(mod)) {
@@ -451,16 +457,17 @@ static Void local browse() { /* browse modules                  */
 }
 
 #if EXPLAIN_INSTANCE_RESOLUTION
-static Void local xplain() { /* print type of expression (if any)*/
+/* Print type of expression (if any) */
+static void xplain(void) {
     Cell d;
-    Bool sir = showInstRes;
+    bool sir = showInstRes;
 
     setCurrModule(findEvalModule());
     startNewScript(0); /* Enables recovery of storage      */
                        /* allocated during evaluation      */
     parseContext();
     checkContext();
-    showInstRes = TRUE;
+    showInstRes = true;
     d = provePred(NIL, NIL, hd(inputContext));
     if (isNull(d)) {
         fprintf(stdout, "not Sat\n");
@@ -472,10 +479,10 @@ static Void local xplain() { /* print type of expression (if any)*/
 }
 #endif
 
-static Void local runmain() {
+static void runmain(void) {
     int MaxArgs = 255;
-    String args[256];
-    String s;
+    char *args[256];
+    char *s;
     int argPos = 1, i;
     args[0] = "Cuddles";
 
@@ -487,7 +494,7 @@ static Void local runmain() {
     for (i = 1; i < argPos; i++)
         free(args[i]);
 
-    stringInput((String) "main");
+    stringInput((char *)"main");
     input(BREAK);
     doCommand();
 }
@@ -497,14 +504,14 @@ static Void local runmain() {
  * about an object.
  * ------------------------------------------------------------------------*/
 
-static String local objToStr(Module m, Cell c) {
+static char *objToStr(Module m, Cell c) {
     /* newVar grows to fit "module.name" for whatever names come up; it is
      * never shrunk, and is reused (and, if necessary, enlarged) on every
      * call, since the result is only ever used before the next call. */
     static char *newVar = 0;
     static size_t newVarLen = 0;
-    String qualifier = 0; /* module part, or 0 if unqualified*/
-    String unqual;        /* name part                       */
+    char *qualifier = 0; /* module part, or 0 if unqualified*/
+    char *unqual;        /* name part                       */
     size_t needed;
 
     switch (whatIs(c)) {
@@ -546,15 +553,16 @@ static String local objToStr(Module m, Cell c) {
         newVarLen = needed;
     }
     if (qualifier)
-        sprintf(newVar, "%s.%s", qualifier, unqual);
+        snprintf(newVar, newVarLen, "%s.%s", qualifier, unqual);
     else
-        sprintf(newVar, "%s", unqual);
+        snprintf(newVar, newVarLen, "%s", unqual);
     return newVar;
 }
 
-static Void local info() { /* describe objects                */
-    Int count = 0;         /* or give menu of commands        */
-    String s;
+/* Describe objects or give menu of commands */
+static void info(void) {
+    int count = 0;
+    char *s;
     Module evMod;
 
     evMod = findEvalModule();
@@ -562,8 +570,8 @@ static Void local info() { /* describe objects                */
     setCurrModule(evMod);
     startNewScript(0); /* for recovery of storage         */
     for (; (s = readFilename()) != 0; count++) {
-        String mod = NULL;
-        String nm = NULL;
+        char *mod = NULL;
+        char *nm = NULL;
 
         /* In the event of a qualified name, decompose it. */
         splitQualString(s, &mod, &nm);
@@ -588,15 +596,15 @@ static Void local info() { /* describe objects                */
     setCurrModule(evMod);
 }
 
-static Void local describe(Text t) /* describe an object              */
-{
+/* Describe an object */
+static void describe(Text t) {
     Tycon tc = findTycon(t);
     Class cl = findClass(t);
     Name nm = findName(t);
 
     if (nonNull(tc)) { /* as a type constructor           */
         Type t = tc;
-        Int i;
+        int i;
         Inst in;
         for (i = 0; i < tyconRec(tc)->arity; ++i) {
             t = ap(t, mkOffset(i));
@@ -687,7 +695,7 @@ static Void local describe(Text t) /* describe an object              */
         printPred(stdout, cclassRec(cl)->head);
         if (nonNull(cclassRec(cl)->fds)) {
             List fds = cclassRec(cl)->fds;
-            String pre = " | ";
+            char *pre = " | ";
             for (; nonNull(fds); fds = tl(fds)) {
                 Printf(pre);
                 printFD(stdout, hd(fds));
@@ -753,10 +761,10 @@ static Void local describe(Text t) /* describe an object              */
     }
 }
 
-static Void local printSyntax(Name nm) {
+static void printSyntax(Name nm) {
     Syntax sy = syntaxOf(nm);
     Text t = nameRec(nm)->text;
-    String s = textToStr(t);
+    char *s = textToStr(t);
     if (sy != defaultSyntax(t)) {
         Printf("infix");
         switch (assocOf(sy)) {
@@ -781,8 +789,8 @@ static Void local printSyntax(Name nm) {
     }
 }
 
-static Void local showInst(Inst in) /* Display instance decl header    */
-{
+/* Display instance decl header */
+static void showInst(Inst in) {
     Printf("instance ");
     if (nonNull(instRec(in)->specifics)) {
         printContext(stdout, instRec(in)->specifics);
@@ -796,12 +804,13 @@ static Void local showInst(Inst in) /* Display instance decl header    */
  * List all names currently in scope:
  * ------------------------------------------------------------------------*/
 
-static Void local listNames() { /* list names matching optional pat*/
-    String pat = readFilename();
+/* List names matching optional pat */
+static void listNames(void) {
+    char *pat = readFilename();
     List names = NIL;
-    Int width = getTerminalWidth() - 1;
-    Int count = 0;
-    Int termPos;
+    int width = getTerminalWidth() - 1;
+    int count = 0;
+    int termPos;
     Module mod = findEvalModule();
 
     if (pat) { /* First gather names to list      */
@@ -809,7 +818,7 @@ static Void local listNames() { /* list names matching optional pat*/
             names = addNamesMatching(pat, names);
         } while ((pat = readFilename()) != 0);
     } else {
-        names = addNamesMatching((String)0, names);
+        names = addNamesMatching((char *)0, names);
     }
     if (isNull(names)) { /* Then print them out             */
         errHead(0);
@@ -817,8 +826,8 @@ static Void local listNames() { /* list names matching optional pat*/
         errFail();
     }
     for (termPos = 0; nonNull(names); names = tl(names)) {
-        String s = objToStr(mod, hd(names));
-        Int l = (Int)strlen(s);
+        char *s = objToStr(mod, hd(names));
+        int l = (int)strlen(s);
         if (termPos + 1 + l > width) {
             Putchar('\n');
             termPos = 0;
@@ -840,7 +849,7 @@ static Void local listNames() { /* list names matching optional pat*/
 /* Size of (expanded) prompt buffer, should be more than enough.... */
 #define MAX_PROMPT_SIZE 1000
 
-Void promptForInput(String moduleName) {
+void promptForInput(char *moduleName) {
     char promptBuffer[MAX_PROMPT_SIZE];
     char *fromPtr;
     char *toPtr;
@@ -883,12 +892,11 @@ Void promptForInput(String moduleName) {
  * main read-eval-print loop, with error trapping:
  * ------------------------------------------------------------------------*/
 
-static Void local
-interpreter(Int argc, String argv[]) /* main interpreter loop           */
-{
-    Int errorNumber = setjmp(catch_error);
+/* Main interpreter loop */
+static void interpreter(int argc, char *argv[]) {
+    int errorNumber = setjmp(catch_error);
 
-    breakOn(TRUE);                 /* enable break trapping           */
+    breakOn(true);                 /* enable break trapping           */
     if (numLoadedScripts() == 0) { /* only succeeds on first time,    */
         if (errorNumber)           /* before Prelude has been loaded  */
             fatal("Unable to load Prelude");
@@ -909,7 +917,7 @@ interpreter(Int argc, String argv[]) /* main interpreter loop           */
                 break;
         }
 
-        breakOn(FALSE);
+        breakOn(false);
 
 #if defined(_MSC_VER) && !defined(_MANAGED)
     } __except (((GetExceptionCode() == EXCEPTION_STACK_OVERFLOW)
@@ -952,7 +960,7 @@ interpreter(Int argc, String argv[]) /* main interpreter loop           */
 #endif
 }
 
-static Void local initInterpreter() {
+static void initInterpreter(void) {
     everybody(RESET); /* reset to sensible initial state */
     /* remove partially loaded scripts */
     dropScriptsFrom(numLoadedScripts());
@@ -960,8 +968,8 @@ static Void local initInterpreter() {
     promptForInput(textToStr(moduleRec(findEvalModule())->text));
 }
 
-Bool doCommand() /* read and execute a command      */
-{                /* returns TRUE on QUIT (:quit)    */
+/* Read and execute a command returns true on QUIT (:quit) */
+bool doCommand(void) {
     Command cmd;
     cmd = readCommand(cmds, (Char)':', (Char)'!');
 #if WANT_TIMER
@@ -1028,11 +1036,11 @@ Bool doCommand() /* read and execute a command      */
         Printf("-- Cuddles Version %s\n", versionString);
         break;
     case QUIT:
-        return TRUE;
+        return true;
     case COLLECT:
-        consGC = FALSE;
+        consGC = false;
         garbageCollect();
-        consGC = TRUE;
+        consGC = true;
         Printf("Garbage collection recovered %d cells\n", cellsRecovered);
         break;
     case NOCMD:
@@ -1048,7 +1056,7 @@ Bool doCommand() /* read and execute a command      */
     Printf("Elapsed time (ms): %ld (user), %ld (system)\n",
            millisecs(userElapsed), millisecs(systElapsed));
 #endif
-    return FALSE;
+    return false;
 }
 
 /*-------------------------------------------------------------------------*/

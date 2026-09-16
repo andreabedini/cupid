@@ -33,29 +33,29 @@
  * local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Cell local bindPat(Int, Cell);
-static Void local bindPats(Int, List);
-static List local dependencyAnal(List);
-static Void local addDepField(Cell);
-static Void local remDepField(List);
-static Void local remDepField1(Cell);
-static Void local saveSyntax(Cell, Cell);
-static Void local dropNameClash(Cell);
-static Void local depBinding(Cell);
-static Void local depClassBindings(List);
-static Void local depAlt(Cell);
-static Cell local depLetRec(Bool, Int, Cell);
-static Void local depRhs(Cell);
-static Void local depGuard(Cell);
-static Void local depPair(Int, Cell);
-static Void local depTriple(Int, Cell);
-static Void local depComp(Int, Cell, List);
-static Void local depCaseAlt(Int, Cell);
-static Cell local depVar(Int, Cell, Bool);
-static Void local depUpdFlds(Int, Cell);
-static List local depFields(Int, Cell, List, Bool);
-static Void local checkNameAmbig(Int, Text, Cell);
-static List local bscc(List);
+static Cell bindPat(int, Cell);
+static void bindPats(int, List);
+static List dependencyAnal(List);
+static void addDepField(Cell);
+static void remDepField(List);
+static void remDepField1(Cell);
+static void saveSyntax(Cell, Cell);
+static void dropNameClash(Cell);
+static void depBinding(Cell);
+static void depClassBindings(List);
+static void depAlt(Cell);
+static Cell depLetRec(bool, int, Cell);
+static void depRhs(Cell);
+static void depGuard(Cell);
+static void depPair(int, Cell);
+static void depTriple(int, Cell);
+static void depComp(int, Cell, List);
+static void depCaseAlt(int, Cell);
+static Cell depVar(int, Cell, bool);
+static void depUpdFlds(int, Cell);
+static List depFields(int, Cell, List, bool);
+static void checkNameAmbig(int, Text, Cell);
+static List bscc(List);
 
 /* --------------------------------------------------------------------------
  * Maintaining lists of bound variables and local definitions, for
@@ -73,18 +73,16 @@ static List depends;  /* list of lists of dependents       */
 #define saveBvars() hd(bounds)           /* list of bvars in current scope   */
 #define restoreBvars(bs) hd(bounds) = bs /* restore list of bound variables  */
 
-static Cell local bindPat(Int line,
-                          Cell p) /* add new bound vars for pattern   */
-{
+/* Add new bound vars for pattern */
+static Cell bindPat(int line, Cell p) {
     patVars = NIL;
     p = checkPat(line, p);
     hd(bounds) = dupOnto(patVars, hd(bounds));
     return p;
 }
 
-static Void local bindPats(Int line,
-                           List ps) /* add new bound vars for patterns  */
-{
+/* Add new bound vars for patterns */
+static void bindPats(int line, List ps) {
     patVars = NIL;
     map1Over(checkPat, line, ps);
     hd(bounds) = revOnto(patVars, hd(bounds));
@@ -93,8 +91,8 @@ static Void local bindPats(Int line,
 /* lookupSyntax walks the scope stacks that the dependency analysis below
  * maintains, so it lives here rather than with the infix resolution in
  * fixity.c, which is its only caller. */
-Syntax lookupSyntax(Text t) /* Try to find fixity for var in  */
-{                           /* enclosing bindings            */
+/* Try to find fixity for var in enclosing bindings */
+Syntax lookupSyntax(Text t) {
     List bounds1 = bounds;
     List bindings1 = bindings;
 
@@ -151,10 +149,9 @@ Syntax lookupSyntax(Text t) /* Try to find fixity for var in  */
 
 #define depVal(d) (fst(snd(snd(d)))) /* Access to dependency information*/
 
-static List local dependencyAnal(List bs) /* Separate lists of bindings into */
-{ /* mutually recursive groups in          */
-    /* order of dependency                   */
-
+/* Separate lists of bindings into mutually recursive groups in order of
+ * dependency */
+static List dependencyAnal(List bs) {
     mapProc(addDepField, bs); /* add extra field for dependents  */
     mapProc(depBinding, bs);  /* find dependents of each binding */
     bs = bscc(bs);            /* sort to strongly connected comps*/
@@ -162,10 +159,10 @@ static List local dependencyAnal(List bs) /* Separate lists of bindings into */
     return bs;
 }
 
-List topDependAnal(List bs) /* Like dependencyAnal(), but at   */
-{                           /* top level, reporting on progress*/
+/* Like dependencyAnal(), but at top level, reporting on progress */
+List topDependAnal(List bs) {
     List xs;
-    Int i = 0;
+    int i = 0;
 
     setGoal("Dependency analysis", (Target)(length(bs)));
     mapProc(addDepField, bs); /* add extra field for dependents   */
@@ -180,37 +177,39 @@ List topDependAnal(List bs) /* Like dependencyAnal(), but at   */
     return bs;
 }
 
-static Void local addDepField(Cell b) /* add extra field to binding to    */
-{                                     /* hold list of dependents           */
+/* Add extra field to binding to hold list of dependents */
+static void addDepField(Cell b) {
     snd(snd(b)) = pair(NIL, snd(snd(b)));
 }
 
-static Void local remDepField(List bs) /* remove dependency field from     */
-{                                      /* list of bindings                 */
+/* Remove dependency field from list of bindings */
+static void remDepField(List bs) {
     mapProc(remDepField1, bs);
 }
 
-static Void local remDepField1(Cell b) /* remove dependency field from     */
-{                                      /* single binding                   */
+/* Remove dependency field from single binding */
+static void remDepField1(Cell b) {
     snd(snd(b)) = snd(snd(snd(b)));
 }
 
-Void clearScope() { /* initialise dependency scoping    */
+/* Initialise dependency scoping */
+void clearScope(void) {
     bounds = NIL;
     bindings = NIL;
     depends = NIL;
 }
 
-Void withinScope(List bs) /* Enter scope of bindings bs       */
-{
+/* Enter scope of bindings bs */
+void withinScope(List bs) {
     bounds = cons(NIL, bounds);
     bindings = cons(bs, bindings);
     depends = cons(NIL, depends);
 }
 
-Void leaveScope() {         /* Leave scope of last withinScope */
+/* Leave scope of last withinScope */
+void leaveScope(void) {
     List bs = hd(bindings); /* Remove fixity info from binds   */
-    Bool toplevel = isNull(tl(bindings));
+    bool toplevel = isNull(tl(bindings));
     for (; nonNull(bs); bs = tl(bs)) {
         Cell b = hd(bs);
         if (isVar(fst(b))) { /* Variable binding                   */
@@ -243,17 +242,15 @@ Void leaveScope() {         /* Leave scope of last withinScope */
     depends = tl(depends);
 }
 
-static Void local dropNameClash(Cell v) {
+static void dropNameClash(Cell v) {
     Name n = findName(textOf(v));
     if (!isNull(n) && nonNull(nameRec(n)->clashes)) {
         nameRec(n)->clashes = tl(nameRec(n)->clashes);
     }
 }
 
-static Void local saveSyntax(Cell v,
-                             Cell sy) /* Save syntax of top-level var      */
-                                      /* in corresponding Name     */
-{
+/* Save syntax of top-level var in corresponding Name */
+static void saveSyntax(Cell v, Cell sy) {
     Name n = findName(textOf(v));
     if (isNull(n) || nameRec(n)->syntax != NO_SYNTAX) {
         internal("saveSyntax");
@@ -277,8 +274,8 @@ static Void local saveSyntax(Cell v,
  * - No free (i.e. unbound) variables are used in the declaration list.
  * ------------------------------------------------------------------------*/
 
-static Void local depBinding(Cell b) /* find dependents of binding         */
-{
+/* Find dependents of binding */
+static void depBinding(Cell b) {
     Cell defpart = snd(snd(snd(b))); /* definition part of binding         */
 
     hd(depends) = NIL;
@@ -291,7 +288,7 @@ static Void local depBinding(Cell b) /* find dependents of binding         */
             fst(fst(snd(b))) = ap(IMPDEPS, hd(depends));
         }
     } else { /* pattern-binding?                   */
-        Int line = rhsLine(snd(defpart));
+        int line = rhsLine(snd(defpart));
         enterBtyvs();
         patVars = NIL;
         fst(defpart) = checkPat(line, fst(defpart));
@@ -301,29 +298,28 @@ static Void local depBinding(Cell b) /* find dependents of binding         */
     depVal(b) = hd(depends);
 }
 
-Void depDefaults(Class c) /* dependency analysis on defaults  */
-{                         /* from class definition            */
+/* Dependency analysis on defaults from class definition */
+void depDefaults(Class c) {
     depClassBindings(cclassRec(c)->defaults);
 }
 
-Void depInsts(Inst in) /* dependency analysis on instance  */
-{                      /* bindings                         */
+/* Dependency analysis on instance bindings */
+void depInsts(Inst in) {
     depClassBindings(instRec(in)->implements);
 }
 
-static Void local
-depClassBindings(List bs)                 /* dependency analysis on list of   */
-{                                         /* bindings, possibly containing    */
-    for (; nonNull(bs); bs = tl(bs)) {    /* NIL bindings ...                 */
+/* Dependency analysis on list of bindings, possibly containing NIL bindings
+ * ... */
+static void depClassBindings(List bs) {
+    for (; nonNull(bs); bs = tl(bs)) {
         if (nonNull(hd(bs))) {            /* No need to add extra field for   */
             mapProc(depAlt, snd(hd(bs))); /* dependency information...     */
         }
     }
 }
 
-static Cell local depLetRec(Bool isRhs, Int line,
-                            Cell e) /* dependency analysis on a letrec    */
-{                                   /* expr, containing a set of bindings */
+/* Dependency analysis on a letrec expr, containing a set of bindings */
+static Cell depLetRec(bool isRhs, int line, Cell e) {
 
     fst(snd(e)) = eqnsToBindings(fst(snd(e)), NIL, NIL, NIL);
     withinScope(fst(snd(e)));
@@ -338,8 +334,8 @@ static Cell local depLetRec(Bool isRhs, Int line,
     return e;
 }
 
-static Void local depAlt(Cell a) /* Find dependents of alternative  */
-{
+/* Find dependents of alternative */
+static void depAlt(Cell a) {
     List obvs = saveBvars(); /* Save list of bound variables       */
     enterBtyvs();
     bindPats(rhsLine(snd(a)), fst(a)); /* add new bound vars for patterns */
@@ -348,15 +344,15 @@ static Void local depAlt(Cell a) /* Find dependents of alternative  */
     restoreBvars(obvs); /* restore original list of bvars  */
 }
 
-static Void local depRhs(Cell r) /* Find dependents of rhs         */
-{
+/* Find dependents of rhs */
+static void depRhs(Cell r) {
     switch (whatIs(r)) {
     case GUARDED:
         mapProc(depGuard, snd(r));
         break;
 
     case LETREC:
-        r = depLetRec(TRUE, rhsLine(snd(snd(r))), r);
+        r = depLetRec(true, rhsLine(snd(snd(r))), r);
         break;
 
     case RSIGN:
@@ -371,29 +367,29 @@ static Void local depRhs(Cell r) /* Find dependents of rhs         */
     }
 }
 
-static Void local depGuard(Cell g) /* find dependents of single guarded*/
-{                                  /* expression                           */
+/* Find dependents of single guarded expression */
+static void depGuard(Cell g) {
     depPair(intOf(fst(g)), snd(g));
 }
 
-Cell depExpr(Int line, Cell e) /* find dependents of expression    */
-{
+/* Find dependents of expression */
+Cell depExpr(int line, Cell e) {
     stackCheck();
     switch (whatIs(e)) {
 
     case VARIDCELL:
     case VAROPCELL:
-        return depVar(line, e, TRUE);
+        return depVar(line, e, true);
 
     case CONIDCELL:
     case CONOPCELL:
-        return conDefined(line, e, TRUE);
+        return conDefined(line, e, true);
 
     case QUALIDENT:
         if (isQVar(e)) {
-            return depQVar(line, e, TRUE);
+            return depQVar(line, e, true);
         } else { /* QConOrConOp */
-            return conDefined(line, e, TRUE);
+            return conDefined(line, e, true);
         }
 
     case INFIX:
@@ -423,7 +419,7 @@ Cell depExpr(Int line, Cell e) /* find dependents of expression    */
         break;
 
     case LETREC:
-        e = depLetRec(FALSE, line, e);
+        e = depLetRec(false, line, e);
         break;
 
     case LAMBDA:
@@ -447,7 +443,7 @@ Cell depExpr(Int line, Cell e) /* find dependents of expression    */
         break;
 
     case CONFLDS:
-        depConFlds(line, e, FALSE);
+        depConFlds(line, e, false);
         break;
 
     case UPDFLDS:
@@ -475,24 +471,21 @@ Cell depExpr(Int line, Cell e) /* find dependents of expression    */
     return e;
 }
 
-static Void local depPair(Int line,
-                          Cell e) /* find dependents of pair of exprs*/
-{
+/* Find dependents of pair of exprs */
+static void depPair(int line, Cell e) {
     fst(e) = depExpr(line, fst(e));
     snd(e) = depExpr(line, snd(e));
 }
 
-static Void local depTriple(Int line,
-                            Cell e) /* find dependents of triple exprs */
-{
+/* Find dependents of triple exprs */
+static void depTriple(int line, Cell e) {
     fst3(e) = depExpr(line, fst3(e));
     snd3(e) = depExpr(line, snd3(e));
     thd3(e) = depExpr(line, thd3(e));
 }
 
-static Void local depComp(Int l, Cell e,
-                          List qs) /* find dependents of comprehension*/
-{
+/* Find dependents of comprehension */
+static void depComp(int l, Cell e, List qs) {
     if (isNull(qs)) {
         fst(e) = depExpr(l, fst(e));
     } else {
@@ -529,9 +522,8 @@ static Void local depComp(Int l, Cell e,
     }
 }
 
-static Void local depCaseAlt(Int line,
-                             Cell a) /* Find dependents of case altern. */
-{
+/* Find dependents of case altern. */
+static void depCaseAlt(int line, Cell a) {
     List obvs = saveBvars(); /* Save list of bound variables       */
     enterBtyvs();
     fst(a) = bindPat(line, fst(a)); /* Add new bound vars for pats         */
@@ -540,8 +532,8 @@ static Void local depCaseAlt(Int line,
     restoreBvars(obvs); /* Restore original list of bvars  */
 }
 
-Void checkNameAmbigName(Int line, Cell n, Bool isV) {
-    String kind = (isV ? "variable" : "data constructor");
+void checkNameAmbigName(int line, Cell n, bool isV) {
+    char *kind = (isV ? "variable" : "data constructor");
     if (!isNull(n) && nonNull(nameRec(n)->clashes)) {
         Text t = nameRec(n)->text;
         List ls = nameRec(n)->clashes;
@@ -560,7 +552,7 @@ Void checkNameAmbigName(Int line, Cell n, Bool isV) {
     }
 }
 
-static Void local checkNameAmbig(Int line, Text t, Cell e) {
+static void checkNameAmbig(int line, Text t, Cell e) {
     Name n;
 
     if (isName(e)) {
@@ -568,12 +560,11 @@ static Void local checkNameAmbig(Int line, Text t, Cell e) {
     } else {
         n = findName(t);
     }
-    checkNameAmbigName(line, n, TRUE);
+    checkNameAmbigName(line, n, true);
 }
 
-static Cell local depVar(Int line, Cell e,
-                         Bool check) /* Register occurrence of variable */
-{
+/* Register occurrence of variable */
+static Cell depVar(int line, Cell e, bool check) {
     List bounds1 = bounds;
     List bindings1 = bindings;
     List depends1 = depends;
@@ -623,11 +614,10 @@ static Cell local depVar(Int line, Cell e,
     return e;
 }
 
-Cell depQVar(Int line, Cell e,
-             Bool isV) /* register occurrence of qualified variable */
-{
+/* Register occurrence of qualified variable */
+Cell depQVar(int line, Cell e, bool isV) {
     List ns = findQualNames(e);
-    String kind = (isV ? "variable" : "data constructor");
+    char *kind = (isV ? "variable" : "data constructor");
     Name n;
     if (isNull(ns)) { /* check global definitions */
         errHead(line);
@@ -658,13 +648,12 @@ Cell depQVar(Int line, Cell e,
     } else {
         e = mkVarop(qtextOf(e));
     }
-    return depVar(line, e, FALSE);
+    return depVar(line, e, false);
 }
 
-Void depConFlds(Int line, Cell e,
-                Bool isP) /* check construction using fields */
-{
-    Name c = conDefined(line, fst(snd(e)), TRUE);
+/* Check construction using fields */
+void depConFlds(int line, Cell e, bool isP) {
+    Name c = conDefined(line, fst(snd(e)), true);
     if (isNull(snd(snd(e))) ||
         nonNull(cellIsMember(c, depFields(line, e, snd(snd(e)), isP)))) {
         fst(snd(e)) = c;
@@ -680,7 +669,7 @@ Void depConFlds(Int line, Cell e,
         isPair(nameRec(c)->defn)) {       /* Check that banged fields defined*/
         List scs = fst(nameRec(c)->defn); /* List of strict components       */
         Type t = nameRec(c)->type;
-        Int a = userArity(c);
+        int a = userArity(c);
         List fs = snd(snd(e));
         List ss;
         if (isPolyType(t)) { /* Find tycon that c belongs to       */
@@ -706,7 +695,7 @@ Void depConFlds(Int line, Cell e,
          * cross reference, and convert integers to selector names.
          */
         for (; nonNull(scs); scs = tl(scs)) {
-            Int i = intOf(hd(scs));
+            int i = intOf(hd(scs));
             List ss1 = ss;
             for (; nonNull(ss1); ss1 = tl(ss1)) {
                 List cns = nameRec(hd(ss1))->defn;
@@ -742,21 +731,19 @@ Void depConFlds(Int line, Cell e,
     }
 }
 
-static Void local depUpdFlds(Int line,
-                             Cell e) /* check update using fields          */
-{
+/* Check update using fields */
+static void depUpdFlds(int line, Cell e) {
     if (isNull(thd3(snd(e)))) {
         errHead(line);
         errPrintf("Empty field list in update");
         errFail();
     }
     fst3(snd(e)) = depExpr(line, fst3(snd(e)));
-    snd3(snd(e)) = depFields(line, e, thd3(snd(e)), FALSE);
+    snd3(snd(e)) = depFields(line, e, thd3(snd(e)), false);
 }
 
-static List local depFields(Int l, Cell e, List fs,
-                            Bool isP) /* check field binding list          */
-{
+/* Check field binding list */
+static List depFields(int l, Cell e, List fs, bool isP) {
     List cs = NIL;
     List ss = NIL;
 
@@ -837,32 +824,32 @@ static List local depFields(Int l, Cell e, List fs,
  * kind field until kinds are inferred; bindings keep theirs in depVal.
  * ------------------------------------------------------------------------*/
 
-static Cell local tcDepends(Cell c) {
+static Cell tcDepends(Cell c) {
     return isTycon(c) ? tyconRec(c)->kind : cclassRec(c)->kinds;
 }
 
-static Void local tcSetDepends(Cell c, Cell v) {
+static void tcSetDepends(Cell c, Cell v) {
     if (isTycon(c))
         tyconRec(c)->kind = v;
     else
         cclassRec(c)->kinds = v;
 }
 
-List tcscc(List ts, List cs) /* scc for tycons and classes    */
-{
+/* Scc for tycons and classes */
+List tcscc(List ts, List cs) {
     return sccSort(ts, cs, tcDepends, tcSetDepends);
 }
 
-static Cell local bDepends(Cell b) {
+static Cell bDepends(Cell b) {
     return depVal(b);
 }
 
-static Void local bSetDepends(Cell b, Cell v) {
+static void bSetDepends(Cell b, Cell v) {
     depVal(b) = v;
 }
 
-static List local bscc(List bs) /* scc for bindings                */
-{
+/* Scc for bindings */
+static List bscc(List bs) {
     return sccSort(bs, NIL, bDepends, bSetDepends);
 }
 
@@ -878,7 +865,7 @@ static Cell *const dependRoots[] = {
     &depends,
 };
 
-Void dependControl(Int what) {
+void dependControl(int what) {
     switch (what) {
     case RESET:
         bounds = NIL;

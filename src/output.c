@@ -6,10 +6,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: output.c,v $
- * $Revision: 1.40 $
- * $Date: 2005/11/02 15:57:56 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -25,43 +21,43 @@
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local putChr(Int);
-static Void local putStr(String);
-static Void local putInt(Int);
+static void putChr(int);
+static void putStr(char *);
+static void putInt(int);
 
-static Void local put(Int, Cell);
-static Void local putFlds(Cell, List);
-static Void local putComp(Cell, List);
-static Void local putQual(Cell);
-static Bool local isDictVal(Cell);
-static Cell local maySkipDict(Cell);
-static Void local putAp(Int, Cell);
-static Void local putOverInfix(Int, Text, Syntax, Cell);
-static Void local putInfix(Int, Text, Syntax, Cell, Cell);
-static Void local putSimpleAp(Cell, Int);
-static Void local putTuple(Int, Cell);
-static Int local unusedTups(Int, Cell);
-static Void local unlexVar(Text);
-static Void local unlexOp(Text);
-static Void local unlexCharConst(Char);
-static Void local unlexStrConst(Text);
+static void put(int, Cell);
+static void putFlds(Cell, List);
+static void putComp(Cell, List);
+static void putQual(Cell);
+static bool isDictVal(Cell);
+static Cell maySkipDict(Cell);
+static void putAp(int, Cell);
+static void putOverInfix(int, Text, Syntax, Cell);
+static void putInfix(int, Text, Syntax, Cell, Cell);
+static void putSimpleAp(Cell, int);
+static void putTuple(int, Cell);
+static int unusedTups(int, Cell);
+static void unlexVar(Text);
+static void unlexOp(Text);
+static void unlexCharConst(Char);
+static void unlexStrConst(Text);
 
-static Void local putSigType(Cell);
-static Void local putContext(List, List, Int);
-static Void local putPred(Cell, Int);
-static Void local putType(Cell, Int, Int);
-static Void local putModule(Module);
-static Void local putTyVar(Int);
-static Bool local putTupleType(Cell, Int);
-static Void local putApType(Type, Int, Int);
+static void putSigType(Cell);
+static void putContext(List, List, int);
+static void putPred(Cell, int);
+static void putType(Cell, int, int);
+static void putModule(Module);
+static void putTyVar(int);
+static bool putTupleType(Cell, int);
+static void putApType(Type, int, int);
 
-static Void local putKind(Kind);
-static Void local putKinds(Kinds);
+static void putKind(Kind);
+static void putKinds(Kinds);
 
-static Bool local isStrConst(Cell);
-static Void local putStrConst(Cell);
-static Bool local isCharCell(Cell);
-static Char local getCellChar(Cell);
+static bool isStrConst(Cell);
+static void putStrConst(Cell);
+static bool isCharCell(Cell);
+static Char getCellChar(Cell);
 
 /* --------------------------------------------------------------------------
  * Basic output routines:
@@ -76,22 +72,22 @@ static FILE *outputStream; /* current output stream                */
     if (b)                                                                     \
         putChr(')');
 
-static Void local putChr(Int c) /* print single character                  */
-{
+/* Print single character */
+static void putChr(int c) {
     Putc(c, outputStream);
 }
 
-static Void local putStr(String s) /* print string                         */
-{
+/* Print string */
+static void putStr(char *s) {
     for (; *s; s++) {
         Putc(*s, outputStream);
     }
 }
 
-static Void local putInt(Int n) /* print integer                           */
-{
+/* Print integer */
+static void putInt(int n) {
     static char intBuf[16];
-    sprintf(intBuf, "%d", n);
+    snprintf(intBuf, sizeof intBuf, "%d", n);
     putStr(intBuf);
 }
 
@@ -113,11 +109,10 @@ static Void local putInt(Int n) /* print integer                           */
  * Print an expression (used to display context of type errors):
  * ------------------------------------------------------------------------*/
 
-static Int putDepth = 0; /* limits depth of printing DBG     */
+static int putDepth = 0; /* limits depth of printing DBG     */
 
-static Void local put(Int d, Cell e) /* print expression e in context of */
-                                     /* operator of precedence d         */
-{
+/* Print expression e in context of operator of precedence d */
+static void put(int d, Cell e) {
     List xs;
 
     if (putDepth > DEPTH_LIMIT) {
@@ -197,7 +192,7 @@ static Void local put(Int d, Cell e) /* print expression e in context of */
         break;
 
     case INTCELL: {
-        Int i = intOf(e);
+        int i = intOf(e);
         if (i < 0 && d >= UMINUS_PREC)
             putChr('(');
         putInt(i);
@@ -318,9 +313,8 @@ static Void local put(Int d, Cell e) /* print expression e in context of */
     putDepth--;
 }
 
-static Void local putFlds(Cell exp,
-                          List fs) /* Output exp using labelled fields*/
-{
+/* Output exp using labelled fields */
+static void putFlds(Cell exp, List fs) {
     put(ALWAYS, exp);
     putStr(" {");
     for (; nonNull(fs); fs = tl(fs)) {
@@ -349,8 +343,8 @@ static Void local putFlds(Cell exp,
     putChr('}');
 }
 
-static Void local putComp(Cell e, List qs) /* print comprehension             */
-{
+/* Print comprehension */
+static void putComp(Cell e, List qs) {
     putStr("[ ");
     put(NEVER, e);
     if (nonNull(qs)) {
@@ -364,8 +358,8 @@ static Void local putComp(Cell e, List qs) /* print comprehension             */
     putStr(" ]");
 }
 
-static Void local putQual(Cell q) /* print list comp qualifier       */
-{
+/* Print list comp qualifier */
+static void putQual(Cell q) {
     switch (whatIs(q)) {
     case BOOLQUAL:
         put(NEVER, snd(q));
@@ -385,35 +379,35 @@ static Void local putQual(Cell q) /* print list comp qualifier       */
     }
 }
 
-static Bool local isDictVal(Cell e) /* Look for dictionary value       */
-{
+/* Look for dictionary value */
+static bool isDictVal(Cell e) {
 #if !DEBUG_CODE
     Cell h = getHead(e);
     switch (whatIs(h)) {
     case DICTVAR:
-        return TRUE;
+        return true;
     case NAME:
         return isDfun(h);
     default:
         break;
     }
 #endif
-    return FALSE;
+    return false;
 }
 
-static Cell local maySkipDict(Cell e) /* descend function application,   */
-{                                     /* ignoring dict aps               */
+/* Descend function application, ignoring dict aps */
+static Cell maySkipDict(Cell e) {
     while (isAp(e) && isDictVal(arg(e)))
         e = fun(e);
     return e;
 }
 
-static Void local putAp(Int d, Cell e) /* print application (args>=1)     */
-{
+/* Print application (args>=1) */
+static void putAp(int d, Cell e) {
     Cell h = NIL;
     Text t = NIL;
     Syntax sy = NIL;
-    Int args = 0;
+    int args = 0;
 
     for (h = e; isAp(h); h = fun(h)) /* find head of expression, looking*/
         if (!isDictVal(arg(h)))      /* for dictionary arguments        */
@@ -480,7 +474,7 @@ static Void local putAp(Int d, Cell e) /* print application (args>=1)     */
     }
 }
 
-static Void local putStrConst(Cell e) {
+static void putStrConst(Cell e) {
     putChr('"');
     while (isAp(e) && isAp(fun(e)) && fun(fun(e)) == nameCons) {
         putStr(unlexChar(getCellChar(arg(fun(e))), '"'));
@@ -491,16 +485,16 @@ static Void local putStrConst(Cell e) {
     putChr('"');
 }
 
-static Bool local isStrConst(Cell e) {
+static bool isStrConst(Cell e) {
     while (isAp(e) && isAp(fun(e)) && fun(fun(e)) == nameCons) {
         if (!isCharCell(arg(fun(e))))
-            return FALSE;
+            return false;
         e = arg(e);
     }
     return e == nameNil;
 }
 
-static Bool local isCharCell(Cell e) {
+static bool isCharCell(Cell e) {
     while (1)
         switch (whatIs(e)) {
         case CHARCELL:
@@ -513,7 +507,7 @@ static Bool local isCharCell(Cell e) {
         }
 }
 
-static Char local getCellChar(Cell e) {
+static Char getCellChar(Cell e) {
     while (1)
         switch (whatIs(e)) {
         case CHARCELL:
@@ -526,9 +520,8 @@ static Char local getCellChar(Cell e) {
         }
 }
 
-static Void local putOverInfix(Int args, Text t, Syntax sy, Cell e)
-/* infix applied to >= 3 arguments  */
-{
+/* Infix applied to >= 3 arguments */
+static void putOverInfix(int args, Text t, Syntax sy, Cell e) {
     if (args > 2) {
         putOverInfix(args - 1, t, sy, maySkipDict(fun(e)));
         putChr(' ');
@@ -537,13 +530,11 @@ static Void local putOverInfix(Int args, Text t, Syntax sy, Cell e)
         putInfix(ALWAYS, t, sy, arg(maySkipDict(fun(e))), arg(e));
 }
 
-static Void local putInfix(Int d, Text t, Syntax sy, Cell e,
-                           Cell f) /* print infix expression          */
-                                   /* Infix operator symbol           */
-                                   /* with name t, syntax s           */
-{                                  /* Left and right operands         */
+/* Print infix expression Infix operator symbol with name t, syntax s Left and
+ * right operands */
+static void putInfix(int d, Text t, Syntax sy, Cell e, Cell f) {
     Syntax a = assocOf(sy);
-    Int p = precOf(sy);
+    int p = precOf(sy);
     OPEN(d > p);
     put((a == LEFT_ASS ? p : 1 + p), e);
     putChr(' ');
@@ -553,9 +544,8 @@ static Void local putInfix(Int d, Text t, Syntax sy, Cell e,
     CLOSE(d > p);
 }
 
-static Void local putSimpleAp(Cell e,
-                              Int n) /* print application e0 e1 ... en  */
-{
+/* Print application e0 e1 ... en */
+static void putSimpleAp(Cell e, int n) {
     if (n > 0) {
         putSimpleAp(maySkipDict(fun(e)), n - 1);
         putChr(' ');
@@ -564,10 +554,10 @@ static Void local putSimpleAp(Cell e,
         put(FUN_PREC, e);
 }
 
-static Void local putTuple(Int ts, Cell e) /* Print tuple expression, allowing*/
-                                           /* for possibility of either too   */
-{                                          /* few or too many args to constr  */
-    Int i;
+/* Print tuple expression, allowing for possibility of either too few or too
+ * many args to constr */
+static void putTuple(int ts, Cell e) {
+    int i;
     putChr('(');
     if ((i = unusedTups(ts, e)) > 0) {
         while (--i > 0)
@@ -576,10 +566,9 @@ static Void local putTuple(Int ts, Cell e) /* Print tuple expression, allowing*/
     }
 }
 
-static Int local unusedTups(Int ts,
-                            Cell e) /* print first part of tuple expr  */
-                                    /* returning number of constructor */
-{                                   /* args not yet printed ...        */
+/* Print first part of tuple expr returning number of constructor args not yet
+ * printed ... */
+static int unusedTups(int ts, Cell e) {
     if (isAp(e)) {
         if ((ts = unusedTups(ts, fun(e)) - 1) >= 0) {
             put(NEVER, arg(e));
@@ -592,9 +581,10 @@ static Int local unusedTups(Int ts,
     return ts;
 }
 
-static Void local unlexVar(Text t) /* print text as a variable name    */
-{                                  /* operator symbols must be enclosed*/
-    String s = textToStr(t);       /* in parentheses... except [] ...  */
+/* Print text as a variable name operator symbols must be enclosed in
+ * parentheses... except [] ... */
+static void unlexVar(Text t) {
+    char *s = textToStr(t);
     if ((isascii(s[0]) && isalpha(s[0])) || s[0] == '_' || s[0] == '[' ||
         s[0] == '(')
         putStr(s);
@@ -605,9 +595,10 @@ static Void local unlexVar(Text t) /* print text as a variable name    */
     }
 }
 
-static Void local unlexOp(Text t) /* print text as operator name      */
-{                                 /* alpha numeric symbols must be    */
-    String s = textToStr(t);      /* enclosed by backquotes           */
+/* Print text as operator name alpha numeric symbols must be enclosed by
+ * backquotes */
+static void unlexOp(Text t) {
+    char *s = textToStr(t);
 
     if (isascii(s[0]) && isalpha(s[0])) {
         putChr('`');
@@ -617,22 +608,22 @@ static Void local unlexOp(Text t) /* print text as operator name      */
         putStr(s);
 }
 
-static Void local unlexCharConst(Char c) {
+static void unlexCharConst(Char c) {
     putChr('\'');
     putStr(unlexChar(c, '\''));
     putChr('\'');
 }
 
-static Void local unlexStrConst(Text t) {
-    String s = textToStr(t);
+static void unlexStrConst(Text t) {
+    char *s = textToStr(t);
     static Char SO = 14; /* ASCII code for '\SO'             */
-    Bool lastWasSO = FALSE;
-    Bool lastWasDigit = FALSE;
-    Bool lastWasEsc = FALSE;
+    bool lastWasSO = false;
+    bool lastWasDigit = false;
+    bool lastWasEsc = false;
 
     putChr('\"');
     while (*s) {
-        String ch;
+        char *ch;
         Char c = ' ';
         Char sc = getStrChr(&s);
 
@@ -660,9 +651,9 @@ static Void local unlexStrConst(Text t) {
  * Print type expression:
  * ------------------------------------------------------------------------*/
 
-static Void local putSigType(Cell t) /* print (possibly) generic type   */
-{
-    Int fr = 0;
+/* Print (possibly) generic type */
+static void putSigType(Cell t) {
+    int fr = 0;
     if (isPolyType(t)) {
         Kinds ks = polySigOf(t);
         for (; isAp(ks); ks = tl(ks))
@@ -673,12 +664,11 @@ static Void local putSigType(Cell t) /* print (possibly) generic type   */
     putType(t, NEVER, fr); /* Finally, print rest of type ... */
 }
 
-static Void local putContext(List ps, List qs,
-                             Int fr) /* print context list                 */
-{
-    Int len = length(ps) + length(qs);
-    Int c = len;
-    Bool useParens = len != 1;
+/* Print context list */
+static void putContext(List ps, List qs, int fr) {
+    int len = length(ps) + length(qs);
+    int c = len;
+    bool useParens = len != 1;
     if (useParens)
         putChr('(');
     for (; nonNull(ps); ps = tl(ps)) {
@@ -697,8 +687,8 @@ static Void local putContext(List ps, List qs,
         putChr(')');
 }
 
-static Void local putPred(Cell pi, Int fr) /* Output predicate             */
-{
+/* Output predicate */
+static void putPred(Cell pi, int fr) {
     if (isAp(pi)) {
         putPred(fun(pi), fr);
         putChr(' ');
@@ -712,9 +702,8 @@ static Void local putPred(Cell pi, Int fr) /* Output predicate             */
         putStr("<unknownPredicate>");
 }
 
-static Void local putType(Cell t, Int prec,
-                          Int fr) /* print nongeneric type expression*/
-{
+/* Print nongeneric type expression */
+static void putType(Cell t, int prec, int fr) {
     switch (whatIs(t)) {
     case TYCON:
         putModule(tyconRec(t)->mod);
@@ -722,7 +711,7 @@ static Void local putType(Cell t, Int prec,
         break;
 
     case TUPLE: {
-        Int n = tupleOf(t);
+        int n = tupleOf(t);
         putChr('(');
         while (--n > 0)
             putChr(',');
@@ -780,8 +769,8 @@ static Void local putType(Cell t, Int prec,
 
     case AP: {
         Cell typeHead = getHead(t);
-        Bool brackets = (argCount != 0 && prec >= ALWAYS);
-        Int args = argCount;
+        bool brackets = (argCount != 0 && prec >= ALWAYS);
+        int args = argCount;
 
         if (typeHead == typeList) {
             if (argCount == 1) {
@@ -825,31 +814,29 @@ static Void local putType(Cell t, Int prec,
     }
 }
 
-static Void local putTyVar(Int n) /* print type variable             */
-{
-    static String alphabet /* for the benefit of EBCDIC :-)   */
+/* Print type variable */
+static void putTyVar(int n) {
+    static char *alphabet /* for the benefit of EBCDIC :-)   */
         = "abcdefghijklmnopqrstuvwxyz";
     putChr(alphabet[n % 26]);
     if (n /= 26) /* just in case there are > 26 vars*/
         putInt(n);
 }
 
-static Bool local putTupleType(Cell e,
-                               Int fr) /* print tuple of types, returning */
-                                       /* TRUE if something was printed,  */
-{                                      /* FALSE otherwise; used to control*/
-    if (isAp(e)) {                     /* printing of intermed. commas    */
+/* Print tuple of types, returning true if something was printed, false
+ * otherwise; used to control printing of intermed. commas */
+static bool putTupleType(Cell e, int fr) {
+    if (isAp(e)) {
         if (putTupleType(fun(e), fr))
             putChr(',');
         putType(arg(e), NEVER, fr);
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
-static Void local putApType(Cell t, Int n,
-                            Int fr) /* print type application          */
-{
+/* Print type application */
+static void putApType(Cell t, int n, int fr) {
     if (n > 0) {
         putApType(fun(t), n - 1, fr);
         putChr(' ');
@@ -862,8 +849,8 @@ static Void local putApType(Cell t, Int n,
  * Print kind expression:
  * ------------------------------------------------------------------------*/
 
-static Void local putKind(Kind k) /* print kind expression           */
-{
+/* Print kind expression */
+static void putKind(Kind k) {
     switch (whatIs(k)) {
     case AP:
         if (isAp(fst(k))) {
@@ -896,8 +883,8 @@ static Void local putKind(Kind k) /* print kind expression           */
     }
 }
 
-static Void local putKinds(Kinds ks) /* Print list of kinds                */
-{
+/* Print list of kinds */
+static void putKinds(Kinds ks) {
     if (isNull(ks))
         putStr("()");
     else if (nonNull(tl(ks))) {
@@ -919,10 +906,10 @@ static Void local putKinds(Kinds ks) /* Print list of kinds                */
 /* --------------------------------------------------------------------------
  * Print qualified module name (if wanted):
  * ------------------------------------------------------------------------*/
-Bool useQualifiedNames = FALSE;
+bool useQualifiedNames = false;
 
-static Void local putModule(Module m) /* print module qualifier        */
-{
+/* Print module qualifier */
+static void putModule(Module m) {
     if (useQualifiedNames &&
         !isPrelude(m)) { /* leave out "Prelude." qualifiers, too noisy. */
         putStr(textToStr(moduleRec(m)->text));
@@ -933,45 +920,45 @@ static Void local putModule(Module m) /* print module qualifier        */
  * Main drivers:
  * ------------------------------------------------------------------------*/
 
-Void printExp(FILE *fp, Cell e) /* print expr on specified stream  */
-{
+/* Print expr on specified stream */
+void printExp(FILE *fp, Cell e) {
     outputStream = fp;
     putDepth = 0;
     put(NEVER, e);
 }
 
-Void printType(FILE *fp, Cell t) /* print type on specified stream  */
-{
+/* Print type on specified stream */
+void printType(FILE *fp, Cell t) {
     outputStream = fp;
     putSigType(t);
 }
 
-Void printContext(FILE *fp, List qs) /* print context on spec. stream   */
-{
+/* Print context on spec. stream */
+void printContext(FILE *fp, List qs) {
     outputStream = fp;
     putContext(qs, NIL, 0);
 }
 
-Void printPred(FILE *fp, Cell pi) /* print predicate pi on stream    */
-{
+/* Print predicate pi on stream */
+void printPred(FILE *fp, Cell pi) {
     outputStream = fp;
     putPred(pi, 0);
 }
 
-Void printKind(FILE *fp, Kind k) /* print kind k on stream          */
-{
+/* Print kind k on stream */
+void printKind(FILE *fp, Kind k) {
     outputStream = fp;
     putKind(k);
 }
 
-Void printKinds(FILE *fp, Kinds ks) /* print list of kinds on stream   */
-{
+/* Print list of kinds on stream */
+void printKinds(FILE *fp, Kinds ks) {
     outputStream = fp;
     putKinds(ks);
 }
 
-Void printFD(FILE *fp, Pair fd) /* print functional dependency     */
-{
+/* Print functional dependency */
+void printFD(FILE *fp, Pair fd) {
     List us;
     outputStream = fp;
     for (us = fst(fd); nonNull(us); us = tl(us)) {

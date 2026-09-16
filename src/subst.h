@@ -5,10 +5,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: subst.h,v $
- * $Revision: 1.11 $
- * $Date: 2004/11/04 00:01:31 $
  * ------------------------------------------------------------------------*/
 #ifndef __SUBST_H__
 #define __SUBST_H__
@@ -21,37 +17,37 @@
 
 typedef struct { /* Each type variable contains:           */
     Type bound;  /* A type skeleton (unbound==NIL)  */
-    Int offs;    /* Offset for skeleton            */
+    int offs;    /* Offset for skeleton            */
     Kind kind;   /* kind annotation                */
 } Tyvar;
 
 extern Tyvar *tyvars; /* storage for type variables        */
-extern Int typeOff;   /* offset of result type     */
+extern int typeOff;   /* offset of result type     */
 extern Type typeIs;   /* skeleton of result type           */
-CUDDLES_inline Void inferType(Type t, Int o) {
+CUDDLES_inline void inferType(Type t, int o) {
     typeIs = t;
     typeOff = o;
 }
-extern Int typeFree;     /* freedom in instantiated type           */
+extern int typeFree;     /* freedom in instantiated type           */
 extern List predsAre;    /* list of predicates in type     */
 extern List genericVars; /* list of generic vars                   */
 extern List btyvars;     /* explicitly scoped type vars    */
 
-CUDDLES_inline Tyvar *tyvar(Int n) {
+CUDDLES_inline Tyvar *tyvar(int n) {
     return tyvars + n;
 } /* nth type variable     */
-CUDDLES_inline Int tyvNum(Tyvar *t) {
-    return (Int)(t - tyvars);
+CUDDLES_inline int tyvNum(Tyvar *t) {
+    return (int)(t - tyvars);
 } /* and its inverse       */
-CUDDLES_inline Bool isBound(Tyvar *t) {
+CUDDLES_inline bool isBound(Tyvar *t) {
     return t->bound && t->bound != SKOLEM;
 }
 #define aVar mkOffset(0) /* Simple skeletons for type vars  */
 #define bVar mkOffset(1)
-CUDDLES_inline Void enterBtyvs(Void) {
+CUDDLES_inline void enterBtyvs(void) {
     btyvars = cons(NIL, btyvars);
 }
-CUDDLES_inline Void leaveBtyvs(Void) {
+CUDDLES_inline void leaveBtyvs(void) {
     btyvars = tl(btyvars);
 }
 
@@ -62,24 +58,24 @@ CUDDLES_inline Void leaveBtyvs(Void) {
 
 extern char *unifyFails; /* Unification error message      */
 
-extern Void emptySubstitution(Void);
-extern Int newTyvars(Int);
-CUDDLES_inline Int newKindvars(Int n) {
+extern void emptySubstitution(void);
+extern int newTyvars(int);
+CUDDLES_inline int newKindvars(int n) {
     return newTyvars(n);
 }
-extern Int newKindedVars(Kind);
-extern Void instantiate(Type);
+extern int newKindedVars(Kind);
+extern void instantiate(Type);
 
 extern Pair findBtyvs(Text);
-extern Void markBtyvs(Void);
+extern void markBtyvs(void);
 extern Type localizeBtyvs(Type);
 
-extern Tyvar *getTypeVar(Type, Int);
+extern Tyvar *getTypeVar(Type, int);
 
 /* Follow the substitution from (t,o) to the first type that is not a
  * bound variable, updating t and o, and return that variable if it is
  * one, else NULL */
-CUDDLES_inline Tyvar *deRef(Type *t, Int *o) {
+CUDDLES_inline Tyvar *deRef(Type *t, int *o) {
     Tyvar *tyv;
     while ((tyv = getTypeVar(*t, *o)) && isBound(tyv)) {
         *t = tyv->bound;
@@ -87,54 +83,54 @@ CUDDLES_inline Tyvar *deRef(Type *t, Int *o) {
     }
     return tyv;
 }
-extern Void tyvarType(Int);
-extern Void bindTv(Int, Type, Int);
-extern Cell getDerefHead(Type, Int);
-extern Void expandSyn(Tycon, Int, Type *, Int *);
+extern void tyvarType(int);
+extern void bindTv(int, Type, int);
+extern Cell getDerefHead(Type, int);
+extern void expandSyn(Tycon, int, Type *, int *);
 
-extern Void clearMarks(Void);
-extern Void markAllVars(Void);
-extern Void resetGenerics(Void);
-extern Void markTyvar(Int);
-extern Void markType(Type, Int);
-extern Void markPred(Cell);
+extern void clearMarks(void);
+extern void markAllVars(void);
+extern void resetGenerics(void);
+extern void markTyvar(int);
+extern void markType(Type, int);
+extern void markPred(Cell);
 
-extern Type copyTyvar(Int);
-extern Type copyType(Type, Int);
-extern Cell copyPred(Cell, Int);
-extern Type dropRank2(Type, Int, Int);
-extern Type dropRank1(Type, Int, Int);
-extern Void liftRank2Args(List, Int, Int);
-extern Type liftRank2(Type, Int, Int);
-extern Type liftRank1(Type, Int, Int);
-extern Kind copyKindvar(Int);
-extern Kind copyKind(Kind, Int);
+extern Type copyTyvar(int);
+extern Type copyType(Type, int);
+extern Cell copyPred(Cell, int);
+extern Type dropRank2(Type, int, int);
+extern Type dropRank1(Type, int, int);
+extern void liftRank2Args(List, int, int);
+extern Type liftRank2(Type, int, int);
+extern Type liftRank1(Type, int, int);
+extern Kind copyKindvar(int);
+extern Kind copyKind(Kind, int);
 
-extern Bool eqKind(Kind, Kind);
-extern Kind getKind(Cell, Int);
+extern bool eqKind(Kind, Kind);
+extern Kind getKind(Cell, int);
 
-extern List genvarTyvar(Int, List);
-extern List genvarType(Type, Int, List);
+extern List genvarTyvar(int, List);
+extern List genvarType(Type, int, List);
 
-extern Bool doesntOccurIn(Tyvar *, Type, Int);
-extern Bool unify(Type, Int, Type, Int);
-extern Bool kunify(Kind, Int, Kind, Int);
+extern bool doesntOccurIn(Tyvar *, Type, int);
+extern bool unify(Type, int, Type, int);
+extern bool kunify(Kind, int, Kind, int);
 
-extern Void typeTuple(Cell);
-extern Kind simpleKind(Int);
-extern Void varKind(Int);
+extern void typeTuple(Cell);
+extern Kind simpleKind(int);
+extern void varKind(int);
 
-extern Bool samePred(Cell, Int, Cell, Int);
-extern Bool matchPred(Cell, Int, Cell, Int);
-extern Bool unifyPred(Cell, Int, Cell, Int);
-extern Inst findInstFor(Cell, Int);
+extern bool samePred(Cell, int, Cell, int);
+extern bool matchPred(Cell, int, Cell, int);
+extern bool unifyPred(Cell, int, Cell, int);
+extern Inst findInstFor(Cell, int);
 
-extern Void improve(Int, List, List);
-extern Void improve1(Int, List, Cell, Int);
+extern void improve(int, List, List);
+extern void improve1(int, List, Cell, int);
 
-extern Bool sameSchemes(Type, Type);
-extern Bool sameType(Type, Int, Type, Int);
-extern Bool matchType(Type, Int, Type, Int);
+extern bool sameSchemes(Type, Type);
+extern bool sameType(Type, int, Type, int);
+extern bool matchType(Type, int, Type, int);
 
 /*-------------------------------------------------------------------------*/
 

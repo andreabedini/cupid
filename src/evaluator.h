@@ -13,11 +13,11 @@
 #include "prelude.h"
 #include "storage.h"
 
-extern Void startEvaluator(Void);
-extern Void stopEvaluator(Void);
-extern Void evaluator(Module);
-extern Int runProgram(Module);
-extern Void everybody(Int);
-extern Void loadPrelude(Void);
+extern void startEvaluator(void);
+extern void stopEvaluator(void);
+extern void evaluator(Module);
+extern int runProgram(Module);
+extern void everybody(int);
+extern void loadPrelude(void);
 
 #endif /* __EVALUATOR_H__ */

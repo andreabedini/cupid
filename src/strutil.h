@@ -7,15 +7,15 @@
 #include "prelude.h"
 
 /* string copy operator, allocates new via malloc() */
-extern String strCopy(String);
+extern char *strCopy(char *);
 
 /* substring copy operator, allocates new via malloc() */
-extern String strnCopy(String, Int);
+extern char *strnCopy(char *, int);
 
 /* Given a string containing a possibly qualified name,
  * split it up into a module and a name portion.
  */
-extern Void splitQualString(String, String *, String *);
+extern void splitQualString(char *, char **, char **);
 
 /*
  * Auto-expandable string builder objects:
@@ -45,9 +45,9 @@ extern void freeStringBuilder(StringBuilder *b);
  * Append 'str' to the back of 'builder', expanding its
  * buffer to accommodate the added string, if needs be.
  *
- * Returns TRUE if successful.
+ * Returns true if successful.
  */
-extern Bool appendString(StringBuilder *b, char *str);
+extern bool appendString(StringBuilder *b, char *str);
 
 /*
  * Function: toString(builder)

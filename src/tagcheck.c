@@ -7,29 +7,29 @@
 #include "errors.h"
 #include "tagcheck.h"
 
-Bool isKindExpr(Cell k) {
+bool isKindExpr(Cell k) {
     switch (whatIs(k)) {
     case STAR:
     case OFFSET:
     case INTCELL:
-        return TRUE;
+        return true;
     case AP:
         return isKindExpr(fst(k)) && isKindExpr(snd(k));
     default:
-        return FALSE;
+        return false;
     }
 }
 
-Bool isKindsSig(Cell ks) /* k1 -> ... -> kn -> *, as generalize */
-{                        /* builds it; NIL entries and a NIL end  */
+/* K1 -> ... -> kn -> *, as generalize builds it; NIL entries and a NIL end */
+bool isKindsSig(Cell ks) {
     for (; isAp(ks);
          ks = snd(ks)) /* are the shape before fixKinds, and         */
         if (nonNull(fst(ks)) && !isKindExpr(fst(ks))) /* a class's kinds  */
-            return FALSE;
+            return false;
     return ks == STAR || isNull(ks);
 }
 
-Bool isTypeExpr(Cell t) {
+bool isTypeExpr(Cell t) {
     switch (whatIs(t)) {
     case TYCON:
     case TUPLE:
@@ -37,7 +37,7 @@ Bool isTypeExpr(Cell t) {
     case INTCELL:
     case VARIDCELL:
     case VAROPCELL:
-        return TRUE;
+        return true;
     case AP:
         return isTypeExpr(fst(t)) && isTypeExpr(snd(t));
     case POLYTYPE:
@@ -49,25 +49,25 @@ Bool isTypeExpr(Cell t) {
     case EXIST:
         return isInt(fst(snd(t))) && isTypeExpr(snd(snd(t)));
     default:
-        return FALSE;
+        return false;
     }
 }
 
-Bool isPredExpr(Cell pi) {
+bool isPredExpr(Cell pi) {
     for (; isAp(pi); pi = fst(pi))
         if (!isTypeExpr(snd(pi)))
-            return FALSE;
+            return false;
     return isClass(pi);
 }
 
-Bool isPredList(Cell ps) {
+bool isPredList(Cell ps) {
     for (; isPair(ps); ps = tl(ps))
         if (!isPredExpr(hd(ps)))
-            return FALSE;
+            return false;
     return isNull(ps);
 }
 
-Void tagError(const char *what, const char *fn, Cell c) {
+void tagError(const char *what, const char *fn, Cell c) {
     static char msg[120];
     /* c is by definition not the handle the caller expected, so it may be
      * any value at all.  whatIs reads heapTopFst[c] for a negative cell and

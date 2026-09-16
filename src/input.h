@@ -9,16 +9,16 @@
 #include "prelude.h"
 #include "storage.h"
 
-extern Int yylex(Void);          /* next token; its value is in yylval */
-extern Int row;                  /* current input line, for errors     */
-extern Void closeAnyInput(Void); /* end of a module: close the source  */
+extern int yylex(void);          /* next token; its value is in yylval */
+extern int row;                  /* current input line, for errors     */
+extern void closeAnyInput(void); /* end of a module: close the source  */
 
 /* The layout algorithm: the grammar's begin/end rules open and close
  * layout contexts, and can ask whether the current token may close one */
-extern Int column, startColumn;
-extern Void goOffside(Int);
-extern Void unOffside(Void);
-extern Bool canUnOffside(Void);
+extern int column, startColumn;
+extern void goOffside(int);
+extern void unOffside(void);
+extern bool canUnOffside(void);
 
 /* Identifiers the grammar compares against or builds with */
 extern Cell conMain;

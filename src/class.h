@@ -9,15 +9,15 @@
 #include "prelude.h"
 #include "storage.h"
 
-extern Void checkClassDefn(Class);  /* validate a class, first pass          */
-extern Void checkClassDefn2_(List); /* second pass over a kinded group       */
-extern Int visitClass(Class);       /* check the hierarchy is acyclic        */
-extern Void extendFundeps(Class);   /* inherit functional dependencies       */
-extern Void addMembers(Class);      /* make the member and selector names    */
-extern List classBindings(String, Class, List); /* order member bindings     */
-extern Void checkInstDefn(Inst);     /* validate an instance                  */
-extern Void insertInst(Inst);        /* add it to its class                   */
+extern void checkClassDefn(Class);  /* validate a class, first pass          */
+extern void checkClassDefn2_(List); /* second pass over a kinded group       */
+extern int visitClass(Class);       /* check the hierarchy is acyclic        */
+extern void extendFundeps(Class);   /* inherit functional dependencies       */
+extern void addMembers(Class);      /* make the member and selector names    */
+extern List classBindings(char *, Class, List); /* order member bindings     */
+extern void checkInstDefn(Inst);     /* validate an instance                  */
+extern void insertInst(Inst);        /* add it to its class                   */
 extern Name newInstImp(Inst);        /* make the name of its dictionary       */
-extern Void checkDefaultDefns(Void); /* validate the default declaration     */
+extern void checkDefaultDefns(void); /* validate the default declaration     */
 
 #endif /* __CLASS_H__ */

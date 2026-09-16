@@ -11,13 +11,13 @@
  * Display progress towards goal:
  * ------------------------------------------------------------------------*/
 static Target currTarget;
-static Bool aiming = FALSE;
-static Int currPos;
-static Int maxPos;
-static Int charCount;
+static bool aiming = false;
+static int currPos;
+static int maxPos;
+static int charCount;
 
-Void setGoal(String what, Target t) /* Set goal for what to be t        */
-{
+/* Set goal for what to be t */
+void setGoal(char *what, Target t) {
     if (quiet
 #if EXPLAIN_INSTANCE_RESOLUTION
         || showInstRes
@@ -25,9 +25,9 @@ Void setGoal(String what, Target t) /* Set goal for what to be t        */
     )
         return;
     currTarget = (t ? t : 1);
-    aiming = TRUE;
+    aiming = true;
     if (useDots) {
-        currPos = (Int)strlen(what);
+        currPos = (int)strlen(what);
         maxPos = getTerminalWidth() - 1;
         Printf("%s", what);
     } else
@@ -36,8 +36,8 @@ Void setGoal(String what, Target t) /* Set goal for what to be t        */
     FlushStdout();
 }
 
-Void soFar(Target t) /* Indicate progress towards goal   */
-{                    /* has now reached t                */
+/* Indicate progress towards goal has now reached t */
+void soFar(Target t) {
     if (quiet
 #if EXPLAIN_INSTANCE_RESOLUTION
         || showInstRes
@@ -45,7 +45,7 @@ Void soFar(Target t) /* Indicate progress towards goal   */
     )
         return;
     if (useDots) {
-        Int newPos = (Int)((maxPos * ((long)t)) / currTarget);
+        int newPos = (int)((maxPos * ((long)t)) / currTarget);
 
         if (newPos > maxPos)
             newPos = maxPos;
@@ -60,7 +60,8 @@ Void soFar(Target t) /* Indicate progress towards goal   */
     }
 }
 
-Void done() { /* Goal has now been achieved       */
+/* Goal has now been achieved */
+void done(void) {
     if (quiet
 #if EXPLAIN_INSTANCE_RESOLUTION
         || showInstRes
@@ -77,13 +78,14 @@ Void done() { /* Goal has now been achieved       */
             Putchar(' ');
             Putchar('\b');
         }
-    aiming = FALSE;
+    aiming = false;
     FlushStdout();
 }
 
-Void failed() {   /* Goal cannot be reached due to    */
-    if (aiming) { /* errors                           */
-        aiming = FALSE;
+/* Goal cannot be reached due to errors */
+void failed(void) {
+    if (aiming) {
+        aiming = false;
         Putchar('\n');
         FlushStdout();
     }

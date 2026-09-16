@@ -26,28 +26,28 @@
  *
  */
 
-extern Void initScripts(Void);
-extern Void stopScripts(Void);
-extern Void setScriptStableMark(Void);
+extern void initScripts(void);
+extern void stopScripts(void);
+extern void setScriptStableMark(void);
 
-extern String getScriptName(Script);
-extern String getScriptRealName(Script);
-extern Int getScriptHwMark(Void);
-extern Int numLoadedScripts(Void);
+extern char *getScriptName(Script);
+extern char *getScriptRealName(Script);
+extern int getScriptHwMark(void);
+extern int numLoadedScripts(void);
 
-extern Void addScriptName(String, Bool);
-extern Bool chase(List);
-extern Void addScriptsFromArgs(Int, String[]);
+extern void addScriptName(char *, bool);
+extern bool chase(List);
+extern void addScriptsFromArgs(int, char *[]);
 
-extern Void forgetScriptsFrom(Script);
-extern Void forgetAllScripts(Void);
-extern Void forgetAScript(Script);
+extern void forgetScriptsFrom(Script);
+extern void forgetAllScripts(void);
+extern void forgetAScript(Script);
 
-extern String scriptFile;
+extern char *scriptFile;
 
-extern Void whatScripts(Void);
-extern Void readScripts(Int);
+extern void whatScripts(void);
+extern void readScripts(int);
 
-extern Void script(int);
+extern void script(int);
 
 #endif /* __SCRIPT_H__ */

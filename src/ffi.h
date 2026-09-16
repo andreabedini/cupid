@@ -10,8 +10,8 @@
 #include "prelude.h"
 #include "storage.h"
 
-extern Void checkForeignImport(Name); /* check one foreign import          */
-extern Void checkForeignExport(Name); /* check one foreign export          */
-extern Void linkForeign(Name);        /* make the import callable          */
+extern void checkForeignImport(Name); /* check one foreign import          */
+extern void checkForeignExport(Name); /* check one foreign export          */
+extern void linkForeign(Name);        /* make the import callable          */
 
 #endif /* __FFI_H__ */

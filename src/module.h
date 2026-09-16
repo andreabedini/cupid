@@ -15,13 +15,13 @@
 #include "prelude.h"
 #include "storage.h"
 
-extern Void addQualImport(Text, Text, List);
-extern Void addUnqualImport(Text, Text, List);
-extern Void importName(Module, Name);
-extern Void checkImportList(Bool, Pair);
-extern Void checkQualImportList(Pair);
-extern Void fixupImportExports(List);
+extern void addQualImport(Text, Text, List);
+extern void addUnqualImport(Text, Text, List);
+extern void importName(Module, Name);
+extern void checkImportList(bool, Pair);
+extern void checkQualImportList(Pair);
+extern void fixupImportExports(List);
 extern List checkExports(List);
-extern Void browseModule(Module, Bool);
+extern void browseModule(Module, bool);
 
 #endif /* __MODULE_H__ */

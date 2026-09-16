@@ -14,12 +14,12 @@
 #include "prelude.h"
 #include "storage.h"
 
-extern Void printExp(FILE *, Cell);
-extern Void printType(FILE *, Cell);
-extern Void printContext(FILE *, List);
-extern Void printPred(FILE *, Cell);
-extern Void printKind(FILE *, Kind);
-extern Void printKinds(FILE *, Kinds);
-extern Void printFD(FILE *, Pair);
+extern void printExp(FILE *, Cell);
+extern void printType(FILE *, Cell);
+extern void printContext(FILE *, List);
+extern void printPred(FILE *, Cell);
+extern void printKind(FILE *, Kind);
+extern void printKinds(FILE *, Kinds);
+extern void printFD(FILE *, Pair);
 
 #endif /* __OUTPUT_H__ */

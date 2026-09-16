@@ -7,6 +7,6 @@
 #include "prelude.h"
 #include "storage.h"
 
-extern Cell tidyInfix(Int, Cell); /* turn an INFIX cell into a tree       */
+extern Cell tidyInfix(int, Cell); /* turn an INFIX cell into a tree       */
 
 #endif /* __FIXITY_H__ */

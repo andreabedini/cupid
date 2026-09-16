@@ -27,28 +27,23 @@
  * local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local kindError(Int, Constr, Constr, String, Kind, Int);
-static Void local kindConstr(Int, Int, Int, Constr);
-static Kind local kindAtom(Int, Constr);
-static Void local initTCKind(Cell);
-static Void local kindTC(Cell);
-static Void local genTC(Cell);
+static void kindError(int, Constr, Constr, char *, Kind, int);
+static void kindConstr(int, int, int, Constr);
+static Kind kindAtom(int, Constr);
+static void initTCKind(Cell);
+static void kindTC(Cell);
+static void genTC(Cell);
 
 /* --------------------------------------------------------------------------
  * Kind checking preliminaries:
  * ------------------------------------------------------------------------*/
 
-Bool kindExpert = FALSE; /* TRUE => display kind errors in  */
+bool kindExpert = false; /* true => display kind errors in  */
                          /*        full detail             */
 
-static Void local kindError(Int l, Constr c, Constr in, String wh, Kind k,
-                            Int o)
-/* line number near constuctor exp */
-/* constructor                     */
-/* context (if any)                */
-/* place in which error occurs     */
-/* expected kind (k,o)             */
-{ /* inferred kind (typeIs,typeOff)  */
+/* Line number near constuctor exp constructor context (if any) place in which
+ * error occurs expected kind (k,o) inferred kind (typeIs,typeOff) */
+static void kindError(int l, Constr c, Constr in, char *wh, Kind k, int o) {
     clearMarks();
 
     if (!kindExpert) { /* for those with a fear of kinds  */
@@ -82,15 +77,15 @@ static Void local kindError(Int l, Constr c, Constr in, String wh, Kind k,
     errFail();
 }
 
-static Void local shouldKind(Int l, Cell c, Cell in, String wh, Kind k,
-                             Int o) { /* unify the inferred kind with (k,o) */
+/* Unify the inferred kind with (k,o) */
+static void shouldKind(int l, Cell c, Cell in, char *wh, Kind k, int o) {
     if (!kunify(typeIs, typeOff, k, o))
         kindError(l, c, in, wh, k, o);
 }
 
-static Void local checkKind(Int l, Int a, Int m, Cell c, Cell in, String wh,
-                            Kind k,
-                            Int o) { /* infer the kind of c, then as above */
+/* Infer the kind of c, then as above */
+static void checkKind(int l, int a, int m, Cell c, Cell in, char *wh, Kind k,
+                      int o) {
     kindConstr(l, a, m, c);
     shouldKind(l, c, in, wh, k, o);
 }
@@ -101,23 +96,22 @@ List unkindTypes; /* types in need of kind annotation*/
  * Kind inference for simple types:
  * ------------------------------------------------------------------------*/
 
-static Void local kindConstr(Int line, Int alpha, Int m, Cell c)
-/* Determine kind of constructor   */
-{
+/* Determine kind of constructor */
+static void kindConstr(int line, int alpha, int m, Cell c) {
     assertType(c);
     Cell h = getHead(c);
-    Int n = argCount;
+    int n = argCount;
 
     switch (whatIs(h)) {
     case POLYTYPE:
         if (n != 0) {
             internal("kindConstr1");
         } else {
-            static String pt = "polymorphic type";
+            static char *pt = "polymorphic type";
             Type t = dropRank1(c, alpha, m);
             Kinds ks = polySigOf(t);
-            Int m1 = 0;
-            Int beta;
+            int m1 = 0;
+            int beta;
             for (; isAp(ks); ks = tl(ks)) {
                 m1++;
             }
@@ -156,11 +150,11 @@ static Void local kindConstr(Int line, Int alpha, Int m, Cell c)
     if (n == 0) { /* trivial case, no arguments    */
         typeIs = kindAtom(alpha, c);
     } else { /* non-trivial application    */
-        static String app = "constructor application";
+        static char *app = "constructor application";
         Cell a = c;
-        Int i;
+        int i;
         Kind k;
-        Int beta;
+        int beta;
 
         varKind(n);
         beta = typeOff;
@@ -177,9 +171,8 @@ static Void local kindConstr(Int line, Int alpha, Int m, Cell c)
     }
 }
 
-static Kind local kindAtom(Int alpha,
-                           Cell c) /* Find kind of atomic constructor */
-{
+/* Find kind of atomic constructor */
+static Kind kindAtom(int alpha, Cell c) {
     switch (whatIs(c)) {
     case TUPLE:
         return simpleKind(tupleOf(c)); /*(,)::* -> * -> * */
@@ -203,12 +196,11 @@ static Kind local kindAtom(Int alpha,
     return STAR; /* not reached */
 }
 
-Void kindPred(Int l, Int alpha, Int m,
-              Cell pi) /* Check kinds of arguments in pred*/
-{
+/* Check kinds of arguments in pred */
+void kindPred(int l, int alpha, int m, Cell pi) {
     assertPred(pi);
     {
-        static String predicate = "class constraint";
+        static char *predicate = "class constraint";
         Class c = getHead(pi);
         List as = getArgs(pi);
         Kinds ks = cclassRec(c)->kinds;
@@ -221,18 +213,17 @@ Void kindPred(Int l, Int alpha, Int m,
     }
 }
 
-Void kindType(Int line, String wh,
-              Type type) /* check that (poss qualified) type*/
-                         /* is well-kinded            */
-{
+/* Check that (poss qualified) type is well-kinded */
+void kindType(int line, char *wh, Type type) {
     assertType(type);
     checkKind(line, 0, 0, type, NIL, wh, STAR, 0);
 }
 
-Void fixKinds() { /* add kind annotations to types   */
+/* Add kind annotations to types */
+void fixKinds(void) {
     for (; nonNull(unkindTypes); unkindTypes = tl(unkindTypes)) {
         Pair pr = hd(unkindTypes);
-        Int beta = intOf(fst(pr));
+        int beta = intOf(fst(pr));
         Cell qts = polySigOf(snd(pr));
         for (;;) {
             if (isNull(hd(qts))) {
@@ -254,8 +245,8 @@ Void fixKinds() { /* add kind annotations to types   */
  * Kind checking of groups of type constructors and classes:
  * ------------------------------------------------------------------------*/
 
-Void kindTCGroup(List tcs) /* find kinds for mutually rec. gp */
-{                          /* of tycons and classes           */
+/* Find kinds for mutually rec. gp of tycons and classes */
+void kindTCGroup(List tcs) {
     emptySubstitution();
     unkindTypes = NIL;
     mapProc(initTCKind, tcs);
@@ -265,10 +256,10 @@ Void kindTCGroup(List tcs) /* find kinds for mutually rec. gp */
     emptySubstitution();
 }
 
-static Void local initTCKind(Cell c) /* build initial kind/arity for    c  */
-{
+/* Build initial kind/arity for c */
+static void initTCKind(Cell c) {
     if (isTycon(c)) {                  /* Initial kind of tycon is:        */
-        Int beta = newKindvars(1);     /*    v1 -> ... -> vn -> vn+1       */
+        int beta = newKindvars(1);     /*    v1 -> ... -> vn -> vn+1       */
         varKind(tyconRec(c)->arity);   /* where n is the arity of c.       */
         bindTv(beta, typeIs, typeOff); /* For data definitions, vn+1 == * */
         switch (whatIs(tyconRec(c)->what)) {
@@ -280,8 +271,8 @@ static Void local initTCKind(Cell c) /* build initial kind/arity for    c  */
         }
         tyconRec(c)->kind = mkInt(beta);
     } else {
-        Int n = cclassRec(c)->arity;
-        Int beta = newKindvars(n);
+        int n = cclassRec(c)->arity;
+        int beta = newKindvars(n);
         cclassRec(c)->kinds = NIL;
         while (n > 0) {
             n--;
@@ -290,14 +281,14 @@ static Void local initTCKind(Cell c) /* build initial kind/arity for    c  */
     }
 }
 
-static Void local kindTC(Cell c) /* check each part of a tycon/class*/
-{                                /* is well-kinded                 */
+/* Check each part of a tycon/class is well-kinded */
+static void kindTC(Cell c) {
     if (isTycon(c)) {
-        static String cfun = "data constructor";
-        static String tsyn = "synonym declaration";
-        Int line = tyconRec(c)->line;
-        Int beta = tyvar(intOf(tyconRec(c)->kind))->offs;
-        Int m = tyconRec(c)->arity;
+        static char *cfun = "data constructor";
+        static char *tsyn = "synonym declaration";
+        int line = tyconRec(c)->line;
+        int beta = tyvar(intOf(tyconRec(c)->kind))->offs;
+        int m = tyconRec(c)->arity;
         switch (whatIs(tyconRec(c)->what)) {
         case NEWTYPE:
         case DATATYPE: {
@@ -318,20 +309,20 @@ static Void local kindTC(Cell c) /* check each part of a tycon/class*/
         }
     } else { /* scan type exprs in class defn to*/
         List ms = fst(cclassRec(c)->members);
-        Int m = cclassRec(c)->arity; /* determine the class signature   */
-        Int beta = newKindvars(length(cclassRec(c)->tyvars));
+        int m = cclassRec(c)->arity; /* determine the class signature   */
+        int beta = newKindvars(length(cclassRec(c)->tyvars));
         kindPred(cclassRec(c)->line, beta, m, cclassRec(c)->head);
         map3Proc(kindPred, cclassRec(c)->line, beta, m, cclassRec(c)->supers);
         for (; nonNull(ms); ms = tl(ms)) {
-            Int line = intOf(fst3(hd(ms)));
+            int line = intOf(fst3(hd(ms)));
             Type type = thd3(hd(ms));
             kindType(line, "member function type signature", type);
         }
     }
 }
 
-static Void local genTC(Cell c) /* generalise kind inferred for    */
-{                               /* given tycon/class               */
+/* Generalise kind inferred for given tycon/class */
+static void genTC(Cell c) {
     if (isTycon(c)) {
         tyconRec(c)->kind = copyKindvar(intOf(tyconRec(c)->kind));
     } else {
@@ -346,9 +337,9 @@ static Void local genTC(Cell c) /* generalise kind inferred for    */
  * Kind checking of instance declaration headers:
  * ------------------------------------------------------------------------*/
 
-Void kindInst(Inst in, Int freedom) /* check predicates in instance    */
-{
-    Int beta;
+/* Check predicates in instance */
+void kindInst(Inst in, int freedom) {
+    int beta;
 
     emptySubstitution();
     beta = newKindvars(freedom);
@@ -374,7 +365,7 @@ static Cell *const kindRoots[] = {
     &unkindTypes,
 };
 
-Void kindControl(Int what) {
+void kindControl(int what) {
     switch (what) {
     case RESET:
         unkindTypes = NIL;

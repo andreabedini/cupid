@@ -10,8 +10,8 @@
  * String manipulation routines:
  * ------------------------------------------------------------------------*/
 
-String strCopy(String s) /* make malloced copy of a string   */
-{
+/* Make malloced copy of a string */
+char *strCopy(char *s) {
     if (s) {
         char *t;
         if ((t = (char *)malloc(strlen(s) + 1)) == 0) {
@@ -25,12 +25,12 @@ String strCopy(String s) /* make malloced copy of a string   */
     return NULL;
 }
 
-String strnCopy(String s, Int n) /* make malloced copy of a substring */
-{
+/* Make malloced copy of a substring */
+char *strnCopy(char *s, int n) {
     if (s) {
         char *t;
-        if ((Int)strlen(s) < n)
-            n = (Int)strlen(s);
+        if ((int)strlen(s) < n)
+            n = (int)strlen(s);
         if ((t = (char *)malloc(n + 1)) == 0) {
             errHead(0);
             errPrintf("String storage space exhausted");
@@ -46,8 +46,8 @@ String strnCopy(String s, Int n) /* make malloced copy of a substring */
 /* Given a string containing a possibly qualified name,
  * split it up into a module and a name portion.
  */
-Void splitQualString(String nm, String *pMod, String *pName) {
-    String dot;
+void splitQualString(char *nm, char **pMod, char **pName) {
+    char *dot;
 
     if (*nm == '\0') { /* nothing to split in an empty    */
         *pMod = NULL;  /* string; nm+strlen(nm)-1 would   */
@@ -65,7 +65,7 @@ Void splitQualString(String nm, String *pMod, String *pName) {
         *pName = nm;
     } else {
         /* The module portion consists of everything upto the last dot. */
-        *pMod = strnCopy(nm, (Int)(dot - nm));
+        *pMod = strnCopy(nm, (int)(dot - nm));
 
         /* Everything after the last '.' is the name string */
         *pName = dot + 1;
@@ -85,7 +85,7 @@ struct StringBuilder {
 
 #define INITIAL_BUILDER_SIZE 200
 
-static Bool expandStringBuilder(StringBuilder *b, unsigned int newSz);
+static bool expandStringBuilder(StringBuilder *b, unsigned int newSz);
 
 /*
  * Function: newStringBuilder(sz)
@@ -120,23 +120,23 @@ StringBuilder *newStringBuilder(unsigned int sz) {
  * buffer to 'newSz'. Along with expansion the old contents of
  * the buffer is copied over. 
  * 
- * Returns TRUE if successful.
+ * Returns true if successful.
  */
-static Bool expandStringBuilder(StringBuilder *b, unsigned int newSz) {
+static bool expandStringBuilder(StringBuilder *b, unsigned int newSz) {
     char *buf;
 
     if (!b)
-        return FALSE;
+        return false;
     if (b->size > newSz)
-        return FALSE;
+        return false;
 
     buf = realloc(b->buf, newSz);
     if (!buf)
-        return FALSE;
+        return false;
     b->size = newSz;
     b->buf = buf;
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -145,20 +145,20 @@ static Bool expandStringBuilder(StringBuilder *b, unsigned int newSz) {
  * Append 'str' to the back of 'builder', expanding its
  * buffer to accommodate the added string, if needs be.
  *
- * Returns TRUE if successful.
+ * Returns true if successful.
  */
-Bool appendString(StringBuilder *b, char *str) {
+bool appendString(StringBuilder *b, char *str) {
     unsigned int len, newLen;
 
     if (!b)
-        return FALSE;
+        return false;
     if (!str)
-        return TRUE;
+        return true;
 
     len = strlen(str);
     newLen = b->len + len;
     if (len == 0)
-        return TRUE;
+        return true;
 
     if (newLen >= b->size) {
         unsigned int newSz = b->size * 2;
@@ -166,14 +166,14 @@ Bool appendString(StringBuilder *b, char *str) {
             newSz = newLen;
         }
         if (!expandStringBuilder(b, newSz)) {
-            return FALSE;
+            return false;
         }
     }
 
     memcpy(b->buf + b->len, str, len + 1);
     b->len = newLen;
 
-    return TRUE;
+    return true;
 }
 
 /*

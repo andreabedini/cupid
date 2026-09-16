@@ -8,6 +8,6 @@
 #include "prelude.h"
 #include "storage.h"
 
-extern Void duplicateError(Int, Module, Text, String); /* two definitions */
+extern void duplicateError(int, Module, Text, char *); /* two definitions */
 
 #endif /* __STATIC_H__ */

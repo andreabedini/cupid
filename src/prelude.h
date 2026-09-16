@@ -6,10 +6,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: prelude.h,v $
- * $Revision: 1.80 $
- * $Date: 2005/09/11 00:33:00 $
  * ------------------------------------------------------------------------*/
 #ifndef __PRELUDE_H__
 #define __PRELUDE_H__
@@ -166,9 +162,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 # define CUDDLES_printf(f, a)
 #endif
 
-/* local = prefix for locally defined functions */
-#define local
-
 #ifdef __GNUC__ /* Avoid spurious warnings                             */
 # if __GNUC__ > 2 || __GNUC__ == 2 && __GNUC_MINOR__ >= 7
 #  define CUDDLES_noreturn __attribute__((noreturn))
@@ -318,7 +311,7 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  * pass of its own and every cell began with a garbage producer.  The page
  * alignment bought nothing -- an allocation this size is mmap'd, and so
  * page-aligned, either way. */
-#define farCalloc(n, s) (Void *)calloc((size_t)(n), (size_t)(s))
+#define farCalloc(n, s) (void *)calloc((size_t)(n), (size_t)(s))
 
 /* bison-generated parsers like to have alloca - so try to define it */
 
@@ -431,22 +424,9 @@ extern int chdir(const char *);
  * General settings:
  *-------------------------------------------------------------------------*/
 
-#define Void void      /* older compilers object to: typedef void Void;   */
-#if !defined(_XLIB_H_) /* clashes with similar declaration in Xlib.h      */
-typedef unsigned Bool;
-#endif
-#define TRUE 1
-#define FALSE 0
-#ifndef _XtIntrinsic_h
-typedef char *String;
-#endif
-typedef int Int;
-typedef signed char Int8;
-typedef short Int16;
-typedef long Long;
-typedef int Char;
-typedef unsigned Unsigned;
-typedef void *Pointer;
+#include <stdint.h>
+
+typedef int Char; /* a Unicode code point, or EOF */
 
 #define doNothing()                                                            \
     do {                                                                       \
@@ -482,15 +462,15 @@ typedef void *Pointer;
 #define wordShift 5
 #define wordMask 31
 
-CUDDLES_inline Int bitArraySize(Int n) {
+CUDDLES_inline int bitArraySize(int n) {
     return n / bitsPerWord + 1;
 }
-CUDDLES_inline Int placeInSet(Int n) /* n is a (negative) pair cell         */
-{
+/* N is a (negative) pair cell */
+CUDDLES_inline int placeInSet(int n) {
     return (-n - 1) >> wordShift;
 }
-CUDDLES_inline unsigned maskInSet(Int n) /* unsigned: the shift can reach   */
-{                                        /* bit 31                          */
+/* Unsigned: the shift can reach bit 31 */
+CUDDLES_inline unsigned maskInSet(int n) {
     return 1u << ((-n - 1) & wordMask);
 }
 

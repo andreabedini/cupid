@@ -11,68 +11,68 @@
 /* --------------------------------------------------------------------------
  * Functions for processing and displaying Cuddles options:
  * ------------------------------------------------------------------------*/
-extern Bool processOption(String);
-extern Void readOptions(String, Bool);
-extern Bool readOptions2(String);
-extern Void optionInfo(Void);
-extern Bool isOption(String);
-extern Void setOptions(Void);
-extern String optionsToStr(Void);
-extern Void processOptionVector(Int, String[]);
-extern Void readOptionSettings(Void);
+extern bool processOption(char *);
+extern void readOptions(char *, bool);
+extern bool readOptions2(char *);
+extern void optionInfo(void);
+extern bool isOption(char *);
+extern void setOptions(void);
+extern char *optionsToStr(void);
+extern void processOptionVector(int, char *[]);
+extern void readOptionSettings(void);
 
-extern Void setLastEdit(String, Int);
-extern String getLastEdit(Int *);
-extern Int argToInt(String);
-extern Void setHeapSize(String);
+extern void setLastEdit(char *, int);
+extern char *getLastEdit(int *);
+extern int argToInt(char *);
+extern void setHeapSize(char *);
 
 /* --------------------------------------------------------------------------
  * Interpreter flags and options:
  * ------------------------------------------------------------------------*/
-extern Bool showStats;       /* TRUE => print stats after eval  */
-extern Bool addType;         /* TRUE => print type with value   */
-extern Bool gcMessages;      /* TRUE => print GC messages         */
-extern Bool literateScripts; /* TRUE => default lit scripts     */
-extern Bool useDots;         /* TRUE => use dots in progress    */
-extern Bool quiet;           /* TRUE => don't show progress     */
-extern Bool
-    useQualifiedNames; /* TRUE => qualify names when printing types and terms */
-extern Bool listScripts;        /* TRUE => list scripts after loading*/
-extern Bool kindExpert;         /* TRUE => display kind errors in    */
+extern bool showStats;       /* true => print stats after eval  */
+extern bool addType;         /* true => print type with value   */
+extern bool gcMessages;      /* true => print GC messages         */
+extern bool literateScripts; /* true => default lit scripts     */
+extern bool useDots;         /* true => use dots in progress    */
+extern bool quiet;           /* true => don't show progress     */
+extern bool
+    useQualifiedNames; /* true => qualify names when printing types and terms */
+extern bool listScripts;        /* true => list scripts after loading*/
+extern bool kindExpert;         /* true => display kind errors in    */
                                 /*         full detail              */
-extern Bool allowOverlap;       /* TRUE => allow overlapping insts   */
-extern Bool allowUnsafeOverlap; /* TRUE => in addition, allow        */
+extern bool allowOverlap;       /* true => allow overlapping insts   */
+extern bool allowUnsafeOverlap; /* true => in addition, allow        */
                                 /* potentially inconsistent          */
                                 /* overlapping instances             */
-extern Bool useShow;            /* TRUE => use Text/show printer     */
-extern Bool displayIO;          /* TRUE => use printer for IO result */
-extern Bool
-    printTypeUseDefaults; /* TRUE => use 'default'ing when printing types */
+extern bool useShow;            /* true => use Text/show printer     */
+extern bool displayIO;          /* true => use printer for IO result */
+extern bool
+    printTypeUseDefaults; /* true => use 'default'ing when printing types */
 
-extern Int cutoff;             /* Constraint Cutoff depth          */
-extern String prompt;          /* Prompt string                   */
-extern String repeatStr;       /* Repeat last expr                */
-extern String cuddlesPath;     /* String for file search path     */
-extern String cuddlesSuffixes; /* Source filename suffixes        */
-extern Int hpSize;             /* Desired heap size               */
-extern String cuddlesEdit;     /* String for editor command       */
+extern int cutoff;            /* Constraint Cutoff depth          */
+extern char *prompt;          /* Prompt string                   */
+extern char *repeatStr;       /* Repeat last expr                */
+extern char *cuddlesPath;     /* String for file search path     */
+extern char *cuddlesSuffixes; /* Source filename suffixes        */
+extern int hpSize;            /* Desired heap size               */
+extern char *cuddlesEdit;     /* String for editor command       */
 
 /* The rest are conditionally supported flags: */
 #if PROFILING
-extern Bool profiling;   /* TRUE => perform profiling.      */
-extern Int profInterval; /* interval between samples        */
+extern bool profiling;   /* true => perform profiling.      */
+extern int profInterval; /* interval between samples        */
 #endif
 
 #if EXPLAIN_INSTANCE_RESOLUTION
-extern Bool showInstRes; /* TRUE => show instance resolution */
+extern bool showInstRes; /* true => show instance resolution */
 #endif
 #if DEBUG_CODE
-extern Bool debugCode; /* TRUE => print G-code to screen  */
+extern bool debugCode; /* true => print G-code to screen  */
 #endif
 
-extern String preprocessor; /* preprocessor command            */
+extern char *preprocessor; /* preprocessor command            */
 
-extern Bool printing; /* TRUE => currently printing value*/
+extern bool printing; /* true => currently printing value*/
 
 /* 
  * How to add a new flag / option:
@@ -103,8 +103,8 @@ extern Bool printing; /* TRUE => currently printing value*/
  */
 struct options { /* command line option toggles     */
     char c;      /* table defined in main app.      */
-    String description;
-    Bool *flag;
+    char *description;
+    bool *flag;
 };
 
 extern struct options toggle[];

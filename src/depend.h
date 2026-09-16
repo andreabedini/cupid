@@ -8,17 +8,17 @@
 #include "prelude.h"
 #include "storage.h"
 
-extern Void clearScope(Void);    /* start with no bindings in scope          */
-extern Void withinScope(List);   /* enter the scope of a binding group       */
-extern Void leaveScope(Void);    /* and leave it                             */
+extern void clearScope(void);    /* start with no bindings in scope          */
+extern void withinScope(List);   /* enter the scope of a binding group       */
+extern void leaveScope(void);    /* and leave it                             */
 extern List topDependAnal(List); /* order a top-level binding group          */
-extern Void depDefaults(Class);  /* analyse the default methods of a class   */
-extern Void depInsts(Inst);      /* analyse the methods of an instance       */
-extern Void depConFlds(Int, Cell, Bool); /* analyse a record construction    */
-extern Cell depQVar(Int, Cell, Bool);    /* resolve a qualified variable     */
-extern Void checkNameAmbigName(Int, Name, Bool); /* error if imported twice  */
+extern void depDefaults(Class);  /* analyse the default methods of a class   */
+extern void depInsts(Inst);      /* analyse the methods of an instance       */
+extern void depConFlds(int, Cell, bool); /* analyse a record construction    */
+extern Cell depQVar(int, Cell, bool);    /* resolve a qualified variable     */
+extern void checkNameAmbigName(int, Name, bool); /* error if imported twice  */
 extern List tcscc(List, List);    /* order tycons and classes by dependency   */
 extern Syntax lookupSyntax(Text); /* fixity from the enclosing bindings      */
-extern Void dependControl(Int);   /* RESET/INSTALL, called by staticAnalysis  */
+extern void dependControl(int);   /* RESET/INSTALL, called by staticAnalysis  */
 
 #endif /* __DEPEND_H__ */

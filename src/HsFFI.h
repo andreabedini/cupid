@@ -23,10 +23,10 @@ typedef signed long long cuddles_int64_t;
 
 #ifdef __PRELUDE_H__ /* #included into Cuddles */
 
-typedef Int HsInt;
-typedef Int8 HsInt8;
-typedef Int16 HsInt16;
-typedef Int HsInt32;
+typedef int HsInt;
+typedef int8_t HsInt8;
+typedef int16_t HsInt16;
+typedef int HsInt32;
 typedef unsigned int HsWord;
 typedef unsigned char HsWord8;
 typedef unsigned short HsWord16;

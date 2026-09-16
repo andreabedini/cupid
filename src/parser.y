@@ -10,10 +10,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: parser.y,v $
- * $Revision: 1.50 $
- * $Date: 2006/08/30 18:57:13 $
  * ------------------------------------------------------------------------*/
 
 %code requires {
@@ -31,29 +27,29 @@
 #include "goal.h"
 #include "machdep.h"	/* needPrims */
 
-static Void   local defTycon	 (Int,Cell,Cell,Cell,Cell);
-static Cell   local sigdecl	 (Cell,List,Type);
-static Cell   local fixdecl	 (Cell,List,Syntax,Cell);
-static Cell   local grded	 (List);
-static Cell   local bang	 (Type);
-static Cell   local only	 (Cell);
-static Cell   local letrec	 (List,Cell);
-static Cell   local qualType	 (List,Type);
-static List   local exportSelf	 (Void);
+static void defTycon(int, Cell, Cell, Cell, Cell);
+static Cell sigdecl(Cell, List, Type);
+static Cell fixdecl(Cell, List, Syntax, Cell);
+static Cell grded(List);
+static Cell bang(Type);
+static Cell only(Cell);
+static Cell letrec(List, Cell);
+static Cell qualType(List, Type);
+static List exportSelf(void);
 #define yyerror(s)		 /* errors handled elsewhere */
 
-static Cell   local gcShadow	 (Int,Cell);
-static Void   local syntaxError	 (String);
-static String local unexpected	 (Void);
-static Cell   local checkPrec	 (Cell);
-static Cell   local buildTuple	 (List);
-static List   local checkCtxt	 (List);
-static Cell   local checkPred	 (Cell);
-static Pair   local checkDo	 (List);
-static Cell   local desugarGuards (List);
-static Cell   local guardMatch	 (Cell,List,Cell);
-static Cell   local checkTyLhs	 (Cell);
-static Cell   local checkConstr	 (Cell);
+static Cell gcShadow(int, Cell);
+static void syntaxError(char *);
+static char *unexpected(void);
+static Cell checkPrec(Cell);
+static Cell buildTuple(List);
+static List checkCtxt(List);
+static Cell checkPred(Cell);
+static Pair checkDo(List);
+static Cell desugarGuards(List);
+static Cell guardMatch(Cell, List, Cell);
+static Cell checkTyLhs(Cell);
+static Cell checkConstr(Cell);
 
 
 
@@ -134,7 +130,7 @@ startMain : /* empty */			{startModule(conMain);
 modname	  : qconid			{startModule(mkCon(mkNestedQual($1))); $$ = gcShadow(1,NIL);}
 	  ;
 modid	  : qconid			{$$ = mkCon(mkNestedQual($1));}
-	  | STRINGLIT			{ String modName = findPathname(textToStr(textOf($1)));
+	  | STRINGLIT			{ char *modName = findPathname(textToStr(textOf($1)));
 					  if (modName) { /* fillin pathname if known */
 					      $$ = mkStr(findText(modName));
 					  } else {
@@ -856,8 +852,8 @@ end	  : '}'				{$$ = $1;}
 
 %%
 
-static Cell local gcShadow(Int n, Cell e)		/* keep parsed fragments on stack  */
-{
+/* Keep parsed fragments on stack */
+static Cell gcShadow(int n, Cell e) {
     /* If a look ahead token is held then the required stack transformation
      * is:
      *   pushed: n               1     0          1     0
@@ -879,13 +875,14 @@ static Cell local gcShadow(Int n, Cell e)		/* keep parsed fragments on stack  */
     return e;
 }
 
-static Void local syntaxError(String s)	/* report on syntax error	   */
-{
+/* Report on syntax error */
+static void syntaxError(char *s) {
     errHead(row); errPrintf("Syntax error in %s (unexpected %s)", s, unexpected());
     errFail();
 }
 
-static String local unexpected() {     /* find name for unexpected token   */
+/* Find name for unexpected token */
+static char *unexpected(void) {
     static char buffer[100];
     static char *fmt = "%s \"%s\"";
     static char *kwd = "keyword";
@@ -963,8 +960,8 @@ static String local unexpected() {     /* find name for unexpected token   */
     }
 }
 
-static Cell local checkPrec(Cell p)		/* Check for valid precedence value*/
-{
+/* Check for valid precedence value */
+static Cell checkPrec(Cell p) {
     if (!isInt(p) || intOf(p)<MIN_PREC || intOf(p)>MAX_PREC) {
 	errHead(row); errPrintf("Precedence value must be an integer in the range [%d..%d]",
 		    MIN_PREC, MAX_PREC);
@@ -999,8 +996,8 @@ static Cell local checkPrec(Cell p)		/* Check for valid precedence value*/
  * next equation is tried.
  * ------------------------------------------------------------------------*/
 
-static Cell local guardMatch(Cell l, List qs, Cell res)	/* build Q above */
-{
+/* Build Q above */
+static Cell guardMatch(Cell l, List qs, Cell res) {
     Cell q;
     if (isNull(qs))
 	return res;
@@ -1017,8 +1014,8 @@ static Cell local guardMatch(Cell l, List qs, Cell res)	/* build Q above */
     return NIL;/*NOTREACHED*/
 }
 
-static Cell local desugarGuards(List gs)	/* [(line,(quals,rhs))] -> rhs */
-{
+/* [(line,(quals,rhs))] -> rhs */
+static Cell desugarGuards(List gs) {
     List binds = NIL;
     List g;
     for (g=gs; nonNull(g); g=tl(g)) {
@@ -1046,9 +1043,9 @@ static Cell local desugarGuards(List gs)	/* [(line,(quals,rhs))] -> rhs */
     return letrec(binds,grded(gs));
 }
 
-static Cell local buildTuple(List tup)	/* build tuple (x1,...,xn) from	   */
-{				/* list [xn,...,x1]		   */
-    Int  n = 0;
+/* Build tuple (x1,...,xn) from list [xn,...,x1] */
+static Cell buildTuple(List tup) {
+    int  n = 0;
     Cell t = tup;
     Cell x;
 
@@ -1064,22 +1061,22 @@ static Cell local buildTuple(List tup)	/* build tuple (x1,...,xn) from	   */
     return tup;
 }
 
-static List local checkCtxt(Type con)	/* validate context		   */
-{
+/* Validate context */
+static List checkCtxt(Type con) {
     mapOver(checkPred, con);
     return con;
 }
 
-static Cell local checkPred(Cell c)		/* check that type expr is a valid */
-{				/* constraint			   */
+/* Check that type expr is a valid constraint */
+static Cell checkPred(Cell c) {
     Cell cn = getHead(c);
     if (!isQCon(cn) /*|| argCount==0*/)
 	syntaxError("class expression");
     return c;
 }
 
-static Pair local checkDo(List dqs)		/* convert reversed list of dquals */
-{				/* to an (expr,quals) pair         */
+/* Convert reversed list of dquals to an (expr,quals) pair */
+static Pair checkDo(List dqs) {
     if (isNull(dqs) || whatIs(hd(dqs))!=DOQUAL) {
 	errHead(row); errPrintf("Last generator in do {...} must be an expression");
 	errFail();
@@ -1090,8 +1087,8 @@ static Pair local checkDo(List dqs)		/* convert reversed list of dquals */
 }
 
 
-static Cell local checkTyLhs(Cell c)		/* check that lhs is of the form   */
-{				/* T a1 ... a			   */
+/* Check that lhs is of the form T a1 ... a */
+static Cell checkTyLhs(Cell c) {
     Cell tlhs = c;
     while (isAp(tlhs) && whatIs(arg(tlhs))==VARIDCELL) {
 	tlhs = fun(tlhs);
@@ -1103,8 +1100,8 @@ static Cell local checkTyLhs(Cell c)		/* check that lhs is of the form   */
     return c;
 }
 
-static Cell local checkConstr(Cell c)	/* check that data constructor has */
-{				/* an unqualified conid as head    */
+/* Check that data constructor has an unqualified conid as head */
+static Cell checkConstr(Cell c) {
     Cell chd = c;
     while (isAp(chd)) {
 	chd = fun(chd);
@@ -1124,37 +1121,35 @@ static Cell local checkConstr(Cell c)	/* check that data constructor has */
  * Building declarations and types:
  * ------------------------------------------------------------------------*/
 
-static Void local defTycon(Int n, Cell l, Cell lhs, Cell rhs, Cell w)
-{				/* define tycon, popping n items   */
+/* Define tycon, popping n items */
+static void defTycon(int n, Cell l, Cell lhs, Cell rhs, Cell w) {
     tyconDefn(intOf(l),lhs,rhs,w);
     sp -= n;
 }
 
-static Cell local sigdecl(Cell l, List vs, Type t)
-{
+static Cell sigdecl(Cell l, List vs, Type t) {
     return ap(SIGDECL,triple(l,vs,t));
 }
 
-static Cell local fixdecl(Cell l, List ops, Syntax a, Cell p)
-{
+static Cell fixdecl(Cell l, List ops, Syntax a, Cell p) {
     return ap(FIXDECL,triple(l,ops,mkInt(mkSyntax(a,intOf(p)))));
 }
 
-static Cell local grded(List gs)   { return ap(GUARDED,gs); }
-static Cell local bang (Type t)    { return ap(BANG,t); }
-static Cell local only (Cell t)    { return ap(ONLY,t); }
+static Cell grded(List gs)   { return ap(GUARDED,gs); }
+static Cell bang (Type t)    { return ap(BANG,t); }
+static Cell only (Cell t)    { return ap(ONLY,t); }
 
-static Cell local letrec(List bs, Cell e)	/* wrap e in bs, if any	   */
-{
+/* Wrap e in bs, if any */
+static Cell letrec(List bs, Cell e) {
     return nonNull(bs) ? ap(LETREC,pair(bs,e)) : e;
 }
 
-static Cell local qualType(List ps, Type t)	/* qualify t by ps, if any  */
-{
+/* Qualify t by ps, if any */
+static Cell qualType(List ps, Type t) {
     return nonNull(ps) ? ap(QUAL,pair(ps,t)) : t;
 }
 
-static List local exportSelf(Void)		/* the module's own name   */
-{
+/* The module's own name */
+static List exportSelf(void) {
     return singleton(ap(MODULEENT,mkCon(moduleRec(currentModule)->text)));
 }

@@ -29,12 +29,12 @@
  * local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Void local depConstrs(Tycon, List, Cell);
-static List local addSels(Int, Name, List, List);
-static List local selectCtxt(List, List);
-static List local visitSyn(List, Tycon, List);
-static Type local instantiateNewtype(Name, Type);
-static Type local instantiateSyn(Type, Type);
+static void depConstrs(Tycon, List, Cell);
+static List addSels(int, Name, List, List);
+static List selectCtxt(List, List);
+static List visitSyn(List, Tycon, List);
+static Type instantiateNewtype(Name, Type);
+static Type instantiateSyn(Type, Type);
 
 /* --------------------------------------------------------------------------
  * Static analysis of type declarations:
@@ -53,12 +53,9 @@ static Type local instantiateSyn(Type, Type);
  * - Build separate lists of newly defined constructors for later use.
  * ------------------------------------------------------------------------*/
 
-Void tyconDefn(Int line, Cell lhs, Cell rhs,
-               Cell what) /* process new type definition           */
-                          /* definition line number        */
-                          /* left hand side of definition          */
-                          /* right hand side of definition   */
-{                         /* SYNONYM/DATATYPE/etc...       */
+/* Process new type definition definition line number left hand side of
+ * definition right hand side of definition SYNONYM/DATATYPE/etc... */
+void tyconDefn(int line, Cell lhs, Cell rhs, Cell what) {
     Text t = textOf(getHead(lhs));
     Tycon tc = findTycon(t);
 
@@ -100,8 +97,8 @@ Void tyconDefn(Int line, Cell lhs, Cell rhs,
     }
 }
 
-Void setTypeIns(List bs) /* set local synonyms for given           */
-{                        /* binding group                  */
+/* Set local synonyms for given binding group */
+void setTypeIns(List bs) {
     List cvs = typeInDefns;
     for (; nonNull(cvs); cvs = tl(cvs)) {
         Tycon c = fst(hd(cvs));
@@ -115,7 +112,8 @@ Void setTypeIns(List bs) /* set local synonyms for given           */
     }
 }
 
-Void clearTypeIns() { /* clear list of local synonyms      */
+/* Clear list of local synonyms */
+void clearTypeIns(void) {
     for (; nonNull(typeInDefns); typeInDefns = tl(typeInDefns))
         tyconRec(fst(hd(typeInDefns)))->what = RESTRICTSYN;
 }
@@ -144,11 +142,11 @@ Void clearTypeIns() { /* clear list of local synonyms      */
  * - install synonym expansions and constructor definitions.
  * ------------------------------------------------------------------------*/
 
-Void checkTyconDefn(Tycon d) /* validate type constructor defn  */
-{
+/* Validate type constructor defn */
+void checkTyconDefn(Tycon d) {
     Cell lhs = fst(tyconRec(d)->defn);
     Cell rhs = snd(tyconRec(d)->defn);
-    Int line = tyconRec(d)->line;
+    int line = tyconRec(d)->line;
     List tyvars = getArgs(lhs);
     List temp;
     /* check for repeated tyvars on lhs*/
@@ -189,19 +187,18 @@ Void checkTyconDefn(Tycon d) /* validate type constructor defn  */
     tcDeps = NIL;
 }
 
-static Void local depConstrs(Tycon t, List tyvars, Cell cd)
-/* Define constructor functions and*/
-/* do dependency analysis for data */
-{ /* definitions (w or w/o deriving) */
-    Int line = tyconRec(t)->line;
+/* Define constructor functions and do dependency analysis for data definitions
+ * (w or w/o deriving) */
+static void depConstrs(Tycon t, List tyvars, Cell cd) {
+    int line = tyconRec(t)->line;
     List ctxt = NIL;
-    Int conNo = 1;
+    int conNo = 1;
     Type lhs = t;
     List cs = fst(cd);
     List derivs = snd(cd);
     List compTypes = NIL;
     List sels = NIL;
-    Int i;
+    int i;
 
     for (i = 0; i < tyconRec(t)->arity;
          ++i)                       /* build representation for tycon  */
@@ -225,8 +222,8 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
         List scs = NIL;    /* strict components            */
         List fs = NONE;    /* selector names               */
         Type type = lhs;   /* constructor function type    */
-        Int arity = 0;     /* arity of constructor function   */
-        Int nr2 = 0;       /* Number of rank 2 args        */
+        int arity = 0;     /* arity of constructor function   */
+        int nr2 = 0;       /* Number of rank 2 args        */
         Name n;            /* name for constructor function   */
 
         if (whatIs(con) == POLYTYPE) { /* Locally quantified vars          */
@@ -259,7 +256,7 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
             for (; nonNull(fls); fls = tl(fls)) { /* for each field spec:    */
                 List vs = fst(hd(fls));
                 Type t = snd(hd(fls)); /* - scrutinize type        */
-                Bool banged = whatIs(t) == BANG;
+                bool banged = whatIs(t) == BANG;
                 t = depCompType(line, sig, (banged ? arg(t) : t));
                 while (nonNull(vs)) { /* - add named components  */
                     Cell us = tl(vs);
@@ -276,7 +273,7 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
             scs = rev(scs); /* put strict comps in ascend ord  */
         } else {            /* Non-labelled constructor    */
             Cell c = con;
-            Int compNo;
+            int compNo;
             for (; isAp(c); c = fun(c))
                 arity++;
             for (compNo = arity, c = con; isAp(c); c = fun(c)) {
@@ -411,11 +408,11 @@ static Void local depConstrs(Tycon t, List tyvars, Cell cd)
     }
 }
 
-Int userArity(Name c) /* Find arity for cfun, ignoring   */
-{                     /* CDICTS parameters            */
-    Int a = nameRec(c)->arity;
+/* Find arity for cfun, ignoring CDICTS parameters */
+int userArity(Name c) {
+    int a = nameRec(c)->arity;
     Type t = nameRec(c)->type;
-    Int w;
+    int w;
     if (isPolyType(t)) {
         t = monotypeOf(t);
     }
@@ -432,13 +429,10 @@ Int userArity(Name c) /* Find arity for cfun, ignoring   */
 List cfunSfuns; /* List of (Cfun,[SelectorVar])     */
                 /*  - used for deriving Show       */
 
-static List local addSels(Int line, Name c, List fs,
-                          List ss) /* Add fields to selector list          */
-                                   /* line number of constructor           */
-                                   /* corresponding constr function   */
-                                   /* list of fields (varids)      */
-{                                  /* list of existing selectors           */
-    Int sn = 1;
+/* Add fields to selector list line number of constructor corresponding constr
+ * function list of fields (varids) list of existing selectors */
+static List addSels(int line, Name c, List fs, List ss) {
+    int sn = 1;
     cfunSfuns = cons(pair(c, fs), cfunSfuns);
     for (; nonNull(fs); fs = tl(fs), ++sn) {
         List ns = ss;
@@ -484,9 +478,8 @@ static List local addSels(Int line, Name c, List fs,
     return ss;
 }
 
-static List local selectCtxt(List ctxt,
-                             List vs) /* calculate subset of context       */
-{
+/* Calculate subset of context */
+static List selectCtxt(List ctxt, List vs) {
     if (isNull(vs)) {
         return NIL;
     } else {
@@ -503,8 +496,8 @@ static List local selectCtxt(List ctxt,
     }
 }
 
-Void checkSynonyms(List ts) /* Check for mutually recursive           */
-{                           /* synonyms                       */
+/* Check for mutually recursive synonyms */
+void checkSynonyms(List ts) {
     List syns = NIL;
     for (; nonNull(ts); ts = tl(ts)) { /* build list of all synonyms       */
         Tycon t = hd(ts);
@@ -522,10 +515,8 @@ Void checkSynonyms(List ts) /* Check for mutually recursive           */
     }
 }
 
-static List local visitSyn(List path, Tycon t,
-                           List syns) /* visit synonym definition to look*/
-                                      /* for cycles                        */
-{
+/* Visit synonym definition to look for cycles */
+static List visitSyn(List path, Tycon t, List syns) {
     if (cellIsMember(t, path)) { /* every elt in path depends on t  */
         errHead(tyconRec(t)->line);
         errPrintf("Type synonyms \"%s\" and \"%s\" are mutually recursive",
@@ -552,11 +543,13 @@ static List local visitSyn(List path, Tycon t,
  * Expanding out all type synonyms and newtypes in a type expression:
  * ------------------------------------------------------------------------*/
 
-Type fullerExpand(Type t) /* find full expansion of type exp */
-{                         /* assuming that all relevant type */
-    Cell h = t;           /* synonym defns of lower rank have*/
-    Int n = 0;            /* already been fully expanded but */
-    List args;            /* not assuming same for newtypes  */
+/* Find full expansion of type exp assuming that all relevant type synonym
+ * defns of lower rank have already been fully expanded but not assuming same
+ * for newtypes */
+Type fullerExpand(Type t) {
+    Cell h = t;
+    int n = 0;
+    List args;
     for (args = NIL; isAp(h); h = fun(h), n++) {
         /* Does not apply recursively because the ffi is only interested
          * in the top level constructors
@@ -593,9 +586,8 @@ Type fullerExpand(Type t) /* find full expansion of type exp */
     return t;
 }
 
-Bool hasIOResultType(
-    Type ty) /* return TRUE if FFI/primitive type sig is an IO action. */
-{
+/* Return true if FFI/primitive type sig is an IO action. */
+bool hasIOResultType(Type ty) {
     Type t = ty;
     if (isPolyType(t)) {
         t = monotypeOf(t);
@@ -607,10 +599,9 @@ Bool hasIOResultType(
     return (getHead(t) == typeIO && argCount == 1);
 }
 
-static Type local instantiateNewtype(Name c,
-                                     Type env) /* instantiate type using      */
-/* env to determine appropriate    */
-{ /* values for OFFSET type vars           */
+/* Instantiate type using env to determine appropriate values for OFFSET type
+ * vars */
+static Type instantiateNewtype(Name c, Type env) {
     Type t = NIL;
     assert(isName(c));
     t = nameRec(c)->type;
@@ -627,10 +618,11 @@ static Type local instantiateNewtype(Name c,
  * Expanding out all type synonyms in a type expression:
  * ------------------------------------------------------------------------*/
 
-Type fullExpand(Type t) /* find full expansion of type exp */
-{                       /* assuming that all relevant      */
-    Cell h = t;         /* synonym defns of lower rank have*/
-    Int n = 0;          /* already been fully expanded     */
+/* Find full expansion of type exp assuming that all relevant synonym defns of
+ * lower rank have already been fully expanded */
+Type fullExpand(Type t) {
+    Cell h = t;
+    int n = 0;
     List args;
     for (args = NIL; isAp(h); h = fun(h), n++) {
         args = cons(fullExpand(arg(h)), args);
@@ -650,10 +642,9 @@ Type fullExpand(Type t) /* find full expansion of type exp */
     return t;
 }
 
-static Type local instantiateSyn(Type t,
-                                 Type env) /* instantiate type according using*/
-                                           /* env to determine appropriate    */
-{ /* values for OFFSET type vars          */
+/* Instantiate type according using env to determine appropriate values for
+ * OFFSET type vars */
+static Type instantiateSyn(Type t, Type env) {
     switch (whatIs(t)) {
     case AP:
         return ap(instantiateSyn(fun(t), env), instantiateSyn(arg(t), env));
@@ -676,7 +667,7 @@ static Cell *const tyconRoots[] = {
     &cfunSfuns,
 };
 
-Void tyconControl(Int what) {
+void tyconControl(int what) {
     switch (what) {
     case RESET:
         cfunSfuns = NIL;

@@ -9,10 +9,6 @@
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
- *
- * $RCSfile: interns.c,v $
- * $Revision: 1.14 $
- * $Date: 2003/11/19 21:49:48 $
  * ------------------------------------------------------------------------*/
 
 #include "prelude.h"
@@ -25,15 +21,15 @@
  * internalPrims control
  * ------------------------------------------------------------------------*/
 
-static Void linkInternals(Void);
+static void linkInternals(void);
 
 /* nameLeft and nameRight (the standard Left/Right data constructors) are
  * declared in connect.h and defined in type.c; use those declarations
  * rather than redeclaring them here.
  */
 
-static Void local internalControl(Int);
-static Void local internalControl(Int what) {
+static void internalControl(int);
+static void internalControl(int what) {
     switch (what) {
     case INSTALL:
         setCurrModule(modulePrelude);
@@ -112,8 +108,8 @@ static Name nameCuddlesChar;    /*              | Char  Char        */
 static Name nameCuddlesPrim;    /*              | Prim  String      */
 static Name nameCuddlesError;   /*              | Error Cell        */
 
-static Void linkInternals() {
-    String internLib = "Cuddles.Internals";
+static void linkInternals(void) {
+    char *internLib = "Cuddles.Internals";
     moduleInternals = findModule(findText(internLib));
     if (nonNull(moduleInternals)) {
         setCurrModule(moduleInternals);
@@ -158,7 +154,8 @@ static Void linkInternals() {
     checkCuddlesObject(whnfHead);                                              \
     nm = snd(whnfHead);
 
-primFun(primGetCell) {                    /* Trivial coercion                 */
+/* Trivial coercion */
+primFun(primGetCell) {
     updapRoot(CUDDLESOBJECT, primArg(1)); /*  :: a -> Cell                    */
 }
 
@@ -166,7 +163,8 @@ primFun(primGetCell) {                    /* Trivial coercion                 */
  * Pointer equality on Cells
  * ------------------------------------------------------------------------*/
 
-primFun(primCellPtrEq) { /* Unsafe pointer equality test     */
+/* Unsafe pointer equality test */
+primFun(primCellPtrEq) {
     Cell x = 0;
     Cell y = 0;
     CuddlesObjectArg(x, 1);
@@ -190,8 +188,9 @@ primFun(primCellPtrEq) { /* Unsafe pointer equality test     */
  * Error catching - evaluate a Cell and return an error redex or its value
  * ------------------------------------------------------------------------*/
 
-primFun(primCatchError2) { /* Error catching  primitive        */
-                           /*  :: a -> Either Cell a           */
+/* Error catching primitive */
+primFun(primCatchError2) {
+    /*  :: a -> Either Cell a           */
     Cell err = NIL;
     err = evalWithNoError(primArg(1));
     if (isNull(err)) {
@@ -224,9 +223,10 @@ primFun(primCatchError2) { /* Error catching  primitive        */
  *    in place.                                                              
  * ------------------------------------------------------------------------*/
 
-primFun(primClassifyCell) { /* classifyCell                       */
-    Bool gc = consGC;       /*  :: Bool -> Cell -> IO CellKind    */
-    Bool strict;
+/* ClassifyCell */
+primFun(primClassifyCell) {
+    bool gc = consGC; /*  :: Bool -> Cell -> IO CellKind    */
+    bool strict;
     Cell result = NIL;
     BoolArg(strict, 2 + IOArity);
     if (strict) {
@@ -243,7 +243,7 @@ primFun(primClassifyCell) { /* classifyCell                       */
         whnfHead = snd(whnfHead);
         unwind(whnfHead);
     }
-    consGC = TRUE;
+    consGC = true;
     if (whnfArgs > 0) {
         Cell args = nameNil;
         while (whnfArgs-- > 0)
@@ -316,8 +316,9 @@ primFun(primClassifyCell) { /* classifyCell                       */
  * Operations on Names
  * ------------------------------------------------------------------------*/
 
-primFun(primNameString) { /* Get string of a name             */
-    Text t;               /*  :: Name -> String              */
+/* Get string of a name */
+primFun(primNameString) {
+    Text t; /*  :: Name -> String              */
     Name nm;
     IntArg(nm, 1);
     t = nameRec(nm)->text;
@@ -333,8 +334,9 @@ primFun(primNameString) { /* Get string of a name             */
     }
 }
 
-primFun(primNameInfo) { /* Get arity and fixity of a Name   */
-    Name nm;            /*  :: Name -> (Int,Int,Char)       */
+/* Get arity and fixity of a Name */
+primFun(primNameInfo) {
+    Name nm; /*  :: Name -> (Int,Int,Char)       */
     Syntax syn = 0;
     Char assoc = 0;
     IntArg(nm, 1);
@@ -359,8 +361,9 @@ primFun(primNameInfo) { /* Get arity and fixity of a Name   */
               mkChar(assoc));
 }
 
-primFun(primNameEq) { /* Compare names                    */
-    Name nm1;         /*  :: Name -> Name -> Bool         */
+/* Compare names */
+primFun(primNameEq) {
+    Name nm1; /*  :: Name -> Name -> Bool         */
     Name nm2;
     IntArg(nm1, 2);
     IntArg(nm2, 1);
@@ -369,8 +372,9 @@ primFun(primNameEq) { /* Compare names                    */
 
 #if BYTECODE_PRIMS
 
-primFun(primNameCode) { /* Obtain address of first bytecode */
-    Name nm;            /*  :: Name -> Addr                 */
+/* Obtain address of first bytecode */
+primFun(primNameCode) {
+    Name nm; /*  :: Name -> Addr                 */
     IntArg(nm, 1);
     IntResult(nameRec(nm)->code);
 }
@@ -383,50 +387,58 @@ primFun(primNameCode) { /* Obtain address of first bytecode */
 
 #if BYTECODE_PRIMS
 
-primFun(primIntAt) { /* Obtain Int at address             */
-    Addr m;          /*  :: Addr -> Int                   */
+/* Obtain Int at address */
+primFun(primIntAt) {
+    Addr m; /*  :: Addr -> Int                   */
     IntArg(m, 1);
     IntResult(IntAt(m));
 }
 
-primFun(primFloatAt) { /* Obtain float at address           */
-    Addr m;            /*  :: Addr -> Cell                  */
+/* Obtain float at address */
+primFun(primFloatAt) {
+    Addr m; /*  :: Addr -> Cell                  */
     IntArg(m, 1);
     FloatResult(FloatAt(m));
 }
 
-primFun(primDoubleAt) { /* Obtain float at address           */
-    Addr m;             /*  :: Addr -> Cell                  */
+/* Obtain float at address */
+primFun(primDoubleAt) {
+    Addr m; /*  :: Addr -> Cell                  */
     IntArg(m, 1);
     DoubleResult(DoubleAt(m));
 }
 
-primFun(primCellAt) { /* Obtain cell at address            */
-    Addr m;           /*  :: Addr -> Cell                  */
+/* Obtain cell at address */
+primFun(primCellAt) {
+    Addr m; /*  :: Addr -> Cell                  */
     IntArg(m, 1);
     updapRoot(CUDDLESOBJECT, CellAt(m));
 }
 
-primFun(primNameAt) { /* Obtain Name at address            */
-    Addr m;           /*  :: Addr -> Name                  */
+/* Obtain Name at address */
+primFun(primNameAt) {
+    Addr m; /*  :: Addr -> Name                  */
     IntArg(m, 1);
     IntResult(CellAt(m));
 }
 
-primFun(primBytecodeAt) { /* Obtain bytecode at address        */
-    Addr m;               /*  :: Addr -> Bytecode              */
+/* Obtain bytecode at address */
+primFun(primBytecodeAt) {
+    Addr m; /*  :: Addr -> Bytecode              */
     IntArg(m, 1);
     IntResult(InstrAt(m));
 }
 
-primFun(primTextAt) { /* Obtain string at address          */
-    Addr m;           /*  :: Addr -> String                */
+/* Obtain string at address */
+primFun(primTextAt) {
+    Addr m; /*  :: Addr -> String                */
     IntArg(m, 1);
     updapRoot(STRCELL, TextAt(m));
 }
 
-primFun(primAddrAt) { /* Obtain address at address         */
-    Addr m;           /*  :: Addr -> Addr                  */
+/* Obtain address at address */
+primFun(primAddrAt) {
+    Addr m; /*  :: Addr -> Addr                  */
     IntArg(m, 1);
     IntResult(AddrAt(m));
 }

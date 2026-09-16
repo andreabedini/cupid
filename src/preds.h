@@ -11,20 +11,20 @@
 
 extern List preds; /* Current predicate assignment         */
 
-extern Cell assumeEvid(Cell, Int);
-extern List makePredAss(List, Int);
+extern Cell assumeEvid(Cell, int);
+extern List makePredAss(List, int);
 extern List copyPreds(List);
-extern Void qualify(List, Cell);
-extern Void qualifyBinding(List, Cell);
-extern Cell qualifyExpr(Int, List, Cell);
-extern Cell scEntail(List, Cell, Int, Int);
-extern Cell inEntail(List, Cell, Int, Int);
+extern void qualify(List, Cell);
+extern void qualifyBinding(List, Cell);
+extern Cell qualifyExpr(int, List, Cell);
+extern Cell scEntail(List, Cell, int, int);
+extern Cell inEntail(List, Cell, int, int);
 extern List scSimplify(List);
-extern Void elimTauts(Void);
+extern void elimTauts(void);
 extern List elimOuterPreds(List);
 extern List elimPredsUsing(List, List);
-extern Void reducePreds(Void);
-extern Void normPreds(Int);
-extern Bool resolveDefs(List, Bool);
+extern void reducePreds(void);
+extern void normPreds(int);
+extern bool resolveDefs(List, bool);
 
 #endif /* PREDS_H */

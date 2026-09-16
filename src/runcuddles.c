@@ -28,11 +28,11 @@
  * with FFI_COMPILER, and its errors have always come out as runcuddles'.  */
 static const char *progName = "runcuddles";
 
-/* Interpreter output is captured rather than printed (EnableOutput(FALSE)),
+/* Interpreter output is captured rather than printed (EnableOutput(false)),
  * so an error arrives here as a buffer to be shown once, on the way out.
  */
-static Void reportError(Void) {
-    String out = ClearOutputBuffer();
+static void reportError(void) {
+    char *out = ClearOutputBuffer();
 
     normalTerminal();
     fprintf(stderr, "%s: Error occurred\n", progName);
@@ -42,7 +42,7 @@ static Void reportError(Void) {
     fflush(stderr);
 }
 
-static Void usageError(const char *message, String arg) {
+static void usageError(const char *message, char *arg) {
     fprintf(stderr, "%s: %s%s\n", progName, message, arg ? arg : "");
     fflush(stderr);
     exit(1);
@@ -51,8 +51,8 @@ static Void usageError(const char *message, String arg) {
 int main(int argc, char *argv[]);
 
 int main(int argc, char *argv[]) {
-    Int exitCode = 0;
-    Int i;
+    int exitCode = 0;
+    int i;
 
     CStackBase = &argc; /* Save stack base for use in gc   */
 
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
         usageError("failed to initialize, exiting", 0);
 
 #if defined(FFI_COMPILER)
-    generateFFI = TRUE;
+    generateFFI = true;
 #endif
 
     if (setjmp(catch_error)) { /* every interpreter error lands here */
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
     if (argc < 1)
         usageError("missing file argument", 0);
 
-    EnableOutput(FALSE);
+    EnableOutput(false);
     loadPrelude();
 
 #if defined(FFI_COMPILER)
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
         ffiSetFlags(argv[i]);
 #endif
 
-    addScriptName(argv[0], TRUE);
+    addScriptName(argv[0], true);
     readScripts(0);
     everybody(RESET);
 

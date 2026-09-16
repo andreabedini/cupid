@@ -37,9 +37,9 @@
  * Time/CPUTime control:
  * ------------------------------------------------------------------------*/
 
-static Void timeControl(Int);
+static void timeControl(int);
 
-static Void timeControl(Int what) {
+static void timeControl(int what) {
 }
 
 /* --------------------------------------------------------------------------
@@ -69,7 +69,8 @@ struct primInfo timePrims = {timeControl, timePrimTable, 0};
  * Time primitives:
  * ------------------------------------------------------------------------*/
 
-primFun(primGetClockTime) { /* :: IO (Int,Int) */
+/* :: IO (Int,Int) */
+primFun(primGetClockTime) {
 
 #if HAVE_GETTIMEOFDAY
     struct timeval tv;
@@ -78,7 +79,7 @@ primFun(primGetClockTime) { /* :: IO (Int,Int) */
     rc = gettimeofday(&tv, NULL);
 
     if (rc == -1)
-        throwErrno("Time.getClockTime", TRUE, NO_HANDLE, NULL);
+        throwErrno("Time.getClockTime", true, NO_HANDLE, NULL);
     IOReturn(ap(ap(mkTuple(2), mkInt(tv.tv_sec)), mkInt(tv.tv_usec)));
 #elif HAVE_FTIME
     struct timeb tb;
@@ -91,14 +92,14 @@ primFun(primGetClockTime) { /* :: IO (Int,Int) */
 # endif
 
     if (rc == -1)
-        throwErrno("Time.getClockTime", TRUE, NO_HANDLE, NULL);
+        throwErrno("Time.getClockTime", true, NO_HANDLE, NULL);
 
     IOReturn(ap(ap(mkTuple(2), mkInt(tb.time)), mkInt(tb.millitm * 1000)));
 #else
     time_t t = time(NULL);
 
     if (t == (time_t)-1)
-        throwErrno("Time.getClockTime", TRUE, NO_HANDLE, NULL);
+        throwErrno("Time.getClockTime", true, NO_HANDLE, NULL);
     IOReturn(ap(ap(mkTuple(2), mkInt(t)), mkInt(0)));
 #endif
 }
@@ -107,15 +108,16 @@ primFun(primGetClockTime) { /* :: IO (Int,Int) */
 # define timezone _timezone
 #endif
 
-primFun(primGetCalTime) { /* Int   -> Int -> IO (.....) */
-                          /* isUTC    secs */
-                          /* isUTC => convert time to UTC, o/wise local time */
+/* Int -> Int -> IO (.....) */
+primFun(primGetCalTime) {
+    /* isUTC    secs */
+    /* isUTC => convert time to UTC, o/wise local time */
 
-    Int isUTC;
+    int isUTC;
     time_t secs;
     struct tm *tm;
     char *zoneNm = NULL;
-    Int utcOff;
+    int utcOff;
     Cell zoneStr = NIL;
 
     IntArg(isUTC, 2 + IOArity);
@@ -141,7 +143,7 @@ primFun(primGetCalTime) { /* Int   -> Int -> IO (.....) */
 #endif
 
 #if HAVE_STRUCT_TM_TM_ZONE
-    utcOff = (Int)tm->tm_gmtoff;
+    utcOff = (int)tm->tm_gmtoff;
 #elif HAVE_DECL_TIMEZONE || HAVE_DECL__TIMEZONE
 # if HAVE_DECL_ALTZONE
     utcOff = (-(tm->tm_isdst ? altzone : timezone));
@@ -170,12 +172,12 @@ primFun(primGetCalTime) { /* Int   -> Int -> IO (.....) */
                 mkInt(utcOff)));
 }
 
-primFun(primMkTime) { /* Int{-year-}  -> Int{-month-} -> Int{-day-} ->
-                         Int{-hour-}  -> Int{-mins-}  -> Int{-sec-} ->
-                         Int{-tz offset-} -> IO Int{-secs since Epoch-} */
-    Int year, month, day;
-    Int hour, min, sec;
-    Int tz;
+/* Int{-year-} -> Int{-month-} -> Int{-day-} -> Int{-hour-} -> Int{-mins-} ->
+ * Int{-sec-} -> Int{-tz offset-} -> IO Int{-secs since Epoch-} */
+primFun(primMkTime) {
+    int year, month, day;
+    int hour, min, sec;
+    int tz;
 
     struct tm tm;
     time_t t;
@@ -201,7 +203,7 @@ primFun(primMkTime) { /* Int{-year-}  -> Int{-month-} -> Int{-day-} ->
     t = mktime(&tm);
 
     if (t == (time_t)-1)
-        throwErrno("Time.toClockTime", TRUE, NO_HANDLE, NULL);
+        throwErrno("Time.toClockTime", true, NO_HANDLE, NULL);
 
     /* mktime() assumes that the given time was local, but we might have
      been passed an UTC cal. time, so we now have to add the UTC
@@ -210,7 +212,7 @@ primFun(primMkTime) { /* Int{-year-}  -> Int{-month-} -> Int{-day-} ->
   */
     tz = -tz;
 #if HAVE_STRUCT_TM_TM_ZONE
-    tz += (Int)tm.tm_gmtoff;
+    tz += (int)tm.tm_gmtoff;
 #elif HAVE_DECL_TIMEZONE || HAVE_DECL__TIMEZONE
 # if HAVE_DECL_ALTZONE
     tz += (-(tm.tm_isdst ? altzone : timezone));

@@ -11,15 +11,15 @@
  * no quoting: `%s' is the whole word it expands to, whatever is in it.
  * The word is measured on the first pass and written on the second.
  */
-static String local expandWord(String *hep, String nm, String fullNm,
-                               String lineStr, Bool *expandedName) {
-    String out = NULL;
-    String o = NULL;
+static char *expandWord(char **hep, char *nm, char *fullNm, char *lineStr,
+                        bool *expandedName) {
+    char *out = NULL;
+    char *o = NULL;
     size_t need = 0;
-    Int pass;
+    int pass;
 
     for (pass = 0; pass < 2; pass++) {
-        String he = *hep;
+        char *he = *hep;
         o = out;
         need = 0;
         while (*he && !isspace((unsigned char)*he)) {
@@ -33,13 +33,13 @@ static String local expandWord(String *hep, String nm, String fullNm,
             }
             he++;
             if (*he == 's' || *he == 'f') {
-                String src = (*he == 's') ? nm : fullNm;
+                char *src = (*he == 's') ? nm : fullNm;
                 if (pass) {
                     strcpy(o, src);
                     o += strlen(src);
                 } else
                     need += strlen(src);
-                *expandedName = TRUE;
+                *expandedName = true;
                 he++;
             } else if (*he == 'd') {
                 if (pass) {
@@ -73,7 +73,7 @@ static String local expandWord(String *hep, String nm, String fullNm,
         if (pass) {
             *o = '\0';
             *hep = he;
-        } else if ((out = (String)malloc(need + 1)) == NULL) {
+        } else if ((out = (char *)malloc(need + 1)) == NULL) {
             errHead(0);
             errPrintf("Unable to start editor");
             errFail();
@@ -82,15 +82,15 @@ static String local expandWord(String *hep, String nm, String fullNm,
     return out;
 }
 
-Bool startEdit(Int line, String nm) /* Start editor on file name at    */
-                                    /* given line.  Both name and line */
-{                                   /* or just line may be zero        */
+/* Start editor on file name at given line. Both name and line or just line may
+ * be zero */
+bool startEdit(int line, char *nm) {
     Argv cmd;
-    String fullNm;
-    String he;
-    Bool expandedName = FALSE;
-    Bool syncEdit = TRUE;
-    char lineStr[2 + 3 * sizeof(Int)];
+    char *fullNm;
+    char *he;
+    bool expandedName = false;
+    bool syncEdit = true;
+    char lineStr[2 + 3 * sizeof(int)];
 
     /* First off, check whether we have actually got a plausible editor
      * available. On a Mac, files have creator information, telling which
@@ -105,11 +105,11 @@ Bool startEdit(Int line, String nm) /* Start editor on file name at    */
 
     /* More sanity checks */
     if (nm == NULL) {
-        return FALSE;
+        return false;
     }
 
     fullNm = RealPath(nm);
-    sprintf(lineStr, "%d", (int)(line ? line : 1));
+    snprintf(lineStr, sizeof lineStr, "%d", (int)(line ? line : 1));
 
     he = cuddlesEdit;
 
@@ -118,7 +118,7 @@ Bool startEdit(Int line, String nm) /* Start editor on file name at    */
      * and wait for the editor to exit).
      */
     while (*he == '&') {
-        syncEdit = FALSE;
+        syncEdit = false;
         he++;
     }
 
@@ -126,7 +126,7 @@ Bool startEdit(Int line, String nm) /* Start editor on file name at    */
      * argv: they are separated on whitespace and on nothing else. */
     argvInit(&cmd);
     while (*he) {
-        String word;
+        char *word;
         while (*he && isspace((unsigned char)*he))
             he++;
         if (!*he)
@@ -150,7 +150,7 @@ Bool startEdit(Int line, String nm) /* Start editor on file name at    */
     if (argvRun(&cmd, syncEdit)) {
         Printf("Warning: Editor terminated abnormally\n");
         argvFree(&cmd);
-        return FALSE;
+        return false;
     }
     argvFree(&cmd);
     return syncEdit;

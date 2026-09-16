@@ -31,14 +31,14 @@
  *       of the UI used.
  *
  * ------------------------------------------------------------------------*/
-Int hpSize = DEFAULTHEAP;   /* Desired heap size               */
-String cuddlesPath = 0;     /* String for file search path     */
-String cuddlesSuffixes = 0; /* Source filename suffixes        */
+int hpSize = DEFAULTHEAP;  /* Desired heap size               */
+char *cuddlesPath = 0;     /* String for file search path     */
+char *cuddlesSuffixes = 0; /* Source filename suffixes        */
 
 /* --------------------------------------------------------------------------
  * Evaluator initialization:
  * ------------------------------------------------------------------------*/
-Void startEvaluator(Void) {
+void startEvaluator(void) {
     initScripts();
 
     cuddlesPath = uniqPath(strCopy(CUDDLESPATH));
@@ -48,7 +48,7 @@ Void startEvaluator(Void) {
 /* --------------------------------------------------------------------------
  * Shutdown evaluator.
  * ------------------------------------------------------------------------*/
-Void stopEvaluator() {
+void stopEvaluator(void) {
     /* Let go of dynamic storage */
     if (cuddlesPath) {
         free(cuddlesPath);
@@ -76,8 +76,8 @@ Void stopEvaluator() {
  * is where they differ, so the three steps they share are here.
  * ------------------------------------------------------------------------*/
 
-static Type local typeInputExpr(Module m) /* Check the expression waiting in */
-{                                         /* the input buffer, in module m   */
+/* Check the expression waiting in the input buffer, in module m */
+static Type typeInputExpr(Module m) {
     setCurrModule(m);
     scriptFile = 0;
     startNewScript(0); /* Enables recovery of storage      */
@@ -85,30 +85,30 @@ static Type local typeInputExpr(Module m) /* Check the expression waiting in */
     parseExp();
     checkExp();
     defaultDefns = evalDefaults;
-    return typeCheckExp(TRUE);
+    return typeCheckExp(true);
 }
 
-static Void local buildInputGraph(Void) /* Compile the checked expression   */
-{                                       /* and build the graph to reduce    */
+/* Compile the checked expression and build the graph to reduce */
+static void buildInputGraph(void) {
     inputExpr = ap(nameIORun, inputExpr);
     compileExp();
     clearStack();
     run(inputCode, sp);
 }
 
-static Void local startEval(Void) /* Reset the counters before reducing */
-{
+/* Reset the counters before reducing */
+static void startEval(void) {
     numCells = 0;
     numReductions = 0;
     numGcs = 0;
-    printing = TRUE;
-    consGC = FALSE;
+    printing = true;
+    consGC = false;
 }
 
-Int runProgram(Module m) /* Run main in module m and return the exit  */
-{                        /* code the program asked for                */
+/* Run main in module m and return the exit code the program asked for */
+int runProgram(Module m) {
     Cell temp = NIL;
-    Int exitCode = 0;
+    int exitCode = 0;
 
     stringInput("main >> return () :: IO ()");
     typeInputExpr(m);
@@ -127,7 +127,8 @@ Int runProgram(Module m) /* Run main in module m and return the exit  */
     return exitCode;
 }
 
-Void evaluator(Module m) { /* evaluate expr and print value    */
+/* Evaluate expr and print value */
+void evaluator(Module m) {
     Type type, bd, t;
     Kinds ks = NIL;
     Cell temp = NIL;
@@ -166,7 +167,7 @@ Void evaluator(Module m) { /* evaluate expr and print value    */
             if (useShow) {
                 Cell d = resolvePred(ks, ap(classShow, t));
                 if (isNull(d)) {
-                    printing = FALSE;
+                    printing = false;
                     errHead(0);
                     errPrintf("Cannot find \"show\" function for IO result:");
                     errPrintf("\n*** Expression : ");
@@ -187,7 +188,7 @@ Void evaluator(Module m) { /* evaluate expr and print value    */
         if (useShow) {
             Cell d = resolvePred(ks, ap(classShow, bd));
             if (isNull(d)) {
-                printing = FALSE;
+                printing = false;
                 errHead(0);
                 errPrintf("Cannot find \"show\" function for:");
                 errPrintf("\n*** Expression : ");
@@ -234,9 +235,10 @@ Void evaluator(Module m) { /* evaluate expr and print value    */
 /* --------------------------------------------------------------------------
  * Read in prelude module(s):
  * ------------------------------------------------------------------------*/
-Void loadPrelude() { /* load in the Prelude module(s). */
-    String prelLocation;
-    Bool listFlg;
+/* Load in the Prelude module(s). */
+void loadPrelude(void) {
+    char *prelLocation;
+    bool listFlg;
 
     if (!cuddlesPath)
         fatal("Cuddles search path not defined");
@@ -246,7 +248,7 @@ Void loadPrelude() { /* load in the Prelude module(s). */
                cuddlesPath);
         fatal("Unable to load prelude implementation");
     }
-    addScriptName(prelLocation, FALSE);
+    addScriptName(prelLocation, false);
 
     /* add the H98 Prelude module to the stack */
     if (!(prelLocation = findMPathname(STD_PRELUDE))) {
@@ -254,13 +256,13 @@ Void loadPrelude() { /* load in the Prelude module(s). */
                cuddlesPath);
         fatal("Unable to load prelude");
     }
-    addScriptName(prelLocation, FALSE);
+    addScriptName(prelLocation, false);
 
     everybody(INSTALL);
 
     /* Hack to temporarily turn off 'listScripts' feature. */
     listFlg = listScripts;
-    listScripts = FALSE;
+    listScripts = false;
     readScripts(0);
     listScripts = listFlg;
 }
@@ -269,10 +271,11 @@ Void loadPrelude() { /* load in the Prelude module(s). */
  * Send message to each component of system:
  * ------------------------------------------------------------------------*/
 
-Void everybody(Int what) /* send command `what' to each component of*/
-{                        /* system to respond as appropriate ...    */
-    machdep(what);       /* The order of calling each component is  */
-    storage(what);       /* important for the INSTALL command       */
+/* Send command `what' to each component of system to respond as appropriate
+ * ... */
+void everybody(int what) {
+    machdep(what); /* The order of calling each component is  */
+    storage(what); /* important for the INSTALL command       */
     substitution(what);
     sccControl(what);
     input(what);

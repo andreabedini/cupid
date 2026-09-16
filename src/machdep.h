@@ -24,11 +24,11 @@
  * ------------------------------------------------------------------------*/
 
 typedef time_t Time;
-CUDDLES_inline Bool timeChanged(Time now, Time thn) {
+CUDDLES_inline bool timeChanged(Time now, Time thn) {
     return now != thn;
 }
 
-extern Void getFileInfo(String, Time *, Long *);
+extern void getFileInfo(char *, Time *, long *);
 
 /* --------------------------------------------------------------------------
  * Prototypes for registry reading
@@ -36,21 +36,21 @@ extern Void getFileInfo(String, Time *, Long *);
 
 #if USE_REGISTRY
 
-extern String readRegString(HKEY, String, String, String);
-extern Bool writeRegString(String, String);
-extern String readRegChildStrings(HKEY, String, String, String);
+extern char *readRegString(HKEY, char *, char *, char *);
+extern bool writeRegString(char *, char *);
+extern char *readRegChildStrings(HKEY, char *, char *, char *);
 #endif /* USE_REGISTRY */
 
 /* --------------------------------------------------------------------------
  * Search for script files on the CUDDLES path:
  * ------------------------------------------------------------------------*/
 
-extern String RealPath(String);
-extern String substPath(String, String);
-extern String uniqPath(String);
-extern Bool startEdit(Int, String); /* edit.c, linked into cuddles only */
+extern char *RealPath(char *);
+extern char *substPath(char *, char *);
+extern char *uniqPath(char *);
+extern bool startEdit(int, char *); /* edit.c, linked into cuddles only */
 
-extern Int shellEsc(String);
+extern int shellEsc(char *);
 
 /* --------------------------------------------------------------------------
  * Running an external program without a shell:
@@ -70,33 +70,33 @@ typedef intptr_t ProcId;
 #endif
 
 typedef struct {
-    String *vec; /* the argv itself, NULL-terminated                 */
+    char **vec;  /* the argv itself, NULL-terminated                 */
     size_t used; /* words in it, not counting the terminating NULL   */
     size_t size; /* slots allocated                                  */
 } Argv;
 
-extern Void argvInit(Argv *);
-extern Void argvWord(Argv *, String);
-extern Void argvWords(Argv *, String);
-extern Void argvFree(Argv *);
-extern Int argvRun(Argv *, Bool);
+extern void argvInit(Argv *);
+extern void argvWord(Argv *, char *);
+extern void argvWords(Argv *, char *);
+extern void argvFree(Argv *);
+extern int argvRun(Argv *, bool);
 extern FILE *argvOpen(Argv *, ProcId *);
-extern Int argvClose(FILE *, ProcId);
-extern Int getTerminalWidth(Void);
-extern Void normalTerminal(Void);
-extern Bool getEchoTerminal(Int);
-extern Void setEchoTerminal(Int, Bool);
-extern Bool getBuffTerminal(Int);
-extern Void setBuffTerminal(Int, Bool);
-extern Void gcStarted(Void);
-extern Void gcScanning(Void);
-extern Void gcRecovered(Int);
-extern Void gcCStack(Void);
-extern Void needPrims(Int, void *);
+extern int argvClose(FILE *, ProcId);
+extern int getTerminalWidth(void);
+extern void normalTerminal(void);
+extern bool getEchoTerminal(int);
+extern void setEchoTerminal(int, bool);
+extern bool getBuffTerminal(int);
+extern void setBuffTerminal(int, bool);
+extern void gcStarted(void);
+extern void gcScanning(void);
+extern void gcRecovered(int);
+extern void gcCStack(void);
+extern void needPrims(int, void *);
 
-extern String fromEnv(String, String);
-extern Bool initSystem(Void);
+extern char *fromEnv(char *, char *);
+extern bool initSystem(void);
 
-extern String dirname(String);
+extern char *dirname(char *);
 
 #endif /* __MACHDEP_H__ */

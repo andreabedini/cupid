@@ -29,11 +29,11 @@
  * local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static Cell local checkMaybeCnkPat(Int, Cell);
-static Cell local checkApPat(Int, Int, Cell);
-static Void local addToPatVars(Int, Cell);
-static Void local checkIsCfun(Int, Name);
-static Void local checkCfunArgs(Int, Cell, Int);
+static Cell checkMaybeCnkPat(int, Cell);
+static Cell checkApPat(int, int, Cell);
+static void addToPatVars(int, Cell);
+static void checkIsCfun(int, Name);
+static void checkCfunArgs(int, Cell, int);
 
 /* --------------------------------------------------------------------------
  * Static analysis of patterns:
@@ -56,8 +56,8 @@ static Void local checkCfunArgs(Int, Cell, Int);
 
 List patVars; /* List of vars bound in pattern    */
 
-Cell checkPat(Int line, Cell p) /* Check valid pattern syntax           */
-{
+/* Check valid pattern syntax */
+Cell checkPat(int line, Cell p) {
     stackCheck();
     switch (whatIs(p)) {
     case VARIDCELL:
@@ -101,7 +101,7 @@ Cell checkPat(Int line, Cell p) /* Check valid pattern syntax           */
         break;
 
     case CONFLDS:
-        depConFlds(line, p, TRUE);
+        depConFlds(line, p, true);
         break;
 
     case ESIGN:
@@ -117,17 +117,13 @@ Cell checkPat(Int line, Cell p) /* Check valid pattern syntax           */
     return p;
 }
 
-static Cell local
-checkMaybeCnkPat(Int l, Cell p) /* Check applicative pattern with   */
-                                /* the possibility of n+k pattern   */
-{
+/* Check applicative pattern with the possibility of n+k pattern */
+static Cell checkMaybeCnkPat(int l, Cell p) {
     return checkApPat(l, 0, p);
 }
 
-static Cell local checkApPat(Int line, Int args, Cell p)
-/* check validity of application    */
-/* of constructor to arguments     */
-{
+/* Check validity of application of constructor to arguments */
+static Cell checkApPat(int line, int args, Cell p) {
     switch (whatIs(p)) {
     case AP:
         fun(p) = checkApPat(line, args + 1, fun(p));
@@ -151,7 +147,7 @@ static Cell local checkApPat(Int line, Int args, Cell p)
         /* deliberate fall through */
     case CONIDCELL:
     case CONOPCELL:
-        p = conDefined(line, p, TRUE);
+        p = conDefined(line, p, true);
         checkCfunArgs(line, p, args);
         break;
 
@@ -168,10 +164,9 @@ static Cell local checkApPat(Int line, Int args, Cell p)
     return p;
 }
 
-static Void local addToPatVars(Int line,
-                               Cell v) /* Add variable v to list of vars  */
-                                       /* in current pattern, checking     */
-{                                      /* for repeated variables.          */
+/* Add variable v to list of vars in current pattern, checking for repeated
+ * variables. */
+static void addToPatVars(int line, Cell v) {
     Text t = textOf(v);
     List p = NIL;
     List n = patVars;
@@ -191,10 +186,9 @@ static Void local addToPatVars(Int line,
     }
 }
 
-Name conDefined(Int line, Cell nm, Bool check)
-/* check that nm is the name of a  */
-/* previously defined constructor  */
-{ /* function (and only one.)        */
+/* Check that nm is the name of a previously defined constructor function (and
+ * only one.) */
+Name conDefined(int line, Cell nm, bool check) {
     Name n = findQualName(nm);
     if (isNull(n)) {
         errHead(line);
@@ -204,17 +198,16 @@ Name conDefined(Int line, Cell nm, Bool check)
     checkIsCfun(line, n);
     if (check) {
         if (isQualIdent(nm)) {
-            depQVar(line, nm, FALSE);
+            depQVar(line, nm, false);
         } else {
-            checkNameAmbigName(line, n, FALSE);
+            checkNameAmbigName(line, n, false);
         }
     }
     return n;
 }
 
-static Void local checkIsCfun(Int line,
-                              Name c) /* Check that c is a constructor fn */
-{
+/* Check that c is a constructor fn */
+static void checkIsCfun(int line, Name c) {
     if (!isCfun(c)) {
         errHead(line);
         errPrintf("\"%s\" is not a data constructor",
@@ -223,11 +216,9 @@ static Void local checkIsCfun(Int line,
     }
 }
 
-static Void local checkCfunArgs(Int line, Cell c, Int args)
-/* Check constructor applied with   */
-/* correct number of arguments     */
-{
-    Int a = userArity(c);
+/* Check constructor applied with correct number of arguments */
+static void checkCfunArgs(int line, Cell c, int args) {
+    int a = userArity(c);
     if (a != args) {
         errHead(line);
         errPrintf(
@@ -237,12 +228,11 @@ static Void local checkCfunArgs(Int line, Cell c, Int args)
     }
 }
 
-Cell checkPatType(Int l, String wh, Cell e,
-                  Type t) /* Check type appearing in pattern */
-{
+/* Check type appearing in pattern */
+Cell checkPatType(int l, char *wh, Cell e, Type t) {
     List tvs = typeVarsIn(t, NIL, NIL, NIL);
     for (; nonNull(tvs); tvs = tl(tvs)) {
-        Int beta = newKindvars(1);
+        int beta = newKindvars(1);
         hd(btyvars) = cons(pair(hd(tvs), mkInt(beta)), hd(btyvars));
     }
     t = checkSigType(l, "pattern type", e, t);
@@ -254,8 +244,8 @@ Cell checkPatType(Int l, String wh, Cell e,
     return t;
 }
 
-Cell applyBtyvs(Cell pat) /* Record bound type vars in pat   */
-{
+/* Record bound type vars in pat */
+Cell applyBtyvs(Cell pat) {
     List bts = hd(btyvars);
     leaveBtyvs();
     if (nonNull(bts)) {
@@ -277,7 +267,7 @@ static Cell *const patternRoots[] = {
     &patVars,
 };
 
-Void patternControl(Int what) {
+void patternControl(int what) {
     switch (what) {
     case RESET:
         patVars = NIL;

@@ -30,40 +30,40 @@ CUDDLES_inline struct strScriptName *scriptName(Script s) {
     return &scriptRec(s)->name;
 }
 
-static Int numScripts;    /* Number of scripts loaded        */
-static Int namesUpto;     /* Number of script names set      */
-static Int scriptsStable; /* Number of (Prelude) scripts     */
+static int numScripts;    /* Number of scripts loaded        */
+static int namesUpto;     /* Number of script names set      */
+static int scriptsStable; /* Number of (Prelude) scripts     */
                           /* considered 'stable'             */
                           /* (=> won't be nuked when clearing */
                           /* the script stack / reloading.)   */
 
-static Bool needsImports; /* set to TRUE if imports required */
-String scriptFile;        /* Name of current script (if any) */
+static bool needsImports; /* set to true if imports required */
+char *scriptFile;         /* Name of current script (if any) */
 
 /* --------------------------------------------------------------------------
  * Local function prototypes:
  * ------------------------------------------------------------------------*/
-static Bool local addScript(String, Long);
-static Void local freeScript(Int);
+static bool addScript(char *, long);
+static void freeScript(int);
 
 /* --------------------------------------------------------------------------
  * Initialising / freeing script stacks:
  * ------------------------------------------------------------------------*/
-Void initScripts() {
+void initScripts(void) {
     scriptFile = 0;
     numScripts = 0;
     namesUpto = 0;
     scriptsStable = 0;
 }
 
-Void stopScripts() {
+void stopScripts(void) {
     int i;
 
     for (i = 0; i < numScripts; i++)
         freeScript(i);
 }
 
-static Void local freeScript(Int i) {
+static void freeScript(int i) {
     if (scriptName(i)->fileName)
         free(scriptName(i)->fileName);
     if (scriptName(i)->realName)
@@ -77,12 +77,12 @@ static Void local freeScript(Int i) {
  * stack (e.g., ":l<ENTER>"), only modules later than the Prelude
  * ones are scratched.
  */
-Void setScriptStableMark() {
+void setScriptStableMark(void) {
     scriptsStable = namesUpto;
 }
 
-String getScriptName(Script s) /* access the script name at index 's' */
-{
+/* Access the script name at index 's' */
+char *getScriptName(Script s) {
     if (s >= 0 && s <= numScripts) {
         return scriptName(s)->fileName;
     } else {
@@ -94,8 +94,8 @@ String getScriptName(Script s) /* access the script name at index 's' */
     return NULL;
 }
 
-String getScriptRealName(Script s) /* access the path of script at index 's' */
-{
+/* Access the path of script at index 's' */
+char *getScriptRealName(Script s) {
     if (s >= 0 && s <= numScripts) {
         return scriptName(s)->realName;
     } else {
@@ -107,11 +107,13 @@ String getScriptRealName(Script s) /* access the path of script at index 's' */
     return NULL;
 }
 
-Int getScriptHwMark() { /* return number of on the stack, loaded or not. */
+/* Return number of on the stack, loaded or not. */
+int getScriptHwMark(void) {
     return namesUpto;
 }
 
-Int numLoadedScripts() { /* return number of currently loaded scripts */
+/* Return number of currently loaded scripts */
+int numLoadedScripts(void) {
     return numScripts;
 }
 
@@ -119,9 +121,9 @@ Int numLoadedScripts() { /* return number of currently loaded scripts */
  * Loading script files:
  * ------------------------------------------------------------------------*/
 
-Void addScriptName(String s, Bool sch) /* Add script to list of scripts   */
-                                       /* to be read in ...               */
-{                                      /* TRUE => requires pathname search*/
+/* Add script to list of scripts to be read in ... true => requires pathname
+ * search */
+void addScriptName(char *s, bool sch) {
     if (namesUpto >= NUM_SCRIPTS) {
         errHead(0);
         errPrintf("Too many module files (maximum of %d allowed)", NUM_SCRIPTS);
@@ -130,7 +132,7 @@ Void addScriptName(String s, Bool sch) /* Add script to list of scripts   */
     }
     if (sch) {
         if (isModuleId(s)) {
-            String location = findMPathname(s);
+            char *location = findMPathname(s);
             if (!location) {
                 errHead(0);
                 errPrintf("Can't find module \"%s\"", s);
@@ -153,10 +155,8 @@ Void addScriptName(String s, Bool sch) /* Add script to list of scripts   */
     namesUpto++;
 }
 
-static Bool local addScript(String fname,
-                            Long len) /* read single script file */
-                                      /* name of script file     */
-{                                     /* length of script file   */
+/* Read single script file name of script file length of script file */
+static bool addScript(char *fname, long len) {
 
     if (!quiet) {
         Printf("Reading file \"%s\":\n", fname);
@@ -164,7 +164,7 @@ static Bool local addScript(String fname,
     }
     setLastEdit(fname, 0);
 
-    needsImports = FALSE;
+    needsImports = false;
     scriptFile = 0;
     if (!parseScript(fname, len)) { /* process script file */
         /* file or parse error, drop the script */
@@ -172,30 +172,30 @@ static Bool local addScript(String fname,
         errFail();
     }
     if (needsImports)
-        return FALSE;
+        return false;
     checkDefns();
     typeCheckDefns();
     compileDefns();
     scriptFile = 0;
-    preludeLoaded = TRUE;
-    return TRUE;
+    preludeLoaded = true;
+    return true;
 }
 
-Bool chase(List imps) /* Process list of import requests */
-{
-    Int origPos = numScripts; /* keep track of original position */
-    String origDir = scriptName(origPos)->directory;
+/* Process list of import requests */
+bool chase(List imps) {
+    int origPos = numScripts; /* keep track of original position */
+    char *origDir = scriptName(origPos)->directory;
     for (; nonNull(imps); imps = tl(imps)) {
-        String modname = textToStr(textOf(hd(imps)));
-        String iname = NULL;
-        String rname;
-        Bool inOrigDir = FALSE;
-        Int i = 0;
+        char *modname = textToStr(textOf(hd(imps)));
+        char *iname = NULL;
+        char *rname;
+        bool inOrigDir = false;
+        int i = 0;
 
         if (origDir) {
             iname = findMInDir(origDir, modname);
             if (iname)
-                inOrigDir = TRUE;
+                inOrigDir = true;
         }
         if (iname == NULL)
             iname = findMPathname(modname);
@@ -212,11 +212,11 @@ Bool chase(List imps) /* Process list of import requests */
         if (i >= origPos) { /* Neither loaded or queued        */
             struct strScriptName tmpScript;
 
-            scriptName(origPos)->postponed = TRUE;
-            needsImports = TRUE;
+            scriptName(origPos)->postponed = true;
+            needsImports = true;
 
             if (i >= namesUpto) { /* Name not found (i==namesUpto)   */
-                addScriptName(iname, FALSE);
+                addScriptName(iname, false);
                 if (inOrigDir)
                     scriptName(i)->directory = strCopy(origDir);
             } else if (scriptName(i)->postponed) { /* imported by itself? */
@@ -244,12 +244,12 @@ Bool chase(List imps) /* Process list of import requests */
 /* --------------------------------------------------------------------------
  * Adding scripts found in an argument vector:
  * ------------------------------------------------------------------------*/
-Void addScriptsFromArgs(Int argc, String argv[]) {
-    Int i;
+void addScriptsFromArgs(int argc, char *argv[]) {
+    int i;
 
     for (i = 1; i < argc; ++i) {
         if (argv[i] && argv[i][0] && !isOption(argv[i])) {
-            addScriptName(argv[i], TRUE);
+            addScriptName(argv[i], true);
         }
     }
 }
@@ -257,8 +257,8 @@ Void addScriptsFromArgs(Int argc, String argv[]) {
 /* --------------------------------------------------------------------------
  * Dropping script files:
  * ------------------------------------------------------------------------*/
-Void forgetScriptsFrom(Script scno) /* remove scripts from system     */
-{
+/* Remove scripts from system */
+void forgetScriptsFrom(Script scno) {
     Script i;
     for (i = scno; i < namesUpto; ++i)
         freeScript(i);
@@ -268,15 +268,15 @@ Void forgetScriptsFrom(Script scno) /* remove scripts from system     */
         numScripts = scno;
 }
 
-Void forgetAllScripts() {
+void forgetAllScripts(void) {
     /* Drop all but the stable scripts; i.e., the
    * Prelude and (possibly) its implementation module(s).
    */
     forgetScriptsFrom(scriptsStable);
 }
 
-Void forgetAScript(Script scno) /* remove a script from system */
-{
+/* Remove a script from system */
+void forgetAScript(Script scno) {
     Script i;
 
     if (scno > namesUpto)
@@ -290,10 +290,11 @@ Void forgetAScript(Script scno) /* remove a script from system */
     namesUpto--;
 }
 
-Void readScripts(Int n) /* Reread current list of scripts, */
-{                       /* loading everything after and    */
-    Time timeStamp;     /* including the first script which*/
-    Long fileSize;      /* has been either changed or added*/
+/* Reread current list of scripts, loading everything after and including the
+ * first script which has been either changed or added */
+void readScripts(int n) {
+    Time timeStamp;
+    long fileSize;
 
     for (; n < numScripts; n++) { /* Scan previously loaded scripts  */
         getFileInfo(scriptName(n)->fileName, &timeStamp, &fileSize);
@@ -304,7 +305,7 @@ Void readScripts(Int n) /* Reread current list of scripts, */
         }
     }
     for (; n < NUM_SCRIPTS; n++)          /* No scripts have been postponed  */
-        scriptName(n)->postponed = FALSE; /* at this stage                   */
+        scriptName(n)->postponed = false; /* at this stage                   */
 
     while (numScripts < namesUpto) { /* Process any remaining scripts   */
         getFileInfo(scriptName(numScripts)->fileName, &timeStamp, &fileSize);
@@ -320,10 +321,11 @@ Void readScripts(Int n) /* Reread current list of scripts, */
     if (listScripts)
         whatScripts();
     if (numScripts <= 1)
-        setLastEdit((String)0, 0);
+        setLastEdit((char *)0, 0);
 }
 
-Void whatScripts() { /* list scripts in current session */
+/* List scripts in current session */
+void whatScripts(void) {
     int i;
     Printf("\nCuddles session for:");
     for (i = 0; i < numScripts; ++i) {
@@ -332,7 +334,7 @@ Void whatScripts() { /* list scripts in current session */
     Putchar('\n');
 }
 
-Void script(Int what) {
+void script(int what) {
 
     /* not much to it..will be more when/if the local tables
    * become resizable.
