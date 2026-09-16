@@ -278,17 +278,4 @@ void installPattern(void) {
     resetPattern();
 }
 
-void patternControl(int what) {
-    switch (what) {
-    case RESET:
-        resetPattern();
-        break;
-    case INSTALL:
-        installPattern();
-        break;
-    default:
-        break;
-    }
-}
-
 /*-------------------------------------------------------------------------*/

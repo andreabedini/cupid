@@ -376,17 +376,4 @@ void installKind(void) {
     resetKind();
 }
 
-void kindControl(int what) {
-    switch (what) {
-    case RESET:
-        resetKind();
-        break;
-    case INSTALL:
-        installKind();
-        break;
-    default:
-        break;
-    }
-}
-
 /*-------------------------------------------------------------------------*/

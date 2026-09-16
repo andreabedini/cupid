@@ -22,8 +22,11 @@ extern Cell printException(Cell, Cell); /* printer.c: exception -> String*/
 extern Name predefPrim(char *, char *); /* builtin.c: name + primitive  */
 extern Name predefName(char *);         /* builtin.c: name to be defined*/
 
+extern void installBuiltIn(void); /* register every module, predefine names */
+extern void resetBuiltIn(void);   /* free every thunk from the last script  */
+
 /* The primitive tables of the other units in this directory, registered
- * by builtIn(INSTALL) in builtin.c */
+ * by installBuiltIn() in builtin.c */
 extern struct primInfo arrayPrims, bignumPrims, dirPrims, iomonadPrims,
     printerPrims, timePrims;
 #if INTERNAL_PRIMS

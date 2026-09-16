@@ -14,7 +14,7 @@
 #include "output.h"
 #include "opts.h"
 #include "goal.h"
-#include "evaluator.h" /* everybody() proto only */
+#include "evaluator.h" /* installSubsystems() etc. proto only */
 #include <setjmp.h>
 
 static void cuddlesVFPrintf(FILE *, const char *, va_list);
@@ -128,7 +128,7 @@ void internal(char *msg) {
 void fatal(char *msg) {
     FlushStdout();
     Printf("\nFATAL ERROR: %s\n", msg);
-    everybody(EXIT);
+    exitSubsystems();
     exit(1);
 }
 
@@ -146,7 +146,7 @@ sigHandler(breakHandler) {
     Printf("{Interrupted!}\n");
     breakOn(true); /* reinstall break trapping (in case breakOn(false) ran */
                    /* while this break was pending)                        */
-    everybody(BREAK);
+    breakSubsystems();
     failed();
     stopAnyPrinting();
     FlushStdout();

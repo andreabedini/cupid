@@ -1634,7 +1634,7 @@ void resetSubstitution(void) {
 
 /* Mark the tuple-constructor and kind caches, and every bound type
  * variable; the rest of the module's roots are in substRoots. */
-static void markSubstitution(void) {
+void markSubstitution(void) {
     int i;
 
     for (i = 0; i < MAXTUPCON; ++i)
@@ -1649,7 +1649,7 @@ static void markSubstitution(void) {
 
 /* Register the roots, reset, and empty the tuple-constructor and kind
  * caches; done once, before the Prelude is read. */
-static void installSubstitution(void) {
+void installSubstitution(void) {
     int i;
 
     registerRoots(substRoots);
@@ -1663,27 +1663,8 @@ static void installSubstitution(void) {
 }
 
 /* Free the type-variable table. */
-static void exitSubstitution(void) {
+void exitSubstitution(void) {
     free(tyvars);
-}
-
-void substitution(int what) {
-    switch (what) {
-    case RESET:
-        resetSubstitution();
-        break;
-    case MARK:
-        markSubstitution();
-        break;
-    case INSTALL:
-        installSubstitution();
-        break;
-    case EXIT:
-        exitSubstitution();
-        break;
-    default:
-        break;
-    }
 }
 
 /*-------------------------------------------------------------------------*/

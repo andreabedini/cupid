@@ -1763,7 +1763,7 @@ static Cell *const inputRoots[] = {
 /* Register the roots, intern the keyword and symbol texts the lexer
  * and grammar compare against, and reset; done once, before the
  * Prelude is read. */
-static void installInput(void) {
+void installInput(void) {
     registerRoots(inputRoots);
     textCase = findText("case");
     textOfK = findText("of");
@@ -1860,22 +1860,6 @@ void resetInput(void) {
 void breakInput(void) {
     if (reading == KEYBOARD)
         c0 = EOF;
-}
-
-void input(int what) {
-    switch (what) {
-    case INSTALL:
-        installInput();
-        break;
-    case RESET:
-        resetInput();
-        break;
-    case BREAK:
-        breakInput();
-        break;
-    default:
-        break;
-    }
 }
 
 /*-------------------------------------------------------------------------*/

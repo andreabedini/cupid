@@ -113,25 +113,29 @@ struct primitive { /* entry in table of primitives         */
     Prim imp;      /* primitive implementation     */
 };
 
-/* Modules that define new primitive functions must register a control
- * function (defining INSTALL, RESET, etc code) and a (null-terminated)
- * table of primitive functions.
+/* Modules that define new primitive functions may register a Subsystem
+ * of lifecycle hooks (connect.h; a null pointer here means it has none)
+ * and a (null-terminated) table of primitive functions.
  *
  * They are stored as a linked list - so there's no wired in limits.
- * Control functions are called in the order they are registered
- * after all other control functions have been called.
+ * A phase's hooks are called in the order the modules were registered,
+ * after every other subsystem's hook for that phase has been called.
  * (At the moment) there's no way of unregistering a module.
  */
+struct Subsystem; /* connect.h; storage.h only needs a pointer to it */
 
 struct primInfo {
-    void (*controlFun)(int);
+    const struct Subsystem *hooks;
     struct primitive *primFuns;
     struct primInfo *nextPrimInfo;
 };
 
 extern void registerPrims(struct primInfo *);
-extern void controlFuns(int); /* Call all control functions in   */
-                              /* prim list.                      */
+extern void installControlFuns(void); /* call every registered module's */
+extern void resetControlFuns(void);   /* hook for the phase named, in   */
+extern void markControlFuns(void);    /* registration order, skipping   */
+extern void exitControlFuns(void);    /* modules with no hook for it    */
+extern void breakControlFuns(void);
 extern struct primInfoDef *setPrimInfoDll(void *);
 
 /* --------------------------------------------------------------------------
@@ -171,6 +175,11 @@ extern void profilerLog(char *);
 
 extern Pair pair(Cell, Cell);
 extern void garbageCollect(void);
+
+extern void installStorage(void); /* allocate the heaps and handle table */
+extern void resetStorage(void);   /* reset the heap pointers and handles */
+extern void markStorage(void);    /* mark the symbol tables and stack    */
+extern void exitStorage(void);    /* free the heaps and handle table     */
 
 extern void overwrite(Pair, Pair);
 extern Cell markExpr(Cell);

@@ -306,7 +306,7 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  *-------------------------------------------------------------------------*/
 
 /* Zeroed, as the name says.  This was valloc when HAVE_VALLOC, which does
- * not zero: heapFst and heapSnd got away with it because storage(INSTALL)
+ * not zero: heapFst and heapSnd got away with it because installStorage()
  * writes every cell onto the free list, but the profiler's heapThd has no
  * pass of its own and every cell began with a garbage producer.  The page
  * alignment bought nothing -- an allocation this size is mmap'd, and so
@@ -411,9 +411,9 @@ extern int chdir(const char *);
 
 /* WARNING: if you use the following optimisations to assign registers for
  * particular global variables, you should be very careful to make sure that
- * storage(RESET) is called after a longjump (usually resulting from an error
+ * resetStorage() is called after a longjump (usually resulting from an error
  * condition) and before you try to access the heap.  The current version of
- * main deals with this using everybody(RESET) at the head of the main read,
+ * main deals with this using resetSubsystems() at the head of the main read,
  * eval, print loop
  */
 

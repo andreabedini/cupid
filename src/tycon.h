@@ -17,6 +17,5 @@ extern int userArity(Name);     /* arity of a constructor, strictness aside */
 extern Type fullerExpand(Type); /* expand synonyms and newtypes           */
 extern void resetTycon(void);   /* clear cfunSfuns                        */
 extern void installTycon(void); /* register roots and reset; INSTALL only */
-extern void tyconControl(int);  /* RESET/INSTALL, called by staticAnalysis */
 
 #endif /* __TYCON_H__ */

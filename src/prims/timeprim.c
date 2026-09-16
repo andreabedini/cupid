@@ -34,15 +34,6 @@
 #endif
 
 /* --------------------------------------------------------------------------
- * Time/CPUTime control:
- * ------------------------------------------------------------------------*/
-
-static void timeControl(int);
-
-static void timeControl(int what) {
-}
-
-/* --------------------------------------------------------------------------
  * Time/CPUTime primitive table:
  * ------------------------------------------------------------------------*/
 
@@ -63,7 +54,7 @@ static struct primitive timePrimTable[] = {
     {"toClockTimePrim", 7 + IOArity, primMkTime},
     {0, 0, 0}};
 
-struct primInfo timePrims = {timeControl, timePrimTable, 0};
+struct primInfo timePrims = {NULL, timePrimTable, 0};
 
 /* --------------------------------------------------------------------------
  * Time primitives:

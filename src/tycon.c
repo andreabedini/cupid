@@ -678,17 +678,4 @@ void installTycon(void) {
     resetTycon();
 }
 
-void tyconControl(int what) {
-    switch (what) {
-    case RESET:
-        resetTycon();
-        break;
-    case INSTALL:
-        installTycon();
-        break;
-    default:
-        break;
-    }
-}
-
 /*-------------------------------------------------------------------------*/

@@ -625,17 +625,4 @@ void installTypeexp(void) {
     resetTypeexp();
 }
 
-void typeexpControl(int what) {
-    switch (what) {
-    case RESET:
-        resetTypeexp();
-        break;
-    case INSTALL:
-        installTypeexp();
-        break;
-    default:
-        break;
-    }
-}
-
 /*-------------------------------------------------------------------------*/

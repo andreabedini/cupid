@@ -70,6 +70,9 @@ extern bool isPrint(Char);
 #define isIdCont(c) (isLatin1(c) ? isIn((c), IDAFTER) : isAlphaNum(c))
 
 extern void initCharTab(void);
+extern void installCharOps(void); /* build the classification tables    */
+extern void markCharOps(void);    /* mark the cons-char table            */
+extern void exitCharOps(void);    /* free the cons-char table            */
 extern Char toUpper(Char);
 extern Char toLower(Char);
 extern Char toTitle(Char);

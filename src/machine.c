@@ -1779,7 +1779,7 @@ void throwException(Cell ex) {
 
 /* Allocate the program memory and write out the FAIL every failing
  * match branches to; done once, before the Prelude is read. */
-static void installMachine(void) {
+void installMachine(void) {
     /* prelude.h defines NUM_ADDRS; 0 is the upper bound (=> unbounded.) */
     /* the elements are MemCells, not pointers to them */
     dynMemory = allocDynTable(sizeof(MemCell), NUM_ADDRS, 0, "memory");
@@ -1794,7 +1794,7 @@ static void installMachine(void) {
 
 /* Clear the exception jump buffer and the evaluator's recursion and
  * stack-dump depths. */
-static void resetMachine(void) {
+void resetMachine(void) {
     evalError = 0;
     evalDepth = 0;
 #if GIMME_STACK_DUMPS
@@ -1803,25 +1803,9 @@ static void resetMachine(void) {
 }
 
 /* Free the program memory. */
-static void exitMachine(void) {
+void exitMachine(void) {
     if (dynMemory)
         freeDynTable(dynMemory);
-}
-
-void machine(int what) {
-    switch (what) {
-    case INSTALL:
-        installMachine();
-        break;
-    case RESET:
-        resetMachine();
-        break;
-    case EXIT:
-        exitMachine();
-        break;
-    default:
-        break;
-    }
 }
 
 /* ------------------------------------------------------------------------*/

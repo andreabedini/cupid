@@ -1133,17 +1133,4 @@ void installDeriving(void) {
     resetDeriving();
 }
 
-void derivingControl(int what) {
-    switch (what) {
-    case RESET:
-        resetDeriving();
-        break;
-    case INSTALL:
-        installDeriving();
-        break;
-    default:
-        break;
-    }
-}
-
 /*-------------------------------------------------------------------------*/

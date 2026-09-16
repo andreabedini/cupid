@@ -17,7 +17,15 @@ extern void startEvaluator(void);
 extern void stopEvaluator(void);
 extern void evaluator(Module);
 extern int runProgram(Module);
-extern void everybody(int);
+
+/* Call every subsystem's hook for the phase named, in the fixed order
+ * evaluator.c's subsystems table lists them. */
+extern void installSubsystems(void); /* once, before the Prelude is read */
+extern void resetSubsystems(void);   /* before each script load/evaluation */
+extern void markSubsystems(void);    /* garbage collection: mark structures */
+extern void exitSubsystems(void);    /* before exit()                      */
+extern void breakSubsystems(void);   /* after an interrupt                 */
+
 extern void loadPrelude(void);
 
 #endif /* __EVALUATOR_H__ */

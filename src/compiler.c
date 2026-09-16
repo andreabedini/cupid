@@ -1644,7 +1644,7 @@ static Cell preCompOffset(int n) {
     }
 }
 
-static void resetCompiler(void);
+void resetCompiler(void);
 
 /* --------------------------------------------------------------------------
  * Main entry points to compiler:
@@ -1758,7 +1758,7 @@ static Cell *const compilerRoots[] = {
 
 /* Clear the free-variable lists a lambda lift builds up, and the
  * offset/arity state of the function currently being compiled. */
-static void resetCompiler(void) {
+void resetCompiler(void) {
     freeVars = NIL;
     freeFuns = NIL;
     freeBegin = mkOffset(0);
@@ -1768,23 +1768,10 @@ static void resetCompiler(void) {
     localArity = 0;
 }
 
-/* Register the roots; done once, before the Prelude is read. */
-static void installCompiler(void) {
+/* Register the roots and reset; done once, before the Prelude is read. */
+void installCompiler(void) {
     registerRoots(compilerRoots);
-}
-
-void compiler(int what) {
-    switch (what) {
-    case INSTALL:
-        installCompiler();
-        resetCompiler();
-        break;
-    case RESET:
-        resetCompiler();
-        break;
-    default:
-        break;
-    }
+    resetCompiler();
 }
 
 /*-------------------------------------------------------------------------*/

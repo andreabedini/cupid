@@ -48,6 +48,6 @@ extern char *scriptFile;
 extern void whatScripts(void);
 extern void readScripts(int);
 
-extern void script(int);
+extern void exitScript(void); /* discard every loaded script */
 
 #endif /* __SCRIPT_H__ */

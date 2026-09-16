@@ -74,29 +74,20 @@ static void resetBignum(void) {
     bigRem = NIL;
 }
 
-/* Register the roots and predefine the name bignum arithmetic reports
- * overflow through. */
+/* Register the roots, predefine the name bignum arithmetic reports
+ * overflow through, and reset. */
 static void installBignum(void) {
     registerRoots(bignumRoots);
     nameIntToInteger = predefName("primIntToInteger");
+    resetBignum();
 }
 
-static void bignumControl(int);
-static void bignumControl(int what) {
-    switch (what) {
-    case INSTALL:
-        installBignum();
-        resetBignum();
-        break;
-    case RESET:
-        resetBignum();
-        break;
-    default:
-        break;
-    }
-}
+/* The hooks builtIn's INSTALL registers this module under. */
+static const Subsystem bignumSubsystem = {
+    "bignum", installBignum, resetBignum, NULL, NULL, NULL,
+};
 
-struct primInfo bignumPrims = {bignumControl, bignumPrimTable, 0};
+struct primInfo bignumPrims = {&bignumSubsystem, bignumPrimTable, 0};
 
 /* --------------------------------------------------------------------------
  * Local function prototypes:

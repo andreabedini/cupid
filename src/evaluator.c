@@ -18,6 +18,12 @@
 #include "machdep.h"
 #include "evaluator.h"
 #include "scc.h"
+#include "subst.h"
+#include "input.h"
+#include "static.h"
+#include "char.h"
+#include "ffi.h"
+#include "prims/builtin.h"
 #include "timer.h" /* IWYU pragma: keep -- updateTimers, under WANT_TIMER */
 
 #if HAVE_WINDOWS_H
@@ -258,7 +264,7 @@ void loadPrelude(void) {
     }
     addScriptName(prelLocation, false);
 
-    everybody(INSTALL);
+    installSubsystems();
 
     /* Hack to temporarily turn off 'listScripts' feature. */
     listFlg = listScripts;
@@ -268,24 +274,78 @@ void loadPrelude(void) {
 }
 
 /* --------------------------------------------------------------------------
- * Send message to each component of system:
+ * The interpreter's lifecycle: one row per subsystem, naming its hooks
+ * for the five phases a null hook means it has nothing to do in.  The
+ * order is the order INSTALL runs the subsystems in, which matters (the
+ * type checker's wired-in types must exist before builtIn predefines
+ * names that use them, and so on); RESET, MARK, EXIT and BREAK keep the
+ * same order for the same reason everybody() always used one order for
+ * every phase.
  * ------------------------------------------------------------------------*/
+static const Subsystem subsystems[] = {
+    {"machdep", installMachdep, resetMachdep, NULL, exitMachdep, exitMachdep},
+    {"storage", installStorage, resetStorage, markStorage, exitStorage, NULL},
+    {"substitution", installSubstitution, resetSubstitution, markSubstitution,
+     exitSubstitution, NULL},
+    {"scc", installScc, resetScc, NULL, NULL, NULL},
+    {"input", installInput, resetInput, NULL, NULL, breakInput},
+    {"staticAnalysis", installStaticAnalysis, resetStaticAnalysis, NULL, NULL,
+     NULL},
+    {"typeChecker", installTypeChecker, resetTypeChecker, markTypeChecker, NULL,
+     NULL},
+    {"compiler", installCompiler, resetCompiler, NULL, NULL, NULL},
+    {"machine", installMachine, resetMachine, NULL, exitMachine, NULL},
+    {"charOps", installCharOps, NULL, markCharOps, exitCharOps, NULL},
+    {"builtIn", installBuiltIn, resetBuiltIn, NULL, NULL, NULL},
+    {"controlFuns", installControlFuns, resetControlFuns, markControlFuns,
+     exitControlFuns, breakControlFuns},
+    {"ffi", installFfi, resetFfi, NULL, NULL, NULL},
+    {"script", NULL, NULL, NULL, exitScript, NULL},
+};
 
-/* Send command `what' to each component of system to respond as appropriate
- * ... */
-void everybody(int what) {
-    machdep(what); /* The order of calling each component is  */
-    storage(what); /* important for the INSTALL command       */
-    substitution(what);
-    sccControl(what);
-    input(what);
-    staticAnalysis(what);
-    typeChecker(what);
-    compiler(what);
-    machine(what);
-    charOps(what);
-    builtIn(what);
-    controlFuns(what);
-    ffi(what);
-    script(what);
+#define NUM_SUBSYSTEMS (sizeof(subsystems) / sizeof(subsystems[0]))
+
+/* Call every subsystem's install hook, in table order; once, before the
+ * Prelude is read. */
+void installSubsystems(void) {
+    size_t i;
+    for (i = 0; i < NUM_SUBSYSTEMS; i++)
+        if (subsystems[i].install)
+            subsystems[i].install();
+}
+
+/* Call every subsystem's reset hook, in table order; before each script
+ * load or evaluation. */
+void resetSubsystems(void) {
+    size_t i;
+    for (i = 0; i < NUM_SUBSYSTEMS; i++)
+        if (subsystems[i].reset)
+            subsystems[i].reset();
+}
+
+/* Call every subsystem's mark hook, in table order; during garbage
+ * collection, to mark structured data a registered root table cannot
+ * describe. */
+void markSubsystems(void) {
+    size_t i;
+    for (i = 0; i < NUM_SUBSYSTEMS; i++)
+        if (subsystems[i].gcMark)
+            subsystems[i].gcMark();
+}
+
+/* Call every subsystem's exit hook, in table order; just before exit(). */
+void exitSubsystems(void) {
+    size_t i;
+    for (i = 0; i < NUM_SUBSYSTEMS; i++)
+        if (subsystems[i].atExit)
+            subsystems[i].atExit();
+}
+
+/* Call every subsystem's break hook, in table order; after an
+ * interrupt. */
+void breakSubsystems(void) {
+    size_t i;
+    for (i = 0; i < NUM_SUBSYSTEMS; i++)
+        if (subsystems[i].onBreak)
+            subsystems[i].onBreak();
 }

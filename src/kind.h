@@ -16,6 +16,5 @@ extern void fixKinds(void); /* write the inferred kinds into unkindTypes  */
 extern void kindInst(Inst, int); /* check the predicates of an instance     */
 extern void resetKind(void);   /* clear unkindTypes                          */
 extern void installKind(void); /* register roots and reset; INSTALL only    */
-extern void kindControl(int);  /* RESET/INSTALL, called by staticAnalysis    */
 
 #endif /* __KIND_H__ */

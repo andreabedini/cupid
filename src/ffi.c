@@ -482,7 +482,7 @@ static Cell *const ffiRoots[] = {
 
 /* Close any stub file left open by an aborted run, and clear the list
  * of headers already #included into the current one. */
-static void resetFfi(void) {
+void resetFfi(void) {
     if (out) {
         fclose(out);
         out = NIL;
@@ -491,21 +491,8 @@ static void resetFfi(void) {
 }
 
 /* Register the roots; done once, before the Prelude is read. */
-static void installFfi(void) {
+void installFfi(void) {
     registerRoots(ffiRoots);
-}
-
-void ffi(int what) {
-    switch (what) {
-    case RESET:
-        resetFfi();
-        break;
-    case INSTALL:
-        installFfi();
-        break;
-    default:
-        break;
-    }
 }
 
 static char *ffiFlags = 0; /* extra flags for compilation command line */
@@ -598,34 +585,36 @@ void foreignFooter(char *fn, Text mn, List is, List es) {
     fprintf(out, "};\n");
     fprintf(out, "\n");
 
-    /* The control function: rebuilds stable ptr table on RESET */
-    fprintf(out, "static void cuddles_primControl(int);\n"
-                 "static void cuddles_primControl(int what)\n"
-                 "{\n");
-
+    /* The reset hook: rebuilds the stable-pointer table for each export.
+     * A module with no exports has nothing to reset, so it gets no hook
+     * at all rather than one that runs and does nothing. */
     if (nonNull(es)) {
-        fprintf(out,
-                "    switch (what) {\n"
-                "        case %d:\n",
-                RESET);
-    }
-
-    for (xs = es; nonNull(xs); xs = tl(xs)) {
-        Name n = hd(xs);
-        Text ext = nameRec(n)->extFun;
-        bool dynamic = inventedText(ext);
-        if (!dynamic) {
-            fprintf(out, "        cuddles_stable_for_%s = ", textToStr(ext));
-            fprintf(out, "cuddles->lookupName(");
-            fprintf(out, "\"%s\"", textToStr(moduleRec(nameRec(n)->mod)->text));
-            fprintf(out, ", \"%s\"", textToStr(nameRec(n)->text));
-            fprintf(out, ");\n");
+        fprintf(out, "static void cuddles_primReset(void);\n"
+                     "static void cuddles_primReset(void)\n"
+                     "{\n");
+        for (xs = es; nonNull(xs); xs = tl(xs)) {
+            Name n = hd(xs);
+            Text ext = nameRec(n)->extFun;
+            bool dynamic = inventedText(ext);
+            if (!dynamic) {
+                fprintf(out, "    cuddles_stable_for_%s = ", textToStr(ext));
+                fprintf(out, "cuddles->lookupName(");
+                fprintf(out, "\"%s\"",
+                        textToStr(moduleRec(nameRec(n)->mod)->text));
+                fprintf(out, ", \"%s\"", textToStr(nameRec(n)->text));
+                fprintf(out, ");\n");
+            }
         }
+        fprintf(out, "}\n");
     }
-    if (nonNull(es)) {
-        fprintf(out, "    }\n");
-    }
-    fprintf(out, "}\n");
+
+    /* The subsystem this module's control lives in: a reset hook when it
+     * has one, and nothing else. */
+    fprintf(out,
+            "static const cuddles_subsystem cuddles_subsystem_hooks = {\n"
+            "    \"%s\", 0, %s, 0, 0, 0\n"
+            "};\n",
+            textToStr(mn), nonNull(es) ? "cuddles_primReset" : "0");
 
     /* For use as a plugin, rename the initialization function with a name  */
     /* derived from the module name, but abbreviated for limited linkers.   */
@@ -648,7 +637,7 @@ void foreignFooter(char *fn, Text mn, List is, List es) {
     /* Boilerplate initialization function */
     fprintf(
         out,
-        "static struct cuddles_primInfo cuddles_prims = { cuddles_primControl, cuddles_primTable, 0 };\n"
+        "static struct cuddles_primInfo cuddles_prims = { &cuddles_subsystem_hooks, cuddles_primTable, 0 };\n"
         "\n"
         "#ifdef __cplusplus\n"
         "extern \"C\" {\n"

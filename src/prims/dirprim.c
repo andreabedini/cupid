@@ -29,15 +29,6 @@
 #endif
 
 /* --------------------------------------------------------------------------
- * Directory control:
- * ------------------------------------------------------------------------*/
-
-static void dirControl(int);
-
-static void dirControl(int what) {
-}
-
-/* --------------------------------------------------------------------------
  * Directory primitive table:
  * ------------------------------------------------------------------------*/
 
@@ -72,7 +63,7 @@ static struct primitive dirPrimTable[] = {
 
     {0, 0, 0}};
 
-struct primInfo dirPrims = {dirControl, dirPrimTable, 0};
+struct primInfo dirPrims = {NULL, dirPrimTable, 0};
 
 static bool isDirectory(char *);
 

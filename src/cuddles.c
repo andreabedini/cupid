@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
 
     interpreter(argc, argv);
     Printf("[Leaving Cuddles]\n");
-    everybody(EXIT);
+    exitSubsystems();
     shutdownCuddles();
 
     return 0;
@@ -962,7 +962,7 @@ static void interpreter(int argc, char *argv[]) {
 }
 
 static void initInterpreter(void) {
-    everybody(RESET); /* reset to sensible initial state */
+    resetSubsystems(); /* reset to sensible initial state */
     /* remove partially loaded scripts */
     dropScriptsFrom(numLoadedScripts());
 

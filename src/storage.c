@@ -13,7 +13,7 @@
 #include "opts.h" /* IWYU pragma: keep -- declares profiling and profInterval, defined here under PROFILING */
 #include "errors.h"
 #include "machdep.h"
-#include "evaluator.h" /* everybody() proto only */
+#include "evaluator.h" /* installSubsystems() etc. proto only */
 #include "strutil.h"
 #include "output.h" /* IWYU pragma: keep -- printPred, under PROFILING */
 #include <setjmp.h>
@@ -1905,9 +1905,9 @@ void garbageCollect(void) {
     gcStarted();
     for (i = 0; i < marksSize; ++i) /* initialise mark set to empty    */
         marks[i] = 0;
-    weakPtrs = NIL;  /* clear list of weak pointers     */
-    everybody(MARK); /* Mark all components of system   */
-    markRoots();     /* and the registered roots        */
+    weakPtrs = NIL;   /* clear list of weak pointers     */
+    markSubsystems(); /* Mark all components of system   */
+    markRoots();      /* and the registered roots        */
 
     for (i = 0; i < (int)num_handles; ++i) /* release any unused handles      */
         if (nonNull(handles[i].hcell)) {
@@ -3112,10 +3112,62 @@ void growDynTable(DynTable *tab) {
     }
 }
 
-/* Release every registered prim's DLL and free the primInfoDef list. */
-static void exitControlFuns(void) {
+/* Call every registered prim module's install hook, in registration
+ * order. */
+void installControlFuns(void) {
+    struct primInfoDef *info_def = firstPrimInfo;
+    for (; 0 != info_def; info_def = info_def->nextPrimInfoDef) {
+        if (info_def->p_info->hooks && info_def->p_info->hooks->install) {
+            info_def->p_info->hooks->install();
+        }
+    }
+}
+
+/* Call every registered prim module's reset hook, in registration
+ * order. */
+void resetControlFuns(void) {
+    struct primInfoDef *info_def = firstPrimInfo;
+    for (; 0 != info_def; info_def = info_def->nextPrimInfoDef) {
+        if (info_def->p_info->hooks && info_def->p_info->hooks->reset) {
+            info_def->p_info->hooks->reset();
+        }
+    }
+}
+
+/* Call every registered prim module's mark hook, in registration
+ * order. */
+void markControlFuns(void) {
+    struct primInfoDef *info_def = firstPrimInfo;
+    for (; 0 != info_def; info_def = info_def->nextPrimInfoDef) {
+        if (info_def->p_info->hooks && info_def->p_info->hooks->gcMark) {
+            info_def->p_info->hooks->gcMark();
+        }
+    }
+}
+
+/* Call every registered prim module's break hook, in registration
+ * order. */
+void breakControlFuns(void) {
+    struct primInfoDef *info_def = firstPrimInfo;
+    for (; 0 != info_def; info_def = info_def->nextPrimInfoDef) {
+        if (info_def->p_info->hooks && info_def->p_info->hooks->onBreak) {
+            info_def->p_info->hooks->onBreak();
+        }
+    }
+}
+
+/* Call every registered prim module's exit hook, in registration order,
+ * then release every prim's DLL and free the primInfoDef list. */
+void exitControlFuns(void) {
+    struct primInfoDef *info_def = firstPrimInfo;
     int i;
     struct primInfoDef *ptr, *tmp;
+
+    for (; 0 != info_def; info_def = info_def->nextPrimInfoDef) {
+        if (info_def->p_info->hooks && info_def->p_info->hooks->atExit) {
+            info_def->p_info->hooks->atExit();
+        }
+    }
 
     /* Release all primitive DLLs */
     for (i = 0; i < scriptHw; i++) {
@@ -3133,23 +3185,10 @@ static void exitControlFuns(void) {
     }
 }
 
-void controlFuns(int what) {
-    struct primInfoDef *info_def = firstPrimInfo;
-    for (; 0 != info_def; info_def = info_def->nextPrimInfoDef) {
-        if (info_def->p_info->controlFun) {
-            (*(info_def->p_info->controlFun))(what);
-        }
-    }
-
-    if (EXIT == what) {
-        exitControlFuns();
-    }
-}
-
 /* Reset the heap pointers a longjmp may have clobbered, the standard
  * handles, and the GC trigger; called before each script load or
  * evaluation. */
-static void resetStorage(void) {
+void resetStorage(void) {
     clearStack();
 
     /* the next 2 statements are particularly important
@@ -3199,7 +3238,7 @@ static void resetStorage(void) {
 /* Mark every cell reachable from the symbol tables (names, modules,
  * tycons, classes, instances), the evaluator stack, stable pointers and
  * the C stack. */
-static void markStorage(void) {
+void markStorage(void) {
     int i;
 
     start();
@@ -3294,7 +3333,7 @@ static void markStorage(void) {
 /* Allocate the two (or three, under profiling) heaps, the handle table
  * and the GC mark bits, and set every table back to empty; done once,
  * before the Prelude is read. */
-static void installStorage(void) {
+void installStorage(void) {
     int i;
 
     heapFst = heapAlloc(heapSize);
@@ -3392,8 +3431,9 @@ static void installStorage(void) {
 }
 
 /* Free the heaps, the handle table and the GC mark bits; the
- * primInfoDef list is freed by controlFuns(), called just before this. */
-static void exitStorage(void) {
+ * primInfoDef list itself is freed by exitControlFuns(), whose row in
+ * the subsystems table runs later than storage's. */
+void exitStorage(void) {
     if (heapFst)
         free(heapFst);
     if (heapSnd)
@@ -3406,25 +3446,6 @@ static void exitStorage(void) {
         freeDynTable(dynTabHandles);
     if (marks)
         free(marks);
-}
-
-void storage(int what) {
-    switch (what) {
-    case RESET:
-        resetStorage();
-        break;
-    case MARK:
-        markStorage();
-        break;
-    case INSTALL:
-        installStorage();
-        break;
-    case EXIT:
-        exitStorage();
-        break;
-    default:
-        break;
-    }
 }
 
 /*-------------------------------------------------------------------------*/

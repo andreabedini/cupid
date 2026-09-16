@@ -187,7 +187,7 @@ static void typeDefnGroup(List);
 static void typeForeignExport(Name);
 static Pair typeSel(Name);
 
-static void resetTypeChecker(void);
+void resetTypeChecker(void);
 
 static Name linkName(char *);
 static Tycon linkTycon(char *);
@@ -2450,7 +2450,7 @@ static Cell *const typeRoots[] = {
 
 /* Reset the current type-checking mode, the predicates and pending
  * scoped type variables collected so far, and the assumption stack. */
-static void resetTypeChecker(void) {
+void resetTypeChecker(void) {
     tcMode = EXPRESSION;
     preds = NIL;
     pendingBtyvs = NIL;
@@ -2459,7 +2459,7 @@ static void resetTypeChecker(void) {
 
 /* Mark the scope stack; the rest of the module's state is in
  * typeRoots. */
-static void markTypeChecker(void) {
+void markTypeChecker(void) {
     int i = 0;                   /* the scope stack; the rest  */
     for (; i < numScopes; i++) { /* is in typeRoots    */
         mark(scopes[i].skolems);
@@ -2471,7 +2471,7 @@ static void markTypeChecker(void) {
 /* Register the roots, reset, and build the wired-in types and
  * constructors every later phase depends on; done once, before the
  * Prelude is read. */
-static void installTypeChecker(void) {
+void installTypeChecker(void) {
     registerRoots(typeRoots);
     resetTypeChecker();
 
@@ -2507,22 +2507,6 @@ static void installTypeChecker(void) {
     addPrimCfun(findText("Rec"), 0, 0, typeUnit);
     addPrimCfun(findText("EmptyRow"), 0, 0, typeUnit);
     addPrimCfun(findText("EmptyRec"), 0, 0, typeUnit);
-}
-
-void typeChecker(int what) {
-    switch (what) {
-    case RESET:
-        resetTypeChecker();
-        break;
-    case MARK:
-        markTypeChecker();
-        break;
-    case INSTALL:
-        installTypeChecker();
-        break;
-    default:
-        break;
-    }
 }
 
 static Name linkName(char *s) {

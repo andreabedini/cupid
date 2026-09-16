@@ -41,19 +41,10 @@ static void resetInternals(void) {
     linkInternals();
 }
 
-static void internalControl(int);
-static void internalControl(int what) {
-    switch (what) {
-    case INSTALL:
-        installInternals();
-        break;
-    case RESET:
-        resetInternals();
-        break;
-    default:
-        break;
-    }
-}
+/* The hooks builtIn's INSTALL registers this module under. */
+static const Subsystem internalsSubsystem = {
+    "internals", installInternals, resetInternals, NULL, NULL, NULL,
+};
 
 PROTO_PRIM(primGetCell);
 PROTO_PRIM(primCellPtrEq);
@@ -98,7 +89,7 @@ static struct primitive internalPrimTable[] = {
 
     {0, 0, 0}};
 
-struct primInfo internalPrims = {internalControl, internalPrimTable, 0};
+struct primInfo internalPrims = {&internalsSubsystem, internalPrimTable, 0};
 
 /* --------------------------------------------------------------------------
  * linkInternals

@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 
     addScriptName(argv[0], true);
     readScripts(0);
-    everybody(RESET);
+    resetSubsystems();
 
 #if !defined(FFI_COMPILER)
     {
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
 
     clearStack();
     stopAnyPrinting();
-    everybody(EXIT);
+    exitSubsystems();
     stopEvaluator();
 
     exit(exitCode);

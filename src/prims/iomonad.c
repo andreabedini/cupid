@@ -85,16 +85,10 @@ static void installIomonad(void) {
     namePutStr = predefName("putStr");
 }
 
-static void iomonadControl(int);
-static void iomonadControl(int what) {
-    switch (what) {
-    case INSTALL:
-        installIomonad();
-        break;
-    default:
-        break;
-    }
-}
+/* The hooks builtIn's INSTALL registers this module under. */
+static const Subsystem iomonadSubsystem = {
+    "iomonad", installIomonad, NULL, NULL, NULL, NULL,
+};
 
 PROTO_PRIM(primReturnIO);
 PROTO_PRIM(primBindIO);
@@ -277,7 +271,7 @@ static struct primitive iomonadPrimTable[] = {
 
     {0, 0, 0}};
 
-struct primInfo iomonadPrims = {iomonadControl, iomonadPrimTable, 0};
+struct primInfo iomonadPrims = {&iomonadSubsystem, iomonadPrimTable, 0};
 
 /* --------------------------------------------------------------------------
  * The monad combinators:

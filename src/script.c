@@ -335,20 +335,6 @@ void whatScripts(void) {
 }
 
 /* Discard every loaded script. */
-static void exitScript(void) {
+void exitScript(void) {
     stopScripts();
-}
-
-void script(int what) {
-
-    /* not much to it..will be more when/if the local tables
-   * become resizable.
-   */
-    switch (what) {
-    case EXIT:
-        exitScript();
-        break;
-    default:
-        break;
-    }
 }

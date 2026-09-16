@@ -878,17 +878,4 @@ void installDepend(void) {
     resetDepend();
 }
 
-void dependControl(int what) {
-    switch (what) {
-    case RESET:
-        resetDepend();
-        break;
-    case INSTALL:
-        installDepend();
-        break;
-    default:
-        break;
-    }
-}
-
 /*-------------------------------------------------------------------------*/

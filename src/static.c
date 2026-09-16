@@ -400,19 +400,4 @@ void resetStaticAnalysis(void) {
     resetDeriving();
 }
 
-/* The per-script state lives in the files that use it; each has a control
- * function of its own, and they reset together here as they always did. */
-void staticAnalysis(int what) {
-    switch (what) {
-    case INSTALL:
-        installStaticAnalysis();
-        break;
-    case RESET:
-        resetStaticAnalysis();
-        break;
-    default:
-        break;
-    }
-}
-
 /*-------------------------------------------------------------------------*/

@@ -55,7 +55,8 @@ static void resetPrinter(void) {
     out = NIL;
 }
 
-/* Register the roots and predefine the printer's own primitives. */
+/* Register the roots, predefine the printer's own primitives, and
+ * reset. */
 static void installPrinter(void) {
     registerRoots(printerRoots);
     setCurrModule(modulePrelude);
@@ -65,22 +66,13 @@ static void installPrinter(void) {
     nameNLPrint = predefPrim("_nlprint", "nlprint");
     nameSPrint = predefPrim("_sprint", "sprint");
     nameNSPrint = predefPrim("_nsprint", "nsprint");
+    resetPrinter();
 }
 
-static void printerControl(int);
-static void printerControl(int what) {
-    switch (what) {
-    case INSTALL:
-        installPrinter();
-        resetPrinter();
-        break;
-    case RESET:
-        resetPrinter();
-        break;
-    default:
-        break;
-    }
-}
+/* The hooks builtIn's INSTALL registers this module under. */
+static const Subsystem printerSubsystem = {
+    "printer", installPrinter, resetPrinter, NULL, NULL, NULL,
+};
 
 PROTO_PRIM(primPrint);
 PROTO_PRIM(primBPrint);
@@ -104,7 +96,7 @@ static struct primitive printerPrimTable[] = {
     {"primShowsDouble", 3, primBPrint},
     {0, 0, 0}};
 
-struct primInfo printerPrims = {printerControl, printerPrimTable, 0};
+struct primInfo printerPrims = {&printerSubsystem, printerPrimTable, 0};
 
 /*-------------------------------------------------------------------------*/
 

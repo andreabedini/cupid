@@ -121,6 +121,19 @@ typedef int CuddlesStablePtr;
 typedef void (*CuddlesPrim)(CuddlesStackPtr); /* primitive function          */
 
 #ifndef __PRELUDE_H__
+/* The hooks a module offers the interpreter's lifecycle; a null hook
+ * means the module has nothing to do in that phase.  Mirrors Subsystem
+ * in connect.h, which is what this becomes when this header is
+ * #included into Cuddles itself. */
+typedef struct {
+    const char *name;
+    void (*install)(void);
+    void (*reset)(void);
+    void (*gcMark)(void);
+    void (*atExit)(void);
+    void (*onBreak)(void);
+} cuddles_subsystem;
+
 struct cuddles_primitive { /* table of primitives                   */
     char *ref;             /* primitive reference string    */
     int arity;             /* primitive function arity      */
@@ -128,16 +141,22 @@ struct cuddles_primitive { /* table of primitives                   */
 };
 
 struct cuddles_primInfo {
-    void (*controlFun)(int);
+    const cuddles_subsystem *hooks;
     struct cuddles_primitive *primFuns;
     struct cuddles_primInfo *nextPrimInfo;
 };
 #else
+# define cuddles_subsystem Subsystem
 # define cuddles_primInfo primInfo
 #endif
 
-/* API Version number */
-#define CUDDLES_API_VERSION 5
+/* API Version number.  6 because struct cuddles_primInfo's first field
+ * changed meaning: it used to be a control function taking an Int code,
+ * and is now a pointer to a cuddles_subsystem record of five hooks.  A
+ * stub built against version 5's layout must not be loaded as if it
+ * matched this one -- the field is the same size (a pointer) either
+ * way, so nothing but the version number would catch the mismatch. */
+#define CUDDLES_API_VERSION 6
 
 typedef struct {
 

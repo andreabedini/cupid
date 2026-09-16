@@ -13,5 +13,7 @@
 extern void checkForeignImport(Name); /* check one foreign import          */
 extern void checkForeignExport(Name); /* check one foreign export          */
 extern void linkForeign(Name);        /* make the import callable          */
+extern void installFfi(void); /* register roots; INSTALL only              */
+extern void resetFfi(void);   /* close any stub file left open, clear includes*/
 
 #endif /* __FFI_H__ */

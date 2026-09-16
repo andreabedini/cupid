@@ -62,18 +62,12 @@ static void installArray(void) {
     nameEltUndef = predefPrim("_undefined_array_element", "eltUndef");
 }
 
-static void arrayControl(int);
-static void arrayControl(int what) {
-    switch (what) {
-    case INSTALL:
-        installArray();
-        break;
-    default:
-        break;
-    }
-}
+/* The hooks builtIn's INSTALL registers this module under. */
+static const Subsystem arraySubsystem = {
+    "array", installArray, NULL, NULL, NULL, NULL,
+};
 
-struct primInfo arrayPrims = {arrayControl, arrayPrimTable, 0};
+struct primInfo arrayPrims = {&arraySubsystem, arrayPrimTable, 0};
 
 /*-------------------------------------------------------------------------*/
 

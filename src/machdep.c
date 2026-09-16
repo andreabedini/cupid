@@ -17,7 +17,7 @@
 #include "opts.h"
 #include "strutil.h"
 #include "machdep.h"
-#include "evaluator.h" /* everybody() proto only */
+#include "evaluator.h" /* installSubsystems() etc. proto only */
 
 /*#define DEBUG_SEARCH*/
 
@@ -961,7 +961,7 @@ static char panicStack[PANIC_STACK_SIZE];
 static sigProto(panic);
 /* Exit in a panic, on receipt of an unexpected signal */
 static sigHandler(panic) {
-    everybody(EXIT);
+    exitSubsystems();
     fprintf(stderr, "\nUnexpected signal\n");
     exit(1);
     sigResume; /*NOTREACHED*/
@@ -1551,10 +1551,15 @@ char *mkFFIFilename(char *file) {
 
 /* Load dll containing prims for current module */
 void needPrims(int version, void *dll) {
-    /* Version 2-5: the Haskell module specifies what module to expect
+    /* Version 2-6: the Haskell module specifies what module to expect
      *              (via a needPrims_cuddles decl).
      *
      * Version 0:   the extension DLL specifies the API version it assumes.
+     *
+     * Version 5 is refused below, in default: a stub built against it
+     * has struct cuddles_primInfo's first field as a control function
+     * taking an Int code, not the cuddles_subsystem pointer version 6
+     * expects, and the two cannot be told apart by size or content.
      */
     switch (version) {
     case 2:
@@ -1573,7 +1578,7 @@ void needPrims(int version, void *dll) {
         }
         break;
     }
-    case 5: {
+    case 6: {
         InitModuleFun5 initModule;
         if (!dll)
             dll = getModDLL(scriptFile);
@@ -1589,7 +1594,7 @@ void needPrims(int version, void *dll) {
     }
     case 0: {
         APIVersionFun versionFun;
-        int version = 5;
+        int version = 6;
 
         dll = getModDLL(scriptFile);
         versionFun = (APIVersionFun)getDLLSymbol(dll, API_VERSION_FUN);
@@ -1873,38 +1878,22 @@ static Cell *const machdepRoots[] = {
 
 /* Register the roots and install the platform's signal and terminal
  * handlers. */
-static void installMachdep(void) {
+void installMachdep(void) {
     registerRoots(machdepRoots);
     installHandlers();
 }
 
-/* Clear the pending breakpoint buffer. */
-static void resetMachdep(void) {
-    bdTemp = NIL;
-}
-
-/* Put the terminal back into its normal (non-raw) mode. */
-static void exitMachdep(void) {
+/* Put the terminal back into its normal (non-raw) mode; shared by
+ * RESET, BREAK and EXIT, which all did this before the codes went. */
+void exitMachdep(void) {
     normalTerminal();
 }
 
-/* Handle machine specific initialisation etc.. */
-void machdep(int what) {
-    switch (what) {
-    case INSTALL:
-        installMachdep();
-        break;
-    case RESET:
-        resetMachdep();
-        exitMachdep(); /* RESET fell through to BREAK/EXIT's cleanup */
-        break;
-    case BREAK:
-    case EXIT:
-        exitMachdep();
-        break;
-    default:
-        break;
-    }
+/* Clear the pending breakpoint buffer, and put the terminal back to
+ * normal as RESET always also did. */
+void resetMachdep(void) {
+    bdTemp = NIL;
+    exitMachdep();
 }
 
 /*-------------------------------------------------------------------------*/

@@ -2123,16 +2123,12 @@ void hs_free_fun_ptr(HsFunPtr fp) {
  * Built-in control:
  * ------------------------------------------------------------------------*/
 
-/* Dummy entry */
-static void builtinControl(int);
-static void builtinControl(int what) {
-}
-static struct primInfo builtinPrims = {builtinControl, builtinPrimTable, 0};
+static struct primInfo builtinPrims = {NULL, builtinPrimTable, 0};
 
 /* Register every primitive module, and predefine the primitive and
  * derived names the rest of the interpreter refers to by global; done
  * once, before the Prelude is read. */
-static void installBuiltIn(void) {
+void installBuiltIn(void) {
     registerPrims(&builtinPrims);
     registerPrims(&printerPrims);
     registerPrims(&arrayPrims);
@@ -2202,21 +2198,8 @@ static void installBuiltIn(void) {
 
 /* Free every thunk built while evaluating the previous script or
  * expression. */
-static void resetBuiltIn(void) {
+void resetBuiltIn(void) {
     freeAllThunks();
-}
-
-void builtIn(int what) {
-    switch (what) {
-    case INSTALL:
-        installBuiltIn();
-        break;
-    case RESET:
-        resetBuiltIn();
-        break;
-    default:
-        break;
-    }
 }
 
 /*-------------------------------------------------------------------------*/

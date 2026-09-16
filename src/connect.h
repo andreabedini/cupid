@@ -209,11 +209,20 @@ extern bool preludeLoaded;           /* true => prelude has been loaded */
 /* --------------------------------------------------------------------------
  * Function prototypes etc...
  * ------------------------------------------------------------------------*/
-#define RESET 1   /* reset subsystem                         */
-#define MARK 2    /* mark parts of graph in use by subsystem */
-#define INSTALL 3 /* install subsystem (executed once only)  */
-#define EXIT 4    /* Take action immediately before exit()   */
-#define BREAK 5   /* Take action after program break       */
+
+/* The hooks a subsystem offers to the interpreter's lifecycle; a null
+ * hook means the subsystem has nothing to do in that phase.  The mark
+ * hook is named gcMark, not mark: storage.h's `mark(v)` macro expands
+ * any token sequence "mark(" it sees, plain struct-member access
+ * included, so a field literally called `mark` cannot be called. */
+typedef struct Subsystem {
+    const char *name;
+    void (*install)(void); /* once, before the Prelude is read */
+    void (*reset)(void);   /* before each script load or evaluation */
+    void (*gcMark)(void);  /* garbage collection: mark structured data */
+    void (*atExit)(void);  /* before exit() */
+    void (*onBreak)(void); /* after an interrupt */
+} Subsystem;
 
 /* cuddles.c exports: */
 extern void shutdownCuddles(void);
@@ -223,10 +232,7 @@ extern bool doCommand(void);
 extern void runEditor(void);
 extern Module findEvalModule(void);
 
-extern void storage(int);
-
 extern bool startsQual(Char);
-extern void input(int);
 extern void consoleInput(char *);
 extern void stringInput(char *);
 extern bool parseScript(char *, long);
@@ -244,9 +250,6 @@ extern char *unlexChar(Char, Char);
 extern void printString(char *);
 extern Char getStrChr(char **);
 
-extern void substitution(int);
-
-extern void staticAnalysis(int);
 extern void startModule(Cell);
 extern void setExportList(List);
 extern void setExports(List);
@@ -279,7 +282,6 @@ extern int foreignCount;
 extern List foreignImports; /* foreign import declarations     */
 extern List foreignExports; /* foreign export declarations     */
 
-extern void ffi(int);
 extern void foreignHeader(char *);
 extern void foreignFooter(char *, Text, List, List);
 extern void ffiSetFlags(char *);
@@ -294,7 +296,9 @@ extern bool foreignNeedStubs(List, List);
 extern bool generateFFI;  /* running fficuddles? */
 extern bool generate_ffi; /* generate FFI for the current module? */
 
-extern void typeChecker(int);
+extern void installTypeChecker(void);
+extern void resetTypeChecker(void);
+extern void markTypeChecker(void);
 extern Type typeCheckExp(bool);
 extern void typeCheckDefns(void);
 extern Cell provePred(Kinds, List, Cell);
@@ -308,13 +312,16 @@ extern void linkPreludeTC(void);
 extern void linkPreludeCM(void);
 extern void linkPreludeFuns(void);
 
-extern void compiler(int);
+extern void installCompiler(void);
+extern void resetCompiler(void);
 extern void compileDefns(void);
 extern void compileExp(void);
 extern bool failFree(Cell);
 extern int discrArity(Cell);
 
-extern void machine(int);
+extern void installMachine(void);
+extern void resetMachine(void);
+extern void exitMachine(void);
 extern Addr codeGen(Name, int, Cell);
 extern void implementCfun(Name, List);
 extern void addCfunTable(Tycon);
@@ -341,7 +348,6 @@ extern Addr AddrAt(Addr);
 extern int InstrAt(Addr);
 #endif /* BYTECODE_PRIMS */
 
-extern void builtIn(int);
 extern void abandon(char *, Cell);
 extern void outputString(FILE *);
 extern void dialogue(Cell);
@@ -359,7 +365,6 @@ extern Bignum bigShift(Bignum, int, int);
 extern int bigCmp(Bignum, Bignum);
 extern void setCuddlesArgs(int, char *[]);
 
-extern void machdep(int);
 extern char *findPathname(char *);
 extern char *findMPathname(char *);
 extern char *findMInDir(char *, char *);
@@ -375,8 +380,6 @@ extern void compileAndLink(char *, char *);
 
 extern List calcFunDepsPreds(List);
 extern Inst findInstFor(Cell, int);
-
-extern void charOps(int);
 
 extern void pushString(char *);
 

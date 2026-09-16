@@ -58,7 +58,10 @@ CUDDLES_inline void leaveBtyvs(void) {
 
 extern char *unifyFails; /* Unification error message      */
 
-extern void resetSubstitution(void); /* clear the current substitution */
+extern void installSubstitution(void); /* register roots, reset, clear caches */
+extern void resetSubstitution(void);   /* clear the current substitution */
+extern void markSubstitution(void);    /* mark the tuple/kind caches      */
+extern void exitSubstitution(void);    /* free the type-variable table    */
 extern void emptySubstitution(void);
 extern int newTyvars(int);
 CUDDLES_inline int newKindvars(int n) {
