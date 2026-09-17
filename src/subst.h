@@ -22,14 +22,24 @@ typedef struct { /* Each type variable contains:           */
 } Tyvar;
 
 extern Tyvar *tyvars; /* storage for type variables        */
-extern int typeOff;   /* offset of result type     */
-extern Type typeIs;   /* skeleton of result type           */
-CUDDLES_inline void inferType(Type t, int o) {
-    typeIs = t;
-    typeOff = o;
+
+/* What a check infers: a type skeleton and the offset its variables are
+ * read at in tyvars.  instantiate also says how many variables it made
+ * from offs and which context it peeled off; every other producer says
+ * 0 and NIL. */
+typedef struct Typing {
+    Type type;  /* the skeleton, or NIL                            */
+    int offs;   /* offset of its variables in tyvars               */
+    int free;   /* variables instantiate created from offs, else 0 */
+    List preds; /* context instantiate peeled off, else NIL        */
+} Typing;
+
+/* The monotype (t,o): no fresh variables, no context */
+CUDDLES_inline Typing typing(Type t, int o) {
+    Typing ty = {t, o, 0, NIL};
+    return ty;
 }
-extern int typeFree;     /* freedom in instantiated type           */
-extern List predsAre;    /* list of predicates in type     */
+
 extern List genericVars; /* list of generic vars                   */
 extern List btyvars;     /* explicitly scoped type vars    */
 
@@ -68,7 +78,7 @@ CUDDLES_inline int newKindvars(int n) {
     return newTyvars(n);
 }
 extern int newKindedVars(Kind);
-extern void instantiate(Type);
+extern Typing instantiate(Type, int);
 
 extern Pair findBtyvs(Text);
 extern void markBtyvs(void);
@@ -87,7 +97,7 @@ CUDDLES_inline Tyvar *deRef(Type *t, int *o) {
     }
     return tyv;
 }
-extern void tyvarType(int);
+extern Typing tyvarType(int);
 extern void bindTv(int, Type, int);
 extern Cell getDerefHead(Type, int);
 extern void expandSyn(Tycon, int, Type *, int *);
@@ -120,9 +130,9 @@ extern bool doesntOccurIn(Tyvar *, Type, int);
 extern bool unify(Type, int, Type, int);
 extern bool kunify(Kind, int, Kind, int);
 
-extern void typeTuple(Cell);
+extern Typing typeTuple(Cell);
 extern Kind simpleKind(int);
-extern void varKind(int);
+extern Typing varKind(int);
 
 extern bool samePred(Cell, int, Cell, int);
 extern bool matchPred(Cell, int, Cell, int);

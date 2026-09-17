@@ -123,13 +123,13 @@ static void leaveBindings(void);
 static int defType(Cell);
 static Type useType(Cell);
 static void markAssumList(List);
-static Cell findAssum(Text);
+static Cell findAssum(Text, Type *);
 static Pair findInAssumList(Text, List);
 static List intsIntersect(List, List);
 static List genvarAllAss(List);
 static List genvarAnyAss(List);
 static int newVarsBind(Cell);
-static void newDefnBind(Cell, Type);
+static Typing newDefnBind(Cell, Type);
 
 static void enterPendingBtyvs(void);
 static void leavePendingBtyvs(void);
@@ -138,24 +138,24 @@ static void doneBtyvs(int);
 static void enterScope(void);
 static void leaveScope(int, Type, int, int);
 
-static void typeError(int, Cell, Cell, char *, Type, int);
+static void typeError(int, Cell, Cell, char *, Typing, Type, int);
 static void reportTypeError(int, Cell, Cell, char *, Type, Type);
 static void cantEstablish(int, char *, Cell, Type, List);
 static void tooGeneral(int, Cell, Type, Type);
 
-static Cell typeExpr(int, Cell);
+static Cell typeExpr(int, Cell, Typing *);
 
-static Cell typeAp(int, Cell);
-static Type typeExpected(int, char *, Cell, Type, int, int, bool);
+static Cell typeAp(int, Cell, Typing *);
+static Cell typeExpected(int, char *, Cell, Type, int, int, bool, Typing *);
 static void typeAlt(char *, Cell, Cell, Type, int, int);
 static int funcType(int);
 static void typeCase(int, int, Cell);
-static void typeComp(int, Type, Cell, List);
-static Cell typeMonadComp(int, Cell);
-static void typeDo(int, Cell);
-static void typeConFlds(int, Cell);
-static void typeUpdFlds(int, Cell);
-static Cell typeFreshPat(int, Cell);
+static Typing typeComp(int, Type, Cell, List);
+static Cell typeMonadComp(int, Cell, Typing *);
+static Typing typeDo(int, Cell);
+static Typing typeConFlds(int, Cell);
+static Typing typeUpdFlds(int, Cell);
+static Cell typeFreshPat(int, Cell, Typing *);
 
 static void typeBindings(List);
 static void removeTypeSigs(Cell);
@@ -174,7 +174,7 @@ static void typeMember(char *, Name, Cell, List, Cell, int);
 
 static void typeBind(Cell);
 static void typeDefAlt(int, Cell, Pair);
-static Cell typeRhs(Cell);
+static Cell typeRhs(Cell, Typing *);
 static void guardedType(int, Cell);
 
 static void genBind(List, Cell);
@@ -301,8 +301,8 @@ static void markAssumList(List as) {
 }
 
 /* Find most recent assumption about variable named t, if any return translated
- * variable, with type in typeIs */
-static Cell findAssum(Text t) {
+ * variable, with its type in *type */
+static Cell findAssum(Text t, Type *type) {
     List defnBounds1 = defnBounds;
     List varsBounds1 = varsBounds;
     List depends1 = depends;
@@ -310,14 +310,14 @@ static Cell findAssum(Text t) {
     while (nonNull(defnBounds1)) {
         Pair ass = findInAssumList(t, hd(varsBounds1)); /* search varsBounds */
         if (nonNull(ass)) {
-            typeIs = snd(ass);
+            *type = snd(ass);
             return fst(ass);
         }
 
         ass = findInAssumList(t, hd(defnBounds1)); /* search defnBounds */
         if (nonNull(ass)) {
             Cell v = fst(ass);
-            typeIs = snd(ass);
+            *type = snd(ass);
 
             if (hd(depends1) != NODEPENDS && /* save dependent?   */
                 isNull(v = varIsMember(t, hd(depends1))))
@@ -382,15 +382,17 @@ static int newVarsBind(Cell v) {
     return beta;
 }
 
-/* Make new assump for defn var and set type if given (nonNull) */
-static void newDefnBind(Cell v, Type type) {
+/* Make new assump for defn var and set type if given (nonNull); returns
+ * the instance of type, whose context the caller may want to see */
+static Typing newDefnBind(Cell v, Type type) {
     int beta = newTyvars(1);
     Cell ta = mkInt(beta);
-    instantiate(type);
+    Typing ty = instantiate(type, 0);
     if (nonNull(type) && isPolyType(type))
         ta = pair(POLYREC, pair(ta, type));
     hd(defnBounds) = cons(pair(v, ta), hd(defnBounds));
-    bindTv(beta, typeIs, typeOff); /* Bind beta to new type skeleton   */
+    bindTv(beta, ty.type, ty.offs); /* Bind beta to new type skeleton   */
+    return ty;
 }
 
 /* --------------------------------------------------------------------------
@@ -573,14 +575,14 @@ static void leaveScope(int l, Type t, int o, int m) {
  * ------------------------------------------------------------------------*/
 
 /* Line number near type error source of error context if any (NIL if not)
- * place in which error occurs should be of type (t,o) type inferred is
- * (typeIs,typeOff) */
-static void typeError(int l, Cell e, Cell in, char *wh, Type t, int o) {
+ * place in which error occurs type inferred is got should be of type (t,o) */
+static void typeError(int l, Cell e, Cell in, char *wh, Typing got, Type t,
+                      int o) {
 
     clearMarks(); /* types printed here are monotypes  */
                   /* use marking to give sensible names*/
 
-    reportTypeError(l, e, in, wh, copyType(typeIs, typeOff), copyType(t, o));
+    reportTypeError(l, e, in, wh, copyType(got.type, got.offs), copyType(t, o));
 }
 
 /* Error printing part of typeError */
@@ -605,16 +607,18 @@ static void reportTypeError(int l, Cell e, Cell in, char *wh, Type inft,
     errFail();
 }
 
-/* Unify the inferred type with (t,o) */
-static void shouldBe(int l, Cell e, Cell in, char *where, Type t, int o) {
-    if (!unify(typeIs, typeOff, t, o))
-        typeError(l, e, in, where, t, o);
+/* Unify the inferred type got with (t,o) */
+static void shouldBe(int l, Cell e, Cell in, char *where, Typing got, Type t,
+                     int o) {
+    if (!unify(got.type, got.offs, t, o))
+        typeError(l, e, in, where, got, t, o);
 }
 
 /* Type check e against (t,o); returns the translated e */
 static Cell check(int l, Cell e, Cell in, char *where, Type t, int o) {
-    e = typeExpr(l, e);
-    shouldBe(l, e, in, where, t, o);
+    Typing got;
+    e = typeExpr(l, e, &got);
+    shouldBe(l, e, in, where, got, t, o);
     return e;
 }
 
@@ -658,8 +662,9 @@ static void tooGeneral(int l, Cell e, Type dt, Type it) {
 #define OLD_PATTERN 2 /* pattern, involving bound vars   */
 static int tcMode = EXPRESSION;
 
-/* Determine type of expr/pattern */
-static Cell typeExpr(int l, Cell e) {
+/* Determine type of expr/pattern: returns the translated e, with its type
+ * in *ty */
+static Cell typeExpr(int l, Cell e, Typing *ty) {
     stackCheck();
     static char *cond = "conditional";
     static char *list = "list";
@@ -676,51 +681,52 @@ static Cell typeExpr(int l, Cell e) {
     case NAME:
     case VAROPCELL:
     case VARIDCELL:
-        return typeAp(l, e);
+        return typeAp(l, e, ty);
 
     case TUPLE:
-        typeTuple(e);
+        *ty = typeTuple(e);
         break;
 
     case POSNUM:
     case ZERONUM:
     case NEGNUM: {
         int alpha = newTyvars(1);
-        inferType(aVar, alpha);
+        *ty = typing(aVar, alpha);
         return ap(ap(nameFromInteger, assumeEvid(predNum, alpha)), e);
     }
     case INTCELL: {
         int alpha = newTyvars(1);
-        inferType(aVar, alpha);
+        *ty = typing(aVar, alpha);
         return ap(ap(nameFromInt, assumeEvid(predNum, alpha)), e);
     }
 
     case DOUBLECELL: {
         int alpha = newTyvars(1);
-        inferType(aVar, alpha);
+        *ty = typing(aVar, alpha);
         return ap(ap(nameFromDouble, assumeEvid(predFractional, alpha)), e);
     }
 
     case STRCELL:
-        inferType(typeString, 0);
+        *ty = typing(typeString, 0);
         break;
 
     case CHARCELL:
-        inferType(typeChar, 0);
+        *ty = typing(typeChar, 0);
         break;
 
     case CONFLDS:
-        typeConFlds(l, e);
+        *ty = typeConFlds(l, e);
         break;
 
     case ESIGN:
         snd(snd(e)) = localizeBtyvs(snd(snd(e)));
-        return typeExpected(l, typeSig, fst(snd(e)), snd(snd(e)), 0, 0, false);
+        return typeExpected(l, typeSig, fst(snd(e)), snd(snd(e)), 0, 0, false,
+                            ty);
 
         /* The following cases can only occur in expr mode                 */
 
     case UPDFLDS:
-        typeUpdFlds(l, e);
+        *ty = typeUpdFlds(l, e);
         break;
 
     case COND: {
@@ -728,16 +734,16 @@ static Cell typeExpr(int l, Cell e) {
         fst3(snd(e)) = check(l, fst3(snd(e)), e, cond, typeBool, 0);
         snd3(snd(e)) = check(l, snd3(snd(e)), e, cond, aVar, beta);
         thd3(snd(e)) = check(l, thd3(snd(e)), e, cond, aVar, beta);
-        tyvarType(beta);
+        *ty = tyvarType(beta);
     } break;
 
     case LETREC:
         enterBindings();
         enterScope();
         mapProc(typeBindings, fst(snd(e)));
-        snd(snd(e)) = typeExpr(l, snd(snd(e)));
+        snd(snd(e)) = typeExpr(l, snd(snd(e)), ty);
         leaveBindings();
-        leaveScope(l, typeIs, typeOff, 0);
+        leaveScope(l, ty->type, ty->offs, 0);
         break;
 
     case FINLIST: {
@@ -746,21 +752,21 @@ static Cell typeExpr(int l, Cell e) {
         for (xs = snd(e); nonNull(xs); xs = tl(xs)) {
             hd(xs) = check(l, hd(xs), e, list, aVar, beta);
         }
-        inferType(listof, beta);
+        *ty = typing(listof, beta);
     } break;
 
     case DOCOMP:
-        typeDo(l, e);
+        *ty = typeDo(l, e);
         break;
 
     case COMP:
-        return typeMonadComp(l, e);
+        return typeMonadComp(l, e, ty);
 
     case CASE: {
         int beta = newTyvars(2); /* discr result */
         fst(snd(e)) = check(l, fst(snd(e)), NIL, discr, aVar, beta);
         map2Proc(typeCase, l, beta, snd(snd(e)));
-        tyvarType(beta + 1);
+        *ty = tyvarType(beta + 1);
     } break;
 
     case LAMBDA: {
@@ -768,25 +774,25 @@ static Cell typeExpr(int l, Cell e) {
         enterPendingBtyvs();
         typeAlt(lambda, e, snd(e), aVar, beta, 1);
         leavePendingBtyvs();
-        tyvarType(beta);
+        *ty = tyvarType(beta);
     } break;
 
         /* The remaining cases can only occur in pattern mode: */
 
     case WILDCARD:
-        inferType(aVar, newTyvars(1));
+        *ty = typing(aVar, newTyvars(1));
         break;
 
     case ASPAT: {
         int beta = newTyvars(1);
-        snd(snd(e)) = typeExpr(l, snd(snd(e)));
-        bindTv(beta, typeIs, typeOff);
+        snd(snd(e)) = typeExpr(l, snd(snd(e)), ty);
+        bindTv(beta, ty->type, ty->offs);
         fst(snd(e)) = check(l, fst(snd(e)), e, aspat, aVar, beta);
-        tyvarType(beta);
+        *ty = tyvarType(beta);
     } break;
 
     case LAZYPAT:
-        snd(e) = typeExpr(l, snd(e));
+        snd(e) = typeExpr(l, snd(e), ty);
         break;
 
     default:
@@ -802,61 +808,63 @@ static Cell typeExpr(int l, Cell e) {
 
 /* Type check application, which may be headed with a variable requires
  * polymorphism, qualified types, and possible rank2 args. */
-static Cell typeAp(int l, Cell e) {
+static Cell typeAp(int l, Cell e, Typing *ty) {
     static char *app = "application";
     Cell h = getHead(e);
     int n = argCount;
     Cell p = NIL;
     Cell a = e;
     int i;
+    Typing t = typing(NIL, 0); /* the head's type, then its instance */
 
     switch (whatIs(h)) {
     case NAME:
-        typeIs = nameRec(h)->type;
+        t.type = nameRec(h)->type;
         break;
 
     case VAROPCELL:
     case VARIDCELL:
         if (tcMode == NEW_PATTERN) {
-            inferType(aVar, newVarsBind(e));
+            t = typing(aVar, newVarsBind(e));
         } else {
-            Cell v = findAssum(textOf(h));
+            Cell v = findAssum(textOf(h), &t.type);
             if (nonNull(v)) {
                 h = v;
-                typeIs =
-                    (tcMode == OLD_PATTERN) ? defType(typeIs) : useType(typeIs);
+                t.type =
+                    (tcMode == OLD_PATTERN) ? defType(t.type) : useType(t.type);
             } else {
                 h = findName(textOf(h));
                 if (isNull(h))
                     internal("typeAp0");
-                typeIs = nameRec(h)->type;
+                t.type = nameRec(h)->type;
             }
         }
         break;
 
     default:
-        h = typeExpr(l, h);
+        h = typeExpr(l, h, &t);
         break;
     }
 
-    if (isNull(typeIs))
+    if (isNull(t.type))
         internal("typeAp1");
 
-    instantiate(typeIs);     /* Deal with polymorphism ...         */
-    if (nonNull(predsAre)) { /* ... and with qualified types.   */
+    t = instantiate(t.type, t.offs); /* Deal with polymorphism ...      */
+    if (nonNull(t.preds)) {          /* ... and with qualified types.   */
         List evs = NIL;
-        for (; nonNull(predsAre); predsAre = tl(predsAre)) {
-            evs = cons(assumeEvid(hd(predsAre), typeOff), evs);
+        List ps;
+        for (ps = t.preds; nonNull(ps); ps = tl(ps)) {
+            evs = cons(assumeEvid(hd(ps), t.offs), evs);
         }
         if (!isName(h) || !isCfun(h)) {
             h = applyToArgs(h, rev(evs));
         }
     }
 
-    if (whatIs(typeIs) == CDICTS) { /* Deal with local dictionaries        */
-        List evs = makePredAss(fst(snd(typeIs)), typeOff);
+    if (whatIs(t.type) == CDICTS) { /* Deal with local dictionaries        */
+        List evs = makePredAss(fst(snd(t.type)), t.offs);
         List ps = evs;
-        typeIs = snd(snd(typeIs));
+        t.type = snd(snd(t.type));
         for (; nonNull(ps); ps = tl(ps)) {
             h = ap(h, thd3(hd(ps)));
         }
@@ -867,13 +875,13 @@ static Cell typeAp(int l, Cell e) {
         }
     }
 
-    if (whatIs(typeIs) == EXIST) { /* Deal with existential arguments */
-        int n = intOf(fst(snd(typeIs)));
-        typeIs = snd(snd(typeIs));
-        if (!isCfun(getHead(h)) || n > typeFree) {
+    if (whatIs(t.type) == EXIST) { /* Deal with existential arguments */
+        int n = intOf(fst(snd(t.type)));
+        t.type = snd(snd(t.type));
+        if (!isCfun(getHead(h)) || n > t.free) {
             internal("typeAp2");
         } else if (tcMode != EXPRESSION) {
-            int alpha = typeOff + typeFree;
+            int alpha = t.offs + t.free;
             for (; n > 0; n--) {
                 bindTv(alpha - n, SKOLEM, 0);
                 scope()->skolems =
@@ -882,11 +890,11 @@ static Cell typeAp(int l, Cell e) {
         }
     }
 
-    if (whatIs(typeIs) == RANK2) { /* Deal with rank 2 arguments           */
-        int alpha = typeOff;
-        int m = typeFree;
-        int nr2 = intOf(fst(snd(typeIs)));
-        Type body = snd(snd(typeIs));
+    if (whatIs(t.type) == RANK2) { /* Deal with rank 2 arguments           */
+        int alpha = t.offs;
+        int m = t.free;
+        int nr2 = intOf(fst(snd(t.type)));
+        Type body = snd(snd(t.type));
         List as = e;
         bool added = false;
 
@@ -910,8 +918,8 @@ static Cell typeAp(int l, Cell e) {
             Type expect = dropRank1(arg(fun(body)), alpha, m);
             if (isPolyOrQualType(expect)) {
                 if (tcMode == EXPRESSION) /* poly/qual type in expr  */
-                    hd(as) =
-                        typeExpected(l, app, hd(as), expect, alpha, m, true);
+                    hd(as) = typeExpected(l, app, hd(as), expect, alpha, m,
+                                          true, NULL);
                 else if (hd(as) != WILDCARD) { /* Pattern binding/match   */
                     if (!isVar(hd(as))) {
                         errHead(l);
@@ -934,8 +942,8 @@ static Cell typeAp(int l, Cell e) {
                         Cell a = findInAssumList(t, hd(defnBounds));
                         if (isNull(a))
                             internal("typeAp3");
-                        instantiate(expect);
-                        if (nonNull(predsAre)) {
+                        Typing got = instantiate(expect, alpha);
+                        if (nonNull(got.preds)) {
                             errHead(l);
                             errPrintf("Cannot use pattern binding for ");
                             errExpr(hd(as));
@@ -943,7 +951,7 @@ static Cell typeAp(int l, Cell e) {
                                 " as a component with a qualified type\n");
                             errFail();
                         }
-                        shouldBe(l, hd(as), e, app, aVar,
+                        shouldBe(l, hd(as), e, app, got, aVar,
                                  intOf(defType(snd(a))));
                     }
                 }
@@ -952,19 +960,19 @@ static Cell typeAp(int l, Cell e) {
             }
             h = ap(h, hd(as)); /* Save checked argument   */
         }
-        inferType(body, alpha);
+        t = typing(body, alpha);
         n -= nr2;
     }
 
     if (n > 0) {                /* Deal with remaining args        */
         int beta = funcType(n); /* check h::t1->t2->...->tn->rn+1  */
-        shouldBe(l, h, e, app, aVar, beta);
+        shouldBe(l, h, e, app, t, aVar, beta);
         for (i = n; i > 0; --i) { /* check e_i::t_i for each i     */
             arg(a) = check(l, arg(a), e, app, aVar, beta + 2 * i - 1);
             p = a;
             a = fun(a);
         }
-        tyvarType(beta + 2 * n); /* Inferred type is r_n+1          */
+        t = tyvarType(beta + 2 * n); /* Inferred type is r_n+1      */
     }
 
     if (isNull(p)) /* Replace head with translation   */
@@ -972,25 +980,22 @@ static Cell typeAp(int l, Cell e) {
     else
         fun(p) = h;
 
+    *ty = t;
     return e;
 }
 
 /* Type check expression e in wh at line l, expecting type reqd, and treating
- * vars alpha through (alpha+n-1) as fixed. true => add \ev -> ... */
+ * vars alpha through (alpha+n-1) as fixed. true => add \ev -> ... The type
+ * of the result, the instance of reqd, goes in *ty when ty is not NULL. */
 static Cell typeExpected(int l, char *wh, Cell e, Type reqd, int alpha, int n,
-                         bool addEvid) {
+                         bool addEvid, Typing *ty) {
     List savePreds = preds;
-    Type t;
-    int o;
-    int m;
-    List ps;
+    Typing in = instantiate(reqd, alpha);
+    Type t = in.type;
+    int o = in.offs;
+    int m = in.free;
+    List ps = makePredAss(in.preds, o);
     int i;
-
-    instantiate(reqd);
-    t = typeIs;
-    o = typeOff;
-    m = typeFree;
-    ps = makePredAss(predsAre, o);
 
     preds = NIL;
     e = check(l, e, NIL, wh, t, o);
@@ -1040,7 +1045,8 @@ static Cell typeExpected(int l, char *wh, Cell e, Type reqd, int alpha, int n,
     } else
         preds = revOnto(ps, savePreds);
 
-    inferType(t, o);
+    if (ty)
+        *ty = typing(t, o);
     return e;
 }
 
@@ -1053,6 +1059,7 @@ static void typeAlt(char *wh, Cell e, Cell a, Type t, int o, int m) {
     int nr2 = 0;
     List as = NIL;
     bool added = false;
+    Typing got; /* the type of the whole alternative */
 
     List savedVars = hd(varsBounds);
     enterScope();
@@ -1087,8 +1094,9 @@ static void typeAlt(char *wh, Cell e, Cell a, Type t, int o, int m) {
                 addVarAssump(hd(ps), ta);
             }
         } else {
-            hd(ps) = typeFreshPat(l, hd(ps));
-            shouldBe(l, hd(ps), NIL, wh, ta, o);
+            Typing pt;
+            hd(ps) = typeFreshPat(l, hd(ps), &pt);
+            shouldBe(l, hd(ps), NIL, wh, pt, ta, o);
         }
         t = arg(t);
         ps = tl(ps);
@@ -1097,28 +1105,29 @@ static void typeAlt(char *wh, Cell e, Cell a, Type t, int o, int m) {
     }
 
     if (n == 0)
-        snd(a) = typeRhs(snd(a));
+        snd(a) = typeRhs(snd(a), &got);
     else {
         int beta = funcType(n);
         int i = 0;
+        Typing pt;
         for (; i < n; ++i) {
-            hd(ps) = typeFreshPat(l, hd(ps));
-            bindTv(beta + 2 * i + 1, typeIs, typeOff);
+            hd(ps) = typeFreshPat(l, hd(ps), &pt);
+            bindTv(beta + 2 * i + 1, pt.type, pt.offs);
             ps = tl(ps);
         }
-        snd(a) = typeRhs(snd(a));
-        bindTv(beta + 2 * n, typeIs, typeOff);
-        tyvarType(beta);
+        snd(a) = typeRhs(snd(a), &pt);
+        bindTv(beta + 2 * n, pt.type, pt.offs);
+        got = tyvarType(beta);
     }
 
-    if (!unify(typeIs, typeOff, t, o)) {
-        Type req, got;
+    if (!unify(got.type, got.offs, t, o)) {
+        Type req, inferred;
         clearMarks();
         req = liftRank2(origt, o, m);
         liftRank2Args(as, o, m);
-        got =
-            ap(RANK2, pair(mkInt(nr2), revOnto(as, copyType(typeIs, typeOff))));
-        reportTypeError(l, e, NIL, wh, got, req);
+        inferred = ap(
+            RANK2, pair(mkInt(nr2), revOnto(as, copyType(got.type, got.offs))));
+        reportTypeError(l, e, NIL, wh, inferred, req);
     }
 
     hd(varsBounds) = savedVars;
@@ -1143,115 +1152,124 @@ static void typeCase(int l, int beta, Cell c) {
     static char *caseExpr = "case expression";
 
     List savedVars = hd(varsBounds);
+    Typing pt;
+    Typing rt;
     enterScope();
-    fst(c) = typeFreshPat(l, patBtyvs(fst(c)));
-    shouldBe(l, fst(c), NIL, casePat, aVar, beta);
-    snd(c) = typeRhs(snd(c));
-    shouldBe(l, rhsExpr(snd(c)), NIL, caseExpr, aVar, beta + 1);
+    fst(c) = typeFreshPat(l, patBtyvs(fst(c)), &pt);
+    shouldBe(l, fst(c), NIL, casePat, pt, aVar, beta);
+    snd(c) = typeRhs(snd(c), &rt);
+    shouldBe(l, rhsExpr(snd(c)), NIL, caseExpr, rt, aVar, beta + 1);
 
     hd(varsBounds) = savedVars;
     doneBtyvs(l);
-    leaveScope(l, typeIs, typeOff, 0);
+    leaveScope(l, rt.type, rt.offs, 0);
 }
 
-/* Type check comprehension monad (mkOffset(0)) */
-static void typeComp(int l, Type m, Cell e, List qs) {
+/* Type check comprehension monad (mkOffset(0)); returns the type of the
+ * body */
+static Typing typeComp(int l, Type m, Cell e, List qs) {
     static char *boolQual = "boolean qualifier";
     static char *genQual = "generator";
+    Typing body;
 
     stackCheck();
     if (isNull(qs)) { /* no qualifiers left                */
-        fst(e) = typeExpr(l, fst(e));
+        fst(e) = typeExpr(l, fst(e), &body);
     } else {
         Cell q = hd(qs);
         List qs1 = tl(qs);
         switch (whatIs(q)) {
         case BOOLQUAL:
             snd(q) = check(l, snd(q), NIL, boolQual, typeBool, 0);
-            typeComp(l, m, e, qs1);
+            body = typeComp(l, m, e, qs1);
             break;
 
         case QWHERE:
             enterBindings();
             enterScope();
             mapProc(typeBindings, snd(q));
-            typeComp(l, m, e, qs1);
+            body = typeComp(l, m, e, qs1);
             leaveBindings();
-            leaveScope(l, typeIs, typeOff, 0);
+            leaveScope(l, body.type, body.offs, 0);
             break;
 
         case FROMQUAL: {
             int beta = newTyvars(1);
             List savedVars = hd(varsBounds);
+            Typing pt;
             enterPendingBtyvs();
             snd(snd(q)) = check(l, snd(snd(q)), NIL, genQual, m, beta);
             enterScope();
-            fst(snd(q)) = typeFreshPat(l, patBtyvs(fst(snd(q))));
-            shouldBe(l, fst(snd(q)), NIL, genQual, aVar, beta);
-            typeComp(l, m, e, qs1);
+            fst(snd(q)) = typeFreshPat(l, patBtyvs(fst(snd(q))), &pt);
+            shouldBe(l, fst(snd(q)), NIL, genQual, pt, aVar, beta);
+            body = typeComp(l, m, e, qs1);
             hd(varsBounds) = savedVars;
             leavePendingBtyvs();
-            leaveScope(l, typeIs, typeOff, 0);
+            leaveScope(l, body.type, body.offs, 0);
         } break;
 
         case DOQUAL:
             snd(q) = check(l, snd(q), NIL, genQual, m, newTyvars(1));
-            typeComp(l, m, e, qs1);
+            body = typeComp(l, m, e, qs1);
             break;
         default:
-            break;
+            internal("typeComp");
         }
     }
+    return body;
 }
 
 /* Type check monad comprehension */
-static Cell typeMonadComp(int l, Cell e) {
+static Cell typeMonadComp(int l, Cell e, Typing *ty) {
     int alpha = newTyvars(1);
     int beta = newTyvars(1);
     Cell mon = ap(mkInt(beta), aVar);
     Cell m = assumeEvid(predMonad, beta);
+    Typing body;
     tyvar(beta)->kind = starToStar;
     bindTv(beta, typeList, 0);
     m = nameListMonad;
 
-    typeComp(l, mon, snd(e), snd(snd(e)));
-    bindTv(alpha, typeIs, typeOff);
-    inferType(mon, alpha);
+    body = typeComp(l, mon, snd(e), snd(snd(e)));
+    bindTv(alpha, body.type, body.offs);
+    *ty = typing(mon, alpha);
     return ap(MONADCOMP, pair(m, snd(e)));
 }
 
-/* Type check do-notation */
-static void typeDo(int l, Cell e) {
+/* Type check do-notation; the type of the final generator is the type of
+ * the whole */
+static Typing typeDo(int l, Cell e) {
     static char *finGen = "final generator";
     int alpha = newTyvars(1);
     int beta = newTyvars(1);
     Cell mon = ap(mkInt(beta), aVar);
     Cell m = assumeEvid(predMonad, beta);
+    Typing body;
     tyvar(beta)->kind = starToStar;
 
-    typeComp(l, mon, snd(e), snd(snd(e)));
-    shouldBe(l, fst(snd(e)), NIL, finGen, mon, alpha);
+    body = typeComp(l, mon, snd(e), snd(snd(e)));
+    shouldBe(l, fst(snd(e)), NIL, finGen, body, mon, alpha);
     snd(e) = pair(m, snd(e));
+    return body;
 }
 
 /* Type check a construction */
-static void typeConFlds(int l, Cell e) {
+static Typing typeConFlds(int l, Cell e) {
     static char *conExpr = "value construction";
     Name c = fst(snd(e));
     List fs = snd(snd(e));
+    Typing ct = instantiate(nameRec(c)->type, 0);
     Type tc;
-    int to;
-    int tf;
+    int to = ct.offs;
+    int tf = ct.free;
+    List ps;
     int i;
 
-    instantiate(nameRec(c)->type);
-    for (; nonNull(predsAre); predsAre = tl(predsAre))
-        assumeEvid(hd(predsAre), typeOff);
-    if (whatIs(typeIs) == RANK2)
-        typeIs = snd(snd(typeIs));
-    tc = typeIs;
-    to = typeOff;
-    tf = typeFree;
+    for (ps = ct.preds; nonNull(ps); ps = tl(ps))
+        assumeEvid(hd(ps), to);
+    tc = ct.type;
+    if (whatIs(tc) == RANK2)
+        tc = snd(snd(tc));
 
     for (; nonNull(fs); fs = tl(fs)) {
         Type t = tc;
@@ -1260,19 +1278,19 @@ static void typeConFlds(int l, Cell e) {
         t = dropRank1(arg(fun(t)), to, tf);
         if (isPolyOrQualType(t))
             snd(hd(fs)) =
-                typeExpected(l, conExpr, snd(hd(fs)), t, to, tf, true);
+                typeExpected(l, conExpr, snd(hd(fs)), t, to, tf, true, NULL);
         else {
             snd(hd(fs)) = check(l, snd(hd(fs)), e, conExpr, t, to);
         }
     }
     for (i = nameRec(c)->arity; i > 0; i--)
         tc = arg(tc);
-    inferType(tc, to);
+    return typing(tc, to);
 }
 
 /* Type check an update (Written in what might seem a bizarre manner for the
  * benefit of as yet unreleased extensions) */
-static void typeUpdFlds(int line, Cell e) {
+static Typing typeUpdFlds(int line, Cell e) {
     static char *update = "update";
     List cs = snd3(snd(e)); /* List of constructors              */
     List fs = thd3(snd(e)); /* List of field specifications      */
@@ -1281,11 +1299,12 @@ static void typeUpdFlds(int line, Cell e) {
     int alpha = newTyvars(2 + n);
     int i;
     List fs1;
+    Typing ft;
 
     /* Calculate type and translation for each expr in the field list      */
     for (fs1 = fs, i = alpha + 2; nonNull(fs1); fs1 = tl(fs1), i++) {
-        snd(hd(fs1)) = typeExpr(line, snd(hd(fs1)));
-        bindTv(i, typeIs, typeOff);
+        snd(hd(fs1)) = typeExpr(line, snd(hd(fs1)), &ft);
+        bindTv(i, ft.type, ft.offs);
     }
 
     clearMarks();
@@ -1301,32 +1320,33 @@ static void typeUpdFlds(int line, Cell e) {
     ts = rev(ts);
 
     /* Type check expression to be updated                                 */
-    fst3(snd(e)) = typeExpr(line, fst3(snd(e)));
-    bindTv(alpha, typeIs, typeOff);
+    fst3(snd(e)) = typeExpr(line, fst3(snd(e)), &ft);
+    bindTv(alpha, ft.type, ft.offs);
 
     for (; nonNull(cs); cs = tl(cs)) { /* Loop through constrs             */
         Name c = hd(cs);
         List ta = replicate(nameRec(c)->arity, NIL);
+        Typing ct;
         Type td, tr;
         int od, or ;
+        List ps;
 
         tcMode = NEW_PATTERN; /* Domain type                       */
-        instantiate(nameRec(c)->type);
+        ct = instantiate(nameRec(c)->type, 0);
         tcMode = EXPRESSION;
-        td = typeIs;
-        od = typeOff;
-        for (; nonNull(predsAre); predsAre = tl(predsAre))
-            assumeEvid(hd(predsAre), typeOff);
+        td = ct.type;
+        od = ct.offs;
+        for (ps = ct.preds; nonNull(ps); ps = tl(ps))
+            assumeEvid(hd(ps), od);
 
         if (whatIs(td) == RANK2) /* Skip rank2 annotation, if any   */
             td = snd(snd(td));
 
-        instantiate(
-            nameRec(c)->type); /* Range type                           */
-        tr = typeIs;
-        or = typeOff;
-        for (; nonNull(predsAre); predsAre = tl(predsAre))
-            assumeEvid(hd(predsAre), typeOff);
+        ct = instantiate(nameRec(c)->type, 0); /* Range type          */
+        tr = ct.type;
+        or = ct.offs;
+        for (ps = ct.preds; nonNull(ps); ps = tl(ps))
+            assumeEvid(hd(ps), or);
 
         if (whatIs(tr) == RANK2) /* Skip rank2 annotation, if any   */
             tr = snd(snd(tr));
@@ -1356,8 +1376,8 @@ static void typeUpdFlds(int line, Cell e) {
 
                 f = hd(f);
                 t = hd(t);
-                instantiate(t);
-                shouldBe(line, snd(f), e, update, arg(fun(tr)), or);
+                shouldBe(line, snd(f), e, update, instantiate(t, 0),
+                         arg(fun(tr)), or);
             } /* Unmentioned component   */
             else if (!unify(arg(fun(td)), od, arg(fun(tr)), or))
                 internal("typeUpdFlds");
@@ -1366,19 +1386,21 @@ static void typeUpdFlds(int line, Cell e) {
             td = arg(td);
         }
 
-        inferType(td, od); /* Check domain type    */
-        shouldBe(line, fst3(snd(e)), e, update, aVar, alpha);
-        inferType(tr, or); /* Check range type     */
-        shouldBe(line, e, NIL, update, aVar, alpha + 1);
+        /* Check domain type    */
+        shouldBe(line, fst3(snd(e)), e, update, typing(td, od), aVar, alpha);
+        /* Check range type     */
+        shouldBe(line, e, NIL, update, typing(tr, or), aVar, alpha + 1);
     }
-    /* (typeIs,typeOff) still carry the result type when we exit the loop  */
+    /* Every constructor's range type was unified with alpha+1, so that is
+     * the type of the update */
+    return typing(aVar, alpha + 1);
 }
 
 /* Find type of pattern, assigning fresh type variables to each var bound in
  * the pattern */
-static Cell typeFreshPat(int l, Cell p) {
+static Cell typeFreshPat(int l, Cell p, Typing *ty) {
     tcMode = NEW_PATTERN;
-    p = typeExpr(l, p);
+    p = typeExpr(l, p, ty);
     tcMode = EXPRESSION;
     return p;
 }
@@ -1517,8 +1539,7 @@ static void restrictedBindAss(Cell b) {
 /* Assume that type of binding var v is t (if nonNull) in restricted binding
  * group */
 static void restrictedAss(int l, Cell v, Type t) {
-    newDefnBind(v, t);
-    if (nonNull(predsAre)) {
+    if (nonNull(newDefnBind(v, t).preds)) {
         errHead(l);
         errPrintf("Explicit overloaded type for \"%s\"", textToStr(textOf(v)));
 
@@ -1639,11 +1660,11 @@ static void unrestricted(List bs) {
         hd(depends) = NODEPENDS;
         preds = NIL;
 
-        instantiate(fst(snd(b)));
-        o = typeOff;
-        m = typeFree;
-        t = dropRank2(typeIs, o, m);
-        ps = makePredAss(predsAre, o);
+        Typing sig = instantiate(fst(snd(b)), 0);
+        o = sig.offs;
+        m = sig.free;
+        t = dropRank2(sig.type, o, m);
+        ps = makePredAss(sig.preds, o);
 
         enterPendingBtyvs();
         for (; nonNull(alts); alts = tl(alts))
@@ -1934,13 +1955,13 @@ static void typeMember(char *wh, Name mem, Cell alts, List evids, Cell head,
     List ps;
     List qs;
     Type rt;
+    Typing sig = instantiate(nameRec(mem)->type, 0); /* Find required type */
 
-    instantiate(nameRec(mem)->type); /* Find required type             */
-    o = typeOff;
-    m = typeFree;
-    t = dropRank2(typeIs, o, m);
-    ps = makePredAss(predsAre, o);
-    if (!unifyPred(hd(predsAre), typeOff, head, beta))
+    o = sig.offs;
+    m = sig.free;
+    t = dropRank2(sig.type, o, m);
+    ps = makePredAss(sig.preds, o);
+    if (!unifyPred(hd(sig.preds), o, head, beta))
         internal("typeMember1");
     clearMarks();
     qs = copyPreds(ps);
@@ -2010,13 +2031,15 @@ static void typeBind(Cell b) {
         Pair pb = snd(snd(b));
         int l = rhsLine(snd(pb));
 
+        Typing rt;
+
         tcMode = OLD_PATTERN;
         enterPendingBtyvs();
         fst(pb) = patBtyvs(fst(pb));
         fst(pb) = check(l, fst(pb), NIL, lhsPat, aVar, beta);
         tcMode = EXPRESSION;
-        snd(pb) = typeRhs(snd(pb));
-        shouldBe(l, rhsExpr(snd(pb)), NIL, rhs, aVar, beta);
+        snd(pb) = typeRhs(snd(pb), &rt);
+        shouldBe(l, rhsExpr(snd(pb)), NIL, rhs, rt, aVar, beta);
         doneBtyvs(l);
         leavePendingBtyvs();
     }
@@ -2028,32 +2051,33 @@ static void typeDefAlt(int beta, Cell v, Pair a) {
     typeAlt(valDef, v, a, aVar, beta, 0);
 }
 
-/* Check type of rhs of definition */
-static Cell typeRhs(Cell e) {
+/* Check type of rhs of definition: returns the translated rhs, with its
+ * type in *ty */
+static Cell typeRhs(Cell e, Typing *ty) {
     switch (whatIs(e)) {
     case GUARDED: {
         int beta = newTyvars(1);
         map1Proc(guardedType, beta, snd(e));
-        tyvarType(beta);
+        *ty = tyvarType(beta);
     } break;
 
     case LETREC:
         enterBindings();
         enterScope();
         mapProc(typeBindings, fst(snd(e)));
-        snd(snd(e)) = typeRhs(snd(snd(e)));
+        snd(snd(e)) = typeRhs(snd(snd(e)), ty);
         leaveBindings();
-        leaveScope(rhsLine(snd(snd(e))), typeIs, typeOff, 0);
+        leaveScope(rhsLine(snd(snd(e))), ty->type, ty->offs, 0);
         break;
 
     case RSIGN:
-        fst(snd(e)) = typeRhs(fst(snd(e)));
+        fst(snd(e)) = typeRhs(fst(snd(e)), ty);
         shouldBe(rhsLine(fst(snd(e))), rhsExpr(fst(snd(e))), NIL, "result type",
-                 snd(snd(e)), 0);
+                 *ty, snd(snd(e)), 0);
         return fst(snd(e));
 
     default:
-        snd(e) = typeExpr(intOf(fst(e)), snd(e));
+        snd(e) = typeExpr(intOf(fst(e)), snd(e), ty);
         break;
     }
     return e;
@@ -2147,9 +2171,9 @@ static Type genTest(int l, Cell v, List ps, Type dt, Type t, int o) {
     bt = copyType(t, o);
     it = generalize(ps, bt);
 
-    if (nonNull(dt)) {   /* If a declared type was given,   */
-        instantiate(dt); /* check body for match.          */
-        if (!equalTypes(typeIs, bt))
+    if (nonNull(dt)) { /* If a declared type was given,   */
+        if (!equalTypes(instantiate(dt, 0).type,
+                        bt)) /* check body for match. */
             tooGeneral(l, v, dt, it);
     } else if (nonNull(ps))  /* Otherwise test for ambiguity in */
         if (isAmbiguous(it)) /* inferred type.             */
@@ -2215,6 +2239,7 @@ et:
 
 /* Type check top level expression using defaults if reqd */
 Type typeCheckExp(bool useDefs) {
+    Typing ty;
     Type type;
     List ctxt;
     int beta;
@@ -2222,9 +2247,9 @@ Type typeCheckExp(bool useDefs) {
     resetTypeChecker();
     emptySubstitution();
     enterBindings();
-    inputExpr = typeExpr(0, inputExpr);
-    type = typeIs;
-    beta = typeOff;
+    inputExpr = typeExpr(0, inputExpr, &ty);
+    type = ty.type;
+    beta = ty.offs;
     clearMarks();
     improve(0, NIL, preds);
     normPreds(0);
@@ -2354,32 +2379,31 @@ static Pair typeSel(Name s) {
         int n = intOf(snd(hd(cns)));
         int a = nameRec(c)->arity;
         Cell pat = c;
+        Typing ct = instantiate(nameRec(c)->type, 0); /* Constructor type */
+        Type t = ct.type;
         Type dom1;
         Type rng1;
-        int o1;
-        int m1;
+        int o1 = ct.offs;
+        int m1 = ct.free;
+        List ps;
 
-        instantiate(
-            nameRec(c)->type); /* Instantiate constructor type         */
-        o1 = typeOff;
-        m1 = typeFree;
-        for (; nonNull(predsAre); predsAre = tl(predsAre))
-            assumeEvid(hd(predsAre), o1);
+        for (ps = ct.preds; nonNull(ps); ps = tl(ps))
+            assumeEvid(hd(ps), o1);
 
-        if (whatIs(typeIs) == RANK2) /* Skip rank2 annotation, if any   */
-            typeIs = snd(snd(typeIs));
+        if (whatIs(t) == RANK2) /* Skip rank2 annotation, if any   */
+            t = snd(snd(t));
         for (; --n > 0; a--) { /* Get range                        */
             pat = ap(pat, WILDCARD);
-            typeIs = arg(typeIs);
+            t = arg(t);
         }
-        rng1 = dropRank1(arg(fun(typeIs)), o1, m1);
+        rng1 = dropRank1(arg(fun(t)), o1, m1);
         pat = ap(pat, nv);
-        typeIs = arg(typeIs);
+        t = arg(t);
         while (--a > 0) { /* And then look for domain      */
             pat = ap(pat, WILDCARD);
-            typeIs = arg(typeIs);
+            t = arg(t);
         }
-        dom1 = typeIs;
+        dom1 = t;
 
         if (isNull(dom)) { /* Save first domain type and then */
             dom = dom1;    /* unify with subsequent domains to*/
@@ -2411,13 +2435,13 @@ static Pair typeSel(Name s) {
     if (isNull(dom) || isNull(rng)) /* Should have been initialized by */
         internal("typeSel2");       /* now, assuming length cns >= 1.  */
 
-    clearMarks();              /* No fixed variables here          */
-    preds = scSimplify(preds); /* Simplify context                 */
-    dom = copyType(dom, o);    /* Calculate domain type    */
-    instantiate(rng);
-    rng = copyType(typeIs, typeOff);
-    if (nonNull(predsAre)) {
-        List ps = makePredAss(predsAre, typeOff);
+    clearMarks();                    /* No fixed variables here          */
+    preds = scSimplify(preds);       /* Simplify context                 */
+    dom = copyType(dom, o);          /* Calculate domain type    */
+    Typing rt = instantiate(rng, o); /* rng is read at the first domain's o */
+    rng = copyType(rt.type, rt.offs);
+    if (nonNull(rt.preds)) {
+        List ps = makePredAss(rt.preds, rt.offs);
         List alts1 = alts;
         for (; nonNull(alts1); alts1 = tl(alts1)) {
             Cell body = nv;

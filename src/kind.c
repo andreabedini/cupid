@@ -27,8 +27,8 @@
  * local function prototypes:
  * ------------------------------------------------------------------------*/
 
-static void kindError(int, Constr, Constr, char *, Kind, int);
-static void kindConstr(int, int, int, Constr);
+static void kindError(int, Constr, Constr, char *, Typing, Kind, int);
+static Typing kindConstr(int, int, int, Constr);
 static Kind kindAtom(int, Constr);
 static void initTCKind(Cell);
 static void kindTC(Cell);
@@ -42,8 +42,9 @@ bool kindExpert = false; /* true => display kind errors in  */
                          /*        full detail             */
 
 /* Line number near constuctor exp constructor context (if any) place in which
- * error occurs expected kind (k,o) inferred kind (typeIs,typeOff) */
-static void kindError(int l, Constr c, Constr in, char *wh, Kind k, int o) {
+ * error occurs inferred kind got expected kind (k,o) */
+static void kindError(int l, Constr c, Constr in, char *wh, Typing got, Kind k,
+                      int o) {
     clearMarks();
 
     if (!kindExpert) { /* for those with a fear of kinds  */
@@ -67,7 +68,7 @@ static void kindError(int l, Constr c, Constr in, char *wh, Kind k, int o) {
     errPrintf("\n*** constructor    : ");
     errType(c);
     errPrintf("\n*** kind           : ");
-    errKind(copyType(typeIs, typeOff));
+    errKind(copyType(got.type, got.offs));
     errPrintf("\n*** does not match : ");
     errKind(copyType(k, o));
     if (unifyFails) {
@@ -77,17 +78,17 @@ static void kindError(int l, Constr c, Constr in, char *wh, Kind k, int o) {
     errFail();
 }
 
-/* Unify the inferred kind with (k,o) */
-static void shouldKind(int l, Cell c, Cell in, char *wh, Kind k, int o) {
-    if (!kunify(typeIs, typeOff, k, o))
-        kindError(l, c, in, wh, k, o);
+/* Unify the inferred kind got with (k,o) */
+static void shouldKind(int l, Cell c, Cell in, char *wh, Typing got, Kind k,
+                       int o) {
+    if (!kunify(got.type, got.offs, k, o))
+        kindError(l, c, in, wh, got, k, o);
 }
 
 /* Infer the kind of c, then as above */
 static void checkKind(int l, int a, int m, Cell c, Cell in, char *wh, Kind k,
                       int o) {
-    kindConstr(l, a, m, c);
-    shouldKind(l, c, in, wh, k, o);
+    shouldKind(l, c, in, wh, kindConstr(l, a, m, c), k, o);
 }
 
 List unkindTypes; /* types in need of kind annotation*/
@@ -97,29 +98,31 @@ List unkindTypes; /* types in need of kind annotation*/
  * ------------------------------------------------------------------------*/
 
 /* Determine kind of constructor */
-static void kindConstr(int line, int alpha, int m, Cell c) {
+static Typing kindConstr(int line, int alpha, int m, Cell c) {
     assertType(c);
     Cell h = getHead(c);
     int n = argCount;
 
     switch (whatIs(h)) {
-    case POLYTYPE:
+    case POLYTYPE: {
         if (n != 0) {
             internal("kindConstr1");
-        } else {
-            static char *pt = "polymorphic type";
-            Type t = dropRank1(c, alpha, m);
-            Kinds ks = polySigOf(t);
-            int m1 = 0;
-            int beta;
-            for (; isAp(ks); ks = tl(ks)) {
-                m1++;
-            }
-            beta = newKindvars(m1);
-            unkindTypes = cons(pair(mkInt(beta), t), unkindTypes);
-            checkKind(line, beta, m1, monotypeOf(t), NIL, pt, STAR, 0);
         }
-        return;
+        static char *pt = "polymorphic type";
+        Type t = dropRank1(c, alpha, m);
+        Kinds ks = polySigOf(t);
+        int m1 = 0;
+        int beta;
+        Typing got;
+        for (; isAp(ks); ks = tl(ks)) {
+            m1++;
+        }
+        beta = newKindvars(m1);
+        unkindTypes = cons(pair(mkInt(beta), t), unkindTypes);
+        got = kindConstr(line, beta, m1, monotypeOf(t));
+        shouldKind(line, monotypeOf(t), NIL, pt, got, STAR, 0);
+        return got;
+    }
 
     case CDICTS:
     case QUAL:
@@ -127,13 +130,11 @@ static void kindConstr(int line, int alpha, int m, Cell c) {
             internal("kindConstr2");
         }
         map3Proc(kindPred, line, alpha, m, fst(snd(c)));
-        kindConstr(line, alpha, m, snd(snd(c)));
-        return;
+        return kindConstr(line, alpha, m, snd(snd(c)));
 
     case EXIST:
     case RANK2:
-        kindConstr(line, alpha, m, snd(snd(c)));
-        return;
+        return kindConstr(line, alpha, m, snd(snd(c)));
 
     case TYCON:
         if (isSynonym(h) && n < tyconRec(h)->arity) {
@@ -147,28 +148,24 @@ static void kindConstr(int line, int alpha, int m, Cell c) {
         break;
     }
 
-    if (n == 0) { /* trivial case, no arguments    */
-        typeIs = kindAtom(alpha, c);
-    } else { /* non-trivial application    */
-        static char *app = "constructor application";
-        Cell a = c;
-        int i;
-        Kind k;
-        int beta;
+    if (n == 0) /* trivial case, no arguments    */
+        return typing(kindAtom(alpha, c), 0);
 
-        varKind(n);
-        beta = typeOff;
-        k = typeIs;
+    /* non-trivial application    */
+    static char *app = "constructor application";
+    Cell a = c;
+    int i;
+    Typing k = varKind(n);
+    int beta = k.offs;
 
-        typeIs = kindAtom(alpha, h); /* h  :: v1 -> ... -> vn -> w         */
-        shouldKind(line, h, c, app, k, beta);
+    /* h  :: v1 -> ... -> vn -> w         */
+    shouldKind(line, h, c, app, typing(kindAtom(alpha, h), 0), k.type, beta);
 
-        for (i = n; i > 0; --i) { /* ci :: vi for each 1 <- 1..n           */
-            checkKind(line, alpha, m, arg(a), c, app, aVar, beta + i - 1);
-            a = fun(a);
-        }
-        tyvarType(beta + n); /* inferred kind is w                 */
+    for (i = n; i > 0; --i) { /* ci :: vi for each 1 <- 1..n           */
+        checkKind(line, alpha, m, arg(a), c, app, aVar, beta + i - 1);
+        a = fun(a);
     }
+    return tyvarType(beta + n); /* inferred kind is w                 */
 }
 
 /* Find kind of atomic constructor */
@@ -258,14 +255,16 @@ void kindTCGroup(List tcs) {
 
 /* Build initial kind/arity for c */
 static void initTCKind(Cell c) {
-    if (isTycon(c)) {                  /* Initial kind of tycon is:        */
-        int beta = newKindvars(1);     /*    v1 -> ... -> vn -> vn+1       */
-        varKind(tyconRec(c)->arity);   /* where n is the arity of c.       */
-        bindTv(beta, typeIs, typeOff); /* For data definitions, vn+1 == * */
+    /* The initial kind of a tycon of arity n is v1 -> ... -> vn -> vn+1,
+     * and for data definitions vn+1 == * */
+    if (isTycon(c)) {
+        int beta = newKindvars(1);
+        Typing k = varKind(tyconRec(c)->arity);
+        bindTv(beta, k.type, k.offs);
         switch (whatIs(tyconRec(c)->what)) {
         case NEWTYPE:
         case DATATYPE:
-            bindTv(typeOff + tyconRec(c)->arity, STAR, 0);
+            bindTv(k.offs + tyconRec(c)->arity, STAR, 0);
         default:
             break;
         }

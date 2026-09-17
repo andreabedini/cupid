@@ -21,10 +21,6 @@ static int maxTyvars = 0;
 static int nextGeneric; /* number of generics found so far */
 
 Tyvar *tyvars = 0;  /* storage for type variables          */
-int typeOff;        /* offset of result type       */
-Type typeIs;        /* skeleton of result type     */
-int typeFree;       /* freedom in instantiated type        */
-List predsAre;      /* list of predicates in type          */
 List genericVars;   /* list of generic vars                */
 List btyvars = NIL; /* explicitly scoped type vars         */
 
@@ -112,8 +108,6 @@ void emptySubstitution(void) {
     }
     nextGeneric = 0;
     genericVars = NIL;
-    typeIs = NIL;
-    predsAre = NIL;
     btyvars = NIL;
 }
 
@@ -184,29 +178,31 @@ int newKindedVars(Kind k) {
     return beta;
 }
 
-/* Instantiate type, if nonNull */
-void instantiate(Type type) {
+/* Instantiate type, read at offset o: a polymorphic type gets fresh
+ * variables for its quantified ones and the result is read at theirs, a
+ * qualified type has its context peeled off, and anything else is the
+ * monotype (type,o). */
+Typing instantiate(Type type, int o) {
+    Typing ty = typing(type, o);
     if (nonNull(type))
         assertType(type);
-    predsAre = NIL;
-    typeIs = type;
-    typeFree = 0;
 
-    if (nonNull(typeIs)) { /* instantiate type expression ?    */
+    if (nonNull(ty.type)) { /* instantiate type expression ?    */
 
-        if (isPolyType(typeIs)) { /* Polymorphic type scheme ?     */
-            Kinds ks = polySigOf(typeIs);
-            typeOff = newKindedVars(ks);
-            typeIs = monotypeOf(typeIs);
+        if (isPolyType(ty.type)) { /* Polymorphic type scheme ?     */
+            Kinds ks = polySigOf(ty.type);
+            ty.offs = newKindedVars(ks);
+            ty.type = monotypeOf(ty.type);
             for (; isAp(ks); ks = arg(ks))
-                typeFree++;
+                ty.free++;
         }
 
-        if (isQualType(typeIs)) { /* Qualified type?                       */
-            predsAre = fst(snd(typeIs));
-            typeIs = snd(snd(typeIs));
+        if (isQualType(ty.type)) { /* Qualified type?                       */
+            ty.preds = fst(snd(ty.type));
+            ty.type = snd(snd(ty.type));
         }
     }
+    return ty;
 }
 
 /* --------------------------------------------------------------------------
@@ -290,8 +286,9 @@ Tyvar *getTypeVar(Type t, int o) {
     return ((Tyvar *)0);
 }
 
-/* Load type held in type variable vn into (typeIs,typeOff) */
-void tyvarType(int vn) {
+/* The type held in type variable vn, followed through the variables it
+ * is bound to; the last variable itself if the chain ends unbound */
+Typing tyvarType(int vn) {
     Tyvar *tyv;
 
     while ((tyv = tyvar(vn)), isBound(tyv))
@@ -310,12 +307,9 @@ void tyvarType(int vn) {
             break;
 
         default:
-            typeIs = tyv->bound;
-            typeOff = tyv->offs;
-            return;
+            return typing(tyv->bound, tyv->offs);
         }
-    typeIs = aVar;
-    typeOff = vn;
+    return typing(aVar, vn);
 }
 
 /* Set type variable vn to (t,o) */
@@ -1533,17 +1527,16 @@ bool kunify(Kind k1, int o1, Kind k2, int o2) {
 #define MAXTUPCON 10
 static Type tupleConTypes[MAXTUPCON];
 
-/* Find type for tuple constr, using tupleConTypes to cache previously
- * calculated tuple constr. types. */
-void typeTuple(Cell e) {
+/* The type of tuple constructor e at fresh variables, using tupleConTypes
+ * to cache previously calculated tuple constr. types. */
+Typing typeTuple(Cell e) {
     int n = tupleOf(e);
-    typeOff = newTyvars(n);
+    int offs = newTyvars(n);
     if (n >= MAXTUPCON)
-        typeIs = makeTupleType(n);
-    else if (tupleConTypes[n])
-        typeIs = tupleConTypes[n];
-    else
-        typeIs = tupleConTypes[n] = makeTupleType(n);
+        return typing(makeTupleType(n), offs);
+    if (isNull(tupleConTypes[n]))
+        tupleConTypes[n] = makeTupleType(n);
+    return typing(tupleConTypes[n], offs);
 }
 
 /* Construct type for tuple constr. t1 -> ... -> tn -> (t1,...,tn) */
@@ -1600,15 +1593,15 @@ static Kind makeVarKind(int n) {
     return k;
 }
 
-/* Return (possibly cached) var function kind */
-void varKind(int n) {
-    typeOff = newKindvars(n + 1);
+/* The (possibly cached) var function kind v0 -> .. -> vn at n+1 fresh
+ * kind variables */
+Typing varKind(int n) {
+    int offs = newKindvars(n + 1);
     if (n >= MAXKINDFUN)
-        typeIs = makeVarKind(n);
-    else if (nonNull(varKindCache[n]))
-        typeIs = varKindCache[n];
-    else
-        typeIs = varKindCache[n] = makeVarKind(n);
+        return typing(makeVarKind(n), offs);
+    if (isNull(varKindCache[n]))
+        varKindCache[n] = makeVarKind(n);
+    return typing(varKindCache[n], offs);
 }
 
 /* --------------------------------------------------------------------------
@@ -1619,8 +1612,6 @@ void varKind(int n) {
  * by the collector on every collection */
 static Cell *const substRoots[] = {
     &btyvars,
-    &typeIs,
-    &predsAre,
     &genericVars,
 };
 
