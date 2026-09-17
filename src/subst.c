@@ -1187,9 +1187,9 @@ bool unifyPred(Cell pi1, int o1, Cell pi, int o) {
 }
 
 /* Find matching instance for pred (pi,o), or otherwise NIL. If a match is
- * found, then tyvars from typeOff have been initialized to allow direct use of
- * specifics. */
-Inst findInstFor(Cell pi, int o) {
+ * found, the instance's variables have been allocated from *beta, so its
+ * specifics can be read at that offset. */
+Inst findInstFor(Cell pi, int o, int *beta) {
     assertPred(pi);
     Class c = getHead(pi);
     List ins;
@@ -1200,19 +1200,19 @@ Inst findInstFor(Cell pi, int o) {
 
     for (ins = cclassRec(c)->instances; nonNull(ins); ins = tl(ins)) {
         Inst in = hd(ins);
-        int beta = newKindedVars(instRec(in)->kinds);
-        if (matchPred(pi, o, instRec(in)->head, beta)) {
-            typeOff = beta;
+        int vars = newKindedVars(instRec(in)->kinds);
+        if (matchPred(pi, o, instRec(in)->head, vars)) {
+            *beta = vars;
             return in;
         } else {
-            numTyvars = beta;
+            numTyvars = vars;
             if (allowOverlap && !allowUnsafeOverlap) {
                 int alpha = newKindedVars(instRec(in)->kinds);
                 if (isNull(kspi)) {
                     kspi = copyNoMark(pi, o);
                 }
-                beta = newKindedVars(fst(kspi));
-                if (matchPred(instRec(in)->head, alpha, snd(kspi), beta)) {
+                vars = newKindedVars(fst(kspi));
+                if (matchPred(instRec(in)->head, alpha, snd(kspi), vars)) {
                     numTyvars = alpha;
                     return NIL;
                 }

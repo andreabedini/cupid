@@ -339,13 +339,13 @@ Cell inEntail(List ps, Cell pi, int o, int d) {
     int i;
 #endif
     Inst in;
+    int beta;
 
     if (d++ >= cutoff)
         cutoffExceeded(pi, o, ps);
 
-    in = findInstFor(pi, o); /* Class predicates                   */
+    in = findInstFor(pi, o, &beta); /* Class predicates                   */
     if (nonNull(in)) {
-        int beta = typeOff;
         Cell e = instRec(in)->builder;
         List es = instRec(in)->specifics;
         List fs = NIL;
@@ -563,10 +563,11 @@ List elimPredsUsing(List ps, List sps) {
             sps = p;
         } else { /* Try to split generics and fixed */
             Inst in;
-            if (numFixedVars > 0 && nonNull(in = findInstFor(pi, o))) {
+            int beta;
+            if (numFixedVars > 0 && nonNull(in = findInstFor(pi, o, &beta))) {
                 List qs = instRec(in)->specifics;
                 for (ev = instRec(in)->builder; nonNull(qs); qs = tl(qs))
-                    ev = ap(ev, assumeEvid(hd(qs), typeOff));
+                    ev = ap(ev, assumeEvid(hd(qs), beta));
                 overEvid(thd3(hd(p)), ev);
             } else { /* No worthwhile progress possible */
                 tl(p) = rems;
@@ -585,14 +586,14 @@ void reducePreds(void) {
         Cell p = preds;
         Cell pi = fst3(hd(p));
         int o = intOf(snd3(hd(p)));
-        Inst in = NIL;
-        in = findInstFor(pi, o);
+        int beta;
+        Inst in = findInstFor(pi, o, &beta);
         preds = tl(preds);
         if (nonNull(in)) {
             List qs = instRec(in)->specifics;
             Cell ev = instRec(in)->builder;
             for (; nonNull(qs); qs = tl(qs))
-                ev = ap(ev, assumeEvid(hd(qs), typeOff));
+                ev = ap(ev, assumeEvid(hd(qs), beta));
             overEvid(thd3(hd(p)), ev);
         } else { /* No worthwhile progress possible */
             tl(p) = rems;

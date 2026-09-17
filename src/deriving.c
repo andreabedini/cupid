@@ -218,10 +218,11 @@ static void calcInstPreds(Inst in) {
         } else { /* Class predicate        */
             Cell pi = fst(p);
             int o = intOf(snd(p));
-            Inst in1 = findInstFor(pi, o);
+            int at;
+            Inst in1 = findInstFor(pi, o, &at);
             if (nonNull(in1)) {
                 List qs = instRec(in1)->specifics;
-                int off = mkInt(typeOff);
+                int off = mkInt(at);
                 if (whatIs(qs) == DERIVE) { /* Still being derived         */
                     for (qs = fst(snd(qs)); nonNull(hd(qs)); qs = tl(qs)) {
                         ps = cons(pair(hd(qs), off), ps);

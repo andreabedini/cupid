@@ -127,7 +127,7 @@ extern void varKind(int);
 extern bool samePred(Cell, int, Cell, int);
 extern bool matchPred(Cell, int, Cell, int);
 extern bool unifyPred(Cell, int, Cell, int);
-extern Inst findInstFor(Cell, int);
+extern Inst findInstFor(Cell, int, int *);
 
 extern void improve(int, List, List);
 extern void improve1(int, List, Cell, int);

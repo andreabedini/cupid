@@ -379,7 +379,6 @@ extern void freeDLL(void *);
 extern void compileAndLink(char *, char *);
 
 extern List calcFunDepsPreds(List);
-extern Inst findInstFor(Cell, int);
 
 extern void pushString(char *);
 
