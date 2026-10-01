@@ -17,6 +17,14 @@ The files that go with it, all optional except NAME.stdout:
   NAME.exit     the expected exit status (default 0)
   NAME.stack    a C stack limit in kilobytes (POSIX only)
 
+Each test runs with TMPDIR set to a fresh, empty directory of its own,
+removed when the test is over.  A test that writes a file puts it there,
+through System.Directory.getTemporaryDirectory, which reads TMPDIR: the
+tests run with this directory as their working directory, and two suites
+running at once -- check-configurations builds and tests configurations
+side by side -- would otherwise create and delete the same files in it.
+NAME.env may still set TMPDIR to something else.
+
 A test passes when the output and the exit status both match.  A process
 killed by a signal never matches, so a crash is always a failure.
 
@@ -41,6 +49,7 @@ import re
 import resource
 import subprocess
 import sys
+import tempfile
 
 # The banner, in both the full and the -Dsmall-banner form, with the help
 # line that usually but not always follows it.
@@ -78,32 +87,34 @@ def run_one(cuddles, runcuddles, packages, testdir, name, features):
     exit_code = int((read(base + ".exit") or "0").strip())
     stack_kb = read(base + ".stack")
 
-    env = dict(os.environ)
-    for line in (read(base + ".env") or "").splitlines():
-        if line.startswith("-"):
-            env.pop(line[1:], None)
-        elif "=" in line:
-            var, value = line.split("=", 1)
-            env[var] = value
+    # A private, empty TMPDIR for the test, gone when it is; see the top.
+    with tempfile.TemporaryDirectory(prefix=name + ".") as scratch:
+        env = dict(os.environ, TMPDIR=scratch)
+        for line in (read(base + ".env") or "").splitlines():
+            if line.startswith("-"):
+                env.pop(line[1:], None)
+            elif "=" in line:
+                var, value = line.split("=", 1)
+                env[var] = value
 
-    if stdin is None:
-        cmd = [runcuddles, "-P" + packages] + args + [name + ".hs"]
-    else:
-        cmd = [cuddles, "+q", "-P" + packages] + args + [name + ".hs"]
+        if stdin is None:
+            cmd = [runcuddles, "-P" + packages] + args + [name + ".hs"]
+        else:
+            cmd = [cuddles, "+q", "-P" + packages] + args + [name + ".hs"]
 
-    def limit_stack():
-        if stack_kb:
-            kb = int(stack_kb.strip()) * 1024
-            resource.setrlimit(resource.RLIMIT_STACK, (kb, kb))
+        def limit_stack():
+            if stack_kb:
+                kb = int(stack_kb.strip()) * 1024
+                resource.setrlimit(resource.RLIMIT_STACK, (kb, kb))
 
-    try:
-        proc = subprocess.run(
-            cmd, cwd=testdir, env=env, input=stdin,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            encoding="utf-8", errors="replace", timeout=120,
-            preexec_fn=limit_stack if stack_kb else None)
-    except subprocess.TimeoutExpired:
-        return False, "timed out"
+        try:
+            proc = subprocess.run(
+                cmd, cwd=testdir, env=env, input=stdin,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                encoding="utf-8", errors="replace", timeout=120,
+                preexec_fn=limit_stack if stack_kb else None)
+        except subprocess.TimeoutExpired:
+            return False, "timed out"
 
     out = proc.stdout.replace("\r\n", "\n")
     if stdin is not None:

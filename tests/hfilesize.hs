@@ -4,8 +4,9 @@ import System.IO
 import System.Directory
 main :: IO ()
 main = do
-  writeFile "hfilesize.tmp" (replicate 12345 'x')
-  h <- openBinaryFile "hfilesize.tmp" ReadMode
+  tmp <- fmap (++ "/hfilesize.tmp") getTemporaryDirectory
+  writeFile tmp (replicate 12345 'x')
+  h <- openBinaryFile tmp ReadMode
   hFileSize h >>= print
   hClose h
-  removeFile "hfilesize.tmp"
+  removeFile tmp

@@ -8,9 +8,10 @@ import System.IO
 import System.Directory
 main :: IO ()
 main = do
-  h <- openBinaryFile "hfilesize-large.tmp" WriteMode
+  tmp <- fmap (++ "/hfilesize-large.tmp") getTemporaryDirectory
+  h <- openBinaryFile tmp WriteMode
   mapM_ (const (hSeek h RelativeSeek 1500000000)) [1 .. 3 :: Int]
   hPutChar h 'x'
   hFileSize h >>= print
   hClose h
-  removeFile "hfilesize-large.tmp"
+  removeFile tmp
