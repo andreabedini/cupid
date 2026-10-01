@@ -2,7 +2,9 @@ project('cuddles', 'c',
   version: '0.1.0',
   license: 'BSD-3-Clause',
   meson_version: '>= 1.1.0',
-  default_options: ['c_std=c23', 'buildtype=debugoptimized', 'warning_level=1'])
+  # c2x is C23 under the name it had before ratification: gcc and clang
+  # have accepted it since 2019, and meson 1.3 (Ubuntu 24.04) rejects c23.
+  default_options: ['c_std=c2x', 'buildtype=debugoptimized', 'warning_level=1'])
 
 # The string the banner and :version print
 cuddles_version_string = '0.1.0'
