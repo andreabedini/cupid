@@ -59,36 +59,33 @@ char *getLastEdit(int *pLastLine) {
  * Setting of command line options:
  * ------------------------------------------------------------------------*/
 
-#define Option(c, description, flag) {c, description, flag}
-
 static void toggleSet(Char, bool);
 static void togglesIn(bool);
 
 struct options toggle[] =
     {/* List of command line toggles    */
-     Option('s', "Print no. reductions/cells after eval", &showStats),
-     Option('t', "Print type after evaluation", &addType),
-     Option('g', "Print no. cells recovered after gc", &gcMessages),
-     Option('l', "Literate modules as default", &literateScripts),
-     Option('.', "Print dots to show progress", &useDots),
-     Option('q', "Print nothing to show progress", &quiet),
-     Option('Q', "Qualify names when printing", &useQualifiedNames),
-     Option('w', "Always show which modules are loaded", &listScripts),
-     Option('k', "Show kind errors in full", &kindExpert),
-     Option('o', "Allow overlapping instances", &allowOverlap),
-     Option('O', "Allow unsafe overlapping instances", &allowUnsafeOverlap),
-     Option('u', "Use \"show\" to display results", &useShow),
-     Option('I', "Display results of IO programs", &displayIO),
-     Option('T', "Apply 'defaulting' when printing types",
-            &printTypeUseDefaults),
+     {'s', "Print no. reductions/cells after eval", &showStats},
+     {'t', "Print type after evaluation", &addType},
+     {'g', "Print no. cells recovered after gc", &gcMessages},
+     {'l', "Literate modules as default", &literateScripts},
+     {'.', "Print dots to show progress", &useDots},
+     {'q', "Print nothing to show progress", &quiet},
+     {'Q', "Qualify names when printing", &useQualifiedNames},
+     {'w', "Always show which modules are loaded", &listScripts},
+     {'k', "Show kind errors in full", &kindExpert},
+     {'o', "Allow overlapping instances", &allowOverlap},
+     {'O', "Allow unsafe overlapping instances", &allowUnsafeOverlap},
+     {'u', "Use \"show\" to display results", &useShow},
+     {'I', "Display results of IO programs", &displayIO},
+     {'T', "Apply 'defaulting' when printing types", &printTypeUseDefaults},
 /* Conditional toggles: */
 #if EXPLAIN_INSTANCE_RESOLUTION
-     Option('x', "Explain instance resolution", &showInstRes),
+     {'x', "Explain instance resolution", &showInstRes},
 #endif
 #if DEBUG_CODE
-     Option('D', "Debug: show generated G code", &debugCode),
+     {'D', "Debug: show generated G code", &debugCode},
 #endif
-     Option(0, 0, 0)};
+     {0, 0, 0}};
 
 /* Change command line options from Cuddles command line */
 void setOptions(void) {
