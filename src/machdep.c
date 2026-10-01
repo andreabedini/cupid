@@ -216,12 +216,18 @@ char *RealPath(char *s) {
     _fullpath(path, s, FILENAME_MAX + 1);
 #elif HAVE_REALPATH /* eg Unix */
     static char path[MAXPATHLEN + 1];
-    path[sizeof(path) - 1] = '\0';
-    if (strlen(s) <= (sizeof(path) - 1)) {
-        realpath(s, path);
-    } else {
+    /* With PATH_CANONICALIZATION the name passed in is often this very
+     * buffer, returned by an earlier call.  realpath(3) may write into its
+     * result before it has finished reading its input -- macOS does, and
+     * resolves the overlap to "/" -- so resolve into a separate buffer. */
+    char resolved[MAXPATHLEN + 1];
+    if (strlen(s) > MAXPATHLEN) {
         return s;
     }
+    if (realpath(s, resolved) == NULL) {
+        return s;
+    }
+    strcpy(path, resolved);
 #else
     static char path[FILENAME_MAX + 1];
 
