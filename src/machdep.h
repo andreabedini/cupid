@@ -100,6 +100,7 @@ extern void needPrims(int, void *);
 
 extern char *fromEnv(char *, char *);
 extern bool initSystem(void);
+extern void installSignalHandlers(void);
 
 extern char *dirname(char *);
 

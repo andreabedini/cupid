@@ -58,6 +58,7 @@ int main(int argc, char *argv[]) {
 
     if (!initSystem())
         usageError("failed to initialize, exiting", 0);
+    installSignalHandlers();
 
 #if defined(FFI_COMPILER)
     generateFFI = true;

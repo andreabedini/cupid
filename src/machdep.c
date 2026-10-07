@@ -768,6 +768,16 @@ void normalTerminal(void) {
         setTerminal(fileno(stdin), originalSettings);
 }
 
+# if !DONT_PANIC
+/* Restore terminal initial state from a signal handler.  tcsetattr is
+ * async-signal-safe and fileno is not, so the descriptor is named and the
+ * mode is applied at once, without waiting for output to drain. */
+static void normalTerminalFromSignal(void) {
+    if (messedWithTerminal)
+        tcsetattr(0, TCSANOW, &originalSettings);
+}
+# endif
+
 bool getEchoTerminal(int fd) {
     TermParams settings;
 
@@ -920,7 +930,6 @@ volatile sig_atomic_t broken = false; /* pending break to be handled     */
 static bool breakReqd = false;        /* currently trapping breaks       */
 static bool trapBreak = false;        /* ever asked to trap breaks       */
 static sigProto(ignoreBreak);
-static void installHandlers(void);
 
 /* Set break trapping on if reqd, or off otherwise, returning old */
 bool breakOn(bool reqd) {
@@ -964,13 +973,59 @@ static sigHandler(ignoreBreak) {
 # define PANIC_STACK_SIZE 65536
 static char panicStack[PANIC_STACK_SIZE];
 
+/* Is sig one the process raises against itself by faulting, rather than
+ * one sent to ask it to stop? */
+static bool isFaultSignal(int sig) {
+    switch (sig) {
+# ifdef SIGABRT
+    case SIGABRT:
+# endif
+# ifdef SIGBUS
+    case SIGBUS:
+# endif
+# ifdef SIGFPE
+    case SIGFPE:
+# endif
+# ifdef SIGILL
+    case SIGILL:
+# endif
+# ifdef SIGSEGV
+    case SIGSEGV:
+# endif
+        return true;
+    default:
+        return false;
+    }
+}
+
 static sigProto(panic);
-/* Exit in a panic, on receipt of an unexpected signal */
+/* Put the terminal back, report a fault, and let the signal end the
+ * process.
+ *
+ * Only async-signal-safe calls are made here.  The signal can arrive in
+ * the middle of malloc or stdio, and the interrupted code still holds
+ * their locks, so the subsystems' exit hooks, fprintf and exit could all
+ * deadlock or corrupt what they touch.  The handler is installed with
+ * SA_RESETHAND, so the default disposition is already back in place;
+ * raising the signal again leaves it pending, and it is delivered when
+ * the handler returns.  The process then ends with the wait status and,
+ * where the default asks for one, the core dump that the signal implies.
+ * A signal sent to ask the process to stop is not unexpected and is not
+ * reported. */
 static sigHandler(panic) {
-    exitSubsystems();
-    fprintf(stderr, "\nUnexpected signal\n");
-    exit(1);
-    sigResume; /*NOTREACHED*/
+    static const char msg[] = "\nUnexpected signal\n";
+    int savedErrno = errno;
+
+# if HAVE_TERMIOS_H
+    normalTerminalFromSignal();
+# endif
+    if (isFaultSignal(sig_arg)) {
+        ssize_t written = write(2, msg, sizeof msg - 1);
+        (void)written; /* nothing better to do if this fails */
+    }
+    raise(sig_arg);
+    errno = savedErrno;
+    sigResume;
 }
 #endif /* !DONT_PANIC */
 
@@ -984,8 +1039,12 @@ BOOL WINAPI consoleHandler(DWORD dwCtrlType) {
 }
 #endif
 
-/* Install handlers for all fatal signals except SIGINT and SIGBREAK */
-static void installHandlers(void) {
+/* Install handlers for all fatal signals except SIGINT and SIGBREAK.
+ *
+ * What a signal does to the process is the program's decision, not the
+ * interpreter's, so this is called by each main() and not by any
+ * subsystem's install hook. */
+void installSignalHandlers(void) {
 #if IS_WINDOWS
     SetConsoleCtrlHandler(consoleHandler, true);
 #endif
@@ -1004,7 +1063,7 @@ static void installHandlers(void) {
 
         sa.sa_handler = panic;
         sigemptyset(&sa.sa_mask);
-        sa.sa_flags = SA_ONSTACK;
+        sa.sa_flags = SA_ONSTACK | SA_RESETHAND; /* see panic() */
 # ifdef SIGABRT
         sigaction(SIGABRT, &sa, NULL);
 # endif
@@ -1882,11 +1941,9 @@ static Cell *const machdepRoots[] = {
     &bdTemp,
 };
 
-/* Register the roots and install the platform's signal and terminal
- * handlers. */
+/* Register the roots */
 void installMachdep(void) {
     registerRoots(machdepRoots);
-    installHandlers();
 }
 
 /* Put the terminal back into its normal (non-raw) mode; shared by

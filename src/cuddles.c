@@ -159,6 +159,7 @@ int main(int argc, char *argv[]) {
         Printf("%0: failed to initialize, exiting\n", (argv ? argv[0] : ""));
         return 1;
     }
+    installSignalHandlers();
 
     printBanner();
 
