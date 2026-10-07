@@ -33,19 +33,6 @@
 #endif
 #include <locale.h>
 
-/* Hack for systems with unlimited path length (e.g. the Hurd), which
- * will not define PATH_MAX or MAXPATHLEN.  The Right Thing would be
- * to dynamically allocate these buffers, and use functions like
- * get_current_dir_name() and canonicalize_file_name().
- */
-#if HAVE_REALPATH && !defined(MAXPATHLEN)
-# ifdef PATH_MAX
-#  define MAXPATHLEN PATH_MAX
-# else
-#  define MAXPATHLEN 4096
-# endif
-#endif
-
 /* Windows include files */
 #if HAVE_IO_H
 # include <io.h>
@@ -215,13 +202,13 @@ char *RealPath(char *s) {
     static char path[FILENAME_MAX + 1];
     _fullpath(path, s, FILENAME_MAX + 1);
 #elif HAVE_REALPATH /* eg Unix */
-    static char path[MAXPATHLEN + 1];
+    static char path[PATH_MAX + 1];
     /* With PATH_CANONICALIZATION the name passed in is often this very
      * buffer, returned by an earlier call.  realpath(3) may write into its
      * result before it has finished reading its input -- macOS does, and
      * resolves the overlap to "/" -- so resolve into a separate buffer. */
-    char resolved[MAXPATHLEN + 1];
-    if (strlen(s) > MAXPATHLEN) {
+    char resolved[PATH_MAX + 1];
+    if (strlen(s) > PATH_MAX) {
         return s;
     }
     if (realpath(s, resolved) == NULL) {
@@ -1562,7 +1549,7 @@ static char *lastExtDot(char *path) {
 /* Load DLL for module */
 static void *getModDLL(char *file) {
 #if HAVE_REALPATH && !HAVE__FULLPATH
-    char dllPath[MAXPATHLEN + 1];
+    char dllPath[PATH_MAX + 1];
 #else
     char dllPath[FILENAME_MAX + 1];
 #endif
@@ -1584,7 +1571,7 @@ static void *getModDLL(char *file) {
 
 char *mkFFIFilename2(char *file) {
 #if HAVE_REALPATH && !HAVE__FULLPATH
-    static char path[MAXPATHLEN + 1];
+    static char path[PATH_MAX + 1];
 #else
     static char path[FILENAME_MAX + 1];
 #endif
@@ -1599,7 +1586,7 @@ char *mkFFIFilename2(char *file) {
 /* Get DLL path for module */
 char *mkFFIFilename(char *file) {
 #if HAVE_REALPATH && !HAVE__FULLPATH
-    static char path[MAXPATHLEN + 1];
+    static char path[PATH_MAX + 1];
 #else
     static char path[FILENAME_MAX + 1];
 #endif
