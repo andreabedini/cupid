@@ -124,10 +124,14 @@ void internal(char *msg) {
     longjmp(catch_error, 1);
 }
 
-/* Handle fatal error */
+/* Handle fatal error.  The message goes straight to stderr, not through
+ * Printf: a program that has set an output sink is collecting the
+ * interpreter's output to show later, and there is no later. */
 void fatal(char *msg) {
     FlushStdout();
-    Printf("\nFATAL ERROR: %s\n", msg);
+    fflush(stdout); /* whatever was printed before comes first */
+    fprintf(stderr, "\nFATAL ERROR: %s\n", msg);
+    fflush(stderr);
     exitSubsystems();
     exit(1);
 }
