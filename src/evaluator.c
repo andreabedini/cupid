@@ -241,18 +241,25 @@ void evaluator(Module m) {
 /* --------------------------------------------------------------------------
  * Read in prelude module(s):
  * ------------------------------------------------------------------------*/
-/* Load in the Prelude module(s). */
-void loadPrelude(void) {
+/* Load in the Prelude module(s).
+ *
+ * Returns false, having printed why, when there is no search path or
+ * either Prelude script is not on it; what to do then is the program's
+ * decision.  An error inside a Prelude script is reported like any other
+ * script error, by errFail returning to the caller's handler. */
+bool loadPrelude(void) {
     char *prelLocation;
     bool listFlg;
 
-    if (!cuddlesPath)
-        fatal("Cuddles search path not defined");
+    if (!cuddlesPath) {
+        Printf("Cuddles search path not defined\n");
+        return false;
+    }
 
     if (!(prelLocation = findMPathname(STD_PRELUDE_CUDDLES))) {
         Printf("%s not found on current path: \"%s\"\n", STD_PRELUDE_CUDDLES,
                cuddlesPath);
-        fatal("Unable to load prelude implementation");
+        return false;
     }
     addScriptName(prelLocation, false);
 
@@ -260,7 +267,7 @@ void loadPrelude(void) {
     if (!(prelLocation = findMPathname(STD_PRELUDE))) {
         Printf("%s not found on current path: \"%s\"\n", STD_PRELUDE,
                cuddlesPath);
-        fatal("Unable to load prelude");
+        return false;
     }
     addScriptName(prelLocation, false);
 
@@ -271,6 +278,7 @@ void loadPrelude(void) {
     listScripts = false;
     readScripts(0);
     listScripts = listFlg;
+    return true;
 }
 
 /* --------------------------------------------------------------------------

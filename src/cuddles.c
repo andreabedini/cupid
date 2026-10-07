@@ -107,7 +107,8 @@ static void initialize(int argc, char *argv[]) {
     processOptionVector(argc, argv);
 
     /* Figure out what Prelude module we're using + hoist it in. */
-    loadPrelude();
+    if (!loadPrelude())
+        fatal("Unable to load Prelude");
 
     /* Add an empty module as the default, to avoid being inside the Prelude */
     addScriptName(STD_EMPTY_MODULE, true);

@@ -108,7 +108,10 @@ int main(int argc, char *argv[]) {
         usageError("missing file argument", 0);
 
     setOutputSink(&captureSink);
-    loadPrelude();
+    if (!loadPrelude()) {
+        reportError();
+        exit(1);
+    }
 
 #if defined(FFI_COMPILER)
     for (i = 1; i < argc; ++i) /* the C compiler's flags */

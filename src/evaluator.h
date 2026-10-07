@@ -26,6 +26,6 @@ extern void markSubsystems(void);    /* garbage collection: mark structures */
 extern void exitSubsystems(void);    /* before exit()                      */
 extern void breakSubsystems(void);   /* after an interrupt                 */
 
-extern void loadPrelude(void);
+extern bool loadPrelude(void); /* false: not found, and said so */
 
 #endif /* __EVALUATOR_H__ */
