@@ -429,6 +429,7 @@ void markTyvar(int vn) {
 /* Mark fixed vars in type (t,o) */
 void markType(Type t, int o) {
     stackCheck();
+    allowBreak();
     switch (whatIs(t)) {
     case POLYTYPE:
     case QUAL:
@@ -508,6 +509,7 @@ Type copyTyvar(int vn) {
 Type copyType(Type t, int o) {
     assertType(t);
     stackCheck();
+    allowBreak();
     switch (whatIs(t)) {
     case AP: {
         Type l = copyType(fst(t), o); /* ensure correct */
@@ -552,6 +554,7 @@ Type zonkTyvar(int vn) {
  * indexes */
 Type zonkType(Type t, int o) {
     stackCheck();
+    allowBreak();
     switch (whatIs(t)) {
     case AP: {
         Type l = zonkType(fst(t), o); /* ensure correct */
@@ -873,6 +876,7 @@ bool doesntOccurIn(Tyvar *lookFor, Type t, int o) {
     Tyvar *tyv;
 
     stackCheck();
+    allowBreak();
     for (;;) {
         tyv = deRef(&t, &o);
         if (tyv) /* type variable                  */
@@ -961,6 +965,7 @@ bool unify(Type t1, int o1, Type t2, int o2) {
     Tyvar *tyv1, *tyv2;
 
     stackCheck();
+    allowBreak();
     tyv1 = deRef(&t1, &o1);
     tyv2 = deRef(&t2, &o2);
 

@@ -2286,10 +2286,12 @@ void typeCheckDefns(void) {
     for (gs = selDefns; nonNull(gs); gs = tl(gs)) {
         mapOver(typeSel, hd(gs));
         soFar(i++);
+        allowBreak();
     }
     for (gs = valDefns; nonNull(gs); gs = tl(gs)) {
         typeDefnGroup(hd(gs));
         soFar(i++);
+        allowBreak();
     }
     mapProc(typeForeignExport, foreignExports); /* ToDo: soFar magic */
     clearTypeIns();
@@ -2297,11 +2299,13 @@ void typeCheckDefns(void) {
         emptySubstitution();
         typeClassDefn(hd(gs));
         soFar(i++);
+        allowBreak();
     }
     for (gs = instDefns; nonNull(gs); gs = tl(gs)) {
         emptySubstitution();
         typeInstDefn(hd(gs));
         soFar(i++);
+        allowBreak();
     }
 
     resetTypeChecker();

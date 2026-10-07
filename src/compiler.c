@@ -1676,14 +1676,17 @@ void compileDefns(void) {
         hd(valDefns) = transBinds(hd(valDefns));
         mapProc(compileGlobalFunction, hd(valDefns));
         soFar(i++);
+        allowBreak();
     }
     for (; nonNull(genDefns); genDefns = tl(genDefns)) {
         compileGenFunction(hd(genDefns));
         soFar(i++);
+        allowBreak();
     }
     for (; nonNull(selDefns); selDefns = tl(selDefns)) {
         mapOver(compileSelFunction, hd(selDefns));
         soFar(i++);
+        allowBreak();
     }
 
     done();

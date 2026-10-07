@@ -170,6 +170,7 @@ List topDependAnal(List bs) {
         emptySubstitution();
         depBinding(hd(xs));
         soFar((Target)(i++));
+        allowBreak();
     }
     bs = bscc(bs);            /* sort to strongly connected comps */
     mapProc(remDepField, bs); /* remove dependency info field      */

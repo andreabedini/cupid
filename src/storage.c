@@ -1892,9 +1892,11 @@ static bool isMarked(Cell c) {
     }
 }
 
-/* Run garbage collector ... */
+/* Run garbage collector.  An interrupt that arrives while it runs is acted
+ * on at the next allowBreak(), not here: the collector runs from whatever
+ * allocation needed it, which is not a point the interpreter can safely
+ * be interrupted at. */
 void garbageCollect(void) {
-    bool breakStat = breakOn(false); /* disable break checking          */
     int i, j;
     register unsigned mask;
     register int place;
@@ -2050,7 +2052,6 @@ void garbageCollect(void) {
     }
 
     gcRecovered(recovered);
-    breakOn(breakStat); /* restore break trapping if nec.  */
 
 #if PROFILING
     if (profile) {
