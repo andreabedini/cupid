@@ -18,15 +18,22 @@ extern void stopAnyPrinting(void);
 
 /*---------------------------------------------------------------------------
  * Compiler output
- * Tweaking this lets us redirect prompts, error messages, etc - but has no
- * effect on output of Haskell programs (which should use hPutStr and friends).
+ * The interpreter's prompts, messages and errors can be sent to a sink
+ * instead of the streams they name.  This has no effect on the output of
+ * Haskell programs (which should use hPutStr and friends).
  *-------------------------------------------------------------------------*/
+
+typedef struct OutputSink {
+    void (*write)(void *ctx, const char *text, size_t len);
+    void (*flush)(void *ctx); /* NULL if there is nothing to flush */
+    void *ctx;
+} OutputSink;
+
+extern void setOutputSink(const OutputSink *); /* NULL: the streams again */
 
 extern void cuddlesPrintf(const char *, ...);
 extern void cuddlesPutchar(int);
 extern void cuddlesFlushStdout(void);
-extern void cuddlesEnableOutput(bool);
-extern char *cuddlesClearOutputBuffer(void);
 
 extern void cuddlesFFlush(FILE *);
 extern void cuddlesFPrintf(FILE *, const char *, ...);
@@ -35,8 +42,6 @@ extern void cuddlesPutc(int, FILE *);
 #define Printf cuddlesPrintf
 #define Putchar cuddlesPutchar
 #define FlushStdout cuddlesFlushStdout
-#define EnableOutput cuddlesEnableOutput
-#define ClearOutputBuffer cuddlesClearOutputBuffer
 
 #define FFlush cuddlesFFlush
 #define FPrintf cuddlesFPrintf

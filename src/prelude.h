@@ -94,9 +94,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  *                  C objects when Haskell is done with them.
  *   GC_WEAKPTRS    to include support for weak pointers.
  *   STABLE_NAMES   stable names a la Simon PJ
- *   REDIRECT_OUTPUT ability to redirect stdout/stderr to a buffer.
- *                  runcuddles captures the interpreter's own output this
- *                  way, and prints it only if something goes wrong.
  *   WORD_OPS       to include operations on unsigned ints
  *   ADDR_OPS       to include operations on addresses
  *   PROVIDE_INT64  to include 64 bit Ints
@@ -118,7 +115,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 #define GC_MALLOCPTRS 1 /* May be required by external libraries        */
 #define GC_WEAKPTRS 1
 #define STABLE_NAMES 1
-#define REDIRECT_OUTPUT 1
 #define WORD_OPS 1
 #define ADDR_OPS 1
 #define PROVIDE_INT64 1

@@ -157,106 +157,78 @@ sigHandler(breakHandler) {
 
 /* --------------------------------------------------------------------------
  * Compiler output
- * We can redirect compiler output (prompts, error messages, etc) by
- * tweaking these functions.
+ *
+ * Prompts, messages and errors go through these functions.  With no sink
+ * set they write to the stream they are given; with a sink set, all of
+ * them write to the sink instead, whatever stream they name.  This has no
+ * effect on the output of Haskell programs, which uses the IO primitives.
  * ------------------------------------------------------------------------*/
-
-static bool disableOutput = false; /* redirect output to buffer?      */
 
 #include <stdarg.h>
 
-/* ----------------------------------------------------------------------- */
+static const OutputSink *outputSink = NULL; /* NULL: write to the stream */
 
-#define BufferSize 10000 /* size of redirected output buffer  */
-
-typedef struct _CuddlesStream {
-    char buffer[BufferSize]; /* buffer for redirected output      */
-    int next;                /* next space in buffer              */
-} CuddlesStream;
-
-static void vBufferedPrintf(CuddlesStream *, const char *, va_list);
-static void bufferedPutchar(CuddlesStream *, int);
-static char *bufferClear(CuddlesStream *stream);
-
-static void vBufferedPrintf(CuddlesStream *stream, const char *fmt,
-                            va_list ap) {
-    int spaceLeft = BufferSize - stream->next;
-    char *p = &stream->buffer[stream->next];
-    int charsAdded = vsnprintf(p, spaceLeft, fmt, ap);
-    if (0 <= charsAdded && charsAdded < spaceLeft)
-        stream->next += charsAdded;
-    else
-        stream->next = 0;
+/* Send the interpreter's output to sink, or back to the streams if sink
+ * is NULL.  The sink is used, not copied, so it must outlive its use. */
+void setOutputSink(const OutputSink *sink) {
+    outputSink = sink;
 }
 
-static void bufferedPutchar(CuddlesStream *stream, int c) {
-    if (BufferSize - stream->next >= 2) {
-        stream->buffer[stream->next++] = (char)c;
-        stream->buffer[stream->next] = '\0';
+/* Format into a buffer and hand the text to the sink.  Most messages fit
+ * the local buffer; a longer one is formatted again into one of its exact
+ * size, so nothing is cut short. */
+static void sinkVPrintf(const char *fmt, va_list ap) {
+    char local[256];
+    va_list again;
+    int n;
+
+    va_copy(again, ap);
+    n = vsnprintf(local, sizeof local, fmt, ap);
+    if (n >= 0 && (size_t)n < sizeof local)
+        outputSink->write(outputSink->ctx, local, (size_t)n);
+    else if (n >= 0) {
+        char *whole = malloc((size_t)n + 1);
+        if (whole) {
+            vsnprintf(whole, (size_t)n + 1, fmt, again);
+            outputSink->write(outputSink->ctx, whole, (size_t)n);
+            free(whole);
+        }
     }
+    va_end(again);
 }
 
-static char *bufferClear(CuddlesStream *stream) {
-    if (stream->next == 0) {
-        return "";
-    } else {
-        stream->next = 0;
-        return stream->buffer;
-    }
-}
-
-/* ----------------------------------------------------------------------- */
-
-static CuddlesStream outputStream;
-/* ADR note:
- * We rely on standard C semantics to initialise outputStream.next to 0.
- */
-
-void cuddlesEnableOutput(bool f) {
-    disableOutput = !f;
-}
-
-char *cuddlesClearOutputBuffer(void) {
-    return bufferClear(&outputStream);
-}
-
-void cuddlesPrintf(const char *fmt, ...) {
-    va_list ap;        /* pointer into argument list           */
-    va_start(ap, fmt); /* make ap point to first arg after fmt */
-    if (!disableOutput) {
-        vprintf(fmt, ap);
-    } else {
-        vBufferedPrintf(&outputStream, fmt, ap);
-    }
-    va_end(ap); /* clean up                             */
-}
-
-void cuddlesPutchar(int c) {
-    if (!disableOutput) {
-        putchar(c);
-    } else {
-        bufferedPutchar(&outputStream, c);
-    }
-}
-
-void cuddlesFlushStdout(void) {
-    if (!disableOutput) {
-        fflush(stdout);
-    }
-}
-
-void cuddlesFFlush(FILE *fp) {
-    if (!disableOutput) {
-        fflush(fp);
-    }
+static void sinkPutc(int c) {
+    char ch = (char)c;
+    outputSink->write(outputSink->ctx, &ch, 1);
 }
 
 static void cuddlesVFPrintf(FILE *fp, const char *fmt, va_list ap) {
-    if (!disableOutput) {
+    if (outputSink)
+        sinkVPrintf(fmt, ap);
+    else
         vfprintf(fp, fmt, ap);
-    } else {
-        vBufferedPrintf(&outputStream, fmt, ap);
-    }
+}
+
+void cuddlesPrintf(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    cuddlesVFPrintf(stdout, fmt, ap);
+    va_end(ap);
+}
+
+void cuddlesPutchar(int c) {
+    cuddlesPutc(c, stdout);
+}
+
+void cuddlesFlushStdout(void) {
+    cuddlesFFlush(stdout);
+}
+
+void cuddlesFFlush(FILE *fp) {
+    if (!outputSink)
+        fflush(fp);
+    else if (outputSink->flush)
+        outputSink->flush(outputSink->ctx);
 }
 
 void cuddlesFPrintf(FILE *fp, const char *fmt, ...) {
@@ -267,9 +239,8 @@ void cuddlesFPrintf(FILE *fp, const char *fmt, ...) {
 }
 
 void cuddlesPutc(int c, FILE *fp) {
-    if (!disableOutput) {
+    if (outputSink)
+        sinkPutc(c);
+    else
         fputc(c, fp);
-    } else {
-        bufferedPutchar(&outputStream, c);
-    }
 }

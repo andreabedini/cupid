@@ -16,6 +16,7 @@
 #include "prelude.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "storage.h"
 #include "connect.h"
 #include "errors.h"
@@ -28,16 +29,38 @@
  * with FFI_COMPILER, and its errors have always come out as runcuddles'.  */
 static const char *progName = "runcuddles";
 
-/* Interpreter output is captured rather than printed (EnableOutput(false)),
- * so an error arrives here as a buffer to be shown once, on the way out.
- */
-static void reportError(void) {
-    char *out = ClearOutputBuffer();
+/* The interpreter's own output is collected here rather than printed, so
+ * that an error can be shown once, under a heading, on the way out; a run
+ * that succeeds shows none of it.  The buffer grows as needed, so a long
+ * message arrives whole. */
+static struct {
+    char *text;
+    size_t len, cap;
+} captured;
 
+static void captureWrite(void *ctx, const char *text, size_t len) {
+    (void)ctx;
+    if (captured.len + len + 1 > captured.cap) {
+        size_t cap = captured.cap ? captured.cap : 1024;
+        char *grown;
+        while (captured.len + len + 1 > cap)
+            cap *= 2;
+        if (!(grown = realloc(captured.text, cap)))
+            return; /* keep what fits; the error heading still shows */
+        captured.text = grown;
+        captured.cap = cap;
+    }
+    memcpy(captured.text + captured.len, text, len);
+    captured.len += len;
+    captured.text[captured.len] = '\0';
+}
+
+static const OutputSink captureSink = {captureWrite, NULL, NULL};
+
+static void reportError(void) {
     normalTerminal();
     fprintf(stderr, "%s: Error occurred\n", progName);
-    if (out)
-        fprintf(stderr, "%s\n", out);
+    fprintf(stderr, "%s\n", captured.len > 0 ? captured.text : "");
     fprintf(stderr, "\n");
     fflush(stderr);
 }
@@ -84,7 +107,7 @@ int main(int argc, char *argv[]) {
     if (argc < 1)
         usageError("missing file argument", 0);
 
-    EnableOutput(false);
+    setOutputSink(&captureSink);
     loadPrelude();
 
 #if defined(FFI_COMPILER)
