@@ -180,6 +180,7 @@ extern Cell *CStackBase; /* pointer to base of C stack     */
 
 extern List tyconDefns;    /* list of type constructor defns  */
 extern List typeInDefns;   /* list of synonym restrictions         */
+extern List kindSigDefns;  /* kinds declared for tycons and classes */
 extern List valDefns;      /* list of value definitions       */
 extern List classDefns;    /* list of class definitions       */
 extern List instDefns;     /* list of instance definitions    */
@@ -254,6 +255,7 @@ extern void startModule(Cell);
 extern void setExportList(List);
 extern void setExports(List);
 extern void tyconDefn(int, Cell, Cell, Cell);
+extern void kindSigDefn(int, Text, Kind); /* type T :: k                 */
 extern void setTypeIns(List);
 extern void clearTypeIns(void);
 extern Type fullExpand(Type);

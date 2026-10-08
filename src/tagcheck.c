@@ -10,6 +10,7 @@
 bool isKindExpr(Cell k) {
     switch (whatIs(k)) {
     case STAR:
+    case CONSTRAINT:
     case OFFSET:
     case INTCELL:
         return true;

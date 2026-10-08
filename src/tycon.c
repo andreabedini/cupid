@@ -20,6 +20,7 @@
 #include "connect.h"
 #include "errors.h"
 #include "static.h"
+#include "kind.h"
 #include "deriving.h"
 #include "typeexp.h"
 #include "binding.h"
@@ -147,8 +148,11 @@ void checkTyconDefn(Tycon d) {
     Cell lhs = fst(tyconRec(d)->defn);
     Cell rhs = snd(tyconRec(d)->defn);
     int line = tyconRec(d)->line;
-    List tyvars = getArgs(lhs);
+    List tyvars;
     List temp;
+
+    stripBinderKinds(line, tyconRec(d)->text, lhs);
+    tyvars = getArgs(lhs);
     /* check for repeated tyvars on lhs*/
     for (temp = tyvars; nonNull(temp); temp = tl(temp))
         if (nonNull(varIsMember(textOf(hd(temp)), tl(temp)))) {

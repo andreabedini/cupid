@@ -50,6 +50,8 @@ static Cell desugarGuards(List);
 static Cell guardMatch(Cell, List, Cell);
 static Cell checkTyLhs(Cell);
 static Cell checkConstr(Cell);
+static Cell starKind(Cell);
+static Cell namedKind(Cell);
 
 
 
@@ -251,6 +253,8 @@ topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
 	  | TYPE tyLhs '=' type IN invars
 					{defTycon(6,$3,$2,
 						    ap($4,$6),RESTRICTSYN);}
+	  | TYPE CONID COCO kind	{kindSigDefn(intOf($3),textOf($2),$4);
+					 sp-=4;}
 	  | TYPE error			{syntaxError("type declaration");}
 	  | DATA btype2 '=' constrs deriving
 					{defTycon(5,$3,checkTyLhs($2),
@@ -282,6 +286,7 @@ topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
 	  | NEEDPRIMS error		{syntaxError("needprims decl");}
 	  ;
 tyLhs	  : tyLhs varid			{$$ = gcShadow(2,ap($1,$2));}
+	  | tyLhs kindedVar		{$$ = gcShadow(2,ap($1,$2));}
 	  | CONID			{$$ = $1;}
 	  | error			{syntaxError("type defn lhs");}
 	  ;
@@ -466,6 +471,7 @@ atype1	  : varid			{$$ = $1;}
 	  | '[' type ']'		{$$ = gcShadow(3,ap(typeList,$2));}
 	  | '[' ']'			{$$ = gcShadow(2,typeList);}
 	  | '_'				{$$ = gcShadow(1,inventVar());}
+	  | kindedVar			{$$ = $1;}
 	  ;
 btypes2	  : btypes2 ',' btype2		{$$ = gcShadow(3,cons($3,$1));}
 	  | btype2  ',' btype2		{$$ = gcShadow(3,cons($3,cons($1,NIL)));}
@@ -474,6 +480,22 @@ typeTuple : type1     ',' type		{$$ = gcShadow(3,cons($3,cons($1,NIL)));}
 	  | btype2    ',' type1		{$$ = gcShadow(3,cons($3,cons($1,NIL)));}
 	  | btypes2   ',' type1		{$$ = gcShadow(3,cons($3,$1));}
 	  | typeTuple ',' type		{$$ = gcShadow(3,cons($3,$1));}
+	  ;
+
+/*- Kinds: ----------------------------------------------------------------
+ * Written in a standalone signature, type T :: kind, and on the variables a
+ * declaration binds, data T (f :: kind) = ...  A kind is a tree over STAR
+ * (written * or Type), CONSTRAINT and ->, with no variables.
+ */
+
+kind	  : akind ARROW kind		{$$ = gcShadow(3,ap($1,$3));}
+	  | akind			{$$ = $1;}
+	  ;
+akind	  : VAROP			{$$ = gcShadow(1,starKind($1));}
+	  | CONID			{$$ = gcShadow(1,namedKind($1));}
+	  | '(' kind ')'		{$$ = gcShadow(3,$2);}
+	  ;
+kindedVar : '(' varid COCO kind ')'	{$$ = gcShadow(5,ap(KINDED,pair($2,$4)));}
 	  ;
 
 /*- Value declarations: ---------------------------------------------------*/
@@ -1087,10 +1109,10 @@ static Pair checkDo(List dqs) {
 }
 
 
-/* Check that lhs is of the form T a1 ... a */
+/* Check that lhs is of the form T a1 ... a, with an ai possibly (a :: k) */
 static Cell checkTyLhs(Cell c) {
     Cell tlhs = c;
-    while (isAp(tlhs) && whatIs(arg(tlhs))==VARIDCELL) {
+    while (isAp(tlhs) && (whatIs(arg(tlhs))==VARIDCELL || whatIs(arg(tlhs))==KINDED)) {
 	tlhs = fun(tlhs);
     }
     if (whatIs(tlhs)!=CONIDCELL) {
@@ -1122,6 +1144,29 @@ static Cell checkConstr(Cell c) {
  * ------------------------------------------------------------------------*/
 
 /* Define tycon, popping n items */
+/* The kind written as an operator: only * */
+static Cell starKind(Cell op) {
+    if (strcmp(textToStr(textOf(op)),"*")!=0) {
+	errHead(row); errPrintf("Syntax error in kind (unexpected symbol \"%s\")",
+				textToStr(textOf(op)));
+	errFail();
+    }
+    return STAR;
+}
+
+/* The kind written as a name: Type is *, and Constraint is what a class has */
+static Cell namedKind(Cell con) {
+    char *s = textToStr(textOf(con));
+    if (strcmp(s,"Type")==0) {
+	return STAR;
+    }
+    if (strcmp(s,"Constraint")==0) {
+	return CONSTRAINT;
+    }
+    errHead(row); errPrintf("Syntax error in kind (unexpected constructor \"%s\")",s);
+    errFail();
+}
+
 static void defTycon(int n, Cell l, Cell lhs, Cell rhs, Cell w) {
     tyconDefn(intOf(l),lhs,rhs,w);
     sp -= n;

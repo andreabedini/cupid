@@ -32,6 +32,7 @@
 
 List tyconDefns = NIL;     /* type constructor definitions    */
 List typeInDefns = NIL;    /* type synonym restrictions       */
+List kindSigDefns = NIL;   /* kinds declared for tycons/classes */
 List valDefns = NIL;       /* value definitions in script     */
 List classDefns = NIL;     /* class defns in script           */
 List instDefns = NIL;      /* instance defns in script        */
@@ -1752,12 +1753,13 @@ void parseContext(void) {
 /* The statics that hold cells: registered as roots at INSTALL and marked
  * by the collector on every collection */
 static Cell *const inputRoots[] = {
-    &tyconDefns,    &typeInDefns,    &valDefns,       &classDefns,
-    &instDefns,     &selDefns,       &genDefns,       &primDefns,
-    &unqualImports, &foreignImports, &foreignExports, &defaultDefns,
-    &evalDefaults,  &inputExpr,      &varMinus,       &varPlus,
-    &varBang,       &varDot,         &varHiding,      &varQualified,
-    &varAsMod,      &varMain,        &conMain,        &imps,
+    &tyconDefns,   &typeInDefns,   &kindSigDefns,   &valDefns,
+    &classDefns,   &instDefns,     &selDefns,       &genDefns,
+    &primDefns,    &unqualImports, &foreignImports, &foreignExports,
+    &defaultDefns, &evalDefaults,  &inputExpr,      &varMinus,
+    &varPlus,      &varBang,       &varDot,         &varHiding,
+    &varQualified, &varAsMod,      &varMain,        &conMain,
+    &imps,
 };
 
 /* Register the roots, intern the keyword and symbol texts the lexer
@@ -1838,6 +1840,7 @@ void installInput(void) {
 void resetInput(void) {
     tyconDefns = NIL;
     typeInDefns = NIL;
+    kindSigDefns = NIL;
     valDefns = NIL;
     classDefns = NIL;
     instDefns = NIL;

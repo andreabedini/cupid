@@ -288,6 +288,7 @@ typedef enum CellTag {
     POLYREC = 64,  /* POLYREC   snd :: (Int,Type)          */
     BIGLAM = 65,   /* BIGLAM    snd :: (vars,patterns)     */
     CDICTS = 66,   /* CDICTS    snd :: ([Pred],Type)       */
+    KINDED = 67,   /* KINDED    snd :: (Var,Kind): a binder with a kind */
 
     LABC = 70,    /* LABC       snd :: (con,[(Vars,Type)]) */
     CONFLDS = 71, /* CONFLDS    snd :: (con,[Field])       */
@@ -312,9 +313,10 @@ typedef enum CellTag {
     /* Special cell values (SPECMIN..TUPMIN-1): atoms that are also their own
      * whatIs codes. */
 
-    NONE = 129,     /* Dummy stub                                  */
-    STAR = 130,     /* Representing the kind of types      */
-    WILDCARD = 132, /* Wildcard pattern                    */
+    NONE = 129,       /* Dummy stub                                  */
+    STAR = 130,       /* Representing the kind of types      */
+    CONSTRAINT = 131, /* The kind of a class, in a kind signature */
+    WILDCARD = 132,   /* Wildcard pattern                    */
 
     SKOLEM = 133, /* Skolem constant                       */
 

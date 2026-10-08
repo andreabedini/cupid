@@ -120,6 +120,7 @@ void checkClassDefn(Class c) {
     List fs = NIL;
     List ss = NIL;
 
+    stripBinderKinds(cclassRec(c)->line, cclassRec(c)->text, temp);
     for (; isAp(temp); temp = fun(temp)) {
         if (!isVar(arg(temp))) {
             errHead(cclassRec(c)->line);

@@ -1,0 +1,37 @@
+Main> Main> -- type constructor with kind (* -> *) -> *
+newtype Fix a
+
+-- constructors:
+In :: a (Fix a) -> Fix a
+
+Main> -- type constructor with kind (* -> *) -> (* -> *) -> * -> *
+newtype Compose a b c
+
+-- constructors:
+Compose :: a (b c) -> Compose a b c
+
+Compose :: a (b c) -> Compose a b c  -- data constructor
+
+Main> -- constructor class with arity * -> *
+class Shaped a where
+  shape :: a b -> String
+
+-- instances:
+instance Shaped Maybe
+
+Main> -- type constructor with kind (* -> *) -> *
+data Proxy a
+
+-- constructors:
+Proxy :: Proxy a
+
+Proxy :: Proxy a  -- data constructor
+
+Main> 55
+"ab"
+just
+[Just 'x']
+(Just 1,Nothing)
+Wrapped 3
+
+Main> [Leaving Cuddles]

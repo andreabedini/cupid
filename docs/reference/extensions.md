@@ -200,6 +200,56 @@ runAccum (MkAccum s add get) (x:xs) = runAccum (MkAccum (add x s) add get) xs
 Existential constructors may not have named fields and their types may
 not use `deriving`.
 
+## Kind signatures
+
+A declaration may say what kind its type constructor or class has.
+The kind can be written on the variables the declaration binds:
+
+```haskell
+newtype Fix (f :: * -> *) = In (f (Fix f))
+class Container (f :: * -> *) where
+    empty :: f a
+```
+
+or in a standalone signature before or after the declaration, where
+the kind of a class ends in `Constraint`:
+
+```haskell
+type Compose :: (* -> *) -> (* -> *) -> * -> *
+newtype Compose f g a = Compose (f (g a))
+
+type Shaped :: (* -> *) -> Constraint
+class Shaped f where
+    shape :: f a -> String
+```
+
+A kind is `*`, `Type`, `Constraint`, or an arrow between kinds, with
+parentheses to group.  `Type` and `Constraint` are names the kind
+grammar knows; nothing has to be in scope for them, but
+`import Data.Kind (Type, Constraint)` is accepted so that programs
+written for GHC load unchanged.  Write `* -> *` with spaces: `*->*` is
+one operator symbol.
+
+Every kind so declared is unified with the kind that inference would
+otherwise start from, and inference then proceeds as usual, so the
+signature can only narrow what is inferred.  A signature that does
+not fit its declaration, for example one with the wrong number of
+arrows, is reported against the signature; a declaration whose
+constructors use a variable at a kind other than the one given is
+reported as the usual kind error at the use.  A standalone signature
+for a type or class the module does not declare is an error.  With
+`+k`, `:info` shows the kinds.
+
+Differences from GHC's `KindSignatures` and `StandaloneKindSignatures`:
+
+- A kind annotation may be written only on the variables a `data`,
+  `newtype`, `type` or `class` declaration binds, not inside a type
+  or on a `forall`.
+- A kind has no variables: there is no kind polymorphism.
+- `Type` and `Constraint` are keywords of the kind grammar, not types
+  exported from `Data.Kind`, and `Data.Kind.Type` cannot be written
+  qualified in a kind.
+
 ## Anonymous type variables
 
 An underscore in a type stands for a fresh type variable:

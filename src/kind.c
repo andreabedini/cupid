@@ -33,6 +33,8 @@ static Kind kindAtom(int, Constr);
 static void initTCKind(Cell);
 static void kindTC(Cell);
 static void genTC(Cell);
+static void declareKind(int, Text, int, Kind);
+static void useDeclaredKinds(Text, Kind);
 
 /* --------------------------------------------------------------------------
  * Kind checking preliminaries:
@@ -269,14 +271,18 @@ static void initTCKind(Cell c) {
             break;
         }
         tyconRec(c)->kind = mkInt(beta);
+        useDeclaredKinds(tyconRec(c)->text, mkInt(beta));
     } else {
         int n = cclassRec(c)->arity;
         int beta = newKindvars(n);
-        cclassRec(c)->kinds = NIL;
+        Kind k = CONSTRAINT;       /* v1 -> .. -> vn -> Constraint, to meet */
+        cclassRec(c)->kinds = NIL; /* the declared kinds           */
         while (n > 0) {
             n--;
             cclassRec(c)->kinds = pair(mkInt(beta + n), cclassRec(c)->kinds);
+            k = ap(mkInt(beta + n), k);
         }
+        useDeclaredKinds(cclassRec(c)->text, k);
     }
 }
 
@@ -352,6 +358,114 @@ void kindInst(Inst in, int freedom) {
             cons(copyKindvar(beta + freedom), instRec(in)->kinds);
     }
     emptySubstitution();
+}
+
+/* --------------------------------------------------------------------------
+ * Declared kinds:
+ *
+ * A declaration may say what kind its type constructor or class has, as a
+ * standalone signature, `type T :: * -> *`, or on the variables it binds,
+ * `data T (f :: * -> *) a = ...`.  Both are kept in kindSigDefns, with the
+ * script's other declarations, against the name they are for, as a kind
+ * skeleton in which offsets stand for the parts left unsaid, and each is
+ * unified with the kind the inference starts from when the group that
+ * declares the name is kinded.  Kind inference then goes on as it would
+ * have; a use that disagrees with the signature is a kind error at the use.
+ * A declared kind that no declaration in the script claims is an error too.
+ *
+ * kindSigDefns :: [(Name, (line, (unknowns, skeleton)))]
+ * ------------------------------------------------------------------------*/
+
+/* Keep the kind skeleton k, with its offsets numbered below unknowns, as a
+ * kind declared for t */
+static void declareKind(int line, Text t, int unknowns, Kind k) {
+    Cell d;
+    push(k); /* the parts a GC must not lose while the rest is made */
+    push(mkInt(line));
+    push(ap(CONIDCELL, t));
+    d = pair(mkInt(unknowns), pushed(2));
+    d = pair(pushed(1), d);
+    d = pair(top(), d);
+    kindSigDefns = cons(d, kindSigDefns);
+    drop();
+    drop();
+    drop();
+}
+
+/* A standalone kind signature, type T :: k, as the parser read it */
+void kindSigDefn(int line, Text t, Kind k) {
+    declareKind(line, t, 0, k);
+}
+
+/* Take the kind annotations off the binders of a declaration head,
+ * T a (b :: k) ..., leaving plain variables, and declare the kind they give
+ * for t.  The unannotated binders and the result are left unsaid. */
+void stripBinderKinds(int line, Text t, Cell lhs) {
+    int unknowns = 1; /* offset 0 is the result */
+    Kind k = mkOffset(0);
+    bool any = false;
+    Cell h;
+
+    for (h = lhs; isAp(h); h = fun(h)) { /* last binder first */
+        if (whatIs(arg(h)) == KINDED) {
+            k = ap(snd(snd(arg(h))), k);
+            any = true;
+        } else {
+            k = ap(mkOffset(unknowns++), k);
+        }
+    }
+    if (any) {
+        declareKind(line, t, unknowns, k);
+        for (h = lhs; isAp(h); h = fun(h)) {
+            if (whatIs(arg(h)) == KINDED) {
+                arg(h) = fst(snd(arg(h)));
+            }
+        }
+    }
+}
+
+/* Unify every kind declared for the name t with k, the kind its declaration
+ * starts from, and forget them */
+static void useDeclaredKinds(Text t, Kind k) {
+    List *ds = &kindSigDefns;
+
+    while (nonNull(*ds)) {
+        Cell d = hd(*ds);
+        if (textOf(fst(d)) != t) {
+            ds = &tl(*ds);
+        } else {
+            int line = intOf(fst(snd(d)));
+            int unknowns = intOf(fst(snd(snd(d))));
+            Kind s = snd(snd(snd(d)));
+            int base = newKindvars(unknowns);
+            if (!kunify(s, base, k, 0)) {
+                errHead(line);
+                errPrintf("Kind signature for \"%s\" does not fit its "
+                          "declaration",
+                          textToStr(t));
+                errPrintf("\n*** signature     : ");
+                errKind(s); /* the parts left unsaid print as variables */
+                errPrintf("\n*** declaration   : ");
+                errKind(copyKind(k, 0));
+                errPrintf("\n");
+                errFail();
+            }
+            *ds = tl(*ds);
+        }
+    }
+}
+
+/* Every declared kind must have met its declaration by the time the
+ * script's type constructors and classes are kinded */
+void noUnclaimedKinds(void) {
+    if (nonNull(kindSigDefns)) {
+        Cell d = hd(kindSigDefns);
+        errHead(intOf(fst(snd(d))));
+        errPrintf("Kind signature for \"%s\", which this module does not "
+                  "declare",
+                  textToStr(textOf(fst(d))));
+        errFail();
+    }
 }
 
 /* --------------------------------------------------------------------------

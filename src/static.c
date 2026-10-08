@@ -209,6 +209,7 @@ void checkDefns(void) {
     tcs = tcscc(tyconDefns, classDefns); /* calc dependencies for type      */
                                          /* constructors and classes        */
     mapProc(kindTCGroup, tcs); /* attach kinds                           */
+    noUnclaimedKinds();        /* every kind signature met its decl      */
     mapProc(visitClass, classDefns);    /* check class hierarchy          */
     mapProc(extendFundeps, classDefns); /* finish class definitions       */
                                         /* (convenient if we do this after */

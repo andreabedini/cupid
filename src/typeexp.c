@@ -252,6 +252,13 @@ Type depTypeExp(int line, List tyvars, Type type) {
     case VARIDCELL:
         return depTypeVar(line, tyvars, textOf(type));
 
+    case KINDED: /* (a :: k) anywhere but a declaration head */
+        errHead(line);
+        errPrintf("Kind annotation on \"%s\": a kind may be given only to the "
+                  "variables a declaration binds",
+                  textToStr(textOf(fst(snd(type)))));
+        errFail();
+
     case QUALIDENT:
         if (isQVar(type)) {
             errHead(line);

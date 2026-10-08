@@ -1513,8 +1513,8 @@ bool kunify(Kind k1, int o1, Kind k2, int o2) {
     else if (kyv2)
         return kvarToTypeBind(kyv2, k1, o1); /* k2 variable, k1 not */
     else {
-        if (k1 == STAR && k2 == STAR) /* k1, k2 not vars           */
-            return true;
+        if (!isAp(k1) && !isAp(k2)) /* k1, k2 not vars: STAR or   */
+            return k1 == k2;        /* CONSTRAINT                 */
         else if (isAp(k1) && isAp(k2))
             return kunify(fst(k1), o1, fst(k2), o2) &&
                    kunify(snd(k1), o1, snd(k2), o2);

@@ -1,0 +1,7 @@
+runcuddles: Error occurred
+ERROR "kind-signature-mismatch.hs":2 - Kind signature for "T" does not fit its declaration
+*** signature     : * -> *
+*** declaration   : * -> * -> *
+
+
+

@@ -869,6 +869,10 @@ static void putKind(Kind k) {
         putChr('*');
         break;
 
+    case CONSTRAINT:
+        putStr("Constraint");
+        break;
+
     case OFFSET:
         putTyVar(offsetOf(k));
         break;
