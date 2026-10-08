@@ -200,6 +200,58 @@ runAccum (MkAccum s add get) (x:xs) = runAccum (MkAccum (add x s) add get) xs
 Existential constructors may not have named fields and their types may
 not use `deriving`.
 
+## GADT syntax
+
+A `data` or `newtype` declaration may list its constructors as
+signatures in a `where` block:
+
+```haskell
+data Shape a where
+    Circle :: a -> Shape a
+    Rect   :: a -> a -> Shape a
+    Named  :: { label :: String, inner :: Shape a } -> Shape a
+    Strict :: !Int -> a -> Shape a
+    Nil, Unit :: Shape a
+    (:+:)  :: Shape a -> Shape a -> Shape a
+  deriving Show
+```
+
+Each signature means what the equation form would have meant.  Its
+result must be the type being declared applied to distinct type
+variables; those variables are the signature's own and are matched by
+position with the ones the head binds, so `C :: a -> b -> T b`
+declares a constructor whose second argument has the type's parameter
+and whose first is existential.  Any variable not in the result is
+existential, and a context is packed with the constructor and given
+back on a match, as for a `forall` constructor in the equation form:
+
+```haskell
+data Some where
+    Some :: Show a => a -> Some
+
+showSome :: Some -> String
+showSome (Some x) = show x
+```
+
+The head may give the type's kind instead of naming its parameters,
+`data Expr :: * -> * where ...`, in which case the kind's arguments
+bind as many variables as it has arrows (see [Kind
+signatures](#kind-signatures)).  A `forall` at the front of a
+signature is accepted and makes no difference.  A `newtype` in this
+syntax has exactly one constructor, with one argument.
+
+Differences from GHC's `GADTSyntax` and `GADTs`:
+
+- A constructor whose result refines the type's arguments, such as
+  `IntE :: Int -> Expr Int`, is rejected: these are generalised
+  algebraic data types proper, which Cuddles does not have.
+- A context on a constructor constrains the constructor's own
+  arguments, as in the equation form; it cannot be used to refine
+  the result type either.
+- The equation form's restrictions carry over: no `deriving` for a
+  type with an existential or constrained constructor, and no
+  selectors on one.
+
 ## Kind signatures
 
 A declaration may say what kind its type constructor or class has.

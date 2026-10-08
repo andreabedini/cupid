@@ -256,6 +256,8 @@ extern void setExportList(List);
 extern void setExports(List);
 extern void tyconDefn(int, Cell, Cell, Cell);
 extern void kindSigDefn(int, Text, Kind); /* type T :: k                 */
+extern List gadtConstrs(Cell, Cell, List, Cell); /* GADT syntax -> constrs */
+extern Cell kindedHeader(Cell, Cell, Kind);      /* data T :: k where ...  */
 extern void setTypeIns(List);
 extern void clearTypeIns(void);
 extern Type fullExpand(Type);

@@ -268,6 +268,15 @@ topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
 	  | DATA context IMPLIES tyLhs  {defTycon(4,$1,$4,
 						  ap(qualType($2,NIL),
 						     NIL),DATATYPE);}
+	  | DATA btype2 WHERE gadtCons deriving
+					{defTycon(5,$3,checkTyLhs($2),
+						    ap(gadtConstrs($3,$2,$4,DATATYPE),
+						       $5),DATATYPE);}
+	  | DATA btype2 COCO kind WHERE gadtCons deriving
+					{Cell lhs = kindedHeader($3,checkTyLhs($2),$4);
+					 defTycon(7,$5,lhs,
+						    ap(gadtConstrs($5,lhs,$6,DATATYPE),
+						       $7),DATATYPE);}
 	  | DATA error			{syntaxError("data declaration");}
 	  | TNEWTYPE btype2 '=' nconstr deriving
 					{defTycon(5,$3,checkTyLhs($2),
@@ -276,6 +285,10 @@ topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
 					{defTycon(7,$5,$4,
 						  ap(qualType($2,$6),
 						     $7),NEWTYPE);}
+	  | TNEWTYPE btype2 WHERE gadtCons deriving
+					{defTycon(5,$3,checkTyLhs($2),
+						    ap(gadtConstrs($3,$2,$4,NEWTYPE),
+						       $5),NEWTYPE);}
 	  | TNEWTYPE error		{syntaxError("newtype declaration");}
 	  | NEEDPRIMS NUMLIT		{if (isInt($2)) {
 					     needPrims(intOf($2), NULL);
@@ -329,6 +342,41 @@ bbtype	  : '!' btype			{$$ = gcShadow(2,bang($2));}
 	  | bpolyType			{$$ = $1;}
 	  ;
 nconstr	  : pconstr			{$$ = gcShadow(1,singleton($1));}
+	  ;
+
+/*- GADT syntax: the constructors as signatures, one per line, in a where
+ *  block.  gadtConstrs (tycon.c) turns each into the constructor the
+ *  equation form would have had. ---------------------------------------*/
+
+gadtCons  : '{' gadtCons0 end		{$$ = gcShadow(3,rev($2));}
+	  | '{' gadtCons1 end		{$$ = gcShadow(3,rev($2));}
+	  ;
+gadtCons0 : /* empty */			{$$ = gcShadow(0,NIL);}
+	  | gadtCons0 ';'		{$$ = gcShadow(2,$1);}
+	  | gadtCons1 ';'		{$$ = gcShadow(2,$1);}
+	  ;
+gadtCons1 : gadtCons0 gadtCon		{$$ = gcShadow(2,cons($2,$1));}
+	  ;
+gadtCon	  : conids COCO gadtType	{$$ = gcShadow(3,triple($2,rev($1),$3));}
+	  ;
+conids	  : conids ',' con		{$$ = gcShadow(3,cons($3,$1));}
+	  | con				{$$ = gcShadow(1,singleton($1));}
+	  ;
+gadtType  : ALL varids '.' gadtType0	{$$ = gcShadow(4,ap(POLYTYPE,
+						     pair(rev($2),$4)));}
+	  | gadtType0			{$$ = $1;}
+	  ;
+gadtType0 : context IMPLIES gadtType1	{$$ = gcShadow(3,qualType($1,$3));}
+	  | gadtType1			{$$ = $1;}
+	  ;
+gadtType1 : gadtArg ARROW gadtType1	{$$ = gcShadow(3,fn($1,$3));}
+	  | btype2			{$$ = $1;}
+	  | '{' fieldspecs '}' ARROW btype2
+					{$$ = gcShadow(5,ap(LABC,pair(rev($2),$5)));}
+	  ;
+gadtArg	  : btype			{$$ = $1;}
+	  | '!' atype			{$$ = gcShadow(2,bang($2));}
+	  | bpolyType			{$$ = $1;}
 	  ;
 fieldspecs: fieldspecs ',' fieldspec	{$$ = gcShadow(3,cons($3,$1));}
 	  | fieldspec			{$$ = gcShadow(1,cons($1,NIL));}

@@ -1,0 +1,43 @@
+Main> -- type constructor
+data Shape a
+
+-- constructors:
+Circle :: a -> Shape a
+Rect :: a -> a -> Shape a
+Named :: String -> Shape a -> Shape a
+Strict :: Int -> a -> Shape a
+Nil :: Shape a
+Unit :: Shape a
+(:+:) :: Shape a -> Shape a -> Shape a
+-- selectors:
+label :: Shape a -> String
+inner :: Shape a -> Shape a
+
+-- instances:
+instance Show a => Show (Shape a)
+
+Main> -- type constructor
+data Pack a
+
+-- constructors:
+Pack :: (Show b, Eq b) => a -> b -> b -> Pack a
+
+Pack :: (Show b, Eq b) => a -> b -> b -> Pack a  -- data constructor
+
+Main> -- type constructor
+data T a
+
+-- constructors:
+C :: b -> a -> T a
+
+Main> 19.0
+Named {label = "u", inner = Unit} :+: Nil
+[1,2,3]
+(True,False)
+-4
+Just 1
+"abc"
+(1,True)
+True
+
+Main> [Leaving Cuddles]

@@ -1,0 +1,4 @@
+runcuddles: Error occurred
+ERROR "gadt-syntax-result.hs":3 - Constructor "C" must build "T" with 1 argument, the type being declared
+
+

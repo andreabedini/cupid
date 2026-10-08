@@ -191,6 +191,200 @@ void checkTyconDefn(Tycon d) {
     tcDeps = NIL;
 }
 
+/* --------------------------------------------------------------------------
+ * GADT syntax for ordinary data declarations:
+ *
+ *     data T a b where
+ *         C :: forall c. Show c => a -> !c -> T a b
+ *         D :: { f :: b } -> T a b
+ *
+ * is the declaration written one constructor signature at a time.  Each
+ * signature becomes the constructor the equation form would have had, so
+ * that nothing after the parser knows the difference: the result must be T
+ * applied to distinct variables, which are renamed to the ones the head
+ * binds; every other variable is existential and gets a fresh name; a
+ * context becomes the constructor's local context.  A result that refines
+ * T's arguments is a GADT proper and is not accepted.
+ * ------------------------------------------------------------------------*/
+
+/* The variable a head binds, with or without a kind */
+static Cell headVar(Cell a) {
+    return whatIs(a) == KINDED ? fst(snd(a)) : a;
+}
+
+/* A copy of t with its free variables renamed through map :: [(Var,Var)];
+ * the variables a nested forall binds, listed in bound, are left alone */
+static Type renameTyvars(Type t, List map, List bound) {
+    switch (whatIs(t)) {
+    case AP: {
+        Type l = renameTyvars(fst(t), map, bound); /* ensure correct */
+        Type r = renameTyvars(snd(t), map, bound); /* eval. order    */
+        return ap(l, r);
+    }
+    case VARIDCELL:
+    case VAROPCELL:
+        if (!varIsMember(textOf(t), bound)) {
+            List m = map;
+            for (; nonNull(m); m = tl(m)) {
+                if (textOf(fst(hd(m))) == textOf(t)) {
+                    return snd(hd(m));
+                }
+            }
+        }
+        return t;
+    case BANG:
+        return ap(BANG, renameTyvars(snd(t), map, bound));
+    case QUAL: {
+        List ps = renameTyvars(fst(snd(t)), map, bound);
+        Type b = renameTyvars(snd(snd(t)), map, bound);
+        return ap(QUAL, pair(ps, b));
+    }
+    case POLYTYPE: {
+        List inner = dupOnto(polySigOf(t), bound);
+        Type b = renameTyvars(monotypeOf(t), map, inner);
+        return ap(POLYTYPE, pair(polySigOf(t), b));
+    }
+    default:
+        return t;
+    }
+}
+
+/* The constructor c with signature sig, for the type tc of the given arity
+ * whose head binds vs */
+static Cell gadtConstr(int line, Text tc, int arity, List vs, Cell c,
+                       Cell sig) {
+    List ctxt = NIL;   /* the context, if any           */
+    List fields = NIL; /* the fields of a record form   */
+    List args = NIL;   /* the argument types otherwise  */
+    List map = NIL;    /* [(Var,Var)] the renaming       */
+    List evs = NIL;    /* the existential variables     */
+    List rvs;          /* the result's variables        */
+    List us, fs;
+    Type r;
+    Cell con;
+
+    if (whatIs(sig) == POLYTYPE) { /* every variable is quantified anyway */
+        sig = monotypeOf(sig);
+    }
+    if (isQualType(sig)) {
+        ctxt = fst(snd(sig));
+        sig = snd(snd(sig));
+    }
+    if (whatIs(sig) == LABC) {
+        fields = fst(snd(sig));
+        r = snd(snd(sig));
+    } else {
+        for (r = sig; isAp(r) && isAp(fun(r)) && fun(fun(r)) == typeArrow;
+             r = arg(r)) {
+            args = cons(arg(fun(r)), args);
+        }
+        args = rev(args);
+    }
+
+    /* The result must be the type being declared, applied to distinct
+     * variables */
+    if (whatIs(getHead(r)) != CONIDCELL || textOf(getHead(r)) != tc ||
+        argCount != arity) {
+        errHead(line);
+        errPrintf("Constructor \"%s\" must build \"%s\" with %d argument%s, "
+                  "the type being declared",
+                  textToStr(textOf(c)), textToStr(tc), arity,
+                  arity == 1 ? "" : "s");
+        errFail();
+    }
+    rvs = getArgs(r);
+    for (us = rvs; nonNull(us); us = tl(us)) {
+        if (!isVar(hd(us)) || varIsMember(textOf(hd(us)), tl(us))) {
+            errHead(line);
+            errPrintf("Constructor \"%s\" refines the result type of \"%s\", "
+                      "which is not supported: the result must be \"%s\" "
+                      "applied to distinct type variables",
+                      textToStr(textOf(c)), textToStr(tc), textToStr(tc));
+            errFail();
+        }
+    }
+
+    /* Rename the result's variables to the head's, and the rest, the
+     * existential ones, to fresh names that cannot clash with those */
+    for (us = rvs; nonNull(us); us = tl(us), vs = tl(vs)) {
+        map = cons(pair(hd(us), headVar(hd(vs))), map);
+    }
+    us = typeVarsIn(ctxt, NIL, NIL, NIL);
+    us = typeVarsIn(args, NIL, NIL, us);
+    for (fs = fields; nonNull(fs); fs = tl(fs)) {
+        us = typeVarsIn(snd(hd(fs)), NIL, NIL, us);
+    }
+    for (; nonNull(us); us = tl(us)) {
+        if (!varIsMember(textOf(hd(us)), rvs)) {
+            Cell v = inventVar();
+            map = cons(pair(hd(us), v), map);
+            evs = cons(v, evs);
+        }
+    }
+
+    /* Build the constructor as the equation form would have */
+    con = c;
+    if (whatIs(sig) == LABC) {
+        for (fs = NIL; nonNull(fields); fields = tl(fields)) {
+            Type t = renameTyvars(snd(hd(fields)), map, NIL);
+            fs = cons(pair(fst(hd(fields)), t), fs);
+        }
+        con = ap(LABC, pair(c, rev(fs)));
+    } else {
+        for (; nonNull(args); args = tl(args)) {
+            con = ap(con, renameTyvars(hd(args), map, NIL));
+        }
+    }
+    if (nonNull(ctxt)) {
+        con = ap(QUAL, pair(renameTyvars(ctxt, map, NIL), con));
+    }
+    if (nonNull(evs)) {
+        con = ap(POLYTYPE, pair(rev(evs), con));
+    }
+    return con;
+}
+
+/* The constructors of a declaration in GADT syntax, lhs being its head and
+ * sigs the signatures as the parser read them, [(line, [Con], Type)] */
+List gadtConstrs(Cell line, Cell lhs, List sigs, Cell what) {
+    Text tc = textOf(getHead(lhs));
+    int arity = argCount;
+    List vs = getArgs(lhs);
+    List cs = NIL;
+
+    for (; nonNull(sigs); sigs = tl(sigs)) {
+        Triple s = hd(sigs);
+        List names = snd3(s);
+        for (; nonNull(names); names = tl(names)) {
+            cs = cons(
+                gadtConstr(intOf(fst3(s)), tc, arity, vs, hd(names), thd3(s)),
+                cs);
+        }
+    }
+    if (what == NEWTYPE && (isNull(cs) || nonNull(tl(cs)))) {
+        errHead(intOf(line));
+        errPrintf("A newtype declaration must have exactly one constructor");
+        errFail();
+    }
+    return rev(cs);
+}
+
+/* The head of data T :: k1 -> .. -> kn -> * where ..., which binds n fresh
+ * variables of those kinds */
+Cell kindedHeader(Cell line, Cell lhs, Kind k) {
+    push(lhs);
+    for (; isAp(k); k = snd(k)) {
+        Cell v = inventVar();
+        top() = ap(top(), ap(KINDED, pair(v, fst(k))));
+    }
+    if (k != STAR) {
+        errHead(intOf(line));
+        errPrintf("The kind of a data type ends in *, not Constraint");
+        errFail();
+    }
+    return pop();
+}
+
 /* Define constructor functions and do dependency analysis for data definitions
  * (w or w/o deriving) */
 static void depConstrs(Tycon t, List tyvars, Cell cd) {
