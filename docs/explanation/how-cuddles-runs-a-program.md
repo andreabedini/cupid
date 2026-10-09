@@ -7,10 +7,9 @@ result and says where each stage lives in `src/`.
 
 ## From text to code
 
-**Reading.**  `input.c` turns a file into tokens.  Literate scripts are
-unwrapped here, and the layout rule is applied here too: the lexer
-inserts the braces and semicolons that indentation implies, so the
-parser never sees layout.
+**Reading.**  `input.c` turns a file into tokens.  The layout rule is
+applied here: the lexer inserts the braces and semicolons that
+indentation implies, so the parser never sees layout.
 
 **Parsing.**  `parser.y` is a bison grammar.  Its output is not an
 abstract syntax tree in the usual sense but heap cells of the same

@@ -10,26 +10,22 @@ other script.
 
 ## Steps
 
-### 1. Write the program as a literate script
+### 1. Write the program
 
-The first line of a script must be the `#!` line, and Haskell has no
-syntax for it.  Literate scripts get around that: only lines beginning
-with `>` are code, so the `#!` line is a comment.  Create a file called
-`myecho`:
+The first line of a script must be the `#!` line.  Haskell has no
+syntax for it, but Cuddles reads a line beginning with `#!` as a blank
+line, so the rest of the file is an ordinary module.  Create a file
+called `myecho`:
 
 ```
-#! /usr/local/bin/runcuddles +l
+#! /usr/local/bin/runcuddles
+module Main where
+import System.Environment
 
-> module Main where
-> import System.Environment
->
-> main = do
->   args <- getArgs
->   putStrLn (unwords args)
+main = do
+  args <- getArgs
+  putStrLn (unwords args)
 ```
-
-The `+l` option tells `runcuddles` that the file is a literate script
-even though its name does not end in `.lhs`.
 
 ### 2. Make it executable
 
@@ -47,22 +43,22 @@ chmod 755 myecho
 Hello World
 ```
 
-The kernel runs `/usr/local/bin/runcuddles +l ./myecho Hello World`;
+The kernel runs `/usr/local/bin/runcuddles ./myecho Hello World`;
 `runcuddles` loads the file, runs `main`, and `getArgs` returns the words
 after the file name.
 
 ## Passing more than one option
 
 The `#!` line passes everything after the program name as a single
-argument.  With `#! /usr/local/bin/runcuddles +l -h4M` the first argument
-would be the one string `+l -h4M`, which is not an option.  Use `-X` to
+argument.  With `#! /usr/local/bin/runcuddles +o -h4M` the first argument
+would be the one string `+o -h4M`, which is not an option.  Use `-X` to
 have the string split into options:
 
 ```
-#! /usr/local/bin/runcuddles -X+l -h4M
+#! /usr/local/bin/runcuddles -X+o -h4M
 ```
 
-Everything after `-X` is re-read as an option string, so both `+l` and
+Everything after `-X` is re-read as an option string, so both `+o` and
 `-h4M` take effect.
 
 ## Troubleshooting
@@ -73,7 +69,7 @@ Everything after `-X` is re-read as an option string, so both `+l` and
 so `runcuddles` found no file name.
 
 **Fix**: put the script's name after the options.  In a `#!` line this
-is done for you; from the shell write `runcuddles +l myecho`.
+is done for you; from the shell write `runcuddles myecho`.
 
 ### The program runs but `getArgs` returns the wrong words
 
@@ -86,4 +82,4 @@ after it.
 ## See also
 
 - [runcuddles](../reference/runcuddles.md)
-- [Options](../reference/options.md) for `+l` and `-X`
+- [Options](../reference/options.md) for `+o`, `-h` and `-X`

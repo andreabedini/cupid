@@ -4,8 +4,7 @@ Make a directory of Haskell modules importable from any Cuddles session.
 
 ## Prerequisites
 
-- a directory tree in which module `A.B.C` is the file `A/B/C.hs` or
-  `A/B/C.lhs`
+- a directory tree in which module `A.B.C` is the file `A/B/C.hs`
 
 ## Steps
 

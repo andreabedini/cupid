@@ -67,7 +67,6 @@ struct options toggle[] =
      {'s', "Print no. reductions/cells after eval", &showStats},
      {'t', "Print type after evaluation", &addType},
      {'g', "Print no. cells recovered after gc", &gcMessages},
-     {'l', "Literate modules as default", &literateScripts},
      {'.', "Print dots to show progress", &useDots},
      {'q', "Print nothing to show progress", &quiet},
      {'Q', "Qualify names when printing", &useQualifiedNames},

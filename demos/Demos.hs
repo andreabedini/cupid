@@ -18,7 +18,6 @@ import EvalRed
 import ArrayEx
 import FastSort
 import Expr
-import Literate
 import Eliza
 import Minsrand
 import Ldfs

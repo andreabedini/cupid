@@ -27,7 +27,7 @@ The platform-specific choices live in a few places:
 
 - `src/sysdeps.h` — the facts about each supported target
 - `meson.build` — shared-library flags and install paths; the Windows
-  search path is `.;{Cuddles}\packages\*` and the suffix list `.hs;.lhs`
+  search path is `.;{Cuddles}\packages\*`
 - `libraries/tools/mksysconfig.c` — the C type widths and the errno
   and signal constants written into `Cuddles.SysConfig`
 

@@ -68,12 +68,6 @@ Default: off.
 
 ## Loading
 
-### `+l`
-
-Treat files whose names end in neither `.hs` nor `.lhs` as literate
-scripts.  Default: off.  `.lhs` files are always literate and `.hs`
-files never are.
-
 ### `+.`
 
 Print a dot for each module as it loads.  Default: off.
@@ -121,10 +115,10 @@ message and the old path kept.
 ### `-S`*str*
 
 The suffixes tried when looking for a module's file, as a
-colon-separated list (semicolons on Windows).  Default: `.hs:.lhs`.
+colon-separated list (semicolons on Windows).  Default: `.hs`.
 An empty entry stands for the previous list and an empty *str* restores
 the default, as for `-P`.  The list must keep `.hs`, or the `Prelude`
-could not be found.  Only `.lhs` files are treated as literate.
+could not be found.
 
 ## Editor
 

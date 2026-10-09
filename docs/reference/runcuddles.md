@@ -36,17 +36,17 @@ Run a program with two arguments:
 runcuddles Main.hs a b
 ```
 
-Run a literate script with a bigger heap:
+Run a script with a bigger heap:
 
 ```sh
-runcuddles -h4M +l myscript
+runcuddles -h4M myscript
 ```
 
 As the interpreter of an executable file, with both options in one
 argument:
 
 ```
-#! /usr/local/bin/runcuddles -X+l -h4M
+#! /usr/local/bin/runcuddles -X+o -h4M
 ```
 
 ## Exit status

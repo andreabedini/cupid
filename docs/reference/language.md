@@ -136,6 +136,14 @@ requires every tuple size.
 multiple-reader rule on files.  A program that reads and writes the
 same file at once may see inconsistent data instead of failing.
 
+### Syntax reference
+
+**Literate comments are not supported.**  Every file is read as
+ordinary Haskell source, so a literate script (section 10.4), with `>`
+lines or `\begin{code}` blocks, is rejected, and `.lhs` is not on the
+default suffix list.  A line beginning with `#!` is read as a blank
+line, so an executable script needs no literate wrapper.
+
 ## Other known bugs
 
 **Infinite computations can crash.**  An unbounded computation usually
@@ -190,7 +198,7 @@ A module containing foreign declarations must be compiled with
 ## Hierarchical modules
 
 A module name may contain dots.  To find `A.B.C`, Cuddles looks for
-`A/B/C.hs` or `A/B/C.lhs` in each directory of the search path.  See
+`A/B/C.hs` in each directory of the search path.  See
 [Modules, files and the search path](../explanation/modules-and-the-search-path.md).
 
 ## See also

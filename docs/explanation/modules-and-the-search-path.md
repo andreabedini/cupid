@@ -10,12 +10,11 @@ recursive modules.  A file may be loaded by its path, in which case it
 may contain a module of any name, or by its module name, in which case
 Cuddles has to find it.
 
-To find module `M`, Cuddles tries `dir/M.hs` and `dir/M.lhs` for each
-directory `dir` on the search path, in order.  A hierarchical name is
-mapped to a path: `A.B.C` becomes `dir/A/B/C.hs`.  The suffix list is
-the `-S` option and the search path the `-P` option.  Files ending in
-`.lhs` are literate scripts; with `+l`, so is any file whose name ends
-in neither suffix.
+To find module `M`, Cuddles tries `dir/M.hs` for each directory `dir`
+on the search path, in order.  A hierarchical name is mapped to a path:
+`A.B.C` becomes `dir/A/B/C.hs`.  The suffix list is the `-S` option and
+the search path the `-P` option.  Literate scripts (`.lhs`) are not
+supported.
 
 ## Imports are chased
 
@@ -83,7 +82,7 @@ import.  This is why `:names` shows `Cuddles.Prelude.map` rather than
 
 ## See also
 
-- [Options](../reference/options.md) for `-P`, `-S` and `+l`
+- [Options](../reference/options.md) for `-P` and `-S`
 - [Add a library to the search path](../how-to/add-a-library.md)
 - [Interpreter commands](../reference/commands.md) for `:load`,
   `:also` and `:module`

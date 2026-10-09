@@ -61,7 +61,7 @@ def main(argv):
     for p in PACKAGES:
         for root, _, files in os.walk(os.path.join(pkgdir, p)):
             for name in sorted(files):
-                if name.endswith((".hs", ".lhs")):
+                if name.endswith(".hs"):
                     path = os.path.join(root, name)
                     with open(path, encoding="latin-1") as f:
                         if re.search(r"^\s*foreign\s+import\b", f.read(), re.M):

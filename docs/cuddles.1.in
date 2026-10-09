@@ -51,11 +51,10 @@ Each Haskell module is stored in a separate file.
 When loading a module \fIname\fP, \fICuddles\fP replaces each `\fB.\fP'
 in \fIname\fP with a `\fB/\fP' and looks in each of the directories
 on its search path (see \fB\-P\fP under \fBOPTIONS\fP)
-for the files \fIname\fP\fB.hs\fP and \fIname\fP\fB.lhs\fP.
+for the file \fIname\fP\fB.hs\fP.
 (The recognized suffixes may be changed using the \fB\-S\fP option,
 described under \fBOPTIONS\fP.)
 It also tries \fIname\fP as a literal filename.
-Files ending in "\fB.lhs\fP" are treated as literate scripts.
 .SH OPTIONS
 Some options are toggled with \fB+\fP or \fB\-\fP to turn them on or
 off, respectively.
@@ -67,10 +66,6 @@ Allow overlapping instances (a Cuddles extension; default: off)
 .B +O
 Allow unsafe overlapping instances (a Cuddles extension; default: off)
 .SS "Module loading"
-.TP
-.B +l
-Treat files whose names end in neither `\fB.hs\fP' nor `\fB.lhs\fP'
-as literate scripts (default: off)
 .TP
 .B +\&.
 Print dots to show progress while loading modules (default: off)
@@ -249,10 +244,9 @@ For example, the executable file \fBhello\fP might contain the lines
 .LP
 .nf
 .RS
-\fB#!\*(BN/runcuddles +l
-.sp
-> module Main where
-> main = putStr "Hello, World\\n"\fP
+\fB#!\*(BN/runcuddles
+module Main where
+main = putStr "Hello, World\\n"\fP
 .RE
 .fi
 .LP

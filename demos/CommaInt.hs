@@ -1,17 +1,18 @@
-This file contains the definition of commaint, a function which takes a
-single string argument containing a sequence of digits, and outputs the
-same sequence with commas inserted after every group of three digits,
-reading from the right hand end of the string.
+-- This file contains the definition of commaint, a function which takes a
+-- single string argument containing a sequence of digits, and outputs the
+-- same sequence with commas inserted after every group of three digits,
+-- reading from the right hand end of the string.
 
-> module CommaInt where
->  commaint = reverse . foldr1 (\x y->x++","++y) . group 3 . reverse
->     where group n = takeWhile (not.null) . map (take n) . iterate (drop n)
+module CommaInt where
 
-This definition uses the following library functions:
+commaint = reverse . foldr1 (\x y->x++","++y) . group 3 . reverse
+   where group n = takeWhile (not.null) . map (take n) . iterate (drop n)
 
-  reverse, (.), foldr1, (++), takeWhile, not, null, map, take, iterate, drop.
+{- This definition uses the following library functions:
 
-Example: evaluation of commaint "1234567"
+     reverse, (.), foldr1, (++), takeWhile, not, null, map, take, iterate, drop.
+
+   Example: evaluation of commaint "1234567"
 
            "1234567"
                |
@@ -39,32 +40,8 @@ Example: evaluation of commaint "1234567"
                V
            "1,234,567"
 
-In a Cuddles session:
+   In a Cuddles session:
 
-    ? commaint "1234567"
-    1,234,567
-    ?
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+       Cuddles> commaint "1234567"
+       "1,234,567"
+-}

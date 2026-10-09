@@ -29,12 +29,11 @@ extern void setHeapSize(char *);
 /* --------------------------------------------------------------------------
  * Interpreter flags and options:
  * ------------------------------------------------------------------------*/
-extern bool showStats;       /* true => print stats after eval  */
-extern bool addType;         /* true => print type with value   */
-extern bool gcMessages;      /* true => print GC messages         */
-extern bool literateScripts; /* true => default lit scripts     */
-extern bool useDots;         /* true => use dots in progress    */
-extern bool quiet;           /* true => don't show progress     */
+extern bool showStats;  /* true => print stats after eval  */
+extern bool addType;    /* true => print type with value   */
+extern bool gcMessages; /* true => print GC messages         */
+extern bool useDots;    /* true => use dots in progress    */
+extern bool quiet;      /* true => don't show progress     */
 extern bool
     useQualifiedNames; /* true => qualify names when printing types and terms */
 extern bool listScripts;        /* true => list scripts after loading*/

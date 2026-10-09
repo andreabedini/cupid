@@ -48,9 +48,8 @@ List defaultDefns = NIL;   /* default definitions (if any)    */
 int defaultLine = 0;       /* line in which default defs occur*/
 List evalDefaults = NIL;   /* defaults for evaluator          */
 
-Cell inputExpr = NIL;         /* input expression                */
-Cell inputContext = NIL;      /* input context                   */
-bool literateScripts = false; /* true => default to lit scripts  */
+Cell inputExpr = NIL;    /* input expression                */
+Cell inputContext = NIL; /* input context                   */
 
 char *repeatStr = 0; /* Repeat last expr                */
 
@@ -61,12 +60,8 @@ char *preprocessor = 0;
  * ------------------------------------------------------------------------*/
 
 static bool fileInput(char *, long);
-static bool literateMode(char *);
-static bool linecmp(char *, ShortChar *);
 static int nextLine(void);
 static void skip(void);
-static void thisLineIs(int);
-static void newlineSkip(void);
 
 static void endToken(void);
 static Text readOperator(void);
@@ -169,8 +164,7 @@ static int c0, c1;
 static FILE *inputStream = 0;
 static bool inputIsPipe = false; /* is inputStream a -F filter?          */
 static ProcId filterPid;         /* and if so, the filter's process id   */
-static bool thisLiterate;
-static char *nextStringChar; /* next char in string buffer       */
+static char *nextStringChar;     /* next char in string buffer       */
 
 #if USE_READLINE           /* for command line editors         */
 # include READLINE_H       /* editline or GNU readline; the    */
@@ -187,18 +181,6 @@ static char *nextChar;
 # define nextConsoleChar() FGetChar(stdin)
 #endif
 
-static int litLines; /* count defn lines in lit script   */
-#define DEFNCHAR '>' /* definition lines begin with this */
-static int lastLine; /* records type of last line read:  */
-#define STARTLINE 0  /* - at start of file, none read    */
-#define BLANKLINE 1  /* - blank (may preceed definition) */
-#define TEXTLINE 2   /* - text comment                   */
-#define DEFNLINE 3   /* - line containing definition     */
-#define CODELINE 4   /* - line inside code block         */
-
-#define BEGINCODE "\\begin{code}"
-#define ENDCODE "\\end{code}"
-
 bool startsQual(Char c) {
     return isConStart(c);
 }
@@ -206,7 +188,6 @@ bool startsQual(Char c) {
 #define LINEBUFFER_SIZE 1000
 static ShortChar lineBuffer[LINEBUFFER_SIZE];
 static int lineLength = 0;
-static int inCodeBlock = false; /* Inside \begin{code}..\end{code} */
 static int linePtr = 0;
 
 #if HAVE_RL_EVENT_HOOK
@@ -302,12 +283,8 @@ static bool fileInput(char *nm, long len) {
         column = 1;
         row = 0;
 
-        lastLine = STARTLINE; /* literate file processing */
-        litLines = 0;
         linePtr = 0;
         lineLength = 0;
-        thisLiterate = literateMode(nm);
-        inCodeBlock = false;
 
         readSoFar = 0;
         setGoal("Parsing", (Target)len);
@@ -335,52 +312,6 @@ void stringInput(char *s) {
     nextStringChar = s;
     if (!charTabBuilt)
         initCharTab();
-}
-
-/* Select literate mode for file */
-static bool literateMode(char *nm) {
-    char *dot = strrchr(nm, '.'); /* look for last dot in file name  */
-    if (dot) {
-        if (filenamecmp(dot + 1, "hs") ==
-            0) /* .hs files are never literate    */
-            return false;
-        if (filenamecmp(dot + 1, "lhs") ==
-                0 || /* .lhs, .verb files are always*/
-            filenamecmp(dot + 1, "verb") ==
-                0) /* literate scripts              */
-            return true;
-    }
-    return literateScripts; /* otherwise, use the default      */
-}
-
-/* This code originally came from Sigbjorn Finne (sof@dcs.gla.ac.uk).
- * I've removed the loop (since newLineSkip contains a loop too) and
- * replaced the warnings with errors. ADR
- */
-/*
- * To deal with literate \begin{code}...\end{code} blocks,
- * add a line buffer that rooms the current line. The old c0 and c1  
- * stream pointers are used as before within that buffer -- sof
- *
- * Upon reading a new line into the line buffer, we check to see if
- * we're reading in a line containing \begin{code} or \end{code} and
- * take appropriate action. 
- */
-
-/* Compare string with line line may end in whitespace */
-static bool linecmp(char *s, ShortChar *line) {
-    int i = 0;
-    while (s[i] != '\0' && s[i] == line[i]) {
-        ++i;
-    }
-    /* s[0..i-1] == line[0..i-1] */
-    if (s[i] != '\0') { /* check s `isPrefixOf` line       */
-        return false;
-    }
-    while (isIn(line[i], SPACE)) { /* allow whitespace at end of line */
-        ++i;
-    }
-    return (line[i] == '\0');
 }
 
 /* Returns line length (including \n) or 0 upon EOF. */
@@ -413,30 +344,6 @@ static int nextLine(void) {
         lineBuffer[0] = '\n'; /* pretend it's a blank line */
         lineBuffer[1] = '\0';
         lineLength = 1;
-    } else if (thisLiterate) {
-        if (linecmp(BEGINCODE, lineBuffer)) {
-            if (!inCodeBlock) { /* Entered a code block        */
-                inCodeBlock = true;
-                lineBuffer[0] = '\n'; /* pretend it's a blank line */
-                lineBuffer[1] = '\0';
-                lineLength = 1;
-            } else {
-                errHead(row);
-                errPrintf("\\begin{code} encountered inside code block");
-                errFail();
-            }
-        } else if (linecmp(ENDCODE, lineBuffer)) {
-            if (inCodeBlock) { /* Finished code block         */
-                inCodeBlock = false;
-                lineBuffer[0] = '\n'; /* pretend it's a blank line */
-                lineBuffer[1] = '\0';
-                lineLength = 1;
-            } else {
-                errHead(row);
-                errPrintf("\\end{code} encountered outside code block");
-                errFail();
-            }
-        }
     }
     return lineLength;
 }
@@ -499,55 +406,6 @@ static void skip(void) {
             }
         }
     }
-}
-
-/* Register kind of current line & check for literate script errs */
-static void thisLineIs(int kind) {
-    if ((kind == DEFNLINE && lastLine == TEXTLINE) ||
-        (kind == TEXTLINE && lastLine == DEFNLINE)) {
-        errHead(row);
-        errPrintf("Program line next to comment");
-        errFail();
-    }
-    lastLine = kind;
-}
-
-/* Skip `\n' (supports lit scripts) */
-static void newlineSkip(void) {
-    /* assert(c0=='\n'); */
-    if (reading == SCRIPTFILE && thisLiterate) {
-        do {
-            skip();
-            if (inCodeBlock) {        /* pass chars on definition lines   */
-                thisLineIs(CODELINE); /* to lexer (w/o leading DEFNCHAR)  */
-                litLines++;
-                return;
-            }
-            if (c0 == DEFNCHAR) {     /* pass chars on definition lines   */
-                thisLineIs(DEFNLINE); /* to lexer (w/o leading DEFNCHAR)  */
-                skip();
-                litLines++;
-                return;
-            }
-            while (c0 != '\n' && isIn(c0, SPACE)) /* maybe line is blank?   */
-                skip();
-            if (c0 == '\n' || c0 == EOF)
-                thisLineIs(BLANKLINE);
-            else {
-                thisLineIs(TEXTLINE); /* otherwise it must be a comment   */
-                while (c0 != '\n' && c0 != EOF)
-                    skip();
-            } /* by now, c0=='\n' or c0==EOF      */
-        } while (c0 != EOF); /* if new line, start again         */
-
-        if (litLines == 0) {
-            errHead(row);
-            errPrintf("Empty script - perhaps you forgot the `%c's?", DEFNCHAR);
-            errFail();
-        }
-        return;
-    }
-    skip();
 }
 
 /* Close input stream, if open, or skip to end of console line */
@@ -945,10 +803,7 @@ static Cell readEscapeChar(bool isStrLit, bool skipEsc) {
 /* Skip over gap in string literal (simplified in Haskell 1.1) */
 static void skipGap(void) {
     do
-        if (c0 == '\n')
-            newlineSkip();
-        else
-            skip();
+        skip();
     while (isLatin1(c0) && isIn(c0, SPACE));
     if (c0 != '\\') {
         errHead(row);
@@ -1289,8 +1144,6 @@ static void skipWhitespaceTok(void) {
     for (;;)           /* Strictly speaking, this code is  */
         if (c0 == EOF) /* a little more liberal than the   */
             return;    /* report allows ...                */
-        else if (c0 == '\n')
-            newlineSkip();
         else if (isIn(c0, SPACE))
             skip();
         else if (c0 == '{' &&
@@ -1308,9 +1161,7 @@ static void skipWhitespaceTok(void) {
                     skip();
                     skip();
                     nesting--;
-                } else if (c0 == '\n')
-                    newlineSkip();
-                else
+                } else
                     skip();
             if (nesting > 0) {
                 errHead(origRow);
@@ -1335,7 +1186,7 @@ static void skipWhitespaceTok(void) {
                 skip();
             }
             if (c0 == '\n')
-                newlineSkip();
+                skip();
         } else
             return;
 }

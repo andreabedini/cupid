@@ -44,11 +44,10 @@ endif
 
 if is_windows
   cuddlespath = '.;{Cuddles}\\packages\\*'
-  cuddlessuffixes = '.hs;.lhs'
 else
   cuddlespath = '.:{Home}/lib/cuddles/packages/*:/usr/local/lib/cuddles/packages/*:{Cuddles}/packages/*'
-  cuddlessuffixes = '.hs:.lhs'
 endif
+cuddlessuffixes = '.hs'
 
 # ---------------------------------------------------------------------------
 # Dependencies
