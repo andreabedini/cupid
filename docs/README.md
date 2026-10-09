@@ -53,6 +53,9 @@ program with `runcuddles`.
 
 - [How Cuddles runs a program](explanation/how-cuddles-runs-a-program.md) —
   the stages from source to result, and where the pieces live
+- [How constraints are solved](explanation/how-constraints-are-solved.md) —
+  predicates, evidence, entailment, improvement and the loop that runs
+  them at each binding group
 - [Modules, files and the search path](explanation/modules-and-the-search-path.md)
 - [Character encoding](explanation/character-encoding.md)
 - [Foreign import wrappers](explanation/foreign-import-wrappers.md) —
