@@ -1,0 +1,6 @@
+runcuddles: Error occurred
+ERROR "equality-given-cannot-hold.hs":3 - Equality constraint cannot hold
+*** Constraint     : Int ~ Bool
+
+
+

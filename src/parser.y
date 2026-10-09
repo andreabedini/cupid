@@ -93,7 +93,7 @@ static Cell namedKind(Cell);
 /*- Top level script/module structure -------------------------------------*/
 
 start	  : EXPR exp wherePart		{inputExpr = letrec($3,$2); sp-=2;}
-	  | CTXT context		{inputContext = $2;	    sp-=1;}
+	  | CTXT classContext		{inputContext = $2;	    sp-=1;}
 	  | SCRIPT topModule		{valDefns  = $2;	    sp-=1;}
 	  | error			{syntaxError("input");}
 	  ;
@@ -482,11 +482,31 @@ varids	  : varids varid		{$$ = gcShadow(2,cons($2,$1));}
 sigType   : context IMPLIES type	{$$ = gcShadow(3,qualType($1,$3));}
 	  | type			{$$ = $1;}
 	  ;
-context	  : '(' ')'			{$$ = gcShadow(2,NIL);}
+context	  : classContext		{$$ = $1;}
+	  | eqpred			{$$ = gcShadow(1,singleton($1));}
+	  | '(' eqpred ')'		{$$ = gcShadow(3,singleton($2));}
+	  | '(' preds ')'		{$$ = gcShadow(3,checkCtxt(rev($2)));}
+ 	  ;
+/* A context of class predicates alone; it is what the :xplain command
+ * reads, and its parenthesised forms are shared with tuple types.  An
+ * equality can only be a context, so a list with one in it has a
+ * nonterminal of its own. */
+classContext
+	  : '(' ')'			{$$ = gcShadow(2,NIL);}
 	  | btype2			{$$ = gcShadow(1,singleton(checkPred($1)));}
 	  | '(' btype2 ')'		{$$ = gcShadow(3,singleton(checkPred($2)));}
 	  | '(' btypes2 ')'		{$$ = gcShadow(3,checkCtxt(rev($2)));}
  	  ;
+preds	  : preds ',' pred		{$$ = gcShadow(3,cons($3,$1));}
+	  | btypes2 ',' eqpred		{$$ = gcShadow(3,cons($3,$1));}
+	  | btype2  ',' eqpred		{$$ = gcShadow(3,cons($3,cons($1,NIL)));}
+	  | eqpred  ',' pred		{$$ = gcShadow(3,cons($3,cons($1,NIL)));}
+	  ;
+pred	  : btype2			{$$ = $1;}
+	  | eqpred			{$$ = $1;}
+	  ;
+eqpred	  : btype '~' btype		{$$ = gcShadow(3,ap(ap(EQUALITY,$1),$3));}
+	  ;
 type	  : type1			{$$ = $1;}
 	  | btype2			{$$ = $1;}
 	  ;
@@ -1137,10 +1157,11 @@ static List checkCtxt(Type con) {
     return con;
 }
 
-/* Check that type expr is a valid constraint */
+/* Check that type expr is a valid constraint: a class applied to types, or
+ * an equality */
 static Cell checkPred(Cell c) {
     Cell cn = getHead(c);
-    if (!isQCon(cn) /*|| argCount==0*/)
+    if (!isQCon(cn) && !isEquality(c))
 	syntaxError("class expression");
     return c;
 }

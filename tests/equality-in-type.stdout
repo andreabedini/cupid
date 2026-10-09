@@ -1,0 +1,4 @@
+runcuddles: Error occurred
+ERROR "equality-in-type.hs":2 - Syntax error in type signature (unexpected `->')
+
+

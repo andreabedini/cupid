@@ -31,6 +31,7 @@
  * ------------------------------------------------------------------------*/
 
 static void depConstrs(Tycon, List, Cell);
+static void noEqualities(int, List, Tycon);
 static List addSels(int, Name, List, List);
 static List selectCtxt(List, List);
 static List visitSyn(List, Tycon, List);
@@ -387,6 +388,21 @@ Cell kindedHeader(Cell line, Cell lhs, Kind k) {
 
 /* Define constructor functions and do dependency analysis for data definitions
  * (w or w/o deriving) */
+/* An equality in the context of a data declaration or of one of its
+ * constructors would refine the result type on a match, which makes a GADT
+ * proper, and that waits for given equalities in the solver. */
+static void noEqualities(int line, List ps, Tycon t) {
+    for (; nonNull(ps); ps = tl(ps))
+        if (isEquality(hd(ps))) {
+            errHead(line);
+            errPrintf("Equality constraint in a context of \"%s\", which is "
+                      "not supported: a constructor cannot refine its result "
+                      "type",
+                      textToStr(tyconRec(t)->text));
+            errFail();
+        }
+}
+
 static void depConstrs(Tycon t, List tyvars, Cell cd) {
     int line = tyconRec(t)->line;
     List ctxt = NIL;
@@ -406,6 +422,7 @@ static void depConstrs(Tycon t, List tyvars, Cell cd) {
         ctxt = fst(snd(cs));
         cs = snd(snd(cs));
         map2Over(depPredExp, line, tyvars, ctxt);
+        noEqualities(line, ctxt, t);
     }
 
     if (nonNull(cs) && isNull(tl(cs))) /* Single constructor datatype?     */
@@ -443,6 +460,7 @@ static void depConstrs(Tycon t, List tyvars, Cell cd) {
                     errFail();
                 }
             map2Over(depPredExp, line, sig, lps);
+            noEqualities(line, lps, t);
             con = snd(snd(con));
             arity = length(lps);
         }

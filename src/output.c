@@ -668,7 +668,7 @@ static void putSigType(Cell t) {
 static void putContext(List ps, List qs, int fr) {
     int len = length(ps) + length(qs);
     int c = len;
-    bool useParens = len != 1;
+    bool useParens = len != 1 || isEquality(hd(nonNull(ps) ? ps : qs));
     if (useParens)
         putChr('(');
     for (; nonNull(ps); ps = tl(ps)) {
@@ -689,7 +689,11 @@ static void putContext(List ps, List qs, int fr) {
 
 /* Output predicate */
 static void putPred(Cell pi, int fr) {
-    if (isAp(pi)) {
+    if (isEquality(pi)) {
+        putType(arg(fun(pi)), ARROW_PREC, fr);
+        putStr(" ~ ");
+        putType(arg(pi), ARROW_PREC, fr);
+    } else if (isAp(pi)) {
         putPred(fun(pi), fr);
         putChr(' ');
         putType(arg(pi), ALWAYS, fr);

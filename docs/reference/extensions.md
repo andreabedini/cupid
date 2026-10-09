@@ -302,6 +302,70 @@ Differences from GHC's `KindSignatures` and `StandaloneKindSignatures`:
   exported from `Data.Kind`, and `Data.Kind.Type` cannot be written
   qualified in a kind.
 
+## Equality constraints
+
+A context may say that two types are the same:
+
+```haskell
+f :: (a ~ Int) => a -> Int
+f x = x + 1
+
+g :: (f a ~ Maybe Int, g ~ (Int -> Bool)) => f a -> g -> Bool
+g m p = maybe False p m
+```
+
+Each side of `~` is a type without a function arrow, or any type in
+parentheses.  A single equality may stand without parentheses,
+`a ~ [Char] => a -> Int`, and an equality may sit beside class
+constraints in the same context.  An equality may be written in the
+context of a type signature, of an expression signature, of a class
+method's signature, of a polymorphic argument or field type, and of an
+instance declaration.
+
+In a signature the equality is *given*: the body is checked with the two
+sides made one type, so `f` above is checked at `Int -> Int`, and the
+inferred type must be as general as the declared type read that way.
+At a use of `f` the equality is *wanted*, and is solved at once by
+unifying its sides, so `:type f` reports `Int -> Int`; `:info f` shows
+the signature as written.  An equality carries no evidence: it is never
+a dictionary parameter or argument.
+
+In an instance context an equality lets the head match more than it
+commits to, and the equality then fixes the rest:
+
+```haskell
+class Describe a where
+    describe :: a -> String
+
+instance (a ~ Char) => Describe [a] where
+    describe s = "string " ++ s
+```
+
+`describe []` is accepted: the constraint `Describe [t]` matches the
+instance for any `t`, and the equality makes `t` `Char`.  A type the
+equality cannot make fit, `describe [True]`, is an error, reported at
+the instance.
+
+The two sides of an equality must have the same kind.  A type variable
+that occurs only in an equality is not ambiguous, since the other side
+determines it.
+
+Differences from GHC's `TypeFamilies` and `GADTs`, which are where `~`
+comes from:
+
+- An equality may not appear in the context of a `data` or `newtype`
+  declaration or of one of its constructors, in either syntax: that
+  would refine the result type on a match, which is a generalised
+  algebraic data type, and Cuddles does not have those.
+- An equality may not be a superclass.
+- A given equality that cannot hold, `(Int ~ Bool) => ...`, is rejected
+  at the signature; GHC accepts the signature and the function is
+  simply uncallable.
+- An instance whose context has an equality cannot be used by
+  `deriving`.
+- There are no type families, so an equality is never stuck: it is
+  solved, or it is an error, where it arises.
+
 ## Anonymous type variables
 
 An underscore in a type stands for a fresh type variable:

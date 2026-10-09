@@ -43,6 +43,22 @@ into triples whose dictionary variables are the binding's extra
 parameters, and these are the evidence the wanteds may be discharged
 with.
 
+## Equality predicates
+
+A predicate may also be an equality, `t1 ~ t2`.
+It has no dictionary, so it never reaches `preds`: it is dealt with by
+unification at the two points where the class predicates would be
+turned into triples.  Given, in the context of a signature or an
+instance, `assumeGivens` unifies its sides before the body is checked
+and returns triples for the class predicates only.  Wanted, at a use
+of a name or when an instance is chosen, `assumeEvid` unifies its
+sides and returns no dictionary variable, and `applyToEvid` and
+`inEntail` do the same for an instance's context.  Because a body is
+checked with its givens applied, the declared type it is compared
+against is read through them too.  An equality that cannot be made to
+hold is an error on the spot; with no type families there is nothing
+that could make it hold later.
+
 ## Entailment
 
 The question the solver asks is whether a predicate follows from a set
@@ -152,8 +168,8 @@ only, as a GADT match provides, would live; 0043 says so.
 
 | step | function | file |
 |------|----------|------|
-| invent a wanted | `assumeEvid` | preds.c |
-| take a context as given | `makePredAss` | preds.c |
+| invent a wanted, or solve a wanted equality | `assumeEvid` | preds.c |
+| take a context as given, applying its equalities | `assumeGivens`, `makePredAss` | preds.c |
 | entailment by superclasses | `scEntail`, `scFind` | preds.c |
 | entailment by instances | `inEntail`, `findInstFor` | preds.c, subst.c |
 | improvement by dependencies | `improve`, `pairImprove` | subst.c |

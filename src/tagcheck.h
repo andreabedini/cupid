@@ -4,7 +4,8 @@
  * Types, kinds and predicates share one representation, so the compiler
  * cannot tell them apart; their tags can.  A type is a tree over
  * constructors, tuples and variables; a kind is a tree over STAR,
- * CONSTRAINT and variables; a predicate is a class applied to types.  The predicates
+ * CONSTRAINT and variables; a predicate is a class applied to types, or
+ * EQUALITY applied to two of them.  The predicates
  * below say which a cell is, and the assert* macros check it at the entry
  * points where the three meet.  With -Dtag-checks (CHECK_TAGS) a failed
  * check is an internal error naming the function; otherwise the macros

@@ -195,10 +195,15 @@ static Kind kindAtom(int alpha, Cell c) {
     return STAR; /* not reached */
 }
 
-/* Check kinds of arguments in pred */
+/* Check kinds of arguments in pred: a class's arguments have the kinds the
+ * class declares, the two sides of an equality have one kind between them */
 void kindPred(int l, int alpha, int m, Cell pi) {
     assertPred(pi);
-    {
+    if (isEquality(pi)) {
+        static char *equality = "equality constraint";
+        Typing k = kindConstr(l, alpha, m, arg(fun(pi)));
+        checkKind(l, alpha, m, arg(pi), NIL, equality, k.type, k.offs);
+    } else {
         static char *predicate = "class constraint";
         Class c = getHead(pi);
         List as = getArgs(pi);

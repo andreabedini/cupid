@@ -45,12 +45,63 @@ static Class classConstraining(int, Cell, int);
 
 List preds; /* Current predicate assignment        */
 
-/* Add predicate pi (offset o) to preds with new dict var nd */
+/* --------------------------------------------------------------------------
+ * Equality predicates:
+ *
+ * A predicate t1 ~ t2 holds when its two sides are the same type.  It has
+ * no evidence: the dictionary-passing translation never sees one, so it
+ * never enters preds and never becomes a parameter or an argument.  Taken
+ * as given, in the context of a signature or an instance, it is applied by
+ * unifying its sides before the body is checked (assumeGivens).  Wanted,
+ * at a use of a name whose type has one or of an instance whose context
+ * has one, it is solved by unifying its sides as soon as it arises
+ * (assumeEvid, inEntail): nothing can make an equality hold later that
+ * does not hold now, so there is nothing to defer.
+ * ------------------------------------------------------------------------*/
+
+/* Solve the equality pi, read at offset o, by unifying its sides.  One
+ * that does not unify is an error, at the line of the signature or
+ * instance it was written in, or 0 for the type of a name being used. */
+static void solveEquality(int line, Cell pi, int o) {
+    if (!unify(arg(fun(pi)), o, arg(pi), o)) {
+        clearMarks();
+        errHead(line);
+        errPrintf("Equality constraint cannot hold");
+        errPrintf("\n*** Constraint     : ");
+        errPred(copyPred(pi, o));
+        if (unifyFails)
+            errPrintf("\n*** Because        : %s", unifyFails);
+        errPrintf("\n");
+        errFail();
+    }
+}
+
+/* Add predicate pi (offset o) to preds with new dict var nd, which is
+ * returned to be put where the dictionary argument goes.  An equality has
+ * no dictionary: it is solved on the spot and NIL is returned. */
 Cell assumeEvid(Cell pi, int o) {
     assertPred(pi);
+    if (isEquality(pi)) {
+        solveEquality(0, pi, o);
+        return NIL;
+    }
     Cell nd = inventDictVar();
     preds = cons(triple(pi, mkInt(o), nd), preds);
     return nd;
+}
+
+/* Apply the builder of instance in to the dictionaries for its context,
+ * read at offset beta where findInstFor matched it, each a new wanted; an
+ * equality in the context is solved and takes no argument */
+static Cell applyToEvid(Inst in, int beta) {
+    Cell e = instRec(in)->builder;
+    List qs = instRec(in)->specifics;
+    for (; nonNull(qs); qs = tl(qs))
+        if (isEquality(hd(qs)))
+            solveEquality(instRec(in)->line, hd(qs), beta);
+        else
+            e = ap(e, assumeEvid(hd(qs), beta));
+    return e;
 }
 
 /* Make list of predicate assumps. from qs (offset o), w/ new dict vars for
@@ -60,6 +111,21 @@ List makePredAss(List qs, int o) {
     List result = NIL;
     for (; nonNull(qs); qs = tl(qs))
         result = cons(triple(hd(qs), mkInt(o), inventDictVar()), result);
+    return rev(result);
+}
+
+/* The predicate assignment for the context qs, read at offset o, taken as
+ * given for the body about to be checked, at line: each equality in it is
+ * applied by unifying its sides, and each class predicate gets a new dict
+ * var, as makePredAss gives it */
+List assumeGivens(int line, List qs, int o) {
+    assertPredList(qs);
+    List result = NIL;
+    for (; nonNull(qs); qs = tl(qs))
+        if (isEquality(hd(qs)))
+            solveEquality(line, hd(qs), o);
+        else
+            result = cons(triple(hd(qs), mkInt(o), inventDictVar()), result);
     return rev(result);
 }
 
@@ -366,6 +432,10 @@ Cell inEntail(List ps, Cell pi, int o, int d) {
 #endif
         for (es = instRec(in)->specifics; nonNull(es); es = tl(es)) {
             Cell ev;
+            if (isEquality(hd(es))) { /* solved, and no argument      */
+                solveEquality(instRec(in)->line, hd(es), beta);
+                continue;
+            }
             improve1(0, ps, hd(es), beta);
             ev = entail(ps, hd(es), beta, d);
             if (nonNull(ev))
@@ -565,9 +635,7 @@ List elimPredsUsing(List ps, List sps) {
             Inst in;
             int beta;
             if (numFixedVars > 0 && nonNull(in = findInstFor(pi, o, &beta))) {
-                List qs = instRec(in)->specifics;
-                for (ev = instRec(in)->builder; nonNull(qs); qs = tl(qs))
-                    ev = ap(ev, assumeEvid(hd(qs), beta));
+                ev = applyToEvid(in, beta);
                 overEvid(thd3(hd(p)), ev);
             } else { /* No worthwhile progress possible */
                 tl(p) = rems;
@@ -590,10 +658,7 @@ void reducePreds(void) {
         Inst in = findInstFor(pi, o, &beta);
         preds = tl(preds);
         if (nonNull(in)) {
-            List qs = instRec(in)->specifics;
-            Cell ev = instRec(in)->builder;
-            for (; nonNull(qs); qs = tl(qs))
-                ev = ap(ev, assumeEvid(hd(qs), beta));
+            Cell ev = applyToEvid(in, beta);
             overEvid(thd3(hd(p)), ev);
         } else { /* No worthwhile progress possible */
             tl(p) = rems;

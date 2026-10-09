@@ -13,6 +13,7 @@ extern List preds; /* Current predicate assignment         */
 
 extern Cell assumeEvid(Cell, int);
 extern List makePredAss(List, int);
+extern List assumeGivens(int, List, int);
 extern List copyPreds(List);
 extern void qualify(List, Cell);
 extern void qualifyBinding(List, Cell);

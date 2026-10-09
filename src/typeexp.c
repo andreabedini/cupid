@@ -472,6 +472,12 @@ bool isAmbiguous(Type type) {
     return false;
 }
 
+/* The dependencies of an equality: each side determines the other.  us and
+ * vs are the variables of its two sides. */
+static List equalityFunDeps(List us, List vs, List fds) {
+    return cons(pair(us, vs), cons(pair(vs, us), fds));
+}
+
 List calcFunDeps(List ps) {
     List fds = NIL;
     for (; nonNull(ps); ps = tl(ps)) { /* Calc functional dependencies     */
@@ -487,6 +493,9 @@ List calcFunDeps(List ps) {
                         fds);
                 }
             }
+        } else if (isEquality(pi)) {
+            fds = equalityFunDeps(offsetTyvarsIn(arg(fun(pi)), NIL),
+                                  offsetTyvarsIn(arg(pi), NIL), fds);
         }
     }
     return fds;
@@ -509,6 +518,9 @@ List calcFunDepsPreds(List ps) {
                                fds);
                 }
             }
+        } else if (isEquality(pi)) {
+            fds = equalityFunDeps(zonkTyvarsIn(zonkType(arg(fun(pi)), o), NIL),
+                                  zonkTyvarsIn(zonkType(arg(pi), o), NIL), fds);
         }
     }
     return fds;
@@ -538,7 +550,10 @@ Cell depPredExp(int line, List tyvars, Cell pred) {
         h = fun(h);
     }
 
-    if (isQCon(h)) { /* standard class constraint          */
+    if (h == EQUALITY) { /* an equality: its sides are resolved above */
+        if (args != 2)
+            internal("depPredExp");
+    } else if (isQCon(h)) { /* standard class constraint          */
         Class c = findQualClass(h);
         if (isNull(c)) {
             errHead(line);

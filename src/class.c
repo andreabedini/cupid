@@ -198,6 +198,14 @@ void checkClassDefn(Class c) {
 
     tcDeps = NIL; /* find dependents               */
     map2Over(depPredExp, cclassRec(c)->line, tyvars, cclassRec(c)->supers);
+    for (ss = cclassRec(c)->supers; nonNull(ss); ss = tl(ss))
+        if (isEquality(hd(ss))) {
+            errHead(cclassRec(c)->line);
+            errPrintf("Equality constraint as a superclass of \"%s\" is not "
+                      "supported",
+                      textToStr(cclassRec(c)->text));
+            errFail();
+        }
 
     cclassRec(c)->numSupers = length(cclassRec(c)->supers);
     cclassRec(c)->defaults =
@@ -634,7 +642,10 @@ void checkInstDefn(Inst in) {
         errFail();
     }
 
-    instRec(in)->numSpecifics = length(instRec(in)->specifics);
+    instRec(in)->numSpecifics = 0; /* dictionary parameters of the builder: */
+    for (List ps = instRec(in)->specifics; nonNull(ps); ps = tl(ps))
+        if (!isEquality(hd(ps))) /* one per class predicate, none for an */
+            instRec(in)->numSpecifics++; /* equality                  */
     instRec(in)->c = getHead(instRec(in)->head);
     if (!isClass(instRec(in)->c)) {
         errHead(line);

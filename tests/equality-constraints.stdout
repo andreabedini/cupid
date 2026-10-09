@@ -1,0 +1,27 @@
+Main> f :: (a ~ Int) => a -> Int
+
+Main> f :: Int -> Int
+Main> -- type class
+class Describe a where
+  describe :: a -> String
+
+-- instances:
+instance (a ~ Char) => Describe [a]
+
+Main> insert :: (Container a, b ~ c) => b -> a c -> a c  -- class member
+
+Main> get :: R -> Int  -- selector function
+
+Main> 42
+12
+False
+3
+3
+string hello
+string 
+xy
+42
+7
+5
+
+Main> [Leaving Cuddles]

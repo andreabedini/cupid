@@ -1,0 +1,6 @@
+runcuddles: Error occurred
+ERROR "equality-instance-cannot-hold.hs":6 - Equality constraint cannot hold
+*** Constraint     : Bool ~ Char
+
+
+

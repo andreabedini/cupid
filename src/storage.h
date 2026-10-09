@@ -320,7 +320,8 @@ typedef enum CellTag {
 
     SKOLEM = 133, /* Skolem constant                       */
 
-    DOTDOT = 134, /* ".." in import/export list            */
+    DOTDOT = 134,   /* ".." in import/export list            */
+    EQUALITY = 135, /* The ~ of an equality predicate t1 ~ t2, as its head */
 
     ZERONUM = 136, /* The zero bignum (see POSNUM, NEGNUM)  */
 
@@ -1059,6 +1060,12 @@ extern List nubList(List);          /* non-destructive */
 
 #define fun(c) fst(c)
 #define arg(c) snd(c)
+
+/* A predicate is a class applied to types, or EQUALITY applied to two
+ * types, the equality t1 ~ t2 */
+CUDDLES_inline bool isEquality(Cell pi) {
+    return isAp(pi) && isAp(fun(pi)) && fun(fun(pi)) == EQUALITY;
+}
 extern Cell getHead(Cell);
 extern List getArgs(Cell);
 extern int argCount;

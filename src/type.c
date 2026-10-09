@@ -300,6 +300,17 @@ static void markAssumList(List as) {
     }
 }
 
+/* Mark the type variables of the enclosing groups' assumptions, of the
+ * predicates sps they are waiting on, and of the scoped type variables as
+ * fixed, so that copying a type quantifies only what this group introduced */
+static void markEnclosing(List sps) {
+    clearMarks();
+    mapProc(markAssumList, tl(defnBounds));
+    mapProc(markAssumList, tl(varsBounds));
+    mapProc(markPred, sps);
+    markBtyvs();
+}
+
 /* Find most recent assumption about variable named t, if any return translated
  * variable, with its type in *type */
 static Cell findAssum(Text t, Type *type) {
@@ -854,7 +865,9 @@ static Cell typeAp(int l, Cell e, Typing *ty) {
         List evs = NIL;
         List ps;
         for (ps = t.preds; nonNull(ps); ps = tl(ps)) {
-            evs = cons(assumeEvid(hd(ps), t.offs), evs);
+            Cell ev = assumeEvid(hd(ps), t.offs);
+            if (nonNull(ev)) /* an equality has none              */
+                evs = cons(ev, evs);
         }
         if (!isName(h) || !isCfun(h)) {
             h = applyToArgs(h, rev(evs));
@@ -994,8 +1007,13 @@ static Cell typeExpected(int l, char *wh, Cell e, Type reqd, int alpha, int n,
     Type t = in.type;
     int o = in.offs;
     int m = in.free;
-    List ps = makePredAss(in.preds, o);
-    int i;
+    List ps = assumeGivens(l, in.preds, o);
+    List determined = NIL; /* the variables the given equalities bound */
+    int i, j;
+
+    for (i = 0; i < m; i++)
+        if (isBound(tyvar(o + i)))
+            determined = cons(mkInt(i), determined);
 
     preds = NIL;
     e = check(l, e, NIL, wh, t, o);
@@ -1031,9 +1049,9 @@ static Cell typeExpected(int l, char *wh, Cell e, Type reqd, int alpha, int n,
         cantEstablish(l, wh, e, ty, qs);
     }
 
-    resetGenerics();
-    for (i = 0; i < m; i++)
-        if (copyTyvar(o + i) != mkOffset(i)) {
+    resetGenerics(); /* the variables the givens left free must still be  */
+    for (i = 0, j = 0; i < m; i++) /* free, and distinct               */
+        if (!intIsMember(i, determined) && copyTyvar(o + i) != mkOffset(j++)) {
             List qs = copyPreds(ps);
             Type it = copyType(t, o);
             tooGeneral(l, e, reqd, generalize(qs, it));
@@ -1619,12 +1637,7 @@ static void unrestricted(List bs) {
         mapProc(typeBind, hd(imps));
         improve(line, NIL, preds);
 
-        clearMarks();
-        mapProc(markAssumList, tl(defnBounds));
-        mapProc(markAssumList, tl(varsBounds));
-        mapProc(markPred, savePreds);
-        markBtyvs();
-
+        markEnclosing(savePreds);
         normPreds(line);
         savePreds = elimOuterPreds(savePreds);
         if (nonNull(preds) &&
@@ -1652,9 +1665,11 @@ static void unrestricted(List bs) {
         List alts = snd(snd(b));
         int line = rhsLine(snd(hd(alts)));
         Type t;
+        Type rt; /* the declared type, with its equalities applied */
         int o;
         int m;
         List ps;
+        List qs;
 
         hd(defnBounds) = NIL;
         hd(depends) = NODEPENDS;
@@ -1664,7 +1679,10 @@ static void unrestricted(List bs) {
         o = sig.offs;
         m = sig.free;
         t = dropRank2(sig.type, o, m);
-        ps = makePredAss(sig.preds, o);
+        ps = assumeGivens(line, sig.preds, o);
+        markEnclosing(savePreds);
+        qs = copyPreds(ps); /* context first, as the inferred type is  */
+        rt = generalize(qs, liftRank2(t, o, m)); /* numbered below      */
 
         enterPendingBtyvs();
         for (; nonNull(alts); alts = tl(alts))
@@ -1675,12 +1693,7 @@ static void unrestricted(List bs) {
         if (nonNull(ps)) /* Add dict params, if necessary   */
             qualifyBinding(ps, b);
 
-        clearMarks();
-        mapProc(markAssumList, tl(defnBounds));
-        mapProc(markAssumList, tl(varsBounds));
-        mapProc(markPred, savePreds);
-        markBtyvs();
-
+        markEnclosing(savePreds);
         normPreds(line);
         savePreds = elimPredsUsing(ps, savePreds);
         if (nonNull(preds)) {
@@ -1703,7 +1716,7 @@ static void unrestricted(List bs) {
         ps = copyPreds(ps);
         t = generalize(ps, liftRank2(t, o, m));
 
-        if (!sameSchemes(t, fst(snd(b))))
+        if (!sameSchemes(t, rt))
             tooGeneral(line, fst(b), fst(snd(b)), t);
 
         if (nonNull(preds)) /* Check context was strong enough */
@@ -1851,7 +1864,7 @@ static void typeInstDefn(Inst in) {
     int alpha = newKindedVars(cclassRec(instRec(in)->c)->kinds);
     List supers = makePredAss(cclassRec(instRec(in)->c)->supers, alpha);
     int beta = newKindedVars(instRec(in)->kinds);
-    List params = makePredAss(instRec(in)->specifics, beta);
+    List params = assumeGivens(instRec(in)->line, instRec(in)->specifics, beta);
     Cell d = inventDictVar();
     /* A previous comment indicated that evids may be wrong
        in some cases when you have overlapping instances.
@@ -1960,7 +1973,7 @@ static void typeMember(char *wh, Name mem, Cell alts, List evids, Cell head,
     o = sig.offs;
     m = sig.free;
     t = dropRank2(sig.type, o, m);
-    ps = makePredAss(sig.preds, o);
+    ps = assumeGivens(line, sig.preds, o);
     if (!unifyPred(hd(sig.preds), o, head, beta))
         internal("typeMember1");
     clearMarks();
@@ -2443,9 +2456,8 @@ static Pair typeSel(Name s) {
     preds = scSimplify(preds);       /* Simplify context                 */
     dom = copyType(dom, o);          /* Calculate domain type    */
     Typing rt = instantiate(rng, o); /* rng is read at the first domain's o */
-    rng = copyType(rt.type, rt.offs);
     if (nonNull(rt.preds)) {
-        List ps = makePredAss(rt.preds, rt.offs);
+        List ps = assumeGivens(nameRec(s)->line, rt.preds, rt.offs);
         List alts1 = alts;
         for (; nonNull(alts1); alts1 = tl(alts1)) {
             Cell body = nv;
@@ -2456,6 +2468,7 @@ static Pair typeSel(Name s) {
         }
         preds = appendOnto(preds, ps);
     }
+    rng = copyType(rt.type, rt.offs); /* after its equalities are applied */
     nameRec(s)->type = generalize(copyPreds(preds), fn(dom, rng));
     nameRec(s)->arity = 1 + length(preds);
     map1Proc(qualify, preds, alts);

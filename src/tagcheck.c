@@ -55,6 +55,8 @@ bool isTypeExpr(Cell t) {
 }
 
 bool isPredExpr(Cell pi) {
+    if (isEquality(pi))
+        return isTypeExpr(arg(fun(pi))) && isTypeExpr(arg(pi));
     for (; isAp(pi); pi = fst(pi))
         if (!isTypeExpr(snd(pi)))
             return false;

@@ -1,0 +1,5 @@
+runcuddles: Error occurred
+ERROR "equality-deriving.hs":7 - Cannot derive Show (U a): an instance it needs has the equality a ~ Int in its context
+
+
+

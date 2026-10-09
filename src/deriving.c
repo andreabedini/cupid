@@ -219,7 +219,19 @@ static void calcInstPreds(Inst in) {
             Cell pi = fst(p);
             int o = intOf(snd(p));
             int at;
-            Inst in1 = findInstFor(pi, o, &at);
+            Inst in1;
+            if (isEquality(pi)) { /* from the context of an instance used */
+                Cell bpi = instRec(in)->head;
+                pi = copyPred(pi, o);
+                errHead(instRec(in)->line);
+                errPrintf("Cannot derive ");
+                errPred(bpi);
+                errPrintf(": an instance it needs has the equality ");
+                errPred(pi);
+                errPrintf(" in its context\n");
+                errFail();
+            }
+            in1 = findInstFor(pi, o, &at);
             if (nonNull(in1)) {
                 List qs = instRec(in1)->specifics;
                 int off = mkInt(at);
