@@ -1,0 +1,16 @@
+Main.T: A =1 ="x"
+Main.T: B 
+Main.T: C f1=True f2=[3]
+Main.P: :% =1 ='c'
+Main.N: N =7
+Main.Five: F1 
+Main.Five: F2 
+Main.Five: F3 
+Main.Five: F4 
+Main.Five: F5 
+(C {f1 = False, f2 = "ab"},2 :% 'z',[F1,F2,F3,F4,F5])
+(Infix RightAssociative 5,Prefix)
+(True,False)
+Main.R: R r1=1 r2='r'
+(True,False)
+True

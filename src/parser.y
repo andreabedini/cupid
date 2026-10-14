@@ -274,8 +274,8 @@ topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
 					{defTycon(7,$5,$4,
 						  ap(qualType($2,rev($6)),
 						     $7),DATATYPE);}
-	  | DATA btype2			{defTycon(2,$1,checkTyLhs($2),
-						    ap(NIL,NIL),DATATYPE);}
+	  | DATA btype2 deriving	{defTycon(3,$1,checkTyLhs($2),
+						    ap(NIL,$3),DATATYPE);}
 	  | DATA context IMPLIES tyLhs  {defTycon(4,$1,$4,
 						  ap(qualType($2,NIL),
 						     NIL),DATATYPE);}
@@ -290,7 +290,7 @@ topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
 						       $7),DATATYPE);}
 	  | DATA opLhs '=' constrs deriving
 					{defTycon(5,$3,$2,ap(rev($4),$5),DATATYPE);}
-	  | DATA opLhs			{defTycon(2,$1,$2,ap(NIL,NIL),DATATYPE);}
+	  | DATA opLhs deriving		{defTycon(3,$1,$2,ap(NIL,$3),DATATYPE);}
 	  | DATA error			{syntaxError("data declaration");}
 	  | TNEWTYPE btype2 '=' nconstr deriving
 					{defTycon(5,$3,checkTyLhs($2),

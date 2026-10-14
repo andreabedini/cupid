@@ -13,7 +13,7 @@ default search path finds them.
 | Package | Contents |
 |---|---|
 | `cupid` | The `Prelude`, `Cupid.Prelude` (where most of it is defined) and the `Cupid.*` modules that bind the interpreter's primitives |
-| `base` | The `base` library of 2006: `Control.*`, `Data.*`, `Foreign.*`, `System.*`, `Text.*` |
+| `base` | The `base` library of 2006: `Control.*`, `Data.*`, `Foreign.*`, `System.*`, `Text.*`; and `GHC.Generics`, added since |
 
 ## Modules beyond Haskell 2010
 
@@ -76,7 +76,7 @@ types to Haskell types (`HsType_int`, `HsType_mode_t`, ...), the
 `Foreign`, `Foreign.C` (and `.Error`, `.String`, `.Types`),
 `Foreign.ForeignPtr`, `Foreign.Marshal` (and `.Alloc`, `.Array`,
 `.Error`, `.Pool`, `.Utils`), `Foreign.Ptr`, `Foreign.StablePtr`,
-`Foreign.Storable`, `Numeric`, `System.Cmd`,
+`Foreign.Storable`, `GHC.Generics`, `Numeric`, `System.Cmd`,
 `System.Console.GetOpt`, `System.CPUTime`, `System.Directory` (and
 `.Internals`), `System.Environment`, `System.Exit`, `System.Info`,
 `System.IO` (and `.Error`, `.Unsafe`), `System.Locale`, `System.Mem`

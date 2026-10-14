@@ -476,6 +476,69 @@ getA (R {a}) = a
 mk a b = R {a, b}
 ```
 
+## Deriving Generic
+
+`deriving Generic`, with `Generic` imported from `GHC.Generics`,
+gives a type a representation built from that module's types, so that
+a function written once over the representation works for every such
+type:
+
+```haskell
+import GHC.Generics
+
+data T a = A Int a | B deriving Generic
+
+class GCount f where
+    gcount :: f p -> Int
+instance GCount U1 where
+    gcount _ = 0
+instance GCount (K1 i c) where
+    gcount _ = 1
+instance (GCount f, GCount g) => GCount (f :+: g) where
+    gcount (L1 x) = gcount x
+    gcount (R1 y) = gcount y
+instance (GCount f, GCount g) => GCount (f :*: g) where
+    gcount (x :*: y) = gcount x + gcount y
+instance GCount f => GCount (M1 i c f) where
+    gcount (M1 x) = gcount x
+
+fields :: (Generic a r, GCount r) => a -> Int
+fields x = gcount (from x)
+```
+
+`fields (A 1 'x')` is 2.  The representation has the shape GHC
+gives it: `M1 D` around the type, `:+:` between constructors, `M1 C`
+around each, `:*:` between fields, `M1 S` around each, and `K1 R`
+holding the field; `U1` for a constructor without fields and `V1` for
+a type without constructors.  Sums and products are balanced.
+`datatypeName`, `moduleName`, `isNewtype`, `conName`, `conFixity`,
+`conIsRecord` and `selName` give the metadata.  A constructor's
+fixity is infix when derived `Show` would show it infix.
+
+A declaration with no constructors may have a `deriving` clause, as
+Haskell 2010 allows; `Generic` is the only class that can be derived
+for it.
+
+Differences from GHC's `DeriveGeneric`:
+
+- There are no type families, so the representation is the second
+  parameter of the class, determined by the first:
+  `class Generic a rep | a -> rep`.  Where GHC code writes
+  `(Generic a, GShow (Rep a)) => ...`, write
+  `(Generic a r, GShow r) => ...`.  Code that names `Rep` does not
+  load.
+- There are no type-level strings, so the metadata in a
+  representation are type indices, not names: `MetaData T` for the
+  type, `MetaCons T n` for its constructors and `MetaSel T n m` for
+  their fields, with `n` and `m` counted in `Zero` and `Succ`.  The
+  metadata classes find the names through a third method of
+  `Generic`, `datatypeInfo`, which `deriving` defines.  Code that
+  uses only the classes is not affected.
+- The metadata classes' methods take an `M1` rather than any type
+  constructor applied to the metadata.
+- `Generic1` cannot be derived, and the Prelude's own types have no
+  `Generic` instances.
+
 ## Restricted type synonyms
 
 A type synonym may be declared transparent inside the definitions of

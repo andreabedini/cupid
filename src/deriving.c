@@ -4,7 +4,7 @@
  * A "deriving" clause asks for an instance the programmer did not write.
  * This file decides what context such an instance needs, by iterating to a
  * fixed point over the requests, and then writes the bindings for it: Eq,
- * Ord, Enum, Ix, Show, Read and Bounded.  tycon.c collects the requests
+ * Ord, Enum, Ix, Show, Read, Bounded and Generic.  tycon.c collects the requests
  * and hands them over; nothing here is reached any other way.
  *
  * Split out of static.c.
@@ -61,6 +61,19 @@ static Cell mkReadTuple(Cell);
 static Cell mkReadRecord(Cell, List);
 static List deriveBounded(Tycon);
 static List mkBndBinds(int, Cell, int);
+static bool isGenericClass(Class);
+static List deriveGeneric(Inst, Type);
+static Cell genTycon(char *);
+static Name genName(char *);
+static List conFieldTypes(Name);
+static Type genRep(Tycon);
+static Type genConRep(Type, Name, int);
+static Cell genIndex(int);
+static Cell genBalanced(Cell, List, int);
+static Cell genInject(Cell, int, int);
+static Cell genValue(Name, List, int, int);
+static Cell genDataInfo(Tycon);
+static Cell genConInfo(Name);
 
 /* --------------------------------------------------------------------------
  * Process derived instance requests:
@@ -77,6 +90,9 @@ void checkDerive(Tycon t, List p, List ts, Cell ct) {
         errHead(line);
         errPrintf("Unknown class \"%s\" in derived instance", identToStr(ct));
         errFail();
+    }
+    if (isGenericClass(c)) { /* a representation needs no context */
+        ts = NIL;
     }
     addDerInst(line, c, p, dupList(ts), t, tyconRec(t)->arity);
 }
@@ -330,6 +346,13 @@ static void addDerivImp(Inst in) {
     List imp = NIL;
     Type t = getHead(arg(instRec(in)->head));
     Class c = instRec(in)->c;
+    if (isTycon(t) && !hasCfun(tyconRec(t)->defn) && !isGenericClass(c)) {
+        errHead(instRec(in)->line);
+        errPrintf("Cannot derive \"%s\" for type \"%s\", which has no "
+                  "constructors",
+                  textToStr(cclassRec(c)->text), textToStr(tyconRec(t)->text));
+        errFail();
+    }
     if (c == classEq) {
         imp = deriveEq(t);
     } else if (c == classOrd) {
@@ -344,6 +367,8 @@ static void addDerivImp(Inst in) {
         imp = deriveRead(t);
     } else if (c == classBounded) {
         imp = deriveBounded(t);
+    } else if (isGenericClass(c)) {
+        imp = deriveGeneric(in, t);
     } else {
         errHead(instRec(in)->line);
         errPrintf("Cannot derive instances of class \"%s\"",
@@ -1111,6 +1136,289 @@ static List mkBndBinds(int line, Cell h, int n) {
     }
     return cons(mkBind("minBound", mkVarAlts(line, minB)),
                 cons(mkBind("maxBound", mkVarAlts(line, maxB)), NIL));
+}
+
+/* --------------------------------------------------------------------------
+ * Deriving Generic, the class of GHC.Generics.  Given
+ *
+ *   data T a = A Int a | B
+ *
+ * the instance is
+ *
+ *   instance Generic (T a)
+ *       (M1 D (MetaData (T a))
+ *          (M1 C (MetaCons (T a) Zero)
+ *               (M1 S (MetaSel (T a) Zero Zero) (K1 R Int) :*:
+ *                M1 S (MetaSel (T a) Zero (Succ Zero)) (K1 R a))
+ *           :+: M1 C (MetaCons (T a) (Succ Zero)) U1)) where
+ *     from (A x y) = M1 (L1 (M1 (M1 (K1 x) :*: M1 (K1 y))))
+ *     from B       = M1 (R1 (M1 U1))
+ *     to (M1 (L1 (M1 (M1 (K1 x) :*: M1 (K1 y))))) = A x y
+ *     to (M1 (R1 (M1 U1)))                          = B
+ *     datatypeInfo _ = DataInfo "T" "M" False
+ *                        [ConInfo "A" Prefix False ["", ""],
+ *                         ConInfo "B" Prefix False []]
+ *
+ * The class has the representation as its second parameter, determined by
+ * the first, since there are no type families, so the instance head is
+ * filled in here once the constructors' types are known; and it has no
+ * context, since a representation needs nothing of the types it holds.
+ * Sums and products are balanced, n splitting as n/2 on the left, as in
+ * GHC.  The metadata are type indices into the value of datatypeInfo, the
+ * constructors and fields counted from Zero: Cupid has no type-level
+ * strings.  The types and constructors used are those of the module that
+ * defines the class, looked up by name.
+ * ------------------------------------------------------------------------*/
+
+static Module genModule; /* the module defining Generic, while deriving */
+
+/* Is c the Generic class of GHC.Generics? */
+static bool isGenericClass(Class c) {
+    return cclassRec(c)->text == findText("Generic") &&
+           moduleRec(cclassRec(c)->mod)->text == findText("GHC.Generics");
+}
+
+/* Bindings for the derived Generic instance in, for the type t; completes
+ * the instance head with the representation */
+static List deriveGeneric(Inst in, Type t) {
+    int line = instRec(in)->line;
+    List cs = tyconRec(t)->defn;
+    int n = 0;
+    int i = 0;
+    List froms = NIL;
+    List tos = NIL;
+    List info;
+
+    if (!isTycon(t)) {
+        internal("deriveGeneric");
+    }
+    genModule = cclassRec(instRec(in)->c)->mod;
+    instRec(in)->head = ap(instRec(in)->head, genRep(t));
+
+    for (; hasCfun(cs); cs = tl(cs)) {
+        n++;
+    }
+    if (n == 0) { /* from x = M1 (voidFrom x); to (M1 x) = voidTo x */
+        Cell v = hd(getDiVars(1));
+        Name m1 = genName("M1");
+        froms = singleton(
+            pair(singleton(v),
+                 pair(mkInt(line), ap(m1, ap(genName("voidFrom"), v)))));
+        tos = singleton(pair(singleton(ap(m1, v)),
+                             pair(mkInt(line), ap(genName("voidTo"), v))));
+    }
+    for (cs = tyconRec(t)->defn; hasCfun(cs); cs = tl(cs), i++) {
+        Name c = hd(cs);
+        int k = userArity(c);
+        List vs = getDiVars(k);
+        Cell con = c;
+        Cell pat = c;
+        int j = 0;
+        for (; j < k; j++, vs = tl(vs)) {
+            con = ap(con, hd(vs));
+            pat = ap(pat, hd(vs));
+        }
+        vs = getDiVars(k);
+        froms =
+            cons(pair(singleton(pat), pair(mkInt(line), genValue(c, vs, i, n))),
+                 froms);
+        tos =
+            cons(pair(singleton(genValue(c, vs, i, n)), pair(mkInt(line), con)),
+                 tos);
+    }
+
+    info = mkVarAlts(line, genDataInfo(t));
+    fst(hd(info)) = singleton(WILDCARD);
+    return cons(
+        mkBind("from", rev(froms)),
+        cons(mkBind("to", rev(tos)), cons(mkBind("datatypeInfo", info), NIL)));
+}
+
+/* The type constructor named s in the module defining Generic */
+static Cell genTycon(char *s) {
+    Text t = findText(s);
+    List ts = moduleRec(genModule)->tycons;
+    for (; nonNull(ts); ts = tl(ts)) {
+        if (isTycon(hd(ts)) && tyconRec(hd(ts))->text == t) {
+            return hd(ts);
+        }
+    }
+    errHead(0);
+    errPrintf("Cannot derive Generic: no type \"%s\" in module \"%s\"", s,
+              textToStr(moduleRec(genModule)->text));
+    errFail();
+}
+
+/* The value or constructor named s in the module defining Generic */
+static Name genName(char *s) {
+    Text t = findText(s);
+    List ns = moduleRec(genModule)->names;
+    for (; nonNull(ns); ns = tl(ns)) {
+        if (nameRec(hd(ns))->text == t) {
+            return hd(ns);
+        }
+    }
+    errHead(0);
+    errPrintf("Cannot derive Generic: no \"%s\" in module \"%s\"", s,
+              textToStr(moduleRec(genModule)->text));
+    errFail();
+}
+
+/* The types of the fields of constructor c, in order */
+static List conFieldTypes(Name c) {
+    Type t = nameRec(c)->type;
+    List ts = NIL;
+    int k = userArity(c);
+    if (isPolyType(t)) {
+        t = monotypeOf(t);
+    }
+    if (whatIs(t) == QUAL) {
+        t = snd(snd(t));
+    }
+    for (; k > 0; k--) {
+        ts = cons(arg(fun(t)), ts);
+        t = arg(t);
+    }
+    return rev(ts);
+}
+
+/* The representation of the type constructor t */
+static Type genRep(Tycon t) {
+    Type self = t;
+    List reps = NIL;
+    List cs = tyconRec(t)->defn;
+    int n = 0;
+    int i = 0;
+    for (; i < tyconRec(t)->arity; i++) {
+        self = ap(self, mkOffset(i));
+    }
+    for (; hasCfun(cs); cs = tl(cs), n++) {
+        reps = cons(genConRep(self, hd(cs), n), reps);
+    }
+    return ap(
+        ap(ap(genTycon("M1"), genTycon("D")), ap(genTycon("MetaData"), self)),
+        n == 0 ? genTycon("V1") : genBalanced(genTycon(":+:"), rev(reps), n));
+}
+
+/* The representation of constructor c, the ith of the type self */
+static Type genConRep(Type self, Name c, int i) {
+    List fs = conFieldTypes(c);
+    List sels = NIL;
+    int k = 0;
+    for (; nonNull(fs); fs = tl(fs), k++) {
+        Type meta =
+            ap(ap(ap(genTycon("MetaSel"), self), genIndex(i)), genIndex(k));
+        sels = cons(ap(ap(ap(genTycon("M1"), genTycon("S")), meta),
+                       ap(ap(genTycon("K1"), genTycon("R")), hd(fs))),
+                    sels);
+    }
+    return ap(ap(ap(genTycon("M1"), genTycon("C")),
+                 ap(ap(genTycon("MetaCons"), self), genIndex(i))),
+              k == 0 ? genTycon("U1")
+                     : genBalanced(genTycon(":*:"), rev(sels), k));
+}
+
+/* The type-level number n, Succ (... (Succ Zero)) */
+static Cell genIndex(int n) {
+    Cell t = genTycon("Zero");
+    for (; n > 0; n--) {
+        t = ap(genTycon("Succ"), t);
+    }
+    return t;
+}
+
+/* The first n of xs, n > 0, joined by the binary op into a balanced tree;
+ * used for types and values alike */
+static Cell genBalanced(Cell op, List xs, int n) {
+    int l = n / 2;
+    List rs = xs;
+    int i = 0;
+    if (n == 1) {
+        return hd(xs);
+    }
+    for (; i < l; i++) {
+        rs = tl(rs);
+    }
+    return ap(ap(op, genBalanced(op, xs, l)), genBalanced(op, rs, n - l));
+}
+
+/* Put e in the L1 and R1 that choose the ith of n constructors */
+static Cell genInject(Cell e, int i, int n) {
+    int l = n / 2;
+    if (n == 1) {
+        return e;
+    } else if (i < l) {
+        return ap(genName("L1"), genInject(e, i, l));
+    } else {
+        return ap(genName("R1"), genInject(e, i - l, n - l));
+    }
+}
+
+/* The representation of constructor c, the ith of n, applied to the
+ * variables vs; built afresh for each use, as pattern or expression */
+static Cell genValue(Name c, List vs, int i, int n) {
+    Name m1 = genName("M1");
+    int k = userArity(c);
+    List fs = NIL;
+    int j = 0;
+    for (; j < k; j++, vs = tl(vs)) {
+        fs = cons(ap(m1, ap(genName("K1"), hd(vs))), fs);
+    }
+    return ap(
+        m1, genInject(ap(m1, k == 0 ? genName("U1")
+                                    : genBalanced(genName(":*:"), rev(fs), k)),
+                      i, n));
+}
+
+/* The value of datatypeInfo for the type t */
+static Cell genDataInfo(Tycon t) {
+    List cs = tyconRec(t)->defn;
+    Cell infos = nameNil;
+    List rcs = NIL;
+    for (; hasCfun(cs); cs = tl(cs)) {
+        rcs = cons(hd(cs), rcs);
+    }
+    for (; nonNull(rcs); rcs = tl(rcs)) {
+        infos = ap2(nameCons, genConInfo(hd(rcs)), infos);
+    }
+    return ap(ap(ap(ap(genName("DataInfo"), mkStr(tyconRec(t)->text)),
+                    mkStr(moduleRec(tyconRec(t)->mod)->text)),
+                 tyconRec(t)->what == NEWTYPE ? nameTrue : nameFalse),
+              infos);
+}
+
+/* The ConInfo for constructor c: its fixity is infix when derived Show
+ * would show it infix */
+static Cell genConInfo(Name c) {
+    int k = userArity(c);
+    Syntax s = syntaxOf(c);
+    List cfs = cfunSfuns;
+    Cell labels = nameNil;
+    Cell fixity = genName("Prefix");
+    bool record = false;
+
+    for (; nonNull(cfs) && c != fst(hd(cfs)); cfs = tl(cfs)) {
+    }
+    if (nonNull(cfs)) {
+        List ls = rev(dupList(snd(hd(cfs))));
+        record = true;
+        for (; nonNull(ls); ls = tl(ls)) {
+            labels = ap2(nameCons, mkStr(textOf(hd(ls))), labels);
+        }
+    } else {
+        for (; k > 0; k--) {
+            labels = ap2(nameCons, mkStr(findText("")), labels);
+        }
+    }
+    if (userArity(c) == 2 && assocOf(s) != APPLIC) {
+        char *a = assocOf(s) == LEFT_ASS    ? "LeftAssociative"
+                  : assocOf(s) == RIGHT_ASS ? "RightAssociative"
+                                            : "NotAssociative";
+        fixity = ap(ap(genName("Infix"), genName(a)), mkInt(precOf(s)));
+    }
+    return ap(ap(ap(ap(genName("ConInfo"), mkStr(nameRec(c)->text)), fixity),
+                 record ? nameTrue : nameFalse),
+              labels);
 }
 
 /* Implement every instance asked for by a deriving clause and hand the list
