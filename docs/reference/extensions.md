@@ -403,6 +403,40 @@ comes from:
 - There are no type families, so an equality is never stuck: it is
   solved, or it is an error, where it arises.
 
+## Constraint synonyms
+
+A type synonym may name a constraint:
+
+```haskell
+import GHC.Stack (HasCallStack)
+import Data.Kind (Constraint)
+
+type Partial = HasCallStack
+type ShowEq a = (Show a, Eq a)
+type MonadIOFail m = (MonadIO m, MonadFail m)
+type Trivial = (() :: Constraint)
+
+firstRepeat :: ShowEq a => [a] -> String
+```
+
+In a context the synonym stands for its parts: `ShowEq a` gives what
+`Show a` and `Eq a` give, and holds wherever they both hold.  Its body
+is a class constraint, a tuple of them, or anything given the kind
+`Constraint`; the empty constraint must be written `(() :: Constraint)`,
+since a bare `()` is the unit type.  A synonym may name another, and
+may be exported and imported like a class.
+
+Each synonym is a class of its own, with its body as the superclasses
+and one instance, `instance (Show a, Eq a) => ShowEq a`, which is what
+`:info` shows.  It differs from GHC's `ConstraintKinds` in that:
+
+- The body may not have an equality, since an equality may not be a
+  superclass.
+- A synonym must be applied to all its parameters, as a class is.
+- Only a synonym's own declaration can give it the kind `Constraint`;
+  there are no other types of that kind, so a constraint cannot be a
+  type parameter.
+
 ## Anonymous type variables
 
 An underscore in a type stands for a fresh type variable:

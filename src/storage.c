@@ -454,13 +454,20 @@ List addTyconsMatching(char *pat, List ts) {
     return ts;
 }
 
-/*
- * Remove 'tc' from a module's 'tycons' list; used to implement 
- * local overrides of imported decls.
- */
+/* Remove tc, a tycon of the current module, from the tycon table and the
+ * module's list of tycons, as when a synonym turns out to name a
+ * constraint and becomes a class. */
 void removeTycon(Tycon tc) {
     List ls = moduleRec(currentModule)->tycons;
     List *prev = &(moduleRec(currentModule)->tycons);
+    Tycon *hp = &tyconHash[tHash(tyconRec(tc)->text)];
+
+    for (; nonNull(*hp); hp = &tyconRec(*hp)->nextTyconHash) {
+        if (*hp == tc) {
+            *hp = tyconRec(tc)->nextTyconHash;
+            break;
+        }
+    }
 
     for (; nonNull(ls); ls = tl(ls)) {
         if (hd(ls) == tc) {

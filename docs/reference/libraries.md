@@ -32,11 +32,11 @@ most: `Control.Category`, `Control.Monad.Fail`,
 `Data.Bifunctor`, `Data.Bitraversable`, `Data.Data`, `Data.Foldable1`,
 `Data.Function`, `Data.Functor` and its submodules (among them
 `.Classes` and `.Contravariant`), `Data.List.NonEmpty`, `Data.Proxy`,
-`Data.Semigroup`, `Data.String`, `Data.Void`, `GHC.Generics` and
-`Numeric.Natural`.  With them the transformers package loads as it is.
-The older modules have the functions added to them since, such as
-`Data.List.intercalate`, `Data.Ord.Down` and `Text.Read.readMaybe`.
-Five differ from GHC's:
+`Data.Semigroup`, `Data.String`, `Data.Void`, `GHC.Generics`,
+`GHC.Stack` and `Numeric.Natural`.  With them the transformers package
+loads as it is.  The older modules have the functions added to them
+since, such as `Data.List.intercalate`, `Data.Ord.Down` and
+`Text.Read.readMaybe`.  Six differ from GHC's:
 
 - `Proxy` stands for a type of kind `Type` only, since kinds are not
   polymorphic: `Proxy :: Proxy Int` but not `Proxy :: Proxy Maybe`.
@@ -47,6 +47,10 @@ Five differ from GHC's:
 - `Data`'s `dataCast1` and `dataCast2` take `Typeable1` and `Typeable2`
   for the type constructor, as `Typeable` is for types of kind `Type`
   only.
+- `HasCallStack` is a class with no parameters that always holds, so
+  code with it in its types loads and runs, but no call stack is
+  recorded: `callStack` is always empty, and an `error` call reports
+  only its message.
 - `Read1` and `Read2` have only their `ReadS` methods, since the `Read`
   class has no `readPrec`, and `Eq1` and its kin have no quantified
   superclasses, so `Eq1 f` does not give `Eq (f a)`.
@@ -134,9 +138,10 @@ types to Haskell types (`HsType_int`, `HsType_mode_t`, ...), the
 `.Error`, `.String`, `.Types`), `Foreign.ForeignPtr`,
 `Foreign.Marshal` (and `.Alloc`, `.Array`, `.Error`, `.Pool`,
 `.Utils`), `Foreign.Ptr`, `Foreign.StablePtr`, `Foreign.Storable`,
-`GHC.Generics`, `Numeric`, `Numeric.Natural`, `Prelude`, `System.Cmd`,
-`System.Console.GetOpt`, `System.CPUTime`, `System.Directory` (and
-`.Internals`), `System.Environment`, `System.Exit`, `System.Info`,
+`GHC.Generics`, `GHC.Stack` (and `.Types`), `Numeric`,
+`Numeric.Natural`, `Prelude`, `System.Cmd`, `System.Console.GetOpt`,
+`System.CPUTime`, `System.Directory` (and `.Internals`),
+`System.Environment`, `System.Exit`, `System.Info`,
 `System.IO` (and `.Error`, `.Unsafe`), `System.Locale`, `System.Mem`
 (and `.StableName`, `.Weak`), `System.Posix.Internals`,
 `System.Posix.Signals`, `System.Posix.Types`,

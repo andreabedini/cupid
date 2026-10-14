@@ -144,6 +144,122 @@ void clearTypeIns(void) {
  * - install synonym expansions and constructor definitions.
  * ------------------------------------------------------------------------*/
 
+/* --------------------------------------------------------------------------
+ * Constraint synonyms:
+ *
+ * A synonym whose body is a constraint, such as
+ *
+ *   type Partial = HasCallStack
+ *   type MonadIOFail m = (MonadIO m, MonadFail m)
+ *   type Trivial = (() :: Constraint)
+ *
+ * is turned, before the declarations are checked, into a class with the
+ * body as its superclasses and the one instance that has the body as its
+ * context:
+ *
+ *   class (MonadIO m, MonadFail m) => MonadIOFail m
+ *   instance (MonadIO m, MonadFail m) => MonadIOFail m
+ *
+ * In a context, MonadIOFail m then gives what its parts give, and it
+ * holds wherever they all hold.  A body is a constraint when it is
+ * annotated with Constraint, or is a class applied to types, or is a
+ * tuple with one of those in it; a bare () is the unit type.  Synonyms for synonyms are found by repeating the
+ * search until it finds no more.
+ * ------------------------------------------------------------------------*/
+
+/* Whether t is a class applied to types */
+static bool isClassPred(Type t) {
+    Cell h = getHead(t);
+    return isQCon(h) && nonNull(findQualClass(h));
+}
+
+/* Whether t, the body of a synonym, is a constraint */
+static bool isConstraintBody(Type t) {
+    if (whatIs(t) == KINDED) {
+        return snd(snd(t)) == CONSTRAINT;
+    }
+    if (isTuple(getHead(t)) && argCount == tupleOf(getHead(t))) {
+        for (; isAp(t); t = fun(t)) {  /* one class makes it a constraint, */
+            if (isClassPred(arg(t))) { /* so that a type in it is an      */
+                return true;           /* undefined class                 */
+            }
+        }
+        return false;
+    }
+    return isClassPred(t);
+}
+
+/* The constraints of a body that isConstraintBody accepts */
+static List constraintsOf(Type t) {
+    List ps = NIL;
+    if (whatIs(t) == KINDED) {
+        t = fst(snd(t));
+    }
+    if (t == typeUnit) {
+        return NIL;
+    }
+    if (!isTuple(getHead(t))) {
+        return singleton(t);
+    }
+    for (; isAp(t); t = fun(t)) {
+        ps = cons(arg(t), ps);
+    }
+    return ps;
+}
+
+/* A copy of a type expression as the parser built it, for a second
+ * declaration that static analysis may overwrite separately */
+static Type copyTypeExp(Type t) {
+    if (isAp(t)) {
+        return ap(copyTypeExp(fun(t)), copyTypeExp(arg(t)));
+    }
+    if (whatIs(t) == KINDED) { /* an instance head binds no kinds */
+        return fst(snd(t));
+    }
+    return t;
+}
+
+static void constraintSynonym(Tycon tc) {
+    int line = tyconRec(tc)->line;
+    Cell lhs = fst(tyconRec(tc)->defn);
+    List ps = constraintsOf(snd(tyconRec(tc)->defn));
+    List is = NIL;
+    List qs = ps;
+
+    for (; nonNull(qs); qs = tl(qs)) {
+        is = cons(copyTypeExp(hd(qs)), is);
+    }
+    tyconDefns = removeCell(tc, tyconDefns);
+    removeTycon(tc);
+    classDefn(line, pair(ps, lhs), NIL, NIL);
+    instDefn(line, pair(rev(is), copyTypeExp(lhs)), NIL);
+}
+
+/* Turn the synonyms of this script that name constraints into classes */
+void constraintSynonyms(void) {
+    bool found = true;
+    while (found) {
+        List ts = tyconDefns;
+        found = false;
+        while (nonNull(ts)) {
+            Tycon tc = hd(ts);
+            Cell rhs = snd(tyconRec(tc)->defn);
+            ts = tl(ts);
+            if (tyconRec(tc)->what != SYNONYM) {
+                continue;
+            }
+            if (whatIs(rhs) == KINDED && snd(snd(rhs)) != CONSTRAINT) {
+                snd(tyconRec(tc)->defn) = fst(snd(rhs)); /* (t :: Type) */
+                continue;
+            }
+            if (isConstraintBody(snd(tyconRec(tc)->defn))) {
+                constraintSynonym(tc);
+                found = true;
+            }
+        }
+    }
+}
+
 /* Validate type constructor defn */
 void checkTyconDefn(Tycon d) {
     Cell lhs = fst(tyconRec(d)->defn);

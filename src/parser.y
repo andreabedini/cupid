@@ -263,6 +263,10 @@ topDecls  : topDecls ';'		{$$ = gcShadow(2,$1);}
 /*- Type declarations: ----------------------------------------------------*/
 
 topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
+	  | TYPE tyLhs '=' '(' ctxtType COCO kind ')'
+					{defTycon(8,$3,$2,
+						  ap(KINDED,pair($5,$7)),
+						  SYNONYM);}
 	  | TYPE tyLhs '=' type IN invars
 					{defTycon(6,$3,$2,
 						    ap($4,$6),RESTRICTSYN);}
@@ -539,6 +543,12 @@ classContext
 	  | '(' btype2 ')'		{$$ = gcShadow(3,singleton(checkPred($2)));}
 	  | '(' btypes2 ')'		{$$ = gcShadow(3,checkCtxt(rev($2)));}
  	  ;
+/* The body of a constraint synonym given with its kind, as in type C =
+ * (() :: Constraint): a constraint, a tuple of them or the empty one. */
+ctxtType  : btype2			{$$ = $1;}
+	  | '(' ')'			{$$ = gcShadow(2,typeUnit);}
+	  | '(' btypes2 ')'		{$$ = gcShadow(3,buildTuple($2));}
+	  ;
 preds	  : preds ',' pred		{$$ = gcShadow(3,cons($3,$1));}
 	  | btypes2 ',' eqpred		{$$ = gcShadow(3,cons($3,$1));}
 	  | btype2  ',' eqpred		{$$ = gcShadow(3,cons($3,cons($1,NIL)));}
