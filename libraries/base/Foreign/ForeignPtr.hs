@@ -69,7 +69,7 @@ import Foreign.Ptr
 
 
 
-import Cuddles.ForeignPtr
+import Cupid.ForeignPtr
 
 
 

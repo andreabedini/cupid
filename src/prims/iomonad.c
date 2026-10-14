@@ -40,10 +40,10 @@ Name nameIORun;  /* run IO code                     */
 Name nameIOBind; /* bind IO code                    */
 Name namePutStr; /* Prelude.putStr                  */
 
-static Name namePass;        /* auxiliary:: \f b a -> f a b     */
-static Name nameHreader;     /* auxiliary function                  */
-static Cell cuddlesProgName; /* value of getProgName            */
-static Cell cuddlesArgs;     /* value of getArgs                */
+static Name namePass;      /* auxiliary:: \f b a -> f a b     */
+static Name nameHreader;   /* auxiliary function                  */
+static Cell cupidProgName; /* value of getProgName            */
+static Cell cupidArgs;     /* value of getArgs                */
 
 static char *toIOErrorDescr(int, bool);
 static Name toIOError(int);
@@ -69,8 +69,8 @@ extern void pushString(char *);
 /* The statics that hold cells: registered as roots at INSTALL and marked
  * by the collector on every collection */
 static Cell *const iomonadRoots[] = {
-    &cuddlesProgName,
-    &cuddlesArgs,
+    &cupidProgName,
+    &cupidArgs,
 };
 
 /* Register the roots and predefine the names the IO monad's
@@ -80,7 +80,7 @@ static void installIomonad(void) {
     setCurrModule(modulePrelude);
     namePass = predefPrim("_pass", "passIO");
     nameHreader = predefPrim("_hreader", "hreader");
-    nameIORun = predefName("cuddlesIORun");
+    nameIORun = predefName("cupidIORun");
     nameIOBind = predefName("primbindIO");
     namePutStr = predefName("putStr");
 }
@@ -641,39 +641,39 @@ primFun(primSystem) {
     IOReturn(mkInt(WEXITSTATUS(r)));
 }
 
-void setCuddlesArgs(int argc, char *argv[]) {
+void setCupidArgs(int argc, char *argv[]) {
     int i;
     Cell str;
 
-    cuddlesArgs = nameNil;
+    cupidArgs = nameNil;
     pushString(argv[0]);
-    cuddlesProgName = pop();
+    cupidProgName = pop();
     for (i = argc - 1; i > 0; i--) {
         pushString(argv[i]);
         str = pop();
-        cuddlesArgs = ap2(nameCons, str, cuddlesArgs);
+        cupidArgs = ap2(nameCons, str, cupidArgs);
     }
 }
 
 /* PrimGetProgName :: IO String */
 primFun(primGetProgName) {
-    IOReturn(cuddlesProgName);
+    IOReturn(cupidProgName);
 }
 
 /* PrimGetArgs :: IO [String] */
 primFun(primGetArgs) {
-    IOReturn(cuddlesArgs);
+    IOReturn(cupidArgs);
 }
 
 /* PrimSetProgName :: String -> IO () */
 primFun(primSetProgName) {
-    cuddlesProgName = IOArg(1);
+    cupidProgName = IOArg(1);
     IOReturn(nameUnit);
 }
 
 /* PrimSetArgs :: [String] -> IO () */
 primFun(primSetArgs) {
-    cuddlesArgs = IOArg(1);
+    cupidArgs = IOArg(1);
     IOReturn(nameUnit);
 }
 
@@ -1377,7 +1377,7 @@ primFun(primEqRef) {
 #define SPArg(nm, offset)                                                      \
     eval(primArg(offset));                                                     \
     checkSP();                                                                 \
-    nm = (CuddlesStablePtr)whnfInt
+    nm = (CupidStablePtr)whnfInt
 
 /* nm should be a variable in which result is stored.
    If you use an expression, reevaluation might occur */
@@ -1385,7 +1385,7 @@ primFun(primEqRef) {
 
 /* A -> IO (StablePtr a) */
 primFun(primMakeSP) {
-    CuddlesStablePtr sp = mkStablePtr(IOArg(1));
+    CupidStablePtr sp = mkStablePtr(IOArg(1));
     if (sp == 0) {
         IOFail(mkIOError(NULL, nameIsFull, "Foreign.makeStablePtr",
                          "too many StablePtrs", NULL));
@@ -1395,7 +1395,7 @@ primFun(primMakeSP) {
 
 /* StablePtr a -> IO a */
 primFun(primDerefSP) {
-    CuddlesStablePtr x;
+    CupidStablePtr x;
     SPArg(x, 1 + IOArity);
 
     IOReturn(derefStablePtr(x));
@@ -1403,7 +1403,7 @@ primFun(primDerefSP) {
 
 /* StablePtr a -> IO () */
 primFun(primFreeSP) {
-    CuddlesStablePtr x;
+    CupidStablePtr x;
     SPArg(x, 1 + IOArity);
     freeStablePtr(x);
     IOReturn(nameUnit);
@@ -1411,7 +1411,7 @@ primFun(primFreeSP) {
 
 /* StablePtr a -> Ptr () */
 primFun(primCastSPToP) {
-    CuddlesStablePtr x;
+    CupidStablePtr x;
     SPArg(x, 1);
     PtrResult((void *)(intptr_t)x);
 }
@@ -1419,9 +1419,9 @@ primFun(primCastSPToP) {
 /* Ptr () -> StablePtr a */
 primFun(primCastPToSP) {
     void *x;
-    CuddlesStablePtr idx; /* not sp: that is the machine stack pointer */
+    CupidStablePtr idx; /* not sp: that is the machine stack pointer */
     PtrArg(x, 1);
-    idx = (CuddlesStablePtr)(intptr_t)x;
+    idx = (CupidStablePtr)(intptr_t)x;
     SPResult(idx);
 }
 

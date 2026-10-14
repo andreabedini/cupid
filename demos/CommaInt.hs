@@ -40,8 +40,8 @@ commaint = reverse . foldr1 (\x y->x++","++y) . group 3 . reverse
                V
            "1,234,567"
 
-   In a Cuddles session:
+   In a Cupid session:
 
-       Cuddles> commaint "1234567"
+       Cupid> commaint "1234567"
        "1,234,567"
 -}

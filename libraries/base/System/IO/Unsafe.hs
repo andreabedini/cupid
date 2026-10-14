@@ -24,7 +24,7 @@ module System.IO.Unsafe (
 
 
 
-import Cuddles.IOExts (unsafePerformIO, unsafeInterleaveIO)
+import Cupid.IOExts (unsafePerformIO, unsafeInterleaveIO)
 
 
 

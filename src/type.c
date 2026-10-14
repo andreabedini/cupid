@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * This is the Cuddles type checker
+ * This is the Cupid type checker
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,

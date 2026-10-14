@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo-wordmark.svg" alt="Cuddles" width="360">
+  <img src="assets/logo-wordmark.svg" alt="Cupid" width="360">
 </p>
 
 <p align="center">
@@ -9,10 +9,13 @@
 
 ---
 
-Cuddles is a fork of Hugs 98 — the interpreter Mark P Jones started in
+Cupid is a fork of Hugs 98 — the interpreter Mark P Jones started in
 1994 and a group of volunteers kept alive until 2006.  It picks up from
 the September 2006 release, the last one that shipped, and takes it
 somewhere Hugs itself was not going.
+
+The name is a nod to its parent: Hugs was first released on Valentine's
+Day, 14 February 1995.
 
 The aim is one sentence: **a Haskell implementation you can sit down and
 read.**  Not the fastest one, not the most complete one.  The one where
@@ -57,23 +60,23 @@ You need a C compiler, meson 1.1 or later, ninja and python3.  Then:
 ```sh
 CC=gcc meson setup build
 ninja -C build
-CUDDLESDIR=build/libraries/cuddlesdir build/src/cuddles
+CUPIDDIR=build/libraries/cupiddir build/src/cupid
 ```
 
 ```
-Cuddles> map (*2) [1..10]
+Cupid> map (*2) [1..10]
 [2,4,6,8,10,12,14,16,18,20]
-Cuddles> :quit
+Cupid> :quit
 ```
 
 The whole build takes about a minute and never writes to the source
 tree.  Two things worth knowing up front:
 
 - Name a **real** compiler in `$CC`.  meson bakes the command into
-  `fficuddles`, which runs it at library-build time and again at run time
+  `fficupid`, which runs it at library-build time and again at run time
   to compile the C stubs of modules with foreign imports.  A wrapper like
   `sccache cc` breaks that step even when the C sources compiled fine;
-  the symptom is `fficuddles` reporting "Error while running compilation
+  the symptom is `fficupid` reporting "Error while running compilation
   command".
 - meson remembers the compiler it found, so changing it in an existing
   build directory needs `meson setup --wipe build`.  A plain
@@ -92,25 +95,25 @@ the useful starting points are:
 
 - [Getting started](docs/tutorials/getting-started.md) — a first session,
   from build to running a program.  About 20 minutes, most of it the build.
-- [How Cuddles runs a program](docs/explanation/how-cuddles-runs-a-program.md)
+- [How Cupid runs a program](docs/explanation/how-cupid-runs-a-program.md)
   — source text to abstract machine, and where each piece lives.  Read
   this before the source.
 - [Interpreter commands](docs/reference/commands.md) and
   [Options](docs/reference/options.md) — what you can type at the prompt
   and what you can set.
-- [The language Cuddles accepts](docs/reference/language.md) — Haskell 2010
+- [The language Cupid accepts](docs/reference/language.md) — Haskell 2010
   conformance, and the deviations and bugs that are known.
 - [Call C functions from Haskell](docs/how-to/call-c-functions.md) — the
-  FFI and `fficuddles`.
+  FFI and `fficupid`.
 
 ## Layout
 
 - `src/` — the interpreter: lexer, parser (`parser.y`), type checker,
-  bytecode compiler, evaluator, storage, and the `cuddles`, `runcuddles`
-  and `fficuddles` front ends
-- `libraries/` — the Haskell it ships: `cuddles` (the Prelude and the
+  bytecode compiler, evaluator, storage, and the `cupid`, `runcupid`
+  and `fficupid` front ends
+- `libraries/` — the Haskell it ships: `cupid` (the Prelude and the
   interpreter-specific modules) and `base`, all plain Haskell.  `tools/`
-  holds the build script and the generator for `Cuddles.SysConfig`
+  holds the build script and the generator for `Cupid.SysConfig`
 - `docs/` — tutorial, how-to guides, reference, explanation and the
   manual page
 - `tests/` — the regression tests and the script that runs them
@@ -126,14 +129,14 @@ describes the rest.
 ## About the name
 
 It's a fork of Hugs, so it needed a name in the same family.  Huggies is
-a trademark and belongs to a nappy company, which left Cuddles.
+a trademark and belongs to a nappy company, which left Cupid.
 
 ## Origin and license
 
-Cuddles is derived from Hugs 98, which is Copyright (c) Mark P Jones,
+Cupid is derived from Hugs 98, which is Copyright (c) Mark P Jones,
 Alastair Reid, the Yale Haskell Group, and the OGI School of Science &
 Engineering at OHSU, 1994-2005, and distributed under the BSD-style
-license in [License](License).  Cuddles is distributed under the same
+license in [License](License).  Cupid is distributed under the same
 license.
 
 The people who built Hugs 98 are listed in [Credits](Credits).  The type

@@ -27,16 +27,16 @@
 
 #include "prelude.h"
 
-/* CUDDLES_VERSION comes from config.h, where the build system sets it */
-#ifndef CUDDLES_VERSION
-# define CUDDLES_VERSION "<snapshot>"
+/* CUPID_VERSION comes from config.h, where the build system sets it */
+#ifndef CUPID_VERSION
+# define CUPID_VERSION "<snapshot>"
 #endif
-#define VERSION_STRING CUDDLES_VERSION
+#define VERSION_STRING CUPID_VERSION
 
 char *versionString = VERSION_STRING;
 
 #if USE_REGISTRY
-# define CUDDLESROOT ("SOFTWARE\\Haskell\\Cuddles\\" VERSION_STRING "\\")
+# define CUPIDROOT ("SOFTWARE\\Haskell\\Cupid\\" VERSION_STRING "\\")
 
-char *cuddlesRegRoot = CUDDLESROOT;
+char *cupidRegRoot = CUPIDROOT;
 #endif

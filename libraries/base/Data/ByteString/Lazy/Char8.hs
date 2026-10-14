@@ -6,7 +6,7 @@
 --
 -- Maintainer  : dons@cse.unsw.edu.au
 -- Stability   : experimental
--- Portability : portable (tested with GHC>=6.4.1 and Cuddles 2005)
+-- Portability : portable (tested with GHC>=6.4.1 and Cupid 2005)
 -- 
 
 --

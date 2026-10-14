@@ -12,8 +12,8 @@
 #include "prelude.h"
 #include "storage.h"
 
-extern void internal(char *) CUDDLES_noreturn;
-extern void fatal(char *) CUDDLES_noreturn;
+extern void internal(char *) CUPID_noreturn;
+extern void fatal(char *) CUPID_noreturn;
 extern void stopAnyPrinting(void);
 
 /*---------------------------------------------------------------------------
@@ -31,21 +31,21 @@ typedef struct OutputSink {
 
 extern void setOutputSink(const OutputSink *); /* NULL: the streams again */
 
-extern void cuddlesPrintf(const char *, ...);
-extern void cuddlesPutchar(int);
-extern void cuddlesFlushStdout(void);
+extern void cupidPrintf(const char *, ...);
+extern void cupidPutchar(int);
+extern void cupidFlushStdout(void);
 
-extern void cuddlesFFlush(FILE *);
-extern void cuddlesFPrintf(FILE *, const char *, ...);
-extern void cuddlesPutc(int, FILE *);
+extern void cupidFFlush(FILE *);
+extern void cupidFPrintf(FILE *, const char *, ...);
+extern void cupidPutc(int, FILE *);
 
-#define Printf cuddlesPrintf
-#define Putchar cuddlesPutchar
-#define FlushStdout cuddlesFlushStdout
+#define Printf cupidPrintf
+#define Putchar cupidPutchar
+#define FlushStdout cupidFlushStdout
 
-#define FFlush cuddlesFFlush
-#define FPrintf cuddlesFPrintf
-#define Putc cuddlesPutc
+#define FFlush cupidFFlush
+#define FPrintf cupidFPrintf
+#define Putc cupidPutc
 
 /*-------------------------------------------------------------------------*/
 
@@ -57,7 +57,7 @@ extern void cuddlesPutc(int, FILE *);
  * with the ERRMSG/ETHEN/EEND macros, whose parentheses did not balance
  * within a line.) */
 extern void errHead(int); /* ERROR "file":line -  */
-extern void errPrintf(const char *, ...) CUDDLES_printf(1, 2);
+extern void errPrintf(const char *, ...) CUPID_printf(1, 2);
 extern void errExpr(Cell);
 extern void errType(Type);
 extern void errContext(List);
@@ -65,14 +65,14 @@ extern void errPred(Cell);
 extern void errKind(Kind);
 extern void errKinds(Kinds);
 extern void errFD(Cell);
-extern void errFail(void) CUDDLES_noreturn;
+extern void errFail(void) CUPID_noreturn;
 extern void errAbort(void);
 
 extern sigProto(breakHandler);
 extern volatile sig_atomic_t broken; /* set by the interrupt handler;   */
                                      /* see the note in prelude.h          */
 /* Act on an interrupt, if one came */
-CUDDLES_inline void allowBreak(void) {
+CUPID_inline void allowBreak(void) {
     if (broken) {
         broken = false;
         sigRaise(breakHandler);

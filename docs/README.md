@@ -1,6 +1,6 @@
-# Cuddles documentation
+# Cupid documentation
 
-Cuddles is a small interpreter for Haskell, written in C.  It reads Haskell
+Cupid is a small interpreter for Haskell, written in C.  It reads Haskell
 2010 source, with a few type-system extensions, and evaluates expressions
 at an interactive prompt or runs a program's `main` from a script.
 
@@ -10,22 +10,22 @@ and explanations discuss.
 
 ## Start here
 
-New to Cuddles?  Work through
-[Getting started with Cuddles](tutorials/getting-started.md).  It builds
+New to Cupid?  Work through
+[Getting started with Cupid](tutorials/getting-started.md).  It builds
 the interpreter, evaluates a few expressions, loads a module and runs a
-program with `runcuddles`.
+program with `runcupid`.
 
 ## Tutorials
 
-- [Getting started with Cuddles](tutorials/getting-started.md) — build the
+- [Getting started with Cupid](tutorials/getting-started.md) — build the
   interpreter, use the prompt, load a module, run a program.
 
 ## How-to guides
 
-- [Build and install Cuddles](how-to/build-and-install.md)
-- [Run Cuddles from the build tree](how-to/run-from-the-build-tree.md)
-- [Build Cuddles on Windows](how-to/build-on-windows.md)
-- [Write a script that runs with runcuddles](how-to/write-a-script.md)
+- [Build and install Cupid](how-to/build-and-install.md)
+- [Run Cupid from the build tree](how-to/run-from-the-build-tree.md)
+- [Build Cupid on Windows](how-to/build-on-windows.md)
+- [Write a script that runs with runcupid](how-to/write-a-script.md)
 - [Call C functions from Haskell](how-to/call-c-functions.md)
 - [Make `:edit` open your editor](how-to/configure-the-editor.md)
 - [Preprocess source files before loading](how-to/preprocess-sources.md)
@@ -40,18 +40,18 @@ program with `runcuddles`.
 - [Options](reference/options.md) — toggles and parameters, and where
   they are read from
 - [Environment variables](reference/environment-variables.md)
-- [runcuddles](reference/runcuddles.md)
-- [fficuddles](reference/fficuddles.md)
+- [runcupid](reference/runcupid.md)
+- [fficupid](reference/fficupid.md)
 - [Build options and install layout](reference/build-options.md)
-- [The language Cuddles accepts](reference/language.md) — Haskell 2010
+- [The language Cupid accepts](reference/language.md) — Haskell 2010
   conformance, known deviations and bugs
-- [Language extensions](reference/extensions.md) — what Cuddles accepts
+- [Language extensions](reference/extensions.md) — what Cupid accepts
   beyond Haskell 2010
 - [The libraries](reference/libraries.md) — packages and modules shipped
 
 ## Explanation
 
-- [How Cuddles runs a program](explanation/how-cuddles-runs-a-program.md) —
+- [How Cupid runs a program](explanation/how-cupid-runs-a-program.md) —
   the stages from source to result, and where the pieces live
 - [How constraints are solved](explanation/how-constraints-are-solved.md) —
   predicates, evidence, entailment, improvement and the loop that runs
@@ -65,5 +65,5 @@ program with `runcuddles`.
 
 ## Manual page
 
-`cuddles.1.in` is the source of the `cuddles(1)` manual page, which meson
+`cupid.1.in` is the source of the `cupid(1)` manual page, which meson
 fills in with the install paths and installs alongside the binaries.

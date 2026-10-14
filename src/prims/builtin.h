@@ -41,7 +41,7 @@ extern struct primInfo internalPrims;
 #define EXT_PROTO_PRIM(name) extern void name(StackPtr)
 #define primFun(name) static void name(StackPtr root)
 #define extPrimFun(name) void name(StackPtr root)
-#define primCAF(name) static void name(StackPtr root CUDDLES_unused)
+#define primCAF(name) static void name(StackPtr root CUPID_unused)
 #define primArg(n) stack(root + n)
 
 /* IMPORTANT: the second element of an update must be written first.

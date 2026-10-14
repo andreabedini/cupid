@@ -1,5 +1,5 @@
 /*
- * The Cuddles evaluator / command interpreter + support functions.
+ * The Cupid evaluator / command interpreter + support functions.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
@@ -37,9 +37,9 @@
  *       of the UI used.
  *
  * ------------------------------------------------------------------------*/
-int hpSize = DEFAULTHEAP;  /* Desired heap size               */
-char *cuddlesPath = 0;     /* String for file search path     */
-char *cuddlesSuffixes = 0; /* Source filename suffixes        */
+int hpSize = DEFAULTHEAP; /* Desired heap size               */
+char *cupidPath = 0;      /* String for file search path     */
+char *cupidSuffixes = 0;  /* Source filename suffixes        */
 
 /* --------------------------------------------------------------------------
  * Evaluator initialization:
@@ -47,8 +47,8 @@ char *cuddlesSuffixes = 0; /* Source filename suffixes        */
 void startEvaluator(void) {
     initScripts();
 
-    cuddlesPath = uniqPath(strCopy(CUDDLESPATH));
-    cuddlesSuffixes = strCopy(CUDDLESSUFFIXES);
+    cupidPath = uniqPath(strCopy(CUPIDPATH));
+    cupidSuffixes = strCopy(CUPIDSUFFIXES);
 }
 
 /* --------------------------------------------------------------------------
@@ -56,13 +56,13 @@ void startEvaluator(void) {
  * ------------------------------------------------------------------------*/
 void stopEvaluator(void) {
     /* Let go of dynamic storage */
-    if (cuddlesPath) {
-        free(cuddlesPath);
-        cuddlesPath = 0;
+    if (cupidPath) {
+        free(cupidPath);
+        cupidPath = 0;
     }
-    if (cuddlesSuffixes) {
-        free(cuddlesSuffixes);
-        cuddlesSuffixes = 0;
+    if (cupidSuffixes) {
+        free(cupidSuffixes);
+        cupidSuffixes = 0;
     }
     if (prompt) {
         free(prompt);
@@ -77,7 +77,7 @@ void stopEvaluator(void) {
 /* --------------------------------------------------------------------------
  * Compiling and running an expression:
  *
- * The prompt and runcuddles both take an expression, check it against the
+ * The prompt and runcupid both take an expression, check it against the
  * module it is to run in and build its graph; what they do with the result
  * is where they differ, so the three steps they share are here.
  * ------------------------------------------------------------------------*/
@@ -251,14 +251,14 @@ bool loadPrelude(void) {
     char *prelLocation;
     bool listFlg;
 
-    if (!cuddlesPath) {
-        Printf("Cuddles search path not defined\n");
+    if (!cupidPath) {
+        Printf("Cupid search path not defined\n");
         return false;
     }
 
-    if (!(prelLocation = findMPathname(STD_PRELUDE_CUDDLES))) {
-        Printf("%s not found on current path: \"%s\"\n", STD_PRELUDE_CUDDLES,
-               cuddlesPath);
+    if (!(prelLocation = findMPathname(STD_PRELUDE_CUPID))) {
+        Printf("%s not found on current path: \"%s\"\n", STD_PRELUDE_CUPID,
+               cupidPath);
         return false;
     }
     addScriptName(prelLocation, false);
@@ -266,7 +266,7 @@ bool loadPrelude(void) {
     /* add the H98 Prelude module to the stack */
     if (!(prelLocation = findMPathname(STD_PRELUDE))) {
         Printf("%s not found on current path: \"%s\"\n", STD_PRELUDE,
-               cuddlesPath);
+               cupidPath);
         return false;
     }
     addScriptName(prelLocation, false);

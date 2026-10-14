@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """Run the regression tests under tests/.
 
-usage: run-tests [--features=F,...] CUDDLES RUNCUDDLES PACKAGES TESTDIR [NAME...]
+usage: run-tests [--features=F,...] CUPID RUNCUPID PACKAGES TESTDIR [NAME...]
 
 Every NAME.hs in TESTDIR is one test (all of them when no NAME is given).
 The files that go with it, all optional except NAME.stdout:
 
   NAME.stdout   the exact output expected (stdout and stderr together)
   NAME.stdin    if present, the test is a REPL session: NAME.hs is loaded
-                into `cuddles +q`, NAME.stdin is fed to the prompt and the
+                into `cupid +q`, NAME.stdin is fed to the prompt and the
                 banner is dropped from the output; otherwise NAME.hs is
-                run with runcuddles
+                run with runcupid
   NAME.args     extra command-line options, one shell word per line
   NAME.env      environment changes, one per line: VAR=VALUE sets,
                 -VAR unsets
@@ -54,7 +54,7 @@ import tempfile
 # The banner, in both the full and the -Dsmall-banner form, with the help
 # line that usually but not always follows it.
 BANNER = re.compile(
-    r"\ACuddles [^\n]*\n"
+    r"\ACupid [^\n]*\n"
     r"(?:Derived from Hugs 98[^\n]*\n"
     r"the Yale Haskell Group[^\n]*\n\n)?"
     r"(?:Type :\? for help\n)?")
@@ -77,7 +77,7 @@ def read(path, default=None):
         return default
 
 
-def run_one(cuddles, runcuddles, packages, testdir, name, features):
+def run_one(cupid, runcupid, packages, testdir, name, features):
     base = os.path.join(testdir, name)
     expected = read(base + ".stdout")
     if expected is None:
@@ -98,9 +98,9 @@ def run_one(cuddles, runcuddles, packages, testdir, name, features):
                 env[var] = value
 
         if stdin is None:
-            cmd = [runcuddles, "-P" + packages] + args + [name + ".hs"]
+            cmd = [runcupid, "-P" + packages] + args + [name + ".hs"]
         else:
-            cmd = [cuddles, "+q", "-P" + packages] + args + [name + ".hs"]
+            cmd = [cupid, "+q", "-P" + packages] + args + [name + ".hs"]
 
         def limit_stack():
             if stack_kb:
@@ -161,12 +161,12 @@ def main(argv):
             break
     if len(argv) < 5:
         sys.exit(__doc__)
-    cuddles, runcuddles, packages, testdir = [os.path.abspath(a) for a in argv[1:5]]
+    cupid, runcupid, packages, testdir = [os.path.abspath(a) for a in argv[1:5]]
     names = argv[5:] or sorted(
         f[:-3] for f in os.listdir(testdir) if f.endswith(".hs"))
     failed = 0
     for name in names:
-        ok, detail = run_one(cuddles, runcuddles, packages, testdir, name,
+        ok, detail = run_one(cupid, runcupid, packages, testdir, name,
                              features)
         print(("PASS " if ok else "FAIL ") + name)
         if not ok:

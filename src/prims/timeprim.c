@@ -257,7 +257,7 @@ CAFInt(primClockTicks, sysconf(_SC_CLK_TCK))
 
     /* Notice that the 'process time' includes the time used
        by all the threads of a process, all of which may not
-       be kept busy running the Cuddles interpreter...
+       be kept busy running the Cupid interpreter...
     */
     if (!GetProcessTimes(GetCurrentProcess(), &creationTime, &exitTime,
                          &kernelTime, &userTime)) {

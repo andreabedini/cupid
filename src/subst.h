@@ -35,7 +35,7 @@ typedef struct Typing {
 } Typing;
 
 /* The monotype (t,o): no fresh variables, no context */
-CUDDLES_inline Typing typing(Type t, int o) {
+CUPID_inline Typing typing(Type t, int o) {
     Typing ty = {t, o, 0, NIL};
     return ty;
 }
@@ -43,21 +43,21 @@ CUDDLES_inline Typing typing(Type t, int o) {
 extern List genericVars; /* list of generic vars                   */
 extern List btyvars;     /* explicitly scoped type vars    */
 
-CUDDLES_inline Tyvar *tyvar(int n) {
+CUPID_inline Tyvar *tyvar(int n) {
     return tyvars + n;
 } /* nth type variable     */
-CUDDLES_inline int tyvNum(Tyvar *t) {
+CUPID_inline int tyvNum(Tyvar *t) {
     return (int)(t - tyvars);
 } /* and its inverse       */
-CUDDLES_inline bool isBound(Tyvar *t) {
+CUPID_inline bool isBound(Tyvar *t) {
     return t->bound && t->bound != SKOLEM;
 }
 #define aVar mkOffset(0) /* Simple skeletons for type vars  */
 #define bVar mkOffset(1)
-CUDDLES_inline void enterBtyvs(void) {
+CUPID_inline void enterBtyvs(void) {
     btyvars = cons(NIL, btyvars);
 }
-CUDDLES_inline void leaveBtyvs(void) {
+CUPID_inline void leaveBtyvs(void) {
     btyvars = tl(btyvars);
 }
 
@@ -74,7 +74,7 @@ extern void markSubstitution(void);    /* mark the tuple/kind caches      */
 extern void exitSubstitution(void);    /* free the type-variable table    */
 extern void emptySubstitution(void);
 extern int newTyvars(int);
-CUDDLES_inline int newKindvars(int n) {
+CUPID_inline int newKindvars(int n) {
     return newTyvars(n);
 }
 extern int newKindedVars(Kind);
@@ -89,7 +89,7 @@ extern Tyvar *getTypeVar(Type, int);
 /* Follow the substitution from (t,o) to the first type that is not a
  * bound variable, updating t and o, and return that variable if it is
  * one, else NULL */
-CUDDLES_inline Tyvar *deRef(Type *t, int *o) {
+CUPID_inline Tyvar *deRef(Type *t, int *o) {
     Tyvar *tyv;
     while ((tyv = getTypeVar(*t, *o)) && isBound(tyv)) {
         *t = tyv->bound;

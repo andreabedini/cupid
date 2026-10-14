@@ -72,7 +72,7 @@ import Prelude
 import Data.Typeable
 
 
-import Cuddles.Weak
+import Cupid.Weak
 
 
 

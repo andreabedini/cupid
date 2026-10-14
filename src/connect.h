@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * Connections between components of the Cuddles system
+ * Connections between components of the Cupid system
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
@@ -17,7 +17,7 @@
  * ------------------------------------------------------------------------*/
 
 extern Module modulePrelude;
-CUDDLES_inline bool isPrelude(Module m) {
+CUPID_inline bool isPrelude(Module m) {
     return m == modulePrelude;
 }
 extern Module moduleUserPrelude;
@@ -126,7 +126,7 @@ extern Text textNum; /* used to process default decls   */
 
 extern char *versionString; /* String containing version name  */
 #if USE_REGISTRY
-extern char *cuddlesRegRoot; /* Root in registry for windows    */
+extern char *cupidRegRoot; /* Root in registry for windows    */
 #endif
 extern char *scriptFile; /* Name of current script (if any) */
 
@@ -225,8 +225,8 @@ typedef struct Subsystem {
     void (*onBreak)(void); /* after an interrupt */
 } Subsystem;
 
-/* cuddles.c exports: */
-extern void shutdownCuddles(void);
+/* cupid.c exports: */
+extern void shutdownCupid(void);
 extern void promptForInput(char *);
 /* The next three are required only by winhugs */
 extern bool doCommand(void);
@@ -297,7 +297,7 @@ extern void implementForeignImportWrapper(int, int, Text, List, bool, Type);
 extern void implementForeignImportLabel(int, int, Text, Text, Text, Type);
 extern void implementForeignExport(int, int, Text, List, bool, Type);
 extern bool foreignNeedStubs(List, List);
-extern bool generateFFI;  /* running fficuddles? */
+extern bool generateFFI;  /* running fficupid? */
 extern bool generate_ffi; /* generate FFI for the current module? */
 
 extern void installTypeChecker(void);
@@ -340,7 +340,7 @@ extern void growMemory(void);
 extern void eval(Cell);
 extern Cell evalWithNoError(Cell);
 extern void evalFails(StackPtr);
-extern void throwException(Cell) CUDDLES_noreturn;
+extern void throwException(Cell) CUPID_noreturn;
 
 #if BYTECODE_PRIMS
 extern int IntAt(Addr);
@@ -367,7 +367,7 @@ extern Bignum bigStr(char *);
 extern Cell bigOut(Bignum, Cell, bool);
 extern Bignum bigShift(Bignum, int, int);
 extern int bigCmp(Bignum, Bignum);
-extern void setCuddlesArgs(int, char *[]);
+extern void setCupidArgs(int, char *[]);
 
 extern char *findPathname(char *);
 extern char *findMPathname(char *);
@@ -376,7 +376,7 @@ extern bool readable(char *, bool);
 #if PROFILING
 extern char *timeString(void);
 #endif
-extern char *cuddlesdir(void);
+extern char *cupiddir(void);
 extern char *mkFFIFilename(char *);
 extern char *mkFFIFilename2(char *);
 extern void freeDLL(void *);

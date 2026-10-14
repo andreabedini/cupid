@@ -26,8 +26,8 @@ import Prelude
 
 
 
-import Cuddles.Prelude
-import Cuddles.Exception
+import Cupid.Prelude
+import Cupid.Exception
 
 
 

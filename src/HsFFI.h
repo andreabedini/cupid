@@ -1,27 +1,27 @@
 #ifndef __HSFFI_H__
 #define __HSFFI_H__
 
-typedef unsigned char cuddles_uint8_t;
-typedef unsigned short cuddles_uint16_t;
-typedef unsigned int cuddles_uint32_t;
-typedef signed char cuddles_int8_t;
-typedef signed short cuddles_int16_t;
-typedef signed int cuddles_int32_t;
+typedef unsigned char cupid_uint8_t;
+typedef unsigned short cupid_uint16_t;
+typedef unsigned int cupid_uint32_t;
+typedef signed char cupid_int8_t;
+typedef signed short cupid_int16_t;
+typedef signed int cupid_int32_t;
 #ifdef _MSC_VER
-typedef unsigned __int64 cuddles_uint64_t;
-typedef __int64 cuddles_int64_t;
+typedef unsigned __int64 cupid_uint64_t;
+typedef __int64 cupid_int64_t;
 #else
-typedef unsigned long long cuddles_uint64_t;
-typedef signed long long cuddles_int64_t;
+typedef unsigned long long cupid_uint64_t;
+typedef signed long long cupid_int64_t;
 #endif
 
 /* 
  * The test on __PRELUDE_H__ (the include guard of prelude.h) is a crude
- * way of testing whether this file is #included into Cuddles.  Use it to
+ * way of testing whether this file is #included into Cupid.  Use it to
  * eliminate non-portable stuff.
  */
 
-#ifdef __PRELUDE_H__ /* #included into Cuddles */
+#ifdef __PRELUDE_H__ /* #included into Cupid */
 
 typedef int HsInt;
 typedef int8_t HsInt8;
@@ -35,13 +35,13 @@ typedef unsigned int HsWord32;
 #else /* #included into user-provided C code */
 
 typedef int HsInt;
-typedef cuddles_int8_t HsInt8;
-typedef cuddles_int16_t HsInt16;
-typedef cuddles_int32_t HsInt32;
+typedef cupid_int8_t HsInt8;
+typedef cupid_int16_t HsInt16;
+typedef cupid_int32_t HsInt32;
 typedef unsigned int HsWord;
-typedef cuddles_uint8_t HsWord8;
-typedef cuddles_uint16_t HsWord16;
-typedef cuddles_uint32_t HsWord32;
+typedef cupid_uint8_t HsWord8;
+typedef cupid_uint16_t HsWord16;
+typedef cupid_uint32_t HsWord32;
 
 #endif
 
@@ -53,8 +53,8 @@ typedef cuddles_uint32_t HsWord32;
 typedef float HsFloat;
 typedef double HsDouble;
 
-typedef cuddles_int64_t HsInt64;
-typedef cuddles_uint64_t HsWord64;
+typedef cupid_int64_t HsInt64;
+typedef cupid_uint64_t HsWord64;
 typedef int HsChar;
 typedef int HsBool;
 typedef void *HsAddr;
@@ -114,17 +114,17 @@ typedef void *HsStablePtr;
 
 #endif /* included into user code */
 
-typedef int CuddlesStackPtr;
-typedef void *CuddlesForeign;
-typedef int CuddlesStablePtr;
+typedef int CupidStackPtr;
+typedef void *CupidForeign;
+typedef int CupidStablePtr;
 
-typedef void (*CuddlesPrim)(CuddlesStackPtr); /* primitive function          */
+typedef void (*CupidPrim)(CupidStackPtr); /* primitive function          */
 
 #ifndef __PRELUDE_H__
 /* The hooks a module offers the interpreter's lifecycle; a null hook
  * means the module has nothing to do in that phase.  Mirrors Subsystem
  * in connect.h, which is what this becomes when this header is
- * #included into Cuddles itself. */
+ * #included into Cupid itself. */
 typedef struct {
     const char *name;
     void (*install)(void);
@@ -132,31 +132,31 @@ typedef struct {
     void (*gcMark)(void);
     void (*atExit)(void);
     void (*onBreak)(void);
-} cuddles_subsystem;
+} cupid_subsystem;
 
-struct cuddles_primitive { /* table of primitives                   */
-    char *ref;             /* primitive reference string    */
-    int arity;             /* primitive function arity      */
-    CuddlesPrim imp;       /* primitive implementation      */
+struct cupid_primitive { /* table of primitives                   */
+    char *ref;           /* primitive reference string    */
+    int arity;           /* primitive function arity      */
+    CupidPrim imp;       /* primitive implementation      */
 };
 
-struct cuddles_primInfo {
-    const cuddles_subsystem *hooks;
-    struct cuddles_primitive *primFuns;
-    struct cuddles_primInfo *nextPrimInfo;
+struct cupid_primInfo {
+    const cupid_subsystem *hooks;
+    struct cupid_primitive *primFuns;
+    struct cupid_primInfo *nextPrimInfo;
 };
 #else
-# define cuddles_subsystem Subsystem
-# define cuddles_primInfo primInfo
+# define cupid_subsystem Subsystem
+# define cupid_primInfo primInfo
 #endif
 
-/* API Version number.  6 because struct cuddles_primInfo's first field
+/* API Version number.  6 because struct cupid_primInfo's first field
  * changed meaning: it used to be a control function taking an Int code,
- * and is now a pointer to a cuddles_subsystem record of five hooks.  A
+ * and is now a pointer to a cupid_subsystem record of five hooks.  A
  * stub built against version 5's layout must not be loaded as if it
  * matched this one -- the field is the same size (a pointer) either
  * way, so nothing but the version number would catch the mismatch. */
-#define CUDDLES_API_VERSION 6
+#define CUPID_API_VERSION 6
 
 typedef struct {
 
@@ -168,7 +168,7 @@ typedef struct {
     HsFloat (*getFloat)(void);
     HsDouble (*getDouble)(void);
     HsChar (*getChar)(void);
-    CuddlesForeign (*getForeign)(void);
+    CupidForeign (*getForeign)(void);
     HsStablePtr (*getStablePtr4)(void);
     HsInt8 (*getInt8)(void);
     HsInt16 (*getInt16)(void);
@@ -190,7 +190,7 @@ typedef struct {
     void (*putFloat)(HsFloat);
     void (*putDouble)(HsDouble);
     void (*putChar)(HsChar);
-    void (*putForeign)(CuddlesForeign, void (*)(CuddlesForeign));
+    void (*putForeign)(CupidForeign, void (*)(CupidForeign));
     void (*putInt8)(HsInt8);
     void (*putInt16)(HsInt16);
     void (*putInt32)(HsInt32);
@@ -205,39 +205,39 @@ typedef struct {
     void (*putStablePtr4)(HsStablePtr);
 
     /* return in IO monad or Id monad */
-    void (*returnIO)(CuddlesStackPtr, int);
+    void (*returnIO)(CupidStackPtr, int);
     int (*runIO)(int);
-    void (*returnId)(CuddlesStackPtr, int);
+    void (*returnId)(CupidStackPtr, int);
     int (*runId)(int);
 
     /* register the prim table */
-    void (*registerPrims)(struct cuddles_primInfo *);
+    void (*registerPrims)(struct cupid_primInfo *);
 
-    CuddlesStablePtr (*lookupName)(char *, char *);
+    CupidStablePtr (*lookupName)(char *, char *);
     void (*ap)(int);
     void (*getUnit)(void);
-    void *(*mkThunk)(HsFunPtr, CuddlesStablePtr);
+    void *(*mkThunk)(HsFunPtr, CupidStablePtr);
     void (*freeThunk)(void *);
 
-    CuddlesStablePtr (*makeStablePtr4)(void);
-    void (*derefStablePtr4)(CuddlesStablePtr);
+    CupidStablePtr (*makeStablePtr4)(void);
+    void (*derefStablePtr4)(CupidStablePtr);
     void (*freeStablePtr4)(HsStablePtr);
-} CuddlesAPI5;
+} CupidAPI5;
 
 /* Note: the change in going from version 4 to 5 is that
-   with 5 (and later), the DLLs specify the CuddlesAPI version
-   assumed by the DLL primitives. The CuddlesAPI method table
+   with 5 (and later), the DLLs specify the CupidAPI version
+   assumed by the DLL primitives. The CupidAPI method table
    is _not_ identical to 4's; it has been re-orged and
    tidied up.
 */
 
-extern CuddlesAPI5 *cuddlesAPI5(void);
-typedef void (*InitModuleFun5)(CuddlesAPI5 *);
+extern CupidAPI5 *cupidAPI5(void);
+typedef void (*InitModuleFun5)(CupidAPI5 *);
 typedef int (*APIVersionFun)(void);
 
-/* To ensure backward compatibility, CuddlesAPI4 is also supported:
- * (due to the CuddlesAPI4 vtbl being an extension of CuddlesAPI3's and
- *  CuddlesAPI2's, support for these two comes for free.)
+/* To ensure backward compatibility, CupidAPI4 is also supported:
+ * (due to the CupidAPI4 vtbl being an extension of CupidAPI3's and
+ *  CupidAPI2's, support for these two comes for free.)
  */
 typedef struct {
 
@@ -248,8 +248,8 @@ typedef struct {
     HsFloat (*getFloat)(void);
     HsDouble (*getDouble)(void);
     char (*getChar)(void);
-    CuddlesForeign (*getForeign)(void);
-    CuddlesStablePtr (*getStablePtr)(void); /* deprecated */
+    CupidForeign (*getForeign)(void);
+    CupidStablePtr (*getStablePtr)(void); /* deprecated */
 
     /* push part of result   */
     void (*putInt)(HsInt);
@@ -258,28 +258,28 @@ typedef struct {
     void (*putFloat)(HsFloat);
     void (*putDouble)(HsDouble);
     void (*putChar)(char);
-    void (*putForeign)(CuddlesForeign, void (*)(CuddlesForeign));
-    void (*putStablePtr)(CuddlesStablePtr); /* deprecated */
+    void (*putForeign)(CupidForeign, void (*)(CupidForeign));
+    void (*putStablePtr)(CupidStablePtr); /* deprecated */
 
     /* return n values in IO monad or Id monad */
-    void (*returnIO)(CuddlesStackPtr, int);
-    void (*returnId)(CuddlesStackPtr, int);
+    void (*returnIO)(CupidStackPtr, int);
+    void (*returnId)(CupidStackPtr, int);
     int (*runIO)(int);
 
     /* free a stable pointer */
-    void (*freeStablePtr)(CuddlesStablePtr); /* deprecated */
+    void (*freeStablePtr)(CupidStablePtr); /* deprecated */
 
     /* register the prim table */
-    void (*registerPrims)(struct cuddles_primInfo *);
+    void (*registerPrims)(struct cupid_primInfo *);
 
     /* garbage collect */
     void (*garbageCollect)(void);
 
     /* API3 additions follow */
-    CuddlesStablePtr (*lookupName)(char *, char *);
+    CupidStablePtr (*lookupName)(char *, char *);
     void (*ap)(int);
     void (*getUnit)(void);
-    void *(*mkThunk)(HsFunPtr, CuddlesStablePtr);
+    void *(*mkThunk)(HsFunPtr, CupidStablePtr);
     void (*freeThunk)(void *);
     HsBool (*getBool)(void);
     void (*putBool)(HsBool);
@@ -309,18 +309,18 @@ typedef struct {
     void (*putFunPtr)(HsFunPtr);
     void (*putForeignPtr)(HsForeignPtr);
 
-    CuddlesStablePtr (*makeStablePtr4)(void);
-    void (*derefStablePtr4)(CuddlesStablePtr);
+    CupidStablePtr (*makeStablePtr4)(void);
+    void (*derefStablePtr4)(CupidStablePtr);
 
     void (*putStablePtr4)(HsStablePtr);
     HsStablePtr (*getStablePtr4)(void);
     void (*freeStablePtr4)(HsStablePtr);
 
     int (*runId)(int);
-} CuddlesAPI4;
+} CupidAPI4;
 
-extern CuddlesAPI4 *cuddlesAPI4(void);
-typedef void (*InitModuleFun4)(CuddlesAPI4 *);
+extern CupidAPI4 *cupidAPI4(void);
+typedef void (*InitModuleFun4)(CupidAPI4 *);
 
 extern void hs_perform_gc(void);
 extern void hs_free_stable_ptr(HsStablePtr sp);

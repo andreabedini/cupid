@@ -51,10 +51,10 @@ import Data.Maybe
 
 
 
-import Cuddles.Prelude
-import Cuddles.IO
-import Cuddles.IORef
-import Cuddles.IOExts
+import Cupid.Prelude
+import Cupid.IO
+import Cupid.IORef
+import Cupid.IOExts
 
 
 

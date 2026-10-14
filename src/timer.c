@@ -4,20 +4,20 @@
  * A somewhat limited version for other systems is also included, believed
  * to be ANSI compatible, but not guaranteed ...
  *
- * It is included in the Cuddles distribution for the purpose of benchmarking
- * the Cuddles interpreter, comparing its performance across a variety of
+ * It is included in the Cupid distribution for the purpose of benchmarking
+ * the Cupid interpreter, comparing its performance across a variety of
  * different machines, and with other systems for similar languages.
  *
  * It is compiled in with the meson option -Dtimer=true, which defines
- * WANT_TIMER for the callers in cuddles.c and evaluator.c.
+ * WANT_TIMER for the callers in cupid.c and evaluator.c.
  *
  * It would be somewhat foolish to try to use the timings produced in this
  * way for anything other than the purpose described above.  In particular,
  * using timings to compare the performance of different versions of an
  * algorithm is likely to give very misleading results.  The current
- * implementation of Cuddles as an interpreter, without any significant
+ * implementation of Cupid as an interpreter, without any significant
  * optimizations, means that there are much more significant overheads than
- * can be accounted for by small variations in Cuddles code.
+ * can be accounted for by small variations in Cupid code.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,

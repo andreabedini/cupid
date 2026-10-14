@@ -3,7 +3,7 @@ Main> 43
 Main> Main> EDIT % ./ScriptAux.hs
 Main> Main> 43
 
-Main> Cuddles> Main> 43
+Main> Cupid> Main> 43
 
 Main> EDIT % script-stack.hs
-Main> [Leaving Cuddles]
+Main> [Leaving Cupid]

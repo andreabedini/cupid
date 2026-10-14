@@ -24,7 +24,7 @@
  * ------------------------------------------------------------------------*/
 
 typedef time_t Time;
-CUDDLES_inline bool timeChanged(Time now, Time thn) {
+CUPID_inline bool timeChanged(Time now, Time thn) {
     return now != thn;
 }
 
@@ -46,13 +46,13 @@ extern char *readRegChildStrings(HKEY, char *, char *, char *);
 #endif /* USE_REGISTRY */
 
 /* --------------------------------------------------------------------------
- * Search for script files on the CUDDLES path:
+ * Search for script files on the CUPID path:
  * ------------------------------------------------------------------------*/
 
 extern char *RealPath(char *);
 extern char *substPath(char *, char *);
 extern char *uniqPath(char *);
-extern bool startEdit(int, char *); /* edit.c, linked into cuddles only */
+extern bool startEdit(int, char *); /* edit.c, linked into cupid only */
 
 extern int shellEsc(char *);
 

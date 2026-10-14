@@ -1,8 +1,8 @@
-# GitHub Pages for andreabedini/cuddles.  Change this if the site moves to a
+# GitHub Pages for andreabedini/cupid.  Change this if the site moves to a
 # custom domain; every URL on the site is built from it.
-base_url = "https://andreabedini.github.io/cuddles"
+base_url = "https://andreabedini.github.io/cupid"
 
-title = "Cuddles"
+title = "Cupid"
 description = "A small Haskell interpreter, written in C.  A fork of Hugs 98 with one aim: an implementation you can read."
 
 compile_sass = true
@@ -24,7 +24,7 @@ dark_theme = "ayu-dark"
 add_color_scheme = true
 
 [extra]
-repo_url = "https://github.com/andreabedini/cuddles"
+repo_url = "https://github.com/andreabedini/cupid"
 tagline = "A small Haskell interpreter, written in C."
 
 # The documentation sections, in navigation order.  sync-docs.py creates these

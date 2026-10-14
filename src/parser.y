@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * Cuddles parser.  The lexer is in input.c; the two meet through the token
+ * Cupid parser.  The lexer is in input.c; the two meet through the token
  * numbers and yylval in the generated parser.h, and through yylex.
  *
  * Regenerate parser.c and parser.h with:  bison -o parser.c parser.y
@@ -56,7 +56,7 @@ static Cell namedKind(Cell);
 
 
 /* For the purposes of reasonably portable garbage collection, it is
- * necessary to simulate the YACC stack on the Cuddles stack to keep
+ * necessary to simulate the YACC stack on the Cupid stack to keep
  * track of all intermediate constructs.  The lexical analyser
  * pushes a token onto the stack for each token that is found, with
  * these elements being removed as reduce actions are performed,
@@ -64,7 +64,7 @@ static Cell namedKind(Cell);
  * below.
  *
  * Of the non-terminals used below, only start, topDecl & begin
- * do not leave any values on the Cuddles stack.  The same is true for the
+ * do not leave any values on the Cupid stack.  The same is true for the
  * terminals EXPR and SCRIPT.  At the end of a successful parse, there
  * should only be one element left on the stack, containing the result
  * of the parse.

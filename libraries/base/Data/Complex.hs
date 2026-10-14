@@ -46,7 +46,7 @@ import Prelude
 import Data.Typeable
 
 
-import Cuddles.Prelude(Num(fromInt), Fractional(fromDouble))
+import Cupid.Prelude(Num(fromInt), Fractional(fromDouble))
 
 
 infix  6  :+

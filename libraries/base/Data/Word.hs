@@ -30,7 +30,7 @@ module Data.Word
 
 
 
-import Cuddles.Word
+import Cupid.Word
 
 
 

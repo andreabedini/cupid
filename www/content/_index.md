@@ -1,4 +1,4 @@
 +++
-title = "Cuddles"
+title = "Cupid"
 template = "index.html"
 +++

@@ -79,13 +79,13 @@ extern Text subText(char *, int);
 #define UMINUS_PREC 6         /* Change these settings at your   */
 #define UMINUS_ASSOC LEFT_ASS /* own risk; they may not work!      */
 
-CUDDLES_inline Syntax assocOf(Syntax x) {
+CUPID_inline Syntax assocOf(Syntax x) {
     return x & NON_ASS;
 }
-CUDDLES_inline int precOf(Syntax x) {
+CUPID_inline int precOf(Syntax x) {
     return (int)(x >> 2);
 }
-CUDDLES_inline Syntax mkSyntax(Syntax a, int p) {
+CUPID_inline Syntax mkSyntax(Syntax a, int p) {
     return a | ((Syntax)p << 2);
 }
 #define DEF_OPSYNTAX mkSyntax(DEF_ASS, DEF_PREC)
@@ -153,7 +153,7 @@ extern void nextInstr(Addr);
 #define heapAlloc(s) (Heap)(farCalloc(s, sizeof(Cell)))
 extern int heapSize;
 extern Heap heapFst, heapSnd;
-CUDDLES_inline bool heapBuilt(void) {
+CUPID_inline bool heapBuilt(void) {
     return heapFst != 0;
 }
 extern Heap heapTopFst;
@@ -195,10 +195,10 @@ extern void markWithoutMove(Cell);
 extern void gcRegisterRoots(Cell *const *, int);
 #define registerRoots(t) gcRegisterRoots((t), (int)(sizeof(t) / sizeof((t)[0])))
 
-CUDDLES_inline bool isPair(Cell c) {
+CUPID_inline bool isPair(Cell c) {
     return c < 0;
 }
-CUDDLES_inline bool isGenPair(Cell c) {
+CUPID_inline bool isGenPair(Cell c) {
     return c < 0 && -heapSize <= c;
 }
 
@@ -275,9 +275,9 @@ typedef enum CellTag {
 
     GUARDED = 54, /* GUARDED    snd :: [guarded exprs]     */
 
-    ARRAY = 55,         /* Array snd :: (Bounds,[Values])   */
-    MUTVAR = 56,        /* Mutvar        snd :: Cell                */
-    CUDDLESOBJECT = 57, /* CUDDLESOBJECT  snd :: Cell                */
+    ARRAY = 55,       /* Array snd :: (Bounds,[Values])   */
+    MUTVAR = 56,      /* Mutvar        snd :: Cell                */
+    CUPIDOBJECT = 57, /* CUPIDOBJECT  snd :: Cell                */
 
     STABLENAME = 58, /* Stable Nm  snd :: Cell             */
 
@@ -720,7 +720,7 @@ extern List dupOnto(List, List);
 extern List dupList(List);
 extern List dupUpto(List, Cell);
 extern List revOnto(List, List); /* destructive    */
-CUDDLES_inline List rev(List xs) {
+CUPID_inline List rev(List xs) {
     return revOnto(xs, NIL);
 } /* non-destructive */
 
@@ -731,75 +731,75 @@ CUDDLES_inline List rev(List xs) {
  * because they are assigned through.
  * ------------------------------------------------------------------------*/
 
-CUDDLES_inline bool isTag(Cell c) {
+CUPID_inline bool isTag(Cell c) {
     return TAGMIN <= c && c < SPECMIN;
 }
-CUDDLES_inline bool isBoxTag(Cell c) {
+CUPID_inline bool isBoxTag(Cell c) {
     return TAGMIN <= c && c < BCSTAG;
 }
-CUDDLES_inline bool isConTag(Cell c) {
+CUPID_inline bool isConTag(Cell c) {
     return BCSTAG <= c && c < SPECMIN;
 }
-CUDDLES_inline bool isTag1(Cell c) {
+CUPID_inline bool isTag1(Cell c) {
     return (c & TAG_MASK) == 0;
 } /* NIL too */
 
-CUDDLES_inline CellTag whatIs(Cell c) {
+CUPID_inline CellTag whatIs(Cell c) {
     return (CellTag)(isPair(c) ? (isTag(fst(c)) ? fst(c) : AP) : whatCode[c]);
 }
 /* Faster; NIL if fst(c) is NIL */
-CUDDLES_inline CellTag whatIs1(Cell c) {
+CUPID_inline CellTag whatIs1(Cell c) {
     return (CellTag)(isPair(c) ? (isTag1(fst(c)) ? fst(c) : AP) : whatCode[c]);
 }
-CUDDLES_inline bool isAp(Cell c) {
+CUPID_inline bool isAp(Cell c) {
     return isPair(c) && !isTag(fst(c));
 }
-CUDDLES_inline bool isAp1(Cell c) {
+CUPID_inline bool isAp1(Cell c) {
     return isPair(c) && !isTag1(fst(c));
 }
 
-CUDDLES_inline Cell ap(Cell f, Cell x) {
+CUPID_inline Cell ap(Cell f, Cell x) {
     return pair(f, x);
 }
 
-CUDDLES_inline bool isNull(Cell c) {
+CUPID_inline bool isNull(Cell c) {
     return c == NIL;
 }
-CUDDLES_inline bool nonNull(Cell c) {
+CUPID_inline bool nonNull(Cell c) {
     return c != NIL;
 }
 
-CUDDLES_inline bool isTuple(Cell c) {
+CUPID_inline bool isTuple(Cell c) {
     return TUPMIN <= c && c < OFFMIN;
 }
-CUDDLES_inline int tupleOf(Cell c) {
+CUPID_inline int tupleOf(Cell c) {
     return (int)(c - TUPMIN);
 }
-CUDDLES_inline bool isOffset(Cell c) {
+CUPID_inline bool isOffset(Cell c) {
     return OFFMIN <= c && c < MODMIN;
 }
-CUDDLES_inline int offsetOf(Cell c) {
+CUPID_inline int offsetOf(Cell c) {
     return c - OFFMIN;
 }
-CUDDLES_inline bool isModule(Cell c) {
+CUPID_inline bool isModule(Cell c) {
     return MODMIN <= c && c < TYCMIN;
 }
-CUDDLES_inline bool isTycon(Cell c) {
+CUPID_inline bool isTycon(Cell c) {
     return TYCMIN <= c && c < NAMEMIN;
 }
-CUDDLES_inline bool isName(Cell c) {
+CUPID_inline bool isName(Cell c) {
     return NAMEMIN <= c && c < INSTMIN;
 }
-CUDDLES_inline bool isInst(Cell c) {
+CUPID_inline bool isInst(Cell c) {
     return INSTMIN <= c && c < CLASSMIN;
 }
-CUDDLES_inline bool isClass(Cell c) {
+CUPID_inline bool isClass(Cell c) {
     return CLASSMIN <= c && c < CHARMIN;
 }
-CUDDLES_inline bool isShortChar(Cell c) {
+CUPID_inline bool isShortChar(Cell c) {
     return CHARMIN <= c && c < INTMIN;
 }
-CUDDLES_inline bool isSmall(Cell c) {
+CUPID_inline bool isSmall(Cell c) {
     return INTMIN <= c;
 }
 
@@ -818,9 +818,9 @@ CUDDLES_inline bool isSmall(Cell c) {
  * tagcheck.c and also used by the assert* macros in tagcheck.h; declared
  * here rather than there because tagcheck.h needs Cell from this header,
  * and only one of the two may depend on the other. */
-extern void tagError(const char *, const char *, Cell) CUDDLES_noreturn;
+extern void tagError(const char *, const char *, Cell) CUPID_noreturn;
 
-CUDDLES_inline struct strModule *moduleRec(Module m) {
+CUPID_inline struct strModule *moduleRec(Module m) {
 #if CHECK_TAGS
     if (!isModule(m))
         tagError("module", __func__, m);
@@ -828,7 +828,7 @@ CUDDLES_inline struct strModule *moduleRec(Module m) {
     return tabModule + (m - MODMIN);
 }
 
-CUDDLES_inline struct strTycon *tyconRec(Tycon t) {
+CUPID_inline struct strTycon *tyconRec(Tycon t) {
 #if CHECK_TAGS
     if (!isTycon(t))
         tagError("tycon", __func__, t);
@@ -836,7 +836,7 @@ CUDDLES_inline struct strTycon *tyconRec(Tycon t) {
     return tabTycon + (t - TYCMIN);
 }
 
-CUDDLES_inline struct strName *nameRec(Name n) {
+CUPID_inline struct strName *nameRec(Name n) {
 #if CHECK_TAGS
     if (!isName(n))
         tagError("name", __func__, n);
@@ -844,7 +844,7 @@ CUDDLES_inline struct strName *nameRec(Name n) {
     return tabName + (n - NAMEMIN);
 }
 
-CUDDLES_inline struct strInst *instRec(Inst in) {
+CUPID_inline struct strInst *instRec(Inst in) {
 #if CHECK_TAGS
     if (!isInst(in))
         tagError("instance", __func__, in);
@@ -852,149 +852,149 @@ CUDDLES_inline struct strInst *instRec(Inst in) {
     return tabInst + (in - INSTMIN);
 }
 
-CUDDLES_inline struct strClass *cclassRec(Class c) {
+CUPID_inline struct strClass *cclassRec(Class c) {
 #if CHECK_TAGS
     if (!isClass(c))
         tagError("class", __func__, c);
 #endif
     return tabClass + (c - CLASSMIN);
 }
-CUDDLES_inline Cell mkDigit(int c) {
+CUPID_inline Cell mkDigit(int c) {
     return (Cell)(c + INTMIN);
 }
-CUDDLES_inline int digitOf(Cell c) {
+CUPID_inline int digitOf(Cell c) {
     return (int)(c - INTMIN);
 }
 
-CUDDLES_inline bool isSynonym(Cell h) {
+CUPID_inline bool isSynonym(Cell h) {
     return isTycon(h) && tyconRec(h)->what == SYNONYM;
 }
-CUDDLES_inline bool isNewtype(Cell h) {
+CUPID_inline bool isNewtype(Cell h) {
     return isTycon(h) && tyconRec(h)->what == NEWTYPE;
 }
 
-CUDDLES_inline bool isQualType(Cell t) {
+CUPID_inline bool isQualType(Cell t) {
     return isPair(t) && fst(t) == QUAL;
 }
-CUDDLES_inline bool isPolyType(Cell t) {
+CUPID_inline bool isPolyType(Cell t) {
     return isPair(t) && fst(t) == POLYTYPE;
 }
-CUDDLES_inline bool isPolyOrQualType(Cell t) {
+CUPID_inline bool isPolyOrQualType(Cell t) {
     return isPair(t) && (fst(t) == POLYTYPE || fst(t) == QUAL);
 }
-CUDDLES_inline Type mkPolyType(Kinds ks, Type t) {
+CUPID_inline Type mkPolyType(Kinds ks, Type t) {
     return pair(POLYTYPE, pair(ks, t));
 }
 
-CUDDLES_inline bool isSfun(Name n) {
+CUPID_inline bool isSfun(Name n) {
     return nameRec(n)->number == SELNAME;
 }
-CUDDLES_inline bool isDfun(Name n) {
+CUPID_inline bool isDfun(Name n) {
     return nameRec(n)->number == DFUNNAME;
 }
-CUDDLES_inline bool isCfun(Name n) {
+CUPID_inline bool isCfun(Name n) {
     return nameRec(n)->number >= CFUNNAME;
 }
-CUDDLES_inline int cfunOf(Name n) {
+CUPID_inline int cfunOf(Name n) {
     return nameRec(n)->number - CFUNNAME;
 }
-CUDDLES_inline int cfunNo(int i) {
+CUPID_inline int cfunNo(int i) {
     return i + CFUNNAME;
 }
-CUDDLES_inline bool isMfun(Name n) {
+CUPID_inline bool isMfun(Name n) {
     return nameRec(n)->number < 0;
 }
-CUDDLES_inline int mfunOf(Name n) {
+CUPID_inline int mfunOf(Name n) {
     return (-1) - nameRec(n)->number;
 }
-CUDDLES_inline int mfunNo(int i) {
+CUPID_inline int mfunNo(int i) {
     return (-1) - i;
 }
-CUDDLES_inline bool hasCfun(List cs) {
+CUPID_inline bool hasCfun(List cs) {
     return nonNull(cs) && isCfun(hd(cs));
 }
 
-CUDDLES_inline Text textOf(Cell c) {
+CUPID_inline Text textOf(Cell c) {
     return (Text)snd(c);
 } /* c :: (VAR|CON)(ID|OP) */
-CUDDLES_inline Text qmodOf(Cell c) {
+CUPID_inline Text qmodOf(Cell c) {
     return textOf(fst(snd(c)));
 } /* c :: QUALIDENT */
-CUDDLES_inline Text qtextOf(Cell c) {
+CUPID_inline Text qtextOf(Cell c) {
     return textOf(snd(snd(c)));
 }
-CUDDLES_inline int intValOf(Cell c) {
+CUPID_inline int intValOf(Cell c) {
     return (int)snd(c);
 }
-CUDDLES_inline Cell mkVar(Text t) {
+CUPID_inline Cell mkVar(Text t) {
     return ap(VARIDCELL, t);
 }
-CUDDLES_inline Cell mkVarop(Text t) {
+CUPID_inline Cell mkVarop(Text t) {
     return ap(VAROPCELL, t);
 }
-CUDDLES_inline Cell mkCon(Text t) {
+CUPID_inline Cell mkCon(Text t) {
     return ap(CONIDCELL, t);
 }
-CUDDLES_inline Cell mkConop(Text t) {
+CUPID_inline Cell mkConop(Text t) {
     return ap(CONOPCELL, t);
 }
-CUDDLES_inline Cell mkQId(Text m, Cell c) {
+CUPID_inline Cell mkQId(Text m, Cell c) {
     return ap(QUALIDENT, pair(mkCon(m), c));
 }
-CUDDLES_inline Cell mkQVar(Text m, Text t) {
+CUPID_inline Cell mkQVar(Text m, Text t) {
     return mkQId(m, mkVar(t));
 }
-CUDDLES_inline Cell mkQCon(Text m, Text t) {
+CUPID_inline Cell mkQCon(Text m, Text t) {
     return mkQId(m, mkCon(t));
 }
-CUDDLES_inline Cell mkQVarOp(Text m, Text t) {
+CUPID_inline Cell mkQVarOp(Text m, Text t) {
     return mkQId(m, mkVarop(t));
 }
-CUDDLES_inline Cell mkQConOp(Text m, Text t) {
+CUPID_inline Cell mkQConOp(Text m, Text t) {
     return mkQId(m, mkConop(t));
 }
-CUDDLES_inline Text mkNestedQual(Cell c) {
+CUPID_inline Text mkNestedQual(Cell c) {
     return findText(identToStr(c));
 } /* fragile... */
-CUDDLES_inline Cell inventVar(void) {
+CUPID_inline Cell inventVar(void) {
     return mkVar(inventText());
 }
-CUDDLES_inline Cell mkDictVar(Text t) {
+CUPID_inline Cell mkDictVar(Text t) {
     return ap(DICTVAR, t);
 }
-CUDDLES_inline Cell inventDictVar(void) {
+CUPID_inline Cell inventDictVar(void) {
     return mkDictVar(inventDictText());
 }
-CUDDLES_inline Cell mkStr(Text t) {
+CUPID_inline Cell mkStr(Text t) {
     return ap(STRCELL, t);
 }
-CUDDLES_inline bool isFloat(Cell c) {
+CUPID_inline bool isFloat(Cell c) {
     return isPair(c) && fst(c) == FLOATCELL;
 }
-CUDDLES_inline bool isDouble(Cell c) {
+CUPID_inline bool isDouble(Cell c) {
     return isPair(c) && fst(c) == DOUBLECELL;
 }
-CUDDLES_inline bool isPtr(Cell c) {
+CUPID_inline bool isPtr(Cell c) {
     return isPair(c) && fst(c) == PTRCELL;
 }
 
-CUDDLES_inline Cell triple(Cell x, Cell y, Cell z) {
+CUPID_inline Cell triple(Cell x, Cell y, Cell z) {
     return pair(x, pair(y, z));
 }
-CUDDLES_inline List cons(Cell x, List xs) {
+CUPID_inline List cons(Cell x, List xs) {
     return pair(x, xs);
 }
-CUDDLES_inline List singleton(Cell x) {
+CUPID_inline List singleton(Cell x) {
     return cons(x, NIL);
 }
-CUDDLES_inline Cell ap2(Cell f, Cell x, Cell y) {
+CUPID_inline Cell ap2(Cell f, Cell x, Cell y) {
     return ap(ap(f, x), y);
 }
-CUDDLES_inline Cell ap3(Cell f, Cell x, Cell y, Cell z) {
+CUPID_inline Cell ap3(Cell f, Cell x, Cell y, Cell z) {
     return ap(ap(ap(f, x), y), z);
 }
 
-CUDDLES_inline bool IS_STANDARD_HANDLE(int h) {
+CUPID_inline bool IS_STANDARD_HANDLE(int h) {
     return h <= 2;
 }
 extern Cell cellIsMember(Cell, List);
@@ -1063,7 +1063,7 @@ extern List nubList(List);          /* non-destructive */
 
 /* A predicate is a class applied to types, or EQUALITY applied to two
  * types, the equality t1 ~ t2 */
-CUDDLES_inline bool isEquality(Cell pi) {
+CUPID_inline bool isEquality(Cell pi) {
     return isAp(pi) && isAp(fun(pi)) && fun(fun(pi)) == EQUALITY;
 }
 extern Cell getHead(Cell);
@@ -1086,35 +1086,35 @@ extern StackPtr sp;
 #define stack(p) cellStack[p] /* lvalues: assigned through         */
 #define top() stack(sp)
 #define pushed(n) stack(sp - (n))
-extern void cuddlesStackOverflow(void);
+extern void cupidStackOverflow(void);
 
-CUDDLES_inline void clearStack(void) {
+CUPID_inline void clearStack(void) {
     sp = -1;
 }
-CUDDLES_inline bool stackEmpty(void) {
+CUPID_inline bool stackEmpty(void) {
     return sp == -1;
 }
-CUDDLES_inline void chkStack(int n) {
+CUPID_inline void chkStack(int n) {
     if (sp >= NUM_STACK - n)
-        cuddlesStackOverflow();
+        cupidStackOverflow();
 }
-CUDDLES_inline void onto(Cell c) {
+CUPID_inline void onto(Cell c) {
     stack(++sp) = c;
 } /* push, unchecked */
-CUDDLES_inline void push(Cell c) {
+CUPID_inline void push(Cell c) {
     chkStack(1);
     onto(c);
 }
-CUDDLES_inline Cell pop(void) {
+CUPID_inline Cell pop(void) {
     return stack(sp--);
 }
-CUDDLES_inline void drop(void) {
+CUPID_inline void drop(void) {
     sp--;
 }
-CUDDLES_inline void topfun(Cell f) {
+CUPID_inline void topfun(Cell f) {
     top() = ap(f, top());
 }
-CUDDLES_inline void toparg(Cell x) {
+CUPID_inline void toparg(Cell x) {
     top() = ap(top(), x);
 }
 
@@ -1131,7 +1131,7 @@ extern char *cStackLimit;
 extern void cStackCheck(void);
 /* Call at the top of a recursive function; inlined, so the probe is in the
  * caller's frame */
-CUDDLES_inline void stackCheck(void) {
+CUPID_inline void stackCheck(void) {
     char cStackProbe;
     if (&cStackProbe <= cStackLimit)
         cStackCheck();
@@ -1187,7 +1187,7 @@ struct strScript {
 
 extern struct strScript DECTABLE(tabScript);
 
-CUDDLES_inline struct strScript *scriptRec(Script s) {
+CUPID_inline struct strScript *scriptRec(Script s) {
 #if CHECK_TAGS
     if (s < 0 || s >= NUM_SCRIPTS)
         tagError("script", __func__, s);

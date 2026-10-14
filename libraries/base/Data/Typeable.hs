@@ -113,15 +113,15 @@ import Data.List( foldl )
 
 
 
-import Cuddles.Prelude	( Key(..), TypeRep(..), TyCon(..), Ratio,
+import Cupid.Prelude	( Key(..), TypeRep(..), TyCon(..), Ratio,
 			  Exception, ArithException, IOException,
 			  ArrayException, AsyncException, Handle,
 			  Ptr, FunPtr, ForeignPtr, StablePtr )
-import Cuddles.IORef	( IORef, newIORef, readIORef, writeIORef )
-import Cuddles.IOExts	( unsafePerformIO, unsafeCoerce )
+import Cupid.IORef	( IORef, newIORef, readIORef, writeIORef )
+import Cupid.IOExts	( unsafePerformIO, unsafeCoerce )
 	-- For the Typeable instance
-import Cuddles.Array	( Array )
-import Cuddles.ConcBase	( MVar )
+import Cupid.Array	( Array )
+import Cupid.ConcBase	( MVar )
 
 
 

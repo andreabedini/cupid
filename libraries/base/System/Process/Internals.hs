@@ -20,7 +20,7 @@ module System.Process.Internals (
 	withFilePathException, withCEnvironment
   ) where
 
-import Cuddles.SysConfig
+import Cupid.SysConfig
 import Prelude -- necessary to get dependencies right
 
 import System.Posix.Types ( CPid )
@@ -28,7 +28,7 @@ import System.IO 	( Handle )
 
 import System.Exit	( ExitCode )
 import Data.Maybe	( fromMaybe )
-import Cuddles.Exception	( Exception(..), IOException(..) )
+import Cupid.Exception	( Exception(..), IOException(..) )
 
 import Control.Concurrent
 import Control.Exception ( handle, throwIO )

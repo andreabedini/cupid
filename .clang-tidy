@@ -1,4 +1,4 @@
-# clang-tidy configuration for the Cuddles C sources.
+# clang-tidy configuration for the Cupid C sources.
 #
 # Only checks whose findings are worth a human look on this codebase are
 # enabled.  The broad bugprone/modernize/cert groups were evaluated and

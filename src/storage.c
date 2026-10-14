@@ -1150,7 +1150,7 @@ extern int rootsp;
 extern Cell evalRoots[];
 
 /* Report stack overflow */
-void cuddlesStackOverflow(void) {
+void cupidStackOverflow(void) {
     errHead(0);
     errPrintf("Control stack overflow");
     if (rootsp >= 0) {
@@ -1181,7 +1181,7 @@ void cuddlesStackOverflow(void) {
 #else /* !GIMME_STACK_DUMPS */
 
 /* Report stack overflow */
-void cuddlesStackOverflow(void) {
+void cupidStackOverflow(void) {
     errHead(0);
     errPrintf("Control stack overflow");
     errFail();
@@ -1460,7 +1460,7 @@ Module moduleOfScript(Script s) {
 char *fileOfModule(Module m) {
     Script s;
     if (m == modulePrelude) {
-        return findMPathname(STD_PRELUDE_CUDDLES);
+        return findMPathname(STD_PRELUDE_CUPID);
     }
     for (s = 1; s < scriptHw; ++s) {
         if (scriptRec(s)->marks.moduleHw == m) {
@@ -2111,7 +2111,7 @@ void garbageCollect(void) {
 /* Turn heap profiling on, saving log in specified file */
 void profilerLog(char *s) {
     if ((profile = fopen(s, "w")) != NULL) {
-        fprintf(profile, "JOB \"Cuddles Heap Profile\"\n");
+        fprintf(profile, "JOB \"Cupid Heap Profile\"\n");
         fprintf(profile, "DATE \"%s\"\n", timeString());
         fprintf(profile, "SAMPLE_UNIT \"reductions\"\n");
         fprintf(profile, "VALUE_UNIT \"cells\"\n");

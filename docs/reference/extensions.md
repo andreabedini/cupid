@@ -1,6 +1,6 @@
 # Language extensions
 
-The language features Cuddles accepts beyond Haskell 2010.  They are
+The language features Cupid accepts beyond Haskell 2010.  They are
 always enabled; there is no option to turn them off.  Most are needed by
 the shipped libraries (see [The libraries](libraries.md)) and
 correspond to GHC extensions, though GHC's versions are often more
@@ -11,7 +11,7 @@ general.
 ### Flexible contexts
 
 In Haskell 2010 a context constrains type variables, possibly applied
-to types.  In Cuddles any type may be constrained, in signatures and in
+to types.  In Cupid any type may be constrained, in signatures and in
 class and instance declarations:
 
 ```haskell
@@ -21,7 +21,7 @@ g :: (C [a], D (a -> b)) => [a] -> b
 ### Flexible instances
 
 In Haskell 2010 an instance head is a `data` or `newtype` constructor
-applied to distinct type variables.  In Cuddles any type may be made an
+applied to distinct type variables.  In Cupid any type may be made an
 instance, and a type synonym may stand for it:
 
 ```haskell
@@ -35,7 +35,7 @@ instance Swap (Pair a) where ...
 ```
 
 With flexible contexts as well, constraint solving is undecidable in
-general.  Cuddles bounds the depth of constraints it will reduce, set by
+general.  Cupid bounds the depth of constraints it will reduce, set by
 the `-c` option (default 40), and reports an error when the bound is
 reached.  Reaching it usually means the constraints would not have
 terminated.  GHC instead restricts the form of instances
@@ -51,7 +51,7 @@ instance C (Bool,a) where ...
 instance C (a,Char) where ...
 ```
 
-Cuddles rejects this:
+Cupid rejects this:
 
 ```
 ERROR "Test.hs":4 - Overlapping instances for class "C"
@@ -79,7 +79,7 @@ f :: C a => [a] -> String
 f xs = toString xs
 ```
 
-the choice cannot be made and Cuddles rejects the definition.  With `+O`
+the choice cannot be made and Cupid rejects the definition.  With `+O`
 it is accepted and the more general instance is chosen, which is wrong
 if `f` is later applied to a `[Char]`.
 
@@ -244,7 +244,7 @@ Differences from GHC's `GADTSyntax` and `GADTs`:
 
 - A constructor whose result refines the type's arguments, such as
   `IntE :: Int -> Expr Int`, is rejected: these are generalised
-  algebraic data types proper, which Cuddles does not have.
+  algebraic data types proper, which Cupid does not have.
 - A context on a constructor constrains the constructor's own
   arguments, as in the equation form; it cannot be used to refine
   the result type either.
@@ -356,7 +356,7 @@ comes from:
 - An equality may not appear in the context of a `data` or `newtype`
   declaration or of one of its constructors, in either syntax: that
   would refine the result type on a match, which is a generalised
-  algebraic data type, and Cuddles does not have those.
+  algebraic data type, and Cupid does not have those.
 - An equality may not be a superclass.
 - A given equality that cannot hold, `(Int ~ Bool) => ...`, is rejected
   at the signature; GHC accepts the signature and the function is
@@ -405,10 +405,10 @@ round.
 
 Differences from GHC's scoped type variables:
 
-- GHC's pattern-bound type variables may be instantiated; in Cuddles they
+- GHC's pattern-bound type variables may be instantiated; in Cupid they
   are rigid, so `g (xs :: [a]) = xs ++ "\n"` is rejected.
 - Variables bound in a class or instance head do not scope over the
-  method definitions in Cuddles.
+  method definitions in Cupid.
 - Result type signatures on the left of a definition are not accepted.
 
 ## Field puns
@@ -460,4 +460,4 @@ portably with a `newtype` or by not exporting a type's constructors.
 ## See also
 
 - [Options](options.md) for `+o`, `+O` and `-c`
-- [The language Cuddles accepts](language.md)
+- [The language Cupid accepts](language.md)

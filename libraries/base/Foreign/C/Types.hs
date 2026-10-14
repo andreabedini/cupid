@@ -53,7 +53,7 @@ module Foreign.C.Types
 	, CFile,        CFpos,     CJmpBuf
 	) where
 
-import Cuddles.SysConfig
+import Cupid.SysConfig
 import Foreign.Storable
 import Data.Bits	( Bits(..) )
 import Data.Int		( Int8,  Int16,  Int32,  Int64  )
@@ -62,7 +62,7 @@ import Data.Typeable
 
 import Control.Monad	( liftM )
 
-import Cuddles.Ptr		( castPtr )
+import Cupid.Ptr		( castPtr )
 
  
 

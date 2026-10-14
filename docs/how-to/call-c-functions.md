@@ -1,13 +1,13 @@
 # Call C functions from Haskell
 
 Compile a module that contains `foreign import` declarations with
-`fficuddles` so that Cuddles can load it.
+`fficupid` so that Cupid can load it.
 
 ## Prerequisites
 
-- `fficuddles`, either installed or reachable from the build tree with
-  `CUDDLESDIR` set (see [Run Cuddles from the build tree](run-from-the-build-tree.md))
-- the C compiler that Cuddles was built with, since `fficuddles` runs the
+- `fficupid`, either installed or reachable from the build tree with
+  `CUPIDDIR` set (see [Run Cupid from the build tree](run-from-the-build-tree.md))
+- the C compiler that Cupid was built with, since `fficupid` runs the
   same command
 
 ## Steps
@@ -31,7 +31,7 @@ and the definition in `clib.c`:
 double half_hypot(double a, double b) { return hypot(a, b) / 2; }
 ```
 
-The header is not optional.  The C that `fficuddles` generates calls the
+The header is not optional.  The C that `fficupid` generates calls the
 function by name, and a C23 compiler rejects a call to a function that
 has not been declared.
 
@@ -46,14 +46,14 @@ module Hyp where
 foreign import ccall "clib.h half_hypot" halfHypot :: Double -> Double -> Double
 ```
 
-### 3. Compile the module with fficuddles
+### 3. Compile the module with fficupid
 
-Cuddles options, if any, go before the module name.  Everything after the
+Cupid options, if any, go before the module name.  Everything after the
 module name is passed to the C compiler: extra sources, include paths,
 libraries.
 
 ```sh
-fficuddles Hyp.hs clib.c -lm
+fficupid Hyp.hs clib.c -lm
 ```
 
 This writes `Hyp.c`, the glue between the interpreter and the C
@@ -62,10 +62,10 @@ function, and compiles it together with `clib.c` into `Hyp.so`
 
 ### 4. Use the module
 
-Cuddles loads `Hyp.so` whenever it loads `Hyp.hs`:
+Cupid loads `Hyp.so` whenever it loads `Hyp.hs`:
 
 ```sh
-cuddles Hyp.hs
+cupid Hyp.hs
 ```
 
 ```
@@ -88,18 +88,18 @@ If you would rather keep the import declaration short:
 foreign import ccall "half_hypot" halfHypot :: Double -> Double -> Double
 ```
 
-then tell `fficuddles` what to include with `-i`.  The argument is exactly
+then tell `fficupid` what to include with `-i`.  The argument is exactly
 what would follow `#include` in C, so it needs its own quotes:
 
 ```sh
-fficuddles '-i"clib.h"' Hyp.hs clib.c -lm
-fficuddles '-i<math.h>' Trig.hs -lm
+fficupid '-i"clib.h"' Hyp.hs clib.c -lm
+fficupid '-i<math.h>' Trig.hs -lm
 ```
 
 ### Several FFI modules
 
 If `A.hs` imports `B.hs` and both contain foreign imports, compile `B`
-first: `fficuddles` loads a module's imports, and `B.so` must exist for
+first: `fficupid` loads a module's imports, and `B.so` must exist for
 that.
 
 ## Troubleshooting
@@ -115,32 +115,32 @@ in step 1 and the first alternative above.
 ### `Error while importing DLL "./Hyp.so"`
 
 **Cause**: `Hyp.hs` was loaded but `Hyp.so` does not exist next to it,
-usually because `fficuddles` failed or was never run.
+usually because `fficupid` failed or was never run.
 
-**Fix**: run `fficuddles` and read its output; the compile command it ran
+**Fix**: run `fficupid` and read its output; the compile command it ran
 is printed on failure.
 
 ### `Error while running compilation command`
 
-**Cause**: the C compiler failed, or the compiler command Cuddles was
+**Cause**: the C compiler failed, or the compiler command Cupid was
 configured with does not work as a plain command (a wrapper such as
 `sccache cc`).
 
 **Fix**: the failing command is printed in full; run it by hand to see
 the compiler's message.  If the compiler itself cannot be run, rebuild
-Cuddles with `CC` naming the real compiler.
+Cupid with `CC` naming the real compiler.
 
 ### A generated file clashes with your own
 
-**Cause**: `fficuddles` writes a C file with the same base name as the
+**Cause**: `fficupid` writes a C file with the same base name as the
 Haskell module, so `Hyp.hs` produces `Hyp.c`.
 
 **Fix**: give your own C sources a different base name.
 
 ## See also
 
-- [fficuddles](../reference/fficuddles.md) for the full command line
-- [The language Cuddles accepts](../reference/language.md#foreign-function-interface)
+- [fficupid](../reference/fficupid.md) for the full command line
+- [The language Cupid accepts](../reference/language.md#foreign-function-interface)
   for what the FFI does and does not support
 - [Foreign import wrappers](../explanation/foreign-import-wrappers.md)
   on callbacks from C into Haskell

@@ -10,7 +10,7 @@
 #ifndef __PRELUDE_H__
 #define __PRELUDE_H__
 
-/* Cuddles is compiled as standard C23.  Strict mode hides the POSIX and BSD
+/* Cupid is compiled as standard C23.  Strict mode hides the POSIX and BSD
  * interfaces we use (fdopen, fileno, realpath, tm_gmtoff, ...) unless a
  * feature macro asks for them, and it must be defined before the first
  * system header. */
@@ -41,7 +41,7 @@ _Static_assert(sizeof(double) == SIZEOF_DOUBLE, "platform.h: SIZEOF_DOUBLE");
 _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 
 /*---------------------------------------------------------------------------
- * Most of the configuration code from earlier versions of Cuddles has been moved
+ * Most of the configuration code from earlier versions of Cupid has been moved
  * into config.h (which is usually automatically generated).  
  *
  * Most of the configuration code is "feature based".  That is, the 
@@ -134,41 +134,41 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 /*---------------------------------------------------------------------------
  * Macros used in declarations:
  *  local declarations
- *  CUDDLES_noreturn/CUDDLES_unused (prevent spurious warnings)
+ *  CUPID_noreturn/CUPID_unused (prevent spurious warnings)
  *  result type of main
  *  dynamic linking declarations
  *-------------------------------------------------------------------------*/
 
-/* CUDDLES_inline marks the small functions in the headers that replace the
+/* CUPID_inline marks the small functions in the headers that replace the
  * old accessor macros.  They must inline even in the files built without
  * optimisation (see src/meson.build), so the attribute is not optional. */
 #if defined(__GNUC__) || defined(__clang__)
-# define CUDDLES_inline static inline __attribute__((always_inline))
+# define CUPID_inline static inline __attribute__((always_inline))
 #elif defined(_MSC_VER)
-# define CUDDLES_inline static __forceinline
+# define CUPID_inline static __forceinline
 #else
-# define CUDDLES_inline static inline
+# define CUPID_inline static inline
 #endif
 
-/* CUDDLES_printf(f,a): the function takes a printf format as parameter f
+/* CUPID_printf(f,a): the function takes a printf format as parameter f
  * and its arguments from parameter a on, so the compiler checks them */
 #if defined(__GNUC__) || defined(__clang__)
-# define CUDDLES_printf(f, a) __attribute__((format(printf, f, a)))
+# define CUPID_printf(f, a) __attribute__((format(printf, f, a)))
 #else
-# define CUDDLES_printf(f, a)
+# define CUPID_printf(f, a)
 #endif
 
 #ifdef __GNUC__ /* Avoid spurious warnings                             */
 # if __GNUC__ > 2 || __GNUC__ == 2 && __GNUC_MINOR__ >= 7
-#  define CUDDLES_noreturn __attribute__((noreturn))
-#  define CUDDLES_unused __attribute__((unused))
+#  define CUPID_noreturn __attribute__((noreturn))
+#  define CUPID_unused __attribute__((unused))
 # else
-#  define CUDDLES_noreturn
-#  define CUDDLES_unused
+#  define CUPID_noreturn
+#  define CUPID_unused
 # endif
 #else
-# define CUDDLES_noreturn
-# define CUDDLES_unused
+# define CUPID_noreturn
+# define CUPID_unused
 #endif
 
 /*---------------------------------------------------------------------------
@@ -257,11 +257,11 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
     */
 # define ctrlbrk(bh)                                                           \
      do {                                                                      \
-         struct sigaction cuddles_sigbrk_sa;                                   \
-         cuddles_sigbrk_sa.sa_handler = (bh);                                  \
-         sigemptyset(&cuddles_sigbrk_sa.sa_mask);                              \
-         cuddles_sigbrk_sa.sa_flags = 0;                                       \
-         sigaction(SIGINT, &cuddles_sigbrk_sa, NULL);                          \
+         struct sigaction cupid_sigbrk_sa;                                     \
+         cupid_sigbrk_sa.sa_handler = (bh);                                    \
+         sigemptyset(&cupid_sigbrk_sa.sa_mask);                                \
+         cupid_sigbrk_sa.sa_flags = 0;                                         \
+         sigaction(SIGINT, &cupid_sigbrk_sa, NULL);                            \
      } while (0)
 
 #endif
@@ -288,14 +288,14 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 
 #include <float.h>
 
-#define CUDDLES_FLT_RADIX FLT_RADIX
-#define CUDDLES_FLT_MANT_DIG FLT_MANT_DIG
-#define CUDDLES_FLT_MIN_EXP FLT_MIN_EXP
-#define CUDDLES_FLT_MAX_EXP FLT_MAX_EXP
+#define CUPID_FLT_RADIX FLT_RADIX
+#define CUPID_FLT_MANT_DIG FLT_MANT_DIG
+#define CUPID_FLT_MIN_EXP FLT_MIN_EXP
+#define CUPID_FLT_MAX_EXP FLT_MAX_EXP
 
-#define CUDDLES_DBL_MANT_DIG DBL_MANT_DIG
-#define CUDDLES_DBL_MIN_EXP DBL_MIN_EXP
-#define CUDDLES_DBL_MAX_EXP DBL_MAX_EXP
+#define CUPID_DBL_MANT_DIG DBL_MANT_DIG
+#define CUPID_DBL_MIN_EXP DBL_MIN_EXP
+#define CUPID_DBL_MAX_EXP DBL_MAX_EXP
 
 /*---------------------------------------------------------------------------
  * Memory allocation
@@ -430,8 +430,8 @@ typedef int Char; /* a Unicode code point, or EOF */
 
 #ifndef STD_PRELUDE
 # define STD_PRELUDE "Prelude"
-# define STD_PRELUDE_CUDDLES "Cuddles.Prelude"
-# define STD_EMPTY_MODULE "Cuddles"
+# define STD_PRELUDE_CUPID "Cupid.Prelude"
+# define STD_EMPTY_MODULE "Cupid"
 #endif
 
 /* The table and heap sizes, which are a group of their own */
@@ -444,7 +444,7 @@ typedef int Char; /* a Unicode code point, or EOF */
 /* Representation of Int */
 #define MAXPOSINT 0x7fffffff
 #define MINNEGINT (-MAXPOSINT - 1)
-#define MAXCUDDLESWORD 0xffffffffU
+#define MAXCUPIDWORD 0xffffffffU
 
 /* Representation of Integer: requires BIGBASE == 10^BIGEXP */
 #define BIGBASE 10000
@@ -458,15 +458,15 @@ typedef int Char; /* a Unicode code point, or EOF */
 #define wordShift 5
 #define wordMask 31
 
-CUDDLES_inline int bitArraySize(int n) {
+CUPID_inline int bitArraySize(int n) {
     return n / bitsPerWord + 1;
 }
 /* N is a (negative) pair cell */
-CUDDLES_inline int placeInSet(int n) {
+CUPID_inline int placeInSet(int n) {
     return (-n - 1) >> wordShift;
 }
 /* Unsigned: the shift can reach bit 31 */
-CUDDLES_inline unsigned maskInSet(int n) {
+CUPID_inline unsigned maskInSet(int n) {
     return 1u << ((-n - 1) & wordMask);
 }
 

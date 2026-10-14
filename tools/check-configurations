@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and test Cuddles in every configuration the feature options make.
+"""Build and test Cupid in every configuration the feature options make.
 
 usage: tools/check-configurations [--build-root DIR] [--jobs N] [--list] [NAME...]
 

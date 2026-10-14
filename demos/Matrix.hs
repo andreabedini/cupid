@@ -1,4 +1,4 @@
--- Some simple Cuddles programs for manipulating matrices.
+-- Some simple Cupid programs for manipulating matrices.
 --
 
 module Matrix where

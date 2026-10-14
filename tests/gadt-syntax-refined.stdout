@@ -1,4 +1,4 @@
-runcuddles: Error occurred
+runcupid: Error occurred
 ERROR "gadt-syntax-refined.hs":4 - Constructor "IntE" refines the result type of "Expr", which is not supported: the result must be "Expr" applied to distinct type variables
 
 

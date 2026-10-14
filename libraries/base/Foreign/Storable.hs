@@ -28,7 +28,7 @@ module Foreign.Storable
 	     poke)           -- :: Ptr a        -> a -> IO ()
         ) where
 
-import Cuddles.SysConfig
+import Cupid.SysConfig
 import Control.Monad		( liftM )
 
  
@@ -65,9 +65,9 @@ import Data.Int
 import Data.Word
 import Foreign.StablePtr
 
-import Cuddles.Prelude
-import Cuddles.Ptr
-import Cuddles.Storable
+import Cupid.Prelude
+import Cupid.Ptr
+import Cupid.Storable
 
 {- |
 The member functions of this class facilitate writing values of

@@ -51,15 +51,15 @@ PAGE_ORDER = {
         "commands.md",
         "options.md",
         "environment-variables.md",
-        "runcuddles.md",
-        "fficuddles.md",
+        "runcupid.md",
+        "fficupid.md",
         "build-options.md",
         "language.md",
         "extensions.md",
         "libraries.md",
     ],
     "explanation": [
-        "how-cuddles-runs-a-program.md",
+        "how-cupid-runs-a-program.md",
         "modules-and-the-search-path.md",
         "character-encoding.md",
         "foreign-import-wrappers.md",
@@ -246,7 +246,7 @@ def write_page(dest: Path, front: dict, body: str) -> None:
 
 def main() -> int:
     if not DOCS.is_dir():
-        print("no docs/ next to www/ -- run this from a Cuddles checkout", file=sys.stderr)
+        print("no docs/ next to www/ -- run this from a Cupid checkout", file=sys.stderr)
         return 1
 
     if CONTENT.exists():

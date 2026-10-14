@@ -8,7 +8,7 @@ This document gives a brief introduction to Mini Prolog Version 1.5g, a simple
 Prolog interpreter that can be used with Hugs 1.3.  The original version of
 this program was written nearly two years ago as an Orwell program.  It has
 been through many minor changes since then, modified to run under Haskell B,
-then Gofer, and now Cuddles.
+then Gofer, and now Cupid.
 
 This document isn't going to explain a  lot  about  how  Prolog  programs  are
 written and work.  But there are plenty of other references for that.   Please
@@ -20,7 +20,7 @@ ______________________________________________________________________________
 
                            GETTING STARTED
 
-The  Mini Prolog interpreter  takes the form of a small  collection  of Cuddles
+The  Mini Prolog interpreter  takes the form of a small  collection  of Cupid
 scripts.  The most important part of  any  implementation  of  Prolog  is  the
 inference engine  which  controls  the  search  for  goals  to  user  supplied
 queries.  Mini Prolog comes with a choice of two different inference  engines,
@@ -29,10 +29,10 @@ infinite proof trees.  The `stack' engine uses an explicit stack  (implemented
 using a list) to provide a more concrete  description  of  backtracking.   The
 stack engine also implements  the  Prolog  cut  `!'  predicate,  used  in  the
 examples below.  Assuming that you've got everything set up  properly  to  use
-the Cuddles interpreter, and that all of the Mini Prolog script files are in the
-current working directory, you should start Cuddles with the command `cuddles':
+the Cupid interpreter, and that all of the Mini Prolog script files are in the
+current working directory, you should start Cupid with the command `cupid':
 
-  C:\CUDDLES\DEMOS\PROLOG>cuddles
+  C:\CUPID\DEMOS\PROLOG>cupid
         ___    ___   ___    ___   __________   __________
        /  /   /  /  /  /   /  /  /  _______/  /  _______/   The Haskell User's
       /  /___/  /  /  /   /  /  /  / _____   /  /______        Gofer System
@@ -42,10 +42,10 @@ current working directory, you should start Cuddles with the command `cuddles':
 
        Copyright (c) Mark P Jones, The University of Nottingham, 1994-1996.
 
-  Reading script file "\Cuddles\Lib\cuddles.prelude":
+  Reading script file "\Cupid\Lib\cupid.prelude":
 
-  Cuddles session for:
-  \Cuddles\Lib\cuddles.prelude
+  Cupid session for:
+  \Cupid\Lib\cupid.prelude
   Type :? for help
   ?
 
@@ -262,9 +262,9 @@ that obviously requires you to be using a workstation at the time).
   (12749 reductions, 1256 cells)
   ?
 
-The `?' prompt  tells you that you are now back in Cuddles,  and you can restart
-Mini Prolog as before,  carry on with some other work in Cuddles,  or use the :q
-command to exit Cuddles and return to the operating system.
+The `?' prompt  tells you that you are now back in Cupid,  and you can restart
+Mini Prolog as before,  carry on with some other work in Cupid,  or use the :q
+command to exit Cupid and return to the operating system.
 
 I hope you have fun with Mini Prolog;  please tell me if you have any comments
 you'd like to make.

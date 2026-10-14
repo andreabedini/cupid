@@ -344,7 +344,7 @@ static void printer(Name pr, int d) {
         pr = nameNPrint;
         break;
 
-    case CUDDLESOBJECT:
+    case CUPIDOBJECT:
         outStr("{Cell ...}");
         pr = nameNPrint;
         break;

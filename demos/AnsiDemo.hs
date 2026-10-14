@@ -14,7 +14,7 @@ program = writes [ cls,
                    at (48,5)  "Version 1.0",
                    at (17,7)  "This program illustrates a simple approach",
                    at (17,8)  "to screen-based interactive programs using",
-                   at (17,9)  "the Cuddles functional programming system.",
+                   at (17,9)  "the Cupid functional programming system.",
                    at (17,11) "Please press any key to continue ..."
                  ]
           (pressAnyKey

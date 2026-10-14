@@ -1,4 +1,4 @@
-runcuddles: Error occurred
+runcupid: Error occurred
 ERROR "kind-annotation-mismatch.hs":3 - Illegal type "a Int" in constructor application
 
 

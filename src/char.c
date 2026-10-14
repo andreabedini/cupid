@@ -40,10 +40,10 @@ static int utfcodelen(Char);
 /* --------------------------------------------------------------------------
  * Character set handling:
  *
- * Cuddles follows Haskell 1.3 in assuming that input uses the ISO-8859-1
+ * Cupid follows Haskell 1.3 in assuming that input uses the ISO-8859-1
  * (Latin-1) character set.  The following code provides methods for
  * classifying input characters according to the lexical structure
- * specified by the report.  Cuddles should still accept older programs
+ * specified by the report.  Cupid should still accept older programs
  * because ASCII is just a subset of the Latin-1 character set.
  * ------------------------------------------------------------------------*/
 

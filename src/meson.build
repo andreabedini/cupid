@@ -50,9 +50,9 @@ if get_option('timer')
 endif
 
 no_opt = cc.get_argument_syntax() == 'msvc' ? '/Od' : '-O0'
-libgc = static_library('cuddles-gcsafe', gc_sensitive,
+libgc = static_library('cupid-gcsafe', gc_sensitive,
   c_args: no_opt, include_directories: src_inc)
-libcore = static_library('cuddles-core', core, parser,
+libcore = static_library('cupid-core', core, parser,
   include_directories: src_inc)
 
 # The two groups reference each other, so link them as objects rather than
@@ -67,17 +67,17 @@ if use_readline
   deps += readline_dep
 endif
 
-cuddles = executable('cuddles', files('cuddles.c', 'edit.c'),
+cupid = executable('cupid', files('cupid.c', 'edit.c'),
   objects: core_objs, include_directories: src_inc, dependencies: deps,
   install: true)
 
-runcuddles = executable('runcuddles', files('runcuddles.c'),
+runcupid = executable('runcupid', files('runcupid.c'),
   objects: core_objs, include_directories: src_inc, dependencies: deps,
   install: true)
 
-fficuddles = executable('fficuddles', files('runcuddles.c'),
+fficupid = executable('fficupid', files('runcupid.c'),
   c_args: '-DFFI_COMPILER',
   objects: core_objs, include_directories: src_inc, dependencies: deps,
   install: true)
 
-install_headers('HsFFI.h', install_dir: cuddlesdir / 'include')
+install_headers('HsFFI.h', install_dir: cupiddir / 'include')

@@ -1,8 +1,8 @@
--- Cuddles.Memo.hash (the "IOHash" primitive) returned a Bool (via the
+-- Cupid.Memo.hash (the "IOHash" primitive) returned a Bool (via the
 -- IOBoolResult helper, which turns any non-zero result into True) instead
--- of the Int the type signature promises, which broke Cuddles.Memo.memo:
+-- of the Int the type signature promises, which broke Cupid.Memo.memo:
 -- every hash truncated to True/False so every key collided in bucket 1.
-import Cuddles.Memo
+import Cupid.Memo
 
 slow :: Int -> Int
 slow n = n * 2

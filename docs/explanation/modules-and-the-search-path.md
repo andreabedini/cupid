@@ -1,16 +1,16 @@
 # Modules, files and the search path
 
-How Cuddles turns a module name into a file, what the current module is,
+How Cupid turns a module name into a file, what the current module is,
 and why the default search path looks the way it does.
 
 ## One module per file
 
-Cuddles keeps each module in its own file and does not support mutually
+Cupid keeps each module in its own file and does not support mutually
 recursive modules.  A file may be loaded by its path, in which case it
 may contain a module of any name, or by its module name, in which case
-Cuddles has to find it.
+Cupid has to find it.
 
-To find module `M`, Cuddles tries `dir/M.hs` for each directory `dir`
+To find module `M`, Cupid tries `dir/M.hs` for each directory `dir`
 on the search path, in order.  A hierarchical name is mapped to a path:
 `A.B.C` becomes `dir/A/B/C.hs`.  The suffix list is the `-S` option and
 the search path the `-P` option.  Literate scripts (`.lhs`) are not
@@ -24,7 +24,7 @@ which the importing module was found, when that module was itself
 loaded by file name or found relative to that directory.  So
 
 ```
-Cuddles> :load /path/to/project/Main.hs
+Cupid> :load /path/to/project/Main.hs
 ```
 
 resolves `import A.B.C` to `/path/to/project/A/B/C.hs` without the
@@ -36,11 +36,11 @@ the search path alone.
 ## The default search path
 
 ```
-.:{Home}/lib/cuddles/packages/*:/usr/local/lib/cuddles/packages/*:{Cuddles}/packages/*
+.:{Home}/lib/cupid/packages/*:/usr/local/lib/cupid/packages/*:{Cupid}/packages/*
 ```
 
 The current directory comes first, so a project's own modules shadow
-everything.  `{Cuddles}` is the library directory and its `packages/`
+everything.  `{Cupid}` is the library directory and its `packages/`
 holds the three shipped packages; `dir/*` means every immediate
 subdirectory of `dir`, so each package's root is a search directory
 and a module `Data.Map` is found as `packages/base/Data/Map.hs`.
@@ -52,13 +52,13 @@ package database and nothing to register.  This is what remains of the
 Cabal support of the 2006 release, which installed packages into these
 directories.
 
-Cuddles refuses a search path or suffix list from which the `Prelude`
+Cupid refuses a search path or suffix list from which the `Prelude`
 cannot be found, so `:set -P` cannot lock you out of the interpreter.
 
 ## The current module
 
 Expressions at the prompt are evaluated in the scope of one module,
-the current module, which the prompt names.  At start it is `Cuddles`, an
+the current module, which the prompt names.  At start it is `Cupid`, an
 empty module that exists only for this purpose.  `:load` and `:also`
 make the last module loaded current; `:module` changes it.
 
@@ -72,13 +72,13 @@ is not abstract at the prompt of its own module.
 Only one module is current at a time.  To have several in scope, write
 a module that imports them and make that one current.
 
-## Why `Cuddles.Prelude`
+## Why `Cupid.Prelude`
 
 Haskell defines the `Prelude` and the standard libraries as mutually
-recursive, which Cuddles does not support.  Instead almost everything is
-defined in `Cuddles.Prelude`, which the `Prelude` and the library modules
-import.  This is why `:names` shows `Cuddles.Prelude.map` rather than
-`Prelude.map`, and why an error message may mention `Cuddles.Prelude`.
+recursive, which Cupid does not support.  Instead almost everything is
+defined in `Cupid.Prelude`, which the `Prelude` and the library modules
+import.  This is why `:names` shows `Cupid.Prelude.map` rather than
+`Prelude.map`, and why an error message may mention `Cupid.Prelude`.
 
 ## See also
 

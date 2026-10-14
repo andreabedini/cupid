@@ -97,9 +97,9 @@ bool startEdit(int line, char *nm) {
      * program to launch to, so an editor named to the empty string ""
      * is often desirable.
      */
-    if (!cuddlesEdit || *cuddlesEdit == '\0') {
+    if (!cupidEdit || *cupidEdit == '\0') {
         errHead(0);
-        errPrintf("Cuddles is not configured to use an editor");
+        errPrintf("Cupid is not configured to use an editor");
         errFail();
     }
 
@@ -111,10 +111,10 @@ bool startEdit(int line, char *nm) {
     fullNm = RealPath(nm);
     snprintf(lineStr, sizeof lineStr, "%d", (int)(line ? line : 1));
 
-    he = cuddlesEdit;
+    he = cupidEdit;
 
     /* If the editor command is prefixed with '&', the editor is
-     * started up asynchronously (the default is for Cuddles to block
+     * started up asynchronously (the default is for Cupid to block
      * and wait for the editor to exit).
      */
     while (*he == '&') {
@@ -139,7 +139,7 @@ bool startEdit(int line, char *nm) {
     if (cmd.used == 0) { /* a template of nothing but spaces */
         argvFree(&cmd);
         errHead(0);
-        errPrintf("Cuddles is not configured to use an editor");
+        errPrintf("Cupid is not configured to use an editor");
         errFail();
     }
 

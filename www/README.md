@@ -1,4 +1,4 @@
-# The Cuddles website
+# The Cupid website
 
 A [Zola](https://www.getzola.org/) site.  The home page lives here; the
 documentation does not — `../docs` is the source of truth for that, and
@@ -36,8 +36,8 @@ listed pages.
 
 ## Publishing
 
-`base_url` in `config.toml` is `https://andreabedini.github.io/cuddles`, the
-GitHub Pages URL for `andreabedini/cuddles`.  Every URL on the site is built
+`base_url` in `config.toml` is `https://andreabedini.github.io/cupid`, the
+GitHub Pages URL for `andreabedini/cupid`.  Every URL on the site is built
 from it, so it has to match wherever the site is actually served — change it
 before pointing a custom domain at this.
 

@@ -1,9 +1,9 @@
 #!/bin/sh
-# meson install script: copy the built Cuddles libraries into cuddlesdir.
+# meson install script: copy the built Cupid libraries into cupiddir.
 #
-# usage: install-libraries BUILT_CUDDLESDIR CUDDLESDIR
+# usage: install-libraries BUILT_CUPIDDIR CUPIDDIR
 #
-# meson sets DESTDIR when staging an install; CUDDLESDIR is the final
+# meson sets DESTDIR when staging an install; CUPIDDIR is the final
 # absolute path.  Everything under packages/ is installed except the C
 # sources, which are only needed to build the FFI stubs.
 
@@ -17,7 +17,7 @@ if [ ! -d "$src/packages" ]; then
 	exit 1
 fi
 
-echo "Installing Cuddles libraries to $dest"
+echo "Installing Cupid libraries to $dest"
 (cd "$src" && find packages -type f -print) | while read file
 do
 	case $file in

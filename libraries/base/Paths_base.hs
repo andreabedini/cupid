@@ -9,7 +9,7 @@ import Data.Version
 version = Version {versionBranch = [2,0], versionTags = []}
 
 bindir     = "/usr/local/bin"
-libdir     = "/usr/local/lib/cuddles/packages/base"
+libdir     = "/usr/local/lib/cupid/packages/base"
 datadir    = "/usr/local/share/base-2.0"
 libexecdir = "/usr/local/libexec"
 

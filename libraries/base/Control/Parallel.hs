@@ -75,6 +75,6 @@ par :: a -> b -> b
 
 
 
--- For now, Cuddles does not support par properly.
+-- For now, Cupid does not support par properly.
 par a b = b
 

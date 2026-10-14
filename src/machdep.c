@@ -91,7 +91,7 @@ bool readable(char *f, bool isReg) {
 }
 
 /* --------------------------------------------------------------------------
- * Search for script files on the CUDDLES path:
+ * Search for script files on the CUPID path:
  * ------------------------------------------------------------------------*/
 
 static char *homeDir(void);
@@ -126,17 +126,17 @@ static bool scanSubDirs(char *);
 #endif
 
 #if HAVE_GETMODULEFILENAME
-static HMODULE cuddlesModule = (HMODULE)0;
-static char *cuddlesRoot = 0;
+static HMODULE cupidModule = (HMODULE)0;
+static char *cupidRoot = 0;
 
-extern void setCuddlesModule(HMODULE);
-extern bool setCuddlesRoot(char *);
+extern void setCupidModule(HMODULE);
+extern bool setCupidRoot(char *);
 
-void setCuddlesModule(HMODULE hmod) {
-    cuddlesModule = hmod;
+void setCupidModule(HMODULE hmod) {
+    cupidModule = hmod;
 }
 
-bool setCuddlesRoot(char *s) {
+bool setCupidRoot(char *s) {
     char *newRoot = malloc(strlen(s) + 1);
 
     if (!newRoot)
@@ -144,35 +144,35 @@ bool setCuddlesRoot(char *s) {
 
     strcpy(newRoot, s);
 
-    if (cuddlesRoot)
-        free(cuddlesRoot);
-    cuddlesRoot = newRoot;
+    if (cupidRoot)
+        free(cupidRoot);
+    cupidRoot = newRoot;
     return true;
 }
 
 #endif
 
 /* Directory containing libraries/Prelude.hs */
-char *cuddlesdir(void) {
+char *cupiddir(void) {
 #if HAVE_GETMODULEFILENAME
     /* On Windows, we can find the binary we're running and it's
      * conventional to put the libraries in the same place.
      */
     static char dir[FILENAME_MAX + 1] = "";
 
-    if (cuddlesRoot)
-        return cuddlesRoot;
+    if (cupidRoot)
+        return cupidRoot;
 
     if (dir[0] == '\0') { /* not initialised yet */
         char *slash = NIL;
-        char *cuddlesdir = getenv("CUDDLESDIR");
+        char *cupiddir = getenv("CUPIDDIR");
 
-        if (cuddlesdir) {
-            strncpy(dir, cuddlesdir, FILENAME_MAX);
+        if (cupiddir) {
+            strncpy(dir, cupiddir, FILENAME_MAX);
         } else {
-            GetModuleFileName(cuddlesModule, dir, FILENAME_MAX + 1);
+            GetModuleFileName(cupidModule, dir, FILENAME_MAX + 1);
             if (dir[0] == '\0') { /* GetModuleFileName must have failed */
-                return CUDDLESDIR;
+                return CUPIDDIR;
             }
             if ((slash = strrchr(dir, SLASH)) != NULL) {
                 /* truncate after directory name */
@@ -187,8 +187,8 @@ char *cuddlesdir(void) {
      * First, check for an environment var, then fall back to
      * a configuration-time constant (--datadir=...).
      */
-    char *cuddlesdir = getenv("CUDDLESDIR");
-    return cuddlesdir ? cuddlesdir : CUDDLESDIR;
+    char *cupiddir = getenv("CUPIDDIR");
+    return cupiddir ? cupiddir : CUPIDDIR;
 #endif
 }
 
@@ -268,7 +268,7 @@ static bool tryEndings(void) {
     char *sp;
 
     save = searchPos;
-    sp = cuddlesSuffixes;
+    sp = cupidSuffixes;
     while (*sp) {
         for (; *sp && !isPATHSEP(sp); sp++)
             if (searchPos < FILENAME_MAX)
@@ -386,10 +386,10 @@ struct shellVariable {
 };
 
 static struct shellVariable shell_var[] = {
-    {"Cuddles", &cuddlesdir}, {"Home", &homeDir}, {0, 0}};
+    {"Cupid", &cupiddir}, {"Home", &homeDir}, {0, 0}};
 
 /*
-    findPathname nm = [ nm ++ e | e <- "" : cuddlesSuffixes ]
+    findPathname nm = [ nm ++ e | e <- "" : cupidSuffixes ]
 */
 
 /* Look for a file, trying various extensions Return ***input name*** if no
@@ -406,8 +406,8 @@ char *findPathname(char *filename) {
 
     find maybe_dir nm = [ d ++ map dot2slash nm ++ e | d <- dirs, e <- exts ]
       where 
-        dirs          = maybeToList maybe_dir ++ cuddlesPath
-        exts          = cuddlesSuffixes          -- default: [".hs"]
+        dirs          = maybeToList maybe_dir ++ cupidPath
+        exts          = cupidSuffixes          -- default: [".hs"]
 
         -- the dir is added if the importing module was found there, or
         -- was specified as an explicit filename.
@@ -438,10 +438,10 @@ char *findMPathname(char *name) {
 
 /* Search each directory of the path */
 static bool find1(char *name) {
-    char *pathpt = cuddlesPath;
+    char *pathpt = cupidPath;
     char *value;
 
-    searchReset(0); /* look along the CUDDLESPATH */
+    searchReset(0); /* look along the CUPIDPATH */
     if (pathpt) {
         while (*pathpt) {
             searchReset(0);
@@ -1018,7 +1018,7 @@ static sigHandler(panic) {
 
 #if IS_WINDOWS
 BOOL WINAPI consoleHandler(DWORD dwCtrlType) {
-    switch (dwCtrlType) {  /* Allows Cuddles to be terminated    */
+    switch (dwCtrlType) {  /* Allows Cupid to be terminated    */
     case CTRL_CLOSE_EVENT: /* from the window's close menu.   */
         ExitProcess(0);
     }
@@ -1599,18 +1599,18 @@ char *mkFFIFilename(char *file) {
 }
 
 #define INIT_MODULE_FUN "initModule"
-#define API_VERSION_FUN "CuddlesAPIVersion"
+#define API_VERSION_FUN "CupidAPIVersion"
 
 /* Load dll containing prims for current module */
 void needPrims(int version, void *dll) {
     /* Version 2-6: the Haskell module specifies what module to expect
-     *              (via a needPrims_cuddles decl).
+     *              (via a needPrims_cupid decl).
      *
      * Version 0:   the extension DLL specifies the API version it assumes.
      *
      * Version 5 is refused below, in default: a stub built against it
-     * has struct cuddles_primInfo's first field as a control function
-     * taking an Int code, not the cuddles_subsystem pointer version 6
+     * has struct cupid_primInfo's first field as a control function
+     * taking an Int code, not the cupid_subsystem pointer version 6
      * expects, and the two cannot be told apart by size or content.
      */
     switch (version) {
@@ -1623,7 +1623,7 @@ void needPrims(int version, void *dll) {
         initModule = (InitModuleFun4)getDLLSymbol(dll, INIT_MODULE_FUN);
         if (initModule) {
             bool flg = setOldDLLFlag(true);
-            (*initModule)(cuddlesAPI4());
+            (*initModule)(cupidAPI4());
             setScriptPrims(setPrimInfoDll(dll));
             setOldDLLFlag(flg);
             return;
@@ -1637,7 +1637,7 @@ void needPrims(int version, void *dll) {
         initModule = (InitModuleFun5)getDLLSymbol(dll, INIT_MODULE_FUN);
         if (initModule) {
             bool flg = setOldDLLFlag(false);
-            (*initModule)(cuddlesAPI5());
+            (*initModule)(cupidAPI5());
             setScriptPrims(setPrimInfoDll(dll));
             setOldDLLFlag(flg);
             return;
@@ -1658,7 +1658,7 @@ void needPrims(int version, void *dll) {
     }
     default: {
         errHead(0);
-        errPrintf("This version of Cuddles does not support FFI version %d\n",
+        errPrintf("This version of Cupid does not support FFI version %d\n",
                   version);
         errFail();
     }
@@ -1673,10 +1673,10 @@ void needPrims(int version, void *dll) {
  * the above mechanisms.
  * ------------------------------------------------------------------------*/
 
-/* "-I<cuddlesdir>/include", with the separators turned into the '/' every
+/* "-I<cupiddir>/include", with the separators turned into the '/' every
  * supported compiler accepts. */
 static char *includeArg(void) {
-    char *dir = cuddlesdir();
+    char *dir = cupiddir();
     char *s = (char *)malloc(strlen(dir) + sizeof("-I/include"));
     char *p;
     if (!s) {
@@ -1701,7 +1701,7 @@ void compileAndLink(char *fn, char *flags) {
     argvInit(&cmd);
 
 #if defined(MKDLL_VISUAL_STUDIO)
-    /* find the location of fficuddles.bat */
+    /* find the location of fficupid.bat */
     /* is in the same directory */
     {
         char Buffer[MAX_PATH + 1];
@@ -1719,7 +1719,7 @@ void compileAndLink(char *fn, char *flags) {
 #endif
 
     /* Identify ourselves */
-    argvWord(&cmd, "-D__CUDDLES__");
+    argvWord(&cmd, "-D__CUPID__");
 
     /* the path to HsFFI.h */
     inc = includeArg();
@@ -1731,7 +1731,7 @@ void compileAndLink(char *fn, char *flags) {
     argvWord(&cmd, mkFFIFilename2(fn));
     argvWord(&cmd, mkFFIFilename(fn));
 
-    /* compiler and linker flags specified on Cuddles command line */
+    /* compiler and linker flags specified on Cupid command line */
     if (flags)
         argvWords(&cmd, flags);
 
@@ -1844,7 +1844,7 @@ char *readRegString(HKEY key, char *regPath, char *var, char *def) {
 bool writeRegString(char *var, char *val) {
     char *realVal = ((NULL == val) ? "" : val);
 
-    return setValue(HKEY_CURRENT_USER, cuddlesRegRoot, var, REG_SZ,
+    return setValue(HKEY_CURRENT_USER, cupidRegRoot, var, REG_SZ,
                     (LPBYTE)realVal, lstrlen(realVal) + 1);
 }
 

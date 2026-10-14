@@ -9,7 +9,7 @@
 #include "prelude.h"
 
 /* --------------------------------------------------------------------------
- * Functions for processing and displaying Cuddles options:
+ * Functions for processing and displaying Cupid options:
  * ------------------------------------------------------------------------*/
 extern bool processOption(char *);
 extern void readOptions(char *, bool);
@@ -48,13 +48,13 @@ extern bool displayIO;          /* true => use printer for IO result */
 extern bool
     printTypeUseDefaults; /* true => use 'default'ing when printing types */
 
-extern int cutoff;            /* Constraint Cutoff depth          */
-extern char *prompt;          /* Prompt string                   */
-extern char *repeatStr;       /* Repeat last expr                */
-extern char *cuddlesPath;     /* String for file search path     */
-extern char *cuddlesSuffixes; /* Source filename suffixes        */
-extern int hpSize;            /* Desired heap size               */
-extern char *cuddlesEdit;     /* String for editor command       */
+extern int cutoff;          /* Constraint Cutoff depth          */
+extern char *prompt;        /* Prompt string                   */
+extern char *repeatStr;     /* Repeat last expr                */
+extern char *cupidPath;     /* String for file search path     */
+extern char *cupidSuffixes; /* Source filename suffixes        */
+extern int hpSize;          /* Desired heap size               */
+extern char *cupidEdit;     /* String for editor command       */
 
 /* The rest are conditionally supported flags: */
 #if PROFILING

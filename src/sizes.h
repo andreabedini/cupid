@@ -44,7 +44,7 @@
 #define DEFAULTHEAP 1000000
 
 /* Some infinite computations generate an infinite depth of alternations
- * between eval() and run().  If they don't use the Cuddles stack or heap,
+ * between eval() and run().  If they don't use the Cupid stack or heap,
  * they will overrun the C stack, crashing the interpreter.  To protect
  * against this, we place a limit on the depth of recursion of eval().
  */

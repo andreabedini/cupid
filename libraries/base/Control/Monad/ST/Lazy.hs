@@ -46,7 +46,7 @@ import qualified Control.Monad.ST as ST
 
 
 
-import Cuddles.LazyST
+import Cupid.LazyST
 
 
 

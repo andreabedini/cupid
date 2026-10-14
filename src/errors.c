@@ -17,7 +17,7 @@
 #include "evaluator.h" /* installSubsystems() etc. proto only */
 #include <setjmp.h>
 
-static void cuddlesVFPrintf(FILE *, const char *, va_list);
+static void cupidVFPrintf(FILE *, const char *, va_list);
 
 jmp_buf catch_error; /* jump buffer for error trapping  */
 
@@ -78,7 +78,7 @@ void errFail(void) {
 void errPrintf(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    cuddlesVFPrintf(errorStream, fmt, ap);
+    cupidVFPrintf(errorStream, fmt, ap);
     va_end(ap);
 }
 
@@ -118,7 +118,7 @@ void internal(char *msg) {
     stopAnyPrinting();
     Printf("INTERNAL ERROR: %s\n", msg);
 
-    Printf("This is a bug in Cuddles; please report it.\n");
+    Printf("This is a bug in Cupid; please report it.\n");
 
     FlushStdout();
     longjmp(catch_error, 1);
@@ -206,43 +206,43 @@ static void sinkPutc(int c) {
     outputSink->write(outputSink->ctx, &ch, 1);
 }
 
-static void cuddlesVFPrintf(FILE *fp, const char *fmt, va_list ap) {
+static void cupidVFPrintf(FILE *fp, const char *fmt, va_list ap) {
     if (outputSink)
         sinkVPrintf(fmt, ap);
     else
         vfprintf(fp, fmt, ap);
 }
 
-void cuddlesPrintf(const char *fmt, ...) {
+void cupidPrintf(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    cuddlesVFPrintf(stdout, fmt, ap);
+    cupidVFPrintf(stdout, fmt, ap);
     va_end(ap);
 }
 
-void cuddlesPutchar(int c) {
-    cuddlesPutc(c, stdout);
+void cupidPutchar(int c) {
+    cupidPutc(c, stdout);
 }
 
-void cuddlesFlushStdout(void) {
-    cuddlesFFlush(stdout);
+void cupidFlushStdout(void) {
+    cupidFFlush(stdout);
 }
 
-void cuddlesFFlush(FILE *fp) {
+void cupidFFlush(FILE *fp) {
     if (!outputSink)
         fflush(fp);
     else if (outputSink->flush)
         outputSink->flush(outputSink->ctx);
 }
 
-void cuddlesFPrintf(FILE *fp, const char *fmt, ...) {
+void cupidFPrintf(FILE *fp, const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    cuddlesVFPrintf(fp, fmt, ap);
+    cupidVFPrintf(fp, fmt, ap);
     va_end(ap);
 }
 
-void cuddlesPutc(int c, FILE *fp) {
+void cupidPutc(int c, FILE *fp) {
     if (outputSink)
         sinkPutc(c);
     else

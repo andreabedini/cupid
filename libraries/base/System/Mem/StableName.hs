@@ -34,7 +34,7 @@ import Prelude
 import Data.Typeable
 
 
-import Cuddles.Stable
+import Cupid.Stable
 
 
 

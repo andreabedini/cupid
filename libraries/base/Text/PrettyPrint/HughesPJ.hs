@@ -978,7 +978,7 @@ spaces n | n <= 0    = ""
    
    when I look at the Doc values that are generated, there are lots of
    Nest constructors with negative arguments.  see this sample output of
-   d1 (obtained with cuddles, :s -u)
+   d1 (obtained with cupid, :s -u)
    
    tBeside (TextDetails_Chr 'a') 1 Doc_Empty) (Doc_NilAbove (Doc_Nest
    (-241) (Doc_TextBeside (TextDetails_Chr 'a') 1 Doc_Empty)))))

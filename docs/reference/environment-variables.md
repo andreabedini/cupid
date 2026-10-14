@@ -1,24 +1,24 @@
 # Environment variables
 
-Variables that `cuddles`, `runcuddles` and `fficuddles` consult.
+Variables that `cupid`, `runcupid` and `fficupid` consult.
 
-### `CUDDLESFLAGS`
+### `CUPIDFLAGS`
 
 Options, in the syntax of [Options](options.md), read before the
 command line.  Spaces inside an option need a backslash or double
 quotes:
 
 ```sh
-CUDDLESFLAGS='+k -E"vi +%d %s"'
-export CUDDLESFLAGS
+CUPIDFLAGS='+k -E"vi +%d %s"'
+export CUPIDFLAGS
 ```
 
-### `CUDDLESDIR`
+### `CUPIDDIR`
 
 The library directory.  Default: the directory chosen at build time,
-`lib/cuddles` under the prefix.  It is substituted for `{Cuddles}` in the
-search path and must contain `packages/`, and for `fficuddles` also
-`include/HsFFI.h`.  Set it to `build/libraries/cuddlesdir` to run from
+`lib/cupid` under the prefix.  It is substituted for `{Cupid}` in the
+search path and must contain `packages/`, and for `fficupid` also
+`include/HsFFI.h`.  Set it to `build/libraries/cupiddir` to run from
 the build tree.
 
 ### `HOME`
@@ -36,14 +36,14 @@ The shell run by `:!`.  Default: `/bin/sh`.
 
 ### `EMACS`
 
-If set, Cuddles assumes it is running in an Emacs shell buffer and reads
+If set, Cupid assumes it is running in an Emacs shell buffer and reads
 its input line by line without stripping carriage returns.
 
 ### `CC`
 
-Read by meson at configuration time, not by Cuddles.  The compiler it
-names is also the one `fficuddles` runs.  See
-[Build and install Cuddles](../how-to/build-and-install.md).
+Read by meson at configuration time, not by Cupid.  The compiler it
+names is also the one `fficupid` runs.  See
+[Build and install Cupid](../how-to/build-and-install.md).
 
 ## See also
 

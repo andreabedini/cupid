@@ -135,7 +135,7 @@ module Control.Exception (
 
 
 
-import Cuddles.Exception	as ExceptionBase
+import Cupid.Exception	as ExceptionBase
 
 
 import Prelude 		hiding ( catch )

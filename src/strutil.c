@@ -1,5 +1,5 @@
 /*
- * String utilities needed throughout the Cuddles codebase.
+ * String utilities needed throughout the Cupid codebase.
  */
 #include "prelude.h"
 #include "errors.h"

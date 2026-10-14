@@ -530,7 +530,7 @@ static struct primitive builtinPrimTable[] = {
  *                      use an intermediate variable to make the order
  *                      of evaluation explicit.
  *
- * If this version of Cuddles has been modified to allow different or
+ * If this version of Cupid has been modified to allow different or
  * additional run-time representations for certain values, then the
  * examples and principles illustrated here may need to be reconsidered,
  * and possibly reclassified.  The same will also be true if the execution
@@ -882,7 +882,7 @@ IntInt2Bool(primTestInt, (x >> y) & 1)
  * Unsigned arithmetic primitives:
  * ------------------------------------------------------------------------*/
 
-CAFWord(primMaxWord, MAXCUDDLESWORD)    /* maximum integer CAF              */
+CAFWord(primMaxWord, MAXCUPIDWORD)      /* maximum integer CAF              */
     WordWord2Word(primPlusWord, x + y)  /* Word addition primitive          */
     WordWord2Word(primMinusWord, x - y) /* Word subtraction primitive       */
     Word2Word(primNegateWord, 0u - x)   /* Word negation (modulo MAXWORD)   */
@@ -1148,27 +1148,27 @@ FloatFloat2Float(primPlusFloat, x + y) /* Float addition primitive         */
     Double2DoublePre(primSqrtDouble, sqrt(x),
                      x >= 0) /* Double square root primitive */
 
-    /* Not used in Cuddles prelude, rounds towards zero */
+    /* Not used in Cupid prelude, rounds towards zero */
     Float2Int(primFloatToInt, (int)x)   /* Adhoc Float --> Int conversion   */
     Double2Int(primDoubleToInt, (int)x) /* Adhoc Double --> Int conversion  */
 
     CAFInt(primFloatDigits,
-           CUDDLES_FLT_MANT_DIG) /* Float sig. digits primitive    */
-                                 /* again, courtesy K&R2             */
+           CUPID_FLT_MANT_DIG) /* Float sig. digits primitive    */
+                               /* again, courtesy K&R2             */
 
     CAFInt(primFloatMinExp,
-           CUDDLES_FLT_MIN_EXP) /* Float min exponent primitive    */
+           CUPID_FLT_MIN_EXP) /* Float min exponent primitive    */
     CAFInt(primFloatMaxExp,
-           CUDDLES_FLT_MAX_EXP) /* Float max exponent primitive    */
+           CUPID_FLT_MAX_EXP) /* Float max exponent primitive    */
 
     CAFInt(primDoubleDigits,
-           CUDDLES_DBL_MANT_DIG) /* Double sig. digits primitive  */
-                                 /* again, courtesy K&R2             */
+           CUPID_DBL_MANT_DIG) /* Double sig. digits primitive  */
+                               /* again, courtesy K&R2             */
 
     CAFInt(primDoubleMinExp,
-           CUDDLES_DBL_MIN_EXP) /* Double min exponent primitive  */
+           CUPID_DBL_MIN_EXP) /* Double min exponent primitive  */
     CAFInt(primDoubleMaxExp,
-           CUDDLES_DBL_MAX_EXP) /* Double max exponent primitive  */
+           CUPID_DBL_MAX_EXP) /* Double max exponent primitive  */
 
     /* ToDo: GHC stole its decode code from Lennart - maybe we should too?     */
     primFun(primFloatDecode) { /* Float decode primitive           */
@@ -1176,9 +1176,9 @@ FloatFloat2Float(primPlusFloat, x + y) /* Float addition primitive         */
     int n;                     /* another gruesome hack            */
     FloatArg(f, 1);
     f = frexp((double)(f), &n); /* 0.5   <= f < 1                   */
-    f = ldexp(
-        f, CUDDLES_FLT_MANT_DIG); /* 2^m-1 <= f < 2^m, m=CUDDLES_FLT_MANT_DIG*/
-    n -= CUDDLES_FLT_MANT_DIG;
+    f = ldexp(f,
+              CUPID_FLT_MANT_DIG); /* 2^m-1 <= f < 2^m, m=CUPID_FLT_MANT_DIG*/
+    n -= CUPID_FLT_MANT_DIG;
     push(bigDouble(f));
     updapRoot(ap(mkTuple(2), top()), mkInt(n));
 }
@@ -1186,7 +1186,7 @@ FloatFloat2Float(primPlusFloat, x + y) /* Float addition primitive         */
 /* Float encode primitive */
 primFun(primFloatEncode) {
     int n;                            /*  :: Integer -> Int -> Float      */
-    Float f;                          /* Ugly hack, don't use Cuddles for    */
+    Float f;                          /* Ugly hack, don't use Cupid for    */
     IntArg(n, 1);                     /* numerical work                   */
     eval(primArg(2));                 /* get integer                      */
     f = (Float)bigToDouble(whnfHead); /* and turn it into a float         */
@@ -1200,9 +1200,9 @@ primFun(primDoubleDecode) {
     int n;    /* another gruesome hack            */
     DoubleArg(f, 1);
     f = frexp((double)(f), &n); /* 0.5   <= f < 1                   */
-    f = ldexp(
-        f, CUDDLES_DBL_MANT_DIG); /* 2^m-1 <= f < 2^m, m=CUDDLES_DBL_MANT_DIG*/
-    n -= CUDDLES_DBL_MANT_DIG;
+    f = ldexp(f,
+              CUPID_DBL_MANT_DIG); /* 2^m-1 <= f < 2^m, m=CUPID_DBL_MANT_DIG*/
+    n -= CUPID_DBL_MANT_DIG;
     push(bigDouble(f));
     updapRoot(ap(mkTuple(2), top()), mkInt(n));
 }
@@ -1210,7 +1210,7 @@ primFun(primDoubleDecode) {
 /* Double encode primitive */
 primFun(primDoubleEncode) {
     int n;                             /*  :: Integer -> Int -> Double     */
-    Double f;                          /* Ugly hack, don't use Cuddles for    */
+    Double f;                          /* Ugly hack, don't use Cupid for    */
     IntArg(n, 1);                      /* numerical work                   */
     eval(primArg(2));                  /* get integer                      */
     f = (Double)bigToDouble(whnfHead); /* and turn it into a double        */
@@ -1294,7 +1294,7 @@ primFun(primCmpDouble) {
 }
 
 /* --------------------------------------------------------------------------
- * Evaluate name, obtaining a C string from a Cuddles string:
+ * Evaluate name, obtaining a C string from a Cupid string:
  * ------------------------------------------------------------------------*/
 
 #if FILENAME_MAX < 1024
@@ -1460,9 +1460,9 @@ primFun(primUnsafePtrToInt) {
 /*---------------------------------------------------------------------------
  * GreenCard entry points
  *
- * GreenCard generated code accesses Cuddles data structures and functions 
+ * GreenCard generated code accesses Cupid data structures and functions 
  * (only) via these functions (which are stored in the virtual function
- * table cuddlesAPI4).
+ * table cupidAPI4).
  *-------------------------------------------------------------------------*/
 
 static void getUnit(void);
@@ -1471,7 +1471,7 @@ static HsWord getWord(void);
 static HsAddr getAddr(void);
 static char getChar4(void);
 static HsChar getChar(void);
-static CuddlesForeign getForeign(void);
+static CupidForeign getForeign(void);
 static HsBool getBool(void);
 static HsInt8 getInt8(void);
 static HsInt16 getInt16(void);
@@ -1488,14 +1488,14 @@ static HsStablePtr getStablePtr4(void);
 static HsFloat getFloat(void);
 static HsDouble getDouble(void);
 
-static CuddlesStablePtr getStablePtr(void);
+static CupidStablePtr getStablePtr(void);
 
 static void putInt(HsInt);
 static void putWord(HsWord);
 static void putAddr(HsAddr);
 static void putChar4(char);
 static void putChar(HsChar);
-static void putForeign(CuddlesForeign, void (*)(void *));
+static void putForeign(CupidForeign, void (*)(void *));
 static void putStablePtr4(HsStablePtr);
 static void putBool(HsBool);
 static void putInt8(HsInt8);
@@ -1514,8 +1514,8 @@ static void putDouble(HsDouble);
 
 static void freeStablePtr4(HsStablePtr);
 
-static void returnIO(CuddlesStackPtr, int);
-static void returnId(CuddlesStackPtr, int);
+static void returnIO(CupidStackPtr, int);
+static void returnId(CupidStackPtr, int);
 static int runIO(int);
 static void apMany(int);
 
@@ -1547,7 +1547,7 @@ static HsChar getChar(void) {
     checkChar();
     return charOf(whnfHead);
 }
-static CuddlesForeign getForeign(void) {
+static CupidForeign getForeign(void) {
     eval(pop());
     return derefMP(whnfHead);
 }
@@ -1607,12 +1607,12 @@ static HsFunPtr getFunPtr(void) {
 
 static HsForeignPtr getForeignPtr(void) {
     errHead(0);
-    errPrintf("getForeignPtr: not implemented in Cuddles");
+    errPrintf("getForeignPtr: not implemented in Cupid");
     errFail();
     return 0;
 }
 
-static CuddlesStablePtr getStablePtr(void) {
+static CupidStablePtr getStablePtr(void) {
     Cell c = mkStablePtr(pop());
     if (isNull(c)) {
         errHead(0);
@@ -1622,8 +1622,8 @@ static CuddlesStablePtr getStablePtr(void) {
     return c;
 }
 
-static CuddlesStablePtr lookupName(char *, char *);
-static CuddlesStablePtr lookupName(char *q, char *n) {
+static CupidStablePtr lookupName(char *, char *);
+static CupidStablePtr lookupName(char *q, char *n) {
     Name nm = findQualFun(findText(q), findText(n));
     Cell c;
 
@@ -1656,10 +1656,10 @@ static void putChar4(char x) {
 static void putChar(HsChar x) {
     push(mkChar(x));
 }
-static void putForeign(CuddlesForeign x, void (*f)(CuddlesForeign)) {
+static void putForeign(CupidForeign x, void (*f)(CupidForeign)) {
     push(mkMallocPtr(x, f));
 }
-static void putStablePtr(CuddlesStablePtr x) {
+static void putStablePtr(CupidStablePtr x) {
     push(derefStablePtr(x));
 }
 static void putBool(HsBool x) {
@@ -1705,18 +1705,18 @@ static void putFunPtr(HsFunPtr x) {
  * be an unevaluated thunk) and unboxed with checkInt()/whnfInt on the way
  * in, exactly like every other get()/put() pair here.                    */
 static void putStablePtr4(HsStablePtr x) {
-    push(mkInt((CuddlesStablePtr)(intptr_t)x));
+    push(mkInt((CupidStablePtr)(intptr_t)x));
 }
 
 static HsStablePtr getStablePtr4(void) {
     eval(pop());
     checkInt();
-    return (HsStablePtr)(intptr_t)(CuddlesStablePtr)whnfInt;
+    return (HsStablePtr)(intptr_t)(CupidStablePtr)whnfInt;
 }
 
 static void freeStablePtr4(HsStablePtr x) {
     if (x)
-        freeStablePtr((CuddlesStablePtr)(intptr_t)x);
+        freeStablePtr((CupidStablePtr)(intptr_t)x);
 }
 
 static HsFloat getFloat(void) {
@@ -1740,12 +1740,12 @@ static void putDouble(HsDouble x) {
 
 static void putForeignPtr(HsForeignPtr x) {
     errHead(0);
-    errPrintf("putForeignPtr: not implemented in Cuddles");
+    errPrintf("putForeignPtr: not implemented in Cupid");
     errFail();
 }
 
 /* Return in IO monad */
-static void returnIO(CuddlesStackPtr root, int n) {
+static void returnIO(CupidStackPtr root, int n) {
     /* There should be n return values on the top of the stack */
     if (n == 0) {
         push(nameUnit);
@@ -1763,7 +1763,7 @@ static void returnIO(CuddlesStackPtr root, int n) {
 }
 
 /* Return in identity monad */
-static void returnId(CuddlesStackPtr root, int n) {
+static void returnId(CupidStackPtr root, int n) {
     /* There should be n return values on the top of the stack */
     if (n == 0) {
         push(nameUnit);
@@ -1881,7 +1881,7 @@ static int runId(int n) {
 struct thunk_data {
     struct thunk_data *next;
     struct thunk_data *prev;
-    CuddlesStablePtr stable;
+    CupidStablePtr stable;
     /* Machine-code generation for the adjustor thunk itself (the i386,
      * PowerPC and SPARC cases GHC's Adjustor.c has) is gone: none of
      * those architectures are supported, and mkThunk
@@ -1893,13 +1893,13 @@ struct thunk_data {
     char code[1];
 };
 
-static void *mkThunk(void (*)(void), CuddlesStablePtr);
+static void *mkThunk(void (*)(void), CupidStablePtr);
 static void freeThunkAux(struct thunk_data *);
 static void freeAllThunks(void);
 
 static struct thunk_data *foreignThunks = 0;
 
-static void *mkThunk(void (*app)(void), CuddlesStablePtr s) {
+static void *mkThunk(void (*app)(void), CupidStablePtr s) {
     /* Every architecture we still support needs machine code written
      * into the thunk to trampoline into Haskell (see the comment above
      * struct thunk_data), and none of the ones that had it (i386,
@@ -1954,8 +1954,8 @@ primFun(primFreeHFunPtr) {
 }
 
 /* Build virtual function table */
-CuddlesAPI4 *cuddlesAPI4(void) {
-    static CuddlesAPI4 api;
+CupidAPI4 *cupidAPI4(void) {
+    static CupidAPI4 api;
     static bool initialised = false;
 
     if (!initialised) {
@@ -2041,8 +2041,8 @@ CuddlesAPI4 *cuddlesAPI4(void) {
 }
 
 /* Build virtual function table */
-CuddlesAPI5 *cuddlesAPI5(void) {
-    static CuddlesAPI5 api;
+CupidAPI5 *cupidAPI5(void) {
+    static CupidAPI5 api;
     static bool initialised = false;
     if (!initialised) {
         api.getBool = getBool;

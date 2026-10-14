@@ -117,7 +117,7 @@ Text textStdcall; /* stdcall                         */
 #endif
 
 Text textNum;         /* Num                             */
-Text textPrelude;     /* Prelude / Cuddles.Prelude          */
+Text textPrelude;     /* Prelude / Cupid.Prelude          */
 Text textUserPrelude; /* Prelude                         */
 Text textPlus;        /* (+)                               */
 
@@ -375,7 +375,7 @@ static void skip(void) {
                 c1 = EOF;
             else {
                 c1 = nextConsoleChar();
-#if HAVE_WINDOWS_H && !CUDDLES_FOR_WINDOWS
+#if HAVE_WINDOWS_H && !CUPID_FOR_WINDOWS
                 Sleep(0);
 #endif
                 /* On Win32, hitting ctrl-C causes the next getchar to
@@ -1652,14 +1652,14 @@ void installInput(void) {
     textBang = findText("!");
     textDot = findText(".");
     textImplies = findText("=>");
-    textPrelude = findText(STD_PRELUDE_CUDDLES);
+    textPrelude = findText(STD_PRELUDE_CUPID);
     textUserPrelude = findText(STD_PRELUDE);
     textNum = findText("Num");
     textModule = findText("module");
     textImport = findText("import");
     textHiding = findText("hiding");
     textQualified = findText("qualified");
-    textNeedPrims = findText("needPrims_cuddles");
+    textNeedPrims = findText("needPrims_cupid");
     textForeign = findText("foreign");
     textExport = findText("export");
     textCCall = findText("ccall");

@@ -949,5 +949,4 @@ BignumBignum2Bignum(primPlusInteger, bigAdd(x, y)) /* Integer addition     */
 }
 
 /*-------------------------------------------------------------------------*/
-CAFBignum(primFloatRadix,
-          bigInt(CUDDLES_FLT_RADIX)) /* Float radix primitive  */
+CAFBignum(primFloatRadix, bigInt(CUPID_FLT_RADIX)) /* Float radix primitive  */

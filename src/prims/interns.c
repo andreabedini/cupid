@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * Implementation of primitives which provide access to internal Cuddles
+ * Implementation of primitives which provide access to internal Cupid
  * data structures and representations from within Haskell.
  *
  * Despite appearances, the only primitives which break referential
@@ -97,42 +97,42 @@ struct primInfo internalPrims = {&internalsSubsystem, internalPrimTable, 0};
 
 static Module moduleInternals;
 
-static Name nameCuddlesApply;   /* data CellKind = Apply Cell [Cell] */
-static Name nameCuddlesFun;     /*              | Fun   Name        */
-static Name nameCuddlesCon;     /*              | Con   Name        */
-static Name nameCuddlesTuple;   /*              | Tuple Int         */
-static Name nameCuddlesInt;     /*              | Int   Int         */
-static Name nameCuddlesInteger; /*              | Integer Integer   */
-static Name nameCuddlesFloat;   /*              | Float Float       */
-static Name nameCuddlesDouble;  /*              | Double Double     */
-static Name nameCuddlesChar;    /*              | Char  Char        */
-static Name nameCuddlesPrim;    /*              | Prim  String      */
-static Name nameCuddlesError;   /*              | Error Cell        */
+static Name nameCupidApply;   /* data CellKind = Apply Cell [Cell] */
+static Name nameCupidFun;     /*              | Fun   Name        */
+static Name nameCupidCon;     /*              | Con   Name        */
+static Name nameCupidTuple;   /*              | Tuple Int         */
+static Name nameCupidInt;     /*              | Int   Int         */
+static Name nameCupidInteger; /*              | Integer Integer   */
+static Name nameCupidFloat;   /*              | Float Float       */
+static Name nameCupidDouble;  /*              | Double Double     */
+static Name nameCupidChar;    /*              | Char  Char        */
+static Name nameCupidPrim;    /*              | Prim  String      */
+static Name nameCupidError;   /*              | Error Cell        */
 
 static void linkInternals(void) {
-    char *internLib = "Cuddles.Internals";
+    char *internLib = "Cupid.Internals";
     moduleInternals = findModule(findText(internLib));
     if (nonNull(moduleInternals)) {
         setCurrModule(moduleInternals);
-        nameCuddlesApply = findName(findText("Apply"));
-        nameCuddlesFun = findName(findText("Fun"));
-        nameCuddlesCon = findName(findText("Con"));
-        nameCuddlesTuple = findName(findText("Tuple"));
-        nameCuddlesInt = findName(findText("Int"));
-        nameCuddlesInteger = findName(findText("Integer"));
-        nameCuddlesFloat = findName(findText("Float"));
-        nameCuddlesDouble = findName(findText("Double"));
-        nameCuddlesChar = findName(findText("Char"));
-        nameCuddlesPrim = findName(findText("Prim"));
-        nameCuddlesError = findName(findText("Error"));
+        nameCupidApply = findName(findText("Apply"));
+        nameCupidFun = findName(findText("Fun"));
+        nameCupidCon = findName(findText("Con"));
+        nameCupidTuple = findName(findText("Tuple"));
+        nameCupidInt = findName(findText("Int"));
+        nameCupidInteger = findName(findText("Integer"));
+        nameCupidFloat = findName(findText("Float"));
+        nameCupidDouble = findName(findText("Double"));
+        nameCupidChar = findName(findText("Char"));
+        nameCupidPrim = findName(findText("Prim"));
+        nameCupidError = findName(findText("Error"));
 
-        if (isNull(nameCuddlesApply) || isNull(nameCuddlesFun) ||
-            isNull(nameCuddlesCon) || isNull(nameCuddlesTuple) ||
-            isNull(nameCuddlesInt) || isNull(nameCuddlesInteger) ||
-            isNull(nameCuddlesFloat) || isNull(nameCuddlesDouble) ||
-            isNull(nameCuddlesChar) || isNull(nameCuddlesPrim) ||
-            isNull(nameCuddlesError)) {
-            fatal("module CuddlesInternals doesn't define CellKind correctly");
+        if (isNull(nameCupidApply) || isNull(nameCupidFun) ||
+            isNull(nameCupidCon) || isNull(nameCupidTuple) ||
+            isNull(nameCupidInt) || isNull(nameCupidInteger) ||
+            isNull(nameCupidFloat) || isNull(nameCupidDouble) ||
+            isNull(nameCupidChar) || isNull(nameCupidPrim) ||
+            isNull(nameCupidError)) {
+            fatal("module CupidInternals doesn't define CellKind correctly");
         }
     }
 }
@@ -141,23 +141,23 @@ static void linkInternals(void) {
  * Operations on Cells
  * ------------------------------------------------------------------------*/
 
-/* Cells have to be boxed (using the CUDDLESOBJECT tag) so that we can        */
+/* Cells have to be boxed (using the CUPIDOBJECT tag) so that we can        */
 /* evaluate a Cell expression such as "fst (cell1, cell2)" without         */
 /* evaluating the thunk inside the Cell.                                   */
 
-#define isCuddlesObject(a) (isPair(a) && fst(a) == CUDDLESOBJECT)
-#define checkCuddlesObject(x)                                                  \
-    if (!isCuddlesObject(x))                                                   \
-    internal("CuddlesObject expected")
+#define isCupidObject(a) (isPair(a) && fst(a) == CUPIDOBJECT)
+#define checkCupidObject(x)                                                    \
+    if (!isCupidObject(x))                                                     \
+    internal("CupidObject expected")
 
-#define CuddlesObjectArg(nm, offset)                                           \
+#define CupidObjectArg(nm, offset)                                             \
     eval(primArg(offset));                                                     \
-    checkCuddlesObject(whnfHead);                                              \
+    checkCupidObject(whnfHead);                                                \
     nm = snd(whnfHead);
 
 /* Trivial coercion */
 primFun(primGetCell) {
-    updapRoot(CUDDLESOBJECT, primArg(1)); /*  :: a -> Cell                    */
+    updapRoot(CUPIDOBJECT, primArg(1)); /*  :: a -> Cell                    */
 }
 
 /* --------------------------------------------------------------------------
@@ -168,9 +168,9 @@ primFun(primGetCell) {
 primFun(primCellPtrEq) {
     Cell x = 0;
     Cell y = 0;
-    CuddlesObjectArg(x, 1);
+    CupidObjectArg(x, 1);
     push(x);
-    CuddlesObjectArg(y, 2);
+    CupidObjectArg(y, 2);
     x = pop();
 
     /* We chase indirection chains since that's easy and gives more
@@ -197,7 +197,7 @@ primFun(primCatchError2) {
     if (isNull(err)) {
         updapRoot(nameRight, primArg(1));
     } else {
-        updapRoot(nameLeft, ap(CUDDLESOBJECT, err));
+        updapRoot(nameLeft, ap(CUPIDOBJECT, err));
     }
 }
 
@@ -233,14 +233,14 @@ primFun(primClassifyCell) {
     if (strict) {
         Cell temp;
         eval(IOArg(1)); /* object */
-        checkCuddlesObject(whnfHead);
+        checkCupidObject(whnfHead);
         whnfHead = snd(whnfHead);
         if (nonNull(temp = evalWithNoError(whnfHead))) {
-            IOReturn(ap(nameCuddlesError, ap(CUDDLESOBJECT, temp)));
+            IOReturn(ap(nameCupidError, ap(CUPIDOBJECT, temp)));
         }
     } else {
         eval(IOArg(1)); /* object */
-        checkCuddlesObject(whnfHead);
+        checkCupidObject(whnfHead);
         whnfHead = snd(whnfHead);
         unwind(whnfHead);
     }
@@ -248,61 +248,61 @@ primFun(primClassifyCell) {
     if (whnfArgs > 0) {
         Cell args = nameNil;
         while (whnfArgs-- > 0)
-            args = ap(ap(nameCons, ap(CUDDLESOBJECT, pushed(whnfArgs))), args);
-        result = ap(ap(nameCuddlesApply, ap(CUDDLESOBJECT, whnfHead)), args);
+            args = ap(ap(nameCons, ap(CUPIDOBJECT, pushed(whnfArgs))), args);
+        result = ap(ap(nameCupidApply, ap(CUPIDOBJECT, whnfHead)), args);
     } else {
         switch (whatIs(whnfHead)) {
 
         case NAME:
-            result = ap((isCfun(whnfHead) ? nameCuddlesCon : nameCuddlesFun),
+            result = ap((isCfun(whnfHead) ? nameCupidCon : nameCupidFun),
                         mkInt(whnfHead));
             break;
 
         case TUPLE:
-            result = ap(nameCuddlesTuple, mkInt(tupleOf(whnfHead)));
+            result = ap(nameCupidTuple, mkInt(tupleOf(whnfHead)));
             break;
 
         case ZERONUM:
         case POSNUM:
         case NEGNUM:
-            result = ap(nameCuddlesInteger, whnfHead);
+            result = ap(nameCupidInteger, whnfHead);
             break;
 
         case INTCELL:
-            result = ap(nameCuddlesInt, whnfHead);
+            result = ap(nameCupidInt, whnfHead);
             break;
 
         case CHARCELL:
-            result = ap(nameCuddlesChar, whnfHead);
+            result = ap(nameCupidChar, whnfHead);
             break;
 
         case FLOATCELL:
-            result = ap(nameCuddlesFloat, whnfHead);
+            result = ap(nameCupidFloat, whnfHead);
             break;
 
         case DOUBLECELL:
-            result = ap(nameCuddlesDouble, whnfHead);
+            result = ap(nameCupidDouble, whnfHead);
             break;
 
         case HANDCELL:
-            result = ap(nameCuddlesPrim, mkStr(findText("{handle}")));
+            result = ap(nameCupidPrim, mkStr(findText("{handle}")));
             break;
 
         case MUTVAR:
-            result = ap(nameCuddlesPrim, mkStr(findText("{ref}")));
+            result = ap(nameCupidPrim, mkStr(findText("{ref}")));
             break;
 
         case ARRAY:
-            result = ap(nameCuddlesPrim, mkStr(findText("{primitive array}")));
+            result = ap(nameCupidPrim, mkStr(findText("{primitive array}")));
             break;
 
-        case CUDDLESOBJECT:
+        case CUPIDOBJECT:
             /* ToDo: fix so that debugger can examine itself */
-            result = ap(nameCuddlesPrim, mkStr(findText("{Cell ...}")));
+            result = ap(nameCupidPrim, mkStr(findText("{Cell ...}")));
             break;
 
         case INSTANCE:
-            result = ap(nameCuddlesPrim, mkStr(findText("{instance}")));
+            result = ap(nameCupidPrim, mkStr(findText("{instance}")));
             break;
         default:
             internal("Error in graph2");
@@ -413,7 +413,7 @@ primFun(primDoubleAt) {
 primFun(primCellAt) {
     Addr m; /*  :: Addr -> Cell                  */
     IntArg(m, 1);
-    updapRoot(CUDDLESOBJECT, CellAt(m));
+    updapRoot(CUPIDOBJECT, CellAt(m));
 }
 
 /* Obtain Name at address */

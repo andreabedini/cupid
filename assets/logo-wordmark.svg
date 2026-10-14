@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 190" width="720" height="190" role="img" aria-label="Cuddles">
-  <title>Cuddles</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 190" width="720" height="190" role="img" aria-label="Cupid">
+  <title>Cupid</title>
   <g transform="translate(4,7) scale(0.72)">
     <rect x="10" y="22" width="236" height="212" rx="52" fill="#2B2340"/>
     <g fill="none" stroke="#EE6C4D" stroke-width="15" stroke-linecap="round" stroke-linejoin="round">
@@ -9,5 +9,5 @@
     <path d="M 92 156 C 104 186 152 186 164 156" fill="none" stroke="#FBEEDB" stroke-width="15" stroke-linecap="round"/>
   </g>
   <text x="222" y="124" font-size="86" font-weight="700" letter-spacing="-2" fill="#2B2340"
-        font-family="ui-monospace, 'SFMono-Regular', 'JetBrains Mono', 'DejaVu Sans Mono', Menlo, Consolas, monospace">Cuddles</text>
+        font-family="ui-monospace, 'SFMono-Regular', 'JetBrains Mono', 'DejaVu Sans Mono', Menlo, Consolas, monospace">Cupid</text>
 </svg>

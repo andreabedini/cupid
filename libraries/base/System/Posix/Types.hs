@@ -68,7 +68,7 @@ module System.Posix.Types (
   Limit
  ) where
 
-import Cuddles.SysConfig
+import Cupid.SysConfig
 import Foreign
 import Foreign.C
 import Data.Typeable

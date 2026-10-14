@@ -1,4 +1,4 @@
-project('cuddles', 'c',
+project('cupid', 'c',
   version: '0.1.0',
   license: 'BSD-3-Clause',
   meson_version: '>= 1.1.0',
@@ -7,7 +7,7 @@ project('cuddles', 'c',
   default_options: ['c_std=c2x', 'buildtype=debugoptimized', 'warning_level=1'])
 
 # The string the banner and :version print
-cuddles_version_string = '0.1.0'
+cupid_version_string = '0.1.0'
 
 cc = meson.get_compiler('c')
 host = host_machine.system()
@@ -25,7 +25,7 @@ host_os_names = {
   'openbsd': 'openbsd',
 }
 if host not in host_os_names
-  error('Cuddles supports Linux, macOS, Windows and the BSDs only (host is @0@)'.format(host))
+  error('Cupid supports Linux, macOS, Windows and the BSDs only (host is @0@)'.format(host))
 endif
 host_os = host_os_names[host]
 
@@ -37,17 +37,17 @@ prefix = get_option('prefix')
 bindir = prefix / get_option('bindir')
 libdir = prefix / get_option('libdir')
 datadir = prefix / get_option('datadir')
-cuddlesdir = get_option('cuddlesdir')
-if cuddlesdir == ''
-  cuddlesdir = libdir / 'cuddles'
+cupiddir = get_option('cupiddir')
+if cupiddir == ''
+  cupiddir = libdir / 'cupid'
 endif
 
 if is_windows
-  cuddlespath = '.;{Cuddles}\\packages\\*'
+  cupidpath = '.;{Cupid}\\packages\\*'
 else
-  cuddlespath = '.:{Home}/lib/cuddles/packages/*:/usr/local/lib/cuddles/packages/*:{Cuddles}/packages/*'
+  cupidpath = '.:{Home}/lib/cupid/packages/*:/usr/local/lib/cupid/packages/*:{Cupid}/packages/*'
 endif
-cuddlessuffixes = '.hs'
+cupidsuffixes = '.hs'
 
 # ---------------------------------------------------------------------------
 # Dependencies
@@ -95,7 +95,7 @@ endif
 
 hp2ps = find_program('hp2ps', required: false)
 
-# The command fficuddles runs to turn generated C into a loadable library
+# The command fficupid runs to turn generated C into a loadable library
 cc_cmd = ' '.join(cc.cmd_array())
 if host == 'darwin'
   dll_flags = '-bundle -undefined dynamic_lookup'
@@ -116,10 +116,10 @@ if not get_option('debug-code')
 endif
 
 conf = configuration_data()
-conf.set_quoted('CUDDLES_VERSION', cuddles_version_string)
-conf.set_quoted('CUDDLESDIR', cuddlesdir)
-conf.set_quoted('CUDDLESPATH', cuddlespath)
-conf.set_quoted('CUDDLESSUFFIXES', cuddlessuffixes)
+conf.set_quoted('CUPID_VERSION', cupid_version_string)
+conf.set_quoted('CUPIDDIR', cupiddir)
+conf.set_quoted('CUPIDPATH', cupidpath)
+conf.set_quoted('CUPIDSUFFIXES', cupidsuffixes)
 conf.set_quoted('MKDLL_CMD', mkdll_cmd)
 conf.set('USE_PREPROCESSOR', 1)
 if use_readline
@@ -171,13 +171,13 @@ if get_option('libraries')
 endif
 subdir('docs')
 
-install_subdir('demos', install_dir: cuddlesdir)
-install_data('README.md', 'License', 'Credits', install_dir: cuddlesdir)
+install_subdir('demos', install_dir: cupiddir)
+install_data('README.md', 'License', 'Credits', install_dir: cupiddir)
 
 summary({
-  'cuddlesdir': cuddlesdir,
+  'cupiddir': cupiddir,
   'readline': use_readline,
   'character encoding': get_option('char-encoding'),
   'Haskell libraries': get_option('libraries'),
-  'fficuddles compile command': mkdll_cmd,
+  'fficupid compile command': mkdll_cmd,
 }, section: 'Configuration')

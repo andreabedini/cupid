@@ -30,7 +30,7 @@ rty thunk(ty1 a1, ..., tym am) {
 }
 ```
 
-where `app` is the entry point that `fficuddles` generated for the
+where `app` is the entry point that `fficupid` generated for the
 declaration.  `app` is ordinary C compiled ahead of time; only the
 step of adding `s` to the argument list must be created per closure.
 
@@ -42,7 +42,7 @@ that was both writable and executable:
 ```c
 struct thunk_data {
     struct thunk_data *next, *prev;   /* all thunks, for the collector */
-    CuddlesStablePtr      stable;        /* the Haskell function */
+    CupidStablePtr      stable;        /* the Haskell function */
     char               code[N];       /* machine code */
 };
 ```
@@ -90,7 +90,7 @@ shipped library uses one.
 - `foreign import "dynamic"` calls *out* through a `FunPtr` obtained
   from C, and works everywhere.
 - A C library that takes a callback can often be driven with a
-  C-side trampoline compiled by `fficuddles` along with the module: a
+  C-side trampoline compiled by `fficupid` along with the module: a
   fixed C function that looks up what to do in a table the Haskell side
   fills through ordinary imports.
 
@@ -102,5 +102,5 @@ shuffle at the cost of reentrancy.
 
 ## See also
 
-- [The language Cuddles accepts](../reference/language.md#foreign-function-interface)
+- [The language Cupid accepts](../reference/language.md#foreign-function-interface)
 - [Call C functions from Haskell](../how-to/call-c-functions.md)

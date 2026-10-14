@@ -94,8 +94,8 @@ import Control.Monad.Fix
 
 
 import Data.Typeable
-import Cuddles.ST
-import qualified Cuddles.LazyST as LazyST
+import Cupid.ST
+import qualified Cupid.LazyST as LazyST
 
 sTTc = mkTyCon "ST"; instance Typeable2 ST where { typeOf2 _ = mkTyConApp sTTc [] }; instance Typeable a => Typeable1 (ST a) where {   typeOf1 = typeOf1Default }; instance (Typeable a, Typeable b) => Typeable (ST a b) where {   typeOf = typeOfDefault }
 realWorldTc = mkTyCon "RealWorld"; instance Typeable RealWorld where { typeOf _ = mkTyConApp realWorldTc [] }

@@ -1,33 +1,33 @@
-# Run Cuddles from the build tree
+# Run Cupid from the build tree
 
-Use a freshly built Cuddles without installing it.
+Use a freshly built Cupid without installing it.
 
 ## Prerequisites
 
 - a completed `ninja -C build` (see
-  [Build and install Cuddles](build-and-install.md))
+  [Build and install Cupid](build-and-install.md))
 
 ## Steps
 
 The interpreter needs to know where the libraries are.  The build
-puts them in `build/libraries/cuddlesdir`, and the binaries in
+puts them in `build/libraries/cupiddir`, and the binaries in
 `build/src`.
 
 ### Interactive session
 
-Point `CUDDLESDIR` at the built library directory:
+Point `CUPIDDIR` at the built library directory:
 
 ```sh
-CUDDLESDIR=build/libraries/cuddlesdir build/src/cuddles
+CUPIDDIR=build/libraries/cupiddir build/src/cupid
 ```
 
 ### A script
 
-Either set `CUDDLESDIR` in the same way, or pass the library search path
+Either set `CUPIDDIR` in the same way, or pass the library search path
 with `-P`:
 
 ```sh
-build/src/runcuddles -P'build/libraries/cuddlesdir/packages/*' Main.hs
+build/src/runcupid -P'build/libraries/cupiddir/packages/*' Main.hs
 ```
 
 ### For the rest of a shell session
@@ -36,19 +36,19 @@ Export the two settings once:
 
 ```sh
 export PATH="$PWD/build/src:$PATH"
-export CUDDLESDIR="$PWD/build/libraries/cuddlesdir"
+export CUPIDDIR="$PWD/build/libraries/cupiddir"
 ```
 
-After this `cuddles`, `runcuddles` and `fficuddles` work as if installed.
+After this `cupid`, `runcupid` and `fficupid` work as if installed.
 
 ## Verify it worked
 
 ```sh
-CUDDLESDIR=build/libraries/cuddlesdir build/src/cuddles
+CUPIDDIR=build/libraries/cupiddir build/src/cupid
 ```
 
 ```
-Cuddles> :load Data.Map
+Cupid> :load Data.Map
 Data.Map> fromList [(1,"one")]
 fromList [(1,"one")]
 Data.Map> :quit
@@ -60,5 +60,5 @@ prompt with a message that the `Prelude` cannot be located.
 ## See also
 
 - [Environment variables](../reference/environment-variables.md) for
-  `CUDDLESDIR`
+  `CUPIDDIR`
 - [Options](../reference/options.md) for `-P`

@@ -1,4 +1,4 @@
-runcuddles: Error occurred
+runcupid: Error occurred
 ERROR "gadt-syntax-newtype.hs":2 - A newtype declaration must have exactly one constructor
 
 

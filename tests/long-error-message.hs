@@ -1,4 +1,4 @@
--- A type error whose message is longer than the 10,000 bytes runcuddles
+-- A type error whose message is longer than the 10,000 bytes runcupid
 -- used to capture: the buffer wrapped to the start on overflow, and only
 -- the message's last fragment was printed.  The whole message must arrive.
 main = putStrLn x

@@ -99,7 +99,7 @@ import Data.Maybe
 
 
 
-import Cuddles.Prelude(Handle, IOException(..), IOErrorType(..))
+import Cupid.Prelude(Handle, IOException(..), IOErrorType(..))
 
 
 

@@ -34,8 +34,8 @@ import Data.Array.Base	( STUArray, castSTUArray, UArray, unsafeFreezeSTUArray )
 import Control.Monad.ST	( ST, runST )
 
 
-import Cuddles.Array	( Array )
-import Cuddles.ST		( STArray, unsafeFreezeSTArray )
+import Cupid.Array	( Array )
+import Cupid.ST		( STArray, unsafeFreezeSTArray )
 
 
 

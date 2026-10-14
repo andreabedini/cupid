@@ -26,7 +26,7 @@
  * carry the same number.  This module fills in the name half; see the
  * script file control section of storage.h.
  */
-CUDDLES_inline struct strScriptName *scriptName(Script s) {
+CUPID_inline struct strScriptName *scriptName(Script s) {
     return &scriptRec(s)->name;
 }
 
@@ -327,7 +327,7 @@ void readScripts(int n) {
 /* List scripts in current session */
 void whatScripts(void) {
     int i;
-    Printf("\nCuddles session for:");
+    Printf("\nCupid session for:");
     for (i = 0; i < numScripts; ++i) {
         Printf("\n%s", scriptName(i)->fileName);
     }

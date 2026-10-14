@@ -182,7 +182,7 @@ only, as a GADT match provides, would live; 0043 says so.
 
 ## See also
 
-- [How Cuddles runs a program](how-cuddles-runs-a-program.md) for the
+- [How Cupid runs a program](how-cupid-runs-a-program.md) for the
   stages around the type checker
 - [Language extensions](../reference/extensions.md) for what the
   flexible contexts, overlap and functional dependencies accept

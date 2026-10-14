@@ -71,8 +71,8 @@ import Data.Char
 
 
 
-import Cuddles.Prelude
-import Cuddles.Numeric
+import Cupid.Prelude
+import Cupid.Numeric
 
 
 

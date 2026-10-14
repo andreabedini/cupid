@@ -1,4 +1,4 @@
-runcuddles: Error occurred
+runcupid: Error occurred
 ERROR "equality-not-general.hs":5 - Inferred type is not general enough
 *** Expression    : f
 *** Expected type : (a ~ Int) => a -> b -> b

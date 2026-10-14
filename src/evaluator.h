@@ -1,5 +1,5 @@
 /*
- * The Cuddles evaluator / command interpreter + support functions.
+ * The Cupid evaluator / command interpreter + support functions.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,

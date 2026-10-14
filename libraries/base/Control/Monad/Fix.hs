@@ -48,7 +48,7 @@ fix f = let x = f x in x
 --	@'mfix' (\\x -> 'mfix' (\\y -> f x y))  =  'mfix' (\\x -> f x x)@
 --
 -- This class is used in the translation of the recursive @do@ notation
--- supported by GHC and Cuddles.
+-- supported by GHC and Cupid.
 class (Monad m) => MonadFix m where
 	-- | The fixed point of a monadic computation.
 	-- @'mfix' f@ executes the action @f@ only once, with the eventual

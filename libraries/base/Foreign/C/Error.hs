@@ -116,7 +116,7 @@ module Foreign.C.Error (
 -- regular imports
 -- ---------------
 
-import Cuddles.SysConfig
+import Cupid.SysConfig
 import Foreign.Storable
 import Foreign.Ptr
 import Foreign.C.Types

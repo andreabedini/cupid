@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -optc-D__CUDDLES__ #-}
+{-# OPTIONS_GHC -optc-D__CUPID__ #-}
 {-# LINE 1 "System/Time.hsc" #-}
 -----------------------------------------------------------------------------
 {-# LINE 2 "System/Time.hsc" #-}
@@ -115,7 +115,7 @@ import System.IO.Unsafe
 
 
 {-# LINE 122 "System/Time.hsc" #-}
-import Cuddles.Time ( getClockTimePrim, toCalTimePrim, toClockTimePrim )
+import Cupid.Time ( getClockTimePrim, toCalTimePrim, toClockTimePrim )
 
 {-# LINE 127 "System/Time.hsc" #-}
 

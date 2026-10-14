@@ -37,7 +37,7 @@ import Prelude
 
 
 
-import Cuddles.System
+import Cupid.System
 
 
 

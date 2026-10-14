@@ -1,6 +1,6 @@
-# Build Cuddles on Windows
+# Build Cupid on Windows
 
-Build Cuddles with MinGW-w64 or MSVC.  The meson build is written to
+Build Cupid with MinGW-w64 or MSVC.  The meson build is written to
 support Windows but has not yet been verified there, so expect to fix a
 few things.
 
@@ -27,9 +27,9 @@ The platform-specific choices live in a few places:
 
 - `src/sysdeps.h` — the facts about each supported target
 - `meson.build` — shared-library flags and install paths; the Windows
-  search path is `.;{Cuddles}\packages\*`
+  search path is `.;{Cupid}\packages\*`
 - `libraries/tools/mksysconfig.c` — the C type widths and the errno
-  and signal constants written into `Cuddles.SysConfig`
+  and signal constants written into `Cupid.SysConfig`
 
 The library sources under `libraries/base` are the POSIX expansion of
 the 2006 sources.  Their Windows code paths were dropped when the
@@ -45,5 +45,5 @@ from this tree.
 
 ## See also
 
-- [Build and install Cuddles](build-and-install.md)
+- [Build and install Cupid](build-and-install.md)
 - [Build options and install layout](../reference/build-options.md)

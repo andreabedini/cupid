@@ -3,7 +3,7 @@
 {% block content %}
 <section class="hero">
   <img class="hero-mark" src="{{ get_url(path='logo.svg') }}" alt="" width="112" height="112">
-  <h1>Cuddles</h1>
+  <h1>Cupid</h1>
   <p class="tagline">{{ config.extra.tagline }}</p>
   <p class="lede">
     A fork of Hugs 98 &mdash; the interpreter Mark P Jones started in 1994 and a
@@ -57,17 +57,17 @@
   <h2>Build it</h2>
   <p>You need a C compiler, meson 1.1 or later, ninja and python3.  The build
   takes about a minute and never writes to the source tree.</p>
-  <pre><code class="language-sh">git clone {{ config.extra.repo_url }}.git cuddles
-cd cuddles
+  <pre><code class="language-sh">git clone {{ config.extra.repo_url }}.git cupid
+cd cupid
 CC=gcc meson setup build
 ninja -C build
-CUDDLESDIR=build/libraries/cuddlesdir build/src/cuddles</code></pre>
-  <pre class="session"><code>Cuddles&gt; map (*2) [1..10]
+CUPIDDIR=build/libraries/cupiddir build/src/cupid</code></pre>
+  <pre class="session"><code>Cupid&gt; map (*2) [1..10]
 [2,4,6,8,10,12,14,16,18,20]
-Cuddles&gt; :quit</code></pre>
+Cupid&gt; :quit</code></pre>
   <p class="aside">
     Name a real compiler in <code>$CC</code>: meson bakes the command into
-    <code>fficuddles</code>, which runs it again at run time to compile the C
+    <code>fficupid</code>, which runs it again at run time to compile the C
     stubs of modules with foreign imports, so a wrapper like
     <code>sccache cc</code> breaks that step.  The rest is in
     <a href="{{ get_url(path='@/docs/how-to/build-and-install.md') }}">Build and install</a>.

@@ -25,7 +25,7 @@ bool useDots = false;     /* true => use dots in progress    */
 bool listScripts = false; /* true => list scripts after loading*/
 bool quiet = true;        /* true => don't show progress     */
 bool printing = false;    /* true => currently printing value*/
-char *cuddlesEdit = 0;    /* String for editor command       */
+char *cupidEdit = 0;      /* String for editor command       */
 char *prompt = 0;         /* Prompt string                   */
 
 #if EXPLAIN_INSTANCE_RESOLUTION
@@ -86,7 +86,7 @@ struct options toggle[] =
 #endif
      {0, 0, 0}};
 
-/* Change command line options from Cuddles command line */
+/* Change command line options from Cupid command line */
 void setOptions(void) {
     char *s;
     if ((s = readFilename()) != 0) {
@@ -143,7 +143,7 @@ void optionInfo(void) {
     }
 
     Printf("\nOTHER OPTIONS: (leading + or - makes no difference)\n");
-    Printf(fmts, "hnum", "Set heap size (cannot be changed within Cuddles)");
+    Printf(fmts, "hnum", "Set heap size (cannot be changed within Cupid)");
     Printf(fmts, "pstr", "Set prompt string to str");
     Printf(fmts, "rstr", "Set repeat last expression string to str");
     Printf(fmts, "Pstr", "Set search path for modules to str");
@@ -166,11 +166,11 @@ void optionInfo(void) {
     printString(repeatStr);
     Printf(" -c%d", cutoff);
     Printf("\nSearch path     : -P");
-    printString(cuddlesPath);
+    printString(cupidPath);
     Printf("\nSource suffixes : -S");
-    printString(cuddlesSuffixes);
+    printString(cupidSuffixes);
     Printf("\nEditor setting  : -E");
-    printString(cuddlesEdit);
+    printString(cupidEdit);
     Printf("\nPreprocessor    : -F");
     printString(preprocessor);
 #if PROFILING
@@ -278,9 +278,9 @@ char *optionsToStr(void) {
     PUTC(' ');
     PUTStr('p', prompt);
     PUTStr('r', repeatStr);
-    PUTStr('P', cuddlesPath);
-    PUTStr('S', cuddlesSuffixes);
-    PUTStr('E', cuddlesEdit);
+    PUTStr('P', cupidPath);
+    PUTStr('S', cupidSuffixes);
+    PUTStr('E', cupidEdit);
     PUTInt('c', cutoff);
     PUTC(' ');
     PUTStr('F', preprocessor);
@@ -318,12 +318,12 @@ void readOptions(char *options, bool freeUp) {
 /* --------------------------------------------------------------------------
  * Tokenising option strings:
  *
- * Option strings come from the command line, from CUDDLESFLAGS, from the
+ * Option strings come from the command line, from CUPIDFLAGS, from the
  * registry and from the argument of -X, and they are split into words here.
  * They used to be split by pointing the global input stream at them with
  * stringInput() and reading words back with readFilename(), but there is
  * only one input stream: a -X nested inside an option string reset it, and
- * everything after that -X was silently lost -- the rest of CUDDLESFLAGS, or
+ * everything after that -X was silently lost -- the rest of CUPIDFLAGS, or
  * the rest of a ":set" line, which was then read back as the next command.
  *
  * The word syntax is the one readFilename() accepted.  Words are separated
@@ -491,21 +491,21 @@ bool processOption(char *s) {
             char *prelLoc;
             char *savedPath;
 
-            savedPath = cuddlesPath;
+            savedPath = cupidPath;
             if (*(s + 1) == '\0') {
-                cuddlesPath = uniqPath(strCopy(CUDDLESPATH));
+                cupidPath = uniqPath(strCopy(CUPIDPATH));
             } else {
-                cuddlesPath = substPath(s + 1, cuddlesPath ? cuddlesPath : "");
+                cupidPath = substPath(s + 1, cupidPath ? cupidPath : "");
             }
             prelLoc = findMPathname(STD_PRELUDE);
             /* prelLoc points to static storage, don't free. */
             if (!prelLoc) {
                 Printf(
                     "ERROR: unable to locate Prelude along new path: \"%s\" - ignoring it.\n",
-                    cuddlesPath);
-                if (cuddlesPath)
-                    free(cuddlesPath);
-                cuddlesPath = savedPath;
+                    cupidPath);
+                if (cupidPath)
+                    free(cupidPath);
+                cupidPath = savedPath;
             } else {
                 if (savedPath)
                     free(savedPath);
@@ -514,17 +514,17 @@ bool processOption(char *s) {
         }
 
         case 'S': {
-            char *saveSuffixes = cuddlesSuffixes;
+            char *saveSuffixes = cupidSuffixes;
             if (*(s + 1) == '\0')
-                cuddlesSuffixes = strCopy(CUDDLESSUFFIXES);
+                cupidSuffixes = strCopy(CUPIDSUFFIXES);
             else
-                cuddlesSuffixes = substPath(s + 1, cuddlesSuffixes);
+                cupidSuffixes = substPath(s + 1, cupidSuffixes);
             if (!findMPathname(STD_PRELUDE)) {
                 Printf(
                     "ERROR: unable to locate Prelude with new suffix list: \"%s\" - ignoring it.\n",
-                    cuddlesSuffixes);
-                free(cuddlesSuffixes);
-                cuddlesSuffixes = saveSuffixes;
+                    cupidSuffixes);
+                free(cupidSuffixes);
+                cupidSuffixes = saveSuffixes;
             } else {
                 free(saveSuffixes);
             }
@@ -532,9 +532,9 @@ bool processOption(char *s) {
         }
 
         case 'E':
-            if (cuddlesEdit)
-                free(cuddlesEdit);
-            cuddlesEdit = strCopy(s + 1);
+            if (cupidEdit)
+                free(cupidEdit);
+            cupidEdit = strCopy(s + 1);
             return true;
 
         case 'F':
@@ -579,7 +579,7 @@ bool processOption(char *s) {
 
         case 'L':
             Printf(
-                "ERROR: +L is no longer supported for fficuddles - put the argument (without +L) *after* the module - ignoring it.\n");
+                "ERROR: +L is no longer supported for fficupid - put the argument (without +L) *after* the module - ignoring it.\n");
             return true;
 
         default:
@@ -609,7 +609,7 @@ void setHeapSize(char *s) {
             hpSize = MAXIMUMHEAP;
         if (heapBuilt() && hpSize != heapSize) {
 #define HEAP_RESIZE_MSG                                                        \
-    "Change to heap size will not take effect until you rerun Cuddles"
+    "Change to heap size will not take effect until you rerun Cupid"
 #if USE_REGISTRY
             FPrintf(stderr, HEAP_RESIZE_MSG "\n");
 #else
@@ -706,7 +706,7 @@ void processOptionVector(int argc, char *argv[]) {
 /*
  * Read option settings from sources other than the command-line:
  *
- *   - CUDDLESFLAGS environment variable
+ *   - CUPIDFLAGS environment variable
  *   - Registry (machine-wide and user-specific portions.)
  *   - Preference files (MacOS<t>, where t < 10).
  *   - WinHugs GUI options.
@@ -715,17 +715,17 @@ void processOptionVector(int argc, char *argv[]) {
 void readOptionSettings(void) {
 
 #if USE_REGISTRY
-    readOptions(
-        readRegString(HKEY_LOCAL_MACHINE, cuddlesRegRoot, "Options", ""), true);
+    readOptions(readRegString(HKEY_LOCAL_MACHINE, cupidRegRoot, "Options", ""),
+                true);
     if (!fromEnv("IGNORE_USER_REGISTRY", NULL)) {
         /* If IGNORE_USER_REGISTRY exist as an env var, don't consult
        * the user portion of the Registry. Emergency workaround if it has
        * somehow become invalid.
        */
         readOptions(
-            readRegString(HKEY_CURRENT_USER, cuddlesRegRoot, "Options", ""),
+            readRegString(HKEY_CURRENT_USER, cupidRegRoot, "Options", ""),
             true);
     }
 #endif /* USE_REGISTRY */
-    readOptions(fromEnv("CUDDLESFLAGS", ""), false);
+    readOptions(fromEnv("CUPIDFLAGS", ""), false);
 }

@@ -7,13 +7,13 @@ them from.
 
 Options start at their defaults and are then read, in this order, from:
 
-1. the `CUDDLESFLAGS` environment variable, if set
+1. the `CUPIDFLAGS` environment variable, if set
 2. the command line
 
 Later settings override earlier ones.  Most options can also be
 changed while the interpreter is running with the `:set` command.
 
-In `CUDDLESFLAGS`, options are separated by whitespace.  To include a
+In `CUPIDFLAGS`, options are separated by whitespace.  To include a
 space in an option, precede it with a backslash or wrap the option in
 double quotes; inside double quotes `\ `, `\"` and `\\` are escapes
 and other backslashes are literal.
@@ -35,7 +35,7 @@ difference.
 Re-read *str* as an option string containing several options.  This
 exists for `#!` scripts, where the kernel passes everything after the
 program name as one argument.  See
-[Write a script that runs with runcuddles](../how-to/write-a-script.md).
+[Write a script that runs with runcupid](../how-to/write-a-script.md).
 
 ## Language
 
@@ -48,7 +48,7 @@ on, are accepted and ignored with a message.
 
 The constraint cutoff in the type checker.  Default: 40.  Range: 1 to
 1024.  With flexible contexts and instances, constraint checking need
-not terminate; Cuddles gives up when the depth reaches this limit.
+not terminate; Cupid gives up when the depth reaches this limit.
 Hitting it usually means the type checker would not have terminated.
 
 ### `+o`
@@ -82,7 +82,7 @@ After each load, list the files loaded.  Default: off.
 
 ### `-F`*cmd*
 
-Run each source file through *cmd* before reading it: Cuddles runs
+Run each source file through *cmd* before reading it: Cupid runs
 *cmd* with the file name appended and reads its standard output.  An
 empty *cmd* turns the filter off.  Default: unset.  *cmd* is split into
 words on whitespace and run directly, without a shell, so shell syntax
@@ -97,7 +97,7 @@ The search path for modules: a colon-separated list of directories
 - An empty entry stands for the previous search path, so `-P:dir`
   appends and `-Pdir:` prepends.
 - An empty *str* restores the default.
-- `{Cuddles}` is replaced by the library directory and `{Home}` by the
+- `{Cupid}` is replaced by the library directory and `{Home}` by the
   home directory.
 - An entry of the form `dir/*` means every immediate subdirectory of
   `dir`.
@@ -106,7 +106,7 @@ The search path for modules: a colon-separated list of directories
 The default on Unix is
 
 ```
-.:{Home}/lib/cuddles/packages/*:/usr/local/lib/cuddles/packages/*:{Cuddles}/packages/*
+.:{Home}/lib/cupid/packages/*:/usr/local/lib/cupid/packages/*:{Cupid}/packages/*
 ```
 
 A path from which the `Prelude` cannot be found is rejected with a
@@ -164,10 +164,10 @@ Default: off.  The type shown is the one after defaulting, so it can
 differ from what `:type` reports:
 
 ```
-Cuddles> :set +t
-Cuddles> 1+2
+Cupid> :set +t
+Cupid> 1+2
 3 :: Integer
-Cuddles> :type 1+2
+Cupid> :type 1+2
 1 + 2 :: Num a => a
 ```
 
@@ -177,10 +177,10 @@ Apply the defaulting rules to a type before `:type` prints it.
 Default: off.
 
 ```
-Cuddles> :type 1
+Cupid> :type 1
 1 :: Num a => a
-Cuddles> :set +T
-Cuddles> :type 1
+Cupid> :set +T
+Cupid> :type 1
 1 :: Integer
 ```
 
@@ -190,7 +190,7 @@ Display results with `show`.  Default: on.  A value whose type is not
 an instance of `Show` is an error:
 
 ```
-Cuddles> id
+Cupid> id
 ERROR - Cannot find "show" function for:
 *** Expression : id
 *** Of type    : a -> a
@@ -201,17 +201,17 @@ type, and it prints the whole of a value in which some parts raise
 exceptions:
 
 ```
-Cuddles> :set -u
-Cuddles> id
+Cupid> :set -u
+Cupid> id
 id
-Cuddles> [1, 2 + error "foo", 3]
+Cupid> [1, 2 + error "foo", 3]
 [1,{error "foo"},3]
 ```
 
 With `+u` the same list stops at the exception:
 
 ```
-Cuddles> [1, 2 + error "foo", 3]
+Cupid> [1, 2 + error "foo", 3]
 [1,
 Program error: foo
 ```
@@ -260,8 +260,8 @@ After each evaluation, print the number of reductions and the number of
 cells allocated.  Default: off.
 
 ```
-Cuddles> :set +s
-Cuddles> True
+Cupid> :set +s
+Cupid> True
 True
 (26 reductions, 51 cells)
 ```
@@ -275,7 +275,7 @@ Print the number of cells recovered by each garbage collection, as
 ### `-d`*num*
 
 Sample the heap every *num* reductions and write the profile to
-`profile.hp`; `-d0` turns profiling off.  Only present when Cuddles was
+`profile.hp`; `-d0` turns profiling off.  Only present when Cupid was
 built with `-Dprofiling=true`.
 
 ## Options that only exist in some builds
@@ -296,4 +296,4 @@ controlled.
 ## See also
 
 - [Interpreter commands](commands.md) for `:set`
-- [Environment variables](environment-variables.md) for `CUDDLESFLAGS`
+- [Environment variables](environment-variables.md) for `CUPIDFLAGS`
