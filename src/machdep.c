@@ -96,7 +96,6 @@ bool readable(char *f, bool isReg) {
 
 static char *homeDir(void);
 
-static char *normPath(char *);
 static void searchChr(int);
 static void searchStr(char *);
 static bool tryEndings(void);
@@ -203,10 +202,10 @@ char *RealPath(char *s) {
     _fullpath(path, s, FILENAME_MAX + 1);
 #elif HAVE_REALPATH /* eg Unix */
     static char path[PATH_MAX + 1];
-    /* With PATH_CANONICALIZATION the name passed in is often this very
-     * buffer, returned by an earlier call.  realpath(3) may write into its
-     * result before it has finished reading its input -- macOS does, and
-     * resolves the overlap to "/" -- so resolve into a separate buffer. */
+    /* The name passed in may be this very buffer, returned by an earlier
+     * call.  realpath(3) may write into its result before it has finished
+     * reading its input -- macOS does, and resolves the overlap to "/" --
+     * so resolve into a separate buffer. */
     char resolved[PATH_MAX + 1];
     if (strlen(s) > PATH_MAX) {
         return s;
@@ -226,20 +225,6 @@ char *RealPath(char *s) {
     }
 #endif
     return path;
-}
-
-/* Try, as much as possible, to normalize a pathname in some appropriate
- * manner. */
-static char *normPath(char *s) {
-#if PATH_CANONICALIZATION
-    char *path = RealPath(s);
-# if CASE_INSENSITIVE_FILENAMES
-    strlwr(path); /* and convert to lowercase        */
-# endif
-    return path;
-#else  /* ! PATH_CANONICALIZATION */
-    return s;
-#endif /* ! PATH_CANONICALIZATION */
 }
 
 static char searchBuf[FILENAME_MAX + 1];
@@ -399,7 +384,7 @@ char *findPathname(char *filename) {
     searchStr(filename);
     if (!readable(searchBuf, true) && !tryEndings())
         searchStr("");
-    return normPath(searchBuf);
+    return searchBuf;
 }
 
 /* Finding the filename corresponding to a module name:
@@ -421,7 +406,7 @@ char *findMInDir(char *dir, char *nm) {
     searchStr(dir);
     searchChr(SLASH);
     if (find2(nm)) {
-        return normPath(searchBuf);
+        return searchBuf;
     } else {
         return NULL;
     }
@@ -430,7 +415,7 @@ char *findMInDir(char *dir, char *nm) {
 /* Look for a module Return NULL if no file was found */
 char *findMPathname(char *name) {
     if (find1(name)) {
-        return normPath(searchBuf);
+        return searchBuf;
     } else {
         return NULL;
     }

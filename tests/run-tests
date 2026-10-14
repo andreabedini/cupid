@@ -35,8 +35,6 @@ before it is compared:
 
   timer                  drop the "Elapsed time" line after every command
   stack-dumps            drop the "while evaluating:" trace after an error
-  path-canonicalization  write file names in messages back to how they were
-                         given, since the option reports the resolved path
 
 The banner is always dropped from a REPL session, whether or not the
 "Type :? for help" line that normally ends it was reached: a module that
@@ -125,18 +123,6 @@ def run_one(cupid, runcupid, packages, testdir, name, features):
         pattern = FEATURE_FILTERS.get(feature)
         if pattern:
             out = pattern.sub("", out)
-    if "path-canonicalization" in features:
-        # The option reports the resolved path, so the spelling the test used
-        # cannot survive it -- "./ScriptAux.hs" comes back as the absolute
-        # path.  Reduce both sides to the bare name rather than pretend the
-        # expected output could describe both.
-        def bare(text):
-            for prefix in {testdir, os.path.realpath(testdir)}:
-                text = text.replace(prefix + os.sep, "")
-            return text.replace("." + os.sep, "")
-
-        out = bare(out)
-        expected = bare(expected)
     problems = []
     if proc.returncode < 0:
         problems.append("killed by signal %d" % -proc.returncode)

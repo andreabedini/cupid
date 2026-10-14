@@ -147,7 +147,6 @@ option_macros = {
   'tag-checks': ['CHECK_TAGS'],
   'internal-prims': ['INTERNAL_PRIMS', 'BYTECODE_PRIMS'],
   'stack-dumps': ['GIMME_STACK_DUMPS'],
-  'path-canonicalization': ['PATH_CANONICALIZATION'],
   'explain-instance-resolution': ['EXPLAIN_INSTANCE_RESOLUTION'],
 }
 foreach opt, macros : option_macros

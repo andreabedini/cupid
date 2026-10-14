@@ -23,7 +23,6 @@ with no arguments lists every option with its current value.
 | `tag-checks` | boolean | `false` | Assert at the type checker's entry points that what is passed as a type, kind or predicate has that shape (see `src/tagcheck.h`); a failure is an internal error naming the function |
 | `internal-prims` | boolean | `false` | Experimental primitives that expose Cupid internals |
 | `stack-dumps` | boolean | `false` | On stack overflow, print the objects under evaluation |
-| `path-canonicalization` | boolean | `false` | Convert file names to absolute normal form |
 | `explain-instance-resolution` | boolean | `false` | Add the `:xplain` command and the `+x` toggle |
 
 Each option sets one or two macros in the generated `config.h`.  The
