@@ -24,7 +24,6 @@
 #include "char.h"
 #include "ffi.h"
 #include "prims/builtin.h"
-#include "timer.h" /* IWYU pragma: keep -- updateTimers, under WANT_TIMER */
 
 #if HAVE_WINDOWS_H
 # include <windows.h>
@@ -164,9 +163,6 @@ void evaluator(Module m) {
     garbageCollect();
 #endif
 
-#if WANT_TIMER
-    updateTimers();
-#endif
     if ((t = getProgType(ks, type)) != 0) {
         if (displayIO) {
             Cell printer = namePrint;

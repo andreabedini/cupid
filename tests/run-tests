@@ -33,7 +33,6 @@ differently, and one expected output has to serve all of them.  --features
 names the ones meson turned on, and the output is normalised for each
 before it is compared:
 
-  timer                  drop the "Elapsed time" line after every command
   stack-dumps            drop the "while evaluating:" trace after an error
 
 The banner is always dropped from a REPL session, whether or not the
@@ -56,9 +55,6 @@ BANNER = re.compile(
     r"(?:Type :\? for help\n)?")
 
 FEATURE_FILTERS = {
-    # Not anchored: the line is printed after the next prompt has been
-    # written, so it usually follows "Main> " rather than starting a line.
-    "timer": re.compile(r"Elapsed time \(ms\): -?\d+ \(user\), -?\d+ \(system\)\n"),
     # Each entry is emitted as a newline followed by the text, so take the
     # pair: what is left is what the option-less build prints.
     "stack-dumps": re.compile(r"\n(?:while evaluating: [^\n]*|\.\.\.)"),

@@ -42,9 +42,6 @@ core = files(
   'prims/array.c', 'prims/bignums.c', 'prims/builtin.c', 'prims/dirprim.c',
   'prims/iomonad.c', 'prims/printer.c', 'prims/timeprim.c',
 )
-if get_option('timer')
-  core += files('timer.c')
-endif
 
 no_opt = cc.get_argument_syntax() == 'msvc' ? '/Od' : '-O0'
 libgc = static_library('cupid-gcsafe', gc_sensitive,

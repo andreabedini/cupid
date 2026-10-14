@@ -9,7 +9,7 @@ run_tests = find_program('run-tests')
 # output for each one it is told about, so a single expected output serves
 # every configuration; see the comment at the top of it.
 test_features = []
-foreach opt : ['timer', 'stack-dumps']
+foreach opt : ['stack-dumps']
   if get_option(opt)
     test_features += opt
   endif

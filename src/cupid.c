@@ -20,7 +20,6 @@
 #include "machdep.h"
 #include "output.h"
 #include "module.h"
-#include "timer.h" /* IWYU pragma: keep -- updateTimers, under WANT_TIMER */
 #include <setjmp.h>
 #include <ctype.h>
 
@@ -924,9 +923,6 @@ static void initInterpreter(void) {
 bool doCommand(void) {
     Command cmd;
     cmd = readCommand(cmds, (Char)':', (Char)'!');
-#if WANT_TIMER
-    updateTimers();
-#endif
     switch (cmd) {
     case EDIT:
         editor();
@@ -1003,11 +999,6 @@ bool doCommand(void) {
     default:
         break;
     }
-#if WANT_TIMER
-    updateTimers();
-    Printf("Elapsed time (ms): %ld (user), %ld (system)\n",
-           millisecs(userElapsed), millisecs(systElapsed));
-#endif
     return false;
 }
 
