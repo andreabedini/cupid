@@ -29,7 +29,7 @@
 static void deriveContexts(List);
 static void addDerivImp(Inst);
 
-static void addDerInst(int, Class, List, List, Type, int);
+static Inst addDerInst(int, Class, List, List, Type, int);
 static void initDerInst(Inst);
 static void calcInstPreds(Inst);
 static void maybeAddPred(Cell, int, int, List);
@@ -74,6 +74,13 @@ static Cell genInject(Cell, int, int);
 static Cell genValue(Name, List, int, int);
 static Cell genDataInfo(Tycon);
 static Cell genConInfo(Name);
+static void checkVia(Inst);
+static Type runtimeType(Type);
+static Type unwrapHead(Type, bool);
+static Type substOffsets(Type, List);
+static bool sameRep(Type, Type);
+static bool holdsEvidence(Type, List *);
+static bool viaReusable(Class);
 
 /* --------------------------------------------------------------------------
  * Process derived instance requests:
@@ -85,11 +92,34 @@ static List derivedInsts; /* list of derived instances     */
  * component types ts and named class ct */
 void checkDerive(Tycon t, List p, List ts, Cell ct) {
     int line = tyconRec(t)->line;
-    Class c = findQualClass(ct);
+    Type via = NIL;
+    bool isVia = whatIs(ct) == DERIVE; /* DERIVE (class, via): see parser.y */
+    Class c;
+    if (isVia) {
+        via = snd(snd(ct));
+        ct = fst(snd(ct));
+    }
+    c = findQualClass(ct);
     if (isNull(c)) {
         errHead(line);
         errPrintf("Unknown class \"%s\" in derived instance", identToStr(ct));
         errFail();
+    }
+    if (isVia) {
+        if (isNull(via)) { /* deriving newtype: via what it wraps */
+            if (tyconRec(t)->what != NEWTYPE) {
+                errHead(line);
+                errPrintf("Cannot derive \"%s\" for \"%s\" with the newtype "
+                          "strategy: it is not a newtype",
+                          textToStr(cclassRec(c)->text),
+                          textToStr(tyconRec(t)->text));
+                errFail();
+            }
+            via = hd(ts);
+        }
+        instRec(addDerInst(line, c, p, singleton(via), t, tyconRec(t)->arity))
+            ->via = via;
+        return;
     }
     if (isGenericClass(c)) { /* a representation needs no context */
         ts = NIL;
@@ -98,7 +128,7 @@ void checkDerive(Tycon t, List p, List ts, Cell ct) {
 }
 
 /* Add a derived instance */
-static void addDerInst(int line, Class c, List p, List cts, Type t, int a) {
+static Inst addDerInst(int line, Class c, List p, List cts, Type t, int a) {
     Inst in;
     Cell head = t; /* Build instance head          */
     int i = 0;
@@ -116,6 +146,7 @@ static void addDerInst(int line, Class c, List p, List cts, Type t, int a) {
     instRec(in)->implements = NIL;
     instRec(in)->kinds = mkInt(a);
     derivedInsts = cons(in, derivedInsts);
+    return in;
 }
 
 /* Request derived instance of c for mkTuple(n) constructor */
@@ -353,7 +384,9 @@ static void addDerivImp(Inst in) {
                   textToStr(cclassRec(c)->text), textToStr(tyconRec(t)->text));
         errFail();
     }
-    if (c == classEq) {
+    if (nonNull(instRec(in)->via)) { /* typeInstDefn builds it */
+        checkVia(in);
+    } else if (c == classEq) {
         imp = deriveEq(t);
     } else if (c == classOrd) {
         imp = deriveOrd(t);
@@ -1419,6 +1452,178 @@ static Cell genConInfo(Name c) {
     return ap(ap(ap(ap(genName("ConInfo"), mkStr(nameRec(c)->text)), fixity),
                  record ? nameTrue : nameFalse),
               labels);
+}
+
+/* --------------------------------------------------------------------------
+ * Deriving via.  In
+ *
+ *   newtype Score = Score Int deriving (Semigroup, Monoid) via Sum Int
+ *
+ * the instances for Score reuse the methods of those for Sum Int.  A newtype
+ * constructor is the identity at run time, so a Score and a Sum Int are the
+ * same value, and the dictionary of Monoid (Sum Int) serves for Score as it
+ * is: the instance has no bindings, and typeInstDefn makes its dictionary
+ * from the methods of the via type's (its superclasses are Score's own).
+ * Its context is the one the via type's instance needs, found as for any
+ * derived instance.  `deriving newtype C' is deriving C via the type the
+ * newtype wraps.
+ *
+ * Two checks keep this safe.  The two types must be the same at run time:
+ * with newtypes and synonyms unwrapped at the top, the same type.  And the
+ * class must not let evidence for the via type pass for evidence for the
+ * derived type, which is what roles are for in GHC; without type families
+ * that can only happen through a functional dependency, which could then
+ * fix a type wrongly, so a class whose methods mention a class with
+ * dependencies, or a type whose constructors hold class evidence, is
+ * refused.
+ * ------------------------------------------------------------------------*/
+
+/* Check the derived instance in, which is derived via a type */
+static void checkVia(Inst in) {
+    Cell self = arg(instRec(in)->head);
+    Class c = instRec(in)->c;
+    Type via = instRec(in)->via;
+
+    if (cclassRec(c)->arity != 1) {
+        errHead(instRec(in)->line);
+        errPrintf("Cannot derive \"%s\" via a type: only a class of one "
+                  "parameter can be",
+                  textToStr(cclassRec(c)->text));
+        errFail();
+    }
+    if (!sameRep(runtimeType(self), runtimeType(via))) {
+        errHead(instRec(in)->line);
+        errPrintf("Cannot derive ");
+        errPred(instRec(in)->head);
+        errPrintf(" via ");
+        errType(via);
+        errPrintf(": the two types are not the same at run time");
+        errFail();
+    }
+    if (!viaReusable(c)) {
+        errHead(instRec(in)->line);
+        errPrintf("Cannot derive \"%s\" via a type: its methods involve a "
+                  "functional dependency or a type holding class evidence",
+                  textToStr(cclassRec(c)->text));
+        errFail();
+    }
+}
+
+/* The type t as it is at run time, with the newtypes and synonyms at its
+ * head unwrapped */
+static Type runtimeType(Type t) {
+    return unwrapHead(t, true);
+}
+
+/* The type t with the synonyms at its head expanded, and its newtypes
+ * unwrapped too if newtypes */
+static Type unwrapHead(Type t, bool newtypes) {
+    for (;;) {
+        Cell h = getHead(t);
+        int n = argCount;
+        List args = NIL;
+        Type u = t;
+        int i = 0;
+        if (!isTycon(h) || n < tyconRec(h)->arity ||
+            !(isSynonym(h) || (newtypes && isNewtype(h))) ||
+            (isNewtype(h) && !hasCfun(tyconRec(h)->defn))) {
+            return t;
+        }
+        for (; i < n; i++, u = fun(u)) {
+            args = cons(arg(u), args);
+        }
+        if (isSynonym(h)) {
+            t = substOffsets(tyconRec(h)->defn, args);
+        } else {
+            t = substOffsets(hd(conFieldTypes(hd(tyconRec(h)->defn))), args);
+        }
+        for (i = tyconRec(h)->arity; i < n; i++) {
+            t = ap(t, nth(i, args));
+        }
+    }
+}
+
+/* The type t with each offset n replaced by the nth of args */
+static Type substOffsets(Type t, List args) {
+    switch (whatIs(t)) {
+    case AP:
+        return ap(substOffsets(fun(t), args), substOffsets(arg(t), args));
+    case OFFSET:
+        return nth(offsetOf(t), args);
+    default:
+        return t;
+    }
+}
+
+/* Are the types t and u the same, synonyms aside? */
+static bool sameRep(Type t, Type u) {
+    Cell h = getHead(t);
+    if (isSynonym(h) && argCount >= tyconRec(h)->arity) {
+        return sameRep(unwrapHead(t, false), u);
+    }
+    h = getHead(u);
+    if (isSynonym(h) && argCount >= tyconRec(h)->arity) {
+        return sameRep(t, unwrapHead(u, false));
+    }
+    if (isAp(t) && isAp(u)) {
+        return sameRep(fun(t), fun(u)) && sameRep(arg(t), arg(u));
+    }
+    return t == u || (isOffset(t) && isOffset(u) && offsetOf(t) == offsetOf(u));
+}
+
+/* Can the methods of class c be reused at another type with the same run
+ * time representation?  Not if a method's context has a class with
+ * functional dependencies, or its type involves a data type whose
+ * constructors hold class evidence. */
+static bool viaReusable(Class c) {
+    List ms = cclassRec(c)->members;
+    List seen = NIL;
+    for (; nonNull(ms); ms = tl(ms)) {
+        if (holdsEvidence(nameRec(hd(ms))->type, &seen)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/* Does the type t, or a type it involves, hold evidence that a functional
+ * dependency could misuse?  seen lists the type constructors looked at. */
+static bool holdsEvidence(Type t, List *seen) {
+    switch (whatIs(t)) {
+    case AP:
+        return holdsEvidence(fun(t), seen) || holdsEvidence(arg(t), seen);
+    case POLYTYPE:
+    case RANK2:
+    case EXIST:
+        return holdsEvidence(snd(snd(t)), seen);
+    case QUAL: {
+        List ps = fst(snd(t));
+        for (; nonNull(ps); ps = tl(ps)) {
+            Cell h = getHead(hd(ps));
+            if (isClass(h) && nonNull(cclassRec(h)->fds)) {
+                return true;
+            }
+        }
+        return holdsEvidence(snd(snd(t)), seen);
+    }
+    case CDICTS:
+        return true;
+    case TYCON: {
+        List cs;
+        if (cellIsMember(t, *seen) || isSynonym(t)) {
+            return false;
+        }
+        *seen = cons(t, *seen);
+        for (cs = tyconRec(t)->defn; hasCfun(cs); cs = tl(cs)) {
+            if (holdsEvidence(nameRec(hd(cs))->type, seen)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    default:
+        return false;
+    }
 }
 
 /* Implement every instance asked for by a deriving clause and hand the list

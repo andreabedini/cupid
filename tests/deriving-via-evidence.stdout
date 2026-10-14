@@ -1,0 +1,4 @@
+runcupid: Error occurred
+ERROR "deriving-via-evidence.hs":19 - Cannot derive "C" via a type: its methods involve a functional dependency or a type holding class evidence
+
+

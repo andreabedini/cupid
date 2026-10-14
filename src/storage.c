@@ -1105,6 +1105,7 @@ Inst newInst(void) {
     instRec(instHw)->specifics = NIL;
     instRec(instHw)->implements = NIL;
     instRec(instHw)->builder = NIL;
+    instRec(instHw)->via = NIL;
 
     return instHw++;
 }
@@ -3253,6 +3254,7 @@ void markStorage(void) {
         mark(instRec(i)->kinds);
         mark(instRec(i)->specifics);
         mark(instRec(i)->implements);
+        mark(instRec(i)->via);
     }
     end("Instances", instHw - INSTMIN);
 

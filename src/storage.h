@@ -611,6 +611,8 @@ struct strInst {
     int numSpecifics; /* length(specifics)                 */
     List implements;
     Name builder; /* Dictionary constructor function */
+    Type via;     /* deriving via: the type whose instance's methods are
+                     reused, or NIL                    */
 };
 
 /* a predicate (an element :: Pred) is an application of a Class to one or

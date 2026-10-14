@@ -539,6 +539,51 @@ Differences from GHC's `DeriveGeneric`:
 - `Generic1` cannot be derived, and the Prelude's own types have no
   `Generic` instances.
 
+## Deriving strategies and deriving via
+
+A declaration may have several `deriving` clauses, and a clause may
+name how its classes are derived:
+
+```haskell
+newtype Score = Score Int
+    deriving stock Show             -- the standard way, as with no strategy
+    deriving (Eq, Ord) via Int      -- reuse Int's instances
+    deriving Monoid via Sum Int     -- reuse Sum Int's
+    deriving newtype Num            -- via the type Score wraps, Int
+```
+
+`deriving C via V` gives the type the instance of `V`, reusing its
+methods: a newtype constructor does nothing at run time, so a `Score`
+and a `Sum Int` are the same value and `Monoid (Sum Int)`'s methods
+work on both.  `deriving newtype C`, on a newtype, is deriving `C` via
+the type it wraps.  The via type may mention the declaration's type
+variables, `newtype Opt a = Opt (Maybe a) deriving Eq via Maybe a`.
+The instance's context is the one `V`'s instance needs, and its
+superclasses are the type's own, so `deriving Ord via V` needs an
+`Eq` instance for the type as usual.
+
+Two checks keep this safe:
+
+- The type and `V` must be the same at run time: equal once the
+  newtypes and synonyms at their heads are unwrapped.  Anything
+  inside must be equal as written; `[Age]` and `[Int]` are not the
+  same here.
+- The class's methods must not mention a class with functional
+  dependencies in their contexts, or a type whose constructors hold
+  class evidence (an existential constructor with a context).  Either
+  could let evidence for `V` pass as evidence for the type, and a
+  dependency then fix a type wrongly.
+
+Differences from GHC's `DerivingStrategies`, `DerivingVia` and
+`GeneralizedNewtypeDeriving`:
+
+- There are no roles.  The first check is stricter than GHC's
+  `Coercible` below the head of the type, and the second is a
+  conservative stand-in for what roles prevent.
+- Only a class of one parameter can be derived via a type.
+- The `anyclass` strategy is not supported, and there is no
+  standalone `deriving instance`.
+
 ## Restricted type synonyms
 
 A type synonym may be declared transparent inside the definitions of

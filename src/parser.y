@@ -52,6 +52,9 @@ static Cell guardMatch(Cell, List, Cell);
 static Cell checkTyLhs(Cell);
 static Cell buildOpType(List);
 static Cell checkOpLhs(Cell);
+static List derivStrategy(Cell, List);
+static List derivVia(List, Type);
+static List derivViaType(Cell, List, Type);
 static Cell checkConstr(Cell);
 static Cell starKind(Cell);
 static Cell namedKind(Cell);
@@ -408,9 +411,23 @@ fieldspec : vars COCO polyType		{$$ = gcShadow(3,pair(rev($1),$3));}
 	  | vars COCO type		{$$ = gcShadow(3,pair(rev($1),$3));}
 	  | vars COCO '!' type		{$$ = gcShadow(4,pair(rev($1),bang($4)));}
 	  ;
+/* The deriving clauses of a declaration, all their classes in one list.  A
+ * class derived by a strategy other than the standard one is given as
+ * DERIVE (class, via): via is the type of a `via' clause, or NIL for
+ * `newtype', which means via the type the newtype wraps.  The strategy names
+ * other than newtype are ordinary identifiers, checked by derivStrategy. */
 deriving  : /* empty */			{$$ = gcShadow(0,NIL);}
-	  | DERIVING qconid		{$$ = gcShadow(2,singleton($2));}
-	  | DERIVING '(' derivs0 ')'	{$$ = gcShadow(4,$3);}
+	  | deriving derivClause	{$$ = gcShadow(2,appendOnto($1,$2));}
+	  ;
+derivClause
+	  : DERIVING derivSet		{$$ = gcShadow(2,$2);}
+	  | DERIVING varid derivSet	{$$ = gcShadow(3,derivStrategy($2,$3));}
+	  | DERIVING TNEWTYPE derivSet	{$$ = gcShadow(3,derivVia($3,NIL));}
+	  | DERIVING derivSet varid btype
+					{$$ = gcShadow(4,derivViaType($3,$2,$4));}
+	  ;
+derivSet  : qconid			{$$ = gcShadow(1,singleton($1));}
+	  | '(' derivs0 ')'		{$$ = gcShadow(3,$2);}
 	  ;
 derivs0	  : /* empty */			{$$ = gcShadow(0,NIL);}
 	  | derivs			{$$ = gcShadow(1,rev($1));}
@@ -1310,6 +1327,38 @@ static Cell checkOpLhs(Cell c) {
 	errFail();
     }
     return c;
+}
+
+/* The classes cs of a deriving clause with the strategy named s */
+static List derivStrategy(Cell s, List cs) {
+    if (textOf(s) == findText("stock"))
+	return cs;
+    errHead(row);
+    if (textOf(s) == findText("anyclass"))
+	errPrintf("The deriving strategy \"anyclass\" is not supported");
+    else
+	errPrintf("Unknown deriving strategy \"%s\"", textToStr(textOf(s)));
+    errFail();
+}
+
+/* The classes cs of a deriving clause, each to be derived via the type t,
+ * or for NIL via the type the newtype wraps */
+static List derivVia(List cs, Type t) {
+    List xs = cs;
+    for (; nonNull(xs); xs = tl(xs))
+	hd(xs) = ap(DERIVE,pair(hd(xs),t));
+    return cs;
+}
+
+/* The classes cs of a clause deriving cs v t, where v must be `via' */
+static List derivViaType(Cell v, List cs, Type t) {
+    if (textOf(v) != findText("via")) {
+	errHead(row);
+	errPrintf("Syntax error in deriving clause (unexpected \"%s\")",
+		  textToStr(textOf(v)));
+	errFail();
+    }
+    return derivVia(cs, t);
 }
 
 /* Check that data constructor has an unqualified conid as head */

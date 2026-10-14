@@ -1,0 +1,4 @@
+runcupid: Error occurred
+ERROR "deriving-via-representation.hs":5 - Cannot derive Eq Age via Bool: the two types are not the same at run time
+
+

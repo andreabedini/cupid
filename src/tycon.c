@@ -620,6 +620,21 @@ static void depConstrs(Tycon t, List tyvars, Cell cd) {
     }
 
     if (nonNull(derivs)) { /* Generate derived instances           */
+        List ds = derivs;
+        List done = NIL; /* (as parsed, resolved): a via clause's classes */
+        for (; nonNull(ds); ds = tl(ds)) { /* share one type             */
+            if (whatIs(hd(ds)) == DERIVE && nonNull(snd(snd(hd(ds))))) {
+                Cell v = snd(snd(hd(ds)));
+                List xs = done;
+                for (; nonNull(xs) && fst(hd(xs)) != v; xs = tl(xs)) {
+                }
+                if (isNull(xs)) {
+                    done = cons(pair(v, depTypeExp(line, tyvars, v)), done);
+                    xs = done;
+                }
+                snd(snd(hd(ds))) = snd(hd(xs));
+            }
+        }
         map3Proc(checkDerive, t, ctxt, compTypes, derivs);
     }
 }

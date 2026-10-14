@@ -1947,6 +1947,34 @@ static void typeInstDefn(Inst in) {
         dictDef = ap(dictDef, thd3(pi));
     }
 
+    if (nonNull(instRec(in)->via)) { /* deriving via: see deriving.c       */
+        Cell pi = ap(instRec(in)->c, instRec(in)->via);
+        Cell v = inventVar();
+        Cell ev = scEntail(params, pi, beta, 0);
+        if (isNull(ev)) {
+            ev = inEntail(evids, pi, beta, 0);
+        }
+        if (isNull(ev)) {
+            clearMarks();
+            errHead(instRec(in)->line);
+            errPrintf("Cannot derive ");
+            errPred(copyPred(instRec(in)->head, beta));
+            errPrintf(" via ");
+            errType(copyType(instRec(in)->via, beta));
+            errPrintf("\n*** Context supplied : ");
+            errContext(copyPreds(params));
+            errPrintf("\n*** Required         : ");
+            errPred(copyPred(pi, beta));
+            errPrintf("\n");
+            errFail();
+        }
+        locs = cons(pair(v, singleton(pair(NIL, ap(l, ev)))), locs);
+        for (; nonNull(mems); mems = tl(mems)) { /* methods of the via type */
+            dictDef = ap(dictDef, ap(hd(mems), v));
+        }
+        defs = NIL;
+    }
+
     for (; nonNull(defs); defs = tl(defs)) {
         Cell imp = NIL;
         if (nonNull(imps)) {
