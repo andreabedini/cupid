@@ -7,8 +7,7 @@ be set up with.
 ## Prerequisites
 
 - meson, ninja, bison and a C compiler, as for an ordinary build
-- a few minutes: twelve configurations, around a minute and a half in
-  total on sixteen cores
+- a few minutes: four configurations
 
 ## Steps
 
@@ -22,12 +21,13 @@ It builds and tests the default configuration, each feature option on
 its own, and all of them together, and prints a line per configuration:
 
 ```
-12 configurations, 4 at a time, under build-configurations
+4 configurations, 4 at a time, under build-configurations
 
 ok   default                        41 tests, 0 failed
 ok   profiling                      41 tests, 0 failed
-...
-12 configurations, 0 failed
+ok   checks                         41 tests, 0 failed
+ok   all                            41 tests, 0 failed
+4 configurations, 0 failed
 ```
 
 A configuration that fails prints the last forty lines of whichever
@@ -42,7 +42,7 @@ while fixing it, name it:
 
 ```sh
 tools/check-configurations all
-tools/check-configurations profiling tag-checks
+tools/check-configurations profiling checks
 ```
 
 `--list` prints the names.  `--jobs N` sets how many run at once, and
@@ -58,12 +58,12 @@ CC=clang tools/check-configurations
 
 ## What it does not cover
 
-Each option is tested alone and all are tested together, which is
-twelve configurations rather than the 1024 the options can make.  The
-one bug this was written after needed two options at once -- `profiling`
-and `tag-checks` -- and was caught only by the run with all of them on.
-A fault that needs a particular pair, and that some third option masks,
-would still get through.
+There are two feature options, so the default, each alone and both
+together are every configuration they can make: the sweep is
+exhaustive.  It stops being so if a third option is added, since three
+alone and all together are five of the eight.  The one bug the sweep was
+written after needed two options at once -- `profiling` and what was
+then `tag-checks` -- and was caught only by the run with all of them on.
 
 ## See also
 

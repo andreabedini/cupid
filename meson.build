@@ -111,7 +111,7 @@ mkdll_cmd = cc_cmd + ' ' + dll_flags
 # src/sysdeps.h and the generated src/platform.h
 # ---------------------------------------------------------------------------
 
-if not get_option('debug-code')
+if not get_option('checks')
   add_project_arguments('-DNDEBUG=1', language: 'c')
 endif
 
@@ -142,8 +142,7 @@ endif
 # ones that are on
 option_macros = {
   'profiling': ['PROFILING'],
-  'debug-code': ['DEBUG_CODE', 'DEBUG_PRINTER'],
-  'tag-checks': ['CHECK_TAGS'],
+  'checks': ['DEBUG_CODE', 'DEBUG_PRINTER', 'CHECK_TAGS'],
 }
 foreach opt, macros : option_macros
   if get_option(opt)

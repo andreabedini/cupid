@@ -808,7 +808,7 @@ CUPID_inline bool isSmall(Cell c) {
  *
  * A handle stays a Cell in the range its table occupies.  These turn one
  * into a pointer to its record, so that a field of it is an lvalue, which
- * is what kept the accessors macros until now.  Under -Dtag-checks each
+ * is what kept the accessors macros until now.  Under -Dchecks each
  * one first checks that the cell really is a handle into that table; the
  * macros indexed whatever they were given.  The tables are fixed arrays,
  * so a record does not move and the pointer stays good.

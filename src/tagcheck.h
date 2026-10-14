@@ -7,7 +7,7 @@
  * CONSTRAINT and variables; a predicate is a class applied to types, or
  * EQUALITY applied to two of them.  The predicates
  * below say which a cell is, and the assert* macros check it at the entry
- * points where the three meet.  With -Dtag-checks (CHECK_TAGS) a failed
+ * points where the three meet.  With -Dchecks (CHECK_TAGS) a failed
  * check is an internal error naming the function; otherwise the macros
  * cost nothing.
  * ------------------------------------------------------------------------*/

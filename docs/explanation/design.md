@@ -202,7 +202,7 @@ predicates, lists and expressions are all trees of heap cells (`Cell`).
 The C type system can't tell them apart.  Wrapper structs would fight
 the thousands of uses of generic operations such as `hd` and `cons`,
 and a typed heap would be a rewrite of the runtime.  Instead, under
-`-Dtag-checks`, the entry points where categories meet check a tree's
+`-Dchecks`, the entry points where categories meet check a tree's
 shape at run time (`tagcheck.c`).  The typedef aliases (`Type`, `Kind`
 and so on) remain as documentation.
 
