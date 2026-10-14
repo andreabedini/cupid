@@ -86,7 +86,7 @@ void getFileInfo(char *f, Time *tm, long *sz) {
 bool readable(char *f, bool isReg) {
     struct stat scbuf;
     return (!stat(f, &scbuf) && (scbuf.st_mode & S_IREAD) /* readable     */
-            && (!isReg || (scbuf.st_mode & S_IFREG))      /* regular file */
+            && (!isReg || S_ISREG(scbuf.st_mode))         /* regular file */
     );
 }
 
