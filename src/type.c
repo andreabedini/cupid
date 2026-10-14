@@ -84,6 +84,7 @@ Name nameUnit;              /* primitive Unit type constructor */
 Name nameLT, nameEQ;        /* Ordering constructors       */
 Name nameGT;
 Class classMonad;                    /* Monads                     */
+Class classMonadFail;                /* Monads with fail           */
 Name nameReturn, nameBind, nameThen; /* for translating do/monad comps  */
 Name nameMFail;
 Name nameGt; /* for readsPrec              */
@@ -208,6 +209,7 @@ static Cell predFractional; /* Fractional (mkOffset(0))    */
 static Cell predIntegral;   /* Integral (mkOffset(0))      */
 static Kind starToStar;     /* Type -> Type                        */
 static Cell predMonad;      /* Monad (mkOffset(0))                 */
+static Cell predMonadFail;  /* MonadFail (mkOffset(0))             */
 
 /* --------------------------------------------------------------------------
  * Assumptions:
@@ -1272,20 +1274,34 @@ static Cell typeMonadComp(int l, Cell e, Typing *ty) {
     return ap(MONADCOMP, pair(m, snd(e)));
 }
 
+/* Does a generator in the statements qs have a pattern that can fail to
+ * match? */
+static bool doCanFail(List qs) {
+    for (; nonNull(qs); qs = tl(qs))
+        if (fst(hd(qs)) == FROMQUAL && !failFree(fst(snd(hd(qs)))))
+            return true;
+    return false;
+}
+
 /* Type check do-notation; the type of the final generator is the type of
- * the whole */
+ * the whole.  The block needs Monad evidence, and MonadFail evidence too
+ * when a generator's pattern can fail: the DOCOMP becomes
+ * ap(DOCOMP, pair(pair(m, mf), (e, qs))), with mf NIL if there is none. */
 static Typing typeDo(int l, Cell e) {
     static char *finGen = "final generator";
     int alpha = newTyvars(1);
     int beta = newTyvars(1);
     Cell mon = ap(mkInt(beta), aVar);
     Cell m = assumeEvid(predMonad, beta);
+    Cell mf = NIL;
     Typing body;
     tyvar(beta)->kind = starToStar;
 
     body = typeComp(l, mon, snd(e), snd(snd(e)));
     shouldBe(l, fst(snd(e)), NIL, finGen, body, mon, alpha);
-    snd(e) = pair(m, snd(e));
+    if (doCanFail(snd(snd(e))))
+        mf = assumeEvid(predMonadFail, beta);
+    snd(e) = pair(pair(m, mf), snd(e));
     return body;
 }
 
@@ -2525,10 +2541,10 @@ static Pair typeSel(Name s) {
 /* The statics that hold cells: registered as roots at INSTALL and marked
  * by the collector on every collection */
 static Cell *const typeRoots[] = {
-    &defnBounds,   &varsBounds,  &depends,        &pendingBtyvs, &dummyVar,
-    &preds,        &stdDefaults, &arrow,          &boundPair,    &listof,
-    &typeVarToVar, &predNum,     &predFractional, &predIntegral, &starToStar,
-    &predMonad,    &typeProgIO,
+    &defnBounds,   &varsBounds,    &depends,        &pendingBtyvs, &dummyVar,
+    &preds,        &stdDefaults,   &arrow,          &boundPair,    &listof,
+    &typeVarToVar, &predNum,       &predFractional, &predIntegral, &starToStar,
+    &predMonad,    &predMonadFail, &typeProgIO,
 };
 
 /* Reset the current type-checking mode, the predicates and pending
@@ -2675,6 +2691,8 @@ void linkPreludeTC(void) {
 
         classMonad = linkClass("Monad");
         predMonad = ap(classMonad, aVar);
+        classMonadFail = linkClass("MonadFail");
+        predMonadFail = ap(classMonadFail, aVar);
 
         typeIO = linkTycon("IO");
         typeProgIO = ap(typeIO, aVar);

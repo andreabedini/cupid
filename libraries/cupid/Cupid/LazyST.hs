@@ -42,8 +42,11 @@ fixST f = ST (\s -> let (x,s') = unST (f x) s in (x,s'))
 instance Functor (ST s) where
     fmap = liftM
 
+instance Applicative (ST s) where
+    pure a = ST (\s -> (a, s))
+    (<*>)  = ap
+
 instance Monad (ST s) where
-    return a = ST (\s -> (a, s))
     ST m >>= f = ST (\S -> let (a,s') = m S in unST (f a) s')
     -- ST m >>= f = ST (\s -> let (a,s') = m s in unST (f a) s')
 

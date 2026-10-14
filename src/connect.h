@@ -70,6 +70,7 @@ extern Name nameReadParen;        /* unwrap from parens              */
 extern Name nameLex;              /* lexer                           */
 extern Name nameRangeSize;        /* calculate size of index range   */
 extern Class classMonad;          /* Monads                        */
+extern Class classMonadFail;      /* Monads with fail              */
 extern Name nameReturn, nameBind; /* for translating do / monad comps*/
 extern Name nameThen;             /* for translating do / monad comps*/
 extern Name nameMFail;

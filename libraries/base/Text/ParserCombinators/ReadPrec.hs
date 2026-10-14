@@ -59,7 +59,8 @@ import qualified Text.ParserCombinators.ReadP as ReadP
   , pfail
   )
 
-import Control.Monad( MonadPlus(..) )
+import Control.Monad( MonadPlus(..), ap )
+import Cupid.Prelude( Alternative(empty, (<|>)) )
 
 
 
@@ -75,14 +76,21 @@ newtype ReadPrec a = P { unP :: Prec -> ReadP a }
 instance Functor ReadPrec where
   fmap h (P f) = P (\n -> fmap h (f n))
 
+instance Applicative ReadPrec where
+  pure x    = P (\_ -> pure x)
+  (<*>)     = ap
+
 instance Monad ReadPrec where
-  return x  = P (\_ -> return x)
-  fail s    = P (\_ -> fail s)
   P f >>= k = P (\n -> do a <- f n; let P f' = k a in f' n)
-  
-instance MonadPlus ReadPrec where
-  mzero = pfail
-  mplus = (+++)
+
+instance MonadFail ReadPrec where
+  fail s    = P (\_ -> fail s)
+
+instance Alternative ReadPrec where
+  empty = pfail
+  (<|>) = (+++)
+
+instance MonadPlus ReadPrec
 
 -- precedences
   

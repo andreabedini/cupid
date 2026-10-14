@@ -1,0 +1,4 @@
+:t \m -> do { (x, _) <- m; return x }
+:t \m -> do { ~(Just x) <- m; return x }
+:t \m -> do { Just x <- m; return x }
+:t \m -> do { x <- m; [y] <- m; return (y : x) }

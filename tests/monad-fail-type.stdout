@@ -1,0 +1,5 @@
+Main> \m -> do {...} :: Monad a => a (b,c) -> a b
+Main> \m -> do {...} :: Monad a => a (Maybe b) -> a b
+Main> \m -> do {...} :: MonadFail a => a (Maybe b) -> a b
+Main> \m -> do {...} :: MonadFail a => a [b] -> a [b]
+Main> [Leaving Cupid]

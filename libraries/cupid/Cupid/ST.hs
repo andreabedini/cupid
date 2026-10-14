@@ -76,9 +76,12 @@ unsafeSTToIO         = stToIO . unsafeCoerce
 instance Functor (ST s) where
     fmap = liftM
 
+instance Applicative (ST s) where
+    pure  = returnST
+    (<*>) = ap
+
 instance Monad (ST s) where
     (>>=)  = thenStrictST
-    return = returnST
 
 -----------------------------------------------------------------------------
 

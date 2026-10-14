@@ -1,0 +1,5 @@
+runcupid: Error occurred
+ERROR "monad-fail-missing.hs":6 - Instance of MonadFail (Either String) required for definition of firstJust
+
+
+

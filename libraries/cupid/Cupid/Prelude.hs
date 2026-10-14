@@ -106,8 +106,12 @@ module Cupid.Prelude (
     RealFloat(floatRadix, floatDigits, floatRange, decodeFloat,
               encodeFloat, exponent, significand, scaleFloat, isNaN,
               isInfinite, isDenormalized, isIEEE, isNegativeZero, atan2),
-    Monad((>>=), (>>), return, fail),
-    Functor(fmap),
+    Functor(fmap, (<$)), (<$>),
+    Applicative(pure, (<*>), liftA2, (*>), (<*)),
+    Monad((>>=), (>>), return),
+    MonadFail(fail),
+    Alternative(empty, (<|>), some, many),
+    MonadPlus(mzero, mplus),
     mapM, mapM_, sequence, sequence_, (=<<),
     maybe, either,
     (&&), (||), not, otherwise,
@@ -137,6 +141,8 @@ infixr 5  ++
 infix  4  ==, /=, <, <=, >=, >, `elem`, `notElem`
 infixr 3  &&
 infixr 2  ||
+infixl 4  <$>, <$, <*>, *>, <*
+infixl 3  <|>
 infixl 1  >>, >>=
 infixr 1  =<<
 infixr 0  $, $!, `seq`
@@ -409,18 +415,65 @@ class Show a where
 
 -- Monad classes ------------------------------------------------------------
 
+-- The hierarchy of GHC's base rather than of Haskell 2010: Applicative
+-- is a superclass of Monad, and fail is in a class of its own, which
+-- do-notation uses only for a pattern that can fail to match.
+
 class Functor f where
     fmap :: (a -> b) -> (f a -> f b)
+    (<$) :: a -> f b -> f a
 
-class Monad m where
-    return :: a -> m a
+    -- Minimal complete definition: fmap
+    (<$) = fmap . const
+
+class Functor f => Applicative f where
+    pure   :: a -> f a
+    (<*>)  :: f (a -> b) -> f a -> f b
+    liftA2 :: (a -> b -> c) -> f a -> f b -> f c
+    (*>)   :: f a -> f b -> f b
+    (<*)   :: f a -> f b -> f a
+
+    -- Minimal complete definition: pure, and (<*>) or liftA2
+    (<*>)        = liftA2 id
+    liftA2 f x y = fmap f x <*> y
+    a *> b       = (id <$ a) <*> b
+    a <* b       = liftA2 const a b
+
+class Applicative m => Monad m where
     (>>=)  :: m a -> (a -> m b) -> m b
     (>>)   :: m a -> m b -> m b
-    fail   :: String -> m a
+    return :: a -> m a
 
-    -- Minimal complete definition: (>>=), return
+    -- Minimal complete definition: (>>=)
     p >> q  = p >>= \ _ -> q
-    fail s  = error s
+    return  = pure
+
+class Monad m => MonadFail m where
+    fail :: String -> m a
+
+class Applicative f => Alternative f where
+    empty :: f a
+    (<|>) :: f a -> f a -> f a
+    some  :: f a -> f [a]
+    many  :: f a -> f [a]
+
+    -- Minimal complete definition: empty, (<|>)
+    some v = some_v
+      where many_v = some_v <|> pure []
+            some_v = liftA2 (:) v many_v
+    many v = many_v
+      where many_v = some_v <|> pure []
+            some_v = liftA2 (:) v many_v
+
+class (Alternative m, Monad m) => MonadPlus m where
+    mzero :: m a
+    mplus :: m a -> m a -> m a
+
+    mzero = empty
+    mplus = (<|>)
+
+(<$>)            :: Functor f => (a -> b) -> f a -> f b
+f <$> x           = fmap f x
 
 sequence       :: Monad m => [m a] -> m [a]
 sequence []     = return []
@@ -576,11 +629,29 @@ instance Functor Maybe where
     fmap f Nothing  = Nothing
     fmap f (Just x) = Just (f x)
 
+instance Applicative Maybe where
+    pure               = Just
+    Just f  <*> m      = fmap f m
+    Nothing <*> _      = Nothing
+    liftA2 f (Just x) (Just y) = Just (f x y)
+    liftA2 _ _        _        = Nothing
+    Just _  *> m       = m
+    Nothing *> _       = Nothing
+
 instance Monad Maybe where
     Just x  >>= k = k x
     Nothing >>= k = Nothing
-    return        = Just
+    (>>)          = (*>)
+
+instance MonadFail Maybe where
     fail s        = Nothing
+
+instance Alternative Maybe where
+    empty         = Nothing
+    Nothing <|> r = r
+    l       <|> _ = l
+
+instance MonadPlus Maybe
 
 -- Either type --------------------------------------------------------------
 
@@ -590,6 +661,35 @@ data Either a b = Left a | Right b
 either              :: (a -> c) -> (b -> c) -> Either a b -> c
 either l r (Left x)  = l x
 either l r (Right y) = r y
+
+instance Functor (Either e) where
+    fmap _ (Left x)  = Left x
+    fmap f (Right y) = Right (f y)
+
+instance Applicative (Either e) where
+    pure          = Right
+    Left e  <*> _ = Left e
+    Right f <*> r = fmap f r
+
+instance Monad (Either e) where
+    Left e  >>= _ = Left e
+    Right x >>= k = k x
+
+-- Functions and pairs ------------------------------------------------------
+
+instance Functor ((->) r) where
+    fmap = (.)
+
+instance Applicative ((->) r) where
+    pure           = const
+    (<*>) f g x    = f x (g x)
+    liftA2 q f g x = q (f x) (g x)
+
+instance Monad ((->) r) where
+    f >>= k = \ r -> k (f r) r
+
+instance Functor ((,) a) where
+    fmap f (x,y) = (x, f y)
 
 -- Ordering type ------------------------------------------------------------
 
@@ -614,11 +714,24 @@ instance Ord a => Ord [a] where
 instance Functor [] where
     fmap = map
 
+instance Applicative [] where
+    pure x        = [x]
+    fs <*> xs     = [ f x | f <- fs, x <- xs ]
+    liftA2 f xs ys = [ f x y | x <- xs, y <- ys ]
+    xs *> ys      = [ y | _ <- xs, y <- ys ]
+
 instance Monad [ ] where
     (x:xs) >>= f = f x ++ (xs >>= f)
     []     >>= f = []
-    return x     = [x]
+
+instance MonadFail [] where
     fail s       = []
+
+instance Alternative [] where
+    empty = []
+    (<|>) = (++)
+
+instance MonadPlus []
 
 instance Read a => Read [a]  where
     readsPrec p = readList
@@ -1834,12 +1947,19 @@ primitive hPutChar    :: Handle -> Char -> IO ()
 primitive hPutStr     :: Handle -> String -> IO ()
 
 instance Functor IO where
-    fmap f x = x >>= (return . f)
+    fmap f x = x `primbindIO` (primretIO . f)
+
+instance Applicative IO where
+    pure     = primretIO
+    f <*> x  = f `primbindIO` \g -> x `primbindIO` (primretIO . g)
+    liftA2 f x y = x `primbindIO` \a -> y `primbindIO` (primretIO . f a)
+    x *> y   = x `primbindIO` \_ -> y
 
 instance Monad IO where
     (>>=)  = primbindIO
     return = primretIO
-    
+
+instance MonadFail IO where
     fail s = ioError (userError s)
 
 -- Hooks for primitives: -----------------------------------------------------

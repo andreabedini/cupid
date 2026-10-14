@@ -9,23 +9,8 @@
 -- Stability   :  provisional
 -- Portability :  portable
 --
--- 'Functor' and 'Monad' instances for @(->) r@ and
--- 'Functor' instances for @(,) a@ and @'Either' a@.
+-- Formerly the 'Functor' and 'Monad' instances for @(->) r@ and the
+-- 'Functor' instances for @(,) a@ and @'Either' a@, which are now in the
+-- Prelude.  The module is kept so that code importing it still loads.
 
 module Control.Monad.Instances (Functor(..),Monad(..)) where
-
-import Prelude
-
-instance Functor ((->) r) where
-	fmap = (.)
-
-instance Monad ((->) r) where
-	return = const
-	f >>= k = \ r -> k (f r) r
-
-instance Functor ((,) a) where
-	fmap f (x,y) = (x, f y)
-
-instance Functor (Either a) where
-	fmap _ (Left x) = Left x
-	fmap f (Right y) = Right (f y)

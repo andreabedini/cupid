@@ -33,7 +33,7 @@ static Cell transRhs(Cell);
 static Cell mkConsList(List);
 static Cell expandLetrec(Cell);
 static Cell transComp(Cell, List, Cell);
-static Cell transDo(Cell, Cell, List);
+static Cell transDo(Cell, Cell, Cell, List);
 static Cell transConFlds(Cell, List);
 static Cell transUpdFlds(Cell, List, List);
 
@@ -141,9 +141,12 @@ static Cell translate(Cell e) {
         return mkConsList(snd(e));
 
     case DOCOMP: {
-        Cell m = translate(fst(snd(e)));
+        Cell m = translate(fst(fst(snd(e))));
+        Cell mf = snd(fst(snd(e)));
         Cell r = translate(fst(snd(snd(e))));
-        return transDo(m, r, snd(snd(snd(e))));
+        if (nonNull(mf))
+            mf = translate(mf);
+        return transDo(m, mf, r, snd(snd(snd(e))));
     }
 
     case MONADCOMP: {
@@ -334,17 +337,18 @@ static Cell transComp(Cell e, List qs, Cell l) {
  *
  * do { e }               =>  e
  * do { p <- exp; qs }    =>  LETREC _h p = do { qs }
- *                                   _h _ = fail m "match fails"
+ *                                   _h _ = fail mf "match fails"
  *                            IN bind m exp _h
  * do { LET decls; qs }   =>  LETREC decls IN do { qs }
- * do { IF guard; qs }    =>  if guard then do { qs } else fail m  "guard fails"
  * do { exp; qs }         =>  (>>) m exp (do {qs})
  *
- * where m :: Monad f
+ * where m :: Monad f, and mf :: MonadFail f, which the type checker
+ * provides only when some pattern can fail, the second _h equation being
+ * left out for a pattern that cannot
  * ------------------------------------------------------------------------*/
 
 /* Translate do { qs ; e } */
-static Cell transDo(Cell m, Cell e, List qs) {
+static Cell transDo(Cell m, Cell mf, Cell e, List qs) {
     if (nonNull(qs)) {
         Cell q = hd(qs);
         Cell qs1 = tl(qs);
@@ -356,11 +360,11 @@ static Cell transDo(Cell m, Cell e, List qs) {
 
             if (!failFree(fst(snd(q)))) {
                 Cell str = mkStr(findText("match fails"));
-                ld =
-                    cons(pair(singleton(WILDCARD), ap2(nameMFail, m, str)), ld);
+                ld = cons(pair(singleton(WILDCARD), ap2(nameMFail, mf, str)),
+                          ld);
             }
 
-            ld = cons(pair(singleton(fst(snd(q))), transDo(m, e, qs1)), ld);
+            ld = cons(pair(singleton(fst(snd(q))), transDo(m, mf, e, qs1)), ld);
 
             return ap(
                 LETREC,
@@ -370,15 +374,12 @@ static Cell transDo(Cell m, Cell e, List qs) {
 
         case DOQUAL:
             return ap(ap(ap(nameThen, m), translate(snd(q))),
-                      transDo(m, e, qs1));
+                      transDo(m, mf, e, qs1));
 
         case QWHERE:
-            return expandLetrec(ap(LETREC, pair(snd(q), transDo(m, e, qs1))));
+            return expandLetrec(
+                ap(LETREC, pair(snd(q), transDo(m, mf, e, qs1))));
 
-        case BOOLQUAL:
-            return ap(COND, triple(translate(snd(q)), transDo(m, e, qs1),
-                                   ap2(nameMFail, m,
-                                       mkStr(findText("guard fails")))));
         default:
             break;
         }

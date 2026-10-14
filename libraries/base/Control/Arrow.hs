@@ -24,8 +24,9 @@ module Control.Arrow (
 		-- ** Derived combinators
 		returnA,
 		(^>>), (>>^),
+		(>>>), (<<<), -- reexported from "Control.Category"
 		-- ** Right-to-left variants
-		(<<<), (<<^), (^<<),
+		(<<^), (^<<),
 		-- * Monoid operations
 		ArrowZero(..), ArrowPlus(..),
 		-- * Conditionals
@@ -36,8 +37,10 @@ module Control.Arrow (
 		ArrowLoop(..)
 	) where
 
-import Prelude
+import Prelude hiding (id, (.))
+import qualified Prelude
 
+import Control.Category
 import Control.Monad
 import Control.Monad.Fix
 
@@ -46,39 +49,30 @@ infixr 3 ***
 infixr 3 &&&
 infixr 2 +++
 infixr 2 |||
-infixr 1 >>>, ^>>, >>^
-infixr 1 <<<, ^<<, <<^
+infixr 1 ^>>, >>^
+infixr 1 ^<<, <<^
 
 -- | The basic arrow class.
---   Any instance must define either 'arr' or 'pure' (which are synonyms),
---   as well as '>>>' and 'first'.  The other combinators have sensible
+--   Any instance must define 'arr' and 'first', or 'arr' and '***',
+--   besides the 'Category' methods.  The other combinators have sensible
 --   default definitions, which may be overridden for efficiency.
 
-class Arrow a where
+class Category a => Arrow a where
 
-	-- | Lift a function to an arrow: you must define either this
-	--   or 'pure'.
+	-- | Lift a function to an arrow.
 	arr :: (b -> c) -> a b c
-	arr = pure
-
-	-- | A synonym for 'arr': you must define one or other of them.
-	pure :: (b -> c) -> a b c
-	pure = arr
-
-	-- | Left-to-right composition of arrows.
-	(>>>) :: a b c -> a c d -> a b d
 
 	-- | Send the first component of the input through the argument
 	--   arrow, and copy the rest unchanged to the output.
 	first :: a b c -> a (b,d) (c,d)
+	first = (*** id)
 
 	-- | A mirror image of 'first'.
 	--
 	--   The default definition may be overridden with a more efficient
 	--   version if desired.
 	second :: a b c -> a (d,b) (d,c)
-	second f = arr swap >>> first f >>> arr swap
-			where	swap ~(x,y) = (y,x)
+	second = (id ***)
 
 	-- | Split the input between the two argument arrows and combine
 	--   their output.  Note that this is in general not a functor.
@@ -86,7 +80,8 @@ class Arrow a where
 	--   The default definition may be overridden with a more efficient
 	--   version if desired.
 	(***) :: a b c -> a b' c' -> a (b,b') (c,c')
-	f *** g = first f >>> second g
+	f *** g = first f >>> arr swap >>> first g >>> arr swap
+			where	swap ~(x,y) = (y,x)
 
 	-- | Fanout: send the input to both argument arrows and combine
 	--   their output.
@@ -117,7 +112,6 @@ class Arrow a where
 
 instance Arrow (->) where
 	arr f = f
-	f >>> g = g . f
 	first f = f *** id
 	second f = id *** f
 --	(f *** g) ~(x,y) = (f x, g y)
@@ -128,9 +122,12 @@ instance Arrow (->) where
 
 newtype Kleisli m a b = Kleisli { runKleisli :: a -> m b }
 
+instance Monad m => Category (Kleisli m) where
+	id = Kleisli return
+	Kleisli f . Kleisli g = Kleisli (\b -> g b >>= f)
+
 instance Monad m => Arrow (Kleisli m) where
-	arr f = Kleisli (return . f)
-	Kleisli f >>> Kleisli g = Kleisli (\b -> f b >>= g)
+	arr f = Kleisli (return Prelude.. f)
 	first (Kleisli f) = Kleisli (\ ~(b,d) -> f b >>= \c -> return (c,d))
 	second (Kleisli f) = Kleisli (\ ~(d,b) -> f b >>= \c -> return (d,c))
 
@@ -146,10 +143,6 @@ f ^>> a = arr f >>> a
 -- | Postcomposition with a pure function.
 (>>^) :: Arrow a => a b c -> (c -> d) -> a b d
 a >>^ f = a >>> arr f
-
--- | Right-to-left composition, for a better fit with arrow notation.
-(<<<) :: Arrow a => a c d -> a b c -> a b d
-f <<< g = g >>> f
 
 -- | Precomposition with a pure function (right-to-left variant).
 (<<^) :: Arrow a => a c d -> (b -> c) -> a b d
@@ -253,8 +246,14 @@ instance Monad m => ArrowApply (Kleisli m) where
 
 newtype ArrowApply a => ArrowMonad a b = ArrowMonad (a () b)
 
+instance ArrowApply a => Functor (ArrowMonad a) where
+	fmap = liftM
+
+instance ArrowApply a => Applicative (ArrowMonad a) where
+	pure x = ArrowMonad (arr (\z -> x))
+	(<*>) = ap
+
 instance ArrowApply a => Monad (ArrowMonad a) where
-	return x = ArrowMonad (arr (\z -> x))
 	ArrowMonad m >>= f = ArrowMonad (m >>>
 			arr (\x -> let ArrowMonad h = f x in (h, ())) >>>
 			app)

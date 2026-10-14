@@ -30,28 +30,21 @@ module Control.Applicative (
 	-- * Instances
 	Const(..), WrappedMonad(..), WrappedArrow(..), ZipList(..),
 	-- * Utility functions
-	(<$>), (<$), (*>), (<*), (<**>),
-	liftA, liftA2, liftA3,
-	optional, some, many
+	(<$>), (<$), (<**>),
+	liftA, liftA3,
+	optional
 	) where
 
-
-
-
-
 import Control.Arrow
-	(Arrow(arr, (>>>), (&&&)), ArrowZero(zeroArrow), ArrowPlus((<+>)))
-import Control.Monad (liftM, ap, MonadPlus(..))
-import Control.Monad.Instances ()
+	(Arrow(arr, (&&&)), (>>>), ArrowZero(zeroArrow), ArrowPlus((<+>)))
+import Control.Monad (liftM, ap)
+import Cupid.Prelude (Alternative(..), MonadPlus(..))
 import Data.Monoid (Monoid(..))
 
-infixl 3 <|>
-infixl 4 <$>, <$
-infixl 4 <*>, <*, *>, <**>
+infixl 4 <**>
 
--- | A functor with application.
---
--- Instances should satisfy the following laws:
+-- 'Applicative' is defined in the Prelude, as the superclass of 'Monad'.
+-- Its instances should satisfy the following laws:
 --
 -- [/identity/]
 --	@'pure' 'id' '<*>' v = v@
@@ -70,49 +63,9 @@ infixl 4 <*>, <*, *>, <**>
 -- @
 --	'fmap' f x = 'pure' f '<*>' x
 -- @
---
--- If @f@ is also a 'Monad', define @'pure' = 'return'@ and @('<*>') = 'ap'@.
 
-class Functor f => Applicative f where
-	-- | Lift a value.
-	pure :: a -> f a
-
-        -- | Sequential application.
-	(<*>) :: f (a -> b) -> f a -> f b
-
--- | A monoid on applicative functors.
-class Applicative f => Alternative f where
-	-- | The identity of '<|>'
-	empty :: f a
-	-- | An associative binary operation
-	(<|>) :: f a -> f a -> f a
-
--- instances for Prelude types
-
-instance Applicative Maybe where
-	pure = return
-	(<*>) = ap
-
-instance Alternative Maybe where
-	empty = Nothing
-	Nothing <|> p = p
-	Just x <|> _ = Just x
-
-instance Applicative [] where
-	pure = return
-	(<*>) = ap
-
-instance Alternative [] where
-	empty = []
-	(<|>) = (++)
-
-instance Applicative IO where
-	pure = return
-	(<*>) = ap
-
-instance Applicative ((->) a) where
-	pure = const
-	(<*>) f g x = f x (g x)
+-- 'Alternative' is defined in "Cupid.Prelude" too, as the superclass
+-- of 'MonadPlus', with its instances for 'Maybe' and lists.
 
 instance Monoid a => Applicative ((,) a) where
 	pure x = (mempty, x)
@@ -137,6 +90,9 @@ instance Monad m => Functor (WrappedMonad m) where
 instance Monad m => Applicative (WrappedMonad m) where
 	pure = WrapMonad . return
 	WrapMonad f <*> WrapMonad v = WrapMonad (f `ap` v)
+
+instance Monad m => Monad (WrappedMonad m) where
+	WrapMonad a >>= f = WrapMonad (a >>= unwrapMonad . f)
 
 instance MonadPlus m => Alternative (WrappedMonad m) where
 	empty = WrapMonad mzero
@@ -170,22 +126,6 @@ instance Applicative ZipList where
 
 -- extra functions
 
--- | A synonym for 'fmap'.
-(<$>) :: Functor f => (a -> b) -> f a -> f b
-f <$> a = fmap f a
-
--- | Replace the value.
-(<$) :: Functor f => a -> f b -> f a
-(<$) = (<$>) . const
- 
--- | Sequence actions, discarding the value of the first argument.
-(*>) :: Applicative f => f a -> f b -> f b
-(*>) = liftA2 (const id)
- 
--- | Sequence actions, discarding the value of the second argument.
-(<*) :: Applicative f => f a -> f b -> f a
-(<*) = liftA2 const
- 
 -- | A variant of '<*>' with the arguments reversed.
 (<**>) :: Applicative f => f a -> f (a -> b) -> f b
 (<**>) = liftA2 (flip ($))
@@ -195,10 +135,6 @@ f <$> a = fmap f a
 liftA :: Applicative f => (a -> b) -> f a -> f b
 liftA f a = pure f <*> a
 
--- | Lift a binary function to actions.
-liftA2 :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
-liftA2 f a b = f <$> a <*> b
-
 -- | Lift a ternary function to actions.
 liftA3 :: Applicative f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
 liftA3 f a b c = f <$> a <*> b <*> c
@@ -207,14 +143,3 @@ liftA3 f a b c = f <$> a <*> b <*> c
 optional :: Alternative f => f a -> f (Maybe a)
 optional v = Just <$> v <|> pure Nothing
 
--- | One or more.
-some :: Alternative f => f a -> f [a]
-some v = some_v
-  where many_v = some_v <|> pure []
-	some_v = (:) <$> v <*> many_v
-
--- | Zero or more.
-many :: Alternative f => f a -> f [a]
-many v = many_v
-  where many_v = some_v <|> pure []
-	some_v = (:) <$> v <*> many_v

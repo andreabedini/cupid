@@ -68,7 +68,8 @@ import Prelude hiding (
 	reverse)
 import qualified Data.List (foldl')
 import Control.Applicative (Applicative(..), (<$>))
-import Control.Monad (MonadPlus(..))
+import Control.Monad (MonadPlus(..), ap)
+import qualified Cupid.Prelude as P (Alternative(..))
 import Data.Monoid (Monoid(..))
 import Data.Foldable
 import Data.Traversable
@@ -115,14 +116,19 @@ instance Foldable Seq where
 instance Traversable Seq where
 	traverse f (Seq xs) = Seq <$> traverse (traverse f) xs
 
+instance Applicative Seq where
+	pure = singleton
+	(<*>) = ap
+
 instance Monad Seq where
-	return = singleton
 	xs >>= f = foldl' add empty xs
 	  where add ys x = ys >< f x
 
-instance MonadPlus Seq where
-	mzero = empty
-	mplus = (><)
+instance P.Alternative Seq where
+	empty = empty
+	(<|>) = (><)
+
+instance MonadPlus Seq
 
 instance Eq a => Eq (Seq a) where
 	xs == ys = length xs == length ys && toList xs == toList ys

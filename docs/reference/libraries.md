@@ -13,7 +13,7 @@ default search path finds them.
 | Package | Contents |
 |---|---|
 | `cupid` | The `Prelude`, `Cupid.Prelude` (where most of it is defined) and the `Cupid.*` modules that bind the interpreter's primitives |
-| `base` | The `base` library of 2006: `Control.*`, `Data.*`, `Foreign.*`, `System.*`, `Text.*`; and `GHC.Generics`, added since |
+| `base` | The `base` library of 2006, `Control.*`, `Data.*`, `Foreign.*`, `System.*`, `Text.*`, with the class hierarchy of GHC's base (see [the language](language.md#predefined-types-and-classes)); and modules added since, such as `Control.Category` and `GHC.Generics` |
 
 ## Modules beyond Haskell 2010
 
@@ -57,10 +57,11 @@ types to Haskell types (`HsType_int`, `HsType_mode_t`, ...), the
 
 ### base
 
-`Control.Applicative`, `Control.Arrow`, `Control.Concurrent` (and
-`.Chan`, `.MVar`, `.QSem`, `.QSemN`, `.SampleVar`),
-`Control.Exception`, `Control.Monad` (and `.Fix`, `.Instances`, `.ST`,
-`.ST.Lazy`, `.ST.Strict`), `Control.Parallel`,
+`Control.Applicative`, `Control.Arrow`, `Control.Category`,
+`Control.Concurrent` (and `.Chan`, `.MVar`, `.QSem`, `.QSemN`,
+`.SampleVar`),
+`Control.Exception`, `Control.Monad` (and `.Fail`, `.Fix`,
+`.Instances`, `.ST`, `.ST.Lazy`, `.ST.Strict`), `Control.Parallel`,
 `Data.Array` (and `.Base`, `.Diff`, `.IArray`, `.IO`, `.IO.Internals`,
 `.MArray`, `.ST`, `.Storable`, `.Unboxed`), `Data.Bits`, `Data.Bool`,
 `Data.ByteString` (and `.Base`, `.Char8`, `.Fusion`, `.Lazy`,

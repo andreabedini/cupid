@@ -117,6 +117,21 @@ cs = 'a':cs
 
 ### Predefined types and classes
 
+**The monad classes are those of GHC's base, not of the Report.**
+`Applicative` is a superclass of `Monad`, and `Functor` of
+`Applicative`, so a `Monad` instance needs the other two; `return`
+defaults to `pure`.  `fail` is the method of a class of its own,
+`MonadFail`, and a `do` block uses it only for a generator whose
+pattern can fail to match: `Just x <- m` needs `MonadFail`, while
+`(x, y) <- m` and `~(Just x) <- m` need only `Monad`.  The Prelude
+exports `Functor(fmap, (<$))`, `(<$>)`,
+`Applicative(pure, (<*>), (*>), (<*), liftA2)`,
+`Monad((>>=), (>>), return)` and `MonadFail(fail)`.  `MonadPlus` has
+`Alternative` as its superclass, and `Control.Arrow`'s `Arrow` has
+`Category`.  A Haskell 98 program that defines `Monad` without
+`Applicative`, or `fail` in a `Monad` instance, is rejected, as it is
+by GHC.
+
 **Rational literals may lose precision.**  A literal such as
 `1.234e-5` is held as a double before conversion, so at type `Rational`
 it may not be exact.

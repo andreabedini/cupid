@@ -16,13 +16,11 @@ module Control.Monad
     (
     -- * Functor and monad classes
 
-      Functor(fmap)
-    , Monad((>>=), (>>), return, fail)
+      Functor(fmap, (<$))
+    , Monad((>>=), (>>), return)
+    , MonadFail(fail)
+    , MonadPlus(mzero, mplus)
 
-    , MonadPlus (   -- class context: Monad
-	  mzero     -- :: (MonadPlus m) => m a
-	, mplus     -- :: (MonadPlus m) => m a -> m a -> m a
-	)
     -- * Functions
 
     -- ** Naming conventions
@@ -37,25 +35,30 @@ module Control.Monad
     , sequence      -- :: (Monad m) => [m a] -> m [a]
     , sequence_     -- :: (Monad m) => [m a] -> m ()
     , (=<<)         -- :: (Monad m) => (a -> m b) -> m a -> m b
+    , (>=>)         -- :: (Monad m) => (a -> m b) -> (b -> m c) -> (a -> m c)
+    , (<=<)         -- :: (Monad m) => (b -> m c) -> (a -> m b) -> (a -> m c)
+    , forever       -- :: (Applicative f) => f a -> f b
+    , void          -- :: (Functor f) => f a -> f ()
 
     -- ** Generalisations of list functions
 
     , join          -- :: (Monad m) => m (m a) -> m a
     , msum          -- :: (MonadPlus m) => [m a] -> m a
-    , filterM       -- :: (Monad m) => (a -> m Bool) -> [a] -> m [a]
-    , mapAndUnzipM  -- :: (Monad m) => (a -> m (b,c)) -> [a] -> m ([b], [c])
-    , zipWithM      -- :: (Monad m) => (a -> b -> m c) -> [a] -> [b] -> m [c]
-    , zipWithM_     -- :: (Monad m) => (a -> b -> m c) -> [a] -> [b] -> m ()
+    , mfilter       -- :: (MonadPlus m) => (a -> Bool) -> m a -> m a
+    , filterM       -- :: (Applicative m) => (a -> m Bool) -> [a] -> m [a]
+    , mapAndUnzipM  -- :: (Applicative m) => (a -> m (b,c)) -> [a] -> m ([b], [c])
+    , zipWithM      -- :: (Applicative m) => (a -> b -> m c) -> [a] -> [b] -> m [c]
+    , zipWithM_     -- :: (Applicative m) => (a -> b -> m c) -> [a] -> [b] -> m ()
     , foldM         -- :: (Monad m) => (a -> b -> m a) -> a -> [b] -> m a 
     , foldM_        -- :: (Monad m) => (a -> b -> m a) -> a -> [b] -> m ()
-    , replicateM    -- :: (Monad m) => Int -> m a -> m [a]
-    , replicateM_   -- :: (Monad m) => Int -> m a -> m ()
+    , replicateM    -- :: (Applicative m) => Int -> m a -> m [a]
+    , replicateM_   -- :: (Applicative m) => Int -> m a -> m ()
 
     -- ** Conditional execution of monadic expressions
 
-    , guard         -- :: (MonadPlus m) => Bool -> m ()
-    , when          -- :: (Monad m) => Bool -> m () -> m ()
-    , unless        -- :: (Monad m) => Bool -> m () -> m ()
+    , guard         -- :: (Alternative f) => Bool -> f ()
+    , when          -- :: (Applicative f) => Bool -> f () -> f ()
+    , unless        -- :: (Applicative f) => Bool -> f () -> f ()
 
     -- ** Monadic lifting operators
 
@@ -67,111 +70,62 @@ module Control.Monad
 
     , ap            -- :: (Monad m) => m (a -> b) -> m a -> m b
 
+    -- ** Strict monadic functions
+
+    , (<$!>)        -- :: (Monad m) => (a -> b) -> m a -> m b
+
     ) where
 
 import Data.Maybe
+import Cupid.Prelude (Alternative(..), MonadPlus(..))
 
+infixr 1 >=>, <=<
+infixl 4 <$!>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
--- -----------------------------------------------------------------------------
--- The MonadPlus class definition
-
--- | Monads that also support choice and failure.
-class Monad m => MonadPlus m where
-   -- | the identity of 'mplus'.  It should also satisfy the equations
-   --
-   -- > mzero >>= f  =  mzero
-   -- > v >> mzero   =  mzero
-   --
-   -- (but the instance for 'System.IO.IO' defined in "Control.Monad.Error"
-   -- does not satisfy the second one).
-   mzero :: m a	
-   -- | an associative operation
-   mplus :: m a -> m a -> m a
-
-instance MonadPlus [] where
-   mzero = []
-   mplus = (++)
-
-instance MonadPlus Maybe where
-   mzero = Nothing
-
-   Nothing `mplus` ys  = ys
-   xs      `mplus` _ys = xs
+-- 'MonadPlus', the class of monads that also support choice and failure,
+-- is defined in "Cupid.Prelude", with 'Alternative' as its superclass.
 
 -- -----------------------------------------------------------------------------
 -- Functions mandated by the Prelude
 
--- | @'guard' b@ is @'return' ()@ if @b@ is 'True',
--- and 'mzero' if @b@ is 'False'.
-guard           :: (MonadPlus m) => Bool -> m ()
-guard True      =  return ()
-guard False     =  mzero
+-- | @'guard' b@ is @'pure' ()@ if @b@ is 'True',
+-- and 'empty' if @b@ is 'False'.
+guard           :: (Alternative f) => Bool -> f ()
+guard True      =  pure ()
+guard False     =  empty
 
 -- | This generalizes the list-based 'filter' function.
-
-filterM          :: (Monad m) => (a -> m Bool) -> [a] -> m [a]
-filterM _ []     =  return []
-filterM p (x:xs) =  do
-   flg <- p x
-   ys  <- filterM p xs
-   return (if flg then x:ys else ys)
+filterM          :: (Applicative m) => (a -> m Bool) -> [a] -> m [a]
+filterM p        = foldr (\x -> liftA2 (\flg -> if flg then (x:) else id) (p x))
+                         (pure [])
 
 -- | 'forM' is 'mapM' with its arguments flipped
 forM            :: Monad m => [a] -> (a -> m b) -> m [b]
-{-# INLINE forM #-}
 forM            = flip mapM
 
 -- | 'forM_' is 'mapM_' with its arguments flipped
 forM_           :: Monad m => [a] -> (a -> m b) -> m ()
-{-# INLINE forM_ #-}
 forM_           = flip mapM_
 
 -- | This generalizes the list-based 'concat' function.
-
 msum        :: MonadPlus m => [m a] -> m a
-{-# INLINE msum #-}
 msum        =  foldr mplus mzero
+
+-- | Left-to-right Kleisli composition of monads.
+(>=>)       :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
+f >=> g     = \x -> f x >>= g
+
+-- | Right-to-left Kleisli composition of monads.
+(<=<)       :: Monad m => (b -> m c) -> (a -> m b) -> (a -> m c)
+(<=<)       = flip (>=>)
+
+-- | @'forever' act@ repeats the action infinitely.
+forever     :: (Applicative f) => f a -> f b
+forever a   = let a' = a *> a' in a'
+
+-- | @'void' value@ discards or ignores the result of evaluation.
+void        :: Functor f => f a -> f ()
+void x      = () <$ x
 
 -- -----------------------------------------------------------------------------
 -- Other monad functions
@@ -182,25 +136,28 @@ msum        =  foldr mplus mzero
 join              :: (Monad m) => m (m a) -> m a
 join x            =  x >>= id
 
+-- | Direct 'MonadPlus' equivalent of 'filter'.
+mfilter           :: (MonadPlus m) => (a -> Bool) -> m a -> m a
+mfilter p ma      = do { a <- ma; if p a then return a else mzero }
+
 -- | The 'mapAndUnzipM' function maps its first argument over a list, returning
 -- the result as a pair of lists. This function is mainly used with complicated
 -- data structures or a state-transforming monad.
-mapAndUnzipM      :: (Monad m) => (a -> m (b,c)) -> [a] -> m ([b], [c])
-mapAndUnzipM f xs =  sequence (map f xs) >>= return . unzip
+mapAndUnzipM      :: (Applicative m) => (a -> m (b,c)) -> [a] -> m ([b], [c])
+mapAndUnzipM f xs =  unzip <$> traverseList f xs
 
--- | The 'zipWithM' function generalizes 'zipWith' to arbitrary monads.
-zipWithM          :: (Monad m) => (a -> b -> m c) -> [a] -> [b] -> m [c]
-zipWithM f xs ys  =  sequence (zipWith f xs ys)
+-- | The 'zipWithM' function generalizes 'zipWith' to arbitrary applicative functors.
+zipWithM          :: (Applicative m) => (a -> b -> m c) -> [a] -> [b] -> m [c]
+zipWithM f xs ys  =  sequenceAList (zipWith f xs ys)
 
 -- | 'zipWithM_' is the extension of 'zipWithM' which ignores the final result.
-zipWithM_         :: (Monad m) => (a -> b -> m c) -> [a] -> [b] -> m ()
-zipWithM_ f xs ys =  sequence_ (zipWith f xs ys)
+zipWithM_         :: (Applicative m) => (a -> b -> m c) -> [a] -> [b] -> m ()
+zipWithM_ f xs ys =  foldr (*>) (pure ()) (zipWith f xs ys)
 
 {- | The 'foldM' function is analogous to 'foldl', except that its result is
 encapsulated in a monad. Note that 'foldM' works from left-to-right over
 the list arguments. This could be an issue where '(>>)' and the `folded
 function' are not commutative.
-
 
 >	foldM f a1 [x1, x2, ..., xm ]
 
@@ -225,14 +182,18 @@ foldM_ f a xs     = foldM f a xs >> return ()
 
 -- | @'replicateM' n act@ performs the action @n@ times,
 -- gathering the results.
-replicateM        :: (Monad m) => Int -> m a -> m [a]
-replicateM n x    = sequence (replicate n x)
+replicateM        :: (Applicative m) => Int -> m a -> m [a]
+replicateM n x    = loop n
+  where loop k | k <= 0    = pure []
+               | otherwise = liftA2 (:) x (loop (k - 1))
 
 -- | Like 'replicateM', but discards the result.
-replicateM_       :: (Monad m) => Int -> m a -> m ()
-replicateM_ n x   = sequence_ (replicate n x)
+replicateM_       :: (Applicative m) => Int -> m a -> m ()
+replicateM_ n x   = loop n
+  where loop k | k <= 0    = pure ()
+               | otherwise = x *> loop (k - 1)
 
-{- | Conditional execution of monadic expressions. For example, 
+{- | Conditional execution of applicative expressions. For example, 
 
 >	when debug (putStr "Debugging\n")
 
@@ -240,13 +201,13 @@ will output the string @Debugging\\n@ if the Boolean value @debug@ is 'True',
 and otherwise do nothing.
 -}
 
-when              :: (Monad m) => Bool -> m () -> m ()
-when p s          =  if p then s else return ()
+when              :: (Applicative f) => Bool -> f () -> f ()
+when p s          =  if p then s else pure ()
 
 -- | The reverse of 'when'.
 
-unless            :: (Monad m) => Bool -> m () -> m ()
-unless p s        =  if p then return () else s
+unless            :: (Applicative f) => Bool -> f () -> f ()
+unless p s        =  if p then pure () else s
 
 -- | Promote a function to a monad.
 liftM   :: (Monad m) => (a1 -> r) -> m a1 -> m r
@@ -255,8 +216,8 @@ liftM f m1              = do { x1 <- m1; return (f x1) }
 -- | Promote a function to a monad, scanning the monadic arguments from
 -- left to right.  For example,
 --
--- >	liftM2 (+) [0,1] [0,2] = [0,2,1,3]
--- >	liftM2 (+) (Just 1) Nothing = Nothing
+-- >    liftM2 (+) [0,1] [0,2] = [0,2,1,3]
+-- >    liftM2 (+) (Just 1) Nothing = Nothing
 --
 liftM2  :: (Monad m) => (a1 -> a2 -> r) -> m a1 -> m a2 -> m r
 liftM2 f m1 m2          = do { x1 <- m1; x2 <- m2; return (f x1 x2) }
@@ -289,6 +250,18 @@ is equivalent to
 
 ap                :: (Monad m) => m (a -> b) -> m a -> m b
 ap                =  liftM2 id
+
+-- | Strict version of '<$>'.
+(<$!>)            :: Monad m => (a -> b) -> m a -> m b
+f <$!> m          = do { x <- m; return $! f x }
+
+-- The list cases of 'traverse' and 'sequenceA', which "Data.Traversable"
+-- defines in general.
+traverseList      :: (Applicative m) => (a -> m b) -> [a] -> m [b]
+traverseList f    = foldr (\x -> liftA2 (:) (f x)) (pure [])
+
+sequenceAList     :: (Applicative m) => [m a] -> m [a]
+sequenceAList     = traverseList id
 
 {- $naming
 

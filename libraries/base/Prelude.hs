@@ -76,8 +76,10 @@ module Prelude (
     fromIntegral, realToFrac,
 
     -- ** Monads and functors
-    Monad((>>=), (>>), return, fail),
-    Functor(fmap),
+    Functor(fmap, (<$)), (<$>),
+    Applicative(pure, (<*>), (*>), (<*), liftA2),
+    Monad((>>=), (>>), return),
+    MonadFail(fail),
     mapM, mapM_, sequence, sequence_, (=<<),
 
     -- ** Miscellaneous functions

@@ -70,7 +70,8 @@ module Text.ParserCombinators.ReadP
   )
  where
 
-import Control.Monad( MonadPlus(..), sequence, liftM2 )
+import Control.Monad( MonadPlus(..), sequence, liftM, liftM2, ap )
+import Cupid.Prelude( Alternative(empty, (<|>)) )
 
 
 
@@ -107,47 +108,55 @@ data P a
   | Result a (P a)
   | Final [(a,String)] -- invariant: list is non-empty!
 
--- Monad, MonadPlus
+-- Functor, Applicative, Monad, Alternative, MonadPlus
+
+instance Functor P where
+  fmap = liftM
+
+instance Applicative P where
+  pure x = Result x Fail
+  (<*>)  = ap
 
 instance Monad P where
-  return x = Result x Fail
-
   (Get f)      >>= k = Get (\c -> f c >>= k)
   (Look f)     >>= k = Look (\s -> f s >>= k)
   Fail         >>= k = Fail
   (Result x p) >>= k = k x `mplus` (p >>= k)
   (Final r)    >>= k = final [ys' | (x,s) <- r, ys' <- run (k x) s]
 
+instance MonadFail P where
   fail _ = Fail
 
-instance MonadPlus P where
-  mzero = Fail
+instance MonadPlus P
+
+instance Alternative P where
+  empty = Fail
 
   -- most common case: two gets are combined
-  Get f1     `mplus` Get f2     = Get (\c -> f1 c `mplus` f2 c)
+  Get f1     <|> Get f2     = Get (\c -> f1 c `mplus` f2 c)
   
   -- results are delivered as soon as possible
-  Result x p `mplus` q          = Result x (p `mplus` q)
-  p          `mplus` Result x q = Result x (p `mplus` q)
+  Result x p <|> q          = Result x (p `mplus` q)
+  p          <|> Result x q = Result x (p `mplus` q)
 
   -- fail disappears
-  Fail       `mplus` p          = p
-  p          `mplus` Fail       = p
+  Fail       <|> p          = p
+  p          <|> Fail       = p
 
   -- two finals are combined
   -- final + look becomes one look and one final (=optimization)
   -- final + sthg else becomes one look and one final
-  Final r    `mplus` Final t    = Final (r ++ t)
-  Final r    `mplus` Look f     = Look (\s -> Final (r ++ run (f s) s))
-  Final r    `mplus` p          = Look (\s -> Final (r ++ run p s))
-  Look f     `mplus` Final r    = Look (\s -> Final (run (f s) s ++ r))
-  p          `mplus` Final r    = Look (\s -> Final (run p s ++ r))
+  Final r    <|> Final t    = Final (r ++ t)
+  Final r    <|> Look f     = Look (\s -> Final (r ++ run (f s) s))
+  Final r    <|> p          = Look (\s -> Final (r ++ run p s))
+  Look f     <|> Final r    = Look (\s -> Final (run (f s) s ++ r))
+  p          <|> Final r    = Look (\s -> Final (run p s ++ r))
 
   -- two looks are combined (=optimization)
   -- look + sthg else floats upwards
-  Look f     `mplus` Look g     = Look (\s -> f s `mplus` g s)
-  Look f     `mplus` p          = Look (\s -> f s `mplus` p)
-  p          `mplus` Look f     = Look (\s -> p `mplus` f s)
+  Look f     <|> Look g     = Look (\s -> f s `mplus` g s)
+  Look f     <|> p          = Look (\s -> f s `mplus` p)
+  p          <|> Look f     = Look (\s -> p `mplus` f s)
 
 -- ---------------------------------------------------------------------------
 -- The ReadP type
@@ -164,14 +173,21 @@ newtype ReadP a = R (forall b . (a -> P b) -> P b)
 instance Functor ReadP where
   fmap h (R f) = R (\k -> f (k . h))
 
+instance Applicative ReadP where
+  pure x    = R (\k -> k x)
+  (<*>)     = ap
+
 instance Monad ReadP where
-  return x  = R (\k -> k x)
-  fail _    = R (\_ -> Fail)
   R m >>= f = R (\k -> m (\a -> let R m' = f a in m' k))
 
-instance MonadPlus ReadP where
-  mzero = pfail
-  mplus = (+++)
+instance MonadFail ReadP where
+  fail _    = R (\_ -> Fail)
+
+instance Alternative ReadP where
+  empty = pfail
+  (<|>) = (+++)
+
+instance MonadPlus ReadP
 
 -- ---------------------------------------------------------------------------
 -- Operations over P
