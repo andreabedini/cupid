@@ -31,11 +31,19 @@ module Data.Bits (
     bitSize,           -- :: a -> Int
     isSigned,          -- :: a -> Bool
     shiftL, shiftR,    -- :: a -> Int -> a
-    rotateL, rotateR   -- :: a -> Int -> a
-  )
-
-  -- instance Bits Int
-  -- instance Bits Integer
+    rotateL, rotateR,  -- :: a -> Int -> a
+    zeroBits,          -- :: a
+    bitSizeMaybe,      -- :: a -> Maybe Int
+    unsafeShiftL, unsafeShiftR, -- :: a -> Int -> a
+    popCount           -- :: a -> Int
+  ),
+  FiniteBits(
+    finiteBitSize,     -- :: a -> Int
+    countLeadingZeros, -- :: a -> Int
+    countTrailingZeros -- :: a -> Int
+  ),
+  bitDefault, testBitDefault, popCountDefault, toIntegralSized,
+  oneBits, (.^.), (.>>.), (.<<.), (!>>.), (!<<.)
  ) where
 
 -- Defines the @Bits@ class containing bit-based operations.
@@ -187,6 +195,8 @@ import Cupid.Bits
 
 
 infixl 8 `shift`, `rotate`, `shiftL`, `shiftR`, `rotateL`, `rotateR`
+infixl 8 `unsafeShiftL`, `unsafeShiftR`, .>>., .<<., !>>., !<<.
+infixl 6 .^.
 infixl 7 .&.
 infixl 6 `xor`
 infixl 5 .|.
@@ -321,6 +331,28 @@ class Num a => Bits a where
     rotateR           :: a -> Int -> a
     x `rotateR` i = x `rotate` (-i)
 
+    -- | The value with no bits set.
+    zeroBits          :: a
+    zeroBits          = clearBit (bit 0) 0
+
+    -- | The number of bits in the type, or 'Nothing' if it has no fixed
+    -- size.
+    bitSizeMaybe      :: a -> Maybe Int
+    bitSizeMaybe x    = Just (bitSize x)
+
+    -- | 'shiftL' for a count that is non-negative and less than the size.
+    unsafeShiftL      :: a -> Int -> a
+    unsafeShiftL      = shiftL
+
+    -- | 'shiftR' for a count that is non-negative and less than the size.
+    unsafeShiftR      :: a -> Int -> a
+    unsafeShiftR      = shiftR
+
+    -- | The number of set bits; for a negative number of a type with no
+    -- fixed size, minus the number of set bits of its negation.
+    popCount          :: a -> Int
+    popCount          = popCountDefault
+
 instance Bits Int where
 
 
@@ -429,6 +461,10 @@ instance Bits Integer where
    rotate x i = shift x i   -- since an Integer never wraps around
 
    bitSize _  = error "Data.Bits.bitSize(Integer)"
+   bitSizeMaybe _ = Nothing
+   popCount n
+     | n >= 0    = popCountDefault n
+     | otherwise = negate (popCountDefault (negate n))
    isSigned _ = True
 
 
@@ -462,3 +498,76 @@ fromInts = foldr catInt 0
 
 numInts = toInteger (maxBound::Int) - toInteger (minBound::Int) + 1
 
+-- | Types with a fixed number of bits.
+class Bits b => FiniteBits b where
+    -- | The number of bits in the type of the argument.
+    finiteBitSize :: b -> Int
+
+    -- | The number of zero bits before the most significant set bit.
+    countLeadingZeros :: b -> Int
+    countLeadingZeros x = (w - 1) - go (w - 1)
+      where
+        go i | i < 0       = i
+             | testBit x i = i
+             | otherwise   = go (i - 1)
+        w = finiteBitSize x
+
+    -- | The number of zero bits after the least significant set bit.
+    countTrailingZeros :: b -> Int
+    countTrailingZeros x = go 0
+      where
+        go i | i >= w      = i
+             | testBit x i = i
+             | otherwise   = go (i + 1)
+        w = finiteBitSize x
+
+instance FiniteBits Int where
+    finiteBitSize = bitSize
+
+-- | A 'bit' from 'shiftL'.
+bitDefault :: (Bits a, Num a) => Int -> a
+bitDefault i = 1 `shiftL` i
+
+-- | A 'testBit' from '.&.'.
+testBitDefault :: (Bits a, Num a) => a -> Int -> Bool
+testBitDefault x i = (x .&. bit i) /= 0
+
+-- | A 'popCount' that clears one bit at a time, for a non-negative value
+-- or one of fixed size.
+popCountDefault :: (Bits a, Num a) => a -> Int
+popCountDefault = go 0
+  where
+    go c 0 = c
+    go c w = c `seq` go (c + 1) (w .&. (w - 1))
+
+-- | Convert between integral types, or 'Nothing' if the value does not
+-- fit.
+toIntegralSized :: (Integral a, Integral b, Bounded b) => a -> Maybe b
+toIntegralSized x
+    | toInteger y == toInteger x = Just y
+    | otherwise                  = Nothing
+  where y = fromIntegral x
+
+-- | The value with every bit set.
+oneBits :: Bits a => a
+oneBits = complement zeroBits
+
+-- | Infix 'xor'.
+(.^.) :: Bits a => a -> a -> a
+(.^.) = xor
+
+-- | Infix 'shiftR'.
+(.>>.) :: Bits a => a -> Int -> a
+(.>>.) = shiftR
+
+-- | Infix 'shiftL'.
+(.<<.) :: Bits a => a -> Int -> a
+(.<<.) = shiftL
+
+-- | Infix 'unsafeShiftR'.
+(!>>.) :: Bits a => a -> Int -> a
+(!>>.) = unsafeShiftR
+
+-- | Infix 'unsafeShiftL'.
+(!<<.) :: Bits a => a -> Int -> a
+(!<<.) = unsafeShiftL

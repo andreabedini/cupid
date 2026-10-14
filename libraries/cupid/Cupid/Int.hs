@@ -79,6 +79,9 @@ instance Read Int8 where
 instance Show Int8 where
     showsPrec p = showsPrec p . int8ToInt
 
+instance FiniteBits Int8 where
+    finiteBitSize = bitSize
+
 instance Bits Int8 where
   x .&. y       = intToInt8 (binop (.&.) x y)
   x .|. y       = intToInt8 (binop (.|.) x y)
@@ -149,6 +152,9 @@ instance Read Int16 where
 instance Show Int16 where
     showsPrec p = showsPrec p . int16ToInt
 
+instance FiniteBits Int16 where
+    finiteBitSize = bitSize
+
 instance Bits Int16 where
   x .&. y       = intToInt16 (binop (.&.) x y)
   x .|. y       = intToInt16 (binop (.|.) x y)
@@ -218,6 +224,9 @@ instance Read Int32 where
 
 instance Show Int32 where
     showsPrec p = showsPrec p . int32ToInt
+
+instance FiniteBits Int32 where
+    finiteBitSize = bitSize
 
 instance Bits Int32 where
     x .&. y       = intToInt32 (binop (.&.) x y)
@@ -301,6 +310,9 @@ instance Integral Int64 where
     x `quotRem` y = (fromInteger q, fromInteger r)
 	where (q,r) = toInteger x `quotRem` toInteger y
     toInteger     = i64ToInteger
+
+instance FiniteBits Int64 where
+    finiteBitSize = bitSize
 
 instance Bits Int64 where
     x .&. y       = liftBinary (.&.) x y

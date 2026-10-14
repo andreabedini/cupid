@@ -2325,6 +2325,78 @@ data FunPtr a -- builtin datatype of C function pointers
 data Ptr a    -- builtin datatype of C pointers
 data Addr     -- builtin datatype of C pointers (deprecated)
 data Word     -- builtin datatype of unsigned ints (deprecated)
+
+-- Word's instances of the Prelude classes are here, as they are for Int,
+-- so that the Prelude's Word has them; Cupid.Word adds Bits.
+
+instance Eq  Word     where (==)    = primEqWord
+instance Ord Word     where compare = primCmpWord
+
+instance Num Word where
+    (+)           = primPlusWord
+    (-)           = primMinusWord
+    negate        = primNegateWord
+    (*)           = primMulWord
+    abs           = absReal
+    signum        = signumReal
+    fromInteger   = primIntegerToWord
+    fromInt       = primIntToWord
+
+instance Bounded Word where
+    minBound = 0
+    maxBound = primMaxWord
+
+instance Real Word where
+    toRational x = toInteger x % 1
+
+instance Integral Word where
+    div       = primDivWord
+    quot      = primQuotWord
+    rem       = primRemWord
+    mod       = primModWord
+    quotRem   = primQrmWord
+    divMod    = quotRem
+    toInteger = primWordToInteger
+    toInt     = primWordToInt
+
+instance Ix Word where
+    range (m,n)          = [m..n]
+    unsafeIndex (m,_) i  = toInt (i - m)
+    inRange (m,n) i      = m <= i && i <= n
+
+instance Enum Word where
+    succ           = boundedSucc
+    pred           = boundedPred
+    toEnum         = primIntToWord
+    fromEnum       = primWordToInt
+
+    enumFrom       = boundedEnumFrom
+    enumFromTo     = boundedEnumFromTo
+    enumFromThen   = boundedEnumFromThen
+    enumFromThenTo = boundedEnumFromThenTo
+
+instance Read Word where
+    readsPrec p   = readDec
+
+instance Show Word where
+    showsPrec p   = showsPrec p . primWordToInteger
+
+primitive primEqWord        :: Word -> Word -> Bool
+primitive primCmpWord       :: Word -> Word -> Ordering
+primitive primPlusWord,
+	  primMinusWord,
+	  primMulWord	    :: Word -> Word -> Word
+primitive primNegateWord    :: Word -> Word
+primitive primIntToWord     :: Int -> Word
+primitive primIntegerToWord :: Integer -> Word
+primitive primMaxWord       :: Word
+primitive primDivWord,
+	  primQuotWord,
+	  primRemWord,
+	  primModWord       :: Word -> Word -> Word
+primitive primQrmWord       :: Word -> Word -> (Word,Word)
+primitive primWordToInt     :: Word -> Int
+primitive primWordToInteger :: Word -> Integer
 data Int8
 data Int16
 data Int32

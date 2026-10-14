@@ -26,57 +26,10 @@ import Data.Int
 -- Word
 -----------------------------------------------------------------------------
 
-instance Eq  Word     where (==)    = primEqWord
-instance Ord Word     where compare = primCmpWord
+-- Word's instances of the Prelude classes are in Cupid.Prelude.
 
-instance Num Word where
-    (+)           = primPlusWord
-    (-)           = primMinusWord
-    negate        = primNegateWord
-    (*)           = primMulWord
-    abs           = absReal
-    signum        = signumReal
-    fromInteger   = primIntegerToWord
-    fromInt       = primIntToWord
-
-instance Bounded Word where
-    minBound = 0
-    maxBound = primMaxWord
-
-instance Real Word where
-    toRational x = toInteger x % 1
-
-instance Integral Word where
-    div       = primDivWord
-    quot      = primQuotWord
-    rem       = primRemWord
-    mod       = primModWord
-    quotRem   = primQrmWord
-    divMod    = quotRem
-    toInteger = primWordToInteger
-    toInt     = primWordToInt
-
-instance Ix Word where
-    range (m,n)          = [m..n]
-    unsafeIndex (m,_) i  = toInt (i - m)
-    inRange (m,n) i      = m <= i && i <= n
-
-instance Enum Word where
-    succ           = boundedSucc
-    pred           = boundedPred
-    toEnum         = primIntToWord
-    fromEnum       = primWordToInt
-
-    enumFrom       = boundedEnumFrom
-    enumFromTo     = boundedEnumFromTo
-    enumFromThen   = boundedEnumFromThen
-    enumFromThenTo = boundedEnumFromThenTo
-
-instance Read Word where
-    readsPrec p   = readDec
-
-instance Show Word where
-    showsPrec p   = showInt  -- a particularily counterintuitive name!
+instance FiniteBits Word where
+    finiteBitSize = bitSize
 
 instance Bits Word where
     (.&.)         = primAndWord
@@ -146,6 +99,9 @@ instance Read Word8 where
 instance Show Word8 where
     showsPrec p   = showInt  -- a particularily counterintuitive name!
 
+instance FiniteBits Word8 where
+    finiteBitSize = bitSize
+
 instance Bits Word8 where
     x .&. y       = to (binop (.&.) x y)
     x .|. y       = to (binop (.|.) x y)
@@ -214,6 +170,9 @@ instance Read Word16 where
 
 instance Show Word16 where
     showsPrec p   = showInt  -- a particularily counterintuitive name!
+
+instance FiniteBits Word16 where
+    finiteBitSize = bitSize
 
 instance Bits Word16 where
     x .&. y       = to (binop (.&.) x y)
@@ -285,6 +244,9 @@ instance Read Word32 where
 
 instance Show Word32 where
     showsPrec p   = showInt  -- a particularily counterintuitive name!
+
+instance FiniteBits Word32 where
+    finiteBitSize = bitSize
 
 instance Bits Word32 where
     x .&. y       = to (binop (.&.) x y)
@@ -365,6 +327,9 @@ instance Integral Word64 where
     x `quotRem` y = (fromInteger q, fromInteger r)
 	where (q,r) = toInteger x `quotRem` toInteger y
     toInteger     = w64ToInteger
+
+instance FiniteBits Word64 where
+    finiteBitSize = bitSize
 
 instance Bits Word64 where
     x .&. y       = liftBinary (.&.) x y
