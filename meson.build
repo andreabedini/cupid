@@ -148,7 +148,6 @@ option_macros = {
   'internal-prims': ['INTERNAL_PRIMS', 'BYTECODE_PRIMS'],
   'stack-dumps': ['GIMME_STACK_DUMPS'],
   'path-canonicalization': ['PATH_CANONICALIZATION'],
-  'small-banner': ['SMALL_BANNER'],
   'explain-instance-resolution': ['EXPLAIN_INSTANCE_RESOLUTION'],
   'dont-panic': ['DONT_PANIC'],
 }

@@ -133,15 +133,11 @@ static void initialize(int argc, char *argv[]) {
 static void printBanner(void);
 
 static void printBanner(void) {
-#if SMALL_BANNER
-    Printf("Cupid %s\n", versionString);
-#else
     Printf("Cupid %s, a Haskell interpreter written in C\n", versionString);
     Printf(
         "Derived from Hugs 98, Copyright (c) 1994-2005 Mark P Jones, Alastair Reid,\n");
     Printf(
         "the Yale Haskell Group and the OGI School of Science & Engineering at OHSU\n\n");
-#endif
 
     FlushStdout();
 }

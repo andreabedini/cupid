@@ -38,10 +38,9 @@ before it is compared:
   path-canonicalization  write file names in messages back to how they were
                          given, since the option reports the resolved path
 
-The banner is always dropped from a REPL session, in either the full or
-the -Dsmall-banner form, and whether or not the "Type :? for help" line
-that normally ends it was reached: a module that fails to load reports the
-failure before it.
+The banner is always dropped from a REPL session, whether or not the
+"Type :? for help" line that normally ends it was reached: a module that
+fails to load reports the failure before it.
 """
 
 import os
@@ -51,12 +50,11 @@ import subprocess
 import sys
 import tempfile
 
-# The banner, in both the full and the -Dsmall-banner form, with the help
-# line that usually but not always follows it.
+# The banner, with the help line that usually but not always follows it.
 BANNER = re.compile(
     r"\ACupid [^\n]*\n"
-    r"(?:Derived from Hugs 98[^\n]*\n"
-    r"the Yale Haskell Group[^\n]*\n\n)?"
+    r"Derived from Hugs 98[^\n]*\n"
+    r"the Yale Haskell Group[^\n]*\n\n"
     r"(?:Type :\? for help\n)?")
 
 FEATURE_FILTERS = {
