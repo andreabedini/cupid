@@ -236,7 +236,7 @@ static void forHelp(void) {
  * ------------------------------------------------------------------------*/
 
 /*
- * Poor man's path expansion: expand out ~/
+ * Poor man's path expansion: expand out a bare ~ or a leading ~/
  * expandedPath must have room for maxLen bytes, including the terminating
  * NUL; a path (or its expansion) that does not fit is a clean error, not
  * a truncated copy.
@@ -248,8 +248,8 @@ static void expandPath(char *origPath, char *expandedPath,
         return;
     }
 
-    /* If the original path starts with "~/", expand it. */
-    if (*origPath == '~' && *(origPath + 1) == '/') {
+    /* If the original path is "~" or starts with "~/", expand it. */
+    if (*origPath == '~' && (origPath[1] == '/' || origPath[1] == '\0')) {
         char *home = getenv("HOME");
         if (!home) {
             errHead(0);
