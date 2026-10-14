@@ -92,15 +92,22 @@ Cell assumeEvid(Cell pi, int o) {
 
 /* Apply the builder of instance in to the dictionaries for its context,
  * read at offset beta where findInstFor matched it, each a new wanted; an
- * equality in the context is solved and takes no argument */
+ * equality in the context is solved and takes no argument.  Each wanted is
+ * first improved by the functional dependencies, as entail does: a context
+ * variable not in the head, such as r in
+ *     instance Generic t r => Datatype (MetaData t),
+ * is only fixed that way, and without it the wanted would match no
+ * instance. */
 static Cell applyToEvid(Inst in, int beta) {
     Cell e = instRec(in)->builder;
     List qs = instRec(in)->specifics;
     for (; nonNull(qs); qs = tl(qs))
-        if (isEquality(hd(qs)))
+        if (isEquality(hd(qs))) {
             solveEquality(instRec(in)->line, hd(qs), beta);
-        else
+        } else {
+            improve1(instRec(in)->line, NIL, hd(qs), beta);
             e = ap(e, assumeEvid(hd(qs), beta));
+        }
     return e;
 }
 
