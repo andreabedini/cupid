@@ -14,10 +14,10 @@
 #include "preds.h"
 #include "tagcheck.h"
 #include "errors.h"
-#include "output.h" /* IWYU pragma: keep -- printPred, under EXPLAIN_INSTANCE_RESOLUTION */
+#include "output.h" /* printContext, for the +x trace */
 #include "subst.h"
 #include "goal.h"
-#include "opts.h" /* IWYU pragma: keep -- showInstRes, under EXPLAIN_INSTANCE_RESOLUTION */
+#include "opts.h" /* showInstRes */
 
 bool catchAmbigs = false; /* true => functions with ambig.   */
                           /*       types produce error     */
@@ -1894,7 +1894,6 @@ static void typeInstDefn(Inst in) {
     for (ps = supers; nonNull(ps); ps = tl(ps)) { /* Superclass dictionaries */
         Cell pi = hd(ps);
         Cell ev = NIL;
-#if EXPLAIN_INSTANCE_RESOLUTION
         if (showInstRes) {
             fputs("scEntail: ", stdout);
             printContext(stdout, copyPreds(params));
@@ -1902,10 +1901,8 @@ static void typeInstDefn(Inst in) {
             printPred(stdout, copyPred(fst3(pi), intOf(snd3(pi))));
             fputc('\n', stdout);
         }
-#endif
         ev = scEntail(params, fst3(pi), intOf(snd3(pi)), 0);
         if (isNull(ev)) {
-#if EXPLAIN_INSTANCE_RESOLUTION
             if (showInstRes) {
                 fputs("inEntail: ", stdout);
                 printContext(stdout, copyPreds(evids));
@@ -1913,7 +1910,6 @@ static void typeInstDefn(Inst in) {
                 printPred(stdout, copyPred(fst3(pi), intOf(snd3(pi))));
                 fputc('\n', stdout);
             }
-#endif
             ev = inEntail(evids, fst3(pi), intOf(snd3(pi)), 0);
         }
         if (isNull(ev)) {

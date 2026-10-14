@@ -28,9 +28,7 @@ bool printing = false;    /* true => currently printing value*/
 char *cupidEdit = 0;      /* String for editor command       */
 char *prompt = 0;         /* Prompt string                   */
 
-#if EXPLAIN_INSTANCE_RESOLUTION
 bool showInstRes = false;
-#endif
 
 bool printTypeUseDefaults = false;
 
@@ -77,10 +75,8 @@ struct options toggle[] =
      {'u', "Use \"show\" to display results", &useShow},
      {'I', "Display results of IO programs", &displayIO},
      {'T', "Apply 'defaulting' when printing types", &printTypeUseDefaults},
-/* Conditional toggles: */
-#if EXPLAIN_INSTANCE_RESOLUTION
      {'x', "Explain instance resolution", &showInstRes},
-#endif
+/* Conditional toggles: */
 #if DEBUG_CODE
      {'D', "Debug: show generated G code", &debugCode},
 #endif

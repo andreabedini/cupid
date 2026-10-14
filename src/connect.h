@@ -239,9 +239,7 @@ extern void stringInput(char *);
 extern bool parseScript(char *, long);
 extern void parseScriptString(char *);
 extern void parseExp(void);
-#if EXPLAIN_INSTANCE_RESOLUTION
 extern void parseContext(void);
-#endif
 extern char *readFilename(void);
 extern char *readLine(void);
 extern bool isModuleId(char *);
@@ -274,9 +272,7 @@ extern Type zonkType(Type, int);
 extern void primDefn(Cell, List, Cell);
 extern void defaultDefn(int, List);
 extern void checkExp(void);
-#if EXPLAIN_INSTANCE_RESOLUTION
 extern void checkContext(void);
-#endif
 extern void checkDefns(void);
 extern Cell depExpr(int, Cell);
 

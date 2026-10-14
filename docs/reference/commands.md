@@ -217,8 +217,8 @@ Force a garbage collection and report how many cells were recovered.
 
 ### `:xplain` *context*
 
-Explain how the instances for *context* are resolved.  Only present
-when Cupid was built with `-Dexplain-instance-resolution=true`.
+Explain how the instances for *context* are resolved, printing each
+entailment tried and each instance used.
 
 ## See also
 

@@ -62,9 +62,7 @@ extern bool profiling;   /* true => perform profiling.      */
 extern int profInterval; /* interval between samples        */
 #endif
 
-#if EXPLAIN_INSTANCE_RESOLUTION
 extern bool showInstRes; /* true => show instance resolution */
-#endif
 #if DEBUG_CODE
 extern bool debugCode; /* true => print G-code to screen  */
 #endif

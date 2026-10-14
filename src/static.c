@@ -157,7 +157,6 @@ void checkExp(void) {
     resetStaticAnalysis();
 }
 
-#if EXPLAIN_INSTANCE_RESOLUTION
 /* Top level static check on Expr */
 void checkContext(void) {
     List vs, qs;
@@ -173,7 +172,6 @@ void checkContext(void) {
     leaveScope();
     resetStaticAnalysis();
 }
-#endif
 
 /* Top level static analysis */
 void checkDefns(void) {

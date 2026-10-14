@@ -11,9 +11,9 @@
 #include "storage.h"
 #include "connect.h"
 #include "errors.h"
-#include "output.h" /* IWYU pragma: keep -- printPred, under EXPLAIN_INSTANCE_RESOLUTION */
+#include "output.h" /* printContext, for the +x trace */
 #include "subst.h"
-#include "opts.h" /* allowOverlap, EXPLAIN_INSTANCE_RESOLUTION */
+#include "opts.h" /* allowOverlap, showInstRes */
 #include "preds.h"
 #include "tagcheck.h"
 
@@ -267,7 +267,6 @@ static Cell scFind(Cell e, Cell pi1, int o1, Cell pi, int o, int d) {
             ps = cons(triple(hd(scs), mkInt(beta), ap(hd(dsels), e)), ps);
         ps = rev(ps);
 
-#if EXPLAIN_INSTANCE_RESOLUTION
         if (showInstRes) {
             int i;
             for (i = 0; i < d; i++)
@@ -278,17 +277,14 @@ static Cell scFind(Cell e, Cell pi1, int o1, Cell pi, int o, int d) {
             printPred(stdout, copyPred(pi, o));
             fputc('\n', stdout);
         }
-#endif
         improve1(0, ps, pi, o);
         ev = scEntail(ps, pi, o, d);
-#if EXPLAIN_INSTANCE_RESOLUTION
         if (showInstRes && nonNull(ev)) {
             int i;
             for (i = 0; i < d; i++)
                 fputc(' ', stdout);
             fputs("scSat.\n", stdout);
         }
-#endif
         return ev;
     }
     return NIL;
@@ -362,7 +358,6 @@ static Cell entail(List ps, Cell pi, int o, int d) {
     assertPred(pi);
     Cell ev = NIL;
 
-#if EXPLAIN_INSTANCE_RESOLUTION
     if (showInstRes) {
         int i;
         for (i = 0; i < d; i++)
@@ -373,37 +368,30 @@ static Cell entail(List ps, Cell pi, int o, int d) {
         printPred(stdout, copyPred(pi, o));
         fputc('\n', stdout);
     }
-#endif
 
     ev = scEntail(ps, pi, o, d);
     if (nonNull(ev)) {
-#if EXPLAIN_INSTANCE_RESOLUTION
         if (showInstRes) {
             int i;
             for (i = 0; i < d; i++)
                 fputc(' ', stdout);
             fputs("scSat.\n", stdout);
         }
-#endif
     } else {
         ev = inEntail(ps, pi, o, d);
-#if EXPLAIN_INSTANCE_RESOLUTION
         if (nonNull(ev) && showInstRes) {
             int i;
             for (i = 0; i < d; i++)
                 fputc(' ', stdout);
             fputs("inSat.\n", stdout);
         }
-#endif
     }
     return ev;
 }
 
 /* Calc evidence for (pi,o) from ps using a top-level instance entailment */
 Cell inEntail(List ps, Cell pi, int o, int d) {
-#if EXPLAIN_INSTANCE_RESOLUTION
     int i;
-#endif
     Inst in;
     int beta;
 
@@ -419,7 +407,6 @@ Cell inEntail(List ps, Cell pi, int o, int d) {
             fs = cons(triple(hd(es), mkInt(beta), NIL), fs);
         fs = rev(fs);
         improve(0, ps, fs);
-#if EXPLAIN_INSTANCE_RESOLUTION
         if (showInstRes) {
             for (i = 0; i < d; i++)
                 fputc(' ', stdout);
@@ -429,7 +416,6 @@ Cell inEntail(List ps, Cell pi, int o, int d) {
             printPred(stdout, copyPred(instRec(in)->head, beta));
             fputc('\n', stdout);
         }
-#endif
         for (es = instRec(in)->specifics; nonNull(es); es = tl(es)) {
             Cell ev;
             if (isEquality(hd(es))) { /* solved, and no argument      */
@@ -444,9 +430,7 @@ Cell inEntail(List ps, Cell pi, int o, int d) {
                 return NIL;
         }
         return e;
-    }
-#if EXPLAIN_INSTANCE_RESOLUTION
-    else {
+    } else {
         if (showInstRes) {
             for (i = 0; i < d; i++)
                 fputc(' ', stdout);
@@ -455,7 +439,6 @@ Cell inEntail(List ps, Cell pi, int o, int d) {
             fputc('\n', stdout);
         }
     }
-#endif
     return NIL;
 }
 
@@ -506,7 +489,6 @@ List scSimplify(List qs) {
     while (0 < n--) {
         Cell pi = hd(qs);
         Cell ev = NIL;
-#if EXPLAIN_INSTANCE_RESOLUTION
         if (showInstRes) {
             fputs("scSimplify: ", stdout);
             printContext(stdout, copyPreds(tl(qs)));
@@ -514,13 +496,10 @@ List scSimplify(List qs) {
             printPred(stdout, copyPred(fst3(pi), intOf(snd3(pi))));
             fputc('\n', stdout);
         }
-#endif
         ev = scEntail(tl(qs), fst3(pi), intOf(snd3(pi)), 0);
         if (nonNull(ev)) {
-#if EXPLAIN_INSTANCE_RESOLUTION
             if (showInstRes)
                 fputs("Simplified!\n", stdout);
-#endif
             overEvid(thd3(pi), ev); /* Overwrite dict var with evidence*/
             qs = tl(qs);            /* ... and discard predicate           */
         } else {                    /* Otherwise, retain predicate         */

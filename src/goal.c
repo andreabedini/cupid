@@ -18,11 +18,7 @@ static int charCount;
 
 /* Set goal for what to be t */
 void setGoal(char *what, Target t) {
-    if (quiet
-#if EXPLAIN_INSTANCE_RESOLUTION
-        || showInstRes
-#endif
-    )
+    if (quiet || showInstRes)
         return;
     currTarget = (t ? t : 1);
     aiming = true;
@@ -38,11 +34,7 @@ void setGoal(char *what, Target t) {
 
 /* Indicate progress towards goal has now reached t */
 void soFar(Target t) {
-    if (quiet
-#if EXPLAIN_INSTANCE_RESOLUTION
-        || showInstRes
-#endif
-    )
+    if (quiet || showInstRes)
         return;
     if (useDots) {
         int newPos = (int)((maxPos * ((long)t)) / currTarget);
@@ -62,11 +54,7 @@ void soFar(Target t) {
 
 /* Goal has now been achieved */
 void done(void) {
-    if (quiet
-#if EXPLAIN_INSTANCE_RESOLUTION
-        || showInstRes
-#endif
-    )
+    if (quiet || showInstRes)
         return;
     if (useDots) {
         while (maxPos > currPos++)

@@ -1590,12 +1590,10 @@ void parseExp(void) {
     setLastExpr(inputExpr);
 }
 
-#if EXPLAIN_INSTANCE_RESOLUTION
 /* Read a context to prove */
 void parseContext(void) {
     parseInput(CTXT);
 }
-#endif
 
 /* --------------------------------------------------------------------------
  * Input control:

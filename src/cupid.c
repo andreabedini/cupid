@@ -191,10 +191,7 @@ static struct cmd cmds[] = {
     {":reload", RELOAD},  {":gc", COLLECT}, {":edit", EDIT},
     {":quit", QUIT},      {":set", SET},    {":find", FIND},
     {":names", NAMES},    {":info", INFO},  {":module", SETMODULE},
-    {":browse", BROWSE},  {":main", MAIN},
-#if EXPLAIN_INSTANCE_RESOLUTION
-    {":xplain", XPLAIN},
-#endif
+    {":browse", BROWSE},  {":main", MAIN},  {":xplain", XPLAIN},
     {":version", PNTVER}, {"", EVAL},       {0, 0}};
 
 static void menu(void) {
@@ -217,9 +214,7 @@ static void menu(void) {
     Printf(":browse <modules>   browse names exported by <modules>\n");
     Printf(
         ":main <aruments>    run the main function with the given arguments\n");
-#if EXPLAIN_INSTANCE_RESOLUTION
     Printf(":xplain <context>   explain instance resolution for <context>\n");
-#endif
     Printf(":find <name>        edit module containing definition of name\n");
     Printf(":cd dir             change directory\n");
     Printf(":gc                 force garbage collection\n");
@@ -454,7 +449,6 @@ static void browse(void) {
         browseModule(findEvalModule(), all);
 }
 
-#if EXPLAIN_INSTANCE_RESOLUTION
 /* Print type of expression (if any) */
 static void xplain(void) {
     Cell d;
@@ -475,7 +469,6 @@ static void xplain(void) {
     fflush(stdout);
     showInstRes = sir;
 }
-#endif
 
 static void runmain(void) {
     int MaxArgs = 255;
@@ -953,11 +946,9 @@ bool doCommand(void) {
     case BROWSE:
         browse();
         break;
-#if EXPLAIN_INSTANCE_RESOLUTION
     case XPLAIN:
         xplain();
         break;
-#endif
     case NAMES:
         listNames();
         break;
