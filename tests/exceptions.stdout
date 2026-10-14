@@ -1,0 +1,15 @@
+Left (InsufficientFunds 15)
+7
+caught AccountClosed
+outer: other: x
+Left boom
+Left divide by zero
+SomeException: pattern match failure: head []
+(Just (InsufficientFunds 1),Nothing)
+bank AccountClosed
+arith divide by zero
+["acquire","use 7","release","body","finally"]
+Left user error (disk full)
+handled late
+42
+Left (Other "mapped")

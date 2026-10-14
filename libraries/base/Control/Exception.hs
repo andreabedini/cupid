@@ -9,7 +9,15 @@
 -- Portability :  non-portable (extended exceptions)
 --
 -- This module provides support for raising and catching both built-in
--- and user-defined exceptions.
+-- and user-defined exceptions, with the 'Exception' class of GHC's base:
+-- any type with 'Typeable' and 'Show', which every type built from type
+-- constructors has, can be made an exception by an empty instance.
+--
+-- Underneath is the exception type of "Cupid.Prelude", whose
+-- constructors the interpreter raises for its own errors and the top
+-- level reports: 'throw' gives it the built-in exceptions as its own
+-- constructors and carries any other in 'UserException', and 'catch'
+-- turns it back into a 'SomeException'.
 --
 -- In addition to exceptions thrown by 'IO' operations, exceptions may
 -- be thrown by pure code (imprecise exceptions) or by external events
@@ -26,512 +34,449 @@
 -----------------------------------------------------------------------------
 
 module Control.Exception (
-
-	-- * The Exception type
-	Exception(..),		-- instance Eq, Ord, Show, Typeable
-	IOException,		-- instance Eq, Ord, Show, Typeable
-	ArithException(..),	-- instance Eq, Ord, Show, Typeable
-	ArrayException(..),	-- instance Eq, Ord, Show, Typeable
-	AsyncException(..),	-- instance Eq, Ord, Show, Typeable
-
+	-- * The Exception class
+	SomeException(..),
+	Exception(..),
+	-- ** Exceptions of the interpreter and the libraries
+	IOException,
+	ArithException(..),
+	ArrayException(..),
+	AssertionFailed(..),
+	SomeAsyncException(..),
+	AsyncException(..),
+	asyncExceptionToException, asyncExceptionFromException,
+	NonTermination(..),
+	BlockedIndefinitelyOnMVar(..),
+	Deadlock(..),
+	NoMethodError(..),
+	PatternMatchFail(..),
+	RecConError(..),
+	RecSelError(..),
+	RecUpdError(..),
+	ErrorCall(..),
+	TypeError(..),
 	-- * Throwing exceptions
-	throwIO,	-- :: Exception -> IO a
-	throw,		-- :: Exception -> a
+	throw,		-- :: Exception e => e -> a
+	throwIO,	-- :: Exception e => e -> IO a
 	ioError,	-- :: IOError -> IO a
-
-
-
-
-	-- * Catching Exceptions
-
-	-- |There are several functions for catching and examining
-    	-- exceptions; all of them may only be used from within the
-    	-- 'IO' monad.
-
-	-- ** The @catch@ functions
-	catch,     -- :: IO a -> (Exception -> IO a) -> IO a
-	catchJust, -- :: (Exception -> Maybe b) -> IO a -> (b -> IO a) -> IO a
-
-	-- ** The @handle@ functions
-	handle,	   -- :: (Exception -> IO a) -> IO a -> IO a
-	handleJust,-- :: (Exception -> Maybe b) -> (b -> IO a) -> IO a -> IO a
-
-	-- ** The @try@ functions
-	try,       -- :: IO a -> IO (Either Exception a)
-	tryJust,   -- :: (Exception -> Maybe b) -> a    -> IO (Either b a)
-
-	-- ** The @evaluate@ function
-	evaluate,  -- :: a -> IO a
-
-	-- ** The @mapException@ function
-	mapException,		-- :: (Exception -> Exception) -> a -> a
-
-	-- ** Exception predicates
-	
-	-- $preds
-
-	ioErrors,		-- :: Exception -> Maybe IOError
-	arithExceptions, 	-- :: Exception -> Maybe ArithException
-	errorCalls,		-- :: Exception -> Maybe String
-	dynExceptions,		-- :: Exception -> Maybe Dynamic
-	assertions,		-- :: Exception -> Maybe String
-	asyncExceptions, 	-- :: Exception -> Maybe AsyncException
-	userErrors,		-- :: Exception -> Maybe String
-
-	-- * Dynamic exceptions
-
-	-- $dynamic
-	throwDyn, 	-- :: Typeable ex => ex -> b
-
-
-
-	catchDyn, 	-- :: Typeable ex => IO a -> (ex -> IO a) -> IO a
-	
-	-- * Asynchronous Exceptions
-
-	-- $async
-
-	-- ** Asynchronous exception control
-
-	-- |The following two functions allow a thread to control delivery of
-	-- asynchronous exceptions during a critical region.
-
-        block,          -- :: IO a -> IO a
-        unblock,        -- :: IO a -> IO a
-
-	-- *** Applying @block@ to an exception handler
-
-	-- $block_handler
-
-	-- *** Interruptible operations
-
-	-- $interruptible
-
+	-- * Catching exceptions
+	catch,		-- :: Exception e => IO a -> (e -> IO a) -> IO a
+	catches, Handler(..),
+	catchJust,
+	handle,
+	handleJust,
+	try,		-- :: Exception e => IO a -> IO (Either e a)
+	tryJust,
+	evaluate,	-- :: a -> IO a
+	mapException,
+	-- * Asynchronous exceptions
+	-- | Cupid's threads are not preemptive and cannot be interrupted by
+	-- another, so masking does nothing.
+	mask, mask_,
+	uninterruptibleMask, uninterruptibleMask_,
+	MaskingState(..), getMaskingState,
+	interruptible, allowInterrupt,
+	block, unblock,
 	-- * Assertions
-
 	assert,		-- :: Bool -> a -> a
-
 	-- * Utilities
-
-	bracket,  	-- :: IO a -> (a -> IO b) -> (a -> IO c) -> IO ()
-	bracket_, 	-- :: IO a -> IO b -> IO c -> IO ()
+	bracket,	-- :: IO a -> (a -> IO b) -> (a -> IO c) -> IO c
+	bracket_,	-- :: IO a -> IO b -> IO c -> IO c
 	bracketOnError,
-
-	finally, 	-- :: IO a -> IO b -> IO a
-	
-
-
-
-
+	finally,	-- :: IO a -> IO b -> IO a
+	onException,	-- :: IO a -> IO b -> IO a
+	-- * The exceptions of the 2006 library
+	throwDyn, catchDyn
   ) where
 
-
-
-
-
-
-
-
-
-
-
-import Cupid.Exception	as ExceptionBase
-
-
-import Prelude 		hiding ( catch )
-import System.IO.Error	hiding ( catch, try )
+import Prelude
+import qualified Cupid.Prelude as Old
+import Cupid.Prelude (IOException, ArithException(..), ArrayException(..),
+	AsyncException(..), ExitCode(..), Dynamic)
+import qualified Cupid.Exception as Old (catchException, evaluate)
+import Data.Dynamic (toDyn, fromDynamic)
+import Data.Typeable (Typeable, cast)
 import System.IO.Unsafe (unsafePerformIO)
-import Data.Dynamic
 
------------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------
+-- The Exception class
+
+-- | Any exception, the root of the hierarchy of exception types.
+data SomeException = forall e . Exception e => SomeException e
+
+instance Show SomeException where
+	showsPrec p (SomeException e) = showsPrec p e
+
+-- | The class of types that can be thrown and caught.  An empty instance
+-- makes a type an exception at the top of the hierarchy; 'toException'
+-- and 'fromException' can be defined to put it lower.
+class (Typeable e, Show e) => Exception e where
+	toException   :: e -> SomeException
+	fromException :: SomeException -> Maybe e
+	-- | The message for an exception that nothing catches.
+	displayException :: e -> String
+
+	toException = SomeException
+	fromException (SomeException e) = cast e
+	displayException = show
+
+instance Exception SomeException where
+	toException se = se
+	fromException = Just
+	displayException (SomeException e) = displayException e
+
+-- ---------------------------------------------------------------------------
+-- The exceptions of the interpreter and the libraries
+
+-- They show as the exception type underneath shows them, so that a caught
+-- exception reads as an uncaught one is reported.
+showTagged :: String -> String -> ShowS
+showTagged tag msg =
+	showString tag . (if null msg then id else showString ": " . showString msg)
+
+instance Exception IOException
+instance Exception ArithException
+instance Exception ArrayException
+instance Exception ExitCode
+
+-- | Raised by 'assert'.
+newtype AssertionFailed = AssertionFailed String
+
+instance Show AssertionFailed where
+	showsPrec _ (AssertionFailed err) = showTagged "assertion failed" err
+
+instance Exception AssertionFailed
+
+-- | The superclass of asynchronous exceptions.
+data SomeAsyncException = forall e . Exception e => SomeAsyncException e
+
+instance Show SomeAsyncException where
+	showsPrec p (SomeAsyncException e) = showsPrec p e
+
+instance Exception SomeAsyncException
+
+-- | 'toException' for an asynchronous exception.
+asyncExceptionToException :: Exception e => e -> SomeException
+asyncExceptionToException = toException . SomeAsyncException
+
+-- | 'fromException' for an asynchronous exception.
+asyncExceptionFromException :: Exception e => SomeException -> Maybe e
+asyncExceptionFromException x = do
+	SomeAsyncException a <- fromException x
+	cast a
+
+instance Exception AsyncException where
+	toException = asyncExceptionToException
+	fromException = asyncExceptionFromException
+
+-- | An expression that the interpreter found to loop.
+data NonTermination = NonTermination
+
+instance Show NonTermination where
+	showsPrec _ NonTermination = showString "<<loop>>"
+
+instance Exception NonTermination
+
+-- | A thread waits on an 'MVar' that nothing will fill.
+data BlockedIndefinitelyOnMVar = BlockedIndefinitelyOnMVar
+
+instance Show BlockedIndefinitelyOnMVar where
+	showsPrec _ BlockedIndefinitelyOnMVar =
+		showString "thread blocked indefinitely in an MVar operation"
+
+instance Exception BlockedIndefinitelyOnMVar
+
+-- | Every thread is blocked.
+data Deadlock = Deadlock
+
+instance Show Deadlock where
+	showsPrec _ Deadlock = showString "<<deadlock>>"
+
+instance Exception Deadlock
+
+-- | A class method with no definition was called.
+newtype NoMethodError = NoMethodError String
+
+instance Show NoMethodError where
+	showsPrec _ (NoMethodError err) = showTagged "undefined member" err
+
+instance Exception NoMethodError
+
+-- | No pattern matched.
+newtype PatternMatchFail = PatternMatchFail String
+
+instance Show PatternMatchFail where
+	showsPrec _ (PatternMatchFail err) = showTagged "pattern match failure" err
+
+instance Exception PatternMatchFail
+
+-- | A record was built without a strict field.
+newtype RecConError = RecConError String
+
+instance Show RecConError where
+	showsPrec _ (RecConError err) = showTagged "undefined field" err
+
+instance Exception RecConError
+
+-- | A field was selected from a constructor without it.
+newtype RecSelError = RecSelError String
+
+instance Show RecSelError where
+	showsPrec _ (RecSelError err) = showTagged "select of missing field" err
+
+instance Exception RecSelError
+
+-- | A field was updated in a constructor without it.
+newtype RecUpdError = RecUpdError String
+
+instance Show RecUpdError where
+	showsPrec _ (RecUpdError err) = showTagged "update of missing field" err
+
+instance Exception RecUpdError
+
+-- | Raised by 'error'.
+newtype ErrorCall = ErrorCall String
+	deriving (Eq, Ord)
+
+instance Show ErrorCall where
+	showsPrec _ (ErrorCall err) = showString err
+
+instance Exception ErrorCall
+
+-- | A type error deferred to run time.  Cupid reports type errors when
+-- it loads a module, so it never raises one.
+newtype TypeError = TypeError String
+
+instance Show TypeError where
+	showsPrec _ (TypeError err) = showString err
+
+instance Exception TypeError
+
+-- An exception of the 2006 library's throwDyn, which no other type fits.
+newtype DynException = DynException Dynamic
+
+instance Show DynException where
+	showsPrec _ _ = showString "unknown exception"
+
+instance Exception DynException
+
+-- ---------------------------------------------------------------------------
+-- The exception type underneath
+
+-- What 'throw' raises: the interpreter's own exceptions as themselves, so
+-- that the top level reports them and the interpreter's handlers know
+-- them, and any other in UserException.
+toOld :: SomeException -> Old.Exception
+toOld se
+	| Just (ErrorCall s) <- fromException se         = Old.ErrorCall s
+	| Just e <- fromException se                      = Old.IOException e
+	| Just e <- fromException se                      = Old.ArithException e
+	| Just e <- fromException se                      = Old.ArrayException e
+	| Just e <- fromException se                      = Old.AsyncException e
+	| Just c <- fromException se                      = Old.ExitException c
+	| Just (AssertionFailed s) <- fromException se   = Old.AssertionFailed s
+	| Just (PatternMatchFail s) <- fromException se  = Old.PatternMatchFail s
+	| Just (NoMethodError s) <- fromException se     = Old.NoMethodError s
+	| Just (RecConError s) <- fromException se       = Old.RecConError s
+	| Just (RecSelError s) <- fromException se       = Old.RecSelError s
+	| Just (RecUpdError s) <- fromException se       = Old.RecUpdError s
+	| Just NonTermination <- fromException se        = Old.NonTermination
+	| Just Deadlock <- fromException se              = Old.Deadlock
+	| Just BlockedIndefinitelyOnMVar <- fromException se = Old.BlockedOnDeadMVar
+	| Just (DynException d) <- fromException se      = Old.DynException d
+	| otherwise = Old.UserException (displaySome se) (toDyn se)
+  where
+	displaySome (SomeException e) = displayException e
+
+-- What 'catch' is given, the inverse of toOld.
+fromOld :: Old.Exception -> SomeException
+fromOld ex = case ex of
+	Old.ArithException e    -> toException e
+	Old.ArrayException e    -> toException e
+	Old.AssertionFailed s   -> toException (AssertionFailed s)
+	Old.AsyncException e    -> toException e
+	Old.BlockedOnDeadMVar   -> toException BlockedIndefinitelyOnMVar
+	Old.Deadlock            -> toException Deadlock
+	Old.DynException d      -> toException (DynException d)
+	Old.ErrorCall s         -> toException (ErrorCall s)
+	Old.ExitException c     -> toException c
+	Old.IOException e       -> toException e
+	Old.NoMethodError s     -> toException (NoMethodError s)
+	Old.NonTermination      -> toException NonTermination
+	Old.PatternMatchFail s  -> toException (PatternMatchFail s)
+	Old.RecConError s       -> toException (RecConError s)
+	Old.RecSelError s       -> toException (RecSelError s)
+	Old.RecUpdError s       -> toException (RecUpdError s)
+	Old.UserException s d   -> case fromDynamic d of
+		Just se -> se
+		Nothing -> toException (ErrorCall s)
+
+-- ---------------------------------------------------------------------------
+-- Throwing exceptions
+
+-- | Throw an exception from pure code.
+throw :: Exception e => e -> a
+throw e = Old.throw (toOld (toException e))
+
+-- | Throw an exception in the 'IO' monad, ordered with respect to the
+-- other actions, unlike @'evaluate' . 'throw'@.
+throwIO :: Exception e => e -> IO a
+throwIO e = Old.IO (\_ -> throw e)
+
+-- ---------------------------------------------------------------------------
 -- Catching exceptions
 
--- |This is the simplest of the exception-catching functions.  It
--- takes a single argument, runs it, and if an exception is raised
--- the \"handler\" is executed, with the value of the exception passed as an
--- argument.  Otherwise, the result is returned as normal.  For example:
---
--- >   catch (openFile f ReadMode) 
--- >       (\e -> hPutStr stderr ("Couldn't open "++f++": " ++ show e))
---
--- For catching exceptions in pure (non-'IO') expressions, see the
--- function 'evaluate'.
---
--- Note that due to Haskell\'s unspecified evaluation order, an
--- expression may return one of several possible exceptions: consider
--- the expression @error \"urk\" + 1 \`div\` 0@.  Does
--- 'catch' execute the handler passing
--- @ErrorCall \"urk\"@, or @ArithError DivideByZero@?
---
--- The answer is \"either\": 'catch' makes a
--- non-deterministic choice about which exception to catch.  If you
--- call it again, you might get a different exception back.  This is
--- ok, because 'catch' is an 'IO' computation.
---
--- Note that 'catch' catches all types of exceptions, and is generally
--- used for \"cleaning up\" before passing on the exception using
--- 'throwIO'.  It is not good practice to discard the exception and
--- continue, without first checking the type of the exception (it
--- might be a 'ThreadKilled', for example).  In this case it is usually better
--- to use 'catchJust' and select the kinds of exceptions to catch.
---
--- Also note that the "Prelude" also exports a function called
--- 'Prelude.catch' with a similar type to 'Control.Exception.catch',
--- except that the "Prelude" version only catches the IO and user
--- families of exceptions (as required by Haskell 98).  
---
--- We recommend either hiding the "Prelude" version of 'Prelude.catch'
--- when importing "Control.Exception": 
---
--- > import Prelude hiding (catch)
---
--- or importing "Control.Exception" qualified, to avoid name-clashes:
---
--- > import qualified Control.Exception as C
---
--- and then using @C.catch@
---
+-- | Run an action, handing an exception of type @e@ that it throws to the
+-- handler; one of any other type passes through.
+catch :: Exception e => IO a -> (e -> IO a) -> IO a
+catch act h = Old.catchException act $ \old ->
+	case fromException (fromOld old) of
+		Just e  -> h e
+		Nothing -> Old.throw old
 
-catch  	:: IO a 		-- ^ The computation to run
-  	-> (Exception -> IO a)	-- ^ Handler to invoke if an exception is raised
-  	-> IO a			
-catch =  ExceptionBase.catchException
+-- | A handler for 'catches'.
+data Handler a = forall e . Exception e => Handler (e -> IO a)
 
--- | The function 'catchJust' is like 'catch', but it takes an extra
--- argument which is an /exception predicate/, a function which
--- selects which type of exceptions we\'re interested in.  There are
--- some predefined exception predicates for useful subsets of
--- exceptions: 'ioErrors', 'arithExceptions', and so on.  For example,
--- to catch just calls to the 'error' function, we could use
---
--- >   result <- catchJust errorCalls thing_to_try handler
---
--- Any other exceptions which are not matched by the predicate
--- are re-raised, and may be caught by an enclosing
--- 'catch' or 'catchJust'.
-catchJust
-	:: (Exception -> Maybe b) -- ^ Predicate to select exceptions
-	-> IO a		 	  -- ^ Computation to run
-	-> (b -> IO a)		  -- ^ Handler
-	-> IO a
-catchJust p a handler = catch a handler'
-  where handler' e = case p e of 
-			Nothing -> throw e
-			Just b  -> handler b
+instance Functor Handler where
+	fmap f (Handler h) = Handler (fmap f . h)
 
--- | A version of 'catch' with the arguments swapped around; useful in
--- situations where the code for the handler is shorter.  For example:
---
--- >   do handle (\e -> exitWith (ExitFailure 1)) $
--- >	  ...
-handle	   :: (Exception -> IO a) -> IO a -> IO a
-handle     =  flip catch
+-- | Catch with the first of several handlers whose type the exception has.
+catches :: IO a -> [Handler a] -> IO a
+catches act handlers = Old.catchException act $ \old ->
+	let se = fromOld old
+	    try1 (Handler h) rest = case fromException se of
+		Just e  -> h e
+		Nothing -> rest
+	in foldr try1 (Old.throw old) handlers
 
--- | A version of 'catchJust' with the arguments swapped around (see
--- 'handle').
-handleJust :: (Exception -> Maybe b) -> (b -> IO a) -> IO a -> IO a
-handleJust p =  flip (catchJust p)
+-- | 'catch' with a predicate that selects the exceptions to handle.
+catchJust :: Exception e => (e -> Maybe b) -> IO a -> (b -> IO a) -> IO a
+catchJust p act handler = catch act handler'
+  where
+	handler' e = case p e of
+		Nothing -> throwIO e
+		Just b  -> handler b
 
------------------------------------------------------------------------------
--- 'mapException'
+-- | 'catch' with its arguments flipped.
+handle :: Exception e => (e -> IO a) -> IO a -> IO a
+handle = flip catch
 
--- | This function maps one exception into another as proposed in the
--- paper \"A semantics for imprecise exceptions\".
+-- | 'catchJust' with its handler first.
+handleJust :: Exception e => (e -> Maybe b) -> (b -> IO a) -> IO a -> IO a
+handleJust p = flip (catchJust p)
 
--- Notice that the usage of 'unsafePerformIO' is safe here.
+-- | Run an action, returning the exception of type @e@ it throws, if any.
+try :: Exception e => IO a -> IO (Either e a)
+try act = catch (act >>= \v -> return (Right v)) (\e -> return (Left e))
 
-mapException :: (Exception -> Exception) -> a -> a
-mapException f v = unsafePerformIO (catch (evaluate v)
-                                          (\x -> throw (f x)))
-
------------------------------------------------------------------------------
--- 'try' and variations.
-
--- | Similar to 'catch', but returns an 'Either' result which is
--- @('Right' a)@ if no exception was raised, or @('Left' e)@ if an
--- exception was raised and its value is @e@.
---
--- >  try a = catch (Right `liftM` a) (return . Left)
---
--- Note: as with 'catch', it is only polite to use this variant if you intend
--- to re-throw the exception after performing whatever cleanup is needed.
--- Otherwise, 'tryJust' is generally considered to be better.
---
--- Also note that "System.IO.Error" also exports a function called
--- 'System.IO.Error.try' with a similar type to 'Control.Exception.try',
--- except that it catches only the IO and user families of exceptions
--- (as required by the Haskell 98 @IO@ module).
-
-try :: IO a -> IO (Either Exception a)
-try a = catch (a >>= \ v -> return (Right v)) (\e -> return (Left e))
-
--- | A variant of 'try' that takes an exception predicate to select
--- which exceptions are caught (c.f. 'catchJust').  If the exception
--- does not match the predicate, it is re-thrown.
-tryJust :: (Exception -> Maybe b) -> IO a -> IO (Either b a)
-tryJust p a = do
-  r <- try a
-  case r of
-	Right v -> return (Right v)
-	Left  e -> case p e of
-			Nothing -> throw e
+-- | 'try' with a predicate that selects the exceptions to return.
+tryJust :: Exception e => (e -> Maybe b) -> IO a -> IO (Either b a)
+tryJust p act = do
+	r <- try act
+	case r of
+		Right v -> return (Right v)
+		Left e  -> case p e of
+			Nothing -> throwIO e
 			Just b  -> return (Left b)
 
------------------------------------------------------------------------------
--- Dynamic exceptions
+-- | Evaluate a value to weak head normal form, raising any exception
+-- then, in the 'IO' monad.
+evaluate :: a -> IO a
+evaluate = Old.evaluate
 
--- $dynamic
---  #DynamicExceptions# Because the 'Exception' datatype is not extensible, there is an
--- interface for throwing and catching exceptions of type 'Dynamic'
--- (see "Data.Dynamic") which allows exception values of any type in
--- the 'Typeable' class to be thrown and caught.
+-- | Apply a function to the exception, of type @e1@, that a value raises.
+mapException :: (Exception e1, Exception e2) => (e1 -> e2) -> a -> a
+mapException f v = unsafePerformIO (catch (evaluate v) (\x -> throwIO (f x)))
 
--- | Raise any value as an exception, provided it is in the
--- 'Typeable' class.
-throwDyn :: Typeable exception => exception -> b
-throwDyn exception = throw (DynException (toDyn exception))
+-- ---------------------------------------------------------------------------
+-- Asynchronous exceptions
 
+-- | Whether asynchronous exceptions can interrupt the current thread.
+data MaskingState = Unmasked | MaskedInterruptible | MaskedUninterruptible
+	deriving (Eq, Show)
 
+-- | Run an action with asynchronous exceptions masked, passing it a
+-- function that unmasks them again.  Nothing can interrupt one of
+-- Cupid's threads, so this only runs the action.
+mask :: ((IO a -> IO a) -> IO b) -> IO b
+mask io = io id
 
+mask_ :: IO a -> IO a
+mask_ io = mask (\_ -> io)
 
+uninterruptibleMask :: ((IO a -> IO a) -> IO b) -> IO b
+uninterruptibleMask = mask
 
+uninterruptibleMask_ :: IO a -> IO a
+uninterruptibleMask_ = mask_
 
+getMaskingState :: IO MaskingState
+getMaskingState = return Unmasked
 
+interruptible :: IO a -> IO a
+interruptible act = act
 
--- | Catch dynamic exceptions of the required type.  All other
--- exceptions are re-thrown, including dynamic exceptions of the wrong
--- type.
---
--- When using dynamic exceptions it is advisable to define a new
--- datatype to use for your exception type, to avoid possible clashes
--- with dynamic exceptions used in other libraries.
---
-catchDyn :: Typeable exception => IO a -> (exception -> IO a) -> IO a
-catchDyn m k = catchException m handle
-  where handle ex = case ex of
-  			   (DynException dyn) ->
-		  	  	case fromDynamic dyn of
-				    Just exception  -> k exception
-				    Nothing -> throw ex
-			   _ -> throw ex
+allowInterrupt :: IO ()
+allowInterrupt = return ()
 
------------------------------------------------------------------------------
--- Exception Predicates
+-- | The 2006 names of 'mask_' and of unmasking.
+block, unblock :: IO a -> IO a
+block act = act
+unblock act = act
 
--- $preds
--- These pre-defined predicates may be used as the first argument to
--- 'catchJust', 'tryJust', or 'handleJust' to select certain common
--- classes of exceptions.
+-- ---------------------------------------------------------------------------
+-- Assertions
 
-ioErrors		:: Exception -> Maybe IOError
-arithExceptions 	:: Exception -> Maybe ArithException
-errorCalls		:: Exception -> Maybe String
-assertions		:: Exception -> Maybe String
-dynExceptions		:: Exception -> Maybe Dynamic
-asyncExceptions 	:: Exception -> Maybe AsyncException
-userErrors		:: Exception -> Maybe String
+-- | @'assert' p x@ is @x@ if @p@ holds; Cupid does not check assertions.
+assert :: Bool -> a -> a
+assert _ x = x
 
-ioErrors (IOException e) = Just e
-ioErrors _ = Nothing
+-- ---------------------------------------------------------------------------
+-- Utilities
 
-arithExceptions (ArithException e) = Just e
-arithExceptions _ = Nothing
+-- | Acquire a resource, use it, and release it however the use ends.
+bracket :: IO a -> (a -> IO b) -> (a -> IO c) -> IO c
+bracket before after thing = mask $ \restore -> do
+	a <- before
+	r <- restore (thing a) `onException` after a
+	_ <- after a
+	return r
 
-errorCalls (ErrorCall e) = Just e
-errorCalls _ = Nothing
+-- | Run an action, and then the other however the first ends.
+finally :: IO a -> IO b -> IO a
+a `finally` sequel = mask $ \restore -> do
+	r <- restore a `onException` sequel
+	_ <- sequel
+	return r
 
-assertions (AssertionFailed e) = Just e
-assertions _ = Nothing
-
-dynExceptions (DynException e) = Just e
-dynExceptions _ = Nothing
-
-asyncExceptions (AsyncException e) = Just e
-asyncExceptions _ = Nothing
-
-userErrors (IOException e) | isUserError e = Just (ioeGetErrorString e)
-userErrors _ = Nothing
-
------------------------------------------------------------------------------
--- Some Useful Functions
-
--- | When you want to acquire a resource, do some work with it, and
--- then release the resource, it is a good idea to use 'bracket',
--- because 'bracket' will install the necessary exception handler to
--- release the resource in the event that an exception is raised
--- during the computation.  If an exception is raised, then 'bracket' will 
--- re-raise the exception (after performing the release).
---
--- A common example is opening a file:
---
--- > bracket
--- >   (openFile "filename" ReadMode)
--- >   (hClose)
--- >   (\handle -> do { ... })
---
--- The arguments to 'bracket' are in this order so that we can partially apply 
--- it, e.g.:
---
--- > withFile name = bracket (openFile name) hClose
---
-bracket 
-	:: IO a		-- ^ computation to run first (\"acquire resource\")
-	-> (a -> IO b)  -- ^ computation to run last (\"release resource\")
-	-> (a -> IO c)	-- ^ computation to run in-between
-	-> IO c		-- returns the value from the in-between computation
-bracket before after thing =
-  block (do
-    a <- before 
-    r <- catch 
-	   (unblock (thing a))
-	   (\e -> do { after a; throw e })
-    after a
-    return r
- )
-   
-
--- | A specialised variant of 'bracket' with just a computation to run
--- afterward.
--- 
-finally :: IO a		-- ^ computation to run first
-	-> IO b		-- ^ computation to run afterward (even if an exception 
-			-- was raised)
-	-> IO a		-- returns the value from the first computation
-a `finally` sequel =
-  block (do
-    r <- catch 
-	     (unblock a)
-	     (\e -> do { sequel; throw e })
-    sequel
-    return r
-  )
-
--- | A variant of 'bracket' where the return value from the first computation
--- is not required.
+-- | 'bracket' with the resource unused.
 bracket_ :: IO a -> IO b -> IO c -> IO c
 bracket_ before after thing = bracket before (const after) (const thing)
 
--- | Like bracket, but only performs the final action if there was an 
--- exception raised by the in-between computation.
-bracketOnError
-	:: IO a		-- ^ computation to run first (\"acquire resource\")
-	-> (a -> IO b)  -- ^ computation to run last (\"release resource\")
-	-> (a -> IO c)	-- ^ computation to run in-between
-	-> IO c		-- returns the value from the in-between computation
-bracketOnError before after thing =
-  block (do
-    a <- before 
-    catch 
-	(unblock (thing a))
-	(\e -> do { after a; throw e })
- )
+-- | 'bracket' that releases the resource only if the use throws.
+bracketOnError :: IO a -> (a -> IO b) -> (a -> IO c) -> IO c
+bracketOnError before after thing = mask $ \restore -> do
+	a <- before
+	restore (thing a) `onException` after a
 
--- -----------------------------------------------------------------------------
--- Asynchronous exceptions
+-- | Run the second action if the first throws, and throw again.
+onException :: IO a -> IO b -> IO a
+onException io what = Old.catchException io $ \old -> do
+	_ <- what
+	Old.throw old
 
-{- $async
+-- ---------------------------------------------------------------------------
+-- The exceptions of the 2006 library
 
- #AsynchronousExceptions# Asynchronous exceptions are so-called because they arise due to
-external influences, and can be raised at any point during execution.
-'StackOverflow' and 'HeapOverflow' are two examples of
-system-generated asynchronous exceptions.
+-- | Throw a value of any 'Typeable' type.
+throwDyn :: Typeable e => e -> b
+throwDyn e = Old.throw (Old.DynException (toDyn e))
 
-The primary source of asynchronous exceptions, however, is
-'throwTo':
-
->  throwTo :: ThreadId -> Exception -> IO ()
-
-'throwTo' (also 'throwDynTo' and 'Control.Concurrent.killThread') allows one
-running thread to raise an arbitrary exception in another thread.  The
-exception is therefore asynchronous with respect to the target thread,
-which could be doing anything at the time it receives the exception.
-Great care should be taken with asynchronous exceptions; it is all too
-easy to introduce race conditions by the over zealous use of
-'throwTo'.
--}
-
-{- $block_handler
-There\'s an implied 'block' around every exception handler in a call
-to one of the 'catch' family of functions.  This is because that is
-what you want most of the time - it eliminates a common race condition
-in starting an exception handler, because there may be no exception
-handler on the stack to handle another exception if one arrives
-immediately.  If asynchronous exceptions are blocked on entering the
-handler, though, we have time to install a new exception handler
-before being interrupted.  If this weren\'t the default, one would have
-to write something like
-
->      block (
->           catch (unblock (...))
->                      (\e -> handler)
->      )
-
-If you need to unblock asynchronous exceptions again in the exception
-handler, just use 'unblock' as normal.
-
-Note that 'try' and friends /do not/ have a similar default, because
-there is no exception handler in this case.  If you want to use 'try'
-in an asynchronous-exception-safe way, you will need to use
-'block'.
--}
-
-{- $interruptible
-
-Some operations are /interruptible/, which means that they can receive
-asynchronous exceptions even in the scope of a 'block'.  Any function
-which may itself block is defined as interruptible; this includes
-'Control.Concurrent.MVar.takeMVar'
-(but not 'Control.Concurrent.MVar.tryTakeMVar'),
-and most operations which perform
-some I\/O with the outside world.  The reason for having
-interruptible operations is so that we can write things like
-
->      block (
->         a <- takeMVar m
->         catch (unblock (...))
->               (\e -> ...)
->      )
-
-if the 'Control.Concurrent.MVar.takeMVar' was not interruptible,
-then this particular
-combination could lead to deadlock, because the thread itself would be
-blocked in a state where it can\'t receive any asynchronous exceptions.
-With 'Control.Concurrent.MVar.takeMVar' interruptible, however, we can be
-safe in the knowledge that the thread can receive exceptions right up
-until the point when the 'Control.Concurrent.MVar.takeMVar' succeeds.
-Similar arguments apply for other interruptible operations like
-'System.IO.openFile'.
--}
-
-
-assert :: Bool -> a -> a
-assert True x = x
-assert False _ = throw (AssertionFailed "")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- | Catch a value that 'throwDyn' threw.
+catchDyn :: Typeable e => IO a -> (e -> IO a) -> IO a
+catchDyn m k = Old.catchException m h
+  where
+	h ex@(Old.DynException dyn) = case fromDynamic dyn of
+		Just e  -> k e
+		Nothing -> Old.throw ex
+	h ex = Old.throw ex

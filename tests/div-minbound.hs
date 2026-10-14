@@ -5,15 +5,15 @@ import Control.Exception
 
 main :: IO ()
 main = do
-  r1 <- try (evaluate ((minBound::Int) `quot` (-1))) :: IO (Either Exception Int)
+  r1 <- try (evaluate ((minBound::Int) `quot` (-1))) :: IO (Either SomeException Int)
   print r1
-  r2 <- try (evaluate ((minBound::Int) `div` (-1))) :: IO (Either Exception Int)
+  r2 <- try (evaluate ((minBound::Int) `div` (-1))) :: IO (Either SomeException Int)
   print r2
   print ((minBound::Int) `rem` (-1))
   print ((minBound::Int) `mod` (-1))
-  r3 <- try (evaluate ((minBound::Int) `quotRem` (-1))) :: IO (Either Exception (Int,Int))
+  r3 <- try (evaluate ((minBound::Int) `quotRem` (-1))) :: IO (Either SomeException (Int,Int))
   print r3
-  r4 <- try (evaluate ((minBound::Int) `divMod` (-1))) :: IO (Either Exception (Int,Int))
+  r4 <- try (evaluate ((minBound::Int) `divMod` (-1))) :: IO (Either SomeException (Int,Int))
   print r4
   -- ordinary cases must still work
   print ((7::Int) `div` 2, (7::Int) `mod` 2, (7::Int) `quot` 2, (7::Int) `rem` 2)

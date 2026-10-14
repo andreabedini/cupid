@@ -13,6 +13,7 @@ import Interact
 import Subst
 import StackEngine
 import Data.List (nub)
+import System.IO.Error (catchIOError)
 
 --- Command structure and parsing:
 
@@ -48,7 +49,7 @@ readLibrary lib   = do is <- readFile lib
                            reading = ['.'| c <- clauses] ++ "done\n"
                        putStr reading
 		       return clauses
-		    `catch` \err ->
+		    `catchIOError` \err ->
                     do putStr "...not found\n"
                        return []
 

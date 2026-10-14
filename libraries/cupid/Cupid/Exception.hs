@@ -45,6 +45,7 @@ instance Eq Exception where
   RecConError e1      == RecConError e2      = e1 == e2
   RecSelError e1      == RecSelError e2      = e1 == e2
   RecUpdError e1      == RecUpdError e2      = e1 == e2
+  UserException _ _   == UserException _ _   = False -- incomparable
   _                   == _                   = False
 
 ----------------------------------------------------------------

@@ -148,6 +148,10 @@ product, sum, null, length)` and
 `Data.Foldable`, `Data.Traversable` and `Control.Monad` export the same
 functions, so a module may import all of them unqualified.
 
+**The Prelude does not export `catch`,** as GHC's has not since 7.6:
+`Control.Exception.catch` catches any exception and
+`System.IO.Error.catchIOError` only an `IOError`.
+
 **`Monoid` has `Semigroup` as its superclass,** and `mappend`
 defaults to `(<>)`; the Prelude exports `Semigroup((<>))` and
 `Monoid(mempty, mappend, mconcat)`.  A `Monoid` instance therefore

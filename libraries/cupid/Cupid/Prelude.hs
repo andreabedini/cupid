@@ -2079,6 +2079,10 @@ data Exception
   | RecConError         String
   | RecSelError         String
   | RecUpdError         String
+  | UserException       String Dynamic
+    -- An exception of a type of Control.Exception's Exception class that
+    -- is none of the above: what displayException makes of it, and the
+    -- SomeException it is, as a Dynamic.
 
 instance Show Exception where
   showsPrec _ (ArithException e)  = shows e
@@ -2097,6 +2101,7 @@ instance Show Exception where
   showsPrec _ (RecConError s)     = showException "undefined field" s
   showsPrec _ (RecSelError s)     = showException "select of missing field" s
   showsPrec _ (RecUpdError s)     = showException "update of missing field" s
+  showsPrec _ (UserException s _) = showString s
 
 data ArithException
   = Overflow

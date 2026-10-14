@@ -31,7 +31,7 @@ import Data.Maybe	( fromMaybe )
 import Cupid.Exception	( Exception(..), IOException(..) )
 
 import Control.Concurrent
-import Control.Exception ( handle, throwIO )
+import System.IO.Error ( catchIOError )
 import Foreign.C
 import Foreign
 
@@ -72,10 +72,9 @@ defaultSignal = const_SIG_DFL :: CLong
 -- Utils
 
 withFilePathException :: FilePath -> IO a -> IO a
-withFilePathException fpath act = handle mapEx act
+withFilePathException fpath act = catchIOError act mapEx
   where
-    mapEx (IOException (IOError h iot fun str _)) = ioError (IOError h iot fun str (Just fpath))
-    mapEx e                                       = throwIO e
+    mapEx (IOError h iot fun str _) = ioError (IOError h iot fun str (Just fpath))
 
 withCEnvironment :: [(String,String)] -> (Ptr CString  -> IO a) -> IO a
 withCEnvironment env act =

@@ -5,6 +5,7 @@
 module Main where
 
 import qualified Control.Monad.Fail as Fail
+import System.IO.Error (catchIOError)
 
 firsts :: [Maybe Int] -> [Int]
 firsts xs = do
@@ -52,6 +53,6 @@ main :: IO ()
 main = do
     print (firsts [Just 1, Nothing, Just 3])
     print pairs
-    r <- fmap show failIO `catch` \e -> return ("IO failed: " ++ show e)
+    r <- fmap show failIO `catchIOError` \e -> return ("IO failed: " ++ show e)
     putStrLn r
     print (runParser digit "7up", runParser digit "up")

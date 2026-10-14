@@ -80,8 +80,7 @@ withMVar :: MVar a -> (a -> IO b) -> IO b
 withMVar m io = 
   block $ do
     a <- takeMVar m
-    b <- Exception.catch (unblock (io a))
-      	    (\e -> do putMVar m a; throw e)
+    b <- unblock (io a) `onException` putMVar m a
     putMVar m a
     return b
 
@@ -95,8 +94,7 @@ modifyMVar_ :: MVar a -> (a -> IO a) -> IO ()
 modifyMVar_ m io = 
   block $ do
     a  <- takeMVar m
-    a' <- Exception.catch (unblock (io a))
-      	    (\e -> do putMVar m a; throw e)
+    a' <- unblock (io a) `onException` putMVar m a
     putMVar m a'
 
 {-|
@@ -108,7 +106,6 @@ modifyMVar :: MVar a -> (a -> IO (a,b)) -> IO b
 modifyMVar m io = 
   block $ do
     a      <- takeMVar m
-    (a',b) <- Exception.catch (unblock (io a))
-      	        (\e -> do putMVar m a; throw e)
+    (a',b) <- unblock (io a) `onException` putMVar m a
     putMVar m a'
     return b

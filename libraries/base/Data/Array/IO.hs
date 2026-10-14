@@ -234,7 +234,7 @@ hGetArray handle arr count = do
  where
   get i | i == count = return i
 	| otherwise = do
-		error_or_c <- try (hGetChar handle)
+		error_or_c <- tryIOError (hGetChar handle)
 		case error_or_c of
 		    Left ex
 			| isEOFError ex -> return i

@@ -80,8 +80,8 @@ module System.IO.Error (
 
     ioError,		       	-- :: IOError -> IO a
 
-    catch,			-- :: IO a -> (IOError -> IO a) -> IO a
-    try,			-- :: IO a -> IO (Either IOError a)
+    catchIOError,		-- :: IO a -> (IOError -> IO a) -> IO a
+    tryIOError,			-- :: IO a -> IO (Either IOError a)
 
 
     modifyIOError,		-- :: (IOError -> IOError) -> IO a -> IO a
@@ -100,6 +100,7 @@ import Data.Maybe
 
 
 import Cupid.Prelude(Handle, IOException(..), IOErrorType(..))
+import qualified Cupid.Prelude (catch)
 
 
 
@@ -131,10 +132,15 @@ import Cupid.Prelude(Handle, IOException(..), IOErrorType(..))
 -- exceptions, use 'Control.Exception.try' from "Control.Exception".
 
 
-try            :: IO a -> IO (Either IOError a)
-try f          =  catch (do r <- f
-                            return (Right r))
-                        (return . Left)
+-- | Catch an 'IOError', and only that: Control.Exception's 'catch' takes
+-- an exception of any type.
+catchIOError   :: IO a -> (IOError -> IO a) -> IO a
+catchIOError   =  Cupid.Prelude.catch
+
+-- | Run an action, returning the 'IOError' it raises if it raises one.
+tryIOError     :: IO a -> IO (Either IOError a)
+tryIOError f   =  catchIOError (do { r <- f; return (Right r) })
+                               (return . Left)
 
 
 
@@ -347,7 +353,7 @@ ioeSetFileName    ioe filename = ioe{ ioe_filename = Just filename }
 -- | Catch any 'IOError' that occurs in the computation and throw a
 -- modified version.
 modifyIOError :: (IOError -> IOError) -> IO a -> IO a
-modifyIOError f io = catch io (\e -> ioError (f e))
+modifyIOError f io = catchIOError io (\e -> ioError (f e))
 
 -- -----------------------------------------------------------------------------
 -- annotating an IOError

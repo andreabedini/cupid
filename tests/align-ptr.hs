@@ -5,9 +5,9 @@ import Control.Exception
 
 main :: IO ()
 main = do
-  r0 <- try (evaluate (alignPtr nullPtr 0)) :: IO (Either Exception (Ptr ()))
+  r0 <- try (evaluate (alignPtr nullPtr 0)) :: IO (Either SomeException (Ptr ()))
   print r0
-  rNeg <- try (evaluate (alignPtr nullPtr (-8))) :: IO (Either Exception (Ptr ()))
+  rNeg <- try (evaluate (alignPtr nullPtr (-8))) :: IO (Either SomeException (Ptr ()))
   print rNeg
   -- ordinary alignment still works
   print (alignPtr (nullPtr `plusPtr` 3) 4 == nullPtr `plusPtr` 4)

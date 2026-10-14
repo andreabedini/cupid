@@ -47,6 +47,32 @@ functions added to them since, such as `Data.List.intercalate`,
   class has no `readPrec`, and `Eq1` and its kin have no quantified
   superclasses, so `Eq1 f` does not give `Eq (f a)`.
 
+## Exceptions
+
+`Control.Exception` has the `Exception` class of GHC's base, with
+`SomeException`, `throw`, `throwIO`, `catch`, `catches`, `try`,
+`bracket`, `finally`, `onException` and the exception types the
+interpreter raises: `ErrorCall` for `error`, `ArithException`,
+`PatternMatchFail` and the rest.  Since every type is `Typeable` (see
+[the extensions](extensions.md#typeable-for-every-type)), an empty
+instance makes a type an exception:
+
+```haskell
+data BankError = InsufficientFunds Int deriving Show
+instance Exception BankError
+```
+
+One that nothing catches is reported with its `displayException`, after
+`Program error:`, and the program exits with status 1.  Four things
+differ from GHC's:
+
+- Cupid's threads cannot be interrupted, so there are no asynchronous
+  exceptions to mask: `mask` and its kin only run the action, and there
+  is no `throwTo`.
+- `assert` does not check its condition.
+- `ErrorCall` is a single constructor, with no source location.
+- `catchDyn` and `throwDyn`, from the 2006 library, remain.
+
 ## Modules with foreign imports
 
 Nine modules call C through the FFI.  Their stubs are compiled by

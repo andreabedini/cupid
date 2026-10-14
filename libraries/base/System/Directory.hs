@@ -335,7 +335,7 @@ removeDirectoryRecursive startLoc = do
   removeDirectory startLoc
   where
     rm :: FilePath -> IO ()
-    rm f = do temp <- try (removeFile f)
+    rm f = do temp <- tryIOError (removeFile f)
               case temp of
                 Left e  -> do isDir <- doesDirectoryExist f
                               -- If f is not a directory, re-throw the error
@@ -543,7 +543,7 @@ copyFile :: FilePath -> FilePath -> IO ()
 copyFile fromFPath toFPath =
 
 	do readFile fromFPath >>= writeFile toFPath
-	   try (copyPermissions fromFPath toFPath)
+	   tryIOError (copyPermissions fromFPath toFPath)
 	   return ()
 
 
@@ -1027,7 +1027,7 @@ getTemporaryDirectory = do
 
 
 
-  catch (getEnv "TMPDIR") (\ex -> return "/tmp")
+  catchIOError (getEnv "TMPDIR") (\ex -> return "/tmp")
 
 
 
