@@ -1,0 +1,9 @@
+runcupid: Error occurred
+ERROR "deriving-context-depth.hs":12 - 
+*** Cannot derive C (L a): its context is still reducing at depth 40.
+*** This may indicate that the problem is undecidable.  However,
+*** you may still try to increase the cutoff limit using the -c
+*** option and then try again.  (The current setting is -c40)
+
+
+

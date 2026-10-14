@@ -223,50 +223,54 @@ static void initDerInst(Inst in) {
     }
     fst(snd(spcs)) = appendOnto(fst(snd(spcs)), singleton(NIL));
     for (spcs = snd(snd(spcs)); nonNull(spcs); spcs = tl(spcs)) {
-        hd(spcs) = ap2(instRec(in)->c, hd(spcs), mkInt(beta));
+        hd(spcs) = triple(ap(instRec(in)->c, hd(spcs)), mkInt(beta), mkInt(0));
     }
     instRec(in)->numSpecifics = beta;
 }
 
-/* Calculate next approximation of the context for a derived instance */
+/* Calculate next approximation of the context for a derived instance.  The
+ * work list ps holds class predicates, as triples (pi,o,d) where d is the
+ * depth of reduction pi was reached at, and delayed substitutions.  A
+ * reduction that does not terminate goes ever deeper, so it is the depth
+ * that is bounded by the cutoff, not the number of predicates: reducing
+ * through a generic representation is wide but shallow. */
 static void calcInstPreds(Inst in) {
     List retain = NIL;
     List ps = snd(snd(instRec(in)->specifics));
     List spcs = fst(snd(instRec(in)->specifics));
     int beta = instRec(in)->numSpecifics;
-    int its = 1;
-    int factor = 1 + length(ps);
 
     while (nonNull(ps)) {
         Cell p = hd(ps);
         ps = tl(ps);
 
-        if (its++ >= factor * cutoff) {
-            Cell bpi = instRec(in)->head;
-            errHead(instRec(in)->line);
-            errPrintf("\n*** Cannot derive ");
-            errPred(bpi);
-            errPrintf(" after %d iterations.", its - 1);
-            errPrintf(
-                "\n*** This may indicate that the problem is undecidable.  However,\n");
-            errPrintf(
-                "*** you may still try to increase the cutoff limit using the -c\n");
-            errPrintf(
-                "*** option and then try again.  (The current setting is -c%d)\n",
-                cutoff);
-            errFail();
-        }
         if (isInt(fst(p))) { /* Delayed substitution?   */
             List qs = snd(p);
             for (; nonNull(hd(qs)); qs = tl(qs)) {
-                ps = cons(pair(hd(qs), fst(p)), ps);
+                ps = cons(triple(hd(qs), fst(p), mkInt(0)), ps);
             }
             retain = cons(pair(fst(p), qs), retain);
         } else { /* Class predicate        */
-            Cell pi = fst(p);
-            int o = intOf(snd(p));
+            Cell pi = fst3(p);
+            int o = intOf(snd3(p));
+            int d = intOf(thd3(p));
             int at;
             Inst in1;
+            if (d >= cutoff) {
+                Cell bpi = instRec(in)->head;
+                errHead(instRec(in)->line);
+                errPrintf("\n*** Cannot derive ");
+                errPred(bpi);
+                errPrintf(": its context is still reducing at depth %d.", d);
+                errPrintf(
+                    "\n*** This may indicate that the problem is undecidable.  However,\n");
+                errPrintf(
+                    "*** you may still try to increase the cutoff limit using the -c\n");
+                errPrintf(
+                    "*** option and then try again.  (The current setting is -c%d)\n",
+                    cutoff);
+                errFail();
+            }
             if (isEquality(pi)) { /* from the context of an instance used */
                 Cell bpi = instRec(in)->head;
                 pi = copyPred(pi, o);
@@ -278,18 +282,25 @@ static void calcInstPreds(Inst in) {
                 errPrintf(" in its context\n");
                 errFail();
             }
+            improve1(instRec(in)->line, NIL, pi, o); /* as applyToEvid */
             in1 = findInstFor(pi, o, &at);
             if (nonNull(in1)) {
                 List qs = instRec(in1)->specifics;
                 int off = mkInt(at);
                 if (whatIs(qs) == DERIVE) { /* Still being derived         */
                     for (qs = fst(snd(qs)); nonNull(hd(qs)); qs = tl(qs)) {
-                        ps = cons(pair(hd(qs), off), ps);
+                        ps = cons(triple(hd(qs), off, mkInt(d + 1)), ps);
                     }
                     retain = cons(pair(off, qs), retain);
-                } else { /* Previously def'd inst   */
+                } else {           /* Previously def'd inst   */
+                    List qs1 = qs; /* improve the whole context first: */
+                    for (; nonNull(qs1); qs1 = tl(qs1)) { /* one of its  */
+                        if (!isEquality(hd(qs1))) {       /* preds may fix a */
+                            improve1(instRec(in)->line, NIL, hd(qs1), at);
+                        } /* variable of another, as Generic a r fixes */
+                    } /* the r of GEq r                              */
                     for (; nonNull(qs); qs = tl(qs)) {
-                        ps = cons(pair(hd(qs), off), ps);
+                        ps = cons(triple(hd(qs), off, mkInt(d + 1)), ps);
                     }
                 }
             } else { /* No matching instance       */
