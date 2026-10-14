@@ -59,6 +59,7 @@ PAGE_ORDER = {
         "libraries.md",
     ],
     "explanation": [
+        "design.md",
         "how-cupid-runs-a-program.md",
         "modules-and-the-search-path.md",
         "character-encoding.md",

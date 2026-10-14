@@ -51,6 +51,8 @@ program with `runcupid`.
 
 ## Explanation
 
+- [The design of Cupid](explanation/design.md) — the aim, and the choices
+  in the language, the build and the C code that follow from it
 - [How Cupid runs a program](explanation/how-cupid-runs-a-program.md) —
   the stages from source to result, and where the pieces live
 - [How constraints are solved](explanation/how-constraints-are-solved.md) —

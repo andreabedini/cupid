@@ -85,3 +85,5 @@ be moved with `-Dcupiddir=DIR`; the compiled-in default search path and
 ## See also
 
 - [Build and install Cupid](../how-to/build-and-install.md)
+- [The design of Cupid](../explanation/design.md#platforms-and-the-build)
+  on why nothing is probed

@@ -27,4 +27,12 @@ tree, which enables exactly four checks:
 
 Findings are never auto-fixed: the two checks that looked mechanically
 safe both broke the build when applied automatically.  Read each
-finding against the code it points at.
+finding against the code it points at.  Before acting on one, check
+it against a build with every feature option on (see
+[Check every configuration](check-every-configuration.md)): a finding
+in one configuration can be wrong for the tree.
+
+## See also
+
+- [The design of Cupid](../explanation/design.md#the-c-code) for why the check list
+  is short

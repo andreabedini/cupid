@@ -14,9 +14,6 @@ Cupid is a fork of Hugs 98 — the interpreter Mark P Jones started in
 the September 2006 release, the last one that shipped, and takes it
 somewhere Hugs itself was not going.
 
-The name is a nod to its parent: Hugs was first released on Valentine's
-Day, 14 February 1995.
-
 The aim is one sentence: **a Haskell implementation you can sit down and
 read.**  Not the fastest one, not the most complete one.  The one where
 you can follow an expression from the characters you typed to the value
@@ -44,9 +41,10 @@ you can't read.  So when something has to go, it goes.
 A fair amount of the 2006 tree has already gone: the autoconf build, the
 flag-guarded extensions, the GHC/nhc98 shared library sources and the
 three-stage bootstrap that turned them into something Hugs could load,
-the platforms nobody has run this century.  If you want the
-longer story of where the code came from, that's
-[History](docs/explanation/history.md).
+the platforms nobody has run this century.  None of that was deleted on
+a whim: [The design of Cupid](docs/explanation/design.md) says what
+stayed and why.  If you want the longer story of where the code came
+from, that's [History](docs/explanation/history.md).
 
 It builds and runs.  The code is standard C23 and builds with meson on
 64-bit Linux, macOS and the BSDs.  Windows is supported by design, but I
@@ -105,6 +103,8 @@ the useful starting points are:
   conformance, and the deviations and bugs that are known.
 - [Call C functions from Haskell](docs/how-to/call-c-functions.md) — the
   FFI and `fficupid`.
+- [The design of Cupid](docs/explanation/design.md) — why the tree
+  looks the way it does.
 
 ## Layout
 
@@ -128,8 +128,10 @@ describes the rest.
 
 ## About the name
 
-It's a fork of Hugs, so it needed a name in the same family.  Huggies is
-a trademark and belongs to a nappy company, which left Cupid.
+It's a fork of Hugs, so it needed a name in the same family.  Hugs was
+first released on Valentine's Day, 14 February 1995, which made Cupid
+the obvious choice.  The grin on the logo is his: Cupid has always been
+a bit of a troublemaker.
 
 ## Origin and license
 

@@ -4,9 +4,9 @@ The type checker in `type.c` infers types by unification, and alongside
 the types it collects *predicates*: the class constraints that uses of
 overloaded names give rise to.  This page is about what happens to
 those predicates.  The code is in `preds.c` and the second half of
-`subst.c`; `type.c` decides when each step runs.  The aim is that this remain
-one solver as the language grows, and this page is the description to
-check a change against.
+`subst.c`; `type.c` decides when each step runs.  The design asks that
+this remain [one solver](design.md#the-language) as the language grows,
+and this page is the description to check a change against.
 
 ## Predicates and evidence
 

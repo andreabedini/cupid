@@ -103,6 +103,8 @@ The libraries have one platform-dependent piece too, the widths of C
 types and the values of `errno` and signal constants.  These are asked
 of the C compiler at build time by `libraries/tools/mksysconfig.c` and
 written into the module `Cupid.SysConfig`.
+[The design of Cupid](design.md#platforms-and-the-build) says why it is
+done this way.
 
 ## What this design gives up
 

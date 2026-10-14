@@ -1,7 +1,8 @@
 # Language extensions
 
 The language features Cupid accepts beyond Haskell 2010.  They are
-always enabled; there is no option to turn them off.  Most are needed by
+always enabled; there is no option to turn them off (see
+[the design](../explanation/design.md#the-language)).  Most are needed by
 the shipped libraries (see [The libraries](libraries.md)) and
 correspond to GHC extensions, though GHC's versions are often more
 general.

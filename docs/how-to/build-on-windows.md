@@ -33,7 +33,8 @@ The platform-specific choices live in a few places:
 
 The library sources under `libraries/base` are the POSIX expansion of
 the 2006 sources.  Their Windows code paths were dropped when the
-library became plain Haskell and would have to be brought
+library became plain Haskell (see
+[the design](../explanation/design.md#the-libraries)) and would have to be brought
 back by hand.
 
 ### 3. What is not built

@@ -89,6 +89,9 @@ In order:
   2006 `lib/` and `include/` trees were dropped, and the three
   modules the demos need from `lib/` moved into `demos/`
 
+[The design of Cupid](design.md) explains the choices that came out of
+these changes, and why they were made.
+
 ## See also
 
 - [How Cupid runs a program](how-cupid-runs-a-program.md)
