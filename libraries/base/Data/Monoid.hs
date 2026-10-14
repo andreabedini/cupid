@@ -34,7 +34,7 @@ module Data.Monoid (
   ) where
 
 import Prelude
-import Cupid.Prelude (Alternative(..))
+import Cupid.Prelude (Alternative(..), Endo(..))
 
 -- ---------------------------------------------------------------------------
 -- 'Monoid' is defined in the Prelude, with 'Semigroup' as its superclass,
@@ -53,14 +53,8 @@ instance Semigroup a => Semigroup (Dual a) where
 instance Monoid a => Monoid (Dual a) where
 	mempty = Dual mempty
 
--- | The monoid of endomorphisms under composition.
-newtype Endo a = Endo { appEndo :: a -> a }
-
-instance Semigroup (Endo a) where
-	Endo f <> Endo g = Endo (f . g)
-
-instance Monoid (Endo a) where
-	mempty = Endo id
+-- 'Endo', the monoid of endomorphisms under composition, is defined in
+-- "Cupid.Prelude" too, for the default methods of 'Foldable'.
 
 -- | Boolean monoid under conjunction.
 newtype All = All { getAll :: Bool }

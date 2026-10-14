@@ -28,12 +28,12 @@ module Control.Monad
 
     -- ** Basic functions from the "Prelude"
 
-    , mapM          -- :: (Monad m) => (a -> m b) -> [a] -> m [b]
-    , mapM_         -- :: (Monad m) => (a -> m b) -> [a] -> m ()
-    , forM          -- :: (Monad m) => [a] -> (a -> m b) -> m [b]
-    , forM_         -- :: (Monad m) => [a] -> (a -> m b) -> m ()
-    , sequence      -- :: (Monad m) => [m a] -> m [a]
-    , sequence_     -- :: (Monad m) => [m a] -> m ()
+    , mapM          -- :: (Traversable t, Monad m) => (a -> m b) -> t a -> m (t b)
+    , mapM_         -- :: (Foldable t, Monad m) => (a -> m b) -> t a -> m ()
+    , forM          -- :: (Traversable t, Monad m) => t a -> (a -> m b) -> m (t b)
+    , forM_         -- :: (Foldable t, Monad m) => t a -> (a -> m b) -> m ()
+    , sequence      -- :: (Traversable t, Monad m) => t (m a) -> m (t a)
+    , sequence_     -- :: (Foldable t, Monad m) => t (m a) -> m ()
     , (=<<)         -- :: (Monad m) => (a -> m b) -> m a -> m b
     , (>=>)         -- :: (Monad m) => (a -> m b) -> (b -> m c) -> (a -> m c)
     , (<=<)         -- :: (Monad m) => (b -> m c) -> (a -> m b) -> (a -> m c)
@@ -43,7 +43,7 @@ module Control.Monad
     -- ** Generalisations of list functions
 
     , join          -- :: (Monad m) => m (m a) -> m a
-    , msum          -- :: (MonadPlus m) => [m a] -> m a
+    , msum          -- :: (Foldable t, MonadPlus m) => t (m a) -> m a
     , mfilter       -- :: (MonadPlus m) => (a -> Bool) -> m a -> m a
     , filterM       -- :: (Applicative m) => (a -> m Bool) -> [a] -> m [a]
     , mapAndUnzipM  -- :: (Applicative m) => (a -> m (b,c)) -> [a] -> m ([b], [c])
@@ -77,7 +77,7 @@ module Control.Monad
     ) where
 
 import Data.Maybe
-import Cupid.Prelude (Alternative(..), MonadPlus(..))
+import Cupid.Prelude (Alternative(..), MonadPlus(..), forM, forM_, msum)
 
 infixr 1 >=>, <=<
 infixl 4 <$!>
@@ -98,18 +98,6 @@ guard False     =  empty
 filterM          :: (Applicative m) => (a -> m Bool) -> [a] -> m [a]
 filterM p        = foldr (\x -> liftA2 (\flg -> if flg then (x:) else id) (p x))
                          (pure [])
-
--- | 'forM' is 'mapM' with its arguments flipped
-forM            :: Monad m => [a] -> (a -> m b) -> m [b]
-forM            = flip mapM
-
--- | 'forM_' is 'mapM_' with its arguments flipped
-forM_           :: Monad m => [a] -> (a -> m b) -> m ()
-forM_           = flip mapM_
-
--- | This generalizes the list-based 'concat' function.
-msum        :: MonadPlus m => [m a] -> m a
-msum        =  foldr mplus mzero
 
 -- | Left-to-right Kleisli composition of monads.
 (>=>)       :: Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
@@ -144,11 +132,11 @@ mfilter p ma      = do { a <- ma; if p a then return a else mzero }
 -- the result as a pair of lists. This function is mainly used with complicated
 -- data structures or a state-transforming monad.
 mapAndUnzipM      :: (Applicative m) => (a -> m (b,c)) -> [a] -> m ([b], [c])
-mapAndUnzipM f xs =  unzip <$> traverseList f xs
+mapAndUnzipM f xs =  unzip <$> traverse f xs
 
 -- | The 'zipWithM' function generalizes 'zipWith' to arbitrary applicative functors.
 zipWithM          :: (Applicative m) => (a -> b -> m c) -> [a] -> [b] -> m [c]
-zipWithM f xs ys  =  sequenceAList (zipWith f xs ys)
+zipWithM f xs ys  =  sequenceA (zipWith f xs ys)
 
 -- | 'zipWithM_' is the extension of 'zipWithM' which ignores the final result.
 zipWithM_         :: (Applicative m) => (a -> b -> m c) -> [a] -> [b] -> m ()
@@ -254,14 +242,6 @@ ap                =  liftM2 id
 -- | Strict version of '<$>'.
 (<$!>)            :: Monad m => (a -> b) -> m a -> m b
 f <$!> m          = do { x <- m; return $! f x }
-
--- The list cases of 'traverse' and 'sequenceA', which "Data.Traversable"
--- defines in general.
-traverseList      :: (Applicative m) => (a -> m b) -> [a] -> m [b]
-traverseList f    = foldr (\x -> liftA2 (:) (f x)) (pure [])
-
-sequenceAList     :: (Applicative m) => [m a] -> m [a]
-sequenceAList     = traverseList id
 
 {- $naming
 

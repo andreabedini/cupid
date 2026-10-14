@@ -82,7 +82,12 @@ module Prelude (
     MonadFail(fail),
     Semigroup((<>)),
     Monoid(mempty, mappend, mconcat),
-    mapM, mapM_, sequence, sequence_, (=<<),
+    mapM_, sequence_, (=<<),
+
+    -- ** Folds and traversals
+    Foldable(elem, foldMap, foldr, foldl, foldr1, foldl1,
+             maximum, minimum, product, sum, null, length),
+    Traversable(traverse, sequenceA, mapM, sequence),
 
     -- ** Miscellaneous functions
     id, const, (.), flip, ($), until,
@@ -91,15 +96,11 @@ module Prelude (
 
     -- * List operations
     map, (++), filter,
-    head, last, tail, init, null, length, (!!), 
+    head, last, tail, init, (!!), 
     reverse,
-    -- ** Reducing lists (folds)
-    foldl, foldl1, foldr, foldr1,
     -- *** Special folds
     and, or, any, all,
-    sum, product,
     concat, concatMap,
-    maximum, minimum,
     -- ** Building lists
     -- *** Scans
     scanl, scanl1, scanr, scanr1,
@@ -108,7 +109,7 @@ module Prelude (
     -- ** Sublists
     take, drop, splitAt, takeWhile, dropWhile, span, break,
     -- ** Searching lists
-    elem, notElem, lookup,
+    notElem, lookup,
     -- ** Zipping and unzipping lists
     zip, zip3, zipWith, zipWith3, unzip, unzip3,
     -- ** Functions on strings

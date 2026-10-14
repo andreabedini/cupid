@@ -89,7 +89,12 @@ len2 = (2*len1) :: Rational
 
 `len1` is defaulted to `Integer` as soon as its own group is inferred,
 so the use at `Rational` in `len2` fails.  The Report defers defaulting
-to the end of the module.
+to the end of the module.  For the same reason a restricted binding
+whose constraint cannot be defaulted is rejected even when a later use
+fixes its type: `total = sum`, with no signature, reports
+`Unresolved top-level overloading` with `Foldable` outstanding, because
+the Prelude's `sum` works on any `Foldable` structure.  A type
+signature avoids both.
 
 ### Modules
 
@@ -131,6 +136,17 @@ exports `Functor(fmap, (<$))`, `(<$>)`,
 `Category`.  A Haskell 98 program that defines `Monad` without
 `Applicative`, or `fail` in a `Monad` instance, is rejected, as it is
 by GHC.
+
+**The Prelude's list folds are those of `Foldable`,** and its `mapM`
+and `sequence` those of `Traversable`, as in GHC's base: `length`,
+`sum`, `elem`, `foldr`, `concat`, `mapM_` and the rest work on any
+structure with an instance, such as `Maybe`, `Either e`, pairs, arrays
+and the containers.  The Prelude exports the classes as
+`Foldable(elem, foldMap, foldr, foldl, foldr1, foldl1, maximum, minimum,
+product, sum, null, length)` and
+`Traversable(traverse, sequenceA, mapM, sequence)`.  `Data.List`,
+`Data.Foldable`, `Data.Traversable` and `Control.Monad` export the same
+functions, so a module may import all of them unqualified.
 
 **`Monoid` has `Semigroup` as its superclass,** and `mappend`
 defaults to `(<>)`; the Prelude exports `Semigroup((<>))` and

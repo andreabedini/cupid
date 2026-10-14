@@ -8,6 +8,7 @@
 module AnsiDemo( program ) where
 import AnsiInteract
 
+writes :: [String] -> Interact -> Interact
 writes  = writeStr . concat
 program = writes [ cls,
                    at (17,5)  (highlight "Demonstration program"),

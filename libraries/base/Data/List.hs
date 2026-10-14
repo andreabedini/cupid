@@ -202,6 +202,8 @@ module Data.List
 
 
 import Data.Maybe
+import Cupid.Prelude (Foldable(foldl'), find, maximumBy, minimumBy,
+	mapAccumL, mapAccumR)
 import Data.Char	( isSpace )
 
 
@@ -226,12 +228,6 @@ elemIndex x     = findIndex (x==)
 -- indices of all elements equal to the query element, in ascending order.
 elemIndices     :: Eq a => a -> [a] -> [Int]
 elemIndices x   = findIndices (x==)
-
--- | The 'find' function takes a predicate and a list and returns the
--- first element in the list matching the predicate, or 'Nothing' if
--- there is no such element.
-find		:: (a -> Bool) -> [a] -> Maybe a
-find p          = listToMaybe . filter p
 
 -- | The 'findIndex' function takes a predicate and a list and returns
 -- the index of the first element in the list satisfying the predicate,
@@ -420,36 +416,6 @@ partition p xs = foldr (select p) ([],[]) xs
 select p x ~(ts,fs) | p x       = (x:ts,fs)
                     | otherwise = (ts, x:fs)
 
--- | The 'mapAccumL' function behaves like a combination of 'map' and
--- 'foldl'; it applies a function to each element of a list, passing
--- an accumulating parameter from left to right, and returning a final
--- value of this accumulator together with the new list.
-mapAccumL :: (acc -> x -> (acc, y)) -- Function of elt of input list
-				    -- and accumulator, returning new
-				    -- accumulator and elt of result list
-   	  -> acc	    -- Initial accumulator 
-	  -> [x]	    -- Input list
-	  -> (acc, [y])	    -- Final accumulator and result list
-mapAccumL _ s []     	=  (s, [])
-mapAccumL f s (x:xs) 	=  (s'',y:ys)
-		           where (s', y ) = f s x
-			         (s'',ys) = mapAccumL f s' xs
-
--- | The 'mapAccumR' function behaves like a combination of 'map' and
--- 'foldr'; it applies a function to each element of a list, passing
--- an accumulating parameter from right to left, and returning a final
--- value of this accumulator together with the new list.
-mapAccumR :: (acc -> x -> (acc, y)) 	-- Function of elt of input list
-					-- and accumulator, returning new
-					-- accumulator and elt of result list
-	    -> acc 		-- Initial accumulator
-	    -> [x] 		-- Input list
-	    -> (acc, [y])		-- Final accumulator and result list
-mapAccumR _ s []     	=  (s, [])
-mapAccumR f s (x:xs)	=  (s'', y:ys)
-		           where (s'',y ) = f s' x
-			         (s', ys) = mapAccumR f s xs
-
 -- | The 'insert' function takes an element and a list and inserts the
 -- element into the list at the last position where it is still less
 -- than or equal to the next element.  In particular, if the list
@@ -507,28 +473,6 @@ insertBy cmp x ys@(y:ys')
 
 
 
-
--- | The 'maximumBy' function takes a comparison function and a list
--- and returns the greatest element of the list by the comparison function.
--- The list must be finite and non-empty.
-maximumBy		:: (a -> a -> Ordering) -> [a] -> a
-maximumBy _ []		=  error "List.maximumBy: empty list"
-maximumBy cmp xs	=  foldl1 max xs
-			where
-			   max x y = case cmp x y of
-					GT -> x
-					_  -> y
-
--- | The 'minimumBy' function takes a comparison function and a list
--- and returns the least element of the list by the comparison function.
--- The list must be finite and non-empty.
-minimumBy		:: (a -> a -> Ordering) -> [a] -> a
-minimumBy _ []		=  error "List.minimumBy: empty list"
-minimumBy cmp xs	=  foldl1 min xs
-			where
-			   min x y = case cmp x y of
-					GT -> y
-					_  -> x
 
 -- | The 'genericLength' function is an overloaded version of 'length'.  In
 -- particular, instead of returning an 'Int', it returns any type which is
@@ -852,19 +796,6 @@ unfoldr f b  =
    Nothing        -> []
 
 -- -----------------------------------------------------------------------------
-
--- | A strict version of 'foldl'.
-foldl'           :: (a -> b -> a) -> a -> [b] -> a
-foldl' f a []     = a
-foldl' f a (x:xs) = let a' = f a x in a' `seq` foldl' f a' xs
-
-
-
-
-
-
-
-
 
 -- | A strict version of 'foldl1'
 foldl1'                  :: (a -> a -> a) -> [a] -> a

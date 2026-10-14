@@ -14,7 +14,7 @@ module Cupid.Array (
     ) where
 
 import Data.Ix
-import Cupid.Prelude( unsafeIndex )
+import Cupid.Prelude( unsafeIndex, Foldable(..), Traversable(..) )
 
 infixl 9  !, //
 
@@ -76,6 +76,15 @@ ixmap bnds f arr =
 
 instance (Ix a) => Functor (Array a) where
     fmap = primAmap
+
+instance (Ix a) => Foldable (Array a) where
+    foldr f z = foldr f z . elems
+    toList    = elems
+    length    = rangeSize . bounds
+    null      = (== 0) . rangeSize . bounds
+
+instance (Ix a) => Traversable (Array a) where
+    traverse f arr = fmap (listArray (bounds arr)) (traverse f (elems arr))
 
 instance (Ix a, Eq b) => Eq (Array a b) where
     a == a'   =   assocs a == assocs a'

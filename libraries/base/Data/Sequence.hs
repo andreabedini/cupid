@@ -71,7 +71,7 @@ import Control.Applicative (Applicative(..), (<$>))
 import Control.Monad (MonadPlus(..), ap)
 import qualified Cupid.Prelude as P (Alternative(..))
 import Data.Monoid (Monoid(..))
-import Data.Foldable
+import Data.Foldable hiding (null, length)
 import Data.Traversable
 import Data.Typeable
 
@@ -106,6 +106,8 @@ instance Functor Seq where
 instance Foldable Seq where
 	foldr f z (Seq xs) = foldr (flip (foldr f)) z xs
 	foldl f z (Seq xs) = foldl (foldl f) z xs
+	null = null
+	length = length
 
 	foldr1 f (Seq xs) = getElem (foldr1 f' xs)
 	  where f' (Elem x) (Elem y) = Elem (f x y)

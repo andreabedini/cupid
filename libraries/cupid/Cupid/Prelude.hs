@@ -24,14 +24,20 @@ __   __ __  __  ____   ___    _______________________________________________
 module Cupid.Prelude (
 --  module PreludeList,
     map, (++), concat, filter,
-    head, last, tail, init, null, length, (!!),
-    foldl, foldl1, scanl, scanl1, foldr, foldr1, scanr, scanr1,
+    head, last, tail, init, (!!),
+    scanl, scanl1, scanr, scanr1,
     iterate, repeat, replicate, cycle,
     take, drop, splitAt, takeWhile, dropWhile, span, break,
     lines, words, unlines, unwords, reverse, and, or,
-    any, all, elem, notElem, lookup,
-    sum, product, maximum, minimum, concatMap, 
+    any, all, notElem, lookup,
+    concatMap,
     zip, zip3, zipWith, zipWith3, unzip, unzip3,
+    Foldable(fold, foldMap, foldMap', foldr, foldr', foldl, foldl',
+             foldr1, foldl1, toList, null, length, elem, maximum,
+             minimum, sum, product),
+    Traversable(traverse, sequenceA, mapM, sequence),
+    find, maximumBy, minimumBy, mapAccumL, mapAccumR, forM, forM_, msum,
+    Endo(..),
 --  module PreludeText, 
     ReadS, ShowS,
     Read(readsPrec, readList),
@@ -115,7 +121,7 @@ module Cupid.Prelude (
     Monoid(mempty, mappend, mconcat),
     NonEmpty((:|)),
     MonadPlus(mzero, mplus),
-    mapM, mapM_, sequence, sequence_, (=<<),
+    mapM_, sequence_, (=<<),
     maybe, either,
     (&&), (||), not, otherwise,
     subtract, even, odd, gcd, lcm, (^), (^^), 
@@ -479,21 +485,6 @@ class (Alternative m, Monad m) => MonadPlus m where
 (<$>)            :: Functor f => (a -> b) -> f a -> f b
 f <$> x           = fmap f x
 
-sequence       :: Monad m => [m a] -> m [a]
-sequence []     = return []
-sequence (c:cs) = do x  <- c
-		     xs <- sequence cs
-		     return (x:xs)
-
-sequence_        :: Monad m => [m a] -> m ()
-sequence_         = foldr (>>) (return ())
-
-mapM             :: Monad m => (a -> m b) -> [a] -> m [b]
-mapM f            = sequence . map f
-
-mapM_            :: Monad m => (a -> m b) -> [a] -> m ()
-mapM_ f           = sequence_ . map f
-
 (=<<)            :: Monad m => (a -> m b) -> m a -> m b
 f =<< x           = x >>= f
 
@@ -625,6 +616,239 @@ instance Monoid a => Applicative ((,) a) where
 
 instance Monoid a => Monad ((,) a) where
     (u, a) >>= k = case k a of (v, b) -> (u <> v, b)
+
+-- | The monoid of endomorphisms under composition, which Foldable's
+-- default foldr uses; Data.Monoid exports it.
+newtype Endo a = Endo { appEndo :: a -> a }
+
+instance Semigroup (Endo a) where
+    Endo f <> Endo g = Endo (f . g)
+
+instance Monoid (Endo a) where
+    mempty = Endo id
+
+-- Foldable and traversable structures ---------------------------------------
+
+-- As in GHC's base, the list functions of the Prelude that fold a list
+-- are those of Foldable, and those that map an action over one are those
+-- of Traversable.  The list instances use the list functions further
+-- down, listFoldr and so on.
+
+class Foldable t where
+    fold     :: Monoid m => t m -> m
+    foldMap  :: Monoid m => (a -> m) -> t a -> m
+    foldMap' :: Monoid m => (a -> m) -> t a -> m
+    foldr    :: (a -> b -> b) -> b -> t a -> b
+    foldr'   :: (a -> b -> b) -> b -> t a -> b
+    foldl    :: (b -> a -> b) -> b -> t a -> b
+    foldl'   :: (b -> a -> b) -> b -> t a -> b
+    foldr1   :: (a -> a -> a) -> t a -> a
+    foldl1   :: (a -> a -> a) -> t a -> a
+    toList   :: t a -> [a]
+    null     :: t a -> Bool
+    length   :: t a -> Int
+    elem     :: Eq a => a -> t a -> Bool
+    maximum  :: Ord a => t a -> a
+    minimum  :: Ord a => t a -> a
+    sum      :: Num a => t a -> a
+    product  :: Num a => t a -> a
+
+    -- Minimal complete definition: foldMap or foldr
+    fold          = foldMap id
+    foldMap f     = foldr (mappend . f) mempty
+    foldMap' f    = foldl' (\acc a -> acc <> f a) mempty
+    foldr f z t   = appEndo (foldMap (Endo . f) t) z
+    foldr' f z0 t = foldl (\k x z -> k $! f x z) id t z0
+    foldl f z t   = foldr (\x k acc -> k (f acc x)) id t z
+    foldl' f z0 t = foldr (\x k z -> k $! f z x) id t z0
+    foldr1 f t    = case foldr mf Nothing t of
+                        Nothing -> error "foldr1: empty structure"
+                        Just x  -> x
+      where mf x m = Just (case m of
+                               Nothing -> x
+                               Just y  -> f x y)
+    foldl1 f t    = case foldl mf Nothing t of
+                        Nothing -> error "foldl1: empty structure"
+                        Just x  -> x
+      where mf m y = Just (case m of
+                               Nothing -> y
+                               Just x  -> f x y)
+    toList t      = foldr (:) [] t
+    null          = foldr (\_ _ -> False) True
+    length        = foldl' (\c _ -> c + 1) 0
+    elem x        = any (== x)
+    maximum t     = case foldl' mx Nothing t of
+                        Nothing -> error "maximum: empty structure"
+                        Just x  -> x
+      where mx Nothing  y = Just y
+            mx (Just x) y = Just $! max x y
+    minimum t     = case foldl' mn Nothing t of
+                        Nothing -> error "minimum: empty structure"
+                        Just x  -> x
+      where mn Nothing  y = Just y
+            mn (Just x) y = Just $! min x y
+    sum           = foldl' (+) 0
+    product       = foldl' (*) 1
+
+class (Functor t, Foldable t) => Traversable t where
+    traverse  :: Applicative f => (a -> f b) -> t a -> f (t b)
+    sequenceA :: Applicative f => t (f a) -> f (t a)
+    mapM      :: Monad m => (a -> m b) -> t a -> m (t b)
+    sequence  :: Monad m => t (m a) -> m (t a)
+
+    -- Minimal complete definition: traverse or sequenceA
+    traverse f = sequenceA . fmap f
+    sequenceA  = traverse id
+    mapM       = traverse
+    sequence   = sequenceA
+
+concat           :: Foldable t => t [a] -> [a]
+concat xs         = foldr (++) [] xs
+
+concatMap        :: Foldable t => (a -> [b]) -> t a -> [b]
+concatMap f xs    = foldr (\x b -> f x ++ b) [] xs
+
+and, or          :: Foldable t => t Bool -> Bool
+and               = foldr (&&) True
+or                = foldr (||) False
+
+any, all         :: Foldable t => (a -> Bool) -> t a -> Bool
+any p             = foldr (\x b -> p x || b) False
+all p             = foldr (\x b -> p x && b) True
+
+notElem          :: (Foldable t, Eq a) => a -> t a -> Bool
+notElem x         = not . elem x
+
+mapM_            :: (Foldable t, Monad m) => (a -> m b) -> t a -> m ()
+mapM_ f           = foldr ((>>) . f) (return ())
+
+sequence_        :: (Foldable t, Monad m) => t (m a) -> m ()
+sequence_         = foldr (>>) (return ())
+
+-- The Foldable and Traversable functions that Control.Monad, Data.List,
+-- Data.Foldable and Data.Traversable share, defined once here so that
+-- importing two of those modules does not make them ambiguous.
+
+forM             :: (Traversable t, Monad m) => t a -> (a -> m b) -> m (t b)
+forM              = flip mapM
+
+forM_            :: (Foldable t, Monad m) => t a -> (a -> m b) -> m ()
+forM_             = flip mapM_
+
+msum             :: (Foldable t, MonadPlus m) => t (m a) -> m a
+msum              = foldr mplus mzero
+
+find             :: Foldable t => (a -> Bool) -> t a -> Maybe a
+find p            = foldr (\x r -> if p x then Just x else r) Nothing
+
+maximumBy        :: Foldable t => (a -> a -> Ordering) -> t a -> a
+maximumBy cmp     = foldl1 (\x y -> case cmp x y of GT -> x; _ -> y)
+
+minimumBy        :: Foldable t => (a -> a -> Ordering) -> t a -> a
+minimumBy cmp     = foldl1 (\x y -> case cmp x y of GT -> y; _ -> x)
+
+-- The Traversable functions that Data.List and Data.Traversable both
+-- export, with the state applicatives they use.
+
+newtype StateL s a = StateL { runStateL :: s -> (s, a) }
+
+instance Functor (StateL s) where
+    fmap f (StateL k) = StateL $ \s -> let (s', v) = k s in (s', f v)
+
+instance Applicative (StateL s) where
+    pure x = StateL (\s -> (s, x))
+    StateL kf <*> StateL kv = StateL $ \s ->
+        let (s', f)  = kf s
+            (s'', v) = kv s'
+        in (s'', f v)
+
+newtype StateR s a = StateR { runStateR :: s -> (s, a) }
+
+instance Functor (StateR s) where
+    fmap f (StateR k) = StateR $ \s -> let (s', v) = k s in (s', f v)
+
+instance Applicative (StateR s) where
+    pure x = StateR (\s -> (s, x))
+    StateR kf <*> StateR kv = StateR $ \s ->
+        let (s', v)  = kv s
+            (s'', f) = kf s'
+        in (s'', f v)
+
+mapAccumL        :: Traversable t => (s -> a -> (s, b)) -> s -> t a -> (s, t b)
+mapAccumL f s t   = runStateL (traverse (StateL . flip f) t) s
+
+mapAccumR        :: Traversable t => (s -> a -> (s, b)) -> s -> t a -> (s, t b)
+mapAccumR f s t   = runStateR (traverse (StateR . flip f) t) s
+
+instance Foldable [] where
+    foldr    = listFoldr
+    foldl    = listFoldl
+    foldl'   = listFoldl'
+    foldr1   = listFoldr1
+    foldl1   = listFoldl1
+    toList   = id
+    null     = listNull
+    length   = listLength
+    elem     = listElem
+    maximum  = listMaximum
+    minimum  = listMinimum
+    sum      = listSum
+    product  = listProduct
+
+instance Traversable [] where
+    traverse f = listFoldr (\x ys -> liftA2 (:) (f x) ys) (pure [])
+
+instance Foldable Maybe where
+    foldMap _ Nothing  = mempty
+    foldMap f (Just x) = f x
+    foldr _ z Nothing  = z
+    foldr f z (Just x) = f x z
+    foldl _ z Nothing  = z
+    foldl f z (Just x) = f z x
+    toList Nothing     = []
+    toList (Just x)    = [x]
+    null Nothing       = True
+    null (Just _)      = False
+    length Nothing     = 0
+    length (Just _)    = 1
+
+instance Traversable Maybe where
+    traverse _ Nothing  = pure Nothing
+    traverse f (Just x) = fmap Just (f x)
+
+instance Foldable (Either a) where
+    foldMap _ (Left _)  = mempty
+    foldMap f (Right y) = f y
+    foldr _ z (Left _)  = z
+    foldr f z (Right y) = f y z
+    null (Left _)       = True
+    null (Right _)      = False
+    length (Left _)     = 0
+    length (Right _)    = 1
+
+instance Traversable (Either a) where
+    traverse _ (Left x)  = pure (Left x)
+    traverse f (Right y) = fmap Right (f y)
+
+instance Foldable ((,) a) where
+    foldMap f (_, y) = f y
+    foldr f z (_, y) = f y z
+    null _           = False
+    length _         = 1
+
+instance Traversable ((,) a) where
+    traverse f (x, y) = fmap ((,) x) (f y)
+
+instance Foldable NonEmpty where
+    foldr f z (a :| as) = f a (listFoldr f z as)
+    foldl f z (a :| as) = listFoldl f (f z a) as
+    foldl1 f (a :| as)  = listFoldl f a as
+    toList (a :| as)    = a : as
+    null _              = False
+    length (_ :| as)    = 1 + listLength as
+
+instance Traversable NonEmpty where
+    traverse f (a :| as) = liftA2 (:|) (f a) (traverse f as)
 
 -- Evaluation and strictness ------------------------------------------------
 
@@ -1417,9 +1641,9 @@ init             :: [a] -> [a]
 init [x]          = []
 init (x:xs)       = x : init xs
 
-null             :: [a] -> Bool
-null []           = True
-null (_:_)        = False
+listNull         :: [a] -> Bool
+listNull []       = True
+listNull (_:_)    = False
 
 (++)             :: [a] -> [a] -> [a]
 []     ++ ys      = ys
@@ -1431,11 +1655,8 @@ map f xs          = [ f x | x <- xs ]
 filter           :: (a -> Bool) -> [a] -> [a]
 filter p xs       = [ x | x <- xs, p x ]
 
-concat           :: [[a]] -> [a]
-concat            = foldr (++) []
-
-length           :: [a] -> Int
-length            = foldl' (\n _ -> n + 1) 0
+listLength       :: [a] -> Int
+listLength        = listFoldl' (\n _ -> n + 1) 0
 
 (!!)             :: [a] -> Int -> a
 xs     !! n | n<0 = error "Prelude.!!: negative index"
@@ -1443,16 +1664,17 @@ xs     !! n | n<0 = error "Prelude.!!: negative index"
 (x:_)  !! 0       = x
 (_:xs) !! n       = xs !! (n-1)
 
-foldl            :: (a -> b -> a) -> a -> [b] -> a
-foldl f z []      = z
-foldl f z (x:xs)  = foldl f (f z x) xs
+listFoldl        :: (a -> b -> a) -> a -> [b] -> a
+listFoldl f z []      = z
+listFoldl f z (x:xs)  = listFoldl f (f z x) xs
 
-foldl'           :: (a -> b -> a) -> a -> [b] -> a
-foldl' f a []     = a
-foldl' f a (x:xs) = (foldl' f $! f a x) xs
+listFoldl'       :: (a -> b -> a) -> a -> [b] -> a
+listFoldl' f a []     = a
+listFoldl' f a (x:xs) = (listFoldl' f $! f a x) xs
 
-foldl1           :: (a -> a -> a) -> [a] -> a
-foldl1 f (x:xs)   = foldl f x xs
+listFoldl1       :: (a -> a -> a) -> [a] -> a
+listFoldl1 f (x:xs)   = listFoldl f x xs
+listFoldl1 _ []       = error "Prelude.foldl1: empty list"
 
 scanl            :: (a -> b -> a) -> a -> [b] -> [a]
 scanl f q xs      = q : (case xs of
@@ -1463,13 +1685,14 @@ scanl1           :: (a -> a -> a) -> [a] -> [a]
 scanl1 _ []       = []
 scanl1 f (x:xs)   = scanl f x xs
 
-foldr            :: (a -> b -> b) -> b -> [a] -> b
-foldr f z []      = z
-foldr f z (x:xs)  = f x (foldr f z xs)
+listFoldr        :: (a -> b -> b) -> b -> [a] -> b
+listFoldr f z []      = z
+listFoldr f z (x:xs)  = f x (listFoldr f z xs)
 
-foldr1           :: (a -> a -> a) -> [a] -> a
-foldr1 f [x]      = x
-foldr1 f (x:xs)   = f x (foldr1 f xs)
+listFoldr1       :: (a -> a -> a) -> [a] -> a
+listFoldr1 f [x]      = x
+listFoldr1 f (x:xs)   = f x (listFoldr1 f xs)
+listFoldr1 _ []       = error "Prelude.foldr1: empty list"
 
 scanr            :: (a -> b -> b) -> b -> [a] -> [b]
 scanr f q0 []     = [q0]
@@ -1554,17 +1777,9 @@ unwords (w:ws)	= w ++ ' ' : unwords ws
 reverse   :: [a] -> [a]
 reverse    = foldl (flip (:)) []
 
-and, or   :: [Bool] -> Bool
-and        = foldr (&&) True
-or         = foldr (||) False
-
-any, all  :: (a -> Bool) -> [a] -> Bool
-any p      = or  . map p
-all p      = and . map p
-
-elem, notElem    :: Eq a => a -> [a] -> Bool
-elem              = any . (==)
-notElem           = all . (/=)
+listElem         :: Eq a => a -> [a] -> Bool
+listElem x []     = False
+listElem x (y:ys) = x == y || listElem x ys
 
 lookup           :: Eq a => a -> [(a,b)] -> Maybe b
 lookup k []       = Nothing
@@ -1572,16 +1787,15 @@ lookup k ((x,y):xys)
       | k==x      = Just y
       | otherwise = lookup k xys
 
-sum, product     :: Num a => [a] -> a
-sum               = foldl' (+) 0
-product           = foldl' (*) 1
+listSum, listProduct :: Num a => [a] -> a
+listSum           = listFoldl' (+) 0
+listProduct       = listFoldl' (*) 1
 
-maximum, minimum :: Ord a => [a] -> a
-maximum           = foldl1 max
-minimum           = foldl1 min
-
-concatMap        :: (a -> [b]) -> [a] -> [b]
-concatMap f       = concat . map f
+listMaximum, listMinimum :: Ord a => [a] -> a
+listMaximum []    = error "Prelude.maximum: empty list"
+listMaximum xs    = listFoldl1 max xs
+listMinimum []    = error "Prelude.minimum: empty list"
+listMinimum xs    = listFoldl1 min xs
 
 zip              :: [a] -> [b] -> [(a,b)]
 zip               = zipWith  (\a b -> (a,b))
