@@ -146,6 +146,7 @@ static void tooGeneral(int, Cell, Type, Type);
 static Cell typeExpr(int, Cell, Typing *);
 
 static Cell typeAp(int, Cell, Typing *);
+static Cell dropDollar(Cell);
 static Cell typeExpected(int, char *, Cell, Type, int, int, bool, Typing *);
 static void typeAlt(char *, Cell, Cell, Type, int, int);
 static int funcType(int);
@@ -828,6 +829,10 @@ static Cell typeAp(int l, Cell e, Typing *ty) {
     int i;
     Typing t = typing(NIL, 0); /* the head's type, then its instance */
 
+    if (h == nameDollar && n >= 2) { /* f $ x is checked as f x */
+        return typeExpr(l, dropDollar(e), ty);
+    }
+
     switch (whatIs(h)) {
     case NAME:
         t.type = nameRec(h)->type;
@@ -994,6 +999,19 @@ static Cell typeAp(int l, Cell e, Typing *ty) {
         fun(p) = h;
 
     *ty = t;
+    return e;
+}
+
+/* Rewrite ($) f x a3 ... an, with n >= 2, to f x a3 ... an.  The two mean
+ * the same, and checking the second lets f have a rank 2 type: runST $ do
+ * ... and C $ \x -> ... for a constructor C with a polymorphic field would
+ * otherwise use runST and C without their polymorphic argument.  This is the
+ * rule GHC long had for ($). */
+static Cell dropDollar(Cell e) {
+    if (fun(fun(e)) == nameDollar) {
+        return ap(arg(fun(e)), arg(e));
+    }
+    fun(e) = dropDollar(fun(e));
     return e;
 }
 

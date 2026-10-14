@@ -37,6 +37,7 @@ extern Name nameGT;
 extern Name nameFst, nameSnd; /* standard combinators              */
 extern Name nameId, nameOtherwise;
 extern Name nameNegate, nameFlip; /* primitives reqd for parsing           */
+extern Name nameDollar;           /* ($), which the type checker unfolds   */
 extern Name nameFrom, nameFromThen;
 extern Name nameFromTo, nameFromThenTo;
 extern Name nameFatbar, nameFail; /* primitives reqd for translation */

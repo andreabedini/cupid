@@ -61,6 +61,7 @@
 #include "builtin.h"
 
 Name nameNegate, nameFlip; /* primitives reqd for parsing     */
+Name nameDollar;           /* ($), unfolded by the type checker */
 Name nameFrom, nameFromThen;
 Name nameFromTo, nameFromThenTo;
 Name nameFatbar, nameFail; /* primitives reqd for translation */
@@ -2158,6 +2159,7 @@ void installBuiltIn(void) {
     nameRec(nameInd)->number = DFUNNAME;
     nameNegate = predefName("negate");
     nameFlip = predefName("flip");
+    nameDollar = predefName("$");
     nameFrom = predefName("enumFrom");
     nameFromThen = predefName("enumFromThen");
     nameFromTo = predefName("enumFromTo");

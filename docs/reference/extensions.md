@@ -159,8 +159,14 @@ Restrictions:
   type.
 
 `runST :: (forall s. ST s a) -> a` in `Control.Monad.ST` has such a
-type.  Because of the last restriction, `runST $ do ...` is
-rejected; write `runST (do ...)`.
+type.
+
+One exception to the third restriction: `f $ x` is checked as
+`f x`, as GHC does, so `runST $ do ...` is accepted, and so is
+`C $ \x -> ...` for a constructor `C` with a polymorphic field (see
+below).  This applies to the Prelude's `$` only, and a type error in
+`f $ x` is reported against `f x`.  Other uses of `$` are not
+affected; `map ($ x) fs` means what it always did.
 
 ### Polymorphic components
 
