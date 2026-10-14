@@ -359,6 +359,7 @@ extern char *findPathname(char *);
 extern char *findMPathname(char *);
 extern char *findMInDir(char *, char *);
 extern bool readable(char *, bool);
+extern bool pathIsDirectory(char *);
 #if PROFILING
 extern char *timeString(void);
 #endif

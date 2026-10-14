@@ -259,6 +259,11 @@ void consoleInput(char *prompt) {
 /* Prepare to input characters from named file (specified length is used to set
  * target for reading) */
 static bool fileInput(char *nm, long len) {
+    if (pathIsDirectory(nm)) { /* fopen would succeed and read as empty */
+        errHead(0);
+        errPrintf("\"%s\" is a directory, not a module file", nm);
+        return false;
+    }
     if (!readable(nm, false)) { /* file not there */
         inputStream = NULL;
     } else if (preprocessor) {

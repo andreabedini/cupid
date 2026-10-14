@@ -90,6 +90,12 @@ bool readable(char *f, bool isReg) {
     );
 }
 
+/* Is f a directory? */
+bool pathIsDirectory(char *f) {
+    struct stat scbuf;
+    return !stat(f, &scbuf) && S_ISDIR(scbuf.st_mode);
+}
+
 /* --------------------------------------------------------------------------
  * Search for script files on the CUPID path:
  * ------------------------------------------------------------------------*/
