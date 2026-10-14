@@ -30,6 +30,7 @@ static List addPatVar(int, Cell, List);
 static void notDefined(int, List, Cell);
 static Cell getAttr(List, Cell);
 static void addSigdecl(List, Cell);
+static bool isTypeOperator(List, Text);
 static void addFixdecl(List, List, List, List, Triple);
 
 /* --------------------------------------------------------------------------
@@ -342,6 +343,18 @@ static void addSigdecl(List bs, Cell sigdecl) {
     }
 }
 
+/* Is t the name of one of the type constructors ts?  A fixity declaration
+ * for a type operator that is not also a data constructor is accepted, and
+ * has no effect, since fixities do not apply to types. */
+static bool isTypeOperator(List ts, Text t) {
+    for (; nonNull(ts); ts = tl(ts)) {
+        if (tyconRec(hd(ts))->text == t) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void addFixdecl(List bs, List ts, List cs, List ps, Triple fixdecl) {
     int line = intOf(fst3(fixdecl));
     List ops = snd3(fixdecl);
@@ -375,6 +388,9 @@ static void addFixdecl(List bs, List ts, List cs, List ps, Triple fixdecl) {
                 n = nameIsMember(t, hd(ps1));
             }
 
+            if (isNull(n) && isTypeOperator(ts, t)) {
+                continue; /* types take no fixity; see buildOpType */
+            }
             if (isNull(n)) {
                 missFixity(line, t);
             } else if (nameRec(n)->syntax != NO_SYNTAX) {

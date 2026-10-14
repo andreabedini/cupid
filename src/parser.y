@@ -50,6 +50,8 @@ static Pair checkDo(List);
 static Cell desugarGuards(List);
 static Cell guardMatch(Cell, List, Cell);
 static Cell checkTyLhs(Cell);
+static Cell buildOpType(List);
+static Cell checkOpLhs(Cell);
 static Cell checkConstr(Cell);
 static Cell starKind(Cell);
 static Cell namedKind(Cell);
@@ -166,6 +168,10 @@ export	  : qvar			{$$ = $1;}
 	  | qcon			{$$ = $1;}
 	  | qconid '(' UPTO ')'		{$$ = gcShadow(4,pair($1,DOTDOT));}
 	  | qconid '(' qnames ')'	{$$ = gcShadow(4,pair($1,$3));}
+	  | '(' CONOP ')' '(' UPTO ')'	{$$ = gcShadow(6,pair($2,DOTDOT));}
+	  | '(' CONOP ')' '(' qnames ')'	{$$ = gcShadow(6,pair($2,$5));}
+	  | '(' QCONOP ')' '(' UPTO ')'	{$$ = gcShadow(6,pair($2,DOTDOT));}
+	  | '(' QCONOP ')' '(' qnames ')'	{$$ = gcShadow(6,pair($2,$5));}
 	  | TMODULE modid		{$$ = gcShadow(2,ap(MODULEENT,$2));}
 	  ;
 qnames	  : /* empty */			{$$ = gcShadow(0,NIL);}
@@ -226,6 +232,9 @@ import	  : var				{$$ = $1;}
 	  | CONID			{$$ = gcShadow(1,pair($1,NONE));}
 	  | CONID '(' UPTO ')'		{$$ = gcShadow(4,pair($1,DOTDOT));}
 	  | CONID '(' names ')'		{$$ = gcShadow(4,pair($1,$3));}
+	  | '(' CONOP ')'		{$$ = gcShadow(3,pair($2,NONE));}
+	  | '(' CONOP ')' '(' UPTO ')'	{$$ = gcShadow(6,pair($2,DOTDOT));}
+	  | '(' CONOP ')' '(' names ')'	{$$ = gcShadow(6,pair($2,$5));}
 	  ;
 names	  : /* empty */			{$$ = gcShadow(0,NIL);}
 	  | ','				{$$ = gcShadow(1,NIL);}
@@ -254,6 +263,7 @@ topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
 	  | TYPE tyLhs '=' type IN invars
 					{defTycon(6,$3,$2,
 						    ap($4,$6),RESTRICTSYN);}
+	  | TYPE opLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
 	  | TYPE CONID COCO kind	{kindSigDefn(intOf($3),textOf($2),$4);
 					 sp-=4;}
 	  | TYPE error			{syntaxError("type declaration");}
@@ -278,6 +288,9 @@ topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
 					 defTycon(7,$5,lhs,
 						    ap(gadtConstrs($5,lhs,$6,DATATYPE),
 						       $7),DATATYPE);}
+	  | DATA opLhs '=' constrs deriving
+					{defTycon(5,$3,$2,ap(rev($4),$5),DATATYPE);}
+	  | DATA opLhs			{defTycon(2,$1,$2,ap(NIL,NIL),DATATYPE);}
 	  | DATA error			{syntaxError("data declaration");}
 	  | TNEWTYPE btype2 '=' nconstr deriving
 					{defTycon(5,$3,checkTyLhs($2),
@@ -290,6 +303,8 @@ topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
 					{defTycon(5,$3,checkTyLhs($2),
 						    ap(gadtConstrs($3,$2,$4,NEWTYPE),
 						       $5),NEWTYPE);}
+	  | TNEWTYPE opLhs '=' nconstr deriving
+					{defTycon(5,$3,$2,ap($4,$5),NEWTYPE);}
 	  | TNEWTYPE error		{syntaxError("newtype declaration");}
 	  | NEEDPRIMS NUMLIT		{if (isInt($2)) {
 					     needPrims(intOf($2), NULL);
@@ -303,6 +318,13 @@ tyLhs	  : tyLhs varid			{$$ = gcShadow(2,ap($1,$2));}
 	  | tyLhs kindedVar		{$$ = gcShadow(2,ap($1,$2));}
 	  | CONID			{$$ = $1;}
 	  | error			{syntaxError("type defn lhs");}
+	  ;
+/* The head of a declaration of a type operator: f :+: g, or (f :+: g)
+ * followed by more variables, meaning the same as (:+:) f g ...  It is read
+ * as a type, since until a `~' or `=>' it could also begin a context, and
+ * checkOpLhs then checks its shape. */
+opLhs	  : btype1			{$$ = checkOpLhs($1);}
+	  | varid CONOP varid		{$$ = gcShadow(3,ap(ap($2,$1),$3));}
 	  ;
 invars	  : invars ',' invar		{$$ = gcShadow(3,cons($3,$1));}
 	  | invar			{$$ = gcShadow(1,cons($1,NIL));}
@@ -469,7 +491,9 @@ topType0  : context IMPLIES topType1	{$$ = gcShadow(3,qualType($1,$3));}
 topType1  : bpolyType ARROW topType1	{$$ = gcShadow(3,fn($1,$3));}
 	  | btype1    ARROW topType1	{$$ = gcShadow(3,fn($1,$3));}
 	  | btype2    ARROW topType1	{$$ = gcShadow(3,fn($1,$3));}
+	  | opTypes   ARROW topType1	{$$ = gcShadow(3,fn(buildOpType($1),$3));}
 	  | btype			{$$ = $1;}
+	  | opTypes			{$$ = gcShadow(1,buildOpType($1));}
 	  ;
 polyType  : ALL varids '.' sigType	{$$ = gcShadow(4,ap(POLYTYPE,
 						     pair(rev($2),$4)));}
@@ -515,7 +539,17 @@ type1	  : btype1			{$$ = $1;}
 	  | bpolyType ARROW type	{$$ = gcShadow(3,fn($1,$3));}
 	  | btype1    ARROW type	{$$ = gcShadow(3,fn($1,$3));}
 	  | btype2    ARROW type	{$$ = gcShadow(3,fn($1,$3));}
+	  | opTypes			{$$ = gcShadow(1,buildOpType($1));}
+	  | opTypes   ARROW type	{$$ = gcShadow(3,fn(buildOpType($1),$3));}
 	  | error			{syntaxError("type expression");}
+	  ;
+/* Types joined by type operators, a :+: b :+: c, in reverse with the
+ * operators between them; buildOpType makes the tree. */
+opTypes	  : btype tyconop btype		{$$ = gcShadow(3,cons($3,cons($2,singleton($1))));}
+	  | opTypes tyconop btype	{$$ = gcShadow(3,cons($3,cons($2,$1)));}
+	  ;
+tyconop	  : CONOP			{$$ = $1;}
+	  | QCONOP			{$$ = $1;}
 	  ;
 btype	  : btype1			{$$ = $1;}
 	  | btype2			{$$ = $1;}
@@ -1198,6 +1232,30 @@ static Cell buildTupleExp(Cell line, List items) {
     return ap(LAMBDA, pair(vs, pair(line, buildTuple(items))));
 }
 
+/* Build the type for a chain of types joined by type operators, given as
+ * [tn, opn-1, tn-1, ..., op1, t1].  Fixity declarations do not apply to
+ * types: an operator groups to the right, binds less tightly than
+ * application and more tightly than ->, and a chain of different
+ * operators must be parenthesised rather than be grouped by a guess. */
+static Cell buildOpType(List ts) {
+    Cell t = hd(ts);
+    Cell op = hd(tl(ts));
+
+    for (ts = tl(ts); nonNull(ts); ts = tl(tl(ts))) {
+	Cell o = hd(ts);
+	if (whatIs(o) != whatIs(op)
+		|| (isQualIdent(o) ? qmodOf(o) != qmodOf(op) || qtextOf(o) != qtextOf(op)
+				   : textOf(o) != textOf(op))) {
+	    errHead(row);
+	    errPrintf("Type operators \"%s\" and ", identToStr(o));
+	    errPrintf("\"%s\" must be grouped with parentheses", identToStr(op));
+	    errFail();
+	}
+	t = ap(ap(o,hd(tl(ts))),t);
+    }
+    return t;
+}
+
 /* Validate context */
 static List checkCtxt(Type con) {
     mapOver(checkPred, con);
@@ -1233,6 +1291,22 @@ static Cell checkTyLhs(Cell c) {
     }
     if (whatIs(tlhs)!=CONIDCELL) {
 	errHead(row); errPrintf("Illegal left hand side in data type declaration");
+	errFail();
+    }
+    return c;
+}
+
+/* Check the head of a declaration of a type operator: an unqualified
+ * constructor operator applied to at least two distinct variables */
+static Cell checkOpLhs(Cell c) {
+    Cell h = c;
+    int n = 0;
+    while (isAp(h) && (whatIs(arg(h))==VARIDCELL || whatIs(arg(h))==KINDED)) {
+	h = fun(h);
+	n++;
+    }
+    if (whatIs(h)!=CONOPCELL || n < 2) {
+	errHead(row); errPrintf("Illegal left hand side in type declaration");
 	errFail();
     }
     return c;

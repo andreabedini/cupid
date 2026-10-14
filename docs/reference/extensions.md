@@ -259,6 +259,36 @@ Differences from GHC's `GADTSyntax` and `GADTs`:
   type with an existential or constrained constructor, and no
   selectors on one.
 
+## Type operators
+
+A constructor operator, a symbol starting with `:`, may name a type
+constructor or synonym.  It is declared with its operands either side,
+the first two in parentheses when there are more:
+
+```haskell
+data a :| b = a :| b
+data (f :+: g) p = L1 (f p) | R1 (g p)
+type a :-> b = a -> b
+```
+
+and used infix in any type, `K Int :+: K Bool`, or prefix in
+parentheses, `(:+:) f g p`.  It is imported and exported like any
+type constructor, as `(:+:)(..)`.
+
+Differences from GHC's `TypeOperators`:
+
+- Fixity declarations do not apply to types.  A type operator binds
+  less tightly than application and more tightly than `->`, and
+  groups to the right, so `a :+: b :+: c` is `a :+: (b :+: c)`.  A
+  chain of different operators, `a :+: b :*: c`, must be
+  parenthesised and is otherwise rejected.  A fixity declaration for
+  an operator that is only a type is accepted and has no effect; one
+  for an operator that is also a data constructor applies to the
+  constructor.
+- A type operator must start with `:`; GHC also allows `+` and the
+  other variable symbols.
+- A class may not be named by an operator.
+
 ## Kind signatures
 
 A declaration may say what kind its type constructor or class has.

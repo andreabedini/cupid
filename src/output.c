@@ -50,6 +50,10 @@ static void putModule(Module);
 static void putTyVar(int);
 static bool putTupleType(Cell, int);
 static void putApType(Type, int, int);
+static bool isTyconOp(Cell);
+static void putTyconName(Tycon);
+static void putOpType(Type, int, int);
+static void putOpApType(Type, int, int);
 
 static void putKind(Kind);
 static void putKinds(Kinds);
@@ -710,8 +714,13 @@ static void putPred(Cell pi, int fr) {
 static void putType(Cell t, int prec, int fr) {
     switch (whatIs(t)) {
     case TYCON:
-        putModule(tyconRec(t)->mod);
-        putStr(textToStr(tyconRec(t)->text));
+        if (isTyconOp(t)) {
+            putChr('(');
+            putTyconName(t);
+            putChr(')');
+        } else {
+            putTyconName(t);
+        }
         break;
 
     case TUPLE: {
@@ -807,6 +816,15 @@ static void putType(Cell t, int prec, int fr) {
                 putChr(')');
                 return;
             }
+        } else if (isTyconOp(typeHead) && argCount >= 2) {
+            if (argCount == 2) {
+                putOpType(t, prec, fr);
+            } else {
+                OPEN(brackets);
+                putOpApType(t, args, fr);
+                CLOSE(brackets);
+            }
+            return;
         }
         OPEN(brackets);
         putApType(t, args, fr);
@@ -847,6 +865,48 @@ static void putApType(Cell t, int n, int fr) {
         putType(arg(t), ALWAYS, fr);
     } else
         putType(t, ALWAYS, fr);
+}
+
+/* Is c a type operator, a type constructor named like :+: ? */
+static bool isTyconOp(Cell c) {
+    return isTycon(c) && textToStr(tyconRec(c)->text)[0] == ':';
+}
+
+/* Print the name of a type constructor, qualified if need be */
+static void putTyconName(Tycon tc) {
+    putModule(tyconRec(tc)->mod);
+    putStr(textToStr(tyconRec(tc)->text));
+}
+
+/* Print a type operator applied to two operands, f :+: g.  It binds less
+ * tightly than application and more tightly than ->, and groups to the
+ * right with itself, as buildOpType in the parser reads it. */
+static void putOpType(Type t, int prec, int fr) {
+    Cell op = fun(fun(t));
+    Cell r = arg(t);
+
+    OPEN(prec >= ARROW_PREC);
+    putType(arg(fun(t)), ARROW_PREC, fr);
+    putChr(' ');
+    putTyconName(op);
+    putChr(' ');
+    if (getHead(r) == op && argCount == 2) {
+        putOpType(r, NEVER, fr);
+    } else {
+        putType(r, ARROW_PREC, fr);
+    }
+    CLOSE(prec >= ARROW_PREC);
+}
+
+/* Print a type operator applied to n > 2 arguments, (f :+: g) p */
+static void putOpApType(Type t, int n, int fr) {
+    if (n > 2) {
+        putOpApType(fun(t), n - 1, fr);
+        putChr(' ');
+        putType(arg(t), ALWAYS, fr);
+    } else {
+        putOpType(t, ALWAYS, fr);
+    }
 }
 
 /* --------------------------------------------------------------------------

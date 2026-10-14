@@ -266,7 +266,8 @@ Type depTypeExp(int line, List tyvars, Type type) {
             errFail();
         }
         /* deliberate fall through */
-    case CONIDCELL: {
+    case CONIDCELL:
+    case CONOPCELL: { /* a type operator, f :+: g */
         Tycon tc = findQualTycon(type);
         if (isNull(tc)) {
             errHead(line);
