@@ -53,6 +53,14 @@ module Data.Typeable
 	typeRepTyCon,	-- :: TypeRep -> TyCon
 	typeRepArgs,	-- :: TypeRep -> [TypeRep]
 	tyConString,	-- :: TyCon   -> String
+	tyConName,	-- :: TyCon   -> String
+	typeRep,	-- :: Typeable a => proxy a -> TypeRep
+	showsTypeRep,	-- :: TypeRep -> ShowS
+	rnfTypeRep,	-- :: TypeRep -> ()
+
+	-- * For the type checker, which solves Typeable from a type's structure
+	mkTyConQ,	-- :: String -> String -> TyCon
+	constRep,	-- :: TypeRep -> a -> TypeRep
 
 	-- * The other Typeable classes
 	-- | /Note:/ The general instances are provided for GHC only.
@@ -289,6 +297,37 @@ mkTyCon :: String	-- ^ the name of the type constructor (should be unique
 			-- fully qualified name).
 	-> TyCon	-- ^ A unique 'TyCon' object
 mkTyCon str = TyCon (mkTyConKey str) str
+
+-- | The 'TyCon' of the type constructor named @n@ in module @m@, keyed on
+-- both but showing only @n@; the type checker uses it to build the
+-- 'TypeRep' of a type with no 'Typeable' instance, from its structure.  An
+-- empty @m@, for the Prelude's built-in types, gives 'mkTyCon' @n@.
+mkTyConQ :: String -> String -> TyCon
+mkTyConQ "" n = mkTyCon n
+mkTyConQ m n  = TyCon (mkTyConKey (m ++ "." ++ n)) n
+
+-- | The 'typeOf' of an instance the type checker builds: the 'TypeRep' it
+-- has computed, whatever the argument.
+constRep :: TypeRep -> a -> TypeRep
+constRep r _ = r
+
+-- | The name of a type constructor, without its module.
+tyConName :: TyCon -> String
+tyConName (TyCon _ str) = str
+
+-- | The 'TypeRep' of the type a proxy stands for.
+typeRep :: Typeable a => proxy a -> TypeRep
+typeRep p = typeOf (unproxy p)
+  where unproxy :: proxy a -> a
+        unproxy _ = undefined
+
+-- | 'shows' for 'TypeRep's.
+showsTypeRep :: TypeRep -> ShowS
+showsTypeRep = shows
+
+-- | Force a 'TypeRep' completely.
+rnfTypeRep :: TypeRep -> ()
+rnfTypeRep (TypeRep _ _ args) = foldr seq () (map rnfTypeRep args)
 
 ----------------- Observation ---------------------
 

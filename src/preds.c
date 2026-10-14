@@ -111,6 +111,154 @@ static Cell applyToEvid(Inst in, int beta) {
     return e;
 }
 
+/* --------------------------------------------------------------------------
+ * Typeable:
+ *
+ * As in GHC, a type built from type constructors is an instance of
+ * Data.Typeable's Typeable without any instance declaration.  When no
+ * instance matches Typeable t, its evidence is the class's dictionary
+ * constructor applied to (constRep r), r being an expression for the
+ * TypeRep of t, built from t's structure:
+ *
+ *   rep (T t1 ... tn) = mkTyConApp (mkTyConQ "M" "T") [rep t1, ..., rep tn]
+ *   rep u             = typeOf ev []   for an argument u of kind *, ev
+ *                                      being the evidence for Typeable u
+ *
+ * An argument of kind * is solved as a Typeable predicate of its own, by an
+ * instance if one matches it, and is the only place a type variable may be:
+ * one of another kind has no TypeRep, and leaves the predicate unsolved.
+ * The argument given to typeOf is never looked at.
+ * ------------------------------------------------------------------------*/
+
+/* How typeableRep solves the Typeable predicates of arguments of kind * */
+typedef enum {
+    TYPEABLE_CHECK,  /* not at all: only find whether the rep can be built */
+    TYPEABLE_ENTAIL, /* by entailment from the given predicates            */
+    TYPEABLE_REDUCE  /* by making each one a new wanted                    */
+} TypeableMode;
+
+typedef struct {
+    Class c; /* Typeable                                    */
+    TypeableMode mode;
+    List ps; /* the given predicates, for TYPEABLE_ENTAIL   */
+    int d;   /* the depth of entailment                     */
+} TypeableSolve;
+
+/* Is c the Typeable class of Data.Typeable? */
+static bool isTypeableClass(Class c) {
+    return cclassRec(c)->text == findText("Typeable") &&
+           moduleRec(cclassRec(c)->mod)->text == findText("Data.Typeable");
+}
+
+/* The name s defined in the module of class c */
+static Name typeableName(Class c, char *s) {
+    Text t = findText(s);
+    List ns = moduleRec(cclassRec(c)->mod)->names;
+    for (; nonNull(ns); ns = tl(ns))
+        if (nameRec(hd(ns))->text == t)
+            return hd(ns);
+    errHead(0);
+    errPrintf("Cannot solve Typeable: no \"%s\" in module \"%s\"", s,
+              textToStr(moduleRec(cclassRec(c)->mod)->text));
+    errFail();
+}
+
+/* An expression for the TyCon of the type constructor h, named as
+ * Data.Typeable names those of the Prelude it has instances for */
+static Cell typeableTyCon(Class c, Cell h) {
+    char *m = "";
+    char commas[NUM_TUPLES + 1];
+    char *n;
+    if (isTuple(h)) {
+        int i = 0;
+        for (; i < tupleOf(h) - 1 && i < NUM_TUPLES; i++)
+            commas[i] = ',';
+        commas[i] = '\0';
+        n = commas;
+    } else if (h == typeArrow) {
+        n = "->";
+    } else {
+        n = textToStr(tyconRec(h)->text);
+        if (h != typeList && h != typeUnit)
+            m = textToStr(moduleRec(tyconRec(h)->mod)->text);
+    }
+    return ap2(typeableName(c, "mkTyConQ"), mkStr(findText(m)),
+               mkStr(findText(n)));
+}
+
+/* An expression for the TypeRep of t (offset o), or NIL if there is none;
+ * top is set for the type of the predicate, which has kind *, and is
+ * built from its structure whatever its kind.  In TYPEABLE_CHECK mode the
+ * result only tells whether there would be one. */
+static Cell typeableRep(TypeableSolve *s, Type t, int o, bool top) {
+    Type h;
+    int a;
+    List args = NIL;
+    Cell rep;
+    for (;;) {
+        h = getDerefHead(t, o);
+        a = argCount;
+        if (isSynonym(h) && a >= tyconRec(h)->arity)
+            expandSyn(h, a, &t, &o);
+        else
+            break;
+    }
+    if (!top && getKind(t, o) == STAR) { /* a Typeable predicate itself */
+        Cell pi = ap(s->c, t);
+        Cell ev;
+        switch (s->mode) {
+        case TYPEABLE_CHECK:
+            return nameNil;
+        case TYPEABLE_REDUCE:
+            ev = assumeEvid(pi, o);
+            break;
+        default:
+            ev = entail(s->ps, pi, o, s->d);
+            break;
+        }
+        if (isNull(ev))
+            return NIL;
+        return ap2(hd(cclassRec(s->c)->members), ev, nameNil);
+    }
+    if (!isTycon(h) && !isTuple(h)) /* a type variable, or one applied   */
+        return NIL;
+    for (; 0 < a--; t = fun(t)) {
+        Cell r;
+        deRef(&t, &o);
+        r = typeableRep(s, arg(t), o, false);
+        if (isNull(r))
+            return NIL;
+        args = cons(r, args);
+    }
+    if (s->mode == TYPEABLE_CHECK)
+        return nameNil;
+    rep = nameNil;
+    for (args = rev(args); nonNull(args); args = tl(args))
+        rep = ap2(nameCons, hd(args), rep);
+    return ap2(typeableName(s->c, "mkTyConApp"), typeableTyCon(s->c, h), rep);
+}
+
+/* The evidence for (pi,o), a Typeable predicate that no instance matched,
+ * solving the predicates of its arguments of kind * as mode says, or NIL
+ * if it cannot be built from the type's structure.  Nothing is solved,
+ * and no new wanted made, unless the whole can be. */
+static Cell typeableEvid(TypeableMode mode, List ps, Cell pi, int o, int d) {
+    TypeableSolve s;
+    Cell rep;
+    s.c = getHead(pi);
+    s.mode = TYPEABLE_CHECK;
+    s.ps = ps;
+    s.d = d;
+    if (!isClass(s.c) || !isTypeableClass(s.c) ||
+        isNull(typeableRep(&s, arg(pi), o, true)))
+        return NIL;
+    s.mode = mode;
+    rep = typeableRep(&s, arg(pi), o, true);
+    if (isNull(rep))
+        return NIL;
+    return ap(cclassRec(s.c)->dcon, ap(typeableName(s.c, "constRep"), rep));
+}
+
 /* Make list of predicate assumps. from qs (offset o), w/ new dict vars for
  * each predicate */
 List makePredAss(List qs, int o) {
@@ -438,6 +586,9 @@ Cell inEntail(List ps, Cell pi, int o, int d) {
         }
         return e;
     } else {
+        Cell ev = typeableEvid(TYPEABLE_ENTAIL, ps, pi, o, d);
+        if (nonNull(ev))
+            return ev;
         if (showInstRes) {
             for (i = 0; i < d; i++)
                 fputc(' ', stdout);
@@ -646,9 +797,14 @@ void reducePreds(void) {
         if (nonNull(in)) {
             Cell ev = applyToEvid(in, beta);
             overEvid(thd3(hd(p)), ev);
-        } else { /* No worthwhile progress possible */
-            tl(p) = rems;
-            rems = p;
+        } else {
+            Cell ev = typeableEvid(TYPEABLE_REDUCE, NIL, pi, o, 0);
+            if (nonNull(ev)) {
+                overEvid(thd3(hd(p)), ev);
+            } else { /* No worthwhile progress possible */
+                tl(p) = rems;
+                rems = p;
+            }
         }
     }
     preds = scSimplify(rems); /* Return any remaining predicates */

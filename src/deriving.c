@@ -62,6 +62,7 @@ static Cell mkReadRecord(Cell, List);
 static List deriveBounded(Tycon);
 static List mkBndBinds(int, Cell, int);
 static bool isGenericClass(Class);
+static bool isTypeableClass(Class);
 static List deriveGeneric(Inst, Type);
 static Cell genTycon(char *);
 static Name genName(char *);
@@ -119,6 +120,9 @@ void checkDerive(Tycon t, List p, List ts, Cell ct) {
         }
         instRec(addDerInst(line, c, p, singleton(via), t, tyconRec(t)->arity))
             ->via = via;
+        return;
+    }
+    if (isTypeableClass(c)) { /* every type is: see preds.c       */
         return;
     }
     if (isGenericClass(c)) { /* a representation needs no context */
@@ -1217,6 +1221,14 @@ static List mkBndBinds(int line, Cell h, int n) {
 static Module genModule; /* the module defining Generic, while deriving */
 
 /* Is c the Generic class of GHC.Generics? */
+/* Is c the Typeable class of Data.Typeable?  The type checker solves it
+ * for every type built from type constructors, so deriving it does
+ * nothing, as in GHC. */
+static bool isTypeableClass(Class c) {
+    return cclassRec(c)->text == findText("Typeable") &&
+           moduleRec(cclassRec(c)->mod)->text == findText("Data.Typeable");
+}
+
 static bool isGenericClass(Class c) {
     return cclassRec(c)->text == findText("Generic") &&
            moduleRec(cclassRec(c)->mod)->text == findText("GHC.Generics");

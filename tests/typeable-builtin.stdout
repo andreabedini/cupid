@@ -1,0 +1,5 @@
+(Color,Pair Color [Maybe Char],Wrap Maybe Color)
+(Just Red,Nothing,Just 3)
+(Pair Bool Bool,Old,Color)
+(True,False)
+([Color,Char],"Color")

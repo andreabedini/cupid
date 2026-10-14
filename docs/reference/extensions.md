@@ -476,6 +476,32 @@ getA (R {a}) = a
 mk a b = R {a, b}
 ```
 
+## Typeable for every type
+
+Every type built from type constructors is an instance of
+`Data.Typeable`'s `Typeable`, as in GHC, without an instance
+declaration, so `typeOf` and `cast` work on the program's own types and
+any type can be made an exception (see
+[the libraries](libraries.md#exceptions)):
+
+```haskell
+import Data.Typeable
+
+data Color = Red | Green
+newtype Wrap f a = Wrap (f a)
+
+-- typeOf (Wrap (Just Red))  ==>  Wrap Maybe Color
+-- cast Red :: Maybe Color   ==>  Just Red
+```
+
+The type checker builds the `TypeRep` from the type's structure when no
+instance matches, and reduces `Typeable (T a)` in an inferred context to
+`Typeable a`.  An argument of kind `Type` is solved as a `Typeable`
+predicate of its own, by an instance if one matches; one of another kind
+must be built from type constructors, so `Typeable (StateT s m a)` holds
+for `m = IO` but cannot be solved, or required, for an unknown `m`.
+`deriving Typeable` is accepted and does nothing.
+
 ## Deriving Generic
 
 `deriving Generic`, with `Generic` imported from `GHC.Generics`,
