@@ -396,6 +396,9 @@ Cell depExpr(int line, Cell e) {
     case INFIX:
         return depExpr(line, tidyInfix(line, snd(e)));
 
+    case SECTION:
+        return depExpr(line, tidySection(line, snd(e)));
+
     case AP:
         depPair(line, e);
         break;

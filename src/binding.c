@@ -215,6 +215,7 @@ static List getPatVars(int line, Cell p, List vs) {
     case NEG:
     case ONLY:
     case INFIX:
+    case SECTION:
         return getPatVars(line, snd(p), vs);
 
     case ASPAT:

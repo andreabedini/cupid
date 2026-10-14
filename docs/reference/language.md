@@ -47,10 +47,6 @@ as
 let x = True in x == x == True
 ```
 
-**Left sections are restricted.**  The expression in a left section
-must be a function application, `case` or `do`.  `(a+b+)` and
-`(a*b+)` are rejected.
-
 ### Declarations and bindings
 
 **Polymorphic recursion is slightly more permissive.**  In a group of

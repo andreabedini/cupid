@@ -243,6 +243,33 @@ Cell tidyInfix(int line, Cell e) {
         }
 }
 
+/* --------------------------------------------------------------------------
+ * Left sections:
+ *
+ * A left section (e op) whose operand e is itself an infix expression,
+ * such as (a + b +), cannot be resolved by the parser either.  It reaches
+ * here as the InfixExp of e op _, the wildcard standing for the missing
+ * right argument.  The Haskell report allows the section only when
+ * e op x would parse as (e) op x, that is when op is the outermost
+ * operator once the fixities are applied, and that is exactly when the
+ * wildcard comes out as the right argument of the whole tree.
+ * ------------------------------------------------------------------------*/
+
+/* Convert the InfixExp of a left section to the partial application op e */
+Cell tidySection(int line, Cell e) {
+    Cell op = fun(fun(e)); /* the operator as written, for errors */
+    Cell t = tidyInfix(line, e);
+
+    if (!isAp(t) || arg(t) != WILDCARD) {
+        errHead(line);
+        errPrintf("Operator \"");
+        errExpr(op);
+        errPrintf("\" in a left section does not apply to the whole operand");
+        errFail();
+    }
+    return fun(t);
+}
+
 /* Attach fixity to operator in an infix expression */
 static Pair attachFixity(int line, Cell op) {
     Syntax sy = DEF_OPSYNTAX;

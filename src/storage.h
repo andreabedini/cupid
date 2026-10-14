@@ -299,9 +299,10 @@ typedef enum CellTag {
     HIDDEN = 81,    /* hiding import list    snd :: [Entity] */
     MODULEENT = 82, /* module in export list snd :: con      */
 
-    INFIX = 90, /* INFIX        snd :: (see tidyInfix)     */
-    ONLY = 91,  /* ONLY snd :: Exp                 */
-    NEG = 92,   /* NEG  snd :: Exp                 */
+    INFIX = 90,   /* INFIX        snd :: (see tidyInfix)     */
+    ONLY = 91,    /* ONLY snd :: Exp                 */
+    NEG = 92,     /* NEG  snd :: Exp                 */
+    SECTION = 93, /* SECTION snd :: InfixExp (see tidySection) */
 
     DOUBLECELL = 97, /* DOUBLECELL snd :: (Int,Int)        */
     I64CELL = 98,    /* Int/Word64 snd :: (Int,Int)           */

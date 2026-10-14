@@ -779,6 +779,8 @@ aexp	  : qvar			{$$ = $1;}
 	  | '(' exps2 ')'		{$$ = gcShadow(3,buildTuple($2));}
 	  | '[' list ']'		{$$ = gcShadow(3,$2);}
 	  | '(' exp10a qop ')'		{$$ = gcShadow(4,ap($3,$2));}
+	  | '(' infixExpa qop ')'	{$$ = gcShadow(4,ap(SECTION,
+						     ap(ap($3,$2),WILDCARD)));}
 	  | '(' qvarop_mi exp0 ')'	{$$ = gcShadow(4,ap(ap(nameFlip,$2),$3));}
 	  | '(' qconop exp0 ')'		{$$ = gcShadow(4,ap(ap(nameFlip,$2),$3));}
 	  ;
