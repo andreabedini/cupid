@@ -295,7 +295,9 @@ static void load(void) {
 
     clearEvalModule();
     while ((s = readFilename()) != 0) {
-        addScriptName(s, true);
+        char expandedPath[FILENAME_MAX + 1];
+        expandPath(s, expandedPath, sizeof(expandedPath));
+        addScriptName(expandedPath, true);
     }
     readScripts(1);
 }
@@ -308,7 +310,9 @@ static void load(void) {
 static void editor(void) {
     char *newFile = readFilename();
     if (newFile) {
-        setLastEdit(newFile, 0);
+        char expandedPath[FILENAME_MAX + 1];
+        expandPath(newFile, expandedPath, sizeof(expandedPath));
+        setLastEdit(expandedPath, 0);
         if (readFilename()) {
             errHead(0);
             errPrintf("Multiple filenames not permitted");
