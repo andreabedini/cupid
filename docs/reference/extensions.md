@@ -565,6 +565,26 @@ Differences from GHC's `DeriveGeneric`:
 - `Generic1` cannot be derived, and the Prelude's own types have no
   `Generic` instances.
 
+## Deriving Data
+
+`deriving Data`, with `Data` imported from `Data.Data`, gives a type
+the instance that generic programming in the style of "Scrap your
+boilerplate" works with, as in GHC:
+
+```haskell
+import Data.Data
+
+data Shape = Circle Double | Rect { width, height :: Double }
+    deriving Data
+
+-- toConstr (Rect 1 2)                  ==>  Rect
+-- constrFields (toConstr (Rect 1 2))   ==>  ["width","height"]
+-- gmapQ (\d -> typeOf d) (Rect 1 2)    ==>  [Double,Double]
+```
+
+The data type is named with its module, `Main.Shape`, and a
+constructor whose name begins with `:` has the fixity `Infix`.
+
 ## Deriving strategies and deriving via
 
 A declaration may have several `deriving` clauses, and a clause may

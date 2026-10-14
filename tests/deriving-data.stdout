@@ -1,0 +1,9 @@
+(Circle,Rect,Dot)
+("Main.Shape",["Circle","Rect","Dot"])
+(["width","height"],Infix)
+(2,Name)
+([3,4],[1,2])
+Lit 2 :+: Neg (Lit 3)
+Dot
+["True","True"]
+Circle 0.0

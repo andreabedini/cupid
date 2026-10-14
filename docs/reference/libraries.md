@@ -27,15 +27,16 @@ enabled; see [Language extensions](extensions.md).
 ## Modules added since 2006
 
 `base` has the modules of GHC's base that later library code imports
-most: `Control.Category`, `Control.Monad.Fail`, `Control.Monad.IO.Class`,
-`Control.Monad.Zip`, `Data.Bifoldable`, `Data.Bifunctor`,
-`Data.Bitraversable`, `Data.Foldable1`, `Data.Function`, `Data.Functor`
-and its submodules (among them `.Classes` and `.Contravariant`),
-`Data.List.NonEmpty`, `Data.Proxy`, `Data.Semigroup`, `Data.String`,
-`Data.Void`, `GHC.Generics` and `Numeric.Natural`.  With them the
-transformers package loads as it is.  The older modules have the
-functions added to them since, such as `Data.List.intercalate`,
-`Data.Ord.Down` and `Text.Read.readMaybe`.  Four differ from GHC's:
+most: `Control.Category`, `Control.Monad.Fail`,
+`Control.Monad.IO.Class`, `Control.Monad.Zip`, `Data.Bifoldable`,
+`Data.Bifunctor`, `Data.Bitraversable`, `Data.Data`, `Data.Foldable1`,
+`Data.Function`, `Data.Functor` and its submodules (among them
+`.Classes` and `.Contravariant`), `Data.List.NonEmpty`, `Data.Proxy`,
+`Data.Semigroup`, `Data.String`, `Data.Void`, `GHC.Generics` and
+`Numeric.Natural`.  With them the transformers package loads as it is.
+The older modules have the functions added to them since, such as
+`Data.List.intercalate`, `Data.Ord.Down` and `Text.Read.readMaybe`.
+Five differ from GHC's:
 
 - `Proxy` stands for a type of kind `Type` only, since kinds are not
   polymorphic: `Proxy :: Proxy Int` but not `Proxy :: Proxy Maybe`.
@@ -43,6 +44,9 @@ functions added to them since, such as `Data.List.intercalate`,
   `fromString` must be called.
 - A `Natural` that would be negative is an `error` call,
   `arithmetic underflow`, rather than an `ArithException`.
+- `Data`'s `dataCast1` and `dataCast2` take `Typeable1` and `Typeable2`
+  for the type constructor, as `Typeable` is for types of kind `Type`
+  only.
 - `Read1` and `Read2` have only their `ReadS` methods, since the `Read`
   class has no `readPrec`, and `Eq1` and its kin have no quantified
   superclasses, so `Eq1 f` does not give `Eq (f a)`.
@@ -115,7 +119,7 @@ types to Haskell types (`HsType_int`, `HsType_mode_t`, ...), the
 `.Unboxed`), `Data.Bifoldable`, `Data.Bifunctor`,
 `Data.Bitraversable`, `Data.Bits`, `Data.Bool`, `Data.ByteString` (and
 `.Base`, `.Char8`, `.Fusion`, `.Lazy`, `.Lazy.Char8`), `Data.Char`,
-`Data.Complex`, `Data.Dynamic`, `Data.Either`, `Data.Eq`,
+`Data.Complex`, `Data.Data`, `Data.Dynamic`, `Data.Either`, `Data.Eq`,
 `Data.Fixed`, `Data.Foldable`, `Data.Foldable1`, `Data.Function`,
 `Data.Functor` (and `.Classes`, `.Compose`, `.Const`,
 `.Contravariant`, `.Identity`, `.Product`, `.Sum`), `Data.FunctorM`,

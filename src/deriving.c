@@ -63,6 +63,10 @@ static List deriveBounded(Tycon);
 static List mkBndBinds(int, Cell, int);
 static bool isGenericClass(Class);
 static bool isTypeableClass(Class);
+static bool isDataClass(Class);
+static List deriveData(Inst, Tycon);
+static Name dataName(Class, char *);
+static Cell dataTypeExpr(Class, Tycon);
 static List deriveGeneric(Inst, Type);
 static Cell genTycon(char *);
 static Name genName(char *);
@@ -417,6 +421,8 @@ static void addDerivImp(Inst in) {
         imp = deriveBounded(t);
     } else if (isGenericClass(c)) {
         imp = deriveGeneric(in, t);
+    } else if (isDataClass(c)) {
+        imp = deriveData(in, t);
     } else {
         errHead(instRec(in)->line);
         errPrintf("Cannot derive instances of class \"%s\"",
@@ -1227,6 +1233,162 @@ static Module genModule; /* the module defining Generic, while deriving */
 static bool isTypeableClass(Class c) {
     return cclassRec(c)->text == findText("Typeable") &&
            moduleRec(cclassRec(c)->mod)->text == findText("Data.Typeable");
+}
+
+/* --------------------------------------------------------------------------
+ * Deriving Data, the class of Data.Data, for
+ *
+ *   data T a = C1 a Int | C2 | ...
+ *
+ * gives
+ *
+ *   gfoldl k z (C1 x1 x2) = k (k (z C1) x1) x2
+ *   gfoldl k z C2         = z C2
+ *   gunfold k z c         = gunfoldIndex c [k (k (z C1)), z C2, ...]
+ *   toConstr x            = indexConstr (dataTypeOf x) (enFrEn x + 1)
+ *   dataTypeOf _          = mkDerivedDataType "M.T"
+ *                               [("C1", [], False), ("C2", [], False), ...]
+ *
+ * where gunfoldIndex picks the alternative for the constructor's index,
+ * and mkDerivedDataType builds the DataType and its constructors, each
+ * with its field labels and whether it is an operator.  A type with one
+ * constructor, or a newtype, has 1 for its index, without looking at x.
+ * ------------------------------------------------------------------------*/
+
+/* Is c the Data class of Data.Data? */
+static bool isDataClass(Class c) {
+    return cclassRec(c)->text == findText("Data") &&
+           moduleRec(cclassRec(c)->mod)->text == findText("Data.Data");
+}
+
+/* The name s defined in the module of class c, which is Data.Data */
+static Name dataName(Class c, char *s) {
+    Text t = findText(s);
+    List ns = moduleRec(cclassRec(c)->mod)->names;
+    for (; nonNull(ns); ns = tl(ns)) {
+        if (nameRec(hd(ns))->text == t) {
+            return hd(ns);
+        }
+    }
+    errHead(0);
+    errPrintf("Cannot derive Data: no \"%s\" in module \"%s\"", s,
+              textToStr(moduleRec(cclassRec(c)->mod)->text));
+    errFail();
+}
+
+/* The DataType of t, for its derived dataTypeOf */
+static Cell dataTypeExpr(Class c, Tycon t) {
+    char name[FILENAME_MAX + 1];
+    List cs = tyconRec(t)->defn;
+    List rcs = NIL;
+    Cell infos = nameNil;
+    snprintf(name, sizeof(name), "%s.%s",
+             textToStr(moduleRec(tyconRec(t)->mod)->text),
+             textToStr(tyconRec(t)->text));
+    for (; hasCfun(cs); cs = tl(cs)) {
+        rcs = cons(hd(cs), rcs);
+    }
+    for (; nonNull(rcs); rcs = tl(rcs)) {
+        Name con = hd(rcs);
+        List cfs = cfunSfuns;
+        Cell labels = nameNil;
+        for (; nonNull(cfs) && con != fst(hd(cfs)); cfs = tl(cfs)) {
+        }
+        if (nonNull(cfs)) {
+            List ls = rev(dupList(snd(hd(cfs))));
+            for (; nonNull(ls); ls = tl(ls)) {
+                labels = ap2(nameCons, mkStr(textOf(hd(ls))), labels);
+            }
+        }
+        infos = ap2(
+            nameCons,
+            ap(ap(ap(mkTuple(3), mkStr(nameRec(con)->text)), labels),
+               textToStr(nameRec(con)->text)[0] == ':' ? nameTrue : nameFalse),
+            infos);
+    }
+    return ap2(dataName(c, "mkDerivedDataType"), mkStr(findText(name)), infos);
+}
+
+/* Bindings for the derived Data instance in, for the type t */
+static List deriveData(Inst in, Tycon t) {
+    Class c = instRec(in)->c;
+    int line = tyconRec(t)->line;
+    List cs = tyconRec(t)->defn;
+    List folds = NIL;
+    Cell unfolds = nameNil;
+    List rcs = NIL;
+    List vs;
+    Cell k, z, x, index;
+    Name dataTypeOf = NIL;
+    List ms = cclassRec(c)->members;
+
+    if (!isTycon(t)) {
+        errHead(line);
+        errPrintf("Cannot derive Data for a tuple type");
+        errFail();
+    }
+    for (; nonNull(ms); ms = tl(ms)) {
+        if (nameRec(hd(ms))->text == findText("dataTypeOf")) {
+            dataTypeOf = hd(ms);
+        }
+    }
+
+    for (; hasCfun(cs); cs = tl(cs)) {
+        Name con = hd(cs);
+        int a = userArity(con);
+        Cell pat = con;
+        Cell body;
+        int i;
+        vs = getDiVars(a + 2);
+        k = hd(vs);
+        z = hd(tl(vs));
+        body = ap(z, con);
+        for (vs = tl(tl(vs)), i = 0; i < a; i++, vs = tl(vs)) {
+            pat = ap(pat, hd(vs));
+            body = ap2(k, body, hd(vs));
+        }
+        folds = cons(
+            pair(cons(k, cons(z, singleton(pat))), pair(mkInt(line), body)),
+            folds);
+        rcs = cons(con, rcs);
+    }
+
+    vs = getDiVars(3);
+    k = hd(vs);
+    z = hd(tl(vs));
+    x = hd(tl(tl(vs)));
+    for (; nonNull(rcs); rcs = tl(rcs)) {
+        Cell alt = ap(z, hd(rcs));
+        int i;
+        for (i = userArity(hd(rcs)); i > 0; i--) {
+            alt = ap(k, alt);
+        }
+        unfolds = ap2(nameCons, alt, unfolds);
+    }
+
+    if (tyconRec(t)->what == NEWTYPE || length(tyconRec(t)->defn) == 1) {
+        index = mkInt(1);
+    } else {
+        index = ap2(namePlus, ap(nameEnFrEn, x), mkInt(1));
+    }
+
+    return cons(
+        mkBind("gfoldl", rev(folds)),
+        cons(mkBind("gunfold",
+                    singleton(
+                        pair(cons(k, cons(z, singleton(x))),
+                             pair(mkInt(line), ap2(dataName(c, "gunfoldIndex"),
+                                                   x, unfolds))))),
+             cons(mkBind("toConstr",
+                         singleton(pair(singleton(x),
+                                        pair(mkInt(line),
+                                             ap2(dataName(c, "indexConstr"),
+                                                 ap(dataTypeOf, x), index))))),
+                  singleton(
+                      mkBind("dataTypeOf",
+                             singleton(pair(
+                                 singleton(WILDCARD),
+                                 pair(mkInt(line), dataTypeExpr(c, t)))))))));
 }
 
 static bool isGenericClass(Class c) {
