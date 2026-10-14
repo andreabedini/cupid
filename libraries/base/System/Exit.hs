@@ -17,6 +17,8 @@ module System.Exit
       ExitCode(ExitSuccess,ExitFailure)
     , exitWith      -- :: ExitCode -> IO a
     , exitFailure   -- :: IO a
+    , exitSuccess   -- :: IO a
+    , die           -- :: String -> IO a
   ) where
 
 import Prelude
@@ -72,3 +74,11 @@ exitWith code@(ExitFailure n)
 -- where /exitfail/ is implementation-dependent.
 exitFailure :: IO a
 exitFailure = exitWith (ExitFailure 1)
+
+-- | The computation 'exitSuccess' is equivalent to 'exitWith' 'ExitSuccess'.
+exitSuccess :: IO a
+exitSuccess = exitWith ExitSuccess
+
+-- | Write a message to standard error and exit with 'exitFailure'.
+die :: String -> IO a
+die err = hPutStr stderr (err ++ "\n") >> exitFailure

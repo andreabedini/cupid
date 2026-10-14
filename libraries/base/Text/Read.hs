@@ -36,6 +36,8 @@ module Text.Read (
    L.Lexeme(..),	
    lexP,		-- :: ReadPrec Lexeme
    parens,		-- :: ReadPrec a -> ReadPrec a
+   readMaybe,		-- :: Read a => String -> Maybe a
+   readEither,		-- :: Read a => String -> Either String a
 
 
 
@@ -68,3 +70,18 @@ parens p = optional
     L.Punc ")" <- lexP
     return x
 
+-- | Parse a string with 'reads', succeeding only when the whole string,
+-- but for white space, is a single value.
+readEither :: Read a => String -> Either String a
+readEither s =
+  case [ x | (x, rest) <- reads s, ("", "") <- lex rest ] of
+    [x] -> Right x
+    []  -> Left "Prelude.read: no parse"
+    _   -> Left "Prelude.read: ambiguous parse"
+
+-- | Parse a string with 'reads', or 'Nothing' if it is not a single
+-- value.
+readMaybe :: Read a => String -> Maybe a
+readMaybe s = case readEither s of
+  Left _  -> Nothing
+  Right a -> Just a

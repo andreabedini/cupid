@@ -18,6 +18,7 @@ module Data.Tuple
   , snd		-- :: (a,b) -> a
   , curry	-- :: ((a, b) -> c) -> a -> b -> c
   , uncurry	-- :: (a -> b -> c) -> ((a, b) -> c)
+  , swap	-- :: (a,b) -> (b,a)
 
 
 
@@ -257,20 +258,6 @@ default ()		-- Double isn't available yet
 -- ---------------------------------------------------------------------------
 -- Standard functions over tuples
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- | Swap the components of a pair.
+swap :: (a,b) -> (b,a)
+swap (a,b) = (b,a)

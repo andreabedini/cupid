@@ -536,6 +536,15 @@ instance Semigroup (NonEmpty a) where
 instance Functor NonEmpty where
     fmap f (a :| as) = f a :| map f as
 
+instance Applicative NonEmpty where
+    pure a    = a :| []
+    fs <*> xs = fs >>= \f -> fmap f xs
+
+instance Monad NonEmpty where
+    (a :| as) >>= f = case f a of
+                          b :| bs -> b :| (bs ++ (as >>= \x -> case f x of
+                                                                  c :| cs -> c : cs))
+
 instance Semigroup [a] where
     (<>) = (++)
 

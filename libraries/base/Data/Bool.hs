@@ -21,19 +21,11 @@ module Data.Bool (
    (||),	-- :: Bool -> Bool -> Bool
    not,		-- :: Bool -> Bool
    otherwise,	-- :: Bool
+   bool,	-- :: a -> a -> Bool -> a
   ) where
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- | Case analysis for 'Bool': @'bool' f t p@ is @t@ if @p@ holds and
+-- @f@ otherwise.
+bool :: a -> a -> Bool -> a
+bool f _ False = f
+bool _ t True  = t

@@ -21,6 +21,9 @@ module Data.IORef
         writeIORef,	      -- :: IORef a -> a -> IO ()
 	modifyIORef,	      -- :: IORef a -> (a -> a) -> IO ()
 	atomicModifyIORef,    -- :: IORef a -> (a -> (a,b)) -> IO b
+	modifyIORef',	      -- :: IORef a -> (a -> a) -> IO ()
+	atomicModifyIORef',   -- :: IORef a -> (a -> (a,b)) -> IO b
+	atomicWriteIORef,     -- :: IORef a -> a -> IO ()
 
 
 
@@ -84,10 +87,20 @@ atomicModifyIORef = plainModifyIORef	-- Cupid has no preemption
 		a <- readIORef r
 		case f a of (a',b) -> writeIORef r a' >> return b
 
+-- | A strict version of 'modifyIORef'.
+modifyIORef' :: IORef a -> (a -> a) -> IO ()
+modifyIORef' ref f = do
+	x <- readIORef ref
+	let x' = f x
+	x' `seq` writeIORef ref x'
 
+-- | A strict version of 'atomicModifyIORef'.
+atomicModifyIORef' :: IORef a -> (a -> (a,b)) -> IO b
+atomicModifyIORef' ref f = do
+	b <- atomicModifyIORef ref $ \a -> case f a of
+		v@(a',_) -> a' `seq` v
+	b `seq` return b
 
-
-
-
-
-
+-- | Write a value; Cupid has no preemption, so any write is atomic.
+atomicWriteIORef :: IORef a -> a -> IO ()
+atomicWriteIORef = writeIORef

@@ -27,6 +27,9 @@ module Data.List
    , last	       -- :: [a] -> a
    , tail	       -- :: [a] -> [a]
    , init              -- :: [a] -> [a]
+   , uncons            -- :: [a] -> Maybe (a, [a])
+   , unsnoc            -- :: [a] -> Maybe ([a], a)
+   , singleton         -- :: a -> [a]
    , null	       -- :: [a] -> Bool
    , length	       -- :: [a] -> Int
 
@@ -36,6 +39,9 @@ module Data.List
 
    , intersperse       -- :: a -> [a] -> [a]
    , transpose         -- :: [[a]] -> [[a]]
+   , intercalate       -- :: [a] -> [[a]] -> [a]
+   , subsequences      -- :: [a] -> [[a]]
+   , permutations      -- :: [a] -> [[a]]
 
    -- * Reducing lists (folds)
 
@@ -63,6 +69,7 @@ module Data.List
 
    -- ** Scans
    , scanl             -- :: (a -> b -> a) -> a -> [b] -> [a]
+   , scanl'            -- :: (a -> b -> a) -> a -> [b] -> [a]
    , scanl1            -- :: (a -> a -> a) -> [a] -> [a]
    , scanr             -- :: (a -> b -> b) -> b -> [a] -> [b]
    , scanr1            -- :: (a -> a -> a) -> [a] -> [a]
@@ -73,6 +80,7 @@ module Data.List
 
    -- ** Infinite lists
    , iterate           -- :: (a -> a) -> a -> [a]
+   , iterate'          -- :: (a -> a) -> a -> [a]
    , repeat            -- :: a -> [a]
    , replicate         -- :: Int -> a -> [a]
    , cycle             -- :: [a] -> [a]
@@ -89,6 +97,7 @@ module Data.List
 
    , takeWhile         -- :: (a -> Bool) -> [a] -> [a]
    , dropWhile         -- :: (a -> Bool) -> [a] -> [a]
+   , dropWhileEnd      -- :: (a -> Bool) -> [a] -> [a]
    , span              -- :: (a -> Bool) -> [a] -> ([a], [a])
    , break             -- :: (a -> Bool) -> [a] -> ([a], [a])
 
@@ -96,11 +105,13 @@ module Data.List
 
    , inits             -- :: [a] -> [[a]]
    , tails             -- :: [a] -> [[a]]
+   , stripPrefix       -- :: Eq a => [a] -> [a] -> Maybe [a]
 
    -- ** Predicates
    , isPrefixOf        -- :: (Eq a) => [a] -> [a] -> Bool
    , isSuffixOf        -- :: (Eq a) => [a] -> [a] -> Bool
    , isInfixOf         -- :: (Eq a) => [a] -> [a] -> Bool
+   , isSubsequenceOf   -- :: (Eq a) => [a] -> [a] -> Bool
 
    -- * Searching lists
 
@@ -119,6 +130,7 @@ module Data.List
    -- with indices ranging from 0 to @'length' xs - 1@.
 
    , (!!)	       -- :: [a] -> Int -> a
+   , (!?)              -- :: [a] -> Int -> Maybe a
 
    , elemIndex	       -- :: (Eq a) => a -> [a] -> Maybe Int
    , elemIndices       -- :: (Eq a) => a -> [a] -> [Int]
@@ -160,6 +172,7 @@ module Data.List
 
    -- ** Ordered lists
    , sort              -- :: (Ord a) => [a] -> [a]
+   , sortOn            -- :: (Ord b) => (a -> b) -> [a] -> [a]
    , insert            -- :: (Ord a) => a -> [a] -> [a]
 
    -- * Generalized functions
@@ -881,4 +894,92 @@ errorEmptyList :: String -> a
 errorEmptyList fun =
   error ("Prelude." ++ fun ++ ": empty list")
 
+-- -----------------------------------------------------------------------------
+-- Functions added to Data.List since 2006
 
+infixl 9 !?
+
+-- | Decompose a list into its head and tail, if it is not empty.
+uncons                  :: [a] -> Maybe (a, [a])
+uncons []               = Nothing
+uncons (x:xs)           = Just (x, xs)
+
+-- | Decompose a list into its initial part and last element, if it is
+-- not empty.
+unsnoc                  :: [a] -> Maybe ([a], a)
+unsnoc                  = foldr (\x mb -> Just (case mb of
+                                                Nothing      -> ([], x)
+                                                Just (a, b)  -> (x : a, b)))
+                                Nothing
+
+-- | A list of one element.
+singleton               :: a -> [a]
+singleton x             = [x]
+
+-- | @'intercalate' xs xss@ inserts @xs@ between the lists of @xss@ and
+-- concatenates the result.
+intercalate             :: [a] -> [[a]] -> [a]
+intercalate xs xss      = concat (intersperse xs xss)
+
+-- | The list of all subsequences of the argument.
+subsequences            :: [a] -> [[a]]
+subsequences xs         = [] : nonEmptySubsequences xs
+  where
+    nonEmptySubsequences []     = []
+    nonEmptySubsequences (y:ys) = [y] : foldr f [] (nonEmptySubsequences ys)
+      where f zs r = zs : (y : zs) : r
+
+-- | The list of all permutations of the argument.
+permutations            :: [a] -> [[a]]
+permutations xs0        = xs0 : perms xs0 []
+  where
+    perms []     _  = []
+    perms (t:ts) is = foldr interleave (perms ts (t:is)) (permutations is)
+      where interleave xs r = let (_,zs) = interleave' id xs r in zs
+            interleave' _ []     r = (ts, r)
+            interleave' f (y:ys) r = let (us,zs) = interleave' (f . (y:)) ys r
+                                     in  (y:us, f (t:y:us) : zs)
+
+-- | A strict version of 'scanl'.
+scanl'                  :: (b -> a -> b) -> b -> [a] -> [b]
+scanl' f q ls           = q `seq` (q : case ls of
+                                         []   -> []
+                                         x:xs -> scanl' f (f q x) xs)
+
+-- | A strict version of 'iterate'.
+iterate'                :: (a -> a) -> a -> [a]
+iterate' f x            = x `seq` (x : iterate' f (f x))
+
+-- | Drop the longest suffix whose elements satisfy the predicate.
+dropWhileEnd            :: (a -> Bool) -> [a] -> [a]
+dropWhileEnd p          = foldr (\x xs -> if p x && null xs then [] else x : xs) []
+
+-- | Drop a prefix, if the list starts with it.
+stripPrefix             :: Eq a => [a] -> [a] -> Maybe [a]
+stripPrefix [] ys       = Just ys
+stripPrefix (x:xs) (y:ys)
+  | x == y              = stripPrefix xs ys
+stripPrefix _ _         = Nothing
+
+-- | Whether the elements of the first list occur, in order, in the
+-- second.
+isSubsequenceOf         :: Eq a => [a] -> [a] -> Bool
+isSubsequenceOf [] _    = True
+isSubsequenceOf _ []    = False
+isSubsequenceOf a@(x:a') (y:b)
+  | x == y              = isSubsequenceOf a' b
+  | otherwise           = isSubsequenceOf a b
+
+-- | The element at an index, counting from zero, if there is one.
+(!?)                    :: [a] -> Int -> Maybe a
+xs !? n
+  | n < 0               = Nothing
+  | otherwise           = foldr (\x r k -> case k of
+                                            0 -> Just x
+                                            _ -> r (k - 1)) (const Nothing) xs n
+
+-- | Sort by comparing the results of a function, computed once for each
+-- element.
+sortOn                  :: Ord b => (a -> b) -> [a] -> [a]
+sortOn f                = map snd . sortBy (\a b -> compare (fst a) (fst b))
+                              . map (\x -> let y = f x in y `seq` (y, x))
