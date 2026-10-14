@@ -186,38 +186,6 @@ void growMemory(void) {
 #define instrAt(m) memory[m].instr
 #define labAt(m) memory[m].lab
 
-#if BYTECODE_PRIMS
-
-int IntAt(Addr m) {
-    return intAt(m);
-}
-
-Float FloatAt(Addr m) {
-    return floatAt(m);
-}
-
-Double DoubleAt(Addr m) {
-    return doubleFromParts(cellAt(m), cellAt(m + 1));
-}
-
-Cell CellAt(Addr m) {
-    return cellAt(m);
-}
-
-Text TextAt(Addr m) {
-    return textAt(m);
-}
-
-Addr AddrAt(Addr m) {
-    return addrAt(m);
-}
-
-int InstrAt(Addr m) {
-    return instrAt(m);
-}
-
-#endif /* BYTECODE_PRIMS */
-
 /* --------------------------------------------------------------------------
  * Local function prototypes:
  * ------------------------------------------------------------------------*/

@@ -50,11 +50,10 @@ types to Haskell types (`HsType_int`, `HsType_mode_t`, ...), the
 ### cupid
 
 `Cupid`, `Prelude`, and under `Cupid.`: `Array`, `Base`, `Bits`,
-`ByteArray`, `Char`, `ConcBase`, `CVHAssert`, `Directory`, `Dynamic`,
-`Exception`, `ForeignPtr`, `GenericPrint`, `Int`, `Internals`, `IO`,
-`IOArray`, `IOExts`, `IORef`, `LazyST`, `Memo`, `Numeric`, `Prelude`,
-`Ptr`, `ST`, `Stable`, `StablePtr`, `Storable`, `SysConfig`
-(generated), `System`, `Time`, `Weak`, `Word`.
+`ByteArray`, `Char`, `ConcBase`, `Directory`, `Exception`,
+`ForeignPtr`, `Int`, `IO`, `IOArray`, `IOExts`, `IORef`, `LazyST`,
+`Memo`, `Numeric`, `Prelude`, `Ptr`, `ST`, `Stable`, `StablePtr`,
+`Storable`, `SysConfig` (generated), `System`, `Time`, `Weak`, `Word`.
 
 ### base
 

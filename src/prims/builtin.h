@@ -29,9 +29,6 @@ extern void resetBuiltIn(void);   /* free every thunk from the last script  */
  * by installBuiltIn() in builtin.c */
 extern struct primInfo arrayPrims, bignumPrims, dirPrims, iomonadPrims,
     printerPrims, timePrims;
-#if INTERNAL_PRIMS
-extern struct primInfo internalPrims;
-#endif
 
 /* --------------------------------------------------------------------------
  * Macros used to define primitives:

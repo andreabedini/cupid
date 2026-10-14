@@ -42,9 +42,6 @@ core = files(
   'prims/array.c', 'prims/bignums.c', 'prims/builtin.c', 'prims/dirprim.c',
   'prims/iomonad.c', 'prims/printer.c', 'prims/timeprim.c',
 )
-if get_option('internal-prims')
-  core += files('prims/interns.c')
-endif
 if get_option('timer')
   core += files('timer.c')
 endif

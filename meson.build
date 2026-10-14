@@ -145,7 +145,6 @@ option_macros = {
   'timer': ['WANT_TIMER'],
   'debug-code': ['DEBUG_CODE', 'DEBUG_PRINTER'],
   'tag-checks': ['CHECK_TAGS'],
-  'internal-prims': ['INTERNAL_PRIMS', 'BYTECODE_PRIMS'],
   'stack-dumps': ['GIMME_STACK_DUMPS'],
   'explain-instance-resolution': ['EXPLAIN_INSTANCE_RESOLUTION'],
 }

@@ -342,16 +342,6 @@ extern Cell evalWithNoError(Cell);
 extern void evalFails(StackPtr);
 extern void throwException(Cell) CUPID_noreturn;
 
-#if BYTECODE_PRIMS
-extern int IntAt(Addr);
-extern Float FloatAt(Addr);
-extern Double DoubleAt(Addr);
-extern Cell CellAt(Addr);
-extern Text TextAt(Addr);
-extern Addr AddrAt(Addr);
-extern int InstrAt(Addr);
-#endif /* BYTECODE_PRIMS */
-
 extern void abandon(char *, Cell);
 extern void outputString(FILE *);
 extern void dialogue(Cell);

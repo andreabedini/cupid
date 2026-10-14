@@ -2136,9 +2136,6 @@ void installBuiltIn(void) {
     registerPrims(&iomonadPrims);
     registerPrims(&timePrims);
     registerPrims(&dirPrims);
-#if INTERNAL_PRIMS
-    registerPrims(&internalPrims);
-#endif
     setCurrModule(modulePrelude);
     nameFatbar = predefPrim("_FATBAR", "fatbar");
     nameFail = predefPrim("_FAIL", "fail");
