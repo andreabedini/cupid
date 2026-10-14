@@ -123,15 +123,31 @@ meson only.  Two kinds of file are generated:
   win over the generated one for a quoted `#include`, and the build
   would then use the wrong token numbers.
 
-**Every configuration is tested.**  The ten feature options in
-`meson.options`, `tag-checks` and `timer` among them, each change what
-is compiled.  An option nothing exercises rots.  So the regression
-suite has to pass with each option on alone and with all of them on
-together, twelve configurations in all, and `tools/check-configurations`
-builds and tests them.  Where an option changes the output, for
-example by adding a timing line, `tests/run-tests` normalises that
-output only when the option is on, so a filter can never hide a
-difference in the default build.  See
+**Two feature options.**  A build option is a flag like any other, so
+each of the ten inherited from Hugs had to justify its second code
+path, and eight didn't.  Where an option chose between two behaviours,
+the less surprising one stays: the one the default build already had,
+unless that left a documented feature missing.  So the one-line
+banner, the build without a fatal-signal handler, absolute file names
+in messages, the elapsed-time line after each command and the "while
+evaluating:" lines after a stack overflow are gone, with the code only
+they compiled.  So are the primitives that exposed the interpreter's
+cells and bytecode, and the three experimental modules over them that
+nothing imported.  `:xplain` and `+x` are documented, so they are
+always built instead, and `+x` is off by default.  Two options are
+left.  `profiling` changes the layout of every heap cell, so it can't
+become a run-time switch without costing every build.  `checks` is a
+developer build that keeps assertions, checks cell tags and adds the
+`+D` bytecode listing.
+
+**Every configuration is tested.**  An option nothing exercises rots.
+So the regression suite has to pass in the default build, with each
+option on alone and with both on, and `tools/check-configurations`
+builds and tests all four.  With two options those four are every
+configuration there is; a third would make the sweep a sample, five of
+eight.  No option changes what the interpreter prints, so every
+configuration is compared against the same expected output, with no
+filters.  See
 [Check every configuration](../how-to/check-every-configuration.md).
 
 ## The C code
