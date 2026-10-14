@@ -43,6 +43,7 @@ static void syntaxError(char *);
 static char *unexpected(void);
 static Cell checkPrec(Cell);
 static Cell buildTuple(List);
+static Cell buildTupleExp(Cell, List);
 static List checkCtxt(List);
 static Cell checkPred(Cell);
 static Pair checkDo(List);
@@ -767,7 +768,9 @@ aexp	  : qvar			{$$ = $1;}
 	  | qvar '@' aexp		{$$ = gcShadow(3,ap(ASPAT,pair($1,$3)));}
 	  | '~' aexp			{$$ = gcShadow(2,ap(LAZYPAT,$2));}
 	  | '_'				{$$ = gcShadow(1,WILDCARD);}
-	  | gcon			{$$ = $1;}
+	  | qcon			{$$ = $1;}
+	  | '(' ')'			{$$ = gcShadow(2,nameUnit);}
+	  | '[' ']'			{$$ = gcShadow(2,nameNil);}
 	  | qcon '{' fbinds '}'		{$$ = gcShadow(4,ap(CONFLDS,pair($1,$3)));}
 	  | aexp '{' fbinds '}'		{$$ = gcShadow(4,ap(UPDFLDS,
 						     triple($1,NIL,$3)));}
@@ -776,7 +779,8 @@ aexp	  : qvar			{$$ = $1;}
 	  | STRINGLIT			{$$ = $1;}
 	  | REPEAT			{$$ = $1;}
 	  | '(' exp ')'			{$$ = gcShadow(3,$2);}
-	  | '(' exps2 ')'		{$$ = gcShadow(3,buildTuple($2));}
+	  | '(' tupItems exp ')'	{$$ = gcShadow(4,buildTupleExp($1,cons($3,$2)));}
+	  | '(' tupItems ')'		{$$ = gcShadow(3,buildTupleExp($1,cons(NIL,$2)));}
 	  | '[' list ']'		{$$ = gcShadow(3,$2);}
 	  | '(' exp10a qop ')'		{$$ = gcShadow(4,ap($3,$2));}
 	  | '(' infixExpa qop ')'	{$$ = gcShadow(4,ap(SECTION,
@@ -786,6 +790,15 @@ aexp	  : qvar			{$$ = $1;}
 	  ;
 exps2	  : exps2 ',' exp		{$$ = gcShadow(3,cons($3,$1));}
 	  | exp ',' exp			{$$ = gcShadow(3,cons($3,cons($1,NIL)));}
+	  ;
+/* The components of a tuple, a tuple section or a tuple constructor, up to
+ * the last comma, in reverse order and with NIL for a missing one.  The
+ * three share these rules, since which of them a `(' starts is only known
+ * at the closing `)'; buildTupleExp tells them apart. */
+tupItems  : tupItems exp ','		{$$ = gcShadow(3,cons($2,$1));}
+	  | tupItems ','		{$$ = gcShadow(2,cons(NIL,$1));}
+	  | exp ','			{$$ = gcShadow(2,singleton($1));}
+	  | ','				{$$ = gcShadow(1,singleton(NIL));}
 	  ;
 alts      : alts1                       {$$ = $1;}
           | ';' alts                    {$$ = gcShadow(2,$2);}
@@ -1151,6 +1164,38 @@ static Cell buildTuple(List tup) {
     } while (nonNull(t));		/*       x1  NIL   (n)  x1	   */
     fst(x) = mkTuple(n);
     return tup;
+}
+
+/* Build the expression for the components of a parenthesised tuple, given
+ * in reverse with NIL for a missing one, and the line it starts on.  With
+ * none missing it is a tuple and with all missing the tuple constructor.
+ * Otherwise it is a tuple section: (,b) is \x -> (x,b), and in general the
+ * missing components become the arguments of a lambda, in order. */
+static Cell buildTupleExp(Cell line, List items) {
+    bool full = true;
+    bool empty = true;
+    List vs = NIL;
+    List xs;
+
+    for (xs = items; nonNull(xs); xs = tl(xs)) {
+	if (isNull(hd(xs)))
+	    full = false;
+	else
+	    empty = false;
+    }
+    if (full)
+	return buildTuple(items);
+    if (empty)
+	return mkTuple(length(items));
+
+    for (xs = items; nonNull(xs); xs = tl(xs)) {
+	if (isNull(hd(xs))) {
+	    Text t = inventText();
+	    hd(xs) = mkVar(t);
+	    vs = cons(mkVar(t), vs);	/* items are reversed, so vs is not */
+	}
+    }
+    return ap(LAMBDA, pair(vs, pair(line, buildTuple(items))));
 }
 
 /* Validate context */

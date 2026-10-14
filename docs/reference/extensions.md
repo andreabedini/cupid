@@ -418,6 +418,22 @@ Differences from GHC's scoped type variables:
   method definitions in Cupid.
 - Result type signatures on the left of a definition are not accepted.
 
+## Tuple sections
+
+A tuple with some components left out is a function of the missing
+ones, in order:
+
+```haskell
+(,True)      -- \x -> (x, True)
+(1,,3,)      -- \x y -> (1, x, 3, y)
+map (,0) xs  -- pairs each element with 0
+```
+
+With every component left out, `(,,)` is the tuple constructor, as
+in Haskell 2010.  A tuple section is an expression only, not a
+pattern.  As in GHC, a component given in the section is evaluated
+afresh at each application rather than once.
+
 ## Field puns
 
 In a record pattern or construction, a field name on its own stands
