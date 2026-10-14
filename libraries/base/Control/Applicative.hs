@@ -39,7 +39,6 @@ import Control.Arrow
 	(Arrow(arr, (&&&)), (>>>), ArrowZero(zeroArrow), ArrowPlus((<+>)))
 import Control.Monad (liftM, ap)
 import Cupid.Prelude (Alternative(..), MonadPlus(..))
-import Data.Monoid (Monoid(..))
 
 infixl 4 <**>
 
@@ -66,10 +65,6 @@ infixl 4 <**>
 
 -- 'Alternative' is defined in "Cupid.Prelude" too, as the superclass
 -- of 'MonadPlus', with its instances for 'Maybe' and lists.
-
-instance Monoid a => Applicative ((,) a) where
-	pure x = (mempty, x)
-	(u, f) <*> (v, x) = (u `mappend` v, f x)
 
 -- new instances
 

@@ -160,9 +160,11 @@ instance Read a => Read (Seq a) where
 		return (fromList xs,t)
 
 
+instance Semigroup (Seq a) where
+	(<>) = (><)
+
 instance Monoid (Seq a) where
 	mempty = empty
-	mappend = (><)
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
 

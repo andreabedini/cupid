@@ -111,6 +111,9 @@ module Cupid.Prelude (
     Monad((>>=), (>>), return),
     MonadFail(fail),
     Alternative(empty, (<|>), some, many),
+    Semigroup((<>), sconcat, stimes),
+    Monoid(mempty, mappend, mconcat),
+    NonEmpty((:|)),
     MonadPlus(mzero, mplus),
     mapM, mapM_, sequence, sequence_, (=<<),
     maybe, either,
@@ -137,7 +140,8 @@ infixr 8  ^, ^^, **
 infixl 7  *, /, `quot`, `rem`, `div`, `mod`, :%, %
 infixl 6  +, -
 --infixr 5  :    -- this fixity declaration is hard-wired into Cupid
-infixr 5  ++
+infixr 6  <>
+infixr 5  ++, :|
 infix  4  ==, /=, <, <=, >=, >, `elem`, `notElem`
 infixr 3  &&
 infixr 2  ||
@@ -492,6 +496,135 @@ mapM_ f           = sequence_ . map f
 
 (=<<)            :: Monad m => (a -> m b) -> m a -> m b
 f =<< x           = x >>= f
+
+-- Semigroups and monoids --------------------------------------------------
+
+-- As in GHC's base, Semigroup is a superclass of Monoid, and mappend
+-- defaults to (<>).
+
+class Semigroup a where
+    (<>)    :: a -> a -> a
+    sconcat :: NonEmpty a -> a
+    stimes  :: Integral b => b -> a -> a
+
+    -- Minimal complete definition: (<>)
+    sconcat (a :| as) = go a as
+      where go b (c:cs) = b <> go c cs
+            go b []     = b
+
+    stimes y0 x0
+      | y0 <= 0   = error "stimes: positive multiplier expected"
+      | otherwise = f x0 y0
+      where
+        f x y
+          | even y    = f (x <> x) (y `quot` 2)
+          | y == 1    = x
+          | otherwise = g (x <> x) (y `quot` 2) x
+        g x y z
+          | even y    = g (x <> x) (y `quot` 2) z
+          | y == 1    = x <> z
+          | otherwise = g (x <> x) (y `quot` 2) (x <> z)
+
+class Semigroup a => Monoid a where
+    mempty  :: a
+    mappend :: a -> a -> a
+    mconcat :: [a] -> a
+
+    -- Minimal complete definition: mempty
+    mappend = (<>)
+    mconcat = foldr mappend mempty
+
+-- | Non-empty lists, which sconcat takes; Data.List.NonEmpty has the
+-- functions on them.
+data NonEmpty a = a :| [a]
+                  deriving (Eq, Ord, Read, Show)
+
+instance Semigroup (NonEmpty a) where
+    (a :| as) <> (b :| bs) = a :| (as ++ b : bs)
+
+instance Functor NonEmpty where
+    fmap f (a :| as) = f a :| map f as
+
+instance Semigroup [a] where
+    (<>) = (++)
+
+instance Monoid [a] where
+    mempty  = []
+    mconcat = concat
+
+instance Semigroup b => Semigroup (a -> b) where
+    (f <> g) x = f x <> g x
+
+instance Monoid b => Monoid (a -> b) where
+    mempty _ = mempty
+
+instance Semigroup () where
+    _ <> _    = ()
+    sconcat _ = ()
+    stimes _ _ = ()
+
+instance Monoid () where
+    mempty    = ()
+    mconcat _ = ()
+
+instance (Semigroup a, Semigroup b) => Semigroup (a,b) where
+    (a,b) <> (a',b') = (a<>a', b<>b')
+
+instance (Monoid a, Monoid b) => Monoid (a,b) where
+    mempty = (mempty, mempty)
+
+instance (Semigroup a, Semigroup b, Semigroup c) => Semigroup (a,b,c) where
+    (a,b,c) <> (a',b',c') = (a<>a', b<>b', c<>c')
+
+instance (Monoid a, Monoid b, Monoid c) => Monoid (a,b,c) where
+    mempty = (mempty, mempty, mempty)
+
+instance (Semigroup a, Semigroup b, Semigroup c, Semigroup d) =>
+         Semigroup (a,b,c,d) where
+    (a,b,c,d) <> (a',b',c',d') = (a<>a', b<>b', c<>c', d<>d')
+
+instance (Monoid a, Monoid b, Monoid c, Monoid d) => Monoid (a,b,c,d) where
+    mempty = (mempty, mempty, mempty, mempty)
+
+instance (Semigroup a, Semigroup b, Semigroup c, Semigroup d, Semigroup e) =>
+         Semigroup (a,b,c,d,e) where
+    (a,b,c,d,e) <> (a',b',c',d',e') = (a<>a', b<>b', c<>c', d<>d', e<>e')
+
+instance (Monoid a, Monoid b, Monoid c, Monoid d, Monoid e) =>
+         Monoid (a,b,c,d,e) where
+    mempty = (mempty, mempty, mempty, mempty, mempty)
+
+-- lexicographical ordering
+instance Semigroup Ordering where
+    LT <> _ = LT
+    EQ <> y = y
+    GT <> _ = GT
+
+instance Monoid Ordering where
+    mempty = EQ
+
+-- Nothing is the identity: the monoid that adjoins one to a semigroup.
+instance Semigroup a => Semigroup (Maybe a) where
+    Nothing <> b       = b
+    a       <> Nothing = a
+    Just a  <> Just b  = Just (a <> b)
+
+instance Semigroup a => Monoid (Maybe a) where
+    mempty = Nothing
+
+instance Semigroup a => Semigroup (IO a) where
+    (<>) = liftA2 (<>)
+
+instance Monoid a => Monoid (IO a) where
+    mempty = pure mempty
+
+instance Monoid a => Applicative ((,) a) where
+    pure x            = (mempty, x)
+    (u, f) <*> (v, x) = (u <> v, f x)
+    liftA2 f (u, x) (v, y) = (u <> v, f x y)
+
+instance Monoid a => Monad ((,) a) where
+    (u, a) >>= k = case k a of (v, b) -> (u <> v, b)
 
 -- Evaluation and strictness ------------------------------------------------
 

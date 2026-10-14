@@ -291,9 +291,11 @@ instance Eq  ByteString
 instance Ord ByteString
     where compare = compareBytes
 
+instance Semigroup ByteString where
+    (<>) = append
+
 instance Monoid ByteString where
     mempty  = empty
-    mappend = append
     mconcat = concat
 
 {-

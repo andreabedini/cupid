@@ -1,0 +1,16 @@
+MaxLen 3
+(MaxLen 5,MaxLen 0)
+abcd
+Just [1,2,3]
+[P "c" 1,P "a" 2,P "b" 2]
+(55,12)
+(False,True)
+Just 1
+Just 2
+Just 'x'
+(1,7)
+('a','b')
+("ababab",Sum {getSum = 10})
+(1,"one")
+(11,"ba")
+("xy",3)

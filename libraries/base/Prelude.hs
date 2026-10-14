@@ -80,6 +80,8 @@ module Prelude (
     Applicative(pure, (<*>), (*>), (<*), liftA2),
     Monad((>>=), (>>), return),
     MonadFail(fail),
+    Semigroup((<>)),
+    Monoid(mempty, mappend, mconcat),
     mapM, mapM_, sequence, sequence_, (=<<),
 
     -- ** Miscellaneous functions

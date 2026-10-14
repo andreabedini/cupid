@@ -210,9 +210,11 @@ data Map k a  = Tip
 
 type Size     = Int
 
+instance (Ord k) => Semigroup (Map k v) where
+    (<>) = union
+
 instance (Ord k) => Monoid (Map k v) where
     mempty  = empty
-    mappend = union
     mconcat = unions
 
 

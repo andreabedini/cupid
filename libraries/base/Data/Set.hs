@@ -137,9 +137,11 @@ data Set a    = Tip
 
 type Size     = Int
 
+instance Ord a => Semigroup (Set a) where
+    (<>) = union
+
 instance Ord a => Monoid (Set a) where
     mempty  = empty
-    mappend = union
     mconcat = unions
 
 instance Foldable Set where

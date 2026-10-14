@@ -26,7 +26,7 @@ applied to distinct type variables.  In Cupid any type may be made an
 instance, and a type synonym may stand for it:
 
 ```haskell
-instance Monoid (a -> a) where ...
+instance Show (a -> a) where ...
 instance Show (Tree Int) where ...
 instance MyClass a where ...
 instance C String where ...
@@ -546,10 +546,10 @@ name how its classes are derived:
 
 ```haskell
 newtype Score = Score Int
-    deriving stock Show             -- the standard way, as with no strategy
-    deriving (Eq, Ord) via Int      -- reuse Int's instances
-    deriving Monoid via Sum Int     -- reuse Sum Int's
-    deriving newtype Num            -- via the type Score wraps, Int
+    deriving stock Show                       -- the standard way, as with no strategy
+    deriving (Eq, Ord) via Int                -- reuse Int's instances
+    deriving (Semigroup, Monoid) via Sum Int  -- reuse Sum Int's
+    deriving newtype Num                      -- via the type Score wraps, Int
 ```
 
 `deriving C via V` gives the type the instance of `V`, reusing its

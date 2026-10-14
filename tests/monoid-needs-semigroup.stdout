@@ -1,0 +1,8 @@
+runcupid: Error occurred
+ERROR "monoid-needs-semigroup.hs":6 - Cannot build superclass instance
+*** Instance            : Monoid Count
+*** Context supplied    : ()
+*** Required superclass : Semigroup Count
+
+
+

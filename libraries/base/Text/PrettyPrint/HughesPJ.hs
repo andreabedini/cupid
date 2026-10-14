@@ -213,7 +213,10 @@ module Text.PrettyPrint.HughesPJ (
   ) where
 
 
-import Prelude
+-- This module's (<>) is its own, left associative where the Prelude's is
+-- right associative, as in the pretty package; Doc is a Semigroup with it.
+import Prelude hiding ((<>))
+import qualified Prelude
 
 infixl 6 <> 
 infixl 6 <+>
@@ -345,6 +348,12 @@ punctuate :: Doc -> [Doc] -> [Doc]
 
 
 -- Displaying @Doc@ values. 
+
+instance Prelude.Semigroup Doc where
+  (<>) = (Text.PrettyPrint.HughesPJ.<>)
+
+instance Monoid Doc where
+  mempty = empty
 
 instance Show Doc where
   showsPrec prec doc cont = showDoc doc cont

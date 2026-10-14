@@ -132,6 +132,14 @@ exports `Functor(fmap, (<$))`, `(<$>)`,
 `Applicative`, or `fail` in a `Monad` instance, is rejected, as it is
 by GHC.
 
+**`Monoid` has `Semigroup` as its superclass,** and `mappend`
+defaults to `(<>)`; the Prelude exports `Semigroup((<>))` and
+`Monoid(mempty, mappend, mconcat)`.  A `Monoid` instance therefore
+needs a `Semigroup` instance for the same type.  `Text.PrettyPrint`
+keeps its own, left-associative `(<>)` on documents, as the `pretty`
+package does, so a module that imports it unqualified and uses `(<>)`
+must hide one of the two.
+
 **Rational literals may lose precision.**  A literal such as
 `1.234e-5` is held as a double before conversion, so at type `Rational`
 it may not be exact.

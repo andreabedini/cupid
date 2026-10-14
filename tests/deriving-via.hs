@@ -10,7 +10,7 @@ import Data.Monoid
 newtype Score = Score Int
     deriving Show
     deriving (Eq, Ord) via Int
-    deriving Monoid via Sum Int
+    deriving (Semigroup, Monoid) via Sum Int
     deriving newtype Num
 
 newtype Opt a = Opt (Maybe a)
@@ -32,7 +32,7 @@ instance Ord a => Ord (Down a) where
 type Ints = [Int]
 
 newtype Bag = Bag Ints
-    deriving Monoid via Ints
+    deriving (Semigroup, Monoid) via Ints
     deriving newtype Show
 
 main :: IO ()

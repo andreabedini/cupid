@@ -162,9 +162,11 @@ data IntSet = Nil
 type Prefix = Int
 type Mask   = Int
 
+instance Semigroup IntSet where
+    (<>) = union
+
 instance Monoid IntSet where
     mempty  = empty
-    mappend = union
     mconcat = unions
 
 

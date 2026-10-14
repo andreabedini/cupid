@@ -221,9 +221,11 @@ type Prefix = Int
 type Mask   = Int
 type Key    = Int
 
+instance Semigroup (IntMap a) where
+    (<>) = union
+
 instance Monoid (IntMap a) where
     mempty  = empty
-    mappend = union
     mconcat = unions
 
 instance Foldable IntMap where
