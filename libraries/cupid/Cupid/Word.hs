@@ -28,23 +28,7 @@ import Data.Int
 
 -- Word's instances of the Prelude classes are in Cupid.Prelude.
 
-instance FiniteBits Word where
-    finiteBitSize = bitSize
-
-instance Bits Word where
-    (.&.)         = primAndWord
-    (.|.)         = primOrWord
-    xor           = primXorWord
-    complement    = primComplementWord
-    shift         = primShiftWord
-    rotate        = primRotateWord (bitSize (0::Word))
-    bit           = primBitWord
-    setBit x i    = x .|. bit i
-    clearBit x i  = x .&. complement (bit i)
-    complementBit x i = x `xor` bit i
-    testBit       = primTestWord
-    bitSize  _    = bitSize (0::Int)
-    isSigned _    = False
+-- Word's Bits and FiniteBits instances are in Data.Bits.
 
 -----------------------------------------------------------------------------
 -- Word8

@@ -524,6 +524,36 @@ class Bits b => FiniteBits b where
 instance FiniteBits Int where
     finiteBitSize = bitSize
 
+-- Word's instances are here, with Int's, so that the Prelude's Word has
+-- them wherever Data.Bits is imported.
+
+instance FiniteBits Word where
+    finiteBitSize = bitSize
+
+instance Bits Word where
+    (.&.)         = primAndWord
+    (.|.)         = primOrWord
+    xor           = primXorWord
+    complement    = primComplementWord
+    shift         = primShiftWord
+    rotate        = primRotateWord (bitSize (0::Word))
+    bit           = primBitWord
+    setBit x i    = x .|. bit i
+    clearBit x i  = x .&. complement (bit i)
+    complementBit x i = x `xor` bit i
+    testBit       = primTestWord
+    bitSize  _    = bitSize (0::Int)
+    isSigned _    = False
+
+primitive primAndWord       :: Word -> Word -> Word
+primitive primOrWord        :: Word -> Word -> Word
+primitive primXorWord       :: Word -> Word -> Word
+primitive primComplementWord:: Word -> Word
+primitive primShiftWord     :: Word -> Int -> Word
+primitive primRotateWord    :: Int -> Word -> Int -> Word
+primitive primBitWord       :: Int -> Word
+primitive primTestWord      :: Word -> Int -> Bool
+
 -- | A 'bit' from 'shiftL'.
 bitDefault :: (Bits a, Num a) => Int -> a
 bitDefault i = 1 `shiftL` i

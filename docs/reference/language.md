@@ -109,6 +109,10 @@ an imported module is aliased as `M`.
 **Type synonyms may be written `T(..)`** in export lists and `T(..)` or
 `T()` in import lists.
 
+**Hiding a name that the module does not export is not an error,** as
+in GHC, though the Report makes it one: `import Prelude hiding (catch)`,
+in code written for a Prelude that exported `catch`, is accepted.
+
 **Mutually recursive modules are not supported.**
 
 **`(:)` is exported by the Prelude as if it were an identifier,** so

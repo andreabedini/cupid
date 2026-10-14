@@ -319,11 +319,13 @@ static List checkImportEntity(List imports, Module exporter, bool isHidden,
             internal("checkImportEntity3");
         }
     }
-    if (!impFound) {
+    /* Hiding a name the module does not export is not an error, as in GHC:
+     * import Prelude hiding (catch) is how code written for a Prelude that
+     * exported catch avoids the clash with Control.Exception's. */
+    if (!impFound && !isHidden) {
         errHead(0);
-        errPrintf("Unknown entity \"%s\" %s from module \"%s\"", textToStr(t),
-                  ((!isHidden) ? "imported" : "hidden"),
-                  textToStr(moduleRec(exporter)->text));
+        errPrintf("Unknown entity \"%s\" imported from module \"%s\"",
+                  textToStr(t), textToStr(moduleRec(exporter)->text));
         errFail();
     }
     return imports;
