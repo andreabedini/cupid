@@ -144,7 +144,6 @@ option_macros = {
   'profiling': ['PROFILING'],
   'debug-code': ['DEBUG_CODE', 'DEBUG_PRINTER'],
   'tag-checks': ['CHECK_TAGS'],
-  'stack-dumps': ['GIMME_STACK_DUMPS'],
   'explain-instance-resolution': ['EXPLAIN_INSTANCE_RESOLUTION'],
 }
 foreach opt, macros : option_macros

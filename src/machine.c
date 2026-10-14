@@ -1327,11 +1327,6 @@ long numReductions; /* number of reductions counted    */
 static Cell exception;         /* Exception thrown                */
 static jmp_buf *evalError = 0; /* jump buffer for eval errors     */
 
-#if GIMME_STACK_DUMPS
-int rootsp = (-1);
-Cell evalRoots[NUM_STACK];
-#endif
-
 /* Graph reduction evaluator */
 void eval(Cell n) {
     StackPtr base = sp;
@@ -1340,11 +1335,6 @@ void eval(Cell n) {
     stackCheck();
     if (++evalDepth >= MAX_EVAL_DEPTH)
         cupidStackOverflow();
-#if GIMME_STACK_DUMPS
-    evalRoots[++rootsp] = n; /* Save pointer to root expression */
-                             /* should probably test that rootsp*/
-                             /* is in interval 0..NUM_STACK-1   */
-#endif
 
 unw:
     switch (whatIs(n)) { /* unwind spine of application     */
@@ -1446,9 +1436,6 @@ unw:
         n = stack(base + ar);
         stack(base + ar) = arg(n);
     }
-#if GIMME_STACK_DUMPS
-    rootsp--;
-#endif
     evalDepth--;
 }
 
@@ -1699,11 +1686,11 @@ Cell evalWithNoError(Cell e) {
     jmp_buf *oldCatch = evalError;
     int savedDepth = evalDepth; /* throwException() longjmps straight*/
     StackPtr savedSp = sp;      /* past eval()'s own bookkeeping, so */
-#if GIMME_STACK_DUMPS           /* an exception caught here must undo   */
-    int savedRootsp = rootsp;   /* whatever the aborted evaluation left */
-#endif                          /* behind: eval() only decrements       */
-                                /* evalDepth, and restores sp/rootsp,   */
-                                /* along its normal return path.        */
+                                /* an exception caught here must undo   */
+                                /* whatever the aborted evaluation left */
+                                /* behind: eval() only decrements       */
+                                /* evalDepth, and restores sp, along    */
+                                /* its normal return path.              */
 
     jmp_buf catcherr[1];
     evalError = catcherr;
@@ -1716,9 +1703,6 @@ Cell evalWithNoError(Cell e) {
     if (nonNull(caughtEx)) {
         evalDepth = savedDepth;
         sp = savedSp;
-#if GIMME_STACK_DUMPS
-        rootsp = savedRootsp;
-#endif
     }
     return caughtEx;
 }
@@ -1760,14 +1744,10 @@ void installMachine(void) {
     instrAt(noMatch) = iFAIL;
 }
 
-/* Clear the exception jump buffer and the evaluator's recursion and
- * stack-dump depths. */
+/* Clear the exception jump buffer and the evaluator's recursion depth. */
 void resetMachine(void) {
     evalError = 0;
     evalDepth = 0;
-#if GIMME_STACK_DUMPS
-    rootsp = (-1);
-#endif
 }
 
 /* Free the program memory. */

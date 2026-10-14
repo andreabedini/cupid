@@ -5,19 +5,8 @@
 
 run_tests = find_program('run-tests')
 
-# Options that change what the interpreter prints.  run-tests normalises the
-# output for each one it is told about, so a single expected output serves
-# every configuration; see the comment at the top of it.
-test_features = []
-foreach opt : ['stack-dumps']
-  if get_option(opt)
-    test_features += opt
-  endif
-endforeach
-
 test('regression', run_tests,
-  args: ['--features=' + ','.join(test_features),
-         cupid, runcupid, cupiddir_build / 'packages' / '*',
+  args: [cupid, runcupid, cupiddir_build / 'packages' / '*',
          meson.current_source_dir()],
   depends: [cupid, runcupid, libraries_stamp],
   timeout: 600, verbose: true)

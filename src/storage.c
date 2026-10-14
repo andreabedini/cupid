@@ -1141,53 +1141,12 @@ static bool typeInvolves(Type ty, Type tc) {
 Cell DEFTABLE(cellStack, NUM_STACK); /* Storage for cells on stack          */
 StackPtr sp;                         /* stack pointer                       */
 
-#if GIMME_STACK_DUMPS
-
-# define UPPER_DISP 5 /* # display entries on top of stack   */
-# define LOWER_DISP 5 /* # display entries on bottom of stack*/
-
-extern int rootsp;
-extern Cell evalRoots[];
-
-/* Report stack overflow */
-void cupidStackOverflow(void) {
-    errHead(0);
-    errPrintf("Control stack overflow");
-    if (rootsp >= 0) {
-        int i;
-        if (rootsp >= UPPER_DISP + LOWER_DISP) {
-            for (i = 0; i < UPPER_DISP; i++) {
-                errPrintf("\nwhile evaluating: ");
-                errExpr(evalRoots[rootsp - i]);
-            }
-            errPrintf("\n...");
-            for (i = LOWER_DISP - 1; i >= 0; i--) {
-                errPrintf("\nwhile evaluating: ");
-                errExpr(evalRoots[i]);
-            }
-        } else {
-            for (i = rootsp; i >= 0; i--) {
-                errPrintf("\nwhile evaluating: ");
-                errExpr(evalRoots[i]);
-            }
-        }
-    }
-    /* No newline here: each entry above opens with one, and errFail ends the
-     * message, so the two versions of this function print the same thing
-     * apart from the trace itself. */
-    errFail();
-}
-
-#else /* !GIMME_STACK_DUMPS */
-
 /* Report stack overflow */
 void cupidStackOverflow(void) {
     errHead(0);
     errPrintf("Control stack overflow");
     errFail();
 }
-
-#endif /* !GIMME_STACK_DUMPS */
 
 /* --------------------------------------------------------------------------
  * Observation storage
