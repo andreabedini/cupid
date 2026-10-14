@@ -42,7 +42,10 @@ int evalDepth; /* depth of nested eval()'s        */
  * When the limit is unavailable or unlimited we fall back to a
  * conservative 8 MB, the default stack size on every supported target.
  * All supported targets grow the C stack downward (see STACK_DIRECTION
- * in sysdeps.h), so the limit is CStackBase minus the usable size.
+ * in sysdeps.h), so the limit is the top of the stack minus the usable
+ * size.  The top is not CStackBase: the rlimit counts the whole stack,
+ * and exec puts the argument and environment strings above main()'s
+ * frame (cStackTop below).
  *
  * STACK_MARGIN is headroom kept below the computed limit: room for the
  * deepest primitive that still runs after STACK_CHECK trips, plus the
@@ -56,6 +59,7 @@ int evalDepth; /* depth of nested eval()'s        */
  * ------------------------------------------------------------------------*/
 #if HAVE_SYS_RESOURCE_H
 # include <sys/resource.h>
+extern char **environ;
 #endif
 
 #define STACK_MARGIN (64 * 1024)           /* headroom kept below the limit   */
@@ -63,6 +67,27 @@ int evalDepth; /* depth of nested eval()'s        */
 
 char *cStackLimit = (char *)(-1); /* lowest address considered safe; */
                                   /* see STACK_CHECK in storage.h    */
+
+/* The top of the stack, as far as it can be found: the end of the
+ * highest environment string, which on Linux, macOS and the BSDs lies
+ * above the argument strings and below only the program's path.  The
+ * environment can be tens of kilobytes; left out, it is taken from the
+ * margin, and a deep recursion then runs off the stack before the check
+ * trips.  A string further away than the usable size was moved off the
+ * stack by setenv() and does not count. */
+static char *cStackTop(unsigned usable) {
+    char *base = (char *)CStackBase;
+    char *top = base;
+#if HAVE_SYS_RESOURCE_H
+    for (char **e = environ; e && *e; e++) {
+        char *end = *e + strlen(*e) + 1;
+        if (end > top && (size_t)(end - base) < usable) {
+            top = end;
+        }
+    }
+#endif
+    return top;
+}
 
 static void initCStackLimit(void) {
     unsigned usable = FALLBACK_C_STACK;
@@ -75,7 +100,7 @@ static void initCStackLimit(void) {
     if (usable <= STACK_MARGIN) {     /* absurdly small rlimit; keep */
         usable = STACK_MARGIN + 4096; /* a sliver of headroom anyway */
     }
-    cStackLimit = (char *)CStackBase - (usable - STACK_MARGIN);
+    cStackLimit = cStackTop(usable) - (usable - STACK_MARGIN);
 }
 
 /* Slow path of STACK_CHECK */
