@@ -1,0 +1,11 @@
+(True,True)
+(Wrap (Just (-3)),Wrap [Left 'a',Right True])
+(Wrap (Just 5),Wrap [1,2])
+(Wrap (Compose (Just [1])),Wrap (Identity 'x'),Wrap (1 :| [2]))
+(GT,True)
+(True,5)
+("1c",7,1)
+1
+(2,"True")
+("abcd",5,"x, y, z")
+lifted into App

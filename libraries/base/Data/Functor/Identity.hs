@@ -12,6 +12,7 @@ module Data.Functor.Identity (Identity(..)) where
 
 import Control.Monad.Fix (MonadFix(..))
 import Control.Monad.Zip (MonadZip(..))
+import Data.String (IsString(..))
 
 -- | The identity functor and monad.
 newtype Identity a = Identity { runIdentity :: a }
@@ -58,3 +59,6 @@ instance Foldable Identity where
 
 instance Traversable Identity where
 	traverse f (Identity a) = fmap Identity (f a)
+
+instance IsString a => IsString (Identity a) where
+	fromString = Identity . fromString

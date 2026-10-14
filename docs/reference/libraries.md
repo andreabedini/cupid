@@ -12,8 +12,8 @@ default search path finds them.
 
 | Package | Contents |
 |---|---|
-| `cupid` | The `Prelude`, `Cupid.Prelude` (where most of it is defined) and the `Cupid.*` modules that bind the interpreter's primitives |
-| `base` | The `base` library of 2006, `Control.*`, `Data.*`, `Foreign.*`, `System.*`, `Text.*`, with the class hierarchy of GHC's base (see [the language](language.md#predefined-types-and-classes)); and modules added since, such as `Control.Category` and `GHC.Generics` |
+| `cupid` | `Cupid.Prelude`, where most of the `Prelude` is defined, and the `Cupid.*` modules that bind the interpreter's primitives |
+| `base` | The `Prelude` and the `base` library of 2006, `Control.*`, `Data.*`, `Foreign.*`, `System.*`, `Text.*`, with the class hierarchy of GHC's base (see [the language](language.md#predefined-types-and-classes)); and modules added since, such as `Control.Category` and `GHC.Generics` |
 
 ## Modules beyond Haskell 2010
 
@@ -27,13 +27,15 @@ enabled; see [Language extensions](extensions.md).
 ## Modules added since 2006
 
 `base` has the modules of GHC's base that later library code imports
-most: `Control.Category`, `Control.Monad.Fail`, `Control.Monad.Zip`,
-`Data.Bifunctor`, `Data.Function`, `Data.Functor` and its
-submodules, `Data.List.NonEmpty`, `Data.Proxy`, `Data.Semigroup`,
-`Data.String`, `Data.Void`, `GHC.Generics` and `Numeric.Natural`.  The
-older modules have the functions added to them since, such as
-`Data.List.intercalate`, `Data.Ord.Down` and `Text.Read.readMaybe`.
-Three differ from GHC's:
+most: `Control.Category`, `Control.Monad.Fail`, `Control.Monad.IO.Class`,
+`Control.Monad.Zip`, `Data.Bifoldable`, `Data.Bifunctor`,
+`Data.Bitraversable`, `Data.Foldable1`, `Data.Function`, `Data.Functor`
+and its submodules (among them `.Classes` and `.Contravariant`),
+`Data.List.NonEmpty`, `Data.Proxy`, `Data.Semigroup`, `Data.String`,
+`Data.Void`, `GHC.Generics` and `Numeric.Natural`.  With them the
+transformers package loads as it is.  The older modules have the
+functions added to them since, such as `Data.List.intercalate`,
+`Data.Ord.Down` and `Text.Read.readMaybe`.  Four differ from GHC's:
 
 - `Proxy` stands for a type of kind `Type` only, since kinds are not
   polymorphic: `Proxy :: Proxy Int` but not `Proxy :: Proxy Maybe`.
@@ -41,6 +43,9 @@ Three differ from GHC's:
   `fromString` must be called.
 - A `Natural` that would be negative is an `error` call,
   `arithmetic underflow`, rather than an `ArithException`.
+- `Read1` and `Read2` have only their `ReadS` methods, since the `Read`
+  class has no `readPrec`, and `Eq1` and its kin have no quantified
+  superclasses, so `Eq1 f` does not give `Eq (f a)`.
 
 ## Modules with foreign imports
 
@@ -67,7 +72,7 @@ types to Haskell types (`HsType_int`, `HsType_mode_t`, ...), the
 
 ### cupid
 
-`Cupid`, `Prelude`, and under `Cupid.`: `Array`, `Base`, `Bits`,
+`Cupid`, and under `Cupid.`: `Array`, `Base`, `Bits`,
 `ByteArray`, `Char`, `ConcBase`, `Directory`, `Exception`,
 `ForeignPtr`, `Int`, `IO`, `IOArray`, `IOExts`, `IORef`, `LazyST`,
 `Memo`, `Numeric`, `Prelude`, `Ptr`, `ST`, `Stable`, `StablePtr`,
@@ -78,31 +83,32 @@ types to Haskell types (`HsType_int`, `HsType_mode_t`, ...), the
 `Control.Applicative`, `Control.Arrow`, `Control.Category`,
 `Control.Concurrent` (and `.Chan`, `.MVar`, `.QSem`, `.QSemN`,
 `.SampleVar`), `Control.Exception`, `Control.Monad` (and `.Fail`,
-`.Fix`, `.Instances`, `.ST`, `.ST.Lazy`, `.ST.Strict`, `.Zip`),
-`Control.Parallel`, `Data.Array` (and `.Base`, `.Diff`, `.IArray`,
-`.IO`, `.IO.Internals`, `.MArray`, `.ST`, `.Storable`, `.Unboxed`),
-`Data.Bifunctor`, `Data.Bits`, `Data.Bool`, `Data.ByteString` (and
+`.Fix`, `.Instances`, `.IO.Class`, `.ST`, `.ST.Lazy`, `.ST.Strict`,
+`.Zip`), `Control.Parallel`, `Data.Array` (and `.Base`, `.Diff`,
+`.IArray`, `.IO`, `.IO.Internals`, `.MArray`, `.ST`, `.Storable`,
+`.Unboxed`), `Data.Bifoldable`, `Data.Bifunctor`,
+`Data.Bitraversable`, `Data.Bits`, `Data.Bool`, `Data.ByteString` (and
 `.Base`, `.Char8`, `.Fusion`, `.Lazy`, `.Lazy.Char8`), `Data.Char`,
 `Data.Complex`, `Data.Dynamic`, `Data.Either`, `Data.Eq`,
-`Data.Fixed`, `Data.Foldable`, `Data.Function`, `Data.Functor` (and
-`.Compose`, `.Const`, `.Identity`, `.Product`, `.Sum`),
-`Data.FunctorM`, `Data.Graph`, `Data.HashTable`, `Data.Int`,
-`Data.IntMap`, `Data.IntSet`, `Data.IORef`, `Data.Ix`, `Data.Kind`,
-`Data.List` (and `.NonEmpty`), `Data.Map`, `Data.Maybe`,
-`Data.Monoid`, `Data.Ord`, `Data.PackedString`, `Data.Proxy`,
-`Data.Queue`, `Data.Ratio`, `Data.Semigroup`, `Data.Sequence`,
-`Data.Set`, `Data.STRef` (and `.Lazy`, `.Strict`), `Data.String`,
-`Data.Traversable`, `Data.Tree`, `Data.Tuple`, `Data.Typeable`,
-`Data.Unique`, `Data.Version`, `Data.Void`, `Data.Word`,
-`Debug.Trace`, `Foreign`, `Foreign.C` (and `.Error`, `.String`,
-`.Types`), `Foreign.ForeignPtr`, `Foreign.Marshal` (and `.Alloc`,
-`.Array`, `.Error`, `.Pool`, `.Utils`), `Foreign.Ptr`,
-`Foreign.StablePtr`, `Foreign.Storable`, `GHC.Generics`, `Numeric`
-(and `.Natural`), `System.Cmd`, `System.Console.GetOpt`,
-`System.CPUTime`, `System.Directory` (and `.Internals`),
-`System.Environment`, `System.Exit`, `System.Info`, `System.IO` (and
-`.Error`, `.Unsafe`), `System.Locale`, `System.Mem` (and
-`.StableName`, `.Weak`), `System.Posix.Internals`,
+`Data.Fixed`, `Data.Foldable`, `Data.Foldable1`, `Data.Function`,
+`Data.Functor` (and `.Classes`, `.Compose`, `.Const`,
+`.Contravariant`, `.Identity`, `.Product`, `.Sum`), `Data.FunctorM`,
+`Data.Graph`, `Data.HashTable`, `Data.Int`, `Data.IntMap`,
+`Data.IntSet`, `Data.IORef`, `Data.Ix`, `Data.Kind`, `Data.List` (and
+`.NonEmpty`), `Data.Map`, `Data.Maybe`, `Data.Monoid`, `Data.Ord`,
+`Data.PackedString`, `Data.Proxy`, `Data.Queue`, `Data.Ratio`,
+`Data.Semigroup`, `Data.Sequence`, `Data.Set`, `Data.STRef` (and
+`.Lazy`, `.Strict`), `Data.String`, `Data.Traversable`, `Data.Tree`,
+`Data.Tuple`, `Data.Typeable`, `Data.Unique`, `Data.Version`,
+`Data.Void`, `Data.Word`, `Debug.Trace`, `Foreign`, `Foreign.C` (and
+`.Error`, `.String`, `.Types`), `Foreign.ForeignPtr`,
+`Foreign.Marshal` (and `.Alloc`, `.Array`, `.Error`, `.Pool`,
+`.Utils`), `Foreign.Ptr`, `Foreign.StablePtr`, `Foreign.Storable`,
+`GHC.Generics`, `Numeric`, `Numeric.Natural`, `Prelude`, `System.Cmd`,
+`System.Console.GetOpt`, `System.CPUTime`, `System.Directory` (and
+`.Internals`), `System.Environment`, `System.Exit`, `System.Info`,
+`System.IO` (and `.Error`, `.Unsafe`), `System.Locale`, `System.Mem`
+(and `.StableName`, `.Weak`), `System.Posix.Internals`,
 `System.Posix.Signals`, `System.Posix.Types`,
 `System.Process.Internals`, `System.Random`, `System.Time`,
 `Text.ParserCombinators.ReadP`, `Text.ParserCombinators.ReadPrec`,

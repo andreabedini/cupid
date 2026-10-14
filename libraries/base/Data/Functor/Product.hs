@@ -11,6 +11,7 @@
 module Data.Functor.Product (Product(..)) where
 
 import Cupid.Prelude (Alternative(..), MonadPlus(..))
+import Data.Functor.Classes
 
 -- | Lifted product of functors.
 data Product f g a = Pair (f a) (g a)
@@ -49,3 +50,18 @@ instance (Monad f, Monad g) => Monad (Product f g) where
 		sndP (Pair _ b) = b
 
 instance (MonadPlus f, MonadPlus g) => MonadPlus (Product f g)
+
+instance (Eq1 f, Eq1 g) => Eq1 (Product f g) where
+	liftEq eq (Pair x1 y1) (Pair x2 y2) = liftEq eq x1 x2 && liftEq eq y1 y2
+
+instance (Ord1 f, Ord1 g) => Ord1 (Product f g) where
+	liftCompare comp (Pair x1 y1) (Pair x2 y2) =
+		liftCompare comp x1 x2 `mappend` liftCompare comp y1 y2
+
+instance (Read1 f, Read1 g) => Read1 (Product f g) where
+	liftReadsPrec rp rl = readsData $
+		readsBinaryWith (liftReadsPrec rp rl) (liftReadsPrec rp rl) "Pair" Pair
+
+instance (Show1 f, Show1 g) => Show1 (Product f g) where
+	liftShowsPrec sp sl d (Pair x y) =
+		showsBinaryWith (liftShowsPrec sp sl) (liftShowsPrec sp sl) "Pair" d x y

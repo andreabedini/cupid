@@ -11,6 +11,7 @@
 module Data.Functor.Compose (Compose(..)) where
 
 import Cupid.Prelude (Alternative(..))
+import Data.Functor.Classes
 
 infixr 9 `Compose`
 
@@ -45,3 +46,24 @@ instance (Applicative f, Applicative g) => Applicative (Compose f g) where
 instance (Alternative f, Applicative g) => Alternative (Compose f g) where
 	empty = Compose empty
 	Compose x <|> Compose y = Compose (x <|> y)
+
+instance (Eq1 f, Eq1 g) => Eq1 (Compose f g) where
+	liftEq eq (Compose x) (Compose y) = liftEq (liftEq eq) x y
+
+instance (Ord1 f, Ord1 g) => Ord1 (Compose f g) where
+	liftCompare comp (Compose x) (Compose y) =
+		liftCompare (liftCompare comp) x y
+
+instance (Read1 f, Read1 g) => Read1 (Compose f g) where
+	liftReadsPrec rp rl = readsData $
+		readsUnaryWith (liftReadsPrec rp' rl') "Compose" Compose
+	  where
+		rp' = liftReadsPrec rp rl
+		rl' = liftReadList rp rl
+
+instance (Show1 f, Show1 g) => Show1 (Compose f g) where
+	liftShowsPrec sp sl d (Compose x) =
+		showsUnaryWith (liftShowsPrec sp' sl') "Compose" d x
+	  where
+		sp' = liftShowsPrec sp sl
+		sl' = liftShowList sp sl

@@ -12,6 +12,7 @@
 module Data.Functor.Const (Const(..)) where
 
 import Control.Applicative (Const(..))
+import Data.String (IsString(..))
 
 instance Eq a => Eq (Const a b) where
 	Const a == Const b = a == b
@@ -38,3 +39,6 @@ instance Foldable (Const m) where
 
 instance Traversable (Const m) where
 	traverse _ (Const m) = pure (Const m)
+
+instance IsString a => IsString (Const a b) where
+	fromString = Const . fromString

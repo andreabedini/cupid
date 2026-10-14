@@ -56,7 +56,7 @@ module Prelude (
     -- ** Numbers
 
     -- *** Numeric types
-    Int, Integer, Float, Double,
+    Int, Integer, Float, Double, Word,
     Rational,
 
     -- *** Numeric type classes

@@ -16,18 +16,9 @@ module Data.String (
 	lines, words, unlines, unwords
 	) where
 
-import Data.Functor.Const (Const(..))
-import Data.Functor.Identity (Identity(..))
-
 -- | Types that can be built from a 'String'.
 class IsString a where
 	fromString :: String -> a
 
 instance (a ~ Char) => IsString [a] where
 	fromString xs = xs
-
-instance IsString a => IsString (Const a b) where
-	fromString = Const . fromString
-
-instance IsString a => IsString (Identity a) where
-	fromString = Identity . fromString
