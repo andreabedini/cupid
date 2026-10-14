@@ -24,5 +24,3 @@ option('path-canonicalization', type: 'boolean', value: false,
        description: 'Convert file names to absolute normal form')
 option('explain-instance-resolution', type: 'boolean', value: false,
        description: 'Enable the :xplain command')
-option('dont-panic', type: 'boolean', value: false,
-       description: 'Leave fatal signals to the debugger instead of returning to the prompt')

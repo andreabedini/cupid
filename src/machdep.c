@@ -755,7 +755,6 @@ void normalTerminal(void) {
         setTerminal(fileno(stdin), originalSettings);
 }
 
-# if !DONT_PANIC
 /* Restore terminal initial state from a signal handler.  tcsetattr is
  * async-signal-safe and fileno is not, so the descriptor is named and the
  * mode is applied at once, without waiting for output to drain. */
@@ -763,7 +762,6 @@ static void normalTerminalFromSignal(void) {
     if (messedWithTerminal)
         tcsetattr(0, TCSANOW, &originalSettings);
 }
-# endif
 
 bool getEchoTerminal(int fd) {
     TermParams settings;
@@ -949,7 +947,6 @@ static sigHandler(ignoreBreak) {
     sigResume;
 }
 
-#if !DONT_PANIC
 /* Fatal signals (including a stack-overflowing SIGSEGV) are handled on an
  * alternate signal stack: if we run out of C stack, the handler itself
  * still needs somewhere to run in order to report the problem and exit
@@ -957,28 +954,28 @@ static sigHandler(ignoreBreak) {
  * size is used instead of SIGSTKSZ because on current glibc that is no
  * longer a compile-time constant.
  */
-# define PANIC_STACK_SIZE 65536
+#define PANIC_STACK_SIZE 65536
 static char panicStack[PANIC_STACK_SIZE];
 
 /* Is sig one the process raises against itself by faulting, rather than
  * one sent to ask it to stop? */
 static bool isFaultSignal(int sig) {
     switch (sig) {
-# ifdef SIGABRT
+#ifdef SIGABRT
     case SIGABRT:
-# endif
-# ifdef SIGBUS
+#endif
+#ifdef SIGBUS
     case SIGBUS:
-# endif
-# ifdef SIGFPE
+#endif
+#ifdef SIGFPE
     case SIGFPE:
-# endif
-# ifdef SIGILL
+#endif
+#ifdef SIGILL
     case SIGILL:
-# endif
-# ifdef SIGSEGV
+#endif
+#ifdef SIGSEGV
     case SIGSEGV:
-# endif
+#endif
         return true;
     default:
         return false;
@@ -1003,9 +1000,9 @@ static sigHandler(panic) {
     static const char msg[] = "\nUnexpected signal\n";
     int savedErrno = errno;
 
-# if HAVE_TERMIOS_H
+#if HAVE_TERMIOS_H
     normalTerminalFromSignal();
-# endif
+#endif
     if (isFaultSignal(sig_arg)) {
         ssize_t written = write(2, msg, sizeof msg - 1);
         (void)written; /* nothing better to do if this fails */
@@ -1014,7 +1011,6 @@ static sigHandler(panic) {
     errno = savedErrno;
     sigResume;
 }
-#endif /* !DONT_PANIC */
 
 #if IS_WINDOWS
 BOOL WINAPI consoleHandler(DWORD dwCtrlType) {
@@ -1035,7 +1031,6 @@ void installSignalHandlers(void) {
 #if IS_WINDOWS
     SetConsoleCtrlHandler(consoleHandler, true);
 #endif
-#if !DONT_PANIC
     {
         stack_t ss;
         struct sigaction sa;
@@ -1051,32 +1046,31 @@ void installSignalHandlers(void) {
         sa.sa_handler = panic;
         sigemptyset(&sa.sa_mask);
         sa.sa_flags = SA_ONSTACK | SA_RESETHAND; /* see panic() */
-# ifdef SIGABRT
+#ifdef SIGABRT
         sigaction(SIGABRT, &sa, NULL);
-# endif
-# ifdef SIGBUS
+#endif
+#ifdef SIGBUS
         sigaction(SIGBUS, &sa, NULL);
-# endif
-# ifdef SIGFPE
+#endif
+#ifdef SIGFPE
         sigaction(SIGFPE, &sa, NULL);
-# endif
-# ifdef SIGHUP
+#endif
+#ifdef SIGHUP
         sigaction(SIGHUP, &sa, NULL);
-# endif
-# ifdef SIGILL
+#endif
+#ifdef SIGILL
         sigaction(SIGILL, &sa, NULL);
-# endif
-# ifdef SIGQUIT
+#endif
+#ifdef SIGQUIT
         sigaction(SIGQUIT, &sa, NULL);
-# endif
-# ifdef SIGSEGV
+#endif
+#ifdef SIGSEGV
         sigaction(SIGSEGV, &sa, NULL);
-# endif
-# ifdef SIGTERM
+#endif
+#ifdef SIGTERM
         sigaction(SIGTERM, &sa, NULL);
-# endif
+#endif
     }
-#endif /* !DONT_PANIC */
 }
 
 /* --------------------------------------------------------------------------

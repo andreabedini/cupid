@@ -149,7 +149,6 @@ option_macros = {
   'stack-dumps': ['GIMME_STACK_DUMPS'],
   'path-canonicalization': ['PATH_CANONICALIZATION'],
   'explain-instance-resolution': ['EXPLAIN_INSTANCE_RESOLUTION'],
-  'dont-panic': ['DONT_PANIC'],
 }
 foreach opt, macros : option_macros
   if get_option(opt)

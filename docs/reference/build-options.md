@@ -25,7 +25,6 @@ with no arguments lists every option with its current value.
 | `stack-dumps` | boolean | `false` | On stack overflow, print the objects under evaluation |
 | `path-canonicalization` | boolean | `false` | Convert file names to absolute normal form |
 | `explain-instance-resolution` | boolean | `false` | Add the `:xplain` command and the `+x` toggle |
-| `dont-panic` | boolean | `false` | Leave fatal signals to the debugger instead of reporting them and ending the process with the signal |
 
 Each option sets one or two macros in the generated `config.h`.  The
 platform facts are not options: they are written down in
