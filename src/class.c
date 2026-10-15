@@ -25,6 +25,7 @@
 #include "kind.h"
 #include "binding.h"
 #include "class.h"
+#include "deriving.h"
 
 /* --------------------------------------------------------------------------
  * local function prototypes:
@@ -621,6 +622,8 @@ void checkInstDefn(Inst in) {
     List tyvars = typeVarsIn(instRec(in)->head, NIL, NIL, NIL);
     List tvps = NIL, tvts = NIL;
     List fds = NIL;
+    bool stock = instRec(in)->implements == DERIVE; /* see deriving.c */
+    List derived = NIL;
 
     /* add in the tyvars from the `specifics' so that we don't
        prematurely complain about undefined tyvars */
@@ -677,22 +680,34 @@ void checkInstDefn(Inst in) {
         }
     }
 
+    if (stock || nonNull(instRec(in)->via)) { /* standalone deriving */
+        instRec(in)->implements = NIL;
+        derived = standaloneDeriving(in, tyvars);
+    }
+
     kindInst(in, length(tyvars));
     insertInst(in);
 
-    if (nonNull(extractSigdecls(instRec(in)->implements))) {
-        errHead(line);
-        errPrintf(
-            "Type signature declarations not permitted in instance declaration");
-        errFail();
+    if (stock) {
+        instRec(in)->implements =
+            classBindings("derived instance", instRec(in)->c, derived);
+    } else {
+        if (nonNull(extractSigdecls(instRec(in)->implements))) {
+            errHead(line);
+            errPrintf("Type signature declarations not permitted in instance "
+                      "declaration");
+            errFail();
+        }
+        if (nonNull(extractFixdecls(instRec(in)->implements))) {
+            errHead(line);
+            errPrintf(
+                "Fixity declarations not permitted in instance declaration");
+            errFail();
+        }
+        instRec(in)->implements =
+            classBindings("instance", instRec(in)->c,
+                          extractBindings(instRec(in)->implements));
     }
-    if (nonNull(extractFixdecls(instRec(in)->implements))) {
-        errHead(line);
-        errPrintf("Fixity declarations not permitted in instance declaration");
-        errFail();
-    }
-    instRec(in)->implements = classBindings(
-        "instance", instRec(in)->c, extractBindings(instRec(in)->implements));
     instRec(in)->builder = newInstImp(in);
     if (!preludeLoaded && isNull(nameListMonad) && isAp(instRec(in)->head) &&
         fun(instRec(in)->head) == classMonad &&

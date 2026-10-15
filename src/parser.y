@@ -56,6 +56,7 @@ static List derivStrategy(Cell, List);
 static List derivVia(List, Type);
 static List derivViaType(Cell, List, Type);
 static Cell checkConstr(Cell);
+static void derivInst(int, Cell, Type, Cell);
 static Cell starKind(Cell);
 static Cell namedKind(Cell);
 
@@ -473,6 +474,17 @@ topDecl	  : TCLASS crule fds wherePart	{classDefn(intOf($1),$2,$4,$3); sp-=4;}
 	  | DEFAULT '(' dtypes ')'	{defaultDefn(intOf($1),$3);  sp-=4;}
 	  | TCLASS error		{syntaxError("class declaration");}
 	  | TINSTANCE error		{syntaxError("instance declaration");}
+	  | DERIVING TINSTANCE irule	{derivInst(intOf($2),NIL,NIL,$3);
+					 sp-=3;}
+	  | DERIVING varid TINSTANCE irule
+					{derivInst(intOf($3),$2,NIL,$4);
+					 sp-=4;}
+	  | DERIVING TNEWTYPE TINSTANCE irule
+					{derivInst(intOf($3),NEWTYPE,NIL,$4);
+					 sp-=4;}
+	  | DERIVING varid btype TINSTANCE irule
+					{derivInst(intOf($4),$2,$3,$5);
+					 sp-=5;}
 	  | DEFAULT error		{syntaxError("default declaration");}
 	  ;
 crule	  : context IMPLIES btype2	{$$ = gcShadow(3,pair($1,checkPred($3)));}
@@ -1369,6 +1381,33 @@ static List derivViaType(Cell v, List cs, Type t) {
 	errFail();
     }
     return derivVia(cs, t);
+}
+
+/* A standalone deriving declaration of the instance (context, head), with
+ * the strategy s: NIL for none, NEWTYPE, or a name, which is via when there
+ * is a via type.  It is an instance with no bindings, marked as deriving.c
+ * describes. */
+static void derivInst(int line, Cell s, Type via, Cell irule) {
+    Inst in;
+    instDefn(line, irule, NIL);
+    in = hd(instDefns);
+    if (nonNull(via)) {
+	if (textOf(s) != findText("via")) {
+	    errHead(line);
+	    errPrintf("Syntax error in deriving declaration (unexpected \"%s\")",
+		      textToStr(textOf(s)));
+	    errFail();
+	}
+	instRec(in)->via = via;
+    } else if (s == NEWTYPE) {
+	instRec(in)->via = NEWTYPE;
+    } else if (isNull(s) || textOf(s) == findText("stock")) {
+	instRec(in)->implements = DERIVE;
+    } else if (textOf(s) != findText("anyclass")) {
+	errHead(line);
+	errPrintf("Unknown deriving strategy \"%s\"", textToStr(textOf(s)));
+	errFail();
+    }
 }
 
 /* Check that data constructor has an unqualified conid as head */

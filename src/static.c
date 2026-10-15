@@ -223,6 +223,7 @@ void checkDefns(void) {
     mapOver(checkPrimDefn, primDefns); /* check primitive declarations     */
 
     instDefns = rev(instDefns); /* process instance definitions    */
+    instDefns = dropTypeableDerivings(instDefns);
     mapProc(checkInstDefn, instDefns);
 
     setCurrModule(thisModule);

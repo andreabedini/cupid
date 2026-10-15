@@ -1964,7 +1964,7 @@ static void typeInstDefn(Inst in) {
     }
 
     if (nonNull(instRec(in)->via)) { /* deriving via: see deriving.c       */
-        Cell pi = ap(instRec(in)->c, instRec(in)->via);
+        Cell pi = ap(fun(instRec(in)->head), instRec(in)->via); /* last */
         Cell v = inventVar();
         Cell ev = scEntail(params, pi, beta, 0);
         if (isNull(ev)) {

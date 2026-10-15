@@ -5,7 +5,8 @@
  * This file decides what context such an instance needs, by iterating to a
  * fixed point over the requests, and then writes the bindings for it: Eq,
  * Ord, Enum, Ix, Show, Read, Bounded and Generic.  tycon.c collects the requests
- * and hands them over; nothing here is reached any other way.
+ * and hands them over, and class.c hands over each standalone deriving
+ * declaration once it has checked it as an instance.
  *
  * Split out of static.c.
  *
@@ -24,6 +25,7 @@
 #include "kind.h"
 #include "tycon.h"
 #include "class.h"
+#include "typeexp.h"
 #include "deriving.h"
 
 static void deriveContexts(List);
@@ -79,9 +81,14 @@ static Cell genInject(Cell, int, int);
 static Cell genValue(Name, List, int, int);
 static Cell genDataInfo(Tycon);
 static Cell genConInfo(Name);
+static List stockBindings(Inst, Type);
+static void viaHead(Inst);
 static void checkVia(Inst);
 static Type runtimeType(Type);
 static Type unwrapHead(Type, bool);
+static Type unwrapOnce(Type, bool);
+static Type etaReduce(Tycon, int, List);
+static bool hasOffset(Type, int);
 static Type substOffsets(Type, List);
 static bool sameRep(Type, Type);
 static bool holdsEvidence(Type, List *);
@@ -404,30 +411,10 @@ static void addDerivImp(Inst in) {
         errFail();
     }
     if (nonNull(instRec(in)->via)) { /* typeInstDefn builds it */
+        viaHead(in);
         checkVia(in);
-    } else if (c == classEq) {
-        imp = deriveEq(t);
-    } else if (c == classOrd) {
-        imp = deriveOrd(t);
-    } else if (c == classEnum) {
-        imp = deriveEnum(t);
-    } else if (c == classIx) {
-        imp = deriveIx(t);
-    } else if (c == classShow) {
-        imp = deriveShow(t);
-    } else if (c == classRead) {
-        imp = deriveRead(t);
-    } else if (c == classBounded) {
-        imp = deriveBounded(t);
-    } else if (isGenericClass(c)) {
-        imp = deriveGeneric(in, t);
-    } else if (isDataClass(c)) {
-        imp = deriveData(in, t);
     } else {
-        errHead(instRec(in)->line);
-        errPrintf("Cannot derive instances of class \"%s\"",
-                  textToStr(cclassRec(instRec(in)->c)->text));
-        errFail();
+        imp = stockBindings(in, t);
     }
 
     kindInst(in, intOf(instRec(in)->kinds));
@@ -435,6 +422,136 @@ static void addDerivImp(Inst in) {
     instRec(in)->builder = newInstImp(in);
     instRec(in)->implements =
         classBindings("derived instance", instRec(in)->c, imp);
+}
+
+/* The bindings of the instance in of a class with a standard deriver, for
+ * the type t */
+static List stockBindings(Inst in, Type t) {
+    Class c = instRec(in)->c;
+    if (c == classEq) {
+        return deriveEq(t);
+    } else if (c == classOrd) {
+        return deriveOrd(t);
+    } else if (c == classEnum) {
+        return deriveEnum(t);
+    } else if (c == classIx) {
+        return deriveIx(t);
+    } else if (c == classShow) {
+        return deriveShow(t);
+    } else if (c == classRead) {
+        return deriveRead(t);
+    } else if (c == classBounded) {
+        return deriveBounded(t);
+    } else if (isGenericClass(c)) {
+        return deriveGeneric(in, t);
+    } else if (isDataClass(c)) {
+        return deriveData(in, t);
+    }
+    errHead(instRec(in)->line);
+    errPrintf("Cannot derive instances of class \"%s\"",
+              textToStr(cclassRec(c)->text));
+    errFail();
+}
+
+/* --------------------------------------------------------------------------
+ * Standalone deriving.  A declaration
+ *
+ *   deriving instance Show a => Show (T a)
+ *   deriving newtype instance Num Age
+ *   deriving via (LiftingAccum MaybeT m) instance
+ *       MonadAccum w m => MonadAccum w (MaybeT m)
+ *   deriving anyclass instance C T
+ *
+ * is an instance declaration whose context is written out, so nothing
+ * needs inferring: the parser makes it an instance with no bindings, and
+ * marks a stock one by DERIVE in place of its bindings and a newtype one
+ * by NEWTYPE as its via type.  checkInstDefn checks it as any instance,
+ * then hands it here for the bindings or the via type.  A via type stands
+ * for the class's last parameter, so a class of several parameters can be
+ * derived this way too.  An anyclass one is just an instance with no
+ * bindings, and one of Typeable is dropped, as every type is Typeable.
+ * ------------------------------------------------------------------------*/
+
+/* The derived bindings of the standalone deriving declaration in, whose
+ * head and context are checked and whose type variables are tyvars; for
+ * one derived via a type, check that type and return no bindings */
+List standaloneDeriving(Inst in, List tyvars) {
+    int line = instRec(in)->line;
+    Class c = instRec(in)->c;
+    Type self;
+    Type t;
+
+    if (!isAp(instRec(in)->head)) {
+        errHead(line);
+        errPrintf("Cannot derive \"%s\": it has no parameters",
+                  textToStr(cclassRec(c)->text));
+        errFail();
+    }
+    self = arg(instRec(in)->head);
+    if (instRec(in)->via == NEWTYPE) { /* via the type the newtype wraps */
+        Type u = unwrapHead(self, false);
+        Cell h = getHead(u);
+        if (!isNewtype(h) || argCount != tyconRec(h)->arity) {
+            errHead(line);
+            errPrintf("Cannot derive ");
+            errPred(instRec(in)->head);
+            errPrintf(" with the newtype strategy: ");
+            errType(self);
+            errPrintf(" is not a newtype applied to all its parameters");
+            errFail();
+        }
+        instRec(in)->via = unwrapOnce(u, true);
+    } else if (nonNull(instRec(in)->via)) {
+        instRec(in)->via = depTypeExp(line, tyvars, instRec(in)->via);
+    }
+    if (nonNull(instRec(in)->via)) {
+        checkVia(in);
+        return NIL;
+    }
+
+    t = getHead(self);
+    if (isSynonym(t)) {
+        errHead(line);
+        errPrintf("Cannot derive ");
+        errPred(instRec(in)->head);
+        errPrintf(": \"%s\" is a type synonym", textToStr(tyconRec(t)->text));
+        errFail();
+    }
+    if (!isTycon(t) || !hasCfun(tyconRec(t)->defn)) {
+        errHead(line);
+        errPrintf("Cannot derive ");
+        errPred(instRec(in)->head);
+        errPrintf(": the type has no constructors to derive it from");
+        errFail();
+    }
+    if (isGenericClass(c)) {
+        errHead(line);
+        errPrintf("Cannot derive \"Generic\" in a standalone declaration: "
+                  "derive it in the declaration of \"%s\"",
+                  textToStr(tyconRec(t)->text));
+        errFail();
+    }
+    return stockBindings(in, t);
+}
+
+/* The instances is with the standalone deriving declarations of Typeable
+ * left out */
+List dropTypeableDerivings(List is) {
+    List rs = NIL;
+    for (; nonNull(is); is = tl(is)) {
+        Inst in = hd(is);
+        Class c = NIL;
+        if (instRec(in)->implements == DERIVE) {
+            Cell h = getHead(instRec(in)->head);
+            if (isQCon(h)) {
+                c = findQualClass(h);
+            }
+        }
+        if (isNull(c) || !isTypeableClass(c)) {
+            rs = cons(in, rs);
+        }
+    }
+    return rev(rs);
 }
 
 static List diVars = NIL; /* Acts as a cache of invented vars*/
@@ -1663,19 +1780,41 @@ static Cell genConInfo(Name c) {
  * refused.
  * ------------------------------------------------------------------------*/
 
+/* Fit the head of in, an instance a deriving clause asks for via a type, to
+ * the class: for a class whose parameter has the kind k1 -> ... -> kn ->
+ * Type, as Monad's has, the type is applied to all but its last n
+ * parameters, so newtype L t m a = L (t m a) deriving Monad via (t m)
+ * gives Monad (L t m). */
+static void viaHead(Inst in) {
+    Class c = instRec(in)->c;
+    Kind k = nth(cclassRec(c)->arity - 1, cclassRec(c)->kinds);
+    int a = intOf(instRec(in)->kinds);
+    int n = 0;
+    Type self = arg(instRec(in)->head);
+    for (; isAp(k); k = snd(k)) {
+        n++;
+    }
+    if (n > a) {
+        errHead(instRec(in)->line);
+        errPrintf("Cannot derive \"%s\" for \"%s\": the type has too few "
+                  "parameters for the class",
+                  textToStr(cclassRec(c)->text),
+                  textToStr(tyconRec(getHead(self))->text));
+        errFail();
+    }
+    for (a -= n; n > 0; n--) {
+        self = fun(self);
+    }
+    arg(instRec(in)->head) = self;
+    instRec(in)->kinds = mkInt(a);
+}
+
 /* Check the derived instance in, which is derived via a type */
 static void checkVia(Inst in) {
     Cell self = arg(instRec(in)->head);
     Class c = instRec(in)->c;
     Type via = instRec(in)->via;
 
-    if (cclassRec(c)->arity != 1) {
-        errHead(instRec(in)->line);
-        errPrintf("Cannot derive \"%s\" via a type: only a class of one "
-                  "parameter can be",
-                  textToStr(cclassRec(c)->text));
-        errFail();
-    }
     if (!sameRep(runtimeType(self), runtimeType(via))) {
         errHead(instRec(in)->line);
         errPrintf("Cannot derive ");
@@ -1703,29 +1842,74 @@ static Type runtimeType(Type t) {
 /* The type t with the synonyms at its head expanded, and its newtypes
  * unwrapped too if newtypes */
 static Type unwrapHead(Type t, bool newtypes) {
-    for (;;) {
-        Cell h = getHead(t);
-        int n = argCount;
-        List args = NIL;
-        Type u = t;
-        int i = 0;
-        if (!isTycon(h) || n < tyconRec(h)->arity ||
-            !(isSynonym(h) || (newtypes && isNewtype(h))) ||
-            (isNewtype(h) && !hasCfun(tyconRec(h)->defn))) {
-            return t;
+    Type u;
+    while (nonNull(u = unwrapOnce(t, newtypes))) {
+        t = u;
+    }
+    return t;
+}
+
+/* The type t with the synonym at its head expanded, or the newtype there
+ * unwrapped if newtypes, or NIL if there is neither.  A newtype applied to
+ * fewer than all its parameters unwraps only if what it wraps ends in the
+ * missing ones, as LiftingAccum t m does in
+ *
+ *   newtype LiftingAccum t m a = LiftingAccum (t m a)
+ *
+ * which is then t m. */
+static Type unwrapOnce(Type t, bool newtypes) {
+    Cell h = getHead(t);
+    int n = argCount;
+    List args = NIL;
+    Type u = t;
+    int i = 0;
+    if (!isTycon(h) || !(isSynonym(h) || (newtypes && isNewtype(h))) ||
+        (isNewtype(h) && !hasCfun(tyconRec(h)->defn))) {
+        return NIL;
+    }
+    for (; i < n; i++, u = fun(u)) {
+        args = cons(arg(u), args);
+    }
+    if (n < tyconRec(h)->arity) {
+        return isNewtype(h) ? etaReduce(h, n, args) : NIL;
+    }
+    if (isSynonym(h)) {
+        t = substOffsets(tyconRec(h)->defn, args);
+    } else {
+        t = substOffsets(hd(conFieldTypes(hd(tyconRec(h)->defn))), args);
+    }
+    for (i = tyconRec(h)->arity; i < n; i++) {
+        t = ap(t, nth(i, args));
+    }
+    return t;
+}
+
+/* Does the type t have the offset n in it? */
+static bool hasOffset(Type t, int n) {
+    if (isAp(t)) {
+        return hasOffset(fun(t), n) || hasOffset(arg(t), n);
+    }
+    return isOffset(t) && offsetOf(t) == n;
+}
+
+/* What the newtype h wraps, applied to the first n of its parameters, args:
+ * its field's type with the parameters after the nth dropped from its end,
+ * if it ends in them and has them nowhere else; NIL if not */
+static Type etaReduce(Tycon h, int n, List args) {
+    Type f = hd(conFieldTypes(hd(tyconRec(h)->defn)));
+    int i = tyconRec(h)->arity;
+    while (i-- > n) {
+        if (!isAp(f) || !isOffset(arg(f)) || offsetOf(arg(f)) != i) {
+            return NIL;
         }
-        for (; i < n; i++, u = fun(u)) {
-            args = cons(arg(u), args);
-        }
-        if (isSynonym(h)) {
-            t = substOffsets(tyconRec(h)->defn, args);
-        } else {
-            t = substOffsets(hd(conFieldTypes(hd(tyconRec(h)->defn))), args);
-        }
-        for (i = tyconRec(h)->arity; i < n; i++) {
-            t = ap(t, nth(i, args));
+        f = fun(f);
+    }
+    for (i = n; i < tyconRec(h)->arity; i++) {
+        if (hasOffset(f, i)) {
+            return NIL;
         }
     }
+    return substOffsets(f, args);
 }
 
 /* The type t with each offset n replaced by the nth of args */
@@ -1764,7 +1948,21 @@ static bool viaReusable(Class c) {
     List ms = cclassRec(c)->members;
     List seen = NIL;
     for (; nonNull(ms); ms = tl(ms)) {
-        if (holdsEvidence(nameRec(hd(ms))->type, &seen)) {
+        Type t = nameRec(hd(ms))->type;
+        if (isPolyType(t)) {
+            t = monotypeOf(t);
+        }
+        if (whatIs(t) == QUAL) {       /* past C's own predicate, the reused */
+            List ps = tl(fst(snd(t))); /* dictionary                    */
+            for (; nonNull(ps); ps = tl(ps)) {
+                Cell h = getHead(hd(ps));
+                if (isClass(h) && nonNull(cclassRec(h)->fds)) {
+                    return false;
+                }
+            }
+            t = snd(snd(t));
+        }
+        if (holdsEvidence(t, &seen)) {
             return false;
         }
     }

@@ -638,6 +638,15 @@ and a `Sum Int` are the same value and `Monoid (Sum Int)`'s methods
 work on both.  `deriving newtype C`, on a newtype, is deriving `C` via
 the type it wraps.  The via type may mention the declaration's type
 variables, `newtype Opt a = Opt (Maybe a) deriving Eq via Maybe a`.
+For a class whose parameter is a type constructor, such as `Monad`,
+the instance is for the type without its last parameter:
+
+```haskell
+newtype Parser a = Parser (StateT String Maybe a)
+    deriving (Functor, Applicative, Monad) via StateT String Maybe
+```
+
+gives `Monad Parser`.
 The instance's context is the one `V`'s instance needs, and its
 superclasses are the type's own, so `deriving Ord via V` needs an
 `Eq` instance for the type as usual.
@@ -647,7 +656,9 @@ Two checks keep this safe:
 - The type and `V` must be the same at run time: equal once the
   newtypes and synonyms at their heads are unwrapped.  Anything
   inside must be equal as written; `[Age]` and `[Int]` are not the
-  same here.
+  same here.  A newtype applied to fewer than all its parameters
+  unwraps when what it wraps ends in the missing ones: given
+  `newtype Lifting t m a = Lifting (t m a)`, `Lifting t m` is `t m`.
 - The class's methods must not mention a class with functional
   dependencies in their contexts, or a type whose constructors hold
   class evidence (an existential constructor with a context).  Either
@@ -660,9 +671,39 @@ Differences from GHC's `DerivingStrategies`, `DerivingVia` and
 - There are no roles.  The first check is stricter than GHC's
   `Coercible` below the head of the type, and the second is a
   conservative stand-in for what roles prevent.
-- Only a class of one parameter can be derived via a type.
-- The `anyclass` strategy is not supported, and there is no
-  standalone `deriving instance`.
+- A `deriving` clause can derive via a type only a class of one
+  parameter; a standalone declaration (below) can derive any class.
+- A clause cannot use the `anyclass` strategy.
+
+### Standalone deriving
+
+A `deriving instance` declaration asks for an instance away from the
+type's declaration, with its context written out:
+
+```haskell
+deriving instance Show a => Show (Tree a)
+deriving stock instance Eq Colour
+deriving newtype instance Num Age
+deriving via (Sum Int) instance Semigroup Score
+deriving anyclass instance Describe Colour
+deriving via (LiftingAccum MaybeT m) instance
+    MonadAccum w m => MonadAccum w (MaybeT m)
+```
+
+With no strategy, or `stock`, the instance's methods are derived as
+for a clause, and the head may be any type with constructors,
+`Show (Tree Int)` as well as `Show (Tree a)`.  `newtype` derives via
+the type the newtype wraps, and `via V` via `V`, with the checks
+above; the via type stands for the class's last parameter, so a class
+of several parameters can be derived too.  `anyclass` gives an
+instance with no methods, which then has the class's defaults.
+Nothing is inferred: the instance has exactly the context written,
+which must give what the methods need.  `deriving instance Typeable T`
+is accepted and does nothing, as every type is `Typeable`.
+
+`Generic` cannot be derived this way, since its instance needs the
+representation as a second parameter; derive it in the type's
+declaration.
 
 ## Restricted type synonyms
 
