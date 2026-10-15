@@ -264,6 +264,10 @@ topDecls  : topDecls ';'		{$$ = gcShadow(2,$1);}
 /*- Type declarations: ----------------------------------------------------*/
 
 topDecl	  : TYPE tyLhs '=' type		{defTycon(4,$3,$2,$4,SYNONYM);}
+	  | TYPE tyLhs '=' ALL tvbinders '.' sigType
+					{defTycon(7,$3,$2,
+						  ap(POLYTYPE,pair(rev($5),$7)),
+						  SYNONYM);}
 	  | TYPE tyLhs '=' '(' ctxtType COCO kind ')'
 					{defTycon(8,$3,$2,
 						  ap(KINDED,pair($5,$7)),
@@ -514,25 +518,36 @@ varids0   : /* empty */			{$$ = gcShadow(0,NIL);}
 
 /*- Type expressions: -----------------------------------------------------*/
 
-topType	  : ALL varids '.' topType0	{$$ = gcShadow(4,ap(POLYTYPE,
+topType	  : ALL tvbinders '.' topType0	{$$ = gcShadow(4,ap(POLYTYPE,
 						     pair(rev($2),$4)));}
 	  | topType0			{$$ = $1;}
 	  ;
 topType0  : context IMPLIES topType1	{$$ = gcShadow(3,qualType($1,$3));}
 	  | topType1			{$$ = $1;}
 	  ;
+/* A signature's arrows, whose result may be polymorphic, as in
+ * (forall a. a -> a) -> (forall a. a -> a); typeexp.c moves such a forall
+ * to the front of the signature. */
 topType1  : bpolyType ARROW topType1	{$$ = gcShadow(3,fn($1,$3));}
 	  | btype1    ARROW topType1	{$$ = gcShadow(3,fn($1,$3));}
 	  | btype2    ARROW topType1	{$$ = gcShadow(3,fn($1,$3));}
 	  | opTypes   ARROW topType1	{$$ = gcShadow(3,fn(buildOpType($1),$3));}
 	  | btype			{$$ = $1;}
 	  | opTypes			{$$ = gcShadow(1,buildOpType($1));}
+	  | bpolyType			{$$ = $1;}
 	  ;
-polyType  : ALL varids '.' sigType	{$$ = gcShadow(4,ap(POLYTYPE,
+polyType  : ALL tvbinders '.' sigType	{$$ = gcShadow(4,ap(POLYTYPE,
 						     pair(rev($2),$4)));}
 	  | bpolyType			{$$ = $1;}
 	  ;
 bpolyType : '(' polyType ')'		{$$ = gcShadow(3,$2);}
+	  ;
+/* The variables a forall binds, each of which may be given its kind,
+ * forall (m :: Type -> Type) a. ..., in reverse */
+tvbinders : tvbinders varid		{$$ = gcShadow(2,cons($2,$1));}
+	  | tvbinders kindedVar		{$$ = gcShadow(2,cons($2,$1));}
+	  | varid			{$$ = gcShadow(1,singleton($1));}
+	  | kindedVar			{$$ = gcShadow(1,singleton($1));}
 	  ;
 varids	  : varids varid		{$$ = gcShadow(2,cons($2,$1));}
 	  | varid			{$$ = gcShadow(1,singleton($1));}

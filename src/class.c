@@ -328,12 +328,16 @@ void extendFundeps(Class c) {
 static void checkMems(Class c, List tyvars, Cell m) {
     int line = intOf(fst3(m));
     Type t = thd3(m);
-    List sig = NIL;
-    List tvs = NIL;
     List xtvs = NIL;
+    List bs = NIL; /* the binders of the forall at the front, if any */
+    bool explicit = isPolyType(t);
 
-    if (isPolyType(t)) {
-        xtvs = fst(snd(t));
+    t = expandPolyTypes(line, t, false);
+    if (isPolyType(t)) { /* a forall expansion brought is implicit */
+        bs = polySigOf(t);
+        if (explicit) {
+            xtvs = boundVars(bs);
+        }
         t = monotypeOf(t);
     }
 
@@ -351,12 +355,8 @@ static void checkMems(Class c, List tyvars, Cell m) {
         cons(cclassRec(c)->head, fst(snd(t))); /* Add main predicate   */
     snd(snd(t)) = depTopType(line, tyvars, snd(snd(t)));
 
-    for (tvs = tyvars; nonNull(tvs);
-         tvs = tl(tvs)) { /* Quantify              */
-        sig = ap(NIL, sig);
-    }
-    if (nonNull(sig)) {
-        t = mkPolyType(sig, t);
+    if (nonNull(tyvars)) { /* Quantify, with the kinds the forall gives */
+        t = mkPolyType(kindSlots(tyvars, bs), t);
     }
     thd3(m) = t;                       /* Save type            */
     take(cclassRec(c)->arity, tyvars); /* Delete extra type vars  */

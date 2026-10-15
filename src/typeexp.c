@@ -56,7 +56,7 @@ List typeVarsIn(Cell ty, List us, List ws, List vs) {
         }
 
     case POLYTYPE:
-        return typeVarsIn(monotypeOf(ty), polySigOf(ty), ws, vs);
+        return typeVarsIn(monotypeOf(ty), boundVars(polySigOf(ty)), ws, vs);
 
     case QUAL: {
         vs = typeVarsIn(fst(snd(ty)), us, ws, vs);
@@ -103,6 +103,356 @@ static List maybeAppendVar(Cell v, List vs) {
 }
 
 /* --------------------------------------------------------------------------
+ * The variables a forall binds:
+ *
+ * The parser keeps a variable given its kind, forall (m :: Type -> Type).
+ * ..., as KINDED (m, kind) in the list of variables a POLYTYPE binds.  The
+ * checks of a forall want the variables, and the kind checker wants the
+ * kinds, each in the slot for its variable, or NIL for one inferred.
+ * ------------------------------------------------------------------------*/
+
+/* The variables the forall binders vs bind, without their kinds */
+List boundVars(List vs) {
+    List us = NIL;
+    for (; nonNull(vs); vs = tl(vs)) {
+        us = cons(whatIs(hd(vs)) == KINDED ? fst(snd(hd(vs))) : hd(vs), us);
+    }
+    return rev(us);
+}
+
+/* The kind slots for the variables tvs: the kind the binders bs give each,
+ * or NIL */
+List kindSlots(List tvs, List bs) {
+    List ks = NIL;
+    for (; nonNull(tvs); tvs = tl(tvs)) {
+        Kind k = NIL;
+        List us = bs;
+        for (; nonNull(us); us = tl(us)) {
+            if (whatIs(hd(us)) == KINDED &&
+                textOf(fst(snd(hd(us)))) == textOf(hd(tvs))) {
+                k = snd(snd(hd(us)));
+            }
+        }
+        ks = cons(k, ks);
+    }
+    return rev(ks);
+}
+
+/* --------------------------------------------------------------------------
+ * Polymorphic type synonyms:
+ *
+ *   type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
+ *
+ * The type checker expands a synonym where it meets one, in the middle of
+ * unification, where a forall cannot be.  So a synonym for a polymorphic
+ * type, or one with such a synonym in its body, is a POLYSYN, which the
+ * type checker never expands; static analysis expands each use of it
+ * before anything else looks at the type, and the type checker sees only
+ * what it would have seen had the expansion been written out.
+ *
+ * Expansion replaces the synonym's parameters by its arguments and gives
+ * the variables its foralls bind fresh names, with their kinds.  An
+ * argument is expanded where the body puts it, so it may be polymorphic if
+ * that is a place for one, as in GenericQ GenericT, which is forall a b.
+ * (Data a, Data b) => a -> b -> b; an ordinary synonym given such an
+ * argument is expanded here too.  A forall
+ * that expansion leaves to the right of an arrow moves, with its context,
+ * to the front of the type around it, as in GHC before 9.0:
+ *
+ *   lens :: (s -> a) -> (s -> b -> t) -> Lens s t a b
+ *   lens :: Functor f => (s -> a) -> (s -> b -> t) -> (a -> f b) -> s -> f t
+ *
+ * A polymorphic type may then be where the type checker takes one: at the
+ * front of a signature, of a function argument in a signature (rank 2),
+ * or of a constructor field.  One anywhere else, as a type constructor's
+ * argument or an argument's argument, is an error.  The expansion of a
+ * forall written out is checked the same way, so these rules hold for
+ * every signature.
+ * ------------------------------------------------------------------------*/
+
+typedef enum {
+    PLACE_MONO, /* a monotype: no forall or context in it               */
+    PLACE_ARG,  /* a function argument or a field: a forall at its      */
+                /* front, and monotypes as its own arguments            */
+    PLACE_TOP   /* a signature: a forall at its front, and arguments    */
+                /* that may be polymorphic                              */
+} Place;
+
+static bool polySynsAllowed = false; /* resolving a synonym's own body */
+
+static Type expandPolys(int, Type, Place);
+static Type expandArgs(int, Type, Place);
+static Type expandPolySyn(int, Tycon, Type);
+static bool hasPolyArg(Type);
+static bool isPolyArg(Type);
+static Type fromSynBody(Type, List *);
+static Type copyTypeSyntax(Type);
+static Type prenex(List, List, Type);
+static void monoOnly(int, Type, char *);
+
+/* The type t, as the parser built it, at place p, with its polymorphic
+ * synonyms expanded and its foralls moved to the front */
+static Type expandPolys(int line, Type t, Place p) {
+    Cell h;
+    int n;
+    Tycon tc = NIL;
+
+    switch (whatIs(t)) {
+    case POLYTYPE:
+    case QUAL:
+        if (p == PLACE_MONO) {
+            errHead(line);
+            errPrintf("A forall or a context cannot be here: a polymorphic "
+                      "type may be the whole of a signature, an argument of "
+                      "a function in one, or a constructor's field");
+            errFail();
+        }
+        if (isPolyType(t)) {
+            return prenex(polySigOf(t), NIL,
+                          expandPolys(line, monotypeOf(t), p));
+        } else {
+            List ps = NIL;
+            List qs = fst(snd(t));
+            for (; nonNull(qs); qs = tl(qs)) {
+                ps = cons(expandArgs(line, hd(qs), PLACE_MONO), ps);
+            }
+            return prenex(NIL, rev(ps), expandPolys(line, snd(snd(t)), p));
+        }
+    case BANG:
+        return ap(BANG, expandPolys(line, snd(t), p));
+    default:
+        break;
+    }
+
+    h = getHead(t);
+    n = argCount;
+    if (h == typeArrow && n == 2) { /* a function: a forall in its result */
+        Type a = expandPolys(line, arg(fun(t)), /* moves to its front */
+                             p == PLACE_TOP ? PLACE_ARG : PLACE_MONO);
+        Type r = expandPolys(line, arg(t), p);
+        List vs = NIL;
+        List ps = NIL;
+        if (isPolyType(r)) {
+            vs = polySigOf(r);
+            r = monotypeOf(r);
+        }
+        if (isQualType(r)) {
+            ps = fst(snd(r));
+            r = snd(snd(r));
+        }
+        return prenex(vs, ps, fn(a, r));
+    }
+    if (isQCon(h)) {
+        tc = findQualTycon(h);
+    } else if (isTycon(h)) { /* from the body of a synonym expanded */
+        tc = h;
+    }
+    if (nonNull(tc) &&
+        (isPolySyn(tc) || /* or a synonym given a polymorphic type */
+         (isSynonym(tc) && n >= tyconRec(tc)->arity && hasPolyArg(t)))) {
+        if (isQCon(h) && whatIs(h) != QUALIDENT) {
+            checkTyconAmbig(line, tyconRec(tc)->text, tc);
+        }
+        return expandPolys(line, expandPolySyn(line, tc, t), p);
+    }
+    return expandArgs(line, t, PLACE_MONO);
+}
+
+/* Is an argument of the application t, as the parser built it, a
+ * polymorphic type, or one with a polymorphic synonym in it? */
+static bool hasPolyArg(Type t) {
+    for (; isAp(t); t = fun(t)) {
+        if (isPolyArg(arg(t))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool isPolyArg(Type t) {
+    Cell h;
+    if (isPolyOrQualType(t)) {
+        return true;
+    }
+    h = getHead(t);
+    if (isQCon(h)) {
+        h = findQualTycon(h);
+    }
+    return isPolySyn(h) || hasPolyArg(t);
+}
+
+/* The application t with each argument expanded at place p */
+static Type expandArgs(int line, Type t, Place p) {
+    if (isAp(t)) {
+        Type l = expandArgs(line, fun(t), p);
+        return ap(l, expandPolys(line, arg(t), p));
+    }
+    return t;
+}
+
+/* The expansion of t, an application of the synonym tc */
+static Type expandPolySyn(int line, Tycon tc, Type t) {
+    int arity = tyconRec(tc)->arity;
+    List args = NIL;
+    List env = NIL;
+    Type u = t;
+    Type e;
+    int i;
+
+    for (; isAp(u); u = fun(u)) { /* expanded where the body puts them */
+        args = cons(arg(u), args);
+    }
+    if (length(args) < arity) {
+        errHead(line);
+        errPrintf("Not enough arguments for type synonym \"%s\"",
+                  textToStr(tyconRec(tc)->text));
+        errFail();
+    }
+    if (cellIsMember(tc, tyconDefns) && !cellIsMember(tc, tcDeps)) {
+        tcDeps = cons(tc, tcDeps);
+    }
+    for (i = 0, u = args; i < arity; i++, u = tl(u)) {
+        env = cons(hd(u), env);
+    }
+    env = rev(env);
+    e = fromSynBody(tyconRec(tc)->defn, &env);
+    for (; nonNull(u); u = tl(u)) { /* arguments beyond its parameters */
+        e = ap(e, hd(u));
+    }
+    return e;
+}
+
+/* The body d of a synonym, as static analysis left it, made back into a
+ * type as the parser builds one: each offset is the type at its position in
+ * env, the synonym's arguments and then the variables of the foralls
+ * around it, which get fresh names */
+static Type fromSynBody(Type d, List *env) {
+    switch (whatIs(d)) {
+    case AP: {
+        Type l = fromSynBody(fun(d), env);
+        return ap(l, fromSynBody(arg(d), env));
+    }
+    case OFFSET:
+        return copyTypeSyntax(nth(offsetOf(d), *env));
+    case POLYTYPE: {
+        int n = length(*env);
+        List bs = NIL;
+        List ks = polySigOf(d);
+        Type b;
+        for (; isAp(ks); ks = tl(ks)) {
+            Cell v = inventVar();
+            bs = cons(nonNull(hd(ks)) ? ap(KINDED, pair(v, hd(ks))) : v, bs);
+            *env = appendOnto(*env, singleton(v));
+        }
+        b = fromSynBody(monotypeOf(d), env);
+        *env = take(n, *env);
+        return ap(POLYTYPE, pair(rev(bs), b));
+    }
+    case QUAL: {
+        List ps = NIL;
+        List qs = fst(snd(d));
+        for (; nonNull(qs); qs = tl(qs)) {
+            ps = cons(fromSynBody(hd(qs), env), ps);
+        }
+        return ap(QUAL, pair(rev(ps), fromSynBody(snd(snd(d)), env)));
+    }
+    case RANK2: /* worked out again where it is used */
+        return fromSynBody(snd(snd(d)), env);
+    default:
+        return d;
+    }
+}
+
+/* A copy of the type t as the parser builds one, for a second place that
+ * static analysis may overwrite separately */
+static Type copyTypeSyntax(Type t) {
+    switch (whatIs(t)) {
+    case AP: {
+        Type l = copyTypeSyntax(fun(t));
+        return ap(l, copyTypeSyntax(arg(t)));
+    }
+    case POLYTYPE:
+        return ap(POLYTYPE,
+                  pair(dupList(polySigOf(t)), copyTypeSyntax(monotypeOf(t))));
+    case QUAL: {
+        List ps = NIL;
+        List qs = fst(snd(t));
+        for (; nonNull(qs); qs = tl(qs)) {
+            ps = cons(copyTypeSyntax(hd(qs)), ps);
+        }
+        return ap(QUAL, pair(rev(ps), copyTypeSyntax(snd(snd(t)))));
+    }
+    default:
+        return t;
+    }
+}
+
+/* The type forall vs. ps => b, joined with the forall and context at the
+ * front of b, if any */
+static Type prenex(List vs, List ps, Type b) {
+    if (isPolyType(b)) {
+        vs = appendOnto(dupList(vs), polySigOf(b));
+        b = monotypeOf(b);
+    }
+    if (isQualType(b)) {
+        ps = appendOnto(dupList(ps), fst(snd(b)));
+        b = snd(snd(b));
+    }
+    if (nonNull(ps)) {
+        b = ap(QUAL, pair(ps, b));
+    }
+    if (nonNull(vs)) {
+        b = ap(POLYTYPE, pair(vs, b));
+    }
+    return b;
+}
+
+/* The type t, a signature as the parser built it, or a constructor's field
+ * if field, with its polymorphic synonyms expanded and each forall moved
+ * to the front of the signature, argument or field it is in */
+Type expandPolyTypes(int line, Type t, bool field) {
+    return expandPolys(line, t, field ? PLACE_ARG : PLACE_TOP);
+}
+
+/* Check that t, part of a synonym's body, has no forall or context in it */
+static void monoOnly(int line, Type t, char *what) {
+    if (isAp(t)) {
+        monoOnly(line, fun(t), what);
+        monoOnly(line, arg(t), what);
+    } else if (isPolyOrQualType(t)) {
+        errHead(line);
+        errPrintf("The body of %s may have a forall and a context only at "
+                  "its front",
+                  what);
+        errFail();
+    }
+}
+
+/* Resolve rhs, the body of a type synonym with parameters tyvars.  One that
+ * starts with a forall is the body of a POLYSYN, which may have no other
+ * forall in it; any other may use the POLYSYNs in scope. */
+Type depSynonymBody(int line, List tyvars, Type rhs) {
+    bool saved = polySynsAllowed;
+    polySynsAllowed = true;
+    if (isPolyType(rhs)) {
+        Type b = monotypeOf(rhs);
+        if (isQualType(b)) {
+            List ps = fst(snd(b));
+            for (; nonNull(ps); ps = tl(ps)) {
+                monoOnly(line, hd(ps), "a type synonym");
+            }
+            b = snd(snd(b));
+        }
+        monoOnly(line, b, "a type synonym");
+        rhs = depCompType(line, tyvars, rhs);
+    } else {
+        rhs = depTopType(line, tyvars, rhs);
+    }
+    polySynsAllowed = saved;
+    return rhs;
+}
+
+/* --------------------------------------------------------------------------
  * Static analysis for type expressions is required to:
  *   - ensure that each type constructor or class used has been defined.
  *   - replace type variables by offsets, constructor names by Tycons.
@@ -114,9 +464,15 @@ Type checkSigType(int line, char *where, Cell e, Type type) {
     List tvs = NIL;
     List sunk = NIL;
     List xtvs = NIL;
+    List bs = NIL; /* the binders of the forall at the front, if any */
+    bool explicit = isPolyType(type);
 
-    if (isPolyType(type)) {
-        xtvs = fst(snd(type));
+    type = expandPolys(line, type, PLACE_TOP);
+    if (isPolyType(type)) { /* a forall expansion brought is implicit */
+        bs = polySigOf(type);
+        if (explicit) {
+            xtvs = boundVars(bs);
+        }
         type = monotypeOf(type);
     }
     tvs = typeVarsIn(type, NIL, xtvs, NIL);
@@ -140,11 +496,7 @@ Type checkSigType(int line, char *where, Cell e, Type type) {
             errPrintf("Too many type variables in %s\n", where);
             errFail();
         } else {
-            List ts = tvs;
-            for (; nonNull(ts); ts = tl(ts)) {
-                hd(ts) = NIL;
-            }
-            type = mkPolyType(tvs, type);
+            type = mkPolyType(kindSlots(tvs, bs), type);
         }
     }
 
@@ -216,10 +568,11 @@ Type depCompType(int l, List tvs, Type t) {
     int ntvs = length(tvs);
     List nfr = NIL;
     if (isPolyType(t)) {
-        List vs = fst(snd(t));
+        List bs = fst(snd(t));
+        List vs = boundVars(bs);
         t = monotypeOf(t);
         tvs = checkQuantVars(l, vs, tvs, t);
-        nfr = replicate(length(vs), NIL);
+        nfr = kindSlots(vs, bs);
     }
 
     if (isQualType(t)) {
@@ -276,6 +629,14 @@ Type depTypeExp(int line, List tyvars, Type type) {
         }
         if (whatIs(type) != QUALIDENT) {
             checkTyconAmbig(line, tyconRec(tc)->text, tc);
+        }
+        if (isPolySyn(tc) && !polySynsAllowed) {
+            errHead(line);
+            errPrintf("The polymorphic type synonym \"%s\" cannot be used "
+                      "here: it may be used in a signature or a constructor's "
+                      "field",
+                      textToStr(tyconRec(tc)->text));
+            errFail();
         }
         if (cellIsMember(tc, tyconDefns) && !cellIsMember(tc, tcDeps)) {
             tcDeps = cons(tc, tcDeps);
@@ -554,6 +915,13 @@ Cell depPredExp(int line, List tyvars, Cell pred) {
     if (h == EQUALITY) { /* an equality: its sides are resolved above */
         if (args != 2)
             internal("depPredExp");
+    } else if (isClass(h)) { /* resolved: from a synonym's body */
+        if (args != cclassRec(h)->arity) {
+            internal("depPredExp");
+        }
+        if (cellIsMember(h, classDefns) && !cellIsMember(h, tcDeps)) {
+            tcDeps = cons(h, tcDeps);
+        }
     } else if (isQCon(h)) { /* standard class constraint          */
         Class c = findQualClass(h);
         if (isNull(c)) {

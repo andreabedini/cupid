@@ -13,6 +13,10 @@ extern List tcDeps; /* tycons and classes the declaration being checked uses */
 
 extern List typeVarsIn(Cell, List, List, List); /* tyvars of an expression  */
 extern Type checkSigType(int, char *, Cell, Type); /* check a signature     */
+extern Type expandPolyTypes(int, Type, bool); /* expand polymorphic synonyms */
+extern Type depSynonymBody(int, List, Type);  /* resolve a synonym's body    */
+extern List boundVars(List); /* a forall's variables, without their kinds  */
+extern List kindSlots(List, List); /* the kinds a forall gives variables   */
 extern void checkOptQuantVars(int, List, List); /* forall vars are all used */
 extern Type depTopType(int, List, Type);  /* resolve a type, rank-2 allowed */
 extern Type depCompType(int, List, Type); /* resolve a constructor argument */

@@ -227,6 +227,7 @@ static List checkImportEntity(List imports, Module exporter, bool isHidden,
                             break;
                         case SYNONYM:
                         case RESTRICTSYN:
+                        case POLYSYN:
                             imports = addEntity(f, DOTDOT, imports);
                             break;
                         default:;
@@ -241,6 +242,7 @@ static List checkImportEntity(List imports, Module exporter, bool isHidden,
                 /* check the data constructors or field labels for match */
                 if (tyconRec(f)->what != SYNONYM &&
                     tyconRec(f)->what != RESTRICTSYN &&
+                    tyconRec(f)->what != POLYSYN &&
                     (lookForVar || lookForDataCon)) {
                     /* The type's exported dcons/fields */
                     Cell dcons;
@@ -759,7 +761,8 @@ static void checkExportDistinct(List exports, bool ambigCheck, Cell ent) {
         if (snd(ent) == DOTDOT) {
             if (isTycon(fst(ent))) {
                 if (tyconRec(fst(ent))->what == SYNONYM ||
-                    tyconRec(fst(ent))->what == RESTRICTSYN) {
+                    tyconRec(fst(ent))->what == RESTRICTSYN ||
+                    tyconRec(fst(ent))->what == POLYSYN) {
                     subs = NIL;
                 } else {
                     subs = tyconRec(fst(ent))->defn;
@@ -793,7 +796,8 @@ static void checkExportDistinct(List exports, bool ambigCheck, Cell ent) {
 static List checkExportTycon(List exports, Text mt, bool viaModExport,
                              Cell spec, Tycon tc) {
     checkExportDistinct(exports, !viaModExport, pair(tc, spec));
-    if (DOTDOT == spec || SYNONYM == tyconRec(tc)->what) {
+    if (DOTDOT == spec || SYNONYM == tyconRec(tc)->what ||
+        POLYSYN == tyconRec(tc)->what) {
         return addEntity(tc, DOTDOT, exports);
     } else {
         return addEntity(tc, NIL, exports);
@@ -1025,6 +1029,7 @@ static List checkExport(List exports, Text mt, Cell e) {
         if (isQCon(ident) && nonNull(nm = findQualTycon(ident))) {
             switch (tyconRec(nm)->what) {
             case SYNONYM:
+            case POLYSYN:
                 if (DOTDOT != parts) {
                     errHead(0);
                     errPrintf(

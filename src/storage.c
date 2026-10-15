@@ -2600,7 +2600,8 @@ Name nameInIEList(Name nm, List ns) {
         if ((isMethod && isPair(hd(ns)) && isClass(fst(hd(ns)))) ||
             (isDCon && isPair(hd(ns)) && isTycon(fst(hd(ns))) &&
              (tyconRec(fst(hd(ns)))->what != SYNONYM) &&
-             (tyconRec(fst(hd(ns)))->what != RESTRICTSYN))) {
+             (tyconRec(fst(hd(ns)))->what != RESTRICTSYN) &&
+             (tyconRec(fst(hd(ns)))->what != POLYSYN))) {
             Name r;
             List subs = snd(hd(ns));
             if (subs == DOTDOT) {

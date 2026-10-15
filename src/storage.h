@@ -344,6 +344,9 @@ typedef enum CellTag {
     NEWTYPE = 159,     /* Newtype type constructor                 */
     SYNONYM = 160,     /* Synonym type constructor                 */
     RESTRICTSYN = 161, /* Synonym with restricted scope    */
+    POLYSYN = 162,     /* Synonym for a polymorphic type, or for a  */
+                       /* type with one in it: expanded by static   */
+                       /* analysis, never by the type checker       */
 
     NODEPENDS = 163,  /* Stop calculation of deps in type check*/
     PREDEFINED = 164, /* Predefined name, not yet filled       */
@@ -871,6 +874,10 @@ CUPID_inline int digitOf(Cell c) {
 
 CUPID_inline bool isSynonym(Cell h) {
     return isTycon(h) && tyconRec(h)->what == SYNONYM;
+}
+/* A synonym static analysis expands where it is used: see typeexp.c */
+CUPID_inline bool isPolySyn(Cell h) {
+    return isTycon(h) && tyconRec(h)->what == POLYSYN;
 }
 CUPID_inline bool isNewtype(Cell h) {
     return isTycon(h) && tyconRec(h)->what == NEWTYPE;

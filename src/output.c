@@ -1001,6 +1001,13 @@ void printType(FILE *fp, Cell t) {
     putSigType(t);
 }
 
+/* Print the type t, whose forall at the front, if any, is printed and binds
+ * the variables from the nth: the body of a polymorphic synonym of arity n */
+void printTypeFrom(FILE *fp, Cell t, int n) {
+    outputStream = fp;
+    putType(t, NEVER, n);
+}
+
 /* Print context on spec. stream */
 void printContext(FILE *fp, List qs) {
     outputStream = fp;

@@ -157,9 +157,20 @@ Restrictions:
   defined as `myRunST = runST`.  Write `myRunST x = runST x`.
 - A type variable bound by `forall` must be used in the quantified
   type.
+- The rank is at most 2: a polymorphic argument's own arguments must
+  be monomorphic, `((forall a. a -> a) -> Int) -> Int` is an error, and
+  so is a polymorphic type as a type constructor's argument, as in
+  `[forall a. a -> a]`.
 
 `runST :: (forall s. ST s a) -> a` in `Control.Monad.ST` has such a
 type.
+
+A polymorphic result moves to the front of the signature, so
+`(forall a. a -> a) -> (forall b. b -> (b, b))` is
+`forall b. (forall a. a -> a) -> b -> (b, b)`, as in GHC before 9.0.
+A `forall` may give the variables it binds their kinds,
+`forall (m :: Type -> Type) a. m a -> m a`, where a variable would
+otherwise get a kind that is not the one meant.
 
 One exception to the third restriction: `f $ x` is checked as
 `f x`, as GHC does, so `runST $ do ...` is accepted, and so is
@@ -183,6 +194,43 @@ data MonadT m = MkMonad {
 The constructors then have rank-2 types and must be applied to their
 polymorphic arguments when used.  Record update is not available on
 records with polymorphic fields.
+
+### Polymorphic type synonyms
+
+A type synonym may name a polymorphic type, which is how lens and
+"Scrap your boilerplate" libraries name theirs:
+
+```haskell
+type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
+type SimpleLens s a = Lens s s a a
+type GenericT = forall a. Data a => a -> a
+
+lens :: (s -> a) -> (s -> b -> t) -> Lens s t a b
+over :: ASetter s t a b -> (a -> b) -> s -> t
+everywhere :: GenericT -> GenericT
+newtype ReifiedLens s a = ReifiedLens { runLens :: SimpleLens s a }
+```
+
+Each use is expanded before type checking, so a use is as if the
+expansion were written out, and the rules for rank-2 types and
+polymorphic components above decide where one may be: as the whole
+of a signature or its result, where its `forall` moves to the front
+(`lens` is `Functor f => (s -> a) -> ... -> (a -> f b) -> s -> f t`),
+as a function argument in a signature, or as a constructor's field.
+One in a list, in another type constructor or in an instance head is
+an error.  A synonym whose body uses one, such as `SimpleLens`, is
+expanded the same way.
+
+A synonym's argument is expanded where the synonym's body puts it, so
+it may be polymorphic if that is a place for one, as with GHC's
+`LiberalTypeSynonyms`: given `type GenericQ r = forall a. Data a => a
+-> r`, `GenericQ GenericT` is `forall a b. (Data a, Data b) => a -> b
+-> b`.  This holds for any synonym, so given `type Fun a = a -> Int`,
+`Fun GenericT` has a rank-2 argument, while `[GenericT]` is still an
+error.
+
+The body may have a `forall` and a context only at its front, and,
+unlike GHC with `RankNTypes`, there is no rank 3 or higher.
 
 ### Existential quantification
 

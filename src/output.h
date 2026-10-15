@@ -16,6 +16,7 @@
 
 extern void printExp(FILE *, Cell);
 extern void printType(FILE *, Cell);
+extern void printTypeFrom(FILE *, Cell, int);
 extern void printContext(FILE *, List);
 extern void printPred(FILE *, Cell);
 extern void printKind(FILE *, Kind);

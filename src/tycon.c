@@ -260,6 +260,63 @@ void constraintSynonyms(void) {
     }
 }
 
+/* Does the type t, as static analysis leaves it, use a polymorphic
+ * synonym? */
+static bool usesPolySyn(Type t) {
+    switch (whatIs(t)) {
+    case AP:
+        return usesPolySyn(fun(t)) || usesPolySyn(arg(t));
+    case POLYTYPE:
+        return usesPolySyn(monotypeOf(t));
+    case RANK2:
+        return usesPolySyn(snd(snd(t)));
+    case QUAL: {
+        List ps = fst(snd(t));
+        for (; nonNull(ps); ps = tl(ps)) {
+            if (usesPolySyn(hd(ps))) {
+                return true;
+            }
+        }
+        return usesPolySyn(snd(snd(t)));
+    }
+    case TYCON:
+        return isPolySyn(t);
+    default:
+        return false;
+    }
+}
+
+/* Validate the type declarations ts.  The synonyms come first, so that
+ * those that must be expanded where they are used, the polymorphic ones and
+ * those that use one, are known before a constructor's fields are
+ * expanded. */
+void checkTyconDefns(List ts) {
+    List us;
+    bool found = true;
+    for (us = ts; nonNull(us); us = tl(us)) {
+        if (tyconRec(hd(us))->what == SYNONYM ||
+            tyconRec(hd(us))->what == RESTRICTSYN) {
+            checkTyconDefn(hd(us));
+        }
+    }
+    while (found) { /* a synonym that uses a POLYSYN is one */
+        found = false;
+        for (us = ts; nonNull(us); us = tl(us)) {
+            if (tyconRec(hd(us))->what == SYNONYM &&
+                usesPolySyn(tyconRec(hd(us))->defn)) {
+                tyconRec(hd(us))->what = POLYSYN;
+                found = true;
+            }
+        }
+    }
+    for (us = ts; nonNull(us); us = tl(us)) {
+        if (tyconRec(hd(us))->what == DATATYPE ||
+            tyconRec(hd(us))->what == NEWTYPE) {
+            checkTyconDefn(hd(us));
+        }
+    }
+}
+
 /* Validate type constructor defn */
 void checkTyconDefn(Tycon d) {
     Cell lhs = fst(tyconRec(d)->defn);
@@ -283,7 +340,15 @@ void checkTyconDefn(Tycon d) {
     switch (whatIs(tyconRec(d)->what)) {
     case RESTRICTSYN:
     case SYNONYM:
-        rhs = depTopType(line, tyvars, rhs);
+        if (isPolyType(rhs)) { /* a polymorphic type: see typeexp.c */
+            if (tyconRec(d)->what == RESTRICTSYN) {
+                errHead(line);
+                errPrintf("A restricted type synonym cannot be polymorphic");
+                errFail();
+            }
+            tyconRec(d)->what = POLYSYN;
+        }
+        rhs = depSynonymBody(line, tyvars, rhs);
         if (cellIsMember(d, tcDeps)) {
             errHead(line);
             errPrintf("Recursive type synonym \"%s\"",
@@ -357,7 +422,7 @@ static Type renameTyvars(Type t, List map, List bound) {
         return ap(QUAL, pair(ps, b));
     }
     case POLYTYPE: {
-        List inner = dupOnto(polySigOf(t), bound);
+        List inner = dupOnto(boundVars(polySigOf(t)), bound);
         Type b = renameTyvars(monotypeOf(t), map, inner);
         return ap(POLYTYPE, pair(polySigOf(t), b));
     }
@@ -589,7 +654,8 @@ static void depConstrs(Tycon t, List tyvars, Cell cd) {
                 List vs = fst(hd(fls));
                 Type t = snd(hd(fls)); /* - scrutinize type        */
                 bool banged = whatIs(t) == BANG;
-                t = depCompType(line, sig, (banged ? arg(t) : t));
+                t = expandPolyTypes(line, banged ? arg(t) : t, true);
+                t = depCompType(line, sig, t);
                 while (nonNull(vs)) { /* - add named components  */
                     Cell us = tl(vs);
                     tl(vs) = fs;
@@ -615,7 +681,7 @@ static void depConstrs(Tycon t, List tyvars, Cell cd) {
                     t = arg(t);
                 }
                 compNo--;
-                arg(c) = depCompType(line, sig, t);
+                arg(c) = depCompType(line, sig, expandPolyTypes(line, t, true));
             }
         }
 
@@ -851,6 +917,7 @@ void checkSynonyms(List ts) {
         switch (whatIs(tyconRec(t)->what)) {
         case SYNONYM:
         case RESTRICTSYN:
+        case POLYSYN:
             syns = cons(t, syns);
             break;
         default:

@@ -1,0 +1,4 @@
+runcupid: Error occurred
+ERROR "rank3-signature.hs":5 - A forall or a context cannot be here: a polymorphic type may be the whole of a signature, an argument of a function in one, or a constructor's field
+
+

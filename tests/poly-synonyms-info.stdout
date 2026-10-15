@@ -1,0 +1,9 @@
+Main> -- type constructor
+type Lens a b c d = forall e. Functor e => (c -> e d) -> a -> e b
+
+Main> -- type constructor
+type SimpleLens a b = Lens a a b b
+
+Main> lens :: Functor a => (b -> c) -> (b -> d -> e) -> (c -> a d) -> b -> a e
+Main> _2 :: Functor a => (b -> a b) -> (c,b) -> a (c,b)
+Main> [Leaving Cupid]

@@ -618,6 +618,13 @@ static void describe(Text t) {
             printType(stdout, tyconRec(tc)->defn);
             break;
 
+        case POLYSYN: /* its forall, if any, is part of it */
+            Printf("type ");
+            printType(stdout, t);
+            Printf(" = ");
+            printTypeFrom(stdout, tyconRec(tc)->defn, tyconRec(tc)->arity);
+            break;
+
         case NEWTYPE:
         case DATATYPE: {
             List cs = tyconRec(tc)->defn;

@@ -115,11 +115,17 @@ static Typing kindConstr(int line, int alpha, int m, Cell c) {
         Kinds ks = polySigOf(t);
         int m1 = 0;
         int beta;
+        int i;
         Typing got;
         for (; isAp(ks); ks = tl(ks)) {
             m1++;
         }
         beta = newKindvars(m1);
+        for (ks = polySigOf(t), i = beta; isAp(ks); ks = tl(ks), i++) {
+            if (nonNull(hd(ks))) { /* the kind a forall gives: a use at */
+                kunify(mkInt(i), 0, hd(ks), 0); /* another is a kind error */
+            }
+        }
         unkindTypes = cons(pair(mkInt(beta), t), unkindTypes);
         got = kindConstr(line, beta, m1, monotypeOf(t));
         shouldKind(line, monotypeOf(t), NIL, pt, got, STAR, 0);
@@ -229,12 +235,8 @@ void fixKinds(void) {
         Pair pr = hd(unkindTypes);
         int beta = intOf(fst(pr));
         Cell qts = polySigOf(snd(pr));
-        for (;;) {
-            if (isNull(hd(qts))) {
-                hd(qts) = copyKindvar(beta++);
-            } else {
-                internal("fixKinds");
-            }
+        for (;;) { /* NIL, or the kind a forall gave, unified already */
+            hd(qts) = copyKindvar(beta++);
             if (nonNull(tl(qts))) {
                 qts = tl(qts);
             } else {

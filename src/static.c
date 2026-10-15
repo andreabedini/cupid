@@ -203,7 +203,7 @@ void checkDefns(void) {
     linkPreludeTC();                     /* Get prelude tycons and classes  */
     constraintSynonyms();                /* synonyms for constraints become */
                                          /* classes                         */
-    mapProc(checkTyconDefn, tyconDefns); /* validate tycon definitions     */
+    checkTyconDefns(tyconDefns);         /* validate tycon definitions     */
     checkSynonyms(tyconDefns);           /* check synonym definitions      */
     mapProc(checkClassDefn, classDefns); /* process class definitions      */
     tcs = tcscc(tyconDefns, classDefns); /* calc dependencies for type      */
