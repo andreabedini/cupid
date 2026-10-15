@@ -1,0 +1,6 @@
+runcupid: Error occurred
+ERROR "deriving-context-growing.hs":7 - Cannot derive Show (T a b): its context would need Show (a [b]), which is not a class applied to distinct type variables
+*** Give the context yourself in a standalone declaration: deriving instance ... => Show (T a b)
+
+
+

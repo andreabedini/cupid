@@ -1,0 +1,6 @@
+runcupid: Error occurred
+ERROR "deriving-context-recursive.hs":6 - Cannot derive Show (Fix a): its context would need Show (a (Fix a)), which is not a class applied to distinct type variables
+*** Give the context yourself in a standalone declaration: deriving instance ... => Show (Fix a)
+
+
+

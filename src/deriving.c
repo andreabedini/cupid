@@ -35,6 +35,8 @@ static Inst addDerInst(int, Class, List, List, Type, int);
 static void initDerInst(Inst);
 static void calcInstPreds(Inst);
 static void maybeAddPred(Cell, int, int, List);
+static bool smallPred(Cell, int);
+static bool smallType(Type, int, List *);
 static Cell copyAdj(Cell, int, int);
 static void tidyDerInst(Inst);
 static List getDiVars(int);
@@ -191,16 +193,22 @@ void addTupInst(Class c, int n) {
  *
  * (assuming, of course, that instance (Show a) => Show [a]).  For now, we
  * choose to reduce contexts in the hope of detecting errors at an earlier
- * stage---in contrast with value definitions, there is no way for a user
- * to provide something analogous to a `type signature' by which they might
- * be able to control this behaviour themselves.  We eliminate tautological
- * predicates, but only allow predicates to appear in the final result if
- * they have at least one argument with a variable at its head.
+ * stage.  A user who wants another context can write it in a standalone
+ * deriving declaration.  We eliminate tautological predicates, and, as GHC
+ * does, only allow a predicate to appear in the final result if it is a
+ * class applied to types made only of distinct type variables: C (f a)
+ * may, but C (f [a]), C (f Int) and C (f a a) may not.  See smallPred.
  *
  * In general, we have to deal with mutually recursive instance declarations.
  * We find a solution in the obvious way by iterating to find a fixed point.
- * Of course, without restrictions on the form of instance declarations, we
- * cannot be sure that this will always terminate!
+ * Each iteration but the last adds a predicate to some context, and there
+ * are only finitely many such predicates over an instance's variables, so
+ * this terminates; reduction through the instances used is bounded by the
+ * cutoff.  Without the restriction it need not: the context of
+ *
+ *    data T f a = T (f a) (T f [a]) deriving Show
+ *
+ * would gain Show (f [a]), Show (f [[a]]), ... one per iteration.
  *
  * For each instance we maintain a pair of the form DERIVE (ctxt,ps).
  * Ctxt is a list giving the parts of the context that have been produced
@@ -333,6 +341,21 @@ static void calcInstPreds(Inst in) {
                     errPred(bpi);
                     errPrintf("\n");
                     errFail();
+                } else if (!smallPred(pi, o)) {
+                    Cell bpi = instRec(in)->head;
+                    pi = copyPred(pi, o);
+                    errHead(instRec(in)->line);
+                    errPrintf("Cannot derive ");
+                    errPred(bpi);
+                    errPrintf(": its context would need ");
+                    errPred(pi);
+                    errPrintf(", which is not a class applied to distinct type "
+                              "variables\n");
+                    errPrintf("*** Give the context yourself in a standalone "
+                              "declaration: deriving instance ... => ");
+                    errPred(bpi);
+                    errPrintf("\n");
+                    errFail();
                 } else {
                     maybeAddPred(pi, o, beta, spcs);
                 }
@@ -356,6 +379,37 @@ static void maybeAddPred(Cell pi, int o, int beta, List ps) {
             return;
         }
     }
+}
+
+/* Is the predicate (pi,o) a class applied to types made only of distinct
+ * type variables, as C (f a) and C (f (g a)) b are and C (f [a]), C (f Int)
+ * and C (f a a) are not?  Only such a predicate may be in a derived context,
+ * as in GHC (validDerivPred): no instance can reduce it, and a context with
+ * others in it may grow without end, as the one of
+ * data T f a = T (f a) (T f [a]) would. */
+static bool smallPred(Cell pi, int o) {
+    List seen = NIL;
+    for (; isAp(pi); pi = fun(pi)) {
+        if (!smallType(arg(pi), o, &seen)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/* Is the type (t,o) made only of type variables by application, none of
+ * them in seen, to which those it has are added? */
+static bool smallType(Type t, int o, List *seen) {
+    Tyvar *tyv = deRef(&t, &o);
+    if (tyv) {
+        int vn = tyvNum(tyv);
+        if (nonNull(intIsMember(vn, *seen))) {
+            return false;
+        }
+        *seen = cons(mkInt(vn), *seen);
+        return true;
+    }
+    return isAp(t) && smallType(fun(t), o, seen) && smallType(arg(t), o, seen);
 }
 
 /* Copy (c,o), replacing vars with offsets relative to beta. */

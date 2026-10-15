@@ -1,0 +1,4 @@
+(T (Just 1),T (Just 2),True,GT)
+(P (Just 1) [2],True)
+(C [Just 'x'],B (Left 3),R [1] (R [2] E))
+(A (B' 1 (A N)),Just True)

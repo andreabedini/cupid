@@ -747,7 +747,29 @@ of several parameters can be derived too.  `anyclass` gives an
 instance with no methods, which then has the class's defaults.
 Nothing is inferred: the instance has exactly the context written,
 which must give what the methods need.  `deriving instance Typeable T`
-is accepted and does nothing, as every type is `Typeable`.
+is accepted and does nothing, whatever its strategy, as every type is
+`Typeable` under its own name.
+
+This is how to derive an instance whose context a `deriving` clause
+cannot infer.  As in GHC, an inferred context may only hold a class
+applied to distinct type variables, such as `Show (f a)` or
+`Show (f (g a))`; it cannot hold `Show (f Int)`, `Show (f a a)` or
+`Show (f (Fix f))`.  So
+
+```haskell
+data T f = T (f Int) deriving Show
+```
+
+is an error that asks for a standalone declaration, which can be
+
+```haskell
+data T f = T (f Int)
+deriving instance Show (f Int) => Show (T f)
+```
+
+Without this rule, inferring the context of
+`data T f a = T (f a) (T f [a])` would never end, as it would need
+`Show (f [a])`, then `Show (f [[a]])`, and so on.
 
 `Generic` cannot be derived this way, since its instance needs the
 representation as a second parameter; derive it in the type's
