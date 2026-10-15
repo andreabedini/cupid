@@ -227,13 +227,7 @@ static void put(int d, Cell e) {
 
     case LETREC:
         OPEN(d > WHERE_PREC);
-#if DEBUG_CODE
-        putStr("let {");
-        put(NEVER, fst(snd(e)));
-        putStr("} in ");
-#else
         putStr("let {...} in ");
-#endif
         put(WHERE_PREC + 1, snd(snd(e)));
         CLOSE(d > WHERE_PREC);
         break;
@@ -288,13 +282,7 @@ static void put(int d, Cell e) {
     case CASE:
         putStr("case ");
         put(NEVER, fst(snd(e)));
-#if DEBUG_CODE
-        putStr(" of {");
-        put(NEVER, snd(snd(e)));
-        putChr('}');
-#else
         putStr(" of {...}");
-#endif
         break;
 
     case CONFLDS:
@@ -385,7 +373,6 @@ static void putQual(Cell q) {
 
 /* Look for dictionary value */
 static bool isDictVal(Cell e) {
-#if !DEBUG_CODE
     Cell h = getHead(e);
     switch (whatIs(h)) {
     case DICTVAR:
@@ -395,7 +382,6 @@ static bool isDictVal(Cell e) {
     default:
         break;
     }
-#endif
     return false;
 }
 
