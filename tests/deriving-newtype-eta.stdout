@@ -1,0 +1,4 @@
+runcupid: Error occurred
+ERROR "deriving-newtype-eta.hs":5 - Cannot derive Functor N with the newtype strategy: what N wraps does not end in the parameters the class leaves off
+
+

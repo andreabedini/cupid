@@ -132,7 +132,10 @@ void checkDerive(Tycon t, List p, List ts, Cell ct) {
                           textToStr(tyconRec(t)->text));
                 errFail();
             }
-            via = hd(ts);
+            instRec(addDerInst(line, c, p, singleton(hd(ts)), t,
+                               tyconRec(t)->arity))
+                ->via = NEWTYPE; /* viaHead finds the type, as only it knows */
+            return;              /* how many parameters the class leaves off */
         }
         instRec(addDerInst(line, c, p, singleton(via), t, tyconRec(t)->arity))
             ->via = via;
@@ -1839,7 +1842,10 @@ static Cell genConInfo(Name c) {
  * the class: for a class whose parameter has the kind k1 -> ... -> kn ->
  * Type, as Monad's has, the type is applied to all but its last n
  * parameters, so newtype L t m a = L (t m a) deriving Monad via (t m)
- * gives Monad (L t m). */
+ * gives Monad (L t m).  With the newtype strategy, the via type is then
+ * what that wraps, newtype App m a = App (StateT Int m a) deriving newtype
+ * Monad being derived via StateT Int m, and the context to infer is the
+ * via type's instance's. */
 static void viaHead(Inst in) {
     Class c = instRec(in)->c;
     Kind k = nth(cclassRec(c)->arity - 1, cclassRec(c)->kinds);
@@ -1862,6 +1868,21 @@ static void viaHead(Inst in) {
     }
     arg(instRec(in)->head) = self;
     instRec(in)->kinds = mkInt(a);
+    if (instRec(in)->via == NEWTYPE) {
+        Type via = unwrapOnce(self, true);
+        if (isNull(via)) {
+            errHead(instRec(in)->line);
+            errPrintf("Cannot derive ");
+            errPred(instRec(in)->head);
+            errPrintf(" with the newtype strategy: what ");
+            errType(self);
+            errPrintf(" wraps does not end in the parameters the class "
+                      "leaves off");
+            errFail();
+        }
+        instRec(in)->via = via;
+        hd(snd(snd(instRec(in)->specifics))) = via;
+    }
 }
 
 /* Check the derived instance in, which is derived via a type */

@@ -694,7 +694,16 @@ newtype Parser a = Parser (StateT String Maybe a)
     deriving (Functor, Applicative, Monad) via StateT String Maybe
 ```
 
-gives `Monad Parser`.
+gives `Monad Parser`.  With the newtype strategy, the via type is
+what the newtype wraps less those parameters, so
+
+```haskell
+newtype App m a = App (StateT Int m a)
+    deriving newtype (Functor, Applicative, Monad)
+```
+
+derives them via `StateT Int m`.  What the newtype wraps must end in
+the parameters left off, and have them nowhere else.
 The instance's context is the one `V`'s instance needs, and its
 superclasses are the type's own, so `deriving Ord via V` needs an
 `Eq` instance for the type as usual.
