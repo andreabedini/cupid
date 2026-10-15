@@ -117,6 +117,9 @@ void checkDerive(Tycon t, List p, List ts, Cell ct) {
         errPrintf("Unknown class \"%s\" in derived instance", identToStr(ct));
         errFail();
     }
+    if (isTypeableClass(c)) { /* every type is, under its own name: see  */
+        return;               /* preds.c; a via type would lend its name */
+    }
     if (isVia) {
         if (isNull(via)) { /* deriving newtype: via what it wraps */
             if (tyconRec(t)->what != NEWTYPE) {
@@ -131,9 +134,6 @@ void checkDerive(Tycon t, List p, List ts, Cell ct) {
         }
         instRec(addDerInst(line, c, p, singleton(via), t, tyconRec(t)->arity))
             ->via = via;
-        return;
-    }
-    if (isTypeableClass(c)) { /* every type is: see preds.c       */
         return;
     }
     if (isGenericClass(c)) { /* a representation needs no context */
@@ -535,13 +535,14 @@ List standaloneDeriving(Inst in, List tyvars) {
 }
 
 /* The instances is with the standalone deriving declarations of Typeable
- * left out */
+ * left out, whatever their strategy: one via another type would give the
+ * type that one's name */
 List dropTypeableDerivings(List is) {
     List rs = NIL;
     for (; nonNull(is); is = tl(is)) {
         Inst in = hd(is);
         Class c = NIL;
-        if (instRec(in)->implements == DERIVE) {
+        if (instRec(in)->implements == DERIVE || nonNull(instRec(in)->via)) {
             Cell h = getHead(instRec(in)->head);
             if (isQCon(h)) {
                 c = findQualClass(h);
@@ -1814,8 +1815,23 @@ static void checkVia(Inst in) {
     Cell self = arg(instRec(in)->head);
     Class c = instRec(in)->c;
     Type via = instRec(in)->via;
+    Type selfRep = runtimeType(self);
+    Type viaRep = runtimeType(via);
 
-    if (!sameRep(runtimeType(self), runtimeType(via))) {
+    if (isNull(selfRep) || isNull(viaRep)) {
+        errHead(instRec(in)->line);
+        errPrintf("Cannot derive ");
+        errPred(instRec(in)->head);
+        errPrintf(" via ");
+        errType(via);
+        errPrintf(": unwrapping the newtypes in ");
+        errType(isNull(selfRep) ? self : via);
+        errPrintf(" reached the cutoff limit, %d, without reaching its type "
+                  "at run time",
+                  cutoff);
+        errFail();
+    }
+    if (!sameRep(selfRep, viaRep)) {
         errHead(instRec(in)->line);
         errPrintf("Cannot derive ");
         errPred(instRec(in)->head);
@@ -1834,13 +1850,27 @@ static void checkVia(Inst in) {
 }
 
 /* The type t as it is at run time, with the newtypes and synonyms at its
- * head unwrapped */
+ * head unwrapped, or NIL if that takes more than cutoff steps: a recursive
+ * newtype such as
+ *
+ *   newtype Loop = Loop Loop
+ *
+ * never reaches a type that is not a newtype */
 static Type runtimeType(Type t) {
-    return unwrapHead(t, true);
+    Type u;
+    int n = 0;
+    while (nonNull(u = unwrapOnce(t, true))) {
+        if (n++ >= cutoff) {
+            return NIL;
+        }
+        t = u;
+    }
+    return t;
 }
 
 /* The type t with the synonyms at its head expanded, and its newtypes
- * unwrapped too if newtypes */
+ * unwrapped too if newtypes; which must be false if t may have a recursive
+ * newtype at its head, as runtimeType deals with */
 static Type unwrapHead(Type t, bool newtypes) {
     Type u;
     while (nonNull(u = unwrapOnce(t, newtypes))) {

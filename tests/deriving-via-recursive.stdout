@@ -1,0 +1,4 @@
+runcupid: Error occurred
+ERROR "deriving-via-recursive.hs":5 - Cannot derive Show Loop via Int: unwrapping the newtypes in Loop reached the cutoff limit, 40, without reaching its type at run time
+
+
