@@ -860,7 +860,9 @@ IntInt2Int(primAndInt, x &y) IntInt2Int(primOrInt, x | y)
     }
 }
 
-IntInt2Bool(primTestInt, (x >> y) & 1)
+/* x>>y is undefined for y<0 or y>=bitsize(Int); testBit is False there */
+IntInt2Bool(primTestInt,
+            y >= 0 && y < (int)(sizeof(int) * 8) && (((unsigned)x >> y) & 1))
 
     primFun(primShiftInt) {
     int x, y;
@@ -872,10 +874,10 @@ IntInt2Bool(primTestInt, (x >> y) & 1)
         /* Unsigned instead, which wraps the way Haskell's shiftL does.    */
         IntResult(y >= (int)(sizeof(x) * 8) ? 0 : (int)((unsigned)x << y));
     } else {
-        y = -y;
         /* arithmetic right shift of a negative Int by >= the Int size     */
-        /* gives -1, not 0 (unlike the unsigned case in primShiftWord)     */
-        IntResult(y >= (int)(sizeof(x) * 8) ? (x < 0 ? -1 : 0) : x >> y);
+        /* gives -1, not 0 (unlike the unsigned case in primShiftWord);    */
+        /* compare before negating, as -y overflows when y is minBound     */
+        IntResult(y <= -(int)(sizeof(x) * 8) ? (x < 0 ? -1 : 0) : x >> -y);
     }
 }
 
@@ -923,7 +925,9 @@ WordWord2Word(primAndWord, x &y) WordWord2Word(primOrWord, x | y)
         WordResult((unsigned)1 << x);
     }
 }
-WordInt2Bool(primTestWord, (x >> y) & 1)
+/* x>>y is undefined for y<0 or y>=bitsize(Word); testBit is False there */
+WordInt2Bool(primTestWord,
+             y >= 0 && y < (int)(sizeof(unsigned) * 8) && ((x >> y) & 1))
 
     primFun(primShiftWord) {
     unsigned x;
@@ -933,9 +937,8 @@ WordInt2Bool(primTestWord, (x >> y) & 1)
     if (y >= 0) {
         /* << isn't defined for y larger than word size */
         WordResult(y >= (int)(sizeof(x) * 8) ? 0 : x << y);
-    } else {
-        y = -y;
-        WordResult(y >= (int)(sizeof(x) * 8) ? 0 : x >> y);
+    } else { /* compare before negating: -y overflows for minBound */
+        WordResult(y <= -(int)(sizeof(x) * 8) ? 0 : x >> -y);
     }
 }
 
@@ -946,7 +949,9 @@ primFun(primRotateWord) {
     IntArg(y, 1);
     IntArg(z, 3);
     y = y % z;
-    if (y >= 0) {
+    if (y == 0) { /* x>>z would be undefined: z is the width of x      */
+        WordResult(x);
+    } else if (y > 0) {
         WordResult((x << y) | (x >> (z - y)));
     } else {
         WordResult((x >> (-y)) | (x << (z + y)));
@@ -1223,18 +1228,23 @@ primFun(primDoubleEncode) {
  * ------------------------------------------------------------------------*/
 
 /* Null pointer Pointer arithmetic Aligning the pointer */
-CAFPtr(primNullPtr, 0) PtrInt2Ptr(primPlusPtr, (char *)x + y)
-    primFun(primAlignPtr) {
+/* The arithmetic is on uintptr_t, as C leaves it undefined on nullPtr and */
+/* across objects, and an Addr in Haskell is just a number.                */
+CAFPtr(primNullPtr, 0)
+    PtrInt2Ptr(primPlusPtr, (void *)((uintptr_t)x + (uintptr_t)(intptr_t)y))
+        primFun(primAlignPtr) {
     void *x;
     int y;
     PtrArg(x, 2);
     IntArg(y, 1);
     if (y <= 0)
         throwException(ap(nameArithException, nameDivideByZero));
-    PtrResult((char *)x + (int)((y - (long)x % y) % y));
+    uintptr_t a = (uintptr_t)x;
+    uintptr_t n = (uintptr_t)y;
+    PtrResult((void *)(a + (n - a % n) % n));
 }
 PtrPtr2Int(primMinusPtr,
-           (char *)x - (char *)y)  /* Pointer arithmetic           */
+           (int)((uintptr_t)x - (uintptr_t)y)) /* Pointer arithmetic */
     PtrPtr2Bool(primEqPtr, x == y) /* Pointer equality primitive       */
 
     primFun(primCmpPtr) { /* Pointer compare primitive        */
