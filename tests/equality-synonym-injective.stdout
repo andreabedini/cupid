@@ -1,0 +1,8 @@
+runcupid: Error occurred
+ERROR "equality-synonym-injective.hs":7 - Inferred type is not general enough
+*** Expression    : bad
+*** Expected type : (K a ~ K b) => a -> b
+*** Inferred type : a -> a
+
+
+

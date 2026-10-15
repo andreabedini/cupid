@@ -1,0 +1,7 @@
+runcupid: Error occurred
+ERROR "equality-synonym-occurs.hs":7 - Equality constraint cannot hold
+*** Constraint     : a ~ [I a]
+*** Because        : unification would give infinite type
+
+
+

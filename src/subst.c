@@ -45,6 +45,7 @@ static Type liftRank1Body(Type, int);
 static bool matchTypeAbove(Type, int, Type, int, int);
 static bool varToVarBind(Tyvar *, Tyvar *);
 static bool varToTypeBind(Tyvar *, Type, int);
+static Type occursExpand(int, Type, int);
 static void expandSynFully(Type *, int *);
 
 static bool improveAgainst(int, List, Cell, int);
@@ -946,9 +947,18 @@ static bool varToTypeBind(Tyvar *tyv, Type t, int o) {
     } else if (tyv->bound == SKOLEM) { /* Check that it is not Skolemized */
         unifyFails = "cannot instantiate Skolem constant";
         return false;
-    } else if (!doesntOccurIn(tyv, t, o)) /* Carry out occurs check        */
-        unifyFails = "unification would give infinite type";
-    else if (!eqKind(tyv->kind, getKind(t, o)))
+    }
+    if (!doesntOccurIn(tyv, t, o)) { /* Carry out occurs check, seeing  */
+        int vn = tyvNum(tyv);        /* through synonyms that drop it   */
+        t = occursExpand(vn, t, o);
+        o = 0;
+        tyv = tyvar(vn); /* expanding may have moved the tyvars */
+        if (isNull(t)) {
+            unifyFails = "unification would give infinite type";
+            return false;
+        }
+    }
+    if (!eqKind(tyv->kind, getKind(t, o)))
         unifyFails = "kinds do not match";
     else {
         tyv->bound = t;
@@ -956,6 +966,38 @@ static bool varToTypeBind(Tyvar *tyv, Type t, int o) {
         return true;
     }
     return false;
+}
+
+/* The type (t,o), with no offsets in it, and the synonyms in it expanded
+ * wherever that leaves the variable numbered vn out; NIL if vn is in it
+ * even so.  With type K a = Int, a occurs in [K a] but not in its
+ * expansion [Int], so a ~ [K a] is not an infinite type. */
+static Type occursExpand(int vn, Type t, int o) {
+    Tyvar *tyv;
+
+    stackCheck();
+    allowBreak();
+    tyv = deRef(&t, &o);
+    if (tyv) {
+        return tyvNum(tyv) == vn ? NIL : mkInt(tyvNum(tyv));
+    }
+    if (!doesntOccurIn(tyvar(vn), t, o)) {
+        Cell h = getDerefHead(t, o);
+        if (isSynonym(h) && argCount >= tyconRec(h)->arity) {
+            expandSyn(h, argCount, &t, &o);
+            return occursExpand(vn, t, o);
+        }
+    }
+    if (isAp(t)) {
+        Type f = occursExpand(vn, fun(t), o);
+        Type x;
+        if (isNull(f)) {
+            return NIL;
+        }
+        x = occursExpand(vn, arg(t), o);
+        return isNull(x) ? NIL : ap(f, x);
+    }
+    return t;
 }
 
 /* Main unification routine unify (t1,o1) with (t2,o2) */
@@ -1003,8 +1045,12 @@ un:
         if (isOffset(h2) || isInt(h2))
             h2 = NIL;
 
-        if (nonNull(h1) && h1 == h2) { /* Assuming well-formed types, both*/
-            if (a1 != a2) {            /* t1, t2 must have same no of args*/
+        /* The same synonym on both sides does not make its arguments    */
+        /* equal, as it may drop them (type K a = Int): expand it below  */
+        if (nonNull(h1) && h1 == h2 &&
+            !(isSynonym(h1) && a1 >= tyconRec(h1)->arity)) {
+            if (a1 != a2) { /* Assuming well-formed types, both  */
+                            /* t1, t2 must have same no of args  */
                 unifyFails = "incompatible constructors";
                 return false;
             }
