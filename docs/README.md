@@ -22,6 +22,7 @@ program with `runcupid`.
 
 ## How-to guides
 
+- [Install a release](how-to/install-a-release.md)
 - [Build and install Cupid](how-to/build-and-install.md)
 - [Run Cupid from the build tree](how-to/run-from-the-build-tree.md)
 - [Build Cupid on Windows](how-to/build-on-windows.md)
@@ -32,6 +33,7 @@ program with `runcupid`.
 - [Add a library to the search path](how-to/add-a-library.md)
 - [Measure time and memory use](how-to/measure-time-and-memory.md)
 - [Run the static analysis](how-to/run-clang-tidy.md)
+- [Make a release](how-to/make-a-release.md)
 
 ## Reference
 
