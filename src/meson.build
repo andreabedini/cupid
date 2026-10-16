@@ -18,7 +18,8 @@ src_inc = include_directories('.')
 # tree.  They must not also exist in src/: a `#include "parser.h"' in
 # src/input.c would find that one first and could be compiled against a
 # stale set of token numbers.
-bison = find_program('bison')
+# win_bison is WinFlexBison's, the bison for Windows that needs no Unix tools
+bison = find_program('bison', 'win_bison')
 parser = custom_target('parser',
   input: 'parser.y',
   output: ['parser.c', 'parser.h'],
