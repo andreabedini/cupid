@@ -30,6 +30,7 @@
 static List maybeAppendVar(Cell, List);
 static List otvarsZonk(Cell, List, int);
 static Cell checkTyconAmbig(int, Text, Cell);
+static void errAmbigOccurrence(int, const char *, Text, Module, List);
 List tcDeps = NIL; /* list of dependent tycons/classes*/
 
 /* --------------------------------------------------------------------------
@@ -930,20 +931,8 @@ Cell depPredExp(int line, List tyvars, Cell pred) {
             errFail();
         }
         if (!isQualIdent(h) && nonNull(cclassRec(c)->clashes)) {
-            List ls = cclassRec(c)->clashes;
-            errHead(line);
-            errPrintf("Ambiguous class occurrence \"%s\"",
-                      textToStr(cclassRec(c)->text));
-            errPrintf("\n*** Could refer to: ");
-            errPrintf("%s.%s ", textToStr(moduleRec(cclassRec(c)->mod)->text),
-                      textToStr(cclassRec(c)->text));
-            for (; nonNull(ls); ls = tl(ls)) {
-                errPrintf("%s.%s ",
-                          textToStr(moduleRec(cclassRec(hd(ls))->mod)->text),
-                          textToStr(cclassRec(hd(ls))->text));
-            }
-            errPrintf("\n");
-            errFail();
+            errAmbigOccurrence(line, "class", cclassRec(c)->text,
+                               cclassRec(c)->mod, cclassRec(c)->clashes);
         }
         if (isNull(prev)) {
             pred = c;
@@ -977,22 +966,28 @@ static Cell checkTyconAmbig(int line, Text t, Cell e) {
     }
 
     if (!isNull(tc) && nonNull(tyconRec(tc)->clashes)) {
-        Text t = tyconRec(tc)->text;
-        List ls = tyconRec(tc)->clashes;
-        errHead(line);
-        errPrintf("Ambiguous type constructor occurrence \"%s\"", textToStr(t));
-        errPrintf("\n*** Could refer to: ");
-        errPrintf("%s.%s ", textToStr(moduleRec(tyconRec(tc)->mod)->text),
-                  textToStr(tyconRec(tc)->text));
-        for (; nonNull(ls); ls = tl(ls)) {
-            errPrintf("%s.%s ",
-                      textToStr(moduleRec(tyconRec(hd(ls))->mod)->text),
-                      textToStr(tyconRec(hd(ls))->text));
-        }
-        errPrintf("\n");
-        errFail();
+        errAmbigOccurrence(line, "type constructor", tyconRec(tc)->text,
+                           tyconRec(tc)->mod, tyconRec(tc)->clashes);
     }
     return e;
+}
+
+/* Report an unqualified type constructor or class name that refers to
+ * several entities: the one found, in module m, and its clashes.  Types
+ * and classes share a namespace, so a clash may be of either kind. */
+static void errAmbigOccurrence(int line, const char *what, Text t, Module m,
+                               List clashes) {
+    errHead(line);
+    errPrintf("Ambiguous %s occurrence \"%s\"", what, textToStr(t));
+    errPrintf("\n*** Could refer to: ");
+    errPrintf("%s.%s ", textToStr(moduleRec(m)->text), textToStr(t));
+    for (; nonNull(clashes); clashes = tl(clashes)) {
+        Cell e = hd(clashes);
+        Module em = isTycon(e) ? tyconRec(e)->mod : cclassRec(e)->mod;
+        errPrintf("%s.%s ", textToStr(moduleRec(em)->text), textToStr(t));
+    }
+    errPrintf("\n");
+    errFail();
 }
 
 /* --------------------------------------------------------------------------

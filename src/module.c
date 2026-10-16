@@ -653,6 +653,19 @@ void importName(Module source, Name n) {
     }
 }
 
+/* Types and classes share one namespace: a type and a class of the same
+ * name, imported from different modules, make an unqualified use of either
+ * ambiguous.  Each goes on the other's list of clashes, so the lists hold
+ * tycons and classes alike. */
+static void addKindClash(Tycon tc, Class c) {
+    if (tyconRec(tc)->mod == cclassRec(c)->mod)
+        return;
+    if (!cellIsMember(c, tyconRec(tc)->clashes))
+        tyconRec(tc)->clashes = cons(c, tyconRec(tc)->clashes);
+    if (!cellIsMember(tc, cclassRec(c)->clashes))
+        cclassRec(c)->clashes = cons(tc, cclassRec(c)->clashes);
+}
+
 static void importTycon(Module source, Tycon tc) {
     Tycon clash = addTycon(tc);
     Class cc;
@@ -663,12 +676,13 @@ static void importTycon(Module source, Tycon tc) {
         tyconRec(clash)->clashes = cons(tc, tyconRec(clash)->clashes);
     }
     if (nonNull(cc = findClass(tyconRec(tc)->text))) {
-        cclassRec(cc)->clashes = cons(tc, cclassRec(cc)->clashes);
+        addKindClash(clash, cc);
     }
 }
 
 static void importClass(Module source, Class c) {
     Class clash = addClass(c);
+    Tycon tc;
     if (nonNull(clash) &&
         clash != c
         /* See importName() comment. */
@@ -678,8 +692,8 @@ static void importClass(Module source, Class c) {
         cclassRec(c)->clashes = cons(clash, cclassRec(c)->clashes);
         cclassRec(clash)->clashes = cons(c, cclassRec(clash)->clashes);
     }
-    if (nonNull(findTycon(cclassRec(c)->text))) {
-        cclassRec(clash)->clashes = cons(c, cclassRec(clash)->clashes);
+    if (nonNull(tc = findTycon(cclassRec(c)->text))) {
+        addKindClash(tc, clash);
     }
 }
 
