@@ -1084,10 +1084,9 @@ extern int numArgs(Cell);
 extern Cell applyToArgs(Cell, List);
 
 /* --------------------------------------------------------------------------
- * Stack implementation:
- *
- * NB: Use of macros makes order of evaluation hard to predict.
- *     For example, "push(1+pop());" doesn't increment TOS.
+ * Stack implementation: one stack of cells shared by the parser (which
+ * shadows bison's stack on it), the SCC sort and the abstract machine.
+ * Every entry below sp is a garbage-collection root.
  * ------------------------------------------------------------------------*/
 
 extern Cell DECTABLE(cellStack);

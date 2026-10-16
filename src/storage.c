@@ -3160,11 +3160,6 @@ void exitControlFuns(void) {
 void resetStorage(void) {
     clearStack();
 
-    /* the next 2 statements are particularly important
-                    * if you are using GLOBALfst or GLOBALsnd since the
-                    * corresponding registers may be reset to their
-                    * uninitialised initial values by a longjump.
-                    */
     heapTopFst = heapFst + heapSize;
     heapTopSnd = heapSnd + heapSize;
 #if PROFILING
@@ -3296,7 +3291,7 @@ void markStorage(void) {
     if (consGC) {
         start();
         gcCStack();
-        end("C stack", stackRoots);
+        end("C stack", 0);
     }
 }
 

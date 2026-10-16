@@ -62,8 +62,8 @@ static void addFixdecl(List, List, List, List, Triple);
  *   - Each lhs is a valid pattern/function lhs, all constructor functions
  *     have been defined and are used with the correct number of arguments.
  *   - Each lhs contains no repeated pattern variables.
- *   - Each equation defines at least one variable (e.g. True = False is
- *     not allowed).
+ *   - An equation that defines no variable (e.g. True = False) is legal
+ *     Haskell and is accepted; Gofer rejected it.
  * - Types appearing in type signatures are well formed:
  *    - Type constructors used are defined and used with correct number
  *      of arguments.
