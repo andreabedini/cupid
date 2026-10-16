@@ -696,11 +696,14 @@ void depConFlds(int line, Cell e, bool isP) {
         /* Now we know the tycon t that c belongs to, and the corresponding
          * list of selectors for that type, ss.  Now we have to check that
          * each of the fields identified by scs appears in fs, using ss to
-         * cross reference, and convert integers to selector names.
+         * cross reference, and convert integers to selector names.  A
+         * strict field with no selector, of a constructor declared without
+         * field labels, cannot appear in fs: `C {}' omits it.
          */
         for (; nonNull(scs); scs = tl(scs)) {
             int i = intOf(hd(scs));
             List ss1 = ss;
+            List fs1 = NIL;
             for (; nonNull(ss1); ss1 = tl(ss1)) {
                 List cns = nameRec(hd(ss1))->defn;
                 for (; nonNull(cns); cns = tl(cns)) {
@@ -712,24 +715,26 @@ void depConFlds(int line, Cell e, bool isP) {
                     break;
                 }
             }
-            if (isNull(ss1)) {
-                internal("depConFlds");
-            } else {
-                Name s = hd(ss1);
-                List fs1 = fs;
-                for (; nonNull(fs1) && s != fst(hd(fs1)); fs1 = tl(fs1)) {
+            if (nonNull(ss1)) {
+                for (fs1 = fs; nonNull(fs1) && hd(ss1) != fst(hd(fs1));
+                     fs1 = tl(fs1)) {
                 }
-                if (isNull(fs1)) {
-                    errHead(line);
-                    errPrintf("Construction does not define strict field");
+            }
+            if (isNull(fs1)) {
+                errHead(line);
+                errPrintf("Construction does not define strict field");
 
-                    errPrintf("\nExpression : ");
-                    errExpr(e);
-                    errPrintf("\nField      : ");
-                    errExpr(s);
-                    errPrintf("\n");
-                    errFail();
+                errPrintf("\nExpression : ");
+                errExpr(e);
+                errPrintf("\nField      : ");
+                if (nonNull(ss1)) {
+                    errExpr(hd(ss1));
+                } else {
+                    errPrintf("argument %d of \"%s\"", i,
+                              textToStr(nameRec(c)->text));
                 }
+                errPrintf("\n");
+                errFail();
             }
         }
     }
