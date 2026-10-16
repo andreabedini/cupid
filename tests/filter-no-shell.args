@@ -1,1 +1,1 @@
--Fsed -e s/GREETING/$(echo_x)/
+-Fsubst GREETING $(echo_x)
