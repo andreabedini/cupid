@@ -7,6 +7,9 @@ Every NAME.hs in TESTDIR is one test (all of them when no NAME is given).
 The files that go with it, all optional except NAME.stdout:
 
   NAME.stdout   the exact output expected (stdout and stderr together)
+  NAME.stdout-windows
+                the output expected on Windows, where it differs, as in
+                the paths the interpreter builds, which use backslashes
   NAME.stdin    if present, the test is a REPL session: NAME.hs is loaded
                 into `cupid +q`, NAME.stdin is fed to the prompt and the
                 banner is dropped from the output; otherwise NAME.hs is
@@ -66,7 +69,11 @@ def read(path, default=None):
 
 def run_one(cupid, runcupid, packages, testdir, name):
     base = os.path.join(testdir, name)
-    expected = read(base + ".stdout")
+    expected = None
+    if os.name == "nt":
+        expected = read(base + ".stdout-windows")
+    if expected is None:
+        expected = read(base + ".stdout")
     if expected is None:
         return False, "missing " + name + ".stdout"
     args = [a for a in (read(base + ".args") or "").splitlines() if a]
