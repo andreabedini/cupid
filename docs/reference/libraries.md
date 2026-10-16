@@ -91,8 +91,17 @@ next to them:
 - `Foreign.C.Error`, `Foreign.Marshal.Alloc`, `Foreign.Marshal.Utils`,
   `Foreign.Ptr`
 - `System.Posix.Internals`, `System.Posix.Signals`,
-  `System.Process.Internals`
+  `System.Process.Internals`, which are POSIX only
 - `Data.ByteString.Base`
+
+## Windows
+
+On Windows the libraries leave out the three POSIX-only modules,
+`System.Posix.Internals`, `System.Posix.Signals` and
+`System.Process.Internals`, and `System.Posix.Types` has only the types
+Windows has: not `CGid`, `CNlink`, `CUid`, `CCc`, `CSpeed`, `CTcflag`,
+`CRLim`, `LinkCount`, `UserID` or `GroupID`.  The Windows version of a
+module is under `libraries/windows`.
 
 ## The generated module
 
@@ -143,9 +152,10 @@ types to Haskell types (`HsType_int`, `HsType_mode_t`, ...), the
 `System.CPUTime`, `System.Directory` (and `.Internals`),
 `System.Environment`, `System.Exit`, `System.Info`,
 `System.IO` (and `.Error`, `.Unsafe`), `System.Locale`, `System.Mem`
-(and `.StableName`, `.Weak`), `System.Posix.Internals`,
-`System.Posix.Signals`, `System.Posix.Types`,
-`System.Process.Internals`, `System.Random`, `System.Time`,
+(and `.StableName`, `.Weak`), `System.Posix.Internals` (not on
+Windows), `System.Posix.Signals` (not on Windows), `System.Posix.Types`,
+`System.Process.Internals` (not on Windows), `System.Random`,
+`System.Time`,
 `Text.ParserCombinators.ReadP`, `Text.ParserCombinators.ReadPrec`,
 `Text.PrettyPrint` (and `.HughesPJ`), `Text.Printf`, `Text.Read` (and
 `.Lex`), `Text.Show` (and `.Functions`).

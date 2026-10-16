@@ -115,9 +115,7 @@ static void collect_htypes(void)
 #if !defined(_WIN32)
     HTYPE(nlink_t, "NLINK_T");
 #endif
-#if !defined(_WIN32)
-    HTYPE(ssize_t, "SSIZE_T");
-#endif
+    HTYPE(ssize_t, "SSIZE_T"); /* MinGW-w64 has it too */
 #if !defined(_WIN32)
     HTYPE(rlim_t, "RLIM_T");
 #endif
