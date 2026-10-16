@@ -82,6 +82,39 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y clang-format
       - run: clang-format --dry-run -Werror src/*.c src/*.h src/prims/*.c src/prims/*.h
 
+  # Windows is a Tier 1 platform, built with MinGW-w64 against the UCRT,
+  # but the port is not finished: until the suite passes here, this job is
+  # not one that ci-ok needs, so it reports without blocking a merge. Then
+  # x86_64-windows joins build and test, and this job goes.
+  windows:
+    name: Windows (not yet required)
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            bison
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-meson
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-python
+
+      - name: Configure
+        run: meson setup build
+
+      - name: Build
+        run: ninja -C build
+
+      - name: Test
+        run: meson test -C build --print-errorlogs
+
   build:
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.build-runner }}
