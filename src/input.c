@@ -121,8 +121,7 @@ Text textPrelude;     /* Prelude / Cupid.Prelude          */
 Text textUserPrelude; /* Prelude                         */
 Text textPlus;        /* (+)                               */
 
-Cell conMain;        /* Main                            */
-static Cell varMain; /* main                            */
+Cell conMain; /* Main                            */
 
 Cell varMinus;     /* (-)                             */
 Cell varPlus;      /* (+)                                  */
@@ -1612,8 +1611,7 @@ static Cell *const inputRoots[] = {
     &primDefns,    &unqualImports, &foreignImports, &foreignExports,
     &defaultDefns, &evalDefaults,  &inputExpr,      &varMinus,
     &varPlus,      &varBang,       &varDot,         &varHiding,
-    &varQualified, &varAsMod,      &varMain,        &conMain,
-    &imps,
+    &varQualified, &varAsMod,      &conMain,        &imps,
 };
 
 /* Register the roots, intern the keyword and symbol texts the lexer
@@ -1683,7 +1681,6 @@ void installInput(void) {
     varQualified = mkVar(textQualified);
     varAsMod = mkVar(textAsMod);
     conMain = mkCon(findText("Main"));
-    varMain = mkVar(findText("main"));
     evalDefaults = NIL;
 
     resetInput();

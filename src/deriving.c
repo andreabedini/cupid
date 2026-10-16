@@ -39,7 +39,7 @@ static bool smallPred(Cell, int);
 static bool smallType(Type, int, List *);
 static Cell copyAdj(Cell, int, int);
 static void tidyDerInst(Inst);
-static List getDiVars(int);
+static List freshVars(int);
 static Cell mkBind(char *, List);
 static Cell mkVarAlts(int, Cell);
 static List deriveEq(Tycon);
@@ -612,15 +612,13 @@ List dropTypeableDerivings(List is) {
     return rev(rs);
 }
 
-static List diVars = NIL; /* Acts as a cache of invented vars*/
-static int diNum = 0;
-
-/* Get list of at least n vars for derived instance generation */
-static List getDiVars(int n) {
-    for (; diNum < n; diNum++) {
-        diVars = cons(inventVar(), diVars);
+/* A list of n fresh vars for derived instance generation */
+static List freshVars(int n) {
+    List vs = NIL;
+    for (; n > 0; n--) {
+        vs = cons(inventVar(), vs);
     }
-    return diVars;
+    return vs;
 }
 
 /* Make a binding for a variable */
@@ -738,7 +736,7 @@ static Pair mkAltOrd(int line, List pats) {
 /* Generate pattern list by putting two new patterns with head h and new var
  * components */
 static List makeDPats2(Cell h, int n) {
-    List us = getDiVars(2 * n);
+    List us = freshVars(2 * n);
     List vs = NIL;
     Cell p;
     int i;
@@ -821,7 +819,7 @@ static bool isEnumType(Tycon t) {
 
 /* Build bindings for derived Ix on a product type */
 static List mkIxBinds(int line, Cell h, int n) {
-    List vs = getDiVars(3 * n);
+    List vs = freshVars(3 * n);
     Cell ls = h;
     Cell us = h;
     Cell is = h;
@@ -924,7 +922,7 @@ static List deriveShow(Tycon t) {
 
 /* Make alt for showsPrec eqn */
 static Cell mkAltShow(int line, Cell h, int a) {
-    List vs = getDiVars(a + 1);
+    List vs = freshVars(a + 1);
     Cell d = hd(vs);
     Cell pat = h;
     List pats = NIL;
@@ -1514,7 +1512,7 @@ static List deriveData(Inst in, Tycon t) {
         Cell pat = con;
         Cell body;
         int i;
-        vs = getDiVars(a + 2);
+        vs = freshVars(a + 2);
         k = hd(vs);
         z = hd(tl(vs));
         body = ap(z, con);
@@ -1528,7 +1526,7 @@ static List deriveData(Inst in, Tycon t) {
         rcs = cons(con, rcs);
     }
 
-    vs = getDiVars(3);
+    vs = freshVars(3);
     k = hd(vs);
     z = hd(tl(vs));
     x = hd(tl(tl(vs)));
@@ -1592,7 +1590,7 @@ static List deriveGeneric(Inst in, Type t) {
         n++;
     }
     if (n == 0) { /* from x = M1 (voidFrom x); to (M1 x) = voidTo x */
-        Cell v = hd(getDiVars(1));
+        Cell v = hd(freshVars(1));
         Name m1 = genName("M1");
         froms = singleton(
             pair(singleton(v),
@@ -1603,15 +1601,15 @@ static List deriveGeneric(Inst in, Type t) {
     for (cs = tyconRec(t)->defn; hasCfun(cs); cs = tl(cs), i++) {
         Name c = hd(cs);
         int k = userArity(c);
-        List vs = getDiVars(k);
+        List us = freshVars(k);
+        List vs = us;
         Cell con = c;
         Cell pat = c;
         int j = 0;
-        for (; j < k; j++, vs = tl(vs)) {
-            con = ap(con, hd(vs));
-            pat = ap(pat, hd(vs));
+        for (; j < k; j++, us = tl(us)) {
+            con = ap(con, hd(us));
+            pat = ap(pat, hd(us));
         }
-        vs = getDiVars(k);
         froms =
             cons(pair(singleton(pat), pair(mkInt(line), genValue(c, vs, i, n))),
                  froms);
@@ -2131,14 +2129,11 @@ List derivedInstances(void) {
  * by the collector on every collection */
 static Cell *const derivingRoots[] = {
     &derivedInsts,
-    &diVars,
 };
 
 /* Clear the list of derived instances still to implement. */
 void resetDeriving(void) {
     derivedInsts = NIL;
-    diVars = NIL;
-    diNum = 0;
 }
 
 /* Register the roots and reset; done once, before the Prelude is read. */

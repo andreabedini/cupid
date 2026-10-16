@@ -50,10 +50,6 @@ Type typeStable;
 Type typeBool;
 Type typeString;
 
-static Type typeInteger;
-static Type typeMaybe;
-static Type typeOrdering;
-
 Class classEq, classOrd; /* `standard' classes             */
 Class classIx, classEnum;
 Class classShow, classRead;
@@ -199,14 +195,12 @@ static Class linkClass(char *);
  * Frequently used type skeletons:
  * ------------------------------------------------------------------------*/
 
-static Type arrow;        /* mkOffset(0) -> mkOffset(1)      */
-static Type boundPair;    /* (mkOffset(0),mkOffset(0))     */
-static Type listof;       /* [ mkOffset(0) ]               */
-static Type typeVarToVar; /* mkOffset(0) -> mkOffset(0)            */
+static Type arrow;     /* mkOffset(0) -> mkOffset(1)      */
+static Type boundPair; /* (mkOffset(0),mkOffset(0))     */
+static Type listof;    /* [ mkOffset(0) ]               */
 
 static Cell predNum;        /* Num (mkOffset(0))                   */
 static Cell predFractional; /* Fractional (mkOffset(0))    */
-static Cell predIntegral;   /* Integral (mkOffset(0))      */
 static Kind starToStar;     /* Type -> Type                        */
 static Cell predMonad;      /* Monad (mkOffset(0))                 */
 static Cell predMonadFail;  /* MonadFail (mkOffset(0))             */
@@ -2541,10 +2535,10 @@ static Pair typeSel(Name s) {
 /* The statics that hold cells: registered as roots at INSTALL and marked
  * by the collector on every collection */
 static Cell *const typeRoots[] = {
-    &defnBounds,   &varsBounds,    &depends,        &pendingBtyvs, &dummyVar,
-    &preds,        &stdDefaults,   &arrow,          &boundPair,    &listof,
-    &typeVarToVar, &predNum,       &predFractional, &predIntegral, &starToStar,
-    &predMonad,    &predMonadFail, &typeProgIO,
+    &defnBounds, &varsBounds, &depends,       &pendingBtyvs,
+    &dummyVar,   &preds,      &stdDefaults,   &arrow,
+    &boundPair,  &listof,     &predNum,       &predFractional,
+    &starToStar, &predMonad,  &predMonadFail, &typeProgIO,
 };
 
 /* Reset the current type-checking mode, the predicates and pending
@@ -2601,7 +2595,6 @@ void installTypeChecker(void) {
 
     tyconRec(typeList)->defn = cons(nameNil, cons(nameCons, NIL));
 
-    typeVarToVar = fn(aVar, aVar);
     /* bogus definitions to avoid changing the prelude */
     addPrimCfun(findText("Rec"), 0, 0, typeUnit);
     addPrimCfun(findText("EmptyRow"), 0, 0, typeUnit);
@@ -2641,6 +2634,8 @@ static Class linkClass(char *s) {
 /* Hook to tycons and classes in prelude when first loaded */
 void linkPreludeTC(void) {
     if (isNull(typeBool)) {
+        Type typeInteger;
+        Type typeOrdering;
         int i;
 
         typeInt = linkTycon("Int");
@@ -2665,7 +2660,6 @@ void linkPreludeTC(void) {
         typeBool = linkTycon("Bool");
         typeString = linkTycon("String");
         typeInteger = linkTycon("Integer");
-        typeMaybe = linkTycon("Maybe");
         typeOrdering = linkTycon("Ordering");
 
         stdDefaults = cons(typeInteger, cons(typeDouble, NIL));
@@ -2687,7 +2681,6 @@ void linkPreludeTC(void) {
         classNum = linkClass("Num");
         predNum = ap(classNum, aVar);
         predFractional = ap(classFractional, aVar);
-        predIntegral = ap(classIntegral, aVar);
 
         classMonad = linkClass("Monad");
         predMonad = ap(classMonad, aVar);
