@@ -118,34 +118,48 @@ static bool scanSubDirs(char *);
 # define DLL_ENDING ".so"
 #endif
 
-#if HAVE_GETMODULEFILENAME
-static HMODULE cupidModule = (HMODULE)0;
-static char *cupidRoot = 0;
-
-extern void setCupidModule(HMODULE);
-extern bool setCupidRoot(char *);
-
-void setCupidModule(HMODULE hmod) {
-    cupidModule = hmod;
-}
-
-bool setCupidRoot(char *s) {
-    char *newRoot = malloc(strlen(s) + 1);
-
-    if (!newRoot)
-        return false;
-
-    strcpy(newRoot, s);
-
-    if (cupidRoot)
-        free(cupidRoot);
-    cupidRoot = newRoot;
-    return true;
-}
-
+#if defined(CUPIDDIR_FROM_BINDIR) &&                                           \
+    (defined(__linux__) || defined(__APPLE__) || IS_WINDOWS)
+# define CAN_RELOCATE 1
 #endif
 
-#if !HAVE_GETMODULEFILENAME
+#if CAN_RELOCATE
+/* The absolute, canonical form of path, in out, which has PATH_MAX + 1
+ * bytes.  Symbolic links are followed, and on POSIX the path must exist. */
+static bool canonicalPath(const char *path, char *out) {
+# if IS_WINDOWS
+    return _fullpath(out, path, PATH_MAX + 1) != NULL;
+# else
+    return realpath(path, out) != NULL;
+# endif
+}
+
+/* The directory that the running executable really lives in, in out, which
+ * has PATH_MAX + 1 bytes. */
+static bool executableDir(char *out) {
+    char exe[PATH_MAX + 1];
+    char *slash;
+# if IS_WINDOWS
+    DWORD n = GetModuleFileNameA(NULL, exe, sizeof(exe));
+    if (n == 0 || n >= sizeof(exe))
+        return false;
+# elif defined(__linux__)
+    ssize_t n = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+    if (n < 0)
+        return false;
+    exe[n] = '\0';
+# else
+    uint32_t size = sizeof(exe);
+    if (_NSGetExecutablePath(exe, &size) != 0)
+        return false;
+# endif
+    if (!canonicalPath(exe, out) || (slash = strrchr(out, SLASH)) == NULL)
+        return false;
+    *slash = '\0';
+    return true;
+}
+#endif
+
 /* The library directory of an installation that may have been moved:
  * CUPIDDIR_FROM_BINDIR, the library directory relative to the directory
  * of the executables, resolved against the directory that the running
@@ -154,89 +168,46 @@ bool setCupidRoot(char *s) {
  * the build put the libraries outside the prefix, or on a system where an
  * executable cannot find itself.  Worked out once. */
 static char *relocatedCupidDir(void) {
-# if defined(CUPIDDIR_FROM_BINDIR) && (defined(__linux__) || defined(__APPLE__))
+#if CAN_RELOCATE
     static bool done = false;
     static char dir[PATH_MAX + 1];
-    char exe[PATH_MAX + 1];
-    char real[PATH_MAX + 1];
-    char *slash;
+    char path[PATH_MAX + 1];
+    char bin[PATH_MAX + 1];
 
     if (done)
         return dir[0] ? dir : NULL;
     done = true;
     dir[0] = '\0';
-#  if defined(__linux__)
-    ssize_t n = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
-    if (n < 0)
-        return NULL;
-    exe[n] = '\0';
-#  else
-    uint32_t size = sizeof(exe);
-    if (_NSGetExecutablePath(exe, &size) != 0)
-        return NULL;
-#  endif
-    if (realpath(exe, real) == NULL || (slash = strrchr(real, '/')) == NULL)
-        return NULL;
-    *slash = '\0';
-    if (snprintf(exe, sizeof(exe), "%s/%s", real, CUPIDDIR_FROM_BINDIR) >=
-            (int)sizeof(exe) ||
-        realpath(exe, dir) == NULL) {
+    if (!executableDir(bin) ||
+        snprintf(path, sizeof(path), "%s%c%s", bin, SLASH,
+                 CUPIDDIR_FROM_BINDIR) >= (int)sizeof(path) ||
+        !canonicalPath(path, dir)) {
         dir[0] = '\0';
         return NULL;
     }
-    if (snprintf(exe, sizeof(exe), "%s/packages", dir) >= (int)sizeof(exe) ||
-        !pathIsDirectory(exe)) {
+    if (snprintf(path, sizeof(path), "%s%cpackages", dir, SLASH) >=
+            (int)sizeof(path) ||
+        !pathIsDirectory(path)) {
         dir[0] = '\0';
         return NULL;
-    }
-    return dir;
-# else
-    return NULL;
-# endif
-}
-#endif
-
-/* Directory containing libraries/Prelude.hs */
-char *cupiddir(void) {
-#if HAVE_GETMODULEFILENAME
-    /* On Windows, we can find the binary we're running and it's
-     * conventional to put the libraries in the same place.
-     */
-    static char dir[FILENAME_MAX + 1] = "";
-
-    if (cupidRoot)
-        return cupidRoot;
-
-    if (dir[0] == '\0') { /* not initialised yet */
-        char *slash = NIL;
-        char *cupiddir = getenv("CUPIDDIR");
-
-        if (cupiddir) {
-            strncpy(dir, cupiddir, FILENAME_MAX);
-        } else {
-            GetModuleFileName(cupidModule, dir, FILENAME_MAX + 1);
-            if (dir[0] == '\0') { /* GetModuleFileName must have failed */
-                return CUPIDDIR;
-            }
-            if ((slash = strrchr(dir, SLASH)) != NULL) {
-                /* truncate after directory name */
-                *slash = '\0';
-            }
-        }
     }
     return dir;
 #else
-    /* The environment variable if it is set; then the libraries next to
-     * the executable, for an installation that has been moved, such as a
-     * release archive unpacked anywhere; then the directory the build
-     * installed them in. */
+    return NULL;
+#endif
+}
+
+/* Directory containing libraries/Prelude.hs: the environment variable if
+ * it is set; then the libraries next to the executable, for an
+ * installation that has been moved, such as a release archive unpacked
+ * anywhere; then the directory the build installed them in. */
+char *cupiddir(void) {
     char *cupiddir = getenv("CUPIDDIR");
     char *moved;
     if (cupiddir)
         return cupiddir;
     moved = relocatedCupidDir();
     return moved ? moved : CUPIDDIR;
-#endif
 }
 
 static char *homeDir(void) {
