@@ -9,7 +9,8 @@ install them under a prefix.
 - meson 1.1 or later, and ninja
 - python3 (meson needs it anyway; the library build script uses it too)
 - optionally readline or libedit, for command-line editing at the prompt
-- bison, which generates the parser from `src/parser.y` at build time
+- bison, which generates the parser from `src/parser.y` at build time;
+  on Windows, WinFlexBison's `win_bison` will do
 - optionally hp2ps, to view heap profiles from a profiling build
 
 Cupid builds on x86-64 and ARM64 machines running a current Linux, macOS
