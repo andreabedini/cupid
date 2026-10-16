@@ -320,9 +320,9 @@ static bool tryEndings(void) {
 /* Does 'sep' mark the end of a valid path? */
 static bool isPathSep(char *sep) {
     /* ';' is always a separator */
-    /* ':' is a separator iff it is not followed by a backslash */
-    /* (should test for <x>:\ but that seems too difficult) */
-    return *sep == ';' || (*sep == ':' && *(sep + 1) != SLASH);
+    /* ':' is a separator iff it is not followed by a slash or backslash, */
+    /* as in the drive letters of C:\cupid and C:/cupid                  */
+    return *sep == ';' || (*sep == ':' && !isSLASH(sep[1]));
 }
 #endif
 
