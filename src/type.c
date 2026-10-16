@@ -375,10 +375,11 @@ static List genvarAllAss(List as) {
     return vs;
 }
 
-/* Calculate generic vars that are in any type in assumptions as */
+/* Calculate generic vars that are in any type in assumptions as.  The list
+ * is empty for a pattern binding that binds no variables, such as `1 = 2' */
 static List genvarAnyAss(List as) {
-    List vs = genvarTyvar(intOf(defType(snd(hd(as)))), NIL);
-    for (as = tl(as); nonNull(as); as = tl(as))
+    List vs = NIL;
+    for (; nonNull(as); as = tl(as))
         vs = genvarTyvar(intOf(defType(snd(hd(as)))), vs);
     return vs;
 }
@@ -1534,13 +1535,21 @@ static void monorestrict(List bs) {
         elimTauts();
 
         if (nonNull(preds)) { /* Look for unresolved overloading */
-            Cell v = isVar(fst(hd(bs))) ? fst(hd(bs)) : hd(fst(hd(bs)));
-            Cell ass = findInAssumList(textOf(v), hd(varsBounds));
+            Cell b = hd(bs);
+            Cell v = isVar(fst(b)) ? fst(b) : isNull(fst(b)) ? NIL : hd(fst(b));
+            Cell ass =
+                isNull(v) ? NIL : findInAssumList(textOf(v), hd(varsBounds));
             preds = scSimplify(preds);
 
             errHead(line);
             errPrintf("Unresolved top-level overloading");
-            errPrintf("\n*** Binding             : %s", textToStr(textOf(v)));
+            if (nonNull(v))
+                errPrintf("\n*** Binding             : %s",
+                          textToStr(textOf(v)));
+            else { /* a pattern binding that binds no variables */
+                errPrintf("\n*** Pattern binding     : ");
+                errExpr(fst(snd(snd(b))));
+            }
 
             if (nonNull(ass)) {
                 errPrintf("\n*** Inferred type       : ");

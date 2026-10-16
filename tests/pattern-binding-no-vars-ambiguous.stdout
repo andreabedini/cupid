@@ -1,0 +1,7 @@
+runcupid: Error occurred
+ERROR "pattern-binding-no-vars-ambiguous.hs":5 - Unresolved top-level overloading
+*** Pattern binding     : True
+*** Outstanding context : (Monoid b, Eq b)
+
+
+
