@@ -34,9 +34,3 @@
 #define VERSION_STRING CUPID_VERSION
 
 char *versionString = VERSION_STRING;
-
-#if USE_REGISTRY
-# define CUPIDROOT ("SOFTWARE\\Haskell\\Cupid\\" VERSION_STRING "\\")
-
-char *cupidRegRoot = CUPIDROOT;
-#endif

@@ -93,9 +93,6 @@ void setOptions(void) {
                 errFail();
             }
         } while ((s = readFilename()) != 0);
-#if USE_REGISTRY
-        writeRegString("Options", optionsToStr());
-#endif
     } else {
         optionInfo();
     }
@@ -175,126 +172,6 @@ void optionInfo(void) {
     Putchar('\n');
 }
 
-/* Get rid off superfluous trailing space(s) */
-#define TRIMSPC()                                                              \
-    while (*(next - 1) == ' ') {                                               \
-        next--;                                                                \
-        charsLeft++;                                                           \
-    }
-
-#define PUTC(c)                                                                \
-    if (charsLeft > 1) {                                                       \
-        *next++ = (c);                                                         \
-        charsLeft--;                                                           \
-    } else {                                                                   \
-        *next = '\0';                                                          \
-    }
-
-#define PUTS(s)                                                                \
-    do {                                                                       \
-        char *sref = (s);                                                      \
-        int len = strlen(sref);                                                \
-        if (charsLeft > len) {                                                 \
-            strcpy(next, sref);                                                \
-            next += len;                                                       \
-            charsLeft -= len;                                                  \
-        } else {                                                               \
-            *next = '\0';                                                      \
-        }                                                                      \
-    } while (0)
-
-#define PUTInt(optc, i)                                                        \
-    if (charsLeft > 20 /*conservative*/) {                                     \
-        int n = snprintf(next, charsLeft, "-%c%d", optc, i);                   \
-        next += n;                                                             \
-        charsLeft -= n;                                                        \
-    } else {                                                                   \
-        *next = '\0';                                                          \
-    }
-
-#define PUTStr(c, s) next = PUTStr_aux(next, &charsLeft, c, s)
-
-static char *PUTStr_aux(char *, int *, Char, char *);
-
-static char *PUTStr_aux(char *next, int *chLeft, Char c, char *s) {
-    int charsLeft = *chLeft;
-    int len;
-    if (s && (len = (int)strlen(s)) > 0) {
-        char *t = 0;
-        len = (int)strlen(s);
-
-        if ((int)(len + 10) > charsLeft) {
-            *next = '\0';
-            /* optionsToStr() will not to break off immediately,
-             * but soon enough. 
-             */
-            return next;
-        }
-
-        *next++ = '-';
-        *next++ = (char)c;
-        *next++ = '"';
-        charsLeft -= 3;
-        /* 
-         * Subtlety if *s == '\0': for-loop below bails out right away,
-         * causing strlen(next) to report quite possibly an inappropriate 
-         * result. => always zero-terminate first.
-         *
-         * Do this even if we now explicitly test for 's' not being "" at
-         * the start.
-         */
-        *next = '\0';
-        for (t = s; *t;) {
-            /* Explicitly bind result to a local to avoid 
-             * duplicating work within PUTS() macro. Ugly.
-             */
-            char *strChar = unlexChar(ExtractChar(t), '"');
-            PUTS(strChar);
-        }
-        next += strlen(next);
-        PUTS("\" ");
-    }
-    *chLeft = charsLeft;
-    return next;
-}
-
-/* Convert options to string */
-char *optionsToStr(void) {
-    static char buffer[2000];
-    char *next = buffer;
-    int charsLeft = 2000;
-
-    int i;
-    for (i = 0; toggle[i].c; ++i) {
-        PUTC(*toggle[i].flag ? '+' : '-');
-        PUTC(toggle[i].c);
-        PUTC(' ');
-    }
-    PUTInt('h', hpSize);
-    PUTC(' ');
-    PUTStr('p', prompt);
-    PUTStr('r', repeatStr);
-    PUTStr('P', cupidPath);
-    PUTStr('S', cupidSuffixes);
-    PUTStr('E', cupidEdit);
-    PUTInt('c', cutoff);
-    PUTC(' ');
-    PUTStr('F', preprocessor);
-#if PROFILING
-    PUTInt('d', profiling ? profInterval : 0);
-#endif
-    TRIMSPC();
-    PUTC('\0');
-
-    return buffer;
-}
-
-#undef TRIMSPC
-#undef PUTC
-#undef PUTS
-#undef PUTInt
-#undef PUTStr
-
 /* --------------------------------------------------------------------------
  * Reading and processing option strings:
  * ------------------------------------------------------------------------*/
@@ -314,8 +191,8 @@ void readOptions(char *options, bool freeUp) {
 /* --------------------------------------------------------------------------
  * Tokenising option strings:
  *
- * Option strings come from the command line, from CUPIDFLAGS, from the
- * registry and from the argument of -X, and they are split into words here.
+ * Option strings come from the command line, from CUPIDFLAGS and from
+ * the argument of -X, and they are split into words here.
  * They used to be split by pointing the global input stream at them with
  * stringInput() and reading words back with readFilename(), but there is
  * only one input stream: a -X nested inside an option string reset it, and
@@ -604,14 +481,7 @@ void setHeapSize(char *s) {
         else if (MAXIMUMHEAP && hpSize > MAXIMUMHEAP)
             hpSize = MAXIMUMHEAP;
         if (heapBuilt() && hpSize != heapSize) {
-#define HEAP_RESIZE_MSG                                                        \
-    "Change to heap size will not take effect until you rerun Cupid"
-#if USE_REGISTRY
-            FPrintf(stderr, HEAP_RESIZE_MSG "\n");
-#else
             FPrintf(stderr, "Cannot change heap size\n");
-#endif
-#undef HEAP_RESIZE_MSG
             FFlush(stderr);
         } else {
             heapSize = hpSize;
@@ -700,28 +570,10 @@ void processOptionVector(int argc, char *argv[]) {
 }
 
 /*
- * Read option settings from sources other than the command-line:
- *
- *   - CUPIDFLAGS environment variable
- *   - Registry (machine-wide and user-specific portions.)
- *   - Preference files (MacOS<t>, where t < 10).
- *   - WinHugs GUI options.
- *
+ * Read option settings from sources other than the command line: the
+ * CUPIDFLAGS environment variable.
  */
 void readOptionSettings(void) {
 
-#if USE_REGISTRY
-    readOptions(readRegString(HKEY_LOCAL_MACHINE, cupidRegRoot, "Options", ""),
-                true);
-    if (!fromEnv("IGNORE_USER_REGISTRY", NULL)) {
-        /* If IGNORE_USER_REGISTRY exist as an env var, don't consult
-       * the user portion of the Registry. Emergency workaround if it has
-       * somehow become invalid.
-       */
-        readOptions(
-            readRegString(HKEY_CURRENT_USER, cupidRegRoot, "Options", ""),
-            true);
-    }
-#endif /* USE_REGISTRY */
     readOptions(fromEnv("CUPIDFLAGS", ""), false);
 }

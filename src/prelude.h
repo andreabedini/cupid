@@ -202,20 +202,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 #include <stdarg.h>
 
 /*---------------------------------------------------------------------------
- * Pipe-related operations:
- *
- * On Windows, many standard Unix names acquire a leading underscore.
- * Irritating, but easy to work around.
- *-------------------------------------------------------------------------*/
-
-#if !HAVE_POPEN && HAVE__POPEN
-# define popen(x, y) _popen(x, y)
-#endif
-#if !HAVE_PCLOSE && HAVE__PCLOSE
-# define pclose(x) _pclose(x)
-#endif
-
-/*---------------------------------------------------------------------------
  * Interrupting execution (signals, allowBreak):
  *-------------------------------------------------------------------------*/
 
@@ -240,6 +226,8 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  * async-signal-safe.
  */
 
+#include <signal.h>
+
 #if IS_WINDOWS
 
 # define ctrlbrk(bh)                                                           \
@@ -250,7 +238,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 
 #else /* Unix */
 
-# include <signal.h>
 /* SA_RESTART is deliberately left off: a blocking read() at the
     * prompt must return EINTR on Ctrl-C rather than silently resume,
     * so that the prompt can be redrawn instead of hanging.
@@ -345,15 +332,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 #else
 # define SUPPORT_PREPROCESSOR 0
 #endif
-
-/*---------------------------------------------------------------------------
- * Environment variables and the registry
- *-------------------------------------------------------------------------*/
-
-/* On Win32 we can use the registry to supplement info in environment 
- * variables.
- */
-#define USE_REGISTRY (HAVE_WINDOWS_H && !__MSDOS__)
 
 /*---------------------------------------------------------------------------
  * File operations:

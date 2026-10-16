@@ -13,12 +13,6 @@
 
 #include <time.h>
 
-#if USE_REGISTRY
-# if HAVE_WINDOWS_H
-#  include <windows.h>
-# endif
-#endif
-
 /* --------------------------------------------------------------------------
  * Find information about a file:
  * ------------------------------------------------------------------------*/
@@ -33,17 +27,6 @@ extern void getFileInfo(char *, Time *, long *);
 extern void installMachdep(void); /* register roots, install signal/term  */
 extern void resetMachdep(void);   /* clear the pending breakpoint buffer  */
 extern void exitMachdep(void);    /* restore the terminal's normal mode   */
-
-/* --------------------------------------------------------------------------
- * Prototypes for registry reading
- * ------------------------------------------------------------------------*/
-
-#if USE_REGISTRY
-
-extern char *readRegString(HKEY, char *, char *, char *);
-extern bool writeRegString(char *, char *);
-extern char *readRegChildStrings(HKEY, char *, char *, char *);
-#endif /* USE_REGISTRY */
 
 /* --------------------------------------------------------------------------
  * Search for script files on the CUPID path:

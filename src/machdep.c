@@ -55,21 +55,6 @@
 #endif
 
 /* --------------------------------------------------------------------------
- * Prototypes for registry reading
- * ------------------------------------------------------------------------*/
-#if USE_REGISTRY
-
-/* where have we hidden things in the registry? */
-
-extern char *readRegString(HKEY, char *, char *, char *);
-
-static bool createKey(HKEY, char *, PHKEY, REGSAM);
-static bool queryValue(HKEY, char *, char *, LPDWORD, LPBYTE, DWORD);
-static bool queryString(HKEY, char *, char *, char **);
-static bool setValue(HKEY, char *, char *, DWORD, LPBYTE, DWORD);
-#endif
-
-/* --------------------------------------------------------------------------
  * Find information about a file:
  * ------------------------------------------------------------------------*/
 
@@ -337,7 +322,7 @@ static bool isPathSep(char *sep) {
     /* ';' is always a separator */
     /* ':' is a separator iff it is not followed by a backslash */
     /* (should test for <x>:\ but that seems too difficult) */
-    return *sep == ';' || *sep == ':' && *(sep + 1) != SLASH;
+    return *sep == ';' || (*sep == ':' && *(sep + 1) != SLASH);
 }
 #endif
 
@@ -679,7 +664,7 @@ static bool samePath(char *pp1, char *pp2) {
 }
 
 /* --------------------------------------------------------------------------
- * Read value from environment variable or registry:
+ * Read value from environment variable:
  * ------------------------------------------------------------------------*/
 
 /* Return value of: environment variable named by var or: default value given
@@ -738,7 +723,7 @@ Cell *CStackBase; /* Retain start of C control stack */
 void gcCStack(void) {
     Cell stackTop = NIL; /* C stack                         */
     Cell *ptr = &stackTop;
-    if (((long)(ptr) - (long)(CStackBase)) & 3)
+    if (((uintptr_t)ptr - (uintptr_t)CStackBase) & 3)
         fatal("gcCStack");
 
 #define StackGrowsDown                                                         \
@@ -1002,8 +987,10 @@ static sigHandler(ignoreBreak) {
  * size is used instead of SIGSTKSZ because on current glibc that is no
  * longer a compile-time constant.
  */
-#define PANIC_STACK_SIZE 65536
+#if !IS_WINDOWS
+# define PANIC_STACK_SIZE 65536
 static char panicStack[PANIC_STACK_SIZE];
+#endif
 
 /* Is sig one the process raises against itself by faulting, rather than
  * one sent to ask it to stop? */
@@ -1077,8 +1064,15 @@ BOOL WINAPI consoleHandler(DWORD dwCtrlType) {
  * subsystem's install hook. */
 void installSignalHandlers(void) {
 #if IS_WINDOWS
+    /* No alternate signal stack on Windows, and the C runtime's signal()
+     * resets the handler before calling it, as SA_RESETHAND does. */
     SetConsoleCtrlHandler(consoleHandler, true);
-#endif
+    signal(SIGABRT, panic);
+    signal(SIGFPE, panic);
+    signal(SIGILL, panic);
+    signal(SIGSEGV, panic);
+    signal(SIGTERM, panic);
+#else
     {
         stack_t ss;
         struct sigaction sa;
@@ -1094,31 +1088,32 @@ void installSignalHandlers(void) {
         sa.sa_handler = panic;
         sigemptyset(&sa.sa_mask);
         sa.sa_flags = SA_ONSTACK | SA_RESETHAND; /* see panic() */
-#ifdef SIGABRT
+# ifdef SIGABRT
         sigaction(SIGABRT, &sa, NULL);
-#endif
-#ifdef SIGBUS
+# endif
+# ifdef SIGBUS
         sigaction(SIGBUS, &sa, NULL);
-#endif
-#ifdef SIGFPE
+# endif
+# ifdef SIGFPE
         sigaction(SIGFPE, &sa, NULL);
-#endif
-#ifdef SIGHUP
+# endif
+# ifdef SIGHUP
         sigaction(SIGHUP, &sa, NULL);
-#endif
-#ifdef SIGILL
+# endif
+# ifdef SIGILL
         sigaction(SIGILL, &sa, NULL);
-#endif
-#ifdef SIGQUIT
+# endif
+# ifdef SIGQUIT
         sigaction(SIGQUIT, &sa, NULL);
-#endif
-#ifdef SIGSEGV
+# endif
+# ifdef SIGSEGV
         sigaction(SIGSEGV, &sa, NULL);
-#endif
-#ifdef SIGTERM
+# endif
+# ifdef SIGTERM
         sigaction(SIGTERM, &sa, NULL);
-#endif
+# endif
     }
+#endif
 }
 
 /* --------------------------------------------------------------------------
@@ -1788,167 +1783,6 @@ void compileAndLink(char *fn, char *flags) {
     }
     argvFree(&cmd);
 }
-
-/* --------------------------------------------------------------------------
- * Read/write values from/to the registry
- * ------------------------------------------------------------------------*/
-
-#if USE_REGISTRY
-
-static bool createKey(HKEY hKey, char *regPath, PHKEY phRootKey,
-                      REGSAM samDesired) {
-    DWORD dwDisp;
-    return RegCreateKeyEx(hKey, regPath, 0, "", REG_OPTION_NON_VOLATILE,
-                          samDesired, NULL, phRootKey,
-                          &dwDisp) == ERROR_SUCCESS;
-}
-
-static bool queryValue(HKEY hKey, char *regPath, char *var, LPDWORD type,
-                       LPBYTE buf, DWORD bufSize) {
-    HKEY hRootKey;
-
-    if (!createKey(hKey, regPath, &hRootKey, KEY_READ)) {
-        return false;
-    } else {
-        LONG res = RegQueryValueEx(hRootKey, var, NULL, type, buf, &bufSize);
-        RegCloseKey(hRootKey);
-        return (res == ERROR_SUCCESS);
-    }
-}
-
-/* Specialised version of queryValue(), which doesn't require
- * you to guess the length of a REG_SZ value. Allocates a big
- * enough buffer (using malloc()) to hold the key's value, which
- * is then returned to the callee (along with the resp. to free the
- * buffer.)
- */
-static bool queryString(HKEY hKey, char *regPath, char *var, char **pString) {
-    HKEY hRootKey;
-    LONG rc;
-    DWORD bufSize;
-    DWORD valType = REG_SZ;
-    bool res = false;
-
-    if (!createKey(hKey, regPath, &hRootKey, KEY_READ)) {
-        return false;
-    } else {
-        /* Determine the length of the entry */
-        rc = RegQueryValueEx(hRootKey, var, NULL, &valType, NULL, &bufSize);
-
-        if (rc == ERROR_SUCCESS && valType == REG_SZ) {
-            /* Got the length, now allocate the buffer and retrieve the string. */
-            if ((*pString = (char *)malloc(sizeof(char) * (bufSize + 1))) !=
-                NULL) {
-                rc = RegQueryValueEx(hRootKey, var, NULL, &valType,
-                                     (LPBYTE)*pString, &bufSize);
-                res = (rc == ERROR_SUCCESS);
-            }
-        }
-
-        RegCloseKey(hRootKey);
-        return (res);
-    }
-}
-
-static bool setValue(HKEY hKey, char *regPath, char *var, DWORD type,
-                     LPBYTE buf, DWORD bufSize) {
-    HKEY hRootKey;
-
-    if (!createKey(hKey, regPath, &hRootKey, KEY_WRITE)) {
-        return false;
-    } else {
-        LONG res = RegSetValueEx(hRootKey, var, 0, type, buf, bufSize);
-        RegCloseKey(hRootKey);
-        return (res == ERROR_SUCCESS);
-    }
-}
-
-/* Read String from registry */
-char *readRegString(HKEY key, char *regPath, char *var, char *def) {
-    char *stringVal;
-
-    if (queryString(key, regPath, var, &stringVal)) {
-        /* The callee is responsible for freeing the returned string */
-        return (char *)stringVal;
-    } else {
-        /* Create a *copy* of the default string, so that it can be freed
-           without worry. */
-        if ((stringVal = malloc(sizeof(char) * (strlen(def) + 1))) == NULL) {
-            return NULL;
-        } else {
-            strcpy(stringVal, def);
-            return (char *)stringVal;
-        }
-    }
-}
-
-/* Write String to registry */
-bool writeRegString(char *var, char *val) {
-    char *realVal = ((NULL == val) ? "" : val);
-
-    return setValue(HKEY_CURRENT_USER, cupidRegRoot, var, REG_SZ,
-                    (LPBYTE)realVal, lstrlen(realVal) + 1);
-}
-
-/* concatenate together all strings from registry of the form regPath\\*\\var,
- * separated by PATHSEP.
- */
-char *readRegChildStrings(HKEY key, char *regPath, char *var, char *def) {
-    HKEY baseKey;
-    ULONG ulResult;
-    int done = 0;
-    DWORD dwIndex = 0;
-    char subKeyName[256];
-    DWORD subKeyLen;
-    BOOL addedPath = false;
-
-    char *resPath = NULL; /* result path, returned to caller */
-    char *component;
-    FILETIME ft; /* just to satisfy RegEnumKeyEx() */
-    char sepString[2];
-    StringBuilder *builder = newStringBuilder(0);
-
-    sepString[0] = PATHSEP;
-    sepString[1] = '\0';
-
-    ulResult = RegOpenKeyEx(key, regPath, 0, KEY_READ, &baseKey);
-    if (ulResult != ERROR_SUCCESS) {
-        freeStringBuilder(builder);
-        resPath = strCopy(def);
-        return resPath;
-    }
-
-    appendString(builder, def);
-    while (!done) {
-        subKeyLen = sizeof(subKeyName);
-        ulResult = RegEnumKeyEx(baseKey, dwIndex, subKeyName, &subKeyLen, NULL,
-                                NULL, NULL, &ft);
-        if (ulResult == ERROR_SUCCESS) {
-            /* read next component of path */
-            component = readRegString(baseKey, subKeyName, var, "");
-
-            if (addedPath) {
-                appendString(builder, sepString);
-            }
-            addedPath = true;
-            appendString(builder, component);
-            free(
-                component); /* readRegString() dynamically allocated it, so let go. */
-        } else {
-            if (ulResult == ERROR_NO_MORE_ITEMS) {
-                done = 1;
-            }
-        }
-
-        dwIndex++;
-    }
-
-    RegCloseKey(baseKey);
-    resPath = strCopy(toString(builder));
-    freeStringBuilder(builder);
-    return resPath;
-}
-#endif /* USE_REGISTRY */
 
 /* --------------------------------------------------------------------------
  * Platform initialisation 

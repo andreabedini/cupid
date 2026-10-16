@@ -1284,6 +1284,7 @@ primFun(primHWaitForInput) {
         IOBoolResult(ready > 0);
     }
 #else
+    (void)msecs;
     /* For now, punt on implementing async IO under Win32 */
     /* For other platforms that don't support select() on file
        file descs, please insert code that'll work. */

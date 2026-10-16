@@ -123,10 +123,16 @@ primFun(primGetCalTime) {
     /* Warning - ugliness. */
 #if HAVE_STRUCT_TM_TM_ZONE
     zoneNm = (char *)tm->tm_zone;
-#elif HAVE_TZNAME || IS_WINDOWS
-    /* ToDo: fix autoconf macro AC_STRUCT_TIMEZONE so that it will recognise
-   *       mingw's _tzname global. For now, force it.
-   */
+#elif IS_WINDOWS
+    /* The UCRT's tzname may not be set; _get_tzname asks it properly */
+    {
+        static char zone[64];
+        size_t len;
+        zoneNm = _get_tzname(&len, zone, sizeof zone, tm->tm_isdst ? 1 : 0) == 0
+                     ? zone
+                     : NULL;
+    }
+#elif HAVE_TZNAME
     zoneNm = (char *)(tm->tm_isdst ? tzname[1] : tzname[0]);
 #else
     /* Don't know how to get at the timezone name, complain louder? */

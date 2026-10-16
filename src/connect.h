@@ -127,10 +127,7 @@ extern Text textUserPrelude;
 extern Text textNum; /* used to process default decls   */
 
 extern char *versionString; /* String containing version name  */
-#if USE_REGISTRY
-extern char *cupidRegRoot; /* Root in registry for windows    */
-#endif
-extern char *scriptFile; /* Name of current script (if any) */
+extern char *scriptFile;    /* Name of current script (if any) */
 
 extern Type typeArrow; /* Builtin type constructors        */
 extern Type typeList;
