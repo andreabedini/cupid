@@ -70,7 +70,9 @@ DESTDIR=/tmp/stage ninja -C build install
 ```
 
 An installed `cupid` finds its libraries without any environment
-variable.
+variable.  On Linux and macOS it still finds them after the whole
+installation tree has been moved, because it looks next to its own
+executable first.
 
 ## Verify it worked
 

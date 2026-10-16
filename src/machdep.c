@@ -50,6 +50,9 @@
 #if IS_WINDOWS
 # include <process.h>
 #endif
+#if defined(__APPLE__)
+# include <mach-o/dyld.h> /* _NSGetExecutablePath */
+#endif
 
 /* --------------------------------------------------------------------------
  * Prototypes for registry reading
@@ -157,6 +160,57 @@ bool setCupidRoot(char *s) {
 
 #endif
 
+#if !HAVE_GETMODULEFILENAME
+/* The library directory of an installation that may have been moved:
+ * CUPIDDIR_FROM_BINDIR, the library directory relative to the directory
+ * of the executables, resolved against the directory that the running
+ * executable really lives in, symbolic links followed.  NULL if there is
+ * no packages directory there, as for an executable in the build tree, if
+ * the build put the libraries outside the prefix, or on a system where an
+ * executable cannot find itself.  Worked out once. */
+static char *relocatedCupidDir(void) {
+# if defined(CUPIDDIR_FROM_BINDIR) && (defined(__linux__) || defined(__APPLE__))
+    static bool done = false;
+    static char dir[PATH_MAX + 1];
+    char exe[PATH_MAX + 1];
+    char real[PATH_MAX + 1];
+    char *slash;
+
+    if (done)
+        return dir[0] ? dir : NULL;
+    done = true;
+    dir[0] = '\0';
+#  if defined(__linux__)
+    ssize_t n = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+    if (n < 0)
+        return NULL;
+    exe[n] = '\0';
+#  else
+    uint32_t size = sizeof(exe);
+    if (_NSGetExecutablePath(exe, &size) != 0)
+        return NULL;
+#  endif
+    if (realpath(exe, real) == NULL || (slash = strrchr(real, '/')) == NULL)
+        return NULL;
+    *slash = '\0';
+    if (snprintf(exe, sizeof(exe), "%s/%s", real, CUPIDDIR_FROM_BINDIR) >=
+            (int)sizeof(exe) ||
+        realpath(exe, dir) == NULL) {
+        dir[0] = '\0';
+        return NULL;
+    }
+    if (snprintf(exe, sizeof(exe), "%s/packages", dir) >= (int)sizeof(exe) ||
+        !pathIsDirectory(exe)) {
+        dir[0] = '\0';
+        return NULL;
+    }
+    return dir;
+# else
+    return NULL;
+# endif
+}
+#endif
+
 /* Directory containing libraries/Prelude.hs */
 char *cupiddir(void) {
 #if HAVE_GETMODULEFILENAME
@@ -187,13 +241,16 @@ char *cupiddir(void) {
     }
     return dir;
 #else
-    /* On Unix systems, data is not typically stored relative to a binary
-     * (it's also harder for a binary to determine where it lives).
-     * First, check for an environment var, then fall back to
-     * a configuration-time constant (--datadir=...).
-     */
+    /* The environment variable if it is set; then the libraries next to
+     * the executable, for an installation that has been moved, such as a
+     * release archive unpacked anywhere; then the directory the build
+     * installed them in. */
     char *cupiddir = getenv("CUPIDDIR");
-    return cupiddir ? cupiddir : CUPIDDIR;
+    char *moved;
+    if (cupiddir)
+        return cupiddir;
+    moved = relocatedCupidDir();
+    return moved ? moved : CUPIDDIR;
 #endif
 }
 

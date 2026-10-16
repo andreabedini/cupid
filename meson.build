@@ -38,8 +38,22 @@ bindir = prefix / get_option('bindir')
 libdir = prefix / get_option('libdir')
 datadir = prefix / get_option('datadir')
 cupiddir = get_option('cupiddir')
+# The library directory relative to the directory of the executables, with
+# which an installation that has been moved finds its libraries; see
+# cupiddir() in src/machdep.c.  Only for the default library directory, and
+# only when the executables and the libraries are both under the prefix.
+cupiddir_from_bindir = ''
 if cupiddir == ''
   cupiddir = libdir / 'cupid'
+  fs = import('fs')
+  if not fs.is_absolute(get_option('bindir')) and not fs.is_absolute(get_option('libdir'))
+    foreach part : get_option('bindir').split('/')
+      if part != '' and part != '.'
+        cupiddir_from_bindir += '../'
+      endif
+    endforeach
+    cupiddir_from_bindir += get_option('libdir') / 'cupid'
+  endif
 endif
 
 if is_windows
@@ -118,6 +132,9 @@ endif
 conf = configuration_data()
 conf.set_quoted('CUPID_VERSION', cupid_version_string)
 conf.set_quoted('CUPIDDIR', cupiddir)
+if cupiddir_from_bindir != '' and not is_windows
+  conf.set_quoted('CUPIDDIR_FROM_BINDIR', cupiddir_from_bindir)
+endif
 conf.set_quoted('CUPIDPATH', cupidpath)
 conf.set_quoted('CUPIDSUFFIXES', cupidsuffixes)
 conf.set_quoted('MKDLL_CMD', mkdll_cmd)
