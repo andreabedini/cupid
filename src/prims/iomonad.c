@@ -740,7 +740,18 @@ primFun(primHreader) {
             updapRoot(consChar(c), ap(nameHreader, primArg(1)));
             return;
         }
-        clearerr(handles[h].hfp);
+        /* All of the contents have been read, so the handle is now closed,
+         * as the report says of semi-closed handles.  Closing the file
+         * matters on Windows, where an open file cannot be removed.  The
+         * standard handles stay open, so that the interpreter can go on
+         * reading from stdin.                                             */
+        if (IS_STANDARD_HANDLE(h)) {
+            clearerr(handles[h].hfp);
+        } else {
+            fclose(handles[h].hfp);
+            handles[h].hfp = 0;
+            handles[h].hmode = HCLOSED;
+        }
     }
     updateRoot(nameNil);
 }
