@@ -1277,17 +1277,64 @@ int argvClose(FILE *f, ProcId pid) {
     return argvWait(pid, false);
 }
 
-#else /* IS_WINDOWS: the same three entry points on _spawnvp.  Like the
-       * rest of the Windows support here, this is written to the
-       * documented interface but is not verified on a Windows host. */
+#else /* IS_WINDOWS: the same three entry points on _spawnvp */
+
+/* _spawnvp joins the arguments with spaces into one command line, which
+ * the program splits again, so each argument is quoted the way the C
+ * runtime's splitting undoes: in double quotes if it is empty or holds
+ * white space or a quote, a quote escaped with a backslash, and the
+ * backslashes before a quote, or before the closing one, doubled. */
+static char *quoteArg(const char *s) {
+    size_t n = strlen(s), i, j = 0, slashes = 0;
+    char *q = malloc(2 * n + 3);
+    if (q == NULL)
+        return NULL;
+    if (*s != '\0' && strpbrk(s, " \t\n\v\"") == NULL) {
+        memcpy(q, s, n + 1);
+        return q;
+    }
+    q[j++] = '"';
+    for (i = 0; i < n; i++) {
+        if (s[i] == '\\') {
+            slashes++;
+        } else {
+            if (s[i] == '"') /* double the backslashes, then escape it */
+                for (slashes++; slashes > 0; slashes--)
+                    q[j++] = '\\';
+            slashes = 0;
+        }
+        q[j++] = s[i];
+    }
+    while (slashes-- > 0) /* the closing quote must stay a quote */
+        q[j++] = '\\';
+    q[j++] = '"';
+    q[j] = '\0';
+    return q;
+}
+
+static intptr_t argvSpawn(int mode, Argv *a) {
+    char **quoted = calloc(a->used + 1, sizeof(char *));
+    intptr_t r = -1;
+    size_t i;
+    if (quoted == NULL)
+        return -1;
+    for (i = 0; i < a->used; i++)
+        if ((quoted[i] = quoteArg(a->vec[i])) == NULL)
+            break;
+    if (i == a->used)
+        r = _spawnvp(mode, a->vec[0], (const char *const *)quoted);
+    while (i > 0)
+        free(quoted[--i]);
+    free(quoted);
+    return r;
+}
 
 int argvRun(Argv *a, bool sync) {
     intptr_t r;
     if (a->used == 0)
         return -1;
     fflush(NULL);
-    r = _spawnvp(sync ? _P_WAIT : _P_NOWAIT, a->vec[0],
-                 (const char *const *)a->vec);
+    r = argvSpawn(sync ? _P_WAIT : _P_NOWAIT, a);
     if (r < 0)
         return -1;
     return sync ? (int)r : 0;
@@ -1303,7 +1350,7 @@ FILE *argvOpen(Argv *a, ProcId *pidp) {
     saved = _dup(1); /* the child inherits our stdout, so aim it at the pipe */
     _dup2(fd[1], 1);
     _close(fd[1]);
-    pid = _spawnvp(_P_NOWAIT, a->vec[0], (const char *const *)a->vec);
+    pid = argvSpawn(_P_NOWAIT, a);
     _dup2(saved, 1);
     _close(saved);
     if (pid < 0) {
