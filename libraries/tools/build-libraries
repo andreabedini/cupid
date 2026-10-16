@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """Assemble the Cupid libraries in the build directory.
 
-usage: build-libraries SRCROOT OUT FFICUPID MKSYSCONFIG PLATFORM_DIR STAMP
+usage: build-libraries SRCROOT OUT FFICUPID MKSYSCONFIG PLATFORM_DIR SYSTEM STAMP
 
 The library sources under libraries/ are plain Haskell that Cupid owns,
 so building them means copying them into OUT/packages,
 generating the two platform-dependent files with mksysconfig, and running
 fficupid over the modules that contain foreign imports to build their C
 stubs.  OUT is what gets installed as cupiddir.
+
+SYSTEM is the operating system the libraries are for, as meson names it
+(host_machine.system()).  On Windows, the modules under libraries/windows
+replace the ones of the same name, and the modules that only make sense
+on a POSIX system are left out.
 """
 import os
 import re
@@ -32,15 +37,23 @@ FFI_ORDER = [
     "base/Data/ByteString/Base.hs",
 ]
 
+# Modules that only make sense on a POSIX system, left out on Windows,
+# where nothing else in the libraries imports them
+POSIX_ONLY = [
+    "base/System/Posix/Internals.hs",
+    "base/System/Posix/Signals.hs",
+    "base/System/Process/Internals.hs",
+]
+
 # Header every base module's stub includes, as its .cabal file used to say
 PACKAGE_INCLUDES = {"base": ["HsBase.h"]}
 PACKAGE_INCLUDE_DIRS = {"base": ["include"], "cupid": ["Cupid"]}
 
 
 def main(argv):
-    if len(argv) != 6:
+    if len(argv) != 7:
         raise SystemExit(__doc__)
-    srcroot, out, fficupid, mksysconfig, platform_dir, stamp = argv
+    srcroot, out, fficupid, mksysconfig, platform_dir, system, stamp = argv
     lib = os.path.join(srcroot, "libraries")
     pkgdir = os.path.join(out, "packages")
 
@@ -48,6 +61,15 @@ def main(argv):
     os.makedirs(os.path.join(out, "include"))
     for p in PACKAGES:
         shutil.copytree(os.path.join(lib, p), os.path.join(pkgdir, p))
+    if system == "windows":
+        shutil.copytree(os.path.join(lib, "windows"), pkgdir, dirs_exist_ok=True)
+        for rel in POSIX_ONLY:
+            path = os.path.join(pkgdir, rel)
+            os.remove(path)
+            try:  # and the directories that held nothing else
+                os.removedirs(os.path.dirname(path))
+            except OSError:
+                pass
     shutil.copy2(os.path.join(srcroot, "src", "HsFFI.h"), os.path.join(out, "include"))
 
     # Platform-dependent parts, from the compiler
