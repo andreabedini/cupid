@@ -35,6 +35,7 @@ SECTIONS = [
 # listed sort alphabetically after the listed ones.
 PAGE_ORDER = {
     "how-to": [
+        "install-a-release.md",
         "build-and-install.md",
         "run-from-the-build-tree.md",
         "build-on-windows.md",
@@ -46,6 +47,7 @@ PAGE_ORDER = {
         "measure-time-and-memory.md",
         "run-clang-tidy.md",
         "check-every-configuration.md",
+        "make-a-release.md",
     ],
     "reference": [
         "commands.md",
