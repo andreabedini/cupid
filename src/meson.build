@@ -61,17 +61,22 @@ if use_readline
   deps += readline_dep
 endif
 
+# The C stack of the main thread is fixed when the program is linked on
+# Windows, 2 MB by default with MinGW-w64; give it the 8 MB that Linux and
+# macOS give, so a program recurses as deep on every platform.
+link_args = is_windows ? ['-Wl,--stack,8388608'] : []
+
 cupid = executable('cupid', files('cupid.c', 'edit.c'),
   objects: core_objs, include_directories: src_inc, dependencies: deps,
-  install: true)
+  link_args: link_args, install: true)
 
 runcupid = executable('runcupid', files('runcupid.c'),
   objects: core_objs, include_directories: src_inc, dependencies: deps,
-  install: true)
+  link_args: link_args, install: true)
 
 fficupid = executable('fficupid', files('runcupid.c'),
   c_args: '-DFFI_COMPILER',
   objects: core_objs, include_directories: src_inc, dependencies: deps,
-  install: true)
+  link_args: link_args, install: true)
 
 install_headers('HsFFI.h', install_dir: cupiddir / 'include')
