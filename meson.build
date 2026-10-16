@@ -6,8 +6,9 @@ project('cupid', 'c',
   # have accepted it since 2019, and meson 1.3 (Ubuntu 24.04) rejects c23.
   default_options: ['c_std=c2x', 'buildtype=debugoptimized', 'warning_level=1'])
 
-# The string the banner and :version print
-cupid_version_string = '0.1.0'
+# The string the banner and :version print.  The release task sets the
+# version above and nowhere else.
+cupid_version_string = meson.project_version()
 
 cc = meson.get_compiler('c')
 host = host_machine.system()
