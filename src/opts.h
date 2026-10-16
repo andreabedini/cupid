@@ -17,7 +17,6 @@ extern bool readOptions2(char *);
 extern void optionInfo(void);
 extern bool isOption(char *);
 extern void setOptions(void);
-extern char *optionsToStr(void);
 extern void processOptionVector(int, char *[]);
 extern void readOptionSettings(void);
 

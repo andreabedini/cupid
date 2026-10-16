@@ -58,7 +58,8 @@ if cupiddir == ''
 endif
 
 if is_windows
-  cupidpath = '.;{Cupid}\\packages\\*'
+  # Doubled: the string becomes a C string literal
+  cupidpath = '.;{Cupid}\\\\packages\\\\*'
 else
   cupidpath = '.:{Home}/lib/cupid/packages/*:/usr/local/lib/cupid/packages/*:{Cupid}/packages/*'
 endif
@@ -108,7 +109,8 @@ if use_readline
   endif
 endif
 
-hp2ps = find_program('hp2ps', required: false)
+# hp2ps runs where Cupid runs, so a cross build cannot look for it here
+have_hp2ps = not meson.is_cross_build() and find_program('hp2ps', required: false).found()
 
 # The command fficupid runs to turn generated C into a loadable library
 cc_cmd = ' '.join(cc.cmd_array())
@@ -152,7 +154,7 @@ if get_option('char-encoding') == 'utf8'
 elif get_option('char-encoding') == 'locale'
   conf.set('CHAR_ENCODING_LOCALE', 1)
 endif
-if hp2ps.found()
+if have_hp2ps
   conf.set('HAVE_HP2PS', 1)
 endif
 
