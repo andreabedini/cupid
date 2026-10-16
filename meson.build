@@ -73,15 +73,18 @@ libm = cc.find_library('m', required: false)
 libdl = cc.find_library('dl', required: false)
 
 readline_opt = get_option('readline')
-readline_dep = dependency('readline', required: false)
+# Static on Windows, where nothing else would find the DLL next to an
+# installed cupid.exe; MSYS2's libedit is WinEditLine, for the console.
+readline_dep = dependency('readline', required: false, static: is_windows)
 if not readline_dep.found() and not readline_opt.disabled()
-  rl = cc.find_library('readline', required: false)
+  rl = cc.find_library('readline', required: false, static: is_windows)
   if not rl.found()
-    rl = cc.find_library('edit', required: false)
+    rl = cc.find_library('edit', required: false, static: is_windows)
   endif
   if rl.found()
     termcap = []
-    foreach name : ['ncurses', 'tinfo', 'termcap', 'curses']
+    # The Windows console needs no terminal database
+    foreach name : is_windows ? [] : ['ncurses', 'tinfo', 'termcap', 'curses']
       if termcap.length() == 0
         lib = cc.find_library(name, required: false)
         if lib.found()
