@@ -173,8 +173,11 @@ static char *nextStringChar;     /* next char in string buffer       */
 static char *currentLine;
 static char *nextChar;
 # define nextConsoleChar() (*nextChar == '\0' ? '\n' : ExtractChar(nextChar))
-# if defined(RL_READLINE_VERSION) && RL_READLINE_VERSION >= 0x0500
-#  define HAVE_RL_EVENT_HOOK 1 /* GNU readline, not libedit        */
+/* GNU readline 5 or later.  Not RL_READLINE_VERSION: libedit and
+ * WinEditLine define it too, the latter as its own version (0x020208),
+ * but only GNU readline defines RL_VERSION_MAJOR.                     */
+# if defined(RL_VERSION_MAJOR) && RL_VERSION_MAJOR >= 5
+#  define HAVE_RL_EVENT_HOOK 1
 # endif
 #else
 # define nextConsoleChar() FGetChar(stdin)
