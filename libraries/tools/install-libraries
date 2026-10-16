@@ -1,29 +1,41 @@
-#!/bin/sh
-# meson install script: copy the built Cupid libraries into cupiddir.
-#
-# usage: install-libraries BUILT_CUPIDDIR CUPIDDIR
-#
-# meson sets DESTDIR when staging an install; CUPIDDIR is the final
-# absolute path.  Everything under packages/ is installed except the C
-# sources, which are only needed to build the FFI stubs.
+#!/usr/bin/env python3
+"""meson install script: copy the built Cupid libraries into cupiddir.
 
-set -e
+usage: install-libraries BUILT_CUPIDDIR CUPIDDIR
 
-src=$1
-dest="${DESTDIR}$2"
+meson sets DESTDIR when staging an install; CUPIDDIR is the final
+absolute path.  Everything under packages/ is installed except the C
+sources, which are only needed to build the FFI stubs.
+"""
+import os
+import shutil
+import sys
 
-if [ ! -d "$src/packages" ]; then
-	echo "$0: $src does not contain built libraries; run the build first" >&2
-	exit 1
-fi
 
-echo "Installing Cupid libraries to $dest"
-(cd "$src" && find packages -type f -print) | while read file
-do
-	case $file in
-	*.c|*.h)	continue ;;
-	esac
-	mkdir -p "$dest/`dirname "$file"`"
-	cp "$src/$file" "$dest/$file"
-	chmod 644 "$dest/$file"
-done
+def main(argv):
+    if len(argv) != 2:
+        raise SystemExit(__doc__)
+    src, cupiddir = argv
+    destdir = os.environ.get("DESTDIR", "")
+    # DESTDIR is put in front of the absolute CUPIDDIR, as meson does it:
+    # less the drive letter on Windows.
+    dest = destdir + os.path.splitdrive(cupiddir)[1] if destdir else cupiddir
+    packages = os.path.join(src, "packages")
+    if not os.path.isdir(packages):
+        raise SystemExit("%s: %s does not contain built libraries; run the build first"
+                         % (sys.argv[0], src))
+
+    print("Installing Cupid libraries to", dest)
+    for root, _, files in os.walk(packages):
+        for name in files:
+            if name.endswith((".c", ".h")):
+                continue
+            rel = os.path.relpath(os.path.join(root, name), src)
+            target = os.path.join(dest, rel)
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            shutil.copyfile(os.path.join(src, rel), target)
+            os.chmod(target, 0o644)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

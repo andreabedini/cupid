@@ -65,7 +65,9 @@ def main(argv):
                     path = os.path.join(root, name)
                     with open(path, encoding="latin-1") as f:
                         if re.search(r"^\s*foreign\s+import\b", f.read(), re.M):
-                            ffi_modules.append(os.path.relpath(path, pkgdir))
+                            # With "/" whatever the OS, to match FFI_ORDER
+                            rel = os.path.relpath(path, pkgdir)
+                            ffi_modules.append(rel.replace(os.sep, "/"))
     ordered = [m for m in FFI_ORDER if m in ffi_modules]
     ordered += sorted(m for m in ffi_modules if m not in FFI_ORDER)
 
