@@ -137,8 +137,8 @@ autoconf used to ask all have the same answer: `int` is four bytes,
 pointers eight, floating point is IEEE, the stack grows down, and every
 C99 header is present.  `src/sysdeps.h` writes those answers down, and
 `static_assert`s in `prelude.h` check them.  The only real differences
-left are Windows against POSIX, and sometimes macOS.  Windows is
-supported by design but has not been tested; see
+left are Windows against POSIX, and sometimes macOS.  Linux, macOS and
+Windows are built and tested on every change; on Windows, see
 [Build Cupid on Windows](../how-to/build-on-windows.md).
 
 **meson, with generated files kept in the build tree.**  The build is

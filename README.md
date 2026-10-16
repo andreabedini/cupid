@@ -47,9 +47,9 @@ stayed and why.  If you want the longer story of where the code came
 from, that's [History](docs/explanation/history.md).
 
 It builds and runs.  The code is standard C23 and builds with meson on
-64-bit Linux, macOS and the BSDs.  Windows is supported by design, but I
-haven't actually verified it — see
-[Build on Windows](docs/how-to/build-on-windows.md) if you'd like to.
+64-bit Linux, macOS, Windows and the BSDs.  Linux, macOS and Windows are
+built and tested on every change; on Windows it builds natively with
+MinGW-w64, see [Build on Windows](docs/how-to/build-on-windows.md).
 
 ## Quick start
 

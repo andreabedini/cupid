@@ -14,7 +14,7 @@ install them under a prefix.
 - optionally hp2ps, to view heap profiles from a profiling build
 
 Cupid builds on x86-64 and ARM64 machines running a current Linux, macOS
-or BSD.  Windows is supported by design but not yet verified; see
+or BSD, and on x86-64 Windows; for Windows, see
 [Build Cupid on Windows](build-on-windows.md).
 
 ## Steps
