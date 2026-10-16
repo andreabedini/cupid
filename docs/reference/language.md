@@ -1,15 +1,17 @@
 # The language Cupid accepts
 
 What Cupid implements of Haskell 2010, where it deviates, and what it
-adds.
+adds.  This page lists the deviations a program is most likely to
+meet; [Haskell 2010 conformance](haskell-2010.md) goes through the
+Report chapter by chapter, libraries included.
 
 ## Summary
 
 Cupid accepts Haskell 2010: the Haskell 98 language with hierarchical
 module names, the foreign function interface, pattern guards, empty
-data declarations, `then` and `else` at do-block indentation and
-`LINE` pragmas.  The n+k patterns that Haskell 2010 removed are not
-accepted.
+data declarations and `then` and `else` at do-block indentation.  The
+n+k patterns that Haskell 2010 removed are not accepted.  `LINE`
+pragmas are read as comments.
 
 It also accepts, without any option, the extensions in
 [Language extensions](extensions.md).  Two of them are visible in
@@ -30,22 +32,24 @@ Listed by the section of the Haskell 2010 Report they concern.
 
 ### Lexical structure
 
-**Identifiers are limited to Latin-1.**  Strings and comments may
-contain any Unicode character, but an identifier may only use
-characters from ISO 8859-1.
+**Operator symbols, spaces and digits are limited to Latin-1.**
+Identifiers may use any Unicode letter, and strings and comments any
+Unicode character.  But an operator may only use symbols from
+ISO 8859-1, so `∘` is `Unrecognised character`; so is a Unicode space
+other than NO-BREAK SPACE between tokens, and a digit outside ASCII in
+a numeric literal.
 
-**Limited lookahead.**  The lexer is confused by `Just.if`, `0xy`,
-`0oy`, `9e+y` and `9.0e+y`, because it does not look far enough ahead.
+**Limited lookahead.**  The lexer is confused by `Just.if`, `9e+y` and
+`9.0e+y`, because it does not look far enough ahead.
 
 ### Expressions
 
-**Fixities are resolved after parsing.**  Cupid does not use operator
-fixities during parsing, so it rejects legal but odd expressions such
-as
-
-```haskell
-let x = True in x == x == True
-```
+**Fixities are resolved after parsing.**  Cupid parses an operator
+expression without regard to fixity and resolves it afterwards.  For
+legal programs the result is the Report's, but two illegal forms get
+through: prefix negation after an operator of precedence 6 or more,
+`a + - b`, and a right section whose operand is an infix expression,
+`(* 3 + 4)`, which is read as `(* (3 + 4))`.
 
 ### Declarations and bindings
 
@@ -164,17 +168,24 @@ keeps its own, left-associative `(<>)` on documents, as the `pretty`
 package does, so a module that imports it unqualified and uses `(<>)`
 must hide one of the two.
 
-**Rational literals may lose precision.**  A literal such as
-`1.234e-5` is held as a double before conversion, so at type `Rational`
-it may not be exact.
+**Rational literals may lose precision.**  A literal is held as a
+double before conversion, so at type `Rational` one with more digits
+than a double holds is not exact, and one outside the range of a
+double, such as `1e400`, becomes `0 % 1`.
 
 **Floating point values print differently.**  `show` on floating point
-numbers uses an internal routine rather than `Numeric.showFloat`, and
-the output can differ slightly.
+numbers uses C's `%.15g` (`%.7g` for `Float`) rather than
+`Numeric.showFloat`, so `show (0.1 + 0.2)` is `0.3` and the output does
+not always read back to the same number.  Infinity and NaN show as
+`inf` and `-nan`.
 
-**Tuple instances stop at size 7.**  `Eq`, `Ord`, `Bounded`, `Read` and
-`Show` are defined for tuples of up to seven components; the Report
-requires every tuple size.
+**`Float` and `Double` do not recognise NaN or infinity.**  `isNaN`,
+`isInfinite`, `isDenormalized`, `isNegativeZero` and `isIEEE` always
+return `False`.
+
+**Tuple instances stop at size 5.**  `Eq`, `Ord`, `Read`, `Show` and
+`Ix` are defined for tuples of up to five components, and `Bounded`
+for none; the Report requires them up to at least fifteen.
 
 **No file locking.**  Cupid does not enforce the single-writer,
 multiple-reader rule on files.  A program that reads and writes the
@@ -223,7 +234,8 @@ its constraints are standard classes and at least one is numeric or is
 
 The FFI of Haskell 2010 is implemented with these limits:
 
-- Calling conventions: `ccall` and `stdcall`.  Any other is an error.
+- Calling conventions: `ccall`, and `stdcall` on Windows only.  Any
+  other is an error.
 - `foreign import` in its `static` form, and `foreign import
   "dynamic"` (calling through a `FunPtr`), work on all targets.
 - `foreign import "wrapper"`, which turns a Haskell function into a C
@@ -232,9 +244,9 @@ The FFI of Haskell 2010 is implemented with these limits:
   targets this tree builds for are among them, and that code has been
   removed, so it fails at run time everywhere.
   See [Foreign import wrappers](../explanation/foreign-import-wrappers.md).
-- `foreign export` declarations are accepted and `fficupid` generates C
-  for them, but nothing in the tree exercises them and they should be
-  considered untested.
+- `foreign export` declarations parse and `fficupid` generates C for
+  them, but loading the module fails with `Foreign export not
+  implemented yet.`
 
 A module containing foreign declarations must be compiled with
 [fficupid](fficupid.md) before it can be loaded.
@@ -247,5 +259,6 @@ A module name may contain dots.  To find `A.B.C`, Cupid looks for
 
 ## See also
 
+- [Haskell 2010 conformance](haskell-2010.md)
 - [Language extensions](extensions.md)
 - [The libraries](libraries.md)
