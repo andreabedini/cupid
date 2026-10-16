@@ -36,6 +36,12 @@ killed by a signal never matches, so a crash is always a failure.
 No build option changes what the interpreter prints, so one expected
 output serves every configuration as it is.
 
+The small programs under helpers/ are compiled first, with $CC or else
+the first of cc, gcc and clang that is found, and put at the front of
+every test's PATH.  They stand in for echo, cat, sed and an editor, so
+that a test which has Cupid run a program runs the same program on every
+platform, Windows included, and none needs a Unix tool.
+
 The banner is always dropped from a REPL session, whether or not the
 "Type :? for help" line that normally ends it was reached: a module that
 fails to load reports the failure before it.
@@ -43,6 +49,8 @@ fails to load reports the failure before it.
 
 import os
 import re
+import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -67,7 +75,21 @@ def read(path, default=None):
         return default
 
 
-def run_one(cupid, runcupid, packages, testdir, name):
+def build_helpers(testdir, out):
+    """Compile each TESTDIR/helpers/NAME.c into OUT; see the top."""
+    cc = shlex.split(os.environ.get("CC", ""), posix=os.name != "nt")
+    if not cc:
+        cc = next(([c] for c in ("cc", "gcc", "clang") if shutil.which(c)), None)
+    if not cc:
+        sys.exit("run-tests: no C compiler for the helper programs; set CC")
+    src = os.path.join(testdir, "helpers")
+    for f in sorted(os.listdir(src)):
+        if f.endswith(".c"):
+            exe = os.path.join(out, f[:-2] + (".exe" if os.name == "nt" else ""))
+            subprocess.run(cc + ["-o", exe, os.path.join(src, f)], check=True)
+
+
+def run_one(cupid, runcupid, packages, testdir, helpers, name):
     base = os.path.join(testdir, name)
     expected = None
     if os.name == "nt":
@@ -92,6 +114,7 @@ def run_one(cupid, runcupid, packages, testdir, name):
             elif "=" in line:
                 var, value = line.split("=", 1)
                 env[var] = value
+        env["PATH"] = helpers + os.pathsep + env.get("PATH", "")
 
         if stdin is None:
             cmd = [runcupid, "-P" + packages] + args + [name + ".hs"]
@@ -138,16 +161,19 @@ def main(argv):
     names = argv[5:] or sorted(
         f[:-3] for f in os.listdir(testdir) if f.endswith(".hs"))
     failed = skipped = 0
-    for name in names:
-        ok, detail = run_one(cupid, runcupid, packages, testdir, name)
-        if ok is None:
-            skipped += 1
-            print("SKIP " + name + ": " + detail)
-            continue
-        print(("PASS " if ok else "FAIL ") + name)
-        if not ok:
-            failed += 1
-            print("  " + detail.replace("\n", "\n  "))
+    with tempfile.TemporaryDirectory(prefix="helpers.") as helpers:
+        build_helpers(testdir, helpers)
+        for name in names:
+            ok, detail = run_one(cupid, runcupid, packages, testdir, helpers,
+                                 name)
+            if ok is None:
+                skipped += 1
+                print("SKIP " + name + ": " + detail)
+                continue
+            print(("PASS " if ok else "FAIL ") + name)
+            if not ok:
+                failed += 1
+                print("  " + detail.replace("\n", "\n  "))
     if skipped:
         print("%d tests, %d failed, %d skipped" % (len(names), failed, skipped))
     else:

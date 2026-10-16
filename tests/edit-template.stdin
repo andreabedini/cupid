@@ -1,7 +1,7 @@
-:set -E"echo EDIT %"
+:set -E"say EDIT %"
 :edit edit-template.hs
 :set -E"%s"
-:edit bin/fake-editor
+:edit fake-editor
 :set -E"fake-editor %"
 :edit edit-template.hs
 :set -E"fake-editor %s"

@@ -1,5 +1,5 @@
 main
-:set -E"echo EDIT %"
+:set -E"say EDIT %"
 :find auxValue
 :reload
 main
