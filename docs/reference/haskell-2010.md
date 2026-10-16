@@ -50,20 +50,13 @@ meet, each explained in its chapter below:
   inferred, not at the end of the module, so a later use cannot fix the
   type.
 
-Three programs stop the interpreter itself rather than getting an
-answer or an error message.  A top-level pattern binding whose pattern
-is a numeric literal, `1 = 2`, and an instance declaration when a type
-and a class of the same name are both imported, are segmentation
-faults at load time (chapters 4 and 5).  `C {}` for a constructor with
-a strict field and no field labels is an internal error (chapter 3).
-
 ## Part I: the language
 
 ### 1 Introduction
 
-Conforms.  The namespaces of 1.4 are kept within a module: a module
-that declares both `class T` and `data T` is rejected.  Across modules
-they are not (see chapter 5).
+Conforms.  The namespaces of 1.4 are kept: a module that declares both
+`class T` and `data T` is rejected, and a type and a class of one name
+imported from different modules make the name ambiguous (chapter 5).
 
 ### 2 Lexical structure
 
@@ -111,7 +104,9 @@ Report's examples of 3.17.2 all give the answers it lists, including
 the irrefutable, newtype and `seq` cases; `case`, `do`, `let`, list
 comprehensions, arithmetic sequences, field labels and expression
 signatures behave as described, and the error messages are the
-compile-time ones the Report asks for where it asks for them.
+compile-time ones the Report asks for where it asks for them.  `C {}`
+is legal for any constructor without strict fields, labelled or not,
+and an error that names the omitted field when one is strict (3.15.2).
 
 **Prefix negation is accepted as the right operand of an operator of
 precedence 6 or higher** (3.4, 10.6).  `1 + - 1`, `a - - b`, `2 * - 3`
@@ -125,12 +120,6 @@ is accepted and evaluates to `2 * (3 + 4)`, as are `(+ 1 + 2)` and
 parses as `x op (e)`.  Left sections are checked: `(1 + 2 *)` is
 rejected with `Operator "(*)" in a left section does not apply to the
 whole operand`.
-
-**`C {}` for a constructor with a strict field and no field labels is an
-internal error** (3.15.2).  `data T = C !Int Int` then `C {}` ends with
-`INTERNAL ERROR: depConFlds`; the Report asks for a compile-time error,
-which is what a labelled constructor gets (`Construction does not
-define strict field`).
 
 **A guard that ends in an unparenthesised type signature is rejected**
 (3.13).  The Report's `| let b = not a in b :: Bool -> a` is a syntax
@@ -174,20 +163,15 @@ defaulting rules of 4.3.4 are applied exactly (`show (read "1")` and
 `print []` are ambiguous in a module, `default (Bool)` is rejected, a
 class outside the standard libraries blocks defaulting); fixity
 declarations follow 4.4.2, in `let` and `where` as well as at top
-level; and the dependency analysis and generalisation of 4.5 give the
-types the Report's examples give.
+level; a pattern binding that binds no variables, such as `1 = 2`, is
+accepted and has no effect (4.4.3.2); and the dependency analysis and
+generalisation of 4.5 give the types the Report's examples give.
 
 **Record construction and update ignore strictness flags** (4.2.1).
 For `data R = R { a :: !Int, b :: Int }`, `R { a = undefined, b = 1 }`
 and `r { a = undefined }` are values; only the positional `R undefined
 1` is bottom.  The Report says the strict field is evaluated in every
 form of construction.
-
-**A top-level pattern binding with a numeric literal pattern crashes
-the interpreter** (4.4.3.2).  `1 = 2` at top level is a segmentation
-fault at load time.  The same binding in a `let`, or with a character,
-constructor or tuple pattern, loads.  The Report accepts the binding
-and gives it no effect.
 
 **Fixity is not resolved on the left-hand side of an infix binding**
 (4.4.3.1).  The Report's example `a ## b : xs = e`, with `##` at a
@@ -255,7 +239,10 @@ subtle ones: `module M` exports only names in scope both unqualified
 and as `M.x`; an export of two different entities under one name, or
 of a lone data constructor, is an error; `hiding (C)` hides a data
 constructor as well as a type; the 5.5.2 example with `sin` is an
-error only at an unqualified use; a module may export a function whose
+error only at an unqualified use; types and classes share a namespace,
+so a type `T` and a class `T` imported from different modules make an
+unqualified `T` ambiguous, in a type, a context, an instance head or an
+export list alike; a module may export a function whose
 type it cannot name (5.5.3); and the Prelude rules of 5.6 hold, down to
 literals using `Prelude.fromInteger` whatever is in scope and the
 Prelude's instances being impossible to hide.
@@ -265,15 +252,6 @@ the table in 5.3.4 that combine `qualified` and `hiding` should bring
 `M.x` and `M.y`, or `M.y`, into scope; in Cupid they bring nothing,
 and `M.y` is `Undefined qualified variable`.  The other thirteen rows
 are right.
-
-**A type and a class of the same name from two modules are not told
-apart.**  The Report puts types and classes in one namespace, so
-importing `data T` from one module and `class T` from another makes an
-unqualified `T` ambiguous.  Cupid does not report the ambiguity: a
-signature using `T` gets the type, an export list naming `T` exports
-the type, and an instance declaration `instance T Bool` with both in
-scope crashes the interpreter with `Unexpected signal`.  Qualified
-names work.
 
 **`Main` need not export `main`** (5.1).  `module Main () where` and
 `module Main (helper) where` run.  The Report requires `main` to be
