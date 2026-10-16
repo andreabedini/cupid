@@ -305,7 +305,7 @@ Additional options for \fIcupid\fP,
 processed before any given on the command line.
 .TP
 .B CUPIDDIR
-The Cupid library directory (default: on Linux and macOS, the library
+The Cupid library directory (default: on Linux, macOS and Windows, the library
 directory where the install put it relative to the executable, if it
 exists, as in a moved installation; otherwise
 .BR \*(LB ).

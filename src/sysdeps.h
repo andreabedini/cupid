@@ -55,7 +55,6 @@
 # define HAVE_WINDOWS_H 1
 # define HAVE_IO_H 1
 # define HAVE_DIRECT_H 1
-# define HAVE_GETMODULEFILENAME 1
 # define HAVE__POPEN 1
 # define HAVE__PCLOSE 1
 # define HAVE__STRICMP 1

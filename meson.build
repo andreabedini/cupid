@@ -138,7 +138,7 @@ endif
 conf = configuration_data()
 conf.set_quoted('CUPID_VERSION', cupid_version_string)
 conf.set_quoted('CUPIDDIR', cupiddir)
-if cupiddir_from_bindir != '' and not is_windows
+if cupiddir_from_bindir != ''
   conf.set_quoted('CUPIDDIR_FROM_BINDIR', cupiddir_from_bindir)
 endif
 conf.set_quoted('CUPIDPATH', cupidpath)
