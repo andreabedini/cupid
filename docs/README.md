@@ -45,6 +45,8 @@ program with `runcupid`.
 - [Build options and install layout](reference/build-options.md)
 - [The language Cupid accepts](reference/language.md) — Haskell 2010
   conformance, known deviations and bugs
+- [Haskell 2010 conformance](reference/haskell-2010.md) — the Report
+  chapter by chapter, language and libraries
 - [Language extensions](reference/extensions.md) — what Cupid accepts
   beyond Haskell 2010
 - [The libraries](reference/libraries.md) — packages and modules shipped

@@ -55,6 +55,7 @@ PAGE_ORDER = {
         "fficupid.md",
         "build-options.md",
         "language.md",
+        "haskell-2010.md",
         "extensions.md",
         "libraries.md",
     ],
