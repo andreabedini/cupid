@@ -15,11 +15,15 @@ export CUPIDFLAGS
 
 ### `CUPIDDIR`
 
-The library directory.  Default: the directory chosen at build time,
-`lib/cupid` under the prefix.  It is substituted for `{Cupid}` in the
-search path and must contain `packages/`, and for `fficupid` also
-`include/HsFFI.h`.  Set it to `build/libraries/cupiddir` to run from
-the build tree.
+The library directory.  Default: on Linux and macOS, the library
+directory where the install put it relative to the running executable
+(`../lib/cupid` from `bin`), if it has a `packages/` directory, so an
+installation that has been moved, such as an unpacked release archive,
+still finds its libraries; otherwise the directory chosen at build
+time, `lib/cupid` under the prefix.  It is substituted
+for `{Cupid}` in the search path and must contain `packages/`, and for
+`fficupid` also `include/HsFFI.h`.  Set it to `build/libraries/cupiddir`
+to run from the build tree.
 
 ### `HOME`
 
