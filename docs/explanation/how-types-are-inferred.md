@@ -157,5 +157,6 @@ type checker; that is still good advice.
 - [How source is read](how-source-is-read.md) — where offsets and
   `POLYTYPE` come from
 - Mark P. Jones, *Qualified Types: Theory and Practice*, for the
-  theory, and *The implementation of the Gofer functional programming
-  system* (1994), §7, for the original description of this machinery
+  theory, and [*The implementation of the Gofer functional programming
+  system*](http://web.cecs.pdx.edu/~mpj/pubs/RR-1030.pdf) (1994), §7,
+  for the original description of this machinery

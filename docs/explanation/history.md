@@ -12,8 +12,9 @@ multi-parameter classes and functional dependencies.  Gofer was small
 enough to run on the machines of the day and was widely used for
 teaching.
 
-Jones described its implementation in a 1994 research report, *The
-implementation of the Gofer functional programming system* (Yale
+Jones described its implementation in a 1994 research report, [*The
+implementation of the Gofer functional programming
+system*](http://web.cecs.pdx.edu/~mpj/pubs/RR-1030.pdf) (Yale
 University, YALEU/DCS/RR-1030, May 1994).  It covers Gofer 2.30,
 before the module system, but the architecture
 it sets out is the one this tree still has: everything a cell in one
