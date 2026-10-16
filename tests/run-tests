@@ -15,7 +15,9 @@ The files that go with it, all optional except NAME.stdout:
   NAME.env      environment changes, one per line: VAR=VALUE sets,
                 -VAR unsets
   NAME.exit     the expected exit status (default 0)
-  NAME.stack    a C stack limit in kilobytes (POSIX only)
+  NAME.stack    a C stack limit in kilobytes; POSIX only, as Windows fixes
+                the stack when the program is linked, so on Windows the
+                test is skipped, and reported as such
 
 Each test runs with TMPDIR set to a fresh, empty directory of its own,
 removed when the test is over.  A test that writes a file puts it there,
@@ -38,10 +40,14 @@ fails to load reports the failure before it.
 
 import os
 import re
-import resource
 import subprocess
 import sys
 import tempfile
+
+try:
+    import resource  # POSIX only
+except ImportError:
+    resource = None
 
 # The banner, with the help line that usually but not always follows it.
 BANNER = re.compile(
@@ -67,6 +73,8 @@ def run_one(cupid, runcupid, packages, testdir, name):
     stdin = read(base + ".stdin")
     exit_code = int((read(base + ".exit") or "0").strip())
     stack_kb = read(base + ".stack")
+    if stack_kb and resource is None:
+        return None, "cannot limit the C stack on this platform"
 
     # A private, empty TMPDIR for the test, gone when it is; see the top.
     with tempfile.TemporaryDirectory(prefix=name + ".") as scratch:
@@ -122,14 +130,21 @@ def main(argv):
     cupid, runcupid, packages, testdir = [os.path.abspath(a) for a in argv[1:5]]
     names = argv[5:] or sorted(
         f[:-3] for f in os.listdir(testdir) if f.endswith(".hs"))
-    failed = 0
+    failed = skipped = 0
     for name in names:
         ok, detail = run_one(cupid, runcupid, packages, testdir, name)
+        if ok is None:
+            skipped += 1
+            print("SKIP " + name + ": " + detail)
+            continue
         print(("PASS " if ok else "FAIL ") + name)
         if not ok:
             failed += 1
             print("  " + detail.replace("\n", "\n  "))
-    print("%d tests, %d failed" % (len(names), failed))
+    if skipped:
+        print("%d tests, %d failed, %d skipped" % (len(names), failed, skipped))
+    else:
+        print("%d tests, %d failed" % (len(names), failed))
     sys.exit(1 if failed else 0)
 
 

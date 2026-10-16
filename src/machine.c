@@ -61,6 +61,9 @@ int evalDepth; /* depth of nested eval()'s        */
 # include <sys/resource.h>
 extern char **environ;
 #endif
+#if IS_WINDOWS
+# include <windows.h> /* GetCurrentThreadStackLimits */
+#endif
 
 #define STACK_MARGIN (64 * 1024)           /* headroom kept below the limit   */
 #define FALLBACK_C_STACK (8 * 1024 * 1024) /* used when the rlimit is unknown */
@@ -68,6 +71,15 @@ extern char **environ;
 char *cStackLimit = (char *)(-1); /* lowest address considered safe; */
                                   /* see STACK_CHECK in storage.h    */
 
+#if IS_WINDOWS
+/* Windows knows the bounds of the thread's stack, fixed when the program
+ * was linked, and nothing lies on it above main()'s frame. */
+static void initCStackLimit(void) {
+    ULONG_PTR low, high;
+    GetCurrentThreadStackLimits(&low, &high);
+    cStackLimit = (char *)low + STACK_MARGIN;
+}
+#else
 /* The top of the stack, as far as it can be found: the end of the
  * highest environment string, which on Linux, macOS and the BSDs lies
  * above the argument strings and below only the program's path.  The
@@ -78,30 +90,31 @@ char *cStackLimit = (char *)(-1); /* lowest address considered safe; */
 static char *cStackTop(unsigned usable) {
     char *base = (char *)CStackBase;
     char *top = base;
-#if HAVE_SYS_RESOURCE_H
+# if HAVE_SYS_RESOURCE_H
     for (char **e = environ; e && *e; e++) {
         char *end = *e + strlen(*e) + 1;
         if (end > top && (size_t)(end - base) < usable) {
             top = end;
         }
     }
-#endif
+# endif
     return top;
 }
 
 static void initCStackLimit(void) {
     unsigned usable = FALLBACK_C_STACK;
-#if HAVE_SYS_RESOURCE_H
+# if HAVE_SYS_RESOURCE_H
     struct rlimit rl;
     if (getrlimit(RLIMIT_STACK, &rl) == 0 && rl.rlim_cur != RLIM_INFINITY) {
         usable = (unsigned)rl.rlim_cur;
     }
-#endif
+# endif
     if (usable <= STACK_MARGIN) {     /* absurdly small rlimit; keep */
         usable = STACK_MARGIN + 4096; /* a sliver of headroom anyway */
     }
     cStackLimit = cStackTop(usable) - (usable - STACK_MARGIN);
 }
+#endif
 
 /* Slow path of STACK_CHECK */
 void cStackCheck(void) {
