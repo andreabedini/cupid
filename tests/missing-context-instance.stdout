@@ -1,0 +1,9 @@
+runcupid: Error occurred
+ERROR "missing-context-instance.hs":6 - Cannot justify constraints in instance member binding
+*** Expression    : show
+*** Type          : Show (T a) => T a -> String
+*** Given context : Show (T a)
+*** Constraints   : Show a
+
+
+

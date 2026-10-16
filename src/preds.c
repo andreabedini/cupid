@@ -704,9 +704,7 @@ void elimTauts(void) {
     }
 }
 
-static int numFixedVars = 0; /* Number of fixed vars found         */
-
-/* Test for generic vars, and count fixed variables */
+/* Test for generic vars */
 static bool anyGenerics(Type t, int o) {
     Type h = getDerefHead(t, o); /* This code is careful to expand  */
     int a = argCount;            /* synonyms; mark* & copy* do not. */
@@ -721,14 +719,7 @@ static bool anyGenerics(Type t, int o) {
                 return true;
         }
         tyv = deRef(&t, &o);
-        if (tyv)
-            if (tyv->offs == FIXED_TYVAR) {
-                numFixedVars++;
-                return false;
-            } else
-                return true;
-        else
-            return false;
+        return tyv && tyv->offs != FIXED_TYVAR;
     }
 }
 
@@ -768,10 +759,10 @@ List elimPredsUsing(List ps, List sps) {
         } else if (!isAp(pi) || !anyGenerics(pi, o)) {
             tl(p) = sps; /* Defer if no generics                   */
             sps = p;
-        } else { /* Try to split generics and fixed */
+        } else { /* Reduce by an instance, if one matches */
             Inst in;
             int beta;
-            if (numFixedVars > 0 && nonNull(in = findInstFor(pi, o, &beta))) {
+            if (nonNull(in = findInstFor(pi, o, &beta))) {
                 ev = applyToEvid(in, beta);
                 overEvid(thd3(hd(p)), ev);
             } else { /* No worthwhile progress possible */
