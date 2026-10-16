@@ -55,9 +55,21 @@ program with `runcupid`.
   in the language, the build and the C code that follow from it
 - [How Cupid runs a program](explanation/how-cupid-runs-a-program.md) —
   the stages from source to result, and where the pieces live
+- [Cells, text and tables](explanation/cells-text-and-tables.md) — the
+  one data type everything is built from, the heap, the collector and
+  the checkpoints that reloading rests on
+- [How source is read](explanation/how-source-is-read.md) — the lexer,
+  the grammar's shortcuts, and the static analysis that turns equations
+  into binding groups
+- [How types are inferred](explanation/how-types-are-inferred.md) — the
+  substitution, structure sharing, generalisation and the in-place
+  rewriting that inserts dictionaries
 - [How constraints are solved](explanation/how-constraints-are-solved.md) —
   predicates, evidence, entailment, improvement and the loop that runs
   them at each binding group
+- [How code is compiled and run](explanation/how-code-is-compiled-and-run.md) —
+  pattern-matching compilation, lambda lifting, the abstract machine and
+  its instructions
 - [Modules, files and the search path](explanation/modules-and-the-search-path.md)
 - [Character encoding](explanation/character-encoding.md)
 - [Foreign import wrappers](explanation/foreign-import-wrappers.md) —

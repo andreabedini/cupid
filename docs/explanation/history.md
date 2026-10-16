@@ -12,6 +12,26 @@ multi-parameter classes and functional dependencies.  Gofer was small
 enough to run on the machines of the day and was widely used for
 teaching.
 
+Jones described its implementation in a 1994 research report, *The
+implementation of the Gofer functional programming system* (Yale
+University, YALEU/DCS/RR-1030, May 1994).  It covers Gofer 2.30,
+before the module system, but the architecture
+it sets out is the one this tree still has: everything a cell in one
+heap, fixed tables with high-water marks as checkpoints, a
+mark-and-sweep collector that scans the C stack, a bison parser whose
+stack is shadowed so the collector can see it, structure-shared types
+in a type checker that rewrites the program in place, lambda lifting
+to supercombinators and a G-machine variant with the root
+optimisation.  The explanation pages on
+[storage](cells-text-and-tables.md), [the front
+end](how-source-is-read.md), [type inference](how-types-are-inferred.md)
+and [the compiler and machine](how-code-is-compiled-and-run.md) draw on
+it and say where Hugs and Cupid moved on.  The report closes with the
+hope that "someone, perhaps even me, has the opportunity to develop a
+new, cleaner version of the system, building on this experience";
+Cupid's aim of an implementation one person can read is in that
+spirit, if thirty years late.
+
 On 14 February 1995 Jones released Hugs, the Haskell User's Gofer
 System, a derivative of Gofer with much closer conformance to Haskell.
 Hugs versions were named after the version of Haskell they

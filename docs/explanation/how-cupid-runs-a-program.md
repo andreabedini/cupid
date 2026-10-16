@@ -28,7 +28,8 @@ bindings, and `depend.c` resolves names and sorts the bindings into
 dependency groups.  `deriving.c` writes the derived instances and
 `ffi.c` checks the `foreign` declarations.
 `module.c` implements the module system: what a module exports, what an
-import brings into scope.
+import brings into scope.  [How source is read](how-source-is-read.md)
+follows these first three stages in detail.
 
 **Type checking.**  `type.c` infers types by Hindley-Milner inference
 with type classes, one binding group at a time in dependency order.
@@ -36,13 +37,18 @@ with type classes, one binding group at a time in dependency order.
 `subst.c` is the substitution machinery.  This is where the
 extensions beyond Haskell 2010 live: multi-parameter classes and
 functional dependencies change what `preds.c` accepts, rank-2 types
-change what `type.c` will unify.
+change what `type.c` will unify.  [How types are
+inferred](how-types-are-inferred.md) describes the machinery and
+[How constraints are solved](how-constraints-are-solved.md) the
+treatment of class constraints.
 
 **Compiling.**  `compiler.c` compiles each binding to the code of an
 abstract machine: pattern matching is compiled to case trees, local
 functions are lambda-lifted to supercombinators, and the result is a
 sequence of instructions for `machine.c` to run.  `scc.c` does the
-strongly-connected-components analysis the compiler needs.
+strongly-connected-components analysis the compiler needs.  [How code
+is compiled and run](how-code-is-compiled-and-run.md) explains the
+passes and the machine.
 
 ## Running the code
 
@@ -50,7 +56,8 @@ strongly-connected-components analysis the compiler needs.
 compiled instructions.  Values live in a heap of two-word **cells**
 managed by `storage.c`.  The heap is a fixed size, set by `-h` when
 the interpreter starts, and is collected by a mark-and-sweep
-collector.
+collector.  [Cells, text and tables](cells-text-and-tables.md)
+explains the representation.
 
 The collector is conservative about the C stack: any word on it that
 looks like a cell pointer keeps that cell alive.  That is why the
@@ -60,9 +67,10 @@ source files that hold cell pointers in C variables across allocations
 optimiser could keep only a derived pointer, which the scan would not
 recognise.
 
-`builtin.c` holds the primitive functions the `Prelude` is built on:
-arithmetic, characters, arrays, the pieces of the FFI.  `iomonad.c`
-implements the `IO` monad and exceptions, `bignums.c` the `Integer`
+`prims/builtin.c` holds the primitive functions the `Prelude` is built
+on: arithmetic, characters, arrays, the pieces of the FFI.
+`prims/iomonad.c` implements the `IO` monad and exceptions,
+`prims/bignums.c` the `Integer`
 type, `char.c` Unicode classification and the encodings described in
 [Character encoding](character-encoding.md).
 
@@ -110,7 +118,8 @@ done this way.
 
 Everything is compiled every time.  There is no object code for
 modules, so starting Cupid recompiles the `Prelude`, and `:reload`
-recompiles every loaded module, not just the changed one.  Programs
+recompiles the first module whose file has changed and every module
+loaded after it, whether or not they depend on it.  Programs
 run perhaps a hundred times slower than compiled code.  In exchange
 the whole implementation is about fifty thousand lines of C that one
 person can read, and the turnaround from editing a file to seeing the
@@ -118,5 +127,10 @@ result is a `:reload`.
 
 ## See also
 
+- [Cells, text and tables](cells-text-and-tables.md),
+  [How source is read](how-source-is-read.md),
+  [How types are inferred](how-types-are-inferred.md) and
+  [How code is compiled and run](how-code-is-compiled-and-run.md) —
+  each stage in detail
 - [Modules, files and the search path](modules-and-the-search-path.md)
 - [Build options and install layout](../reference/build-options.md)

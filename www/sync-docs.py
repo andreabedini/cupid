@@ -61,6 +61,11 @@ PAGE_ORDER = {
     "explanation": [
         "design.md",
         "how-cupid-runs-a-program.md",
+        "cells-text-and-tables.md",
+        "how-source-is-read.md",
+        "how-types-are-inferred.md",
+        "how-constraints-are-solved.md",
+        "how-code-is-compiled-and-run.md",
         "modules-and-the-search-path.md",
         "character-encoding.md",
         "foreign-import-wrappers.md",

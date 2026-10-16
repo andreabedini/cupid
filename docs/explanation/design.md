@@ -23,6 +23,36 @@ Programs written for GHC, nhc98 or Hugs in 2006 load if they are
 Haskell 2010 plus the extensions described below.  Programs that rely
 on anything else don't, and Cupid doesn't try to make them.
 
+## What is inherited and what is not
+
+The architecture is Gofer's, designed in 1991 by Mark Jones and
+described in his 1994 report ([History](history.md#gofer-and-hugs)
+says where to find it).  Gofer's goals were compatibility with Haskell,
+extensibility as a test bed for type-system ideas, and portability
+down to an 8 MHz PC with 640K; speed was explicitly not one.  Cupid
+keeps the parts of that design that serve readability, and they are
+most of it: one cell type for everything, fixed tables whose
+high-water marks double as checkpoints, a conservative collector so
+that ordinary C can build in the heap, a type checker that rewrites
+the program in place, and a small abstract machine.  Where the report
+gives a reason for a choice, the explanation pages repeat it, because
+the reason is usually still the reason.
+
+The departures follow from the different aim.  Gofer was written for
+K&R compilers and 16-bit machines, so it leaned on the preprocessor:
+`Args(...)` prototypes, map-like macros, a source file included
+several times as a template, error reporting as macros.  Cupid targets
+C23 on 64-bit systems and makes each of these a function or a plain
+declaration.  Gofer's components were driven by a `control` function
+per file answering `INSTALL`, `RESET`, `MARK` and `EXIT` codes; Cupid
+makes each phase a named function in a subsystem table.  Gofer marked
+its static cells in each file's `MARK` case; Cupid registers them
+once.  Gofer kept old features compilable behind definitions, with a
+footnote wishing it could remove some; Cupid deletes them.  And Gofer
+aimed at compatibility with a moving target, which its author came to
+find "a little frustrating"; Cupid fixes the language at Haskell 2010
+plus a listed set of extensions and does not chase anything.
+
 ## The language
 
 **Haskell 2010, plus what the libraries need.**  The accepted language
@@ -327,6 +357,7 @@ explains why callbacks into Haskell are not available.
 ## See also
 
 - [How Cupid runs a program](how-cupid-runs-a-program.md)
+- [Cells, text and tables](cells-text-and-tables.md)
 - [How constraints are solved](how-constraints-are-solved.md)
-- [History](history.md) — how the tree got here from Hugs 98
+- [History](history.md) — how the tree got here from Gofer and Hugs 98
 - [Build options and install layout](../reference/build-options.md)
