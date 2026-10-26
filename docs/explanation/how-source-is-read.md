@@ -23,9 +23,9 @@ ever sees explicit braces.  One case cannot be decided by indentation
 alone: the rule says an implicit block also closes when the next token
 would be a parse error, as in `let x = 1 in x`, where `in` closes the
 `let`.  The lexer cannot know what is a parse error, so the grammar's
-`begin` and `end` productions have an `error` alternative that, on a
+`end` production has an `error` alternative that, on a
 parse error inside an implicit block, calls `yyerrok` and closes the
-block (`canUnOffside`, `unOffside`).  Those `error` alternatives are
+block (`canUnOffside`, `unOffside`).  That `error` alternative is
 load-bearing: they are how the layout rule is implemented, not just
 how syntax errors are reported.
 
@@ -60,9 +60,10 @@ is therefore a static error, not a syntax error.
 
 **Function heads and generators are parsed as expressions.**  `f (x:xs)
 = ...` and `p <- e` have patterns on the left that the grammar reads as
-expressions, and `checkPat` in `src/depend.c` later checks that each is
-a pattern and converts it.  A wildcard in an expression, or a `let` in
-a pattern, is reported there.  Where the pattern is unambiguous, in a
+expressions, and `checkPat` in `src/pattern.c` later checks that each is
+a pattern and converts it.  A wildcard in an expression is reported by
+`depend.c`, and an expression that is not a pattern by
+`pattern.c`.  Where the pattern is unambiguous, in a
 `case` alternative or a lambda, the grammar has pattern productions of
 its own.
 
@@ -86,11 +87,12 @@ guard becomes a hidden `Maybe` binding and a boolean guard.  [The
 design of Cupid](design.md#the-language) says why desugaring in the
 parser is preferred.
 
-Declarations other than equations do not wait for the end of the
-script: a data, class or instance declaration is entered into its
-table as it is parsed, a fixity declaration takes effect at once for
-the rest of the file, and primitive bindings are collected for the
-static checks.
+Declarations other than equations do not wait for the end of the script:
+a data, class or instance declaration is entered into its table as it is
+parsed, a fixity declaration is collected and attached to its operator
+when `binding.c` groups the equations into bindings, so it applies
+throughout the module, before or after its uses, and primitive bindings
+are collected for the static checks.
 
 ## Static analysis
 
@@ -104,14 +106,14 @@ and the compiler never meets an undefined constructor.  Because
 definitions in a script may come in any order, most checks run only
 when the whole script has been parsed.
 
-Alongside the checks, static analysis *translates*, so that later
-stages do no lookups.  An identifier that names a constructor, a class
-method, a global function or a type constructor is replaced by the
-`Name`, `Class` or `Tycon` cell itself.  In a type signature the type
-variables are replaced by offsets, `mkOffset(0)`, `mkOffset(1)`, ...,
-in order of first occurrence, and the whole type is wrapped in a
-`POLYTYPE` cell whose first component lists the kinds of those
-variables; `a -> m a` becomes `POLYTYPE ([*, * -> *], OFFSET 0 -> OFFSET 1 (OFFSET 0))`.
+Alongside the checks, static analysis *translates*, so that later stages
+do no lookups.  An identifier that names a constructor, a class method,
+a global function or a type constructor is replaced by the `Name`,
+`Class` or `Tycon` cell itself.  In a type signature the type variables
+are replaced by offsets, `mkOffset(0)`, `mkOffset(1)`, ..., in order of
+first occurrence, and the whole type is wrapped in a `POLYTYPE` cell
+whose first component lists the kinds of those variables; `a -> m a`
+becomes `POLYTYPE ([*, * -> *], OFFSET 0 -> OFFSET 1 (OFFSET 0))`.
 Offsets rather than names are what make instantiating a type scheme
 cheap; [How types are inferred](how-types-are-inferred.md) builds on
 this.  There can be at most `NUM_OFFSETS` of them in one scheme.
