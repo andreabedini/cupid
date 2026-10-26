@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="assets/logo-wordmark.svg" alt="Cupid" width="360">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-wordmark-dark.svg">
+    <img src="assets/logo-wordmark.svg" alt="Cupid" width="360">
+  </picture>
 </p>
 
 <p align="center">
