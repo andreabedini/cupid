@@ -1,21 +1,23 @@
 // Cupid — site styles.
 //
-// Warm paper, ink text, coral accent; monospace for anything that names the
-// project or shows code, a plain system sans for prose.  The palette is the
-// logo's, and nothing here needs a webfont.
+// Blush paper, wine ink, a raspberry accent: the "Wine & Blush" palette of the
+// logo.  Nunito for anything that names the project or labels a section,
+// a plain system sans for prose, monospace for code.
 
 :root {
-  --paper:     #faf7f2;
-  --paper-2:   #f2ece2;
-  --ink:       #2b2340;
-  --ink-soft:  #5c5470;
-  --coral:     #d4512c;
-  --coral-lit: #ee6c4d;
-  --plum:      #5b3e8e;
-  --rule:      #e2d9cb;
-  --tile:      #2b2340;
-  --cream:     #fbeedb;
+  --paper:     #fcf6f5;
+  --paper-2:   #f6e9e8;
+  --ink:       #3b1a2a;
+  --ink-soft:  #6f5260;
+  --coral:     #b8284c;
+  --coral-lit: #ff6f8e;
+  --plum:      #8c3a6c;
+  --rule:      #ecd8d8;
+  --tile:      #3b1a2a;
+  --cream:     #ffe4ea;
+  --button-rule: var(--tile);
 
+  --display: "Nunito", ui-rounded, system-ui, sans-serif;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", system-ui, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
 
@@ -25,16 +27,17 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper:     #1a1526;
-    --paper-2:   #241d33;
-    --ink:       #ece6f5;
-    --ink-soft:  #a99fc0;
-    --coral:     #ff8b6b;
-    --coral-lit: #ff8b6b;
-    --plum:      #b9a2e8;
-    --rule:      #362c4c;
-    --tile:      #241d33;
-    --cream:     #fbeedb;
+    --paper:     #1d1016;
+    --paper-2:   #2a1720;
+    --ink:       #f8e9ef;
+    --ink-soft:  #c9a9b8;
+    --coral:     #ff8ca6;
+    --coral-lit: #ff8ca6;
+    --plum:      #e7a3cc;
+    --rule:      #43262f;
+    --tile:      #2a1720;
+    --cream:     #ffe4ea;
+    --button-rule: var(--rule);
   }
 }
 
@@ -68,9 +71,9 @@ a:hover { color: var(--ink); }
 
   .brand {
     display: inline-flex; align-items: center; gap: .6rem;
-    font: 700 1.1rem/1 var(--mono);
+    font: 700 1.1rem/1 var(--display);
     color: var(--ink); text-decoration: none; letter-spacing: -.02em;
-    img { display: block; border-radius: 8px; }
+    img { display: block; }
   }
 
   nav {
@@ -98,11 +101,11 @@ main { padding: 0 clamp(1rem, 4vw, 3rem); }
   max-width: 46rem; margin: 0 auto; padding: clamp(3rem, 9vw, 6rem) 0 3rem;
   text-align: center;
 
-  .hero-mark { border-radius: 24px; }
+  .hero-mark { display: block; margin: 0 auto; }
 
   h1 {
-    font: 700 clamp(2.6rem, 9vw, 4rem)/1 var(--mono);
-    letter-spacing: -.04em; margin: 1.2rem 0 .4rem;
+    font: 700 clamp(2.6rem, 9vw, 4rem)/1 var(--display);
+    letter-spacing: -.02em; margin: 1.2rem 0 .4rem;
   }
 
   .tagline { font: 600 1.15rem/1.4 var(--sans); color: var(--coral); margin: 0 0 1.4rem; }
@@ -114,8 +117,8 @@ main { padding: 0 clamp(1rem, 4vw, 3rem); }
   display: inline-block; padding: .7rem 1.4rem; border-radius: 999px;
   background: var(--tile); color: var(--cream);
   font: 600 .95rem/1 var(--sans); text-decoration: none;
-  border: 1px solid var(--tile);
-  &:hover { background: var(--coral-lit); border-color: var(--coral-lit); color: #2b2340; }
+  border: 1px solid var(--button-rule);
+  &:hover { background: var(--coral-lit); border-color: var(--coral-lit); color: #3b1a2a; }
   &.ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
   &.ghost:hover { border-color: var(--coral); color: var(--coral); background: transparent; }
 }
@@ -124,7 +127,7 @@ section.aim, section.start, section.quadrants {
   max-width: 62rem; margin: 0 auto; padding: 3rem 0;
   border-top: 1px solid var(--rule);
 
-  h2 { font: 600 .85rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+  h2 { font: 600 .85rem/1 var(--display); letter-spacing: .12em; text-transform: uppercase;
        color: var(--ink-soft); margin: 0 0 1.2rem; }
   > p { max-width: var(--measure); }
 }
@@ -140,14 +143,14 @@ section.aim, section.start, section.quadrants {
   article, .quadrant {
     background: var(--paper-2); border: 1px solid var(--rule);
     border-radius: 14px; padding: 1.2rem 1.3rem;
-    h3 { font: 700 1rem/1.3 var(--mono); margin: 0 0 .5rem; letter-spacing: -.02em; }
+    h3 { font: 700 1rem/1.3 var(--display); margin: 0 0 .5rem; letter-spacing: -.02em; }
     p { margin: 0; font-size: .95rem; color: var(--ink-soft); }
   }
 
   .quadrant {
     text-decoration: none; color: var(--ink); display: block;
     &:hover { border-color: var(--coral); }
-    .count { display: block; margin-top: .8rem; font: 500 .8rem/1 var(--mono); color: var(--coral); }
+    .count { display: block; margin-top: .8rem; font: 600 .8rem/1 var(--display); color: var(--coral); }
   }
 }
 
@@ -163,13 +166,13 @@ pre {
   max-width: 100%;
 }
 
-pre.session { background: var(--tile); color: var(--cream); border-color: var(--tile); }
+pre.session { background: var(--tile); color: var(--cream); border-color: var(--button-rule);
+              .prompt { color: var(--coral-lit); } }
 
 // The syntax themes bring their own background, which is a different white (and
 // a much deeper black) than the page.  Keep their token colours, drop the
 // background so code blocks sit on the same paper as everything else.
 pre.giallo.z-l-code, pre.giallo.z-d-code { background: var(--paper-2); }
-@media (prefers-color-scheme: dark) { pre.session { border-color: var(--rule); } }
 
 code { font-family: var(--mono); font-size: .9em; }
 
@@ -195,7 +198,7 @@ code { font-family: var(--mono); font-size: .9em; }
   padding-right: .5rem;
 
   .sidebar-home {
-    display: block; font: 700 .85rem/1 var(--mono); letter-spacing: .1em;
+    display: block; font: 700 .85rem/1 var(--display); letter-spacing: .1em;
     text-transform: uppercase; color: var(--ink-soft);
     text-decoration: none; margin-bottom: 1rem;
   }
@@ -221,7 +224,7 @@ code { font-family: var(--mono); font-size: .9em; }
   max-width: var(--measure);
   padding-bottom: 3rem;
 
-  h1 { font: 700 clamp(1.9rem, 5vw, 2.5rem)/1.2 var(--sans); letter-spacing: -.03em; margin: 0 0 1.2rem; }
+  h1 { font: 700 clamp(1.9rem, 5vw, 2.5rem)/1.2 var(--display); letter-spacing: -.02em; margin: 0 0 1.2rem; }
   h2 { font-size: 1.35rem; letter-spacing: -.02em; margin: 2.4rem 0 .7rem; padding-top: .4rem; border-top: 1px solid var(--rule); }
   h3 { font-size: 1.1rem; margin: 1.8rem 0 .5rem; }
   h4 { font-size: 1rem; margin: 1.4rem 0 .4rem; color: var(--ink-soft); }
@@ -251,7 +254,7 @@ code { font-family: var(--mono); font-size: .9em; }
   }
 }
 
-.crumb { font: 500 .85rem/1 var(--mono); color: var(--ink-soft); margin: 0 0 .8rem;
+.crumb { font: 600 .85rem/1 var(--display); color: var(--ink-soft); margin: 0 0 .8rem;
          a { color: var(--ink-soft); text-decoration: none; } a:hover { color: var(--coral); } }
 
 .blurb { color: var(--ink-soft); font-size: 1.05rem; }
@@ -259,7 +262,7 @@ code { font-family: var(--mono); font-size: .9em; }
 .toc {
   background: var(--paper-2); border: 1px solid var(--rule); border-radius: 12px;
   padding: .9rem 1.1rem; margin: 0 0 2rem; font-size: .9rem;
-  p { margin: 0 0 .4rem; font: 600 .75rem/1 var(--mono); letter-spacing: .1em;
+  p { margin: 0 0 .4rem; font: 600 .75rem/1 var(--display); letter-spacing: .1em;
       text-transform: uppercase; color: var(--ink-soft); }
   ul { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 1.5rem; }
   li { margin: .15rem 0; break-inside: avoid; }

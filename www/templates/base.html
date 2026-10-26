@@ -6,6 +6,9 @@
 <title>{% block title %}{{ config.title }}{% endblock %}</title>
 <meta name="description" content="{% block description %}{{ config.description }}{% endblock %}">
 <link rel="icon" href="{{ get_url(path='favicon.svg') }}" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700&display=swap">
 <link rel="stylesheet" href="{{ get_url(path='main.css') }}">
 <link rel="stylesheet" href="{{ get_url(path='giallo-light.css') }}" media="(prefers-color-scheme: light)">
 <link rel="stylesheet" href="{{ get_url(path='giallo-dark.css') }}" media="(prefers-color-scheme: dark)">
@@ -16,7 +19,7 @@
 
 <header class="site-head">
   <a class="brand" href="{{ get_url(path='@/_index.md') }}">
-    <img src="{{ get_url(path='logo.svg') }}" alt="" width="34" height="34">
+    <img src="{{ get_url(path='logo-square.svg') }}" alt="" width="34" height="34">
     <span>Cupid</span>
   </a>
   <nav>
