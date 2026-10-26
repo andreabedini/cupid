@@ -1,10 +1,6 @@
-Please send bug reports to
+Please report bugs at
 
-    <hugs-bugs@haskell.org>
-
-General questions about using Hugs should be sent to
-
-    <hugs-users@haskell.org>
+    <https://github.com/andreabedini/cupid/issues>
 
 ========================================================================
 
@@ -14,7 +10,7 @@ General questions about using Hugs should be sent to
 
 Original author:
 
-    Mark Jones
+    Mark P Jones
 
 Primary developers:
 
