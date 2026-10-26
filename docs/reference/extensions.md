@@ -1,15 +1,20 @@
 # Language extensions
 
 The language features Cupid accepts beyond Haskell 2010.  They are
-always enabled; there is no option to turn them off.  Each is here
+always enabled, except overlapping instances, which need the `+o` or
+`+O` option; there is no option to turn the others off.  Each is here
 because real code needs it, either the shipped libraries (see
 [The libraries](libraries.md)) or packages written for GHC, and each
 is written as GHC writes it, though GHC's version is often more
 general; the differences are listed under the feature.  The exception
 is [restricted type synonyms](#restricted-type-synonyms), which are
 Hugs's own and are kept from the 2006 release.
-[Not accepted](#not-accepted) lists what is left out, and
-[the design](../explanation/design.md#the-language) says how a feature
+[Not accepted](#not-accepted) lists the major features left out and
+the common GHC extensions that are missing.  A GHC extension that this
+page does not list is not implemented.  `LANGUAGE` pragmas are read as
+comments, so code that needs one usually fails with a syntax or type
+error, not a message about the extension.
+[The design](../explanation/design.md#the-language) says how a feature
 gets in.
 
 ## Type classes
@@ -384,9 +389,9 @@ for a type or class the module does not declare is an error.  With
 
 Differences from GHC's `KindSignatures` and `StandaloneKindSignatures`:
 
-- A kind annotation may be written only on the variables a `data`,
-  `newtype`, `type` or `class` declaration binds, not inside a type
-  or on a `forall`.
+- A kind annotation may be written only on the variables that a
+  `data`, `newtype`, `type` or `class` declaration or a `forall`
+  binds, not elsewhere inside a type.
 - A kind has no variables: there is no kind polymorphism.
 - `Type` and `Constraint` are keywords of the kind grammar, not types
   exported from `Data.Kind`, and `Data.Kind.Type` cannot be written
@@ -533,7 +538,9 @@ Differences from GHC's scoped type variables:
   are rigid, so `g (xs :: [a]) = xs ++ "\n"` is rejected.
 - Variables bound in a class or instance head do not scope over the
   method definitions in Cupid.
-- Result type signatures on the left of a definition are not accepted.
+- A result type signature on the left of a function definition,
+  `f x :: Int = ...`, is accepted and checked like an expression
+  signature on the right-hand side.
 
 ## Tuple sections
 
@@ -809,7 +816,7 @@ pop (_:xs) = xs
 ```
 
 Within `emptyStack`, `push` and the other listed functions a `Stack a`
-is a `[a]`.  Elsewhere it is not: `length emptyStack` is a type error,
+is a `[a]`.  Elsewhere it is not: `emptyStack ++ [1]` is a type error,
 because `Stack a` does not match `[a]`.  The list of functions may
 carry their signatures instead of naming them:
 
@@ -839,6 +846,21 @@ asynchronous exceptions to hold off.
 | Rewrite rules | Cupid does not optimise, so there is nothing for them to rewrite; `RULES` pragmas are ignored |
 | Linear types | A second discipline in the type checker, for a guarantee nothing in Cupid uses |
 | STM and asynchronous exceptions | They need a run-time system with preemptive threads.  Cupid's `forkIO` threads switch only at the primitives of `Control.Concurrent`, `throwTo` is absent and `mask` is a no-op |
+
+These common GHC extensions are not implemented either.  Each was
+tried and fails to load, with a syntax or type error or, for deriving,
+a message that the class cannot be derived:
+
+| Extension | What happens |
+|---|---|
+| `LambdaCase`, `MultiWayIf`, `BlockArguments`, `EmptyCase` | Syntax error at `\case`, `if \|`, a `do` argument, or `case x of {}` |
+| `BangPatterns`, `ViewPatterns`, `PatternSynonyms`, `RecordWildCards` | Syntax error at `!`, `->` in a pattern or `..`; `pattern P = 1` gives an undefined constructor |
+| `TypeApplications` | `read @Int` gives "Illegal `@` in expression" |
+| `InstanceSigs`, `DefaultSignatures` | A signature in an instance, or `default` in a class, is an error |
+| `DeriveFunctor`, `DeriveFoldable`, `DeriveTraversable` | "Cannot derive instances of class" |
+| `DataKinds` | Syntax error in a kind |
+| `BinaryLiterals` | `0b101` reads as `0 b101` |
+| `OverloadedStrings` | A string literal always has type `String` |
 
 [The language Cupid accepts](language.md) lists the smaller
 deviations from Haskell 2010 and from GHC.
