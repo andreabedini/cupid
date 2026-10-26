@@ -27,6 +27,7 @@ program with `runcupid`.
 - [Build and install Cupid](how-to/build-and-install.md)
 - [Run Cupid from the build tree](how-to/run-from-the-build-tree.md)
 - [Build Cupid on Windows](how-to/build-on-windows.md)
+- [Check every build configuration](how-to/check-every-configuration.md)
 - [Write a script that runs with runcupid](how-to/write-a-script.md)
 - [Call C functions from Haskell](how-to/call-c-functions.md)
 - [Make `:edit` open your editor](how-to/configure-the-editor.md)
