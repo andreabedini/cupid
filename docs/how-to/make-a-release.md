@@ -1,14 +1,17 @@
 # Make a release
 
-Publish a new version of Cupid on GitHub, with binary archives for Linux
-and macOS, the source distribution and the changelog.  The maintainer
-makes releases.
+Publish a new version of Cupid on GitHub, with binary archives for
+Linux, macOS and Windows, the source distribution and the changelog.
+The maintainer makes releases.
 
 ## Prerequisites
 
 - [mise](https://mise.jdx.dev/), which installs the pinned git-cliff and
   jq from `mise.toml`
-- jj and gh, signed in to GitHub with push access to the repository
+- zsh, which the release task is written in, and GNU sed (on macOS,
+  install `gnu-sed` and put it first on the path)
+- git and jj, with the repository a jj repository colocated with git
+- gh, signed in to GitHub with push access to the repository
 - every change to release merged into `main`, with CI green
 
 ## Steps
@@ -43,6 +46,7 @@ publishes a GitHub release, which creates the tag `vVERSION`, with:
 - `cupid-VERSION-TARGET.tar.gz` for `x86_64-linux`, `aarch64-linux`,
   `x86_64-macos` and `aarch64-macos`: the archives that CI built and
   tested, nothing rebuilt
+- `cupid-VERSION-x86_64-windows.zip`, likewise built and tested by CI
 - `cupid-VERSION.tar.gz`, the source distribution that `meson dist`
   makes
 - `SHA256SUMS` for all of them
@@ -64,7 +68,8 @@ release.
 
 Versions follow [Semantic Versioning](https://semver.org/), `A.B.C`.
 The release task works out the next one from the commit messages, which
-CI checks follow [Conventional Commits](https://www.conventionalcommits.org/):
+CI checks follow [Conventional
+Commits](https://www.conventionalcommits.org/):
 
 | Since the last release      | While 0.x | From 1.0.0 |
 |-----------------------------|-----------|------------|
