@@ -157,5 +157,5 @@ license in [License](License).  Cupid is distributed under the same
 license.
 
 The people who built Hugs 98 are listed in [Credits](Credits).  The type
-checker and the abstract machine are their design, and so is the base
-the libraries grew from; this tree would not exist without their work.
+checker and the abstract machine are their design, and the libraries
+grew from theirs; this tree would not exist without their work.
