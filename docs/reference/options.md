@@ -40,7 +40,8 @@ program name as one argument.  See
 ## Language
 
 The extensions beyond Haskell 2010 listed in
-[Language extensions](extensions.md) are always enabled.  The `+98`
+[Language extensions](extensions.md) are always enabled, except
+overlapping instances, which need `+o` (or `+O`).  The `+98`
 and `-98` options of earlier releases, which switched them off and
 on, are accepted and ignored with a message.
 
