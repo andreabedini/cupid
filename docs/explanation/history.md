@@ -105,8 +105,9 @@ flags.  In order:
 - the packaging, the DocBook user's guide and the release notes were
   replaced with this documentation
 - the `-98` switch was dropped, so the extensions are always on
-- kind signatures, GADT syntax and equality constraints were added to
-  the one constraint solver, and literate scripts were dropped
+- kind signatures, GADT syntax and equality constraints were added,
+  the equalities within the one constraint solver, and literate
+  scripts were dropped
 - the fork was named Cupid, after the day Hugs was first released,
   and everything that carried the Hugs name was renamed; the
   `haskell98` flat-module package, the .NET remnants and the unbuilt
@@ -117,8 +118,7 @@ flags.  In order:
   operators, tuple sections, polymorphic and constraint synonyms, and
   GHC's deriving strategies with `Generic` and `Data`
 - Windows became a supported platform, built natively without a POSIX
-  layer, and releases are built as archives for Linux, macOS and
-  Windows
+  layer, and CI builds release archives for Linux, macOS and Windows
 
 [The design of Cupid](design.md) explains the choices that came out of
 these changes, and why they were made.
