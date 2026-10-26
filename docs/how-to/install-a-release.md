@@ -4,6 +4,9 @@ Install Cupid from a binary archive on the
 [releases page](https://github.com/andreabedini/cupid/releases),
 without building it.
 
+No release has been published yet.  Until there is one, follow
+[Build and install Cupid](build-and-install.md).
+
 ## Prerequisites
 
 - Linux with glibc 2.35 or later (Ubuntu 22.04, Debian 12, Fedora 36 or
