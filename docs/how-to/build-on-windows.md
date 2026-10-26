@@ -5,7 +5,7 @@ native Windows programs only: no MSYS2 shell, Cygwin or WSL.
 
 ## Prerequisites
 
-- Windows 10 or 11 on x86-64
+- Windows 10 or later on x86-64
 - MinGW-w64 gcc for the UCRT, Python, meson 1.1 or later and ninja.
   MSYS2's UCRT64 packages are the simplest source.  They are Windows
   programs, installed in `C:\msys64\ucrt64\bin`; the MSYS2 shell is only
