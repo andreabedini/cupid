@@ -36,8 +36,9 @@ step of adding `s` to the argument list must be created per closure.
 
 ## The solution the 2006 release used
 
-`mkThunk` in `src/builtin.c` allocated a small structure in memory
-that was both writable and executable:
+`mkThunk` in `src/builtin.c` (it is now in `src/prims/builtin.c`)
+allocated a small structure in memory that was both writable and
+executable:
 
 ```c
 struct thunk_data {
@@ -47,13 +48,14 @@ struct thunk_data {
 };
 ```
 
-It filled `code` with a few instructions that insert `s` in front of
-the incoming arguments and jump to `app`.  On 32-bit x86, where
-arguments are on the stack, that is: push the return address up one
-slot, store `s` where it was, jump.  The code is the same whatever the
-function's type, because the C calling convention does not depend on
-the argument types for the purpose of shifting them along.  The
-structure's address, offset to `code`, would be the function pointer
+It filled `code` with a few instructions that insert `s` in front of the
+incoming arguments and jump to `app`.  On 32-bit x86, where arguments
+are on the stack, that is: push `s`, push the address of a small stub
+that takes it off again, and jump to `app`, which took the original
+return address as an extra unused argument.  The code is the same
+whatever the function's type, because the C calling convention does not
+depend on the argument types for the purpose of shifting them along.
+The structure's address, offset to `code`, would be the function pointer
 returned to Haskell.
 
 The instruction sequence is different for every architecture and
@@ -102,5 +104,6 @@ shuffle at the cost of reentrancy.
 
 ## See also
 
-- [The language Cupid accepts](../reference/language.md#foreign-function-interface)
+- [The language Cupid
+  accepts](../reference/language.md#foreign-function-interface)
 - [Call C functions from Haskell](../how-to/call-c-functions.md)
