@@ -19,7 +19,10 @@
 
 <header class="site-head">
   <a class="brand" href="{{ get_url(path='@/_index.md') }}">
-    <img src="{{ get_url(path='logo-square.svg') }}" alt="" width="34" height="34">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="{{ get_url(path='logo-square-dark.svg') }}">
+      <img src="{{ get_url(path='logo-square.svg') }}" alt="" width="34" height="34">
+    </picture>
     <span>Cupid</span>
   </a>
   <nav>

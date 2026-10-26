@@ -2,7 +2,10 @@
 
 {% block content %}
 <section class="hero">
-  <img class="hero-mark" src="{{ get_url(path='logo.svg') }}" alt="" width="112" height="112">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="{{ get_url(path='logo-dark.svg') }}">
+    <img class="hero-mark" src="{{ get_url(path='logo.svg') }}" alt="" width="112" height="112">
+  </picture>
   <h1>Cupid</h1>
   <p class="tagline">{{ config.extra.tagline }}</p>
   <p class="lede">
