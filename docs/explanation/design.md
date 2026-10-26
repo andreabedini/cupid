@@ -51,9 +51,9 @@ its static cells in each file's `MARK` case; Cupid registers them
 once.  Gofer kept old features compilable behind definitions, with a
 footnote wishing it could remove some; Cupid deletes them.  And Gofer
 aimed at compatibility with a moving target, which its author came to
-find "a little frustrating"; Cupid does not chase GHC either.  A
-feature gets in when real code needs it and it fits the type checker
-Cupid has, and what is in and what is out are both written down.
+find "a little frustrating"; Cupid does not chase GHC.  A feature
+gets in by the rules under [The language](#the-language), and what is
+left out is written down as well as what is in.
 
 ## The language
 
@@ -63,8 +63,7 @@ type classes, functional dependencies, flexible contexts and instances,
 existential and rank-n types, polymorphic and constraint synonyms, kind
 signatures, GADT syntax, equality constraints, type operators, tuple
 sections and GHC's deriving strategies, all always on.  `forall` is
-always a keyword.  Literate scripts are not
-read.  A `#!` first line is read as a blank line, so an executable
+always a keyword.  Literate scripts are not read.  A `#!` first line is read as a blank line, so an executable
 script is an ordinary Haskell file.  The details are in
 [The language Cupid accepts](../reference/language.md) and
 [Language extensions](../reference/extensions.md).
@@ -84,8 +83,8 @@ exist to keep the type checker one pipeline that a reader can follow:
 - *One solver.*  A feature extends the existing constraint solver; it
   never adds a second one.  Separate engines are how the extensions
   Hugs used to have were written, and they are why those are gone.
-- *Restrict rather than infer.*  Where inference is the hard part, a
-  type signature is required.  Where termination is the hard part, the
+- *Take the common case, reject the rest.*  Where inference is the
+  hard part, a type signature is required.  Where termination is the hard part, the
   existing `-c` depth bound comes before any new termination check.
 - *GHC's syntax, Cupid's rules.*  The syntax is GHC's, so programs
   read the same.  Where the rules differ, the difference is listed in
@@ -138,10 +137,15 @@ Cupid owns its libraries.  `libraries/base` and `libraries/cupid` are
 plain Haskell, written for Cupid, with no conditional code for other
 compilers.  Their API follows GHC's base, roughly base 4.18: the class
 hierarchy, and the modules and functions that code written since 2006
-imports.  That is a choice about what programs can import, not about
-the interpreter.  The C is what a reader of Cupid reads, so it stays
-small; a library module is plain Haskell, and adds nothing to it.  The parts that depend on the platform, such as the C types
-behind `CInt` and `CSize` and the values of `errno` constants, are
+imports.
+
+"Small" is a property of the C, not of the libraries.  The C is what a
+reader of Cupid reads; a library module is plain Haskell and adds no
+C, so the libraries can follow what programs import without working
+against the aim.
+
+The parts that depend on the platform, such as the C types behind
+`CInt` and `CSize` and the values of `errno` constants, are
 generated at build time by `libraries/tools/mksysconfig.c` into the
 module `Cupid.SysConfig` and the header `HsBaseConfig.h`.  A small C
 program answers those questions by asking the compiler, so the build
@@ -156,8 +160,8 @@ Nothing in it targets GHC now, so they serve no purpose.
 ## Platforms and the build
 
 **Modern 64-bit systems only.**  Cupid targets 64-bit Linux, macOS
-and the BSDs on x86-64 and ARM64, and Windows on x86-64.  On these, the questions
-autoconf used to ask all have the same answer: `int` is four bytes,
+and the BSDs on x86-64 and ARM64, and Windows on x86-64.  On these,
+the questions autoconf used to ask all have the same answer: `int` is four bytes,
 pointers eight, floating point is IEEE, the stack grows down, and every
 C99 header is present.  `src/sysdeps.h` writes those answers down, and
 `static_assert`s in `prelude.h` check them.  The only real differences
