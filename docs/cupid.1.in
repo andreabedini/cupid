@@ -35,11 +35,14 @@ cupid, runcupid, fficupid \- Cupid, a Haskell interpreter
 ] ...
 .SH DESCRIPTION
 Cupid is an interpreter for Haskell, a standard non-strict functional
-programming language.  Cupid implements Haskell 2010, except for
-mutually recursive modules, together with a few type-system extensions
-that are always enabled.
-The name \fBCupid\fP is
-a mnemonic for the \fBHaskell User's Gofer System\fP.
+programming language.  Cupid implements Haskell 2010 with the
+deviations listed in its documentation (among them: no literate
+scripts and no mutually recursive modules, and the classes of the
+Prelude follow those of GHC's base), together with language extensions
+that are always enabled, except for overlapping instances, which need
+\fB+o\fP or \fB+O\fP.
+The name \fBCupid\fP comes from the date of the first release of Hugs,
+14 February 1995.
 .PP
 The interpreter is started using the
 .I cupid
@@ -52,7 +55,7 @@ When loading a module \fIname\fP, \fICupid\fP replaces each `\fB.\fP'
 in \fIname\fP with a `\fB/\fP' and looks in each of the directories
 on its search path (see \fB\-P\fP under \fBOPTIONS\fP)
 for the file \fIname\fP\fB.hs\fP.
-(The recognized suffixes may be changed using the \fB\-S\fP option,
+(The recognised suffixes may be changed using the \fB\-S\fP option,
 described under \fBOPTIONS\fP.)
 It also tries \fIname\fP as a literal filename.
 .SH OPTIONS
@@ -207,6 +210,12 @@ describe named objects.
 \fB:browse\fP \fImodules\fP
 browse names exported by \fImodules\fP.
 .TP
+\fB:main\fP [\fIarguments\fP]
+run the \fBmain\fP function with the given arguments.
+.TP
+\fB:xplain\fP \fIcontext\fP
+explain instance resolution for \fIcontext\fP.
+.TP
 \fB:find\fP \fIname\fP
 edit file containing definition of \fIname\fP.
 .TP
@@ -258,7 +267,7 @@ function.
 Any arguments given on the command line will be available through
 .BR getArgs .
 .LP
-Note that \fB#!\fP passes only one orgument to the script.
+Note that \fB#!\fP passes only one argument to the script.
 The \fB\-X\fP option may be used to get around this.
 .SH "C INTERFACE"
 .I Cupid
@@ -334,9 +343,9 @@ Simon Marlow (editor).
 Paul Hudak & Joseph H. Fasel.  A gentle introduction to Haskell.
 \fIACM SIGPLAN Notices\fP, 27(5), May 1992.
 .SH AUTHOR
-Hugs 98: Mark Jones and others, 1994-2006.
+Hugs 98: Mark Jones and others, 1994-2005.
 .PP
 Manual page: Jonathan Bowen, modified by Gary Leavens, and then
 (with apologies to the original authors) by Mark Jones.
 Updated for Hugs 98 by Antti-Juhani Kaijanaho and Ross Paterson.
-Updated for the March 2005 fficupid changes by Joseph P. Skudlarek.
+Updated for the March 2005 ffihugs changes by Joseph P. Skudlarek.
