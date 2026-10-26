@@ -77,9 +77,11 @@ Just [3,1,2]
 [4,40]</code></pre>
   <p>
     Running real code doesn&rsquo;t mean following GHC.  A feature gets in when
-    programs need it and it fits the one type checker Cupid has; the C does not
-    grow a second solver or touch the machine underneath for it.  Type
-    families, unboxed types, Template Haskell and STM are not in.
+    packages written for GHC need it, when it fits the one type checker with
+    nothing below the type checker changing, and when Cupid can take the
+    common case and reject the rest.  Unboxed types, Template Haskell and STM
+    can&rsquo;t meet that, and stay out.  Type families are not in either;
+    whether they can be is still open.
   </p>
   <p class="aside">
     <a href="{{ get_url(path='@/docs/reference/extensions.md') }}">Language extensions</a>

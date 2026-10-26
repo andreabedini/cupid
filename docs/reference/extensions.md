@@ -823,8 +823,11 @@ portably with a `newtype` or by not exporting a type's constructors.
 
 ## Not accepted
 
-These parts of GHC's language are not in Cupid.  A program that uses
-one of them does not load, and no option changes that.
+These parts of GHC's language are not in Cupid, and no option adds
+them.  A program that uses one of them does not load, except where
+ignoring it cannot change what the program means: `RULES` pragmas are
+read as comments, and `mask` does nothing, since there are no
+asynchronous exceptions to hold off.
 
 | Feature | Why |
 |---|---|
@@ -833,7 +836,7 @@ one of them does not load, and no option changes that.
 | Template Haskell | It needs the interpreter to run code while it is checking a module, a second pipeline inside the first |
 | Rewrite rules | Cupid does not optimise, so there is nothing for them to rewrite; `RULES` pragmas are ignored |
 | Linear types | A second discipline in the type checker, for a guarantee nothing in Cupid uses |
-| STM and asynchronous exceptions | They need a different run-time system; `mask` is a no-op and `throwTo` is absent |
+| STM and asynchronous exceptions | They need a run-time system with preemptive threads.  Cupid's `forkIO` threads switch only at the primitives of `Control.Concurrent`, `throwTo` is absent and `mask` is a no-op |
 
 [The language Cupid accepts](language.md) lists the smaller
 deviations from Haskell 2010 and from GHC.

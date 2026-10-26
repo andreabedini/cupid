@@ -98,9 +98,10 @@ exist to keep the type checker one pipeline that a reader can follow:
 
 **What stays out.**  Some of GHC's language can't meet those rules.
 Unboxed types and `MagicHash` change the machine below the type
-checker.  Template Haskell, rewrite rules and linear types each need
-a mechanism of their own, and STM and asynchronous exceptions need a
-different run-time system.  None of them is in.  Type families are
+checker.  Template Haskell and linear types each need a mechanism of
+their own, rewrite rules have nothing to rewrite in an implementation
+that does not optimise, and STM and asynchronous exceptions need
+preemptive threads.  None of them is in.  Type families are
 not in either; whether they can be added without a second solver is
 an open question.  [Language extensions](../reference/extensions.md#not-accepted)
 lists what is left out and why.
