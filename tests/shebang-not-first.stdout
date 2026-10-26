@@ -1,0 +1,4 @@
+runcupid: Error occurred
+ERROR "shebang-not-first.hs":5 - Syntax error in input (unexpected symbol "#!")
+
+
