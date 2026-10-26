@@ -43,8 +43,9 @@
     <article>
       <h3>It stays small</h3>
       <p>The whole interpreter is under fifty thousand lines of C, and it is
-      kept that way.  The libraries are plain Haskell and grow with what
-      programs import; the C grows only where a library can&rsquo;t do the
+      kept that way.  The libraries are Haskell, with a few small C helpers in
+      <code>base</code>, and grow with what programs import; the
+      interpreter&rsquo;s C grows only where a library can&rsquo;t do the
       job.  Anything that doesn&rsquo;t serve the aim gets deleted rather than
       parked behind a flag.</p>
     </article>
@@ -98,7 +99,7 @@ Nothing
 <section class="start">
   <h2>Build it</h2>
   <p>You need a C compiler, meson 1.1 or later, ninja, python3 and bison.  The
-  build takes about a minute and never writes to the source tree.</p>
+  build takes a minute or two and never writes to the source tree.</p>
   <pre><code class="language-sh">git clone {{ config.extra.repo_url }}.git cupid
 cd cupid
 CC=gcc meson setup build
@@ -110,9 +111,9 @@ CUPIDDIR=build/libraries/cupiddir build/src/cupid</code></pre>
   <p class="aside">
     Cupid builds on 64-bit Linux, macOS, the BSDs and Windows, and Linux, macOS
     and Windows are built and tested on every change.
-    <a href="{{ get_url(path='@/docs/how-to/build-and-install.md') }}">Build and install</a>
+    <a href="{{ get_url(path='@/docs/how-to/build-and-install.md') }}">Build and install Cupid</a>
     has the detail, and
-    <a href="{{ get_url(path='@/docs/how-to/build-on-windows.md') }}">Build on Windows</a>
+    <a href="{{ get_url(path='@/docs/how-to/build-on-windows.md') }}">Build Cupid on Windows</a>
     covers the native MinGW-w64 build.
   </p>
 </section>
