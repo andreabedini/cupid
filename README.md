@@ -28,10 +28,11 @@ Three things follow from that, and they don't change:
   few build tools, but no Haskell compiler, and the thing you are
   reading is the thing that runs.
 - **It stays small.**  The whole interpreter is under fifty thousand
-  lines of C, and it is kept that way.  The libraries are plain Haskell
-  and grow with what programs import; the C grows only where a library
-  can't do the job.  Anything that doesn't serve the aim gets deleted
-  rather than parked behind a flag.
+  lines of C, and it is kept that way.  The libraries are Haskell, with
+  a few small C helpers in `base`, and grow with what programs import;
+  the interpreter's C grows only where a library can't do the job.
+  Anything that doesn't serve the aim gets deleted rather than parked
+  behind a flag.
 
 That third one does most of the work.  A flag is a promise to keep two
 code paths working forever, and a tree full of them is exactly the tree
@@ -47,22 +48,25 @@ a whim: [The design of Cupid](docs/explanation/design.md) says what
 stayed and why.  If you want the longer story of where the code came
 from, that's [History](docs/explanation/history.md).
 
-What has been added is what real code needs.  The Prelude and `base`
-follow GHC's base, roughly version 4.18, with `Applicative` under
+What has been added is what real code needs.  The libraries follow
+GHC's base, roughly version 4.18, with `Applicative` under
 `Monad`, `Semigroup` under `Monoid`, and `Foldable` and `Traversable`.
 The transformers package loads from its unmodified source once it has
 been through the C preprocessor; see
-[Preprocess source files](docs/how-to/preprocess-sources.md).  That doesn't mean following GHC: a feature
-gets in when real code needs it and it fits the one type checker.
-Unboxed types, Template Haskell and STM are out, and type families are
-undecided.
+[Preprocess source files before loading](docs/how-to/preprocess-sources.md).
+Running real code doesn't mean following GHC.  A feature gets in when
+real code needs it, when it fits the one type checker with nothing below
+the type checker changing, and when Cupid can take the common case and
+reject the rest.  Every extension is always on, except overlapping
+instances, which need the `+o` option.  Unboxed types, Template Haskell
+and STM are out, and type families are undecided.
 [Language extensions](docs/reference/extensions.md) lists what is
 accepted and what is left out.
 
 It builds and runs.  The code is standard C23 and builds with meson on
 64-bit Linux, macOS, Windows and the BSDs.  Linux, macOS and Windows are
 built and tested on every change; on Windows it builds natively with
-MinGW-w64, see [Build on Windows](docs/how-to/build-on-windows.md).
+MinGW-w64, see [Build Cupid on Windows](docs/how-to/build-on-windows.md).
 
 ## Quick start
 
@@ -81,7 +85,7 @@ Cupid> map (*2) [1..10]
 Cupid> :quit
 ```
 
-The whole build takes about a minute and never writes to the source
+The whole build takes a minute or two and never writes to the source
 tree.  Two things worth knowing up front:
 
 - Name a **real** compiler in `$CC`.  meson bakes the command into
@@ -95,9 +99,10 @@ tree.  Two things worth knowing up front:
   `--reconfigure` keeps the old one.
 
 Tests are `meson test -C build`, and installing is `ninja -C build
-install`.  [Build and install](docs/how-to/build-and-install.md) has the
-detail, and [Build options and install layout](docs/reference/build-options.md)
-lists every `-Dname=value` you can set.
+install`.  [Build and install Cupid](docs/how-to/build-and-install.md)
+has the detail, and [Build options and install
+layout](docs/reference/build-options.md) lists every `-Dname=value` you
+can set.
 
 ## Documentation
 
@@ -105,8 +110,8 @@ The docs follow [Diátaxis](https://diataxis.fr/), so where a page lives
 tells you what it's for.  [docs/README.md](docs/README.md) is the index;
 the useful starting points are:
 
-- [Getting started](docs/tutorials/getting-started.md) — a first session,
-  from build to running a program.  About 20 minutes, most of it the build.
+- [Getting started with Cupid](docs/tutorials/getting-started.md) — a
+  first session, from build to running a program.  About 20 minutes.
 - [How Cupid runs a program](docs/explanation/how-cupid-runs-a-program.md)
   — source text to abstract machine, and where each piece lives.  Read
   this before the source.
@@ -125,9 +130,11 @@ the useful starting points are:
 - `src/` — the interpreter: lexer, parser (`parser.y`), type checker,
   bytecode compiler, evaluator, storage, and the `cupid`, `runcupid`
   and `fficupid` front ends
-- `libraries/` — the Haskell it ships: `cupid` (the Prelude and the
-  interpreter-specific modules) and `base`, all plain Haskell.  `tools/`
-  holds the build script and the generator for `Cupid.SysConfig`
+- `libraries/` — the Haskell it ships: `cupid` (`Cupid.Prelude`, where
+  most of the Prelude is defined, and the interpreter-specific `Cupid.*`
+  modules) and `base` (the `Prelude` module and the rest of base, with a
+  few C helpers in `cbits`).  `libraries/tools/` holds the build script
+  and the generator for `Cupid.SysConfig`
 - `docs/` — tutorial, how-to guides, reference, explanation and the
   manual page
 - `tests/` — the regression tests and the script that runs them
@@ -147,13 +154,16 @@ first released on Valentine's Day, 14 February 1995, which made Cupid
 the obvious choice.  The grin on the logo is his: Cupid has always been
 a bit of a troublemaker.
 
-## Origin and license
+## Origin and licence
 
 Cupid is derived from Hugs 98, which is Copyright (c) Mark P Jones,
 Alastair Reid, the Yale Haskell Group, and the OGI School of Science &
 Engineering at OHSU, 1994-2005, and distributed under the BSD-style
-license in [License](License).  Cupid is distributed under the same
-license.
+licence in [License](License).  Cupid is distributed under the same
+licence.  The `base` library carries its own BSD-style licence, in
+[libraries/base/LICENSE](libraries/base/LICENSE), because it is derived
+from code by the GHC project, the Haskell 98 Report and the Haskell FFI
+specification.
 
 The people who built Hugs 98 are listed in [Credits](Credits).  The type
 checker and the abstract machine are their design, and the libraries
