@@ -86,7 +86,7 @@ compilers.
 ## This tree
 
 This tree starts from the September 2006 release with one aim: a
-simpler, understandable Haskell implementation.  It is not an attempt
+Haskell implementation you can sit down and read.  It is not an attempt
 to keep up with GHC, but it is meant to run the Haskell people write.
 The language is Haskell 2010 plus the parts of modern Haskell that
 real code needs and one type checker can hold; everything from 2006
@@ -104,15 +104,17 @@ flags.  In order:
   Cabal/cpphs/hsc2hs bootstrap removed
 - the packaging, the DocBook user's guide and the release notes were
   replaced with this documentation
-- the `-98` switch was dropped, so the extensions are always on
+- the `-98` switch was dropped, so the extensions are always on,
+  apart from overlapping instances
+- the fork was first called Cuddles, and everything that carried the
+  Hugs name was renamed; the `haskell98` flat-module package, the .NET
+  remnants and the unbuilt 2006 `lib/` and `include/` trees were
+  dropped, and the three modules the demos need from `lib/` moved
+  into `demos/`
 - kind signatures, GADT syntax and equality constraints were added,
   the equalities within the one constraint solver, and literate
   scripts were dropped
-- the fork was named Cupid, after the day Hugs was first released,
-  and everything that carried the Hugs name was renamed; the
-  `haskell98` flat-module package, the .NET remnants and the unbuilt
-  2006 `lib/` and `include/` trees were dropped, and the three
-  modules the demos need from `lib/` moved into `demos/`
+- the fork was named Cupid, after the day Hugs was first released
 - the libraries took the class hierarchy and API of GHC's base, and
   the language gained what packages written for GHC use most: type
   operators, tuple sections, polymorphic and constraint synonyms, and
