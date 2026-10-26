@@ -15,7 +15,9 @@ prompt names the current module; at the start this is the empty module
 
 At the prompt, a line is either a Haskell expression or a command.
 Commands begin with `:` and may be abbreviated to their first letter:
-`:l` for `:load`, `:t` for `:type`, and so on.
+`:l` for `:load`, `:t` for `:type`, and so on.  Where two commands
+share a first letter, the one listed first in `:?` wins: `:m` is
+`:module`, so write `:main` in full.
 
 Ctrl-C interrupts a load or an evaluation; Cupid prints
 `{Interrupted!}` and returns to the prompt.  Ctrl-D at the prompt
@@ -50,8 +52,10 @@ result of an `IO` action.  See
 
 **Ambiguous types.**  Before evaluation, defaulting is applied to each
 ambiguous type variable `v` whose constraints all have the form `C v`
-with `C` a standard class, provided at least one of those classes is
-numeric or is `Show`, `Eq` or `Ord`.  This is wider than the Haskell
+with `C` one of the Haskell 2010 classes `Eq`, `Ord`, `Show`, `Read`,
+`Enum`, `Bounded`, `Ix` or a numeric class, provided at least one of
+those classes is numeric or is `Show`, `Eq` or `Ord`.  Classes such as
+`Monoid` never default.  This is wider than the Haskell
 rule for modules, which requires a numeric class.  It is what makes
 `reverse []` printable: the `Show` constraint from printing defaults
 the element type to `Integer`.  Any ambiguous variable not covered by
@@ -119,8 +123,9 @@ The last one loaded becomes the current module.
 
 ### `:reload`
 
-Forget everything and load again the modules that were loaded.  Use
-this after editing a file.
+Reload the first loaded module whose file has changed since it was
+read, and every module loaded after it.  If no file has changed,
+nothing is read.  Use this after editing a file.
 
 ### `:module` *module*
 
@@ -154,9 +159,11 @@ character `c` itself.  With no pattern, list every name in scope.
 
 ```
 Cupid> :names ma*
-Cupid.Prelude.map Cupid.Prelude.mapM Cupid.Prelude.mapM_ Cupid.Prelude.max
-Cupid.Prelude.maxBound Cupid.Prelude.maximum Cupid.Prelude.maybe
-(7 names listed)
+Cupid.Prelude.many Cupid.Prelude.map Cupid.Prelude.mapAccumL
+Cupid.Prelude.mapAccumR Cupid.Prelude.mapM Cupid.Prelude.mapM_
+Cupid.Prelude.mappend Cupid.Prelude.max Cupid.Prelude.maxBound
+Cupid.Prelude.maximum Cupid.Prelude.maximumBy Cupid.Prelude.maybe
+(12 names listed)
 ```
 
 ### `:info` [*name* ...]
@@ -175,9 +182,20 @@ Nothing :: Maybe a
 Just :: a -> Maybe a
 
 -- instances:
+instance Semigroup a => Semigroup (Maybe a)
+instance Semigroup a => Monoid (Maybe a)
+instance Foldable Maybe
+instance Traversable Maybe
 instance Functor Maybe
+instance Applicative Maybe
 instance Monad Maybe
-...
+instance MonadFail Maybe
+instance Alternative Maybe
+instance MonadPlus Maybe
+instance Eq a => Eq (Maybe a)
+instance Ord a => Ord (Maybe a)
+instance Read a => Read (Maybe a)
+instance Show a => Show (Maybe a)
 ```
 
 With `+k` set, classes and type constructors are shown with their
@@ -203,8 +221,10 @@ Cupid> :version
 
 ### `:!` [*command*]
 
-Run a shell command, or with no argument start a shell.  The shell is
-named by `SHELL`, or `/bin/sh` if that is unset.
+Run a shell command, or with no argument start a shell.  With no
+argument Cupid starts the shell named by `SHELL`, or `/bin/sh` if that
+is unset.  With an argument it runs the command with `/bin/sh -c`,
+whatever `SHELL` says.
 
 ### `:cd` *dir*
 
