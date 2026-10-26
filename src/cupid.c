@@ -179,7 +179,7 @@ static void menu(void) {
     Printf(":info <names>       describe named objects\n");
     Printf(":browse <modules>   browse names exported by <modules>\n");
     Printf(
-        ":main <aruments>    run the main function with the given arguments\n");
+        ":main <arguments>   run the main function with the given arguments\n");
     Printf(":xplain <context>   explain instance resolution for <context>\n");
     Printf(":find <name>        edit module containing definition of name\n");
     Printf(":cd dir             change directory\n");
