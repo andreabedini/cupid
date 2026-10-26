@@ -14,11 +14,12 @@ n+k patterns that Haskell 2010 removed are not accepted.  `LINE`
 pragmas are read as comments.
 
 It also accepts, without any option, the extensions in
-[Language extensions](extensions.md).  Two of them are visible in
-programs that use no extension at all: `forall` is a keyword, so it
-cannot be used as a variable name, and a type synonym may appear in an
-instance head.  Everything else in this page holds whether or not the
-extensions are used.
+[Language extensions](extensions.md), except overlapping instances,
+which need `+o`.  Some of them are visible in programs that use no
+extension at all: `forall` is a keyword, so it cannot be used as a
+variable name, a type synonym may appear in an instance head, and
+`f $ x` is type-checked as `f x`.  Everything else in this page holds
+whether or not the extensions are used.
 
 The extensions of the 2006 release that were guarded by compile-time
 flags are gone: TREX extensible records, implicit parameters, the
@@ -196,7 +197,7 @@ same file at once may see inconsistent data instead of failing.
 **Literate comments are not supported.**  Every file is read as
 ordinary Haskell source, so a literate script (section 10.4), with `>`
 lines or `\begin{code}` blocks, is rejected, and `.lhs` is not on the
-default suffix list.  A line beginning with `#!` is read as a blank
+default suffix list.  A `#!` first line is read as a blank
 line, so an executable script needs no literate wrapper.
 
 ## Other known bugs
@@ -227,8 +228,9 @@ main = return () >>= \_ -> mapM_ putStrLn (repeat "y")
 
 An expression typed at the prompt is defaulted more liberally than a
 top-level binding: an ambiguous type variable is defaulted when all
-its constraints are standard classes and at least one is numeric or is
-`Show`, `Eq` or `Ord`.  See [Interpreter commands](commands.md#expr).
+its constraints are Haskell 2010 classes (`Eq`, `Ord`, `Show`, `Read`,
+`Enum`, `Bounded`, `Ix` or a numeric class) and at least one is numeric
+or is `Show`, `Eq` or `Ord`.  See [Interpreter commands](commands.md#expr).
 
 ## Foreign function interface
 
