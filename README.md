@@ -49,9 +49,11 @@ stayed and why.  If you want the longer story of where the code came
 from, that's [History](docs/explanation/history.md).
 
 What has been added is what real code needs.  The Prelude and `base`
-follow GHC's base, with `Applicative` under `Monad`, `Semigroup` under
-`Monoid`, and `Foldable` and `Traversable`, and the transformers
-package loads unchanged.  That doesn't mean following GHC: a feature
+follow GHC's base, roughly version 4.18, with `Applicative` under
+`Monad`, `Semigroup` under `Monoid`, and `Foldable` and `Traversable`.
+The transformers package loads from its unmodified source once it has
+been through the C preprocessor; see
+[Preprocess source files](docs/how-to/preprocess-sources.md).  That doesn't mean following GHC: a feature
 gets in when real code needs it and it fits the one type checker.
 Unboxed types, Template Haskell and STM are out, and type families are
 undecided.

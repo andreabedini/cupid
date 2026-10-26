@@ -44,6 +44,25 @@ An empty argument clears the filter:
 Cupid> :set -F
 ```
 
+## Load a package written for GHC
+
+Packages written for GHC test the version of `base` with
+`MIN_VERSION_base(a,b,c)`, a macro that Cabal defines and Cupid does
+not.  Define it on the cpp command line, true for every version up to
+4.18, the base that Cupid's libraries follow:
+
+```
+Cupid> :set -F"cpp -P -traditional -DMIN_VERSION_base(a,b,c)=((a)<4||((a)==4&&(b)<=18))"
+```
+
+The macro has no spaces in it, because Cupid splits the command on
+whitespace.  Leave `__GLASGOW_HASKELL__` undefined, so that the package
+takes the code it keeps for compilers other than GHC.  Then put the
+package's source directory on the search path (see
+[Add a library to the search path](add-a-library.md)) and load its
+modules as usual.  This is how the transformers package, 0.6.1.2, loads
+from its unmodified source.
+
 ## Notes
 
 - The filter is slower than reading files directly, and because of the
