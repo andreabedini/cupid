@@ -18,24 +18,31 @@ By the end you will be able to:
 
 ## Prerequisites
 
-You need a C compiler (gcc or clang), meson 1.1 or later, ninja and
-python3.  On Fedora:
+You need a C compiler (gcc or clang), meson 1.1 or later, ninja,
+python3 and bison.  On Fedora:
 
 ```sh
-sudo dnf install gcc meson ninja-build python3
+sudo dnf install gcc meson ninja-build python3 bison
 ```
 
-On Debian or Ubuntu:
+On Debian 13 or Ubuntu 24.04 and later:
 
 ```sh
-sudo apt install gcc meson ninja-build python3
+sudo apt install gcc meson ninja-build python3 bison
 ```
+
+Older releases ship a meson older than 1.1; install a newer one with
+`python3 -m pip install --user meson`.
 
 On macOS with Homebrew:
 
 ```sh
-brew install meson ninja
+brew install meson ninja bison
+export PATH="$(brew --prefix bison)/bin:$PATH"
 ```
+
+The bison that macOS ships is too old for Cupid's grammar, so the
+Homebrew one has to come first on the path.
 
 Everything else in this tutorial is done from the top of the Cupid
 source tree.

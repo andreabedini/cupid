@@ -25,8 +25,9 @@ Three things follow from that, and they don't change:
   code of a small abstract machine and run in the same process.  No
   native code generation, no linker, no separate compilation step.
 - **It does not self-host.**  Nothing in the implementation is written in
-  Haskell except the libraries it ships.  You need a C compiler and
-  nothing else, and the thing you are reading is the thing that runs.
+  Haskell except the libraries it ships.  You need a C compiler and a
+  few build tools, but no Haskell compiler, and the thing you are
+  reading is the thing that runs.
 - **It stays small.**  Haskell 2010, plus the parts of modern Haskell
   that real programs need and one type checker can hold — classes with
   several parameters and functional dependencies, rank-n types, GADT
@@ -63,7 +64,8 @@ MinGW-w64, see [Build on Windows](docs/how-to/build-on-windows.md).
 
 ## Quick start
 
-You need a C compiler, meson 1.1 or later, ninja and python3.  Then:
+You need a C compiler, meson 1.1 or later, ninja, python3 and bison.
+Then:
 
 ```sh
 CC=gcc meson setup build

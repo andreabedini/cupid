@@ -36,8 +36,9 @@
     <article>
       <h3>No self-hosting</h3>
       <p>Nothing in the implementation is written in Haskell except the
-      libraries it ships.  You need a C compiler and nothing else, and the thing
-      you are reading is the thing that runs.</p>
+      libraries it ships.  You need a C compiler and a few build tools, but no
+      Haskell compiler, and the thing you are reading is the thing that
+      runs.</p>
     </article>
     <article>
       <h3>It stays small</h3>
@@ -87,8 +88,8 @@ Just [3,1,2]
 
 <section class="start">
   <h2>Build it</h2>
-  <p>You need a C compiler, meson 1.1 or later, ninja and python3.  The build
-  takes about a minute and never writes to the source tree.</p>
+  <p>You need a C compiler, meson 1.1 or later, ninja, python3 and bison.  The
+  build takes about a minute and never writes to the source tree.</p>
   <pre><code class="language-sh">git clone {{ config.extra.repo_url }}.git cupid
 cd cupid
 CC=gcc meson setup build
