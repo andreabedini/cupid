@@ -34,7 +34,8 @@ a use: `typeAp` instantiates the type of the name being applied, and
 for each predicate in its context calls `assumeEvid`, which invents the
 dictionary variable, adds the triple to `preds` and returns the
 variable to be applied as an argument.  Literals and `do` blocks do the
-same for `Num`, `Fractional` and `Monad`.  A *given* predicate comes
+same for `Num`, `Fractional` and `Monad`, and a `do` block whose
+pattern can fail also asks for `MonadFail`.  A *given* predicate comes
 from a context that may be assumed: the context of a type signature
 while its binding is checked, the context of an instance while its
 methods are checked, the constraints a constructor was declared with
@@ -162,7 +163,7 @@ discharged against the scope's givens where they can be
 (`elimPredsUsing` again) and the rest passed outward, and the inferred
 type and the assumptions are checked for skolems that would escape.
 The scope stack is where a future given that holds for one alternative
-only, as a GADT match provides, would live; 0043 says so.
+only, as a GADT match provides, would live.
 
 ## Where to read
 
