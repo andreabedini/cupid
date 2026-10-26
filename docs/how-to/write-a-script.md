@@ -13,9 +13,9 @@ other script.
 ### 1. Write the program
 
 The first line of a script must be the `#!` line.  Haskell has no
-syntax for it, but Cupid reads a line beginning with `#!` as a blank
-line, so the rest of the file is an ordinary module.  Create a file
-called `myecho`:
+syntax for it, but Cupid reads a `#!` first line as a blank line, so
+the rest of the file is an ordinary module.  Create a file called
+`myecho`:
 
 ```
 #! /usr/local/bin/runcupid
