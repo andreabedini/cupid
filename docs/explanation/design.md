@@ -15,8 +15,9 @@ serve the aim is deleted, not left in the tree behind a flag.  A flag
 is a promise to keep two code paths working forever, and every such
 promise makes the code harder to read.  So Cupid has no
 language-extension flags and no compatibility modes.  The extensions it
-has are always on, and the extensions Hugs had that it doesn't keep
-are gone from the source.
+has are always on, except overlapping instances, which need the `+o`
+toggle (`+O` for the unsafe kind).  The extensions Hugs had that it
+doesn't keep are gone from the source.
 
 Cupid is meant to run real Haskell, because an implementation that
 runs only examples shows little of how Haskell works.  That is not the
@@ -60,11 +61,12 @@ left out is written down as well as what is in.
 **Haskell 2010, plus what real code needs and one type checker can
 hold.**  The accepted language is Haskell 2010 with multi-parameter
 type classes, functional dependencies, flexible contexts and instances,
-existential and rank-n types, polymorphic and constraint synonyms, kind
+existential and rank-2 types, polymorphic and constraint synonyms, kind
 signatures, GADT syntax, equality constraints, type operators, tuple
-sections and GHC's deriving strategies, all always on.  `forall` is
-always a keyword.  Literate scripts are not read.  A `#!` first line is read as a blank line, so an executable
-script is an ordinary Haskell file.  The details are in
+sections and GHC's deriving strategies, all always on, except overlapping
+instances (`+o`, `+O`).  `forall` is always a keyword.  Literate
+scripts are not read.  A `#!` first line is read as a blank line, so
+an executable script is an ordinary Haskell file.  The details are in
 [The language Cupid accepts](../reference/language.md) and
 [Language extensions](../reference/extensions.md).
 
@@ -75,35 +77,41 @@ exist to keep the type checker one pipeline that a reader can follow:
 - *Needed by real code.*  A feature comes in because programs people
   have written need it, found by loading packages from Hackage and
   seeing what stops them.  Without that evidence a feature stays out,
-  however small.  Where a need can be met by a library module, or by a
+  however small; restricted type synonyms, kept from Hugs, are the one
+  exception.  Where a need can be met by a library module, or by a
   tool such as the C preprocessor before loading, it is met there and
   not in the C.
-- *Always on.*  There is no `-X` flag.  A feature is good enough for
-  every program, or it is not in the tree.
+- *Always on.*  There are no language-extension flags like GHC's
+  `-XFoo` (Cupid's `-X` only re-reads an option string).  A feature is
+  good enough for every program, or it is not in the tree.  The one
+  exception is overlapping instances, which need `+o` or `+O`.
 - *One solver.*  A feature extends the existing constraint solver; it
   never adds a second one.  Separate engines are how the extensions
   Hugs used to have were written, and they are why those are gone.
-- *Take the common case, reject the rest.*  Where inference is the
-  hard part, a type signature is required.  Where termination is the hard part, the
-  existing `-c` depth bound comes before any new termination check.
+- *Take the common case, reject the rest.*  Where inference is the hard
+  part, a type signature is required.  Where termination is the hard
+  part, the existing `-c` depth bound comes before any new termination
+  check.
 - *GHC's syntax, Cupid's rules.*  The syntax is GHC's, so programs
   read the same.  Where the rules differ, the difference is listed in
   [Language extensions](../reference/extensions.md).
 - *Small and local.*  A feature is a few named functions in the file
   that owns its stage of the pipeline.
-- *Nothing below the type checker changes.*  Evidence is erased before
-  code generation, a GADT match compiles as an existential match, and
-  a feature that needs evidence at run time is not a candidate.
+- *Nothing below the type checker changes.*  The type checker turns
+  evidence into ordinary expressions (dictionary arguments), so code
+  generation never sees a predicate; a GADT match compiles as an
+  existential match, and a feature that needs more than dictionary
+  arguments at run time is not a candidate.
 
 **What stays out.**  Some of GHC's language can't meet those rules.
-Unboxed types and `MagicHash` change the machine below the type
-checker.  Template Haskell and linear types each need a mechanism of
-their own, rewrite rules have nothing to rewrite in an implementation
-that does not optimise, and STM and asynchronous exceptions need
-preemptive threads.  None of them is in.  Type families are
-not in either; whether they can be added without a second solver is
-an open question.  [Language extensions](../reference/extensions.md#not-accepted)
-lists what is left out and why.
+Unboxed types and `MagicHash` change the machine below the type checker.
+Template Haskell and linear types each need a mechanism of their own,
+rewrite rules have nothing to rewrite in an implementation that does not
+optimise, and STM and asynchronous exceptions need preemptive threads.
+None of them is in.  Type families are not in either; whether they can
+be added without a second solver is an open question.  [Language
+extensions](../reference/extensions.md#not-accepted) lists what is left
+out and why.
 
 Equality constraints show the rules at work.  `a ~ b` is a predicate
 with no evidence.  A given equality is unified at the point it is
@@ -140,9 +148,10 @@ hierarchy, and the modules and functions that code written since 2006
 imports.
 
 "Small" is a property of the C, not of the libraries.  The C is what a
-reader of Cupid reads; a library module is plain Haskell and adds no
-C, so the libraries can follow what programs import without working
-against the aim.
+reader of Cupid reads; a library module is plain Haskell, apart from a
+few small C helpers in `base`, and adds no C to the interpreter, so the
+libraries can follow what programs import without working against the
+aim.
 
 The parts that depend on the platform, such as the C types behind
 `CInt` and `CSize` and the values of `errno` constants, are
@@ -159,27 +168,33 @@ Nothing in it targets GHC now, so they serve no purpose.
 
 ## Platforms and the build
 
-**Modern 64-bit systems only.**  Cupid targets 64-bit Linux, macOS
-and the BSDs on x86-64 and ARM64, and Windows on x86-64.  On these,
-the questions autoconf used to ask all have the same answer: `int` is four bytes,
-pointers eight, floating point is IEEE, the stack grows down, and every
-C99 header is present.  `src/sysdeps.h` writes those answers down, and
-`static_assert`s in `prelude.h` check them.  The only real differences
-left are Windows against POSIX, and sometimes macOS.  Linux, macOS and
-Windows are built and tested on every change; on Windows, see
+**Modern 64-bit systems only.**  Cupid targets 64-bit Linux, macOS and
+the BSDs on x86-64 and ARM64, and Windows on x86-64.  On these, the
+questions autoconf used to ask all have the same answer: `int` is four
+bytes, pointers eight, floating point is IEEE, the stack grows down, and
+every C99 header is present.  `src/sysdeps.h` writes those answers down,
+and `static_assert`s in `prelude.h` check them.  The only real
+differences left are Windows against POSIX, and sometimes macOS.  Linux,
+macOS and Windows are built and tested on every change; on Windows, see
 [Build Cupid on Windows](../how-to/build-on-windows.md).
 
 **meson, with generated files kept in the build tree.**  The build is
-meson only.  Two kinds of file are generated:
+meson only.  Three kinds of file are generated:
 
-- `platform.h` is generated from `platform.h.in`, because the Haskell
-  libraries are preprocessed outside the C compiler and can't see
-  macros like `__linux__`.
+- `config.h` holds the build options and the install paths.
+- `platform.h` is generated from `platform.h.in` with the operating
+  system and architecture names as meson knows them, in the
+  `*_HOST_OS` spellings the C sources test.  Only C reads it; the
+  libraries get the same facts from `Cupid.SysConfig`.
 - `parser.c` and `parser.h` are generated by bison into the build
   directory, and no copies are kept in `src/`.  A hand-regenerated
   file goes stale.  A stale `parser.h` next to `input.c` would also
   win over the generated one for a quoted `#include`, and the build
   would then use the wrong token numbers.
+
+The library build also generates `HsBaseConfig.h` and
+`Cupid/SysConfig.hs`, as described under
+[The libraries](#the-libraries).
 
 **Two feature options.**  A build option is a flag like any other, so
 each of the ten inherited from Hugs had to justify its second code
@@ -196,27 +211,31 @@ always built instead, and `+x` is off by default.  Two options are
 left.  `profiling` changes the layout of every heap cell, so it can't
 become a run-time switch without costing every build.  `checks` is a
 developer build that keeps assertions, checks cell tags and adds the
-`+D` bytecode listing.
+`+D` bytecode listing.  `char-encoding` and `readline` remain as
+well, but they choose a character set and a library, not a feature.
 
 **Every configuration is tested.**  An option nothing exercises rots.
 So the regression suite has to pass in the default build, with each
 option on alone and with both on, and `tools/check-configurations`
-builds and tests all four.  With two options those four are every
-configuration there is; a third would make the sweep a sample, five of
-eight.  No option changes what the interpreter prints, so every
-configuration is compared against the same expected output, with no
-filters.  See
-[Check every configuration](../how-to/check-every-configuration.md).
+builds and tests all four.  With two feature options those four are
+every combination of them; a third would make the sweep a sample, five
+of eight.  `char-encoding` and `readline` are not swept.  No feature
+option changes what a program prints (a build with `checks` adds the
+`+D` toggle to the `:set` listing), so every configuration is compared
+against the same expected output, with no filters.  See [Check every
+build configuration](../how-to/check-every-configuration.md).
 
 ## The C code
 
 The C is meant to be read, so it is written in a small number of
 consistent ways.
 
-**Standard C23, written in its C17-compatible subset.**  The one GNU
-extension is computed-goto dispatch in `machine.c`, with a `switch`
-fallback for compilers that don't have it.  Newer C23 features such as
-`nullptr`, `typeof` and `constexpr` are not used casually.
+**Standard C23, written in its C17-compatible subset.**  The GNU
+extensions are computed-goto dispatch in `machine.c`, with a `switch`
+fallback for compilers that don't have it, and a few function attributes
+in `prelude.h`, each with a fallback for other compilers.  Newer C23
+features such as `nullptr`, `typeof` and `constexpr` are not used
+casually.
 
 **One file is one translation unit.**  No `.c` file includes another.
 A fragment included into several files shares their static state and
@@ -376,11 +395,13 @@ instead.
 
 `fficupid` generates a C stub for each module with foreign imports.
 Each marshallable type is one row of a table in `ffi.c`, so adding a
-type means adding a row.  Every stub records the `CUPID_API_VERSION`
-it was built for, and the interpreter refuses a stub from a different
-version rather than misread its layout.  `HsFFI.h` keeps the name the
-FFI standard gives it.  [Foreign import wrappers](foreign-import-wrappers.md)
-explains why callbacks into Haskell are not available.
+type means adding a row.  Every stub records the `CUPID_API_VERSION` it
+was built for, and the interpreter refuses a stub whose layout it cannot
+read (the current version 6 and the older 2 to 4 are accepted; version 5
+and unknown versions are not).  `HsFFI.h` keeps the name the FFI
+standard gives it.  [Foreign import
+wrappers](foreign-import-wrappers.md) explains why callbacks into
+Haskell are not available.
 
 ## See also
 
