@@ -1,8 +1,9 @@
 # Cupid documentation
 
-Cupid is a small interpreter for Haskell, written in C.  It reads Haskell
-2010 source, with a few type-system extensions, and evaluates expressions
-at an interactive prompt or runs a program's `main` from a script.
+Cupid is a small interpreter for Haskell, written in C.  It reads
+Haskell 2010 with the parts of modern Haskell that real code needs, its
+libraries follow GHC's base, and it evaluates expressions at an
+interactive prompt or runs a program's `main` from a script.
 
 The documentation follows the [Diátaxis](https://diataxis.fr/) scheme:
 tutorials teach, how-to guides solve a task, reference pages describe,
@@ -50,7 +51,7 @@ program with `runcupid`.
 - [Haskell 2010 conformance](reference/haskell-2010.md) — the Report
   chapter by chapter, language and libraries
 - [Language extensions](reference/extensions.md) — what Cupid accepts
-  beyond Haskell 2010
+  beyond Haskell 2010, and what it leaves out
 - [The libraries](reference/libraries.md) — packages and modules shipped
 
 ## Explanation
