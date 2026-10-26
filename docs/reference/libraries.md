@@ -20,9 +20,10 @@ default search path finds them.
 Much of `base` is not Haskell 2010.  The `ST` monad's `runST` has a
 rank-2 type, and `Control.Monad.ST`, `Data.STRef`, the mutable and
 unboxed array modules, `Data.HashTable` and `Data.Graph` are built on
-it; other modules use multi-parameter classes or existential types.
-All of them load without any option, since the extensions are always
-enabled; see [Language extensions](extensions.md).
+it; other modules use multi-parameter classes or existential types.  All
+of them load without any option, since the extensions are always enabled
+(overlapping instances excepted; they need `+o`); see [Language
+extensions](extensions.md).
 
 ## Modules added since 2006
 
@@ -35,10 +36,11 @@ most: `Control.Category`, `Control.Monad.Fail`,
 `Data.Semigroup`, `Data.String`, `Data.Void`, `GHC.Generics`,
 `GHC.Stack` and `Numeric.Natural`.  With them the transformers package
 loads from its unmodified source, once it has been through the C
-preprocessor (see
-[Load a package written for GHC](../how-to/preprocess-sources.md#load-a-package-written-for-ghc)).  The older modules have the functions added to them
-since, such as `Data.List.intercalate`, `Data.Ord.Down` and
-`Text.Read.readMaybe`.  Six differ from GHC's:
+preprocessor (see [Load a package written for
+GHC](../how-to/preprocess-sources.md#load-a-package-written-for-ghc)).
+The older modules have the functions added to them since, such as
+`Data.List.intercalate`, `Data.Ord.Down` and `Text.Read.readMaybe`.  Six
+differ from GHC's:
 
 - `Proxy` stands for a type of kind `Type` only, since kinds are not
   polymorphic: `Proxy :: Proxy Int` but not `Proxy :: Proxy Maybe`.
