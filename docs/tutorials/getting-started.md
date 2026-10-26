@@ -3,7 +3,7 @@
 Learn to use Cupid by building it, evaluating expressions at its prompt,
 loading a module of your own and running a program from the shell.
 
-**Time**: about 20 minutes, most of it the build.
+**Time**: about 20 minutes.
 **Level**: you have written a little Haskell before, or are following a
 Haskell text alongside this.
 
@@ -18,8 +18,8 @@ By the end you will be able to:
 
 ## Prerequisites
 
-You need a C compiler (gcc or clang), meson 1.1 or later, ninja,
-python3 and bison.  On Fedora:
+You need a C compiler (gcc 13 or later, or clang), meson 1.1 or later,
+ninja, python3 and bison.  On Fedora:
 
 ```sh
 sudo dnf install gcc meson ninja-build python3 bison
@@ -32,7 +32,9 @@ sudo apt install gcc meson ninja-build python3 bison
 ```
 
 Older releases ship a meson older than 1.1; install a newer one with
-`python3 -m pip install --user meson`.
+`python3 -m pip install --user meson`.  They also ship a gcc older than
+13, which cannot compile Cupid's C23 sources (Ubuntu 22.04 has gcc 11).
+Install gcc 13 or later and name it in `CC` below.
 
 On macOS with Homebrew:
 
@@ -57,12 +59,14 @@ ninja -C build
 ```
 
 The build compiles three programs into `build/src` and then assembles
-the Haskell libraries into `build/libraries/cupiddir`.  The last lines
-of output look like this:
+the Haskell libraries into `build/libraries/cupiddir`.  It takes a
+minute or two.  The last lines of output look like this:
 
 ```
-Compiling FFI stubs for base/Data/ByteString/Base.hs
-[43/43] Generating libraries/cupid-libraries with a custom command
+[52/53] Generating libraries/cupid-libraries with a custom command
+fficupid cupid/Cupid/Storable.hs
+...
+fficupid base/Data/ByteString/Base.hs
 ```
 
 Now tell the shell where the programs and the libraries are:
