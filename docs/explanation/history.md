@@ -87,10 +87,11 @@ compilers.
 
 This tree starts from the September 2006 release with one aim: a
 simpler, understandable Haskell implementation.  It is not an attempt
-to keep up with GHC.  The language is Haskell 2010 plus the
-type-system extensions the libraries need; everything from 2006 that
-did not serve the aim has been removed rather than kept behind flags.
-In order:
+to keep up with GHC, but it is meant to run the Haskell people write.
+The language is Haskell 2010 plus the parts of modern Haskell that
+real code needs and one type checker can hold; everything from 2006
+that did not serve the aim has been removed rather than kept behind
+flags.  In order:
 
 - the sources were made standard C23 and the K&R definitions converted
 - autoconf was replaced by meson, with the platform facts written down
@@ -104,11 +105,20 @@ In order:
 - the packaging, the DocBook user's guide and the release notes were
   replaced with this documentation
 - the `-98` switch was dropped, so the extensions are always on
+- kind signatures, GADT syntax and equality constraints were added to
+  the one constraint solver, and literate scripts were dropped
 - the fork was named Cupid, after the day Hugs was first released,
   and everything that carried the Hugs name was renamed; the
   `haskell98` flat-module package, the .NET remnants and the unbuilt
   2006 `lib/` and `include/` trees were dropped, and the three
   modules the demos need from `lib/` moved into `demos/`
+- the libraries took the class hierarchy and API of GHC's base, and
+  the language gained what packages written for GHC use most: type
+  operators, tuple sections, polymorphic and constraint synonyms, and
+  GHC's deriving strategies with `Generic` and `Data`
+- Windows became a supported platform, built natively without a POSIX
+  layer, and releases are built as archives for Linux, macOS and
+  Windows
 
 [The design of Cupid](design.md) explains the choices that came out of
 these changes, and why they were made.
@@ -116,4 +126,4 @@ these changes, and why they were made.
 ## See also
 
 - [How Cupid runs a program](how-cupid-runs-a-program.md)
-- [The language Hugs accepts](../reference/language.md)
+- [The language Cupid accepts](../reference/language.md)
