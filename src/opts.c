@@ -420,8 +420,11 @@ bool processOption(char *s) {
             }
             return true;
 
-        case 'i':
-            ffiAddCppInclude(s + 1);
+        case 'i': /* a header for fficupid's C; elsewhere unknown */
+            if (generateFFI)
+                ffiAddCppInclude(s + 1);
+            else
+                toggleSet(*s, state);
             return true;
 
             /* re-parse options (useful with #!) */
