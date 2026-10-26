@@ -98,9 +98,10 @@ fficupid '-i<math.h>' Trig.hs -lm
 
 ### Several FFI modules
 
-If `A.hs` imports `B.hs` and both contain foreign imports, compile `B`
-first: `fficupid` loads a module's imports, and `B.so` must exist for
-that.
+If `A.hs` imports `B.hs` and both contain foreign imports, run
+`fficupid` on each of them.  Compiling `A` does not compile `B`, and
+until `B.so` exists, loading `A` fails with `Error while importing DLL
+"./B.so"`.
 
 ## Troubleshooting
 
