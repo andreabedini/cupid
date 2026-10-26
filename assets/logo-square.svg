@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Cupid">
+  <title>Cupid</title>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="#3B1A2A"/>
+  <g transform="translate(128 128) scale(0.8) translate(-128 -131)" fill="none" stroke="#FFE4EA" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 56 66 L 108 138 M 82 102 L 56 138 M 148 66 L 200 138 M 174 102 L 148 138"/>
+    <path d="M 88 176 C 106 204 150 204 168 176"/>
+  </g>
+</svg>
