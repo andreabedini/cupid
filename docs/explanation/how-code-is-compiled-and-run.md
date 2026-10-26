@@ -10,10 +10,11 @@ are its author's; the places where Hugs changed it are noted.
 
 ## From typed bindings to a core language
 
-Nothing after the type checker can report an error to the user, which
-frees the compiler to change representation.  `translate` reduces the
-typed program to a core language with only the constructs the later
-stages understand:
+Almost nothing after the type checker can report an error to the user
+(the exception is a binding too large for the code, which fails with
+"Compiled code too complex"), which frees the compiler to change
+representation.  `translate` reduces the typed program to a core
+language with only the constructs the later stages understand:
 
 - Line numbers are dropped from right-hand sides.  (Gofer's author
   later called this hasty, because a warning for a non-exhaustive
