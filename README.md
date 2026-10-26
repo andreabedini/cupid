@@ -3,22 +3,38 @@
 </p>
 
 <p align="center">
-  <strong>A small Haskell interpreter, written in C.</strong><br>
-  <em>Hugs 98, taken apart and put back together so you can read it.</em>
+  <strong>Hugs, revived.</strong><br>
+  <em>A small Haskell interpreter in plain C, with modern base, that
+  builds in a minute.</em>
 </p>
 
 ---
 
-Cupid is a fork of Hugs 98 — the interpreter Mark P Jones started in
-1994 and a group of volunteers kept alive until 2006.  It picks up from
-the September 2006 release, the last one that shipped.
+Cupid is Hugs 98 brought back.  Hugs is the interpreter Mark P Jones
+started in 1994, and the Haskell many people learned with.  A group of
+volunteers kept it going until the September 2006 release, the last one
+that shipped, and in time it stopped building on current compilers.
+Cupid picks up from that release:
 
-The aim is one sentence: **a Haskell implementation you can sit down and
-read.**  Not the fastest one, not the most complete one.  The one where
-you can follow an expression from the characters you typed to the value
-that comes back, and never lose the thread.
+- **A small interpreter in plain C.**  Source text is compiled to the
+  code of a small abstract machine and run in the same process.  The
+  whole interpreter is under fifty thousand lines of standard C23.
+- **Modern base.**  The libraries follow GHC's base, roughly version
+  4.18, so the Haskell written today loads.
+- **Builds in a minute.**  You need a C compiler, meson, ninja, python3
+  and bison, but no Haskell compiler.  It builds natively on Linux,
+  macOS and Windows.
 
-Three things follow from that, and they don't change:
+## Written to be read
+
+The aim behind it is one sentence: **a Haskell implementation you can
+sit down and read.**  Not the fastest one, not the most complete one.
+The one where you can follow an expression from the characters you
+typed to the value that comes back, and never lose the thread.  It
+isn't there yet: much of the C is still Hugs's, tidied rather than
+rewritten.  But every change is judged against that aim.
+
+Three things follow from it, and they don't change:
 
 - **It is an interpreter written in C.**  Source text is compiled to the
   code of a small abstract machine and run in the same process.  No
