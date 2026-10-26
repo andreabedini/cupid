@@ -5,7 +5,7 @@ install them under a prefix.
 
 ## Prerequisites
 
-- a C compiler: gcc or clang (the sources are standard C23)
+- a C compiler: gcc 13 or later, or clang (the sources are standard C23)
 - meson 1.1 or later, and ninja
 - python3 (meson needs it anyway; the library build script uses it too)
 - optionally readline or libedit, for command-line editing at the prompt
@@ -53,7 +53,7 @@ ninja -C build
 
 This compiles `cupid`, `runcupid` and `fficupid` into `build/src`, then
 assembles the Haskell libraries into `build/libraries/cupiddir`.  The
-source tree is not written to.  The whole thing takes about a minute.
+source tree is not written to.  The whole thing takes a minute or two.
 
 ### 3. Install
 
@@ -89,7 +89,8 @@ Cupid> [1..10]
 Cupid> :quit
 ```
 
-Then run one of the installed demos:
+Then run one of the installed demos.  Where the distribution uses
+`lib64`, the path is `/usr/local/lib64/cupid/demos/Say.hs`:
 
 ```sh
 cupid /usr/local/lib/cupid/demos/Say.hs
@@ -97,6 +98,12 @@ cupid /usr/local/lib/cupid/demos/Say.hs
 
 ```
 Say> putStr (say "Cupid")
+
+ CCCC  U   U  PPPP   IIIII  DDDD 
+C      U   U  P   P    I    D   D
+C      U   U  PPPP     I    D   D
+C      U   U  P        I    D   D
+ CCCC   UUU   P      IIIII  DDDD 
 ```
 
 ## Troubleshooting
