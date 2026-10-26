@@ -1,7 +1,7 @@
 option('cupiddir', type: 'string', value: '',
        description: 'Directory for the Cupid libraries (default: libdir/cupid)')
 option('libraries', type: 'boolean', value: true,
-       description: 'Build the Haskell libraries (needs a POSIX shell)')
+       description: 'Build the Haskell libraries')
 option('readline', type: 'feature', value: 'auto',
        description: 'Command-line editing with GNU readline or libedit')
 option('char-encoding', type: 'combo', choices: ['utf8', 'locale', 'none'], value: 'utf8',
