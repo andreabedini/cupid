@@ -25,8 +25,10 @@ instance and default declarations, `typeexp.c` resolves the type
 expressions in them, `kind.c` infers their kinds, `pattern.c` turns
 parsed expressions into patterns, `binding.c` turns equations into
 bindings, and `depend.c` resolves names and sorts the bindings into
-dependency groups.  `deriving.c` writes the derived instances and
-`ffi.c` checks the `foreign` declarations.
+dependency groups.  `scc.c` does the strongly-connected-components
+sort that dependency analysis and the type checker use.  `deriving.c`
+writes the derived instances and `ffi.c` checks the `foreign`
+declarations.
 `module.c` implements the module system: what a module exports, what an
 import brings into scope.  [How source is read](how-source-is-read.md)
 follows these first three stages in detail.
@@ -45,8 +47,7 @@ treatment of class constraints.
 **Compiling.**  `compiler.c` compiles each binding to the code of an
 abstract machine: pattern matching is compiled to case trees, local
 functions are lambda-lifted to supercombinators, and the result is a
-sequence of instructions for `machine.c` to run.  `scc.c` does the
-strongly-connected-components analysis the compiler needs.  [How code
+sequence of instructions for `machine.c` to run.  [How code
 is compiled and run](how-code-is-compiled-and-run.md) explains the
 passes and the machine.
 
@@ -62,17 +63,18 @@ explains the representation.
 The collector is conservative about the C stack: any word on it that
 looks like a cell pointer keeps that cell alive.  That is why the
 source files that hold cell pointers in C variables across allocations
-(the static analysis files, `compiler.c`, `module.c`, `preds.c`,
-`scc.c`, `subst.c` and `type.c`) are compiled without optimisation.  An
+(the static analysis files other than `ffi.c` and `fixity.c`, and
+`compiler.c`, `module.c`, `preds.c`, `scc.c`, `subst.c` and `type.c`:
+fifteen in all) are compiled without optimisation.  An
 optimiser could keep only a derived pointer, which the scan would not
 recognise.
 
 `prims/builtin.c` holds the primitive functions the `Prelude` is built
-on: arithmetic, characters, arrays, the pieces of the FFI.
-`prims/iomonad.c` implements the `IO` monad and exceptions,
-`prims/bignums.c` the `Integer`
-type, `char.c` Unicode classification and the encodings described in
-[Character encoding](character-encoding.md).
+on: arithmetic, characters, the pieces of the FFI.  `prims/array.c`
+holds the array primitives.  `prims/iomonad.c` implements the `IO` monad
+and exceptions, `prims/bignums.c` the `Integer` type, `char.c` Unicode
+classification and the encodings described in [Character
+encoding](character-encoding.md).
 
 ## The front ends
 
@@ -80,8 +82,9 @@ Three programs share all of the above.
 
 `cupid.c` is the interactive interpreter: the prompt, the commands, and
 the loop that reads a line, decides whether it is a command or an
-expression, and acts.  `edit.c` adds line editing through readline or
-libedit when one was found at build time.
+expression, and acts.  `edit.c` starts the external editor for `:edit` and
+`:find`; line editing through readline or libedit, when one was found
+at build time, is in `input.c`.
 
 `runcupid.c` is the same interpreter without the prompt: it starts the
 evaluator, loads the Prelude and the file it is given, and calls
@@ -121,7 +124,7 @@ modules, so starting Cupid recompiles the `Prelude`, and `:reload`
 recompiles the first module whose file has changed and every module
 loaded after it, whether or not they depend on it.  Programs
 run perhaps a hundred times slower than compiled code.  In exchange
-the whole implementation is about fifty thousand lines of C that one
+the whole implementation is under fifty thousand lines of C that one
 person can read, and the turnaround from editing a file to seeing the
 result is a `:reload`.
 
