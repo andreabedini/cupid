@@ -1,6 +1,6 @@
 #! /usr/local/bin/runcupid
--- A line beginning with #! is read as a blank line, so an executable
--- script is an ordinary module after it.
+-- A first line beginning with #! is read as a blank line, so an
+-- executable script is an ordinary module after it.
 module Main where
 
 main :: IO ()

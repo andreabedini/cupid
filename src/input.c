@@ -191,6 +191,7 @@ bool startsQual(Char c) {
 static ShortChar lineBuffer[LINEBUFFER_SIZE];
 static int lineLength = 0;
 static int linePtr = 0;
+static bool firstLine = false; /* is nextLine to read a file's first? */
 
 #if HAVE_RL_EVENT_HOOK
 static int readlineInterrupted(void) {
@@ -292,6 +293,7 @@ static bool fileInput(char *nm, long len) {
 
         linePtr = 0;
         lineLength = 0;
+        firstLine = true;
 
         readSoFar = 0;
         setGoal("Parsing", (Target)len);
@@ -346,12 +348,13 @@ static int nextLine(void) {
 
     if (lineLength <= 0) { /* EOF / IO error, who knows.. */
         return lineLength;
-    } else if (lineLength >= 2 && lineBuffer[0] == '#' &&
+    } else if (firstLine && lineLength >= 2 && lineBuffer[0] == '#' &&
                lineBuffer[1] == '!') {
-        lineBuffer[0] = '\n'; /* pretend it's a blank line */
+        lineBuffer[0] = '\n'; /* a script's #! line: pretend it's blank */
         lineBuffer[1] = '\0';
         lineLength = 1;
     }
+    firstLine = false;
     return lineLength;
 }
 
