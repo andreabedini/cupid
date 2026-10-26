@@ -52,12 +52,12 @@ introduced so that a function's signature says what it produces.
 the result back into the parent node, so a `let`, an application or a
 conditional is updated destructively as its parts are typed.  The
 translation is where dictionaries go.  When an overloaded name is
-instantiated, `assumeEvid` invents a *dictionary variable* (a
-`DICTVAR` cell) for each predicate in the name's context, records the
-predicate, and returns the variable to be applied as an extra
-argument, so `x == y` becomes `(==) dv x y` on the spot.  When the
-solver later finds what `dv` is, `overEvid` overwrites that very cell
-with an indirection to the evidence.  Nothing walks the expression a
+instantiated, `assumeEvid` invents a *dictionary variable* (a `DICTVAR`
+cell) for each predicate in the name's context, records the predicate,
+and returns the variable to be applied as an extra argument, so `x == y`
+becomes `(==) dv x y` on the spot.  When the solver later finds what
+`dv` is, `overEvid` overwrites that very cell with an application of
+`nameInd` (`_indirect`) to the evidence.  Nothing walks the expression a
 second time to fill the dictionaries in, and if the evidence is itself
 overwritten later, every reference sees it through the indirection.
 
@@ -75,15 +75,15 @@ assumptions distinguish let-bound from lambda-bound variables at all.
 
 ## Assumptions
 
-The types of variables in scope are two lists of lists: `defnBounds`
-for let-bound variables, which may be polymorphic and overloaded, and
+The types of variables in scope are two lists of lists: `defnBounds` for
+let-bound variables, which may be polymorphic and overloaded, and
 `varsBounds` for lambda-bound ones, which are monomorphic and carry no
 dictionaries.  `enterBindings` pushes an empty level on each when a
 scope is entered and `leaveBindings` pops it.  Only locally bound
-variables are here; a global has its type in its name record, and
-needs no assumption.  The scopes that existential types and local
-givens require are a separate stack (`TcScope`), described in [How
-constraints are solved](how-constraints-are-solved.md#scopes-skolems-and-local-givens).
+variables are here; a global has its type in its name record, and needs
+no assumption.  The scopes that existential types and local givens
+require are a separate stack (`TcScope`), described in
+[How constraints are solved](how-constraints-are-solved.md#scopes-skolems-and-local-givens).
 
 ## Generalisation
 
@@ -108,8 +108,8 @@ than `NUM_OFFSETS` variables is an error.
 A binding group arrives from dependency analysis as a set of mutually
 recursive bindings, and `typeBindings` picks one of two treatments:
 
-- If the group has a pattern binding, or a variable binding without a
-  signature, the monomorphism restriction applies: `monorestrict`
+- If the group has a pattern binding, or a binding with no arguments and
+  no signature, the monomorphism restriction applies: `monorestrict`
   types the group and does not generalise over any constrained
   variable, so no dictionary parameters are added.
 - Otherwise `unrestricted` handles it.  The bindings with signatures
@@ -124,19 +124,20 @@ recursive bindings, and `typeBindings` picks one of two treatments:
 In either case the group's types are found by allocating a fresh
 variable for each binding, typing the right-hand sides with the
 predicates accumulating, and then running the solver and generalising;
-[How constraints are solved](how-constraints-are-solved.md#the-loop-at-a-binding-group)
-is that part.
+[How constraints are
+solved](how-constraints-are-solved.md#the-loop-at-a-binding-group) is
+that part.
 
 ## Kinds use the same machinery
 
-Kind inference, in `src/kind.c`, is a type checker without
-polymorphism or overloading: the kinds are `STAR` and pairs `(k1, k2)`
-for `k1 -> k2`, unknown kinds are offsets, and they are unified in the
-same substitution array (`newKindvars` is `newTyvars`).  That is why
-`kind.c` is among the files compiled without optimisation, and why a
-kind check is bracketed by `emptySubstitution`.  Gofer's author
-suggested reading `kind.c` first as the easier introduction to the
-type checker; that is still good advice.
+Kind inference, in `src/kind.c`, is a type checker without polymorphism
+or overloading: the kinds are `STAR`, `CONSTRAINT` (the kind of a class,
+in a kind signature) and pairs `(k1, k2)` for `k1 -> k2`, unknown kinds
+are offsets, and they are unified in the same substitution array
+(`newKindvars` is `newTyvars`).  That is why `kind.c` is among the files
+compiled without optimisation, and why a kind check is bracketed by
+`emptySubstitution`.  Gofer's author suggested reading `kind.c` first as
+the easier introduction to the type checker; that is still good advice.
 
 ## Where to read
 
@@ -149,7 +150,7 @@ type checker; that is still good advice.
 | dictionary placeholders | `assumeEvid`, `overEvid` | preds.c |
 | generalisation | `clearMarks`, `markType`, `copyType`, `generalize` | subst.c, type.c |
 | binding groups | `typeBindings`, `monorestrict`, `unrestricted` | type.c |
-| kinds | `kindTCGroup`, `inferKinds` | kind.c |
+| kinds | `kindTCGroup`, `kindInst` | kind.c |
 
 ## See also
 
