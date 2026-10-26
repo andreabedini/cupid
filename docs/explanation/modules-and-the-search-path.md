@@ -35,22 +35,28 @@ the search path alone.
 
 ## The default search path
 
+On Linux and macOS it is:
+
 ```
 .:{Home}/lib/cupid/packages/*:/usr/local/lib/cupid/packages/*:{Cupid}/packages/*
 ```
 
+On Windows it is `.;{Cupid}\packages\*`, with no home or system-wide
+entry.
+
 The current directory comes first, so a project's own modules shadow
 everything.  `{Cupid}` is the library directory and its `packages/`
-holds the three shipped packages; `dir/*` means every immediate
-subdirectory of `dir`, so each package's root is a search directory
-and a module `Data.Map` is found as `packages/base/Data/Map.hs`.
+holds the two shipped packages, `base` and `cupid`; `dir/*` means every
+immediate subdirectory of `dir`, so each package's root is a search
+directory and a module `Data.Map` is found as
+`packages/base/Data/Map.hs`.
 
-The two other `packages/*` entries exist for libraries you add.  One is
-under your home directory, the other is the system-wide location.  A
-library is a directory of modules copied under either; there is no
-package database and nothing to register.  This is what remains of the
-Cabal support of the 2006 release, which installed packages into these
-directories.
+On Linux and macOS the two other `packages/*` entries exist for
+libraries you add.  One is under your home directory, the other is the
+system-wide location.  A library is a directory of modules copied under
+either; there is no package database and nothing to register.  This is
+what remains of the Cabal support of the 2006 release, which installed
+packages into these directories.
 
 Cupid refuses a search path or suffix list from which the `Prelude`
 cannot be found, so `:set -P` cannot lock you out of the interpreter.
