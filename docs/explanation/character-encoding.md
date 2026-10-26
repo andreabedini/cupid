@@ -14,8 +14,9 @@ arguments.  Handles opened in binary mode are exempt; they carry bytes
 as `Char` values below 256.
 
 Because program text is decoded, string literals and comments may
-contain any character the encoding can represent.  Identifiers are an
-exception: the lexer accepts only Latin-1 characters in names.
+contain any character the encoding can represent.  Identifiers may use
+any Unicode letter, classified through the Unicode tables in
+`unitable.c`.
 
 ## The `char-encoding` build option
 
