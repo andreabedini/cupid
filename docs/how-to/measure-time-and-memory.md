@@ -15,7 +15,7 @@ on to.
 Cupid> :set +s
 Cupid> length [1..10000]
 10000
-(210054 reductions, 278105 cells)
+(210056 reductions, 278134 cells)
 ```
 
 The reduction count is a crude measure of the work done; the cell count
@@ -26,9 +26,9 @@ the expression in code to print the value and catch exceptions.
 ### 2. Watch the garbage collector
 
 ```
-Cupid> :set +g
+Cupid> :set -s +g
 Cupid> length [1..60000]
-{{Gc:986865}}60000
+{{Gc:982638}}60000
 ```
 
 Each `{{Gc:n}}` is a collection that recovered `n` cells.  With the
@@ -43,7 +43,7 @@ cupid -h250k
 ```
 Cupid> :set +g
 Cupid> length [1..60000]
-{{Gc:236848}}{{Gc:236850}}{{Gc:236845}}{{Gc:236850}}{{Gc:236853}}{{Gc:236853}}{{Gc:236853}}60000
+{{Gc:232614}}{{Gc:232619}}{{Gc:232616}}{{Gc:232612}}{{Gc:232618}}{{Gc:232617}}{{Gc:232612}}60000
 ```
 
 The number recovered is the same at every collection, so the
@@ -51,16 +51,17 @@ computation runs in constant space.  Compare:
 
 ```
 Cupid> let xs = [1..60000] in sum xs `div` length xs
-{{Gc:220934}}{{Gc:204361}}{{Gc:189033}}{{Gc:174857}}{{Gc:161749}}{{Gc:149611}}
-{{Gc:138397}}{{Gc:128015}}{{Gc:118413}}{{Gc:109527}}{{Gc:101314}}{{Gc:93713}}
-{{Gc:86686}}{{Gc:80184}}{{Gc:74178}}{{Gc:68605}}{{Gc:63463}}{{Gc:59279}}
-{{Gc:77814}}{{Gc:103752}}{{Gc:138336}}{{Gc:184452}}30000
+{{Gc:217013}}{{Gc:200730}}{{Gc:185683}}{{Gc:171755}}{{Gc:158875}}{{Gc:146954}}
+{{Gc:135933}}{{Gc:125743}}{{Gc:116306}}{{Gc:107594}}{{Gc:99518}}{{Gc:92055}}
+{{Gc:85150}}{{Gc:78765}}{{Gc:72861}}{{Gc:67389}}{{Gc:62335}}{{Gc:57659}}
+{{Gc:58828}}{{Gc:78437}}{{Gc:104584}}{{Gc:139443}}{{Gc:185925}}30000
 ```
 
 The amount recovered falls steadily while `sum` traverses the list,
 because `xs` is kept alive for `length`, and climbs again once
 `length` starts consuming it.  The messages are interleaved with the
-program's own output, so turn `+g` off again once you have seen what
+program's own output, and one more appears just before the next prompt,
+so turn `+g` off again once you have seen what
 you need:
 
 ```
