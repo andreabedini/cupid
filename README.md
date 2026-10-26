@@ -11,8 +11,7 @@
 
 Cupid is a fork of Hugs 98 — the interpreter Mark P Jones started in
 1994 and a group of volunteers kept alive until 2006.  It picks up from
-the September 2006 release, the last one that shipped, and takes it
-somewhere Hugs itself was not going.
+the September 2006 release, the last one that shipped.
 
 The aim is one sentence: **a Haskell implementation you can sit down and
 read.**  Not the fastest one, not the most complete one.  The one where
