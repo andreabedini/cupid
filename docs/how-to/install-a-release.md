@@ -48,6 +48,7 @@ gh attestation verify cupid-VERSION-TARGET.tar.gz --repo andreabedini/cupid
 ### 2. Unpack it anywhere
 
 ```sh
+mkdir -p ~/.local/opt ~/.local/bin
 tar -xzf cupid-VERSION-TARGET.tar.gz -C ~/.local/opt
 ```
 
