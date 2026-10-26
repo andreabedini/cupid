@@ -62,17 +62,22 @@
   <h2>What it runs</h2>
   <p>
     An implementation that only runs textbook examples can&rsquo;t show you how
-    Haskell works, so Cupid runs real code.  The Prelude has GHC&rsquo;s class
-    hierarchy, with <code>Applicative</code> under <code>Monad</code>,
-    <code>Semigroup</code> under <code>Monoid</code>, and
-    <code>Foldable</code> and <code>Traversable</code>.  Deriving via,
-    standalone deriving, <code>GHC.Generics</code> and <code>Data.Data</code>
-    work, and the transformers package loads unchanged.
+    Haskell works, so Cupid runs real code.  Its libraries follow GHC&rsquo;s
+    base, roughly version 4.18, because that is what programs import:
+    <code>Applicative</code> under <code>Monad</code>, <code>Semigroup</code>
+    under <code>Monoid</code>, and the Prelude&rsquo;s folds those of
+    <code>Foldable</code>.  Deriving via, standalone deriving and
+    <code>Data.Data</code> work, and so does <code>deriving Generic</code>,
+    with a functional dependency where GHC has the <code>Rep</code> family.
+    The transformers package loads from its unmodified source, once it has
+    been through the C preprocessor.
   </p>
   <pre class="session"><code><span class="prompt">Cupid&gt;</span> :type traverse
 traverse :: (Traversable a, Applicative b) =&gt; (c -&gt; b d) -&gt; a c -&gt; b (a d)
 <span class="prompt">Cupid&gt;</span> traverse (\x -&gt; if x &gt; 0 then Just x else Nothing) [3,1,2]
 Just [3,1,2]
+<span class="prompt">Cupid&gt;</span> traverse (\x -&gt; if x &gt; 0 then Just x else Nothing) [3,0,2]
+Nothing
 <span class="prompt">Cupid&gt;</span> foldMap (\x -&gt; [x, x * 10]) (Just 4)
 [4,40]</code></pre>
   <p>

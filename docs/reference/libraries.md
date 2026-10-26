@@ -13,7 +13,7 @@ default search path finds them.
 | Package | Contents |
 |---|---|
 | `cupid` | `Cupid.Prelude`, where most of the `Prelude` is defined, and the `Cupid.*` modules that bind the interpreter's primitives |
-| `base` | The `Prelude` and the `base` library of 2006, `Control.*`, `Data.*`, `Foreign.*`, `System.*`, `Text.*`, with the class hierarchy of GHC's base (see [the language](language.md#predefined-types-and-classes)); and modules added since, such as `Control.Category` and `GHC.Generics` |
+| `base` | The `Prelude` and `base`, following GHC's base, roughly version 4.18: `Control.*`, `Data.*`, `Foreign.*`, `System.*`, `Text.*`, with GHC's class hierarchy (see [the language](language.md#predefined-types-and-classes)), and the modules added since 2006, such as `Control.Category` and `GHC.Generics` |
 
 ## Modules beyond Haskell 2010
 
@@ -34,7 +34,9 @@ most: `Control.Category`, `Control.Monad.Fail`,
 `.Classes` and `.Contravariant`), `Data.List.NonEmpty`, `Data.Proxy`,
 `Data.Semigroup`, `Data.String`, `Data.Void`, `GHC.Generics`,
 `GHC.Stack` and `Numeric.Natural`.  With them the transformers package
-loads as it is.  The older modules have the functions added to them
+loads from its unmodified source, once it has been through the C
+preprocessor (see
+[Load a package written for GHC](../how-to/preprocess-sources.md#load-a-package-written-for-ghc)).  The older modules have the functions added to them
 since, such as `Data.List.intercalate`, `Data.Ord.Down` and
 `Text.Read.readMaybe`.  Six differ from GHC's:
 
