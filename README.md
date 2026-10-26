@@ -28,11 +28,11 @@ Three things follow from that, and they don't change:
   Haskell except the libraries it ships.  You need a C compiler and a
   few build tools, but no Haskell compiler, and the thing you are
   reading is the thing that runs.
-- **It stays small.**  Haskell 2010, plus the parts of modern Haskell
-  that real programs need and one type checker can hold — classes with
-  several parameters and functional dependencies, rank-n types, GADT
-  syntax, GHC's deriving strategies — always on.  Anything that doesn't
-  serve the aim gets deleted rather than parked behind a flag.
+- **It stays small.**  The whole interpreter is under fifty thousand
+  lines of C, and it is kept that way.  The libraries are plain Haskell
+  and grow with what programs import; the C grows only where a library
+  can't do the job.  Anything that doesn't serve the aim gets deleted
+  rather than parked behind a flag.
 
 That third one does most of the work.  A flag is a promise to keep two
 code paths working forever, and a tree full of them is exactly the tree
