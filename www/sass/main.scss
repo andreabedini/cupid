@@ -123,7 +123,7 @@ main { padding: 0 clamp(1rem, 4vw, 3rem); }
   &.ghost:hover { border-color: var(--coral); color: var(--coral); background: transparent; }
 }
 
-section.aim, section.start, section.quadrants {
+section.aim, section.runs, section.start, section.quadrants {
   max-width: 62rem; margin: 0 auto; padding: 3rem 0;
   border-top: 1px solid var(--rule);
 

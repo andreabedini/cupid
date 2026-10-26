@@ -6,14 +6,14 @@
   <h1>Cupid</h1>
   <p class="tagline">{{ config.extra.tagline }}</p>
   <p class="lede">
-    A fork of Hugs 98 &mdash; the interpreter Mark P Jones started in 1994 and a
-    group of volunteers kept alive until 2006.  It picks up from the September
-    2006 release, the last one that shipped, and takes it somewhere Hugs itself
-    was not going.
+    A fork of Hugs 98, the interpreter Mark P Jones started in 1994, rebuilt
+    around one aim: a Haskell implementation you can read from end to end.  It
+    runs the Haskell people write today, from the Prelude&rsquo;s
+    <code>Foldable</code> to the transformers library.
   </p>
   <p class="cta">
-    <a class="button" href="{{ get_url(path='@/docs/tutorials/getting-started.md') }}">Get started</a>
-    <a class="button ghost" href="{{ get_url(path='@/docs/_index.md') }}">Read the docs</a>
+    <a class="button" href="{{ get_url(path='@/docs/explanation/how-cupid-runs-a-program.md') }}">See how it works</a>
+    <a class="button ghost" href="{{ get_url(path='@/docs/tutorials/getting-started.md') }}">Get started</a>
   </p>
 </section>
 
@@ -41,9 +41,9 @@
     </article>
     <article>
       <h3>It stays small</h3>
-      <p>Haskell 2010, plus the type-system extensions the libraries actually
-      need, always on.  Anything that doesn&rsquo;t serve the aim gets deleted
-      rather than parked behind a flag.</p>
+      <p>Haskell 2010, plus the parts of modern Haskell that real programs need
+      and one type checker can hold, always on.  Anything that doesn&rsquo;t
+      serve the aim gets deleted rather than parked behind a flag.</p>
     </article>
   </div>
   <p class="aside">
@@ -52,6 +52,36 @@
     can&rsquo;t read.  So when something has to go, it goes.  What stays, and
     why, is in
     <a href="{{ get_url(path='@/docs/explanation/design.md') }}">the design</a>.
+  </p>
+</section>
+
+<section class="runs">
+  <h2>What it runs</h2>
+  <p>
+    An implementation that only runs textbook examples can&rsquo;t show you how
+    Haskell works, so Cupid runs real code.  The Prelude has GHC&rsquo;s class
+    hierarchy, with <code>Applicative</code> under <code>Monad</code>,
+    <code>Semigroup</code> under <code>Monoid</code>, and
+    <code>Foldable</code> and <code>Traversable</code>.  Deriving via,
+    standalone deriving, <code>GHC.Generics</code> and <code>Data.Data</code>
+    work, and the transformers package loads unchanged.
+  </p>
+  <pre class="session"><code><span class="prompt">Cupid&gt;</span> :type traverse
+traverse :: (Traversable a, Applicative b) =&gt; (c -&gt; b d) -&gt; a c -&gt; b (a d)
+<span class="prompt">Cupid&gt;</span> traverse (\x -&gt; if x &gt; 0 then Just x else Nothing) [3,1,2]
+Just [3,1,2]
+<span class="prompt">Cupid&gt;</span> foldMap (\x -&gt; [x, x * 10]) (Just 4)
+[4,40]</code></pre>
+  <p>
+    Running real code doesn&rsquo;t mean following GHC.  A feature gets in when
+    programs need it and it fits the one type checker Cupid has; the C does not
+    grow a second solver or touch the machine underneath for it.  Type
+    families, unboxed types, Template Haskell and STM are not in.
+  </p>
+  <p class="aside">
+    <a href="{{ get_url(path='@/docs/reference/extensions.md') }}">Language extensions</a>
+    lists everything accepted beyond Haskell 2010, how each differs from GHC,
+    and what is left out and why.
   </p>
 </section>
 
@@ -68,11 +98,12 @@ CUPIDDIR=build/libraries/cupiddir build/src/cupid</code></pre>
 [2,4,6,8,10,12,14,16,18,20]
 <span class="prompt">Cupid&gt;</span> :quit</code></pre>
   <p class="aside">
-    Name a real compiler in <code>$CC</code>: meson bakes the command into
-    <code>fficupid</code>, which runs it again at run time to compile the C
-    stubs of modules with foreign imports, so a wrapper like
-    <code>sccache cc</code> breaks that step.  The rest is in
-    <a href="{{ get_url(path='@/docs/how-to/build-and-install.md') }}">Build and install</a>.
+    Cupid builds on 64-bit Linux, macOS, the BSDs and Windows, and Linux, macOS
+    and Windows are built and tested on every change.
+    <a href="{{ get_url(path='@/docs/how-to/build-and-install.md') }}">Build and install</a>
+    has the detail, and
+    <a href="{{ get_url(path='@/docs/how-to/build-on-windows.md') }}">Build on Windows</a>
+    covers the native MinGW-w64 build.
   </p>
 </section>
 
