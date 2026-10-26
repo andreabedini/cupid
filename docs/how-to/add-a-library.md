@@ -38,10 +38,11 @@ An empty entry stands for the previous path, so this appends:
 cupid -P:/path/to/mylib
 ```
 
-An entry ending in `/*` means every immediate subdirectory:
+An entry ending in `/*` means every immediate subdirectory.  Quote it, so
+that the shell does not expand it:
 
 ```sh
-cupid -P:/path/to/packages/*
+cupid -P':/path/to/packages/*'
 ```
 
 To make it permanent, put the option in `CUPIDFLAGS`.
