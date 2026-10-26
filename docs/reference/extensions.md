@@ -2,12 +2,14 @@
 
 The language features Cupid accepts beyond Haskell 2010.  They are
 always enabled; there is no option to turn them off.  Each is here
-because real code needs it, the shipped libraries (see
-[The libraries](libraries.md)) or packages written for GHC, and each is
-written the way GHC writes it, though GHC's versions are often more
-general.  The differences are listed under each feature, and
-[Not accepted](#not-accepted) lists what is left out.
-[The design](../explanation/design.md#the-language) says how a feature
+because real code needs it, either the shipped libraries (see
+[The libraries](libraries.md)) or packages written for GHC, and each
+is written as GHC writes it, though GHC's version is often more
+general; the differences are listed under the feature.  The exception
+is [restricted type synonyms](#restricted-type-synonyms), which are
+Hugs's own and are kept from the 2006 release.
+[Not accepted](#not-accepted) lists what is left out, and
+[the design](../explanation/design.md#the-language) says how a feature
 gets in.
 
 ## Type classes
@@ -731,8 +733,8 @@ Differences from GHC's `DerivingStrategies`, `DerivingVia` and
 - There are no roles.  The first check is stricter than GHC's
   `Coercible` below the head of the type, and the second is a
   conservative stand-in for what roles prevent.
-- A `deriving` clause can derive via a type only a class of one
-  parameter; a standalone declaration (below) can derive any class.
+- In a `deriving` clause, only a class of one parameter can be derived
+  via a type; a standalone declaration (below) can derive any class.
 - A clause cannot use the `anyclass` strategy.
 
 ### Standalone deriving
