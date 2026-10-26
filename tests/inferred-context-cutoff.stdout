@@ -1,0 +1,13 @@
+runcupid: Error occurred
+ERROR "inferred-context-cutoff.hs" - 
+*** The type checker has reached the cutoff limit while trying to
+*** determine whether:
+***     C [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[Char]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]
+*** can be deduced from:
+***     ()
+*** This may indicate that the problem is undecidable.  However,
+*** you may still try to increase the cutoff limit using the -c
+*** option and then try again.  (The current setting is -c40)
+
+
+

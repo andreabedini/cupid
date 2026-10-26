@@ -28,6 +28,7 @@ static Cell scFind(Cell, Cell, int, Cell, int, int);
 static Cell entail(List, Cell, int, int);
 
 static bool anyGenerics(Type, int);
+static List reduceFrom(int, List);
 
 static bool resolveVar(int, bool);
 static Class classConstraining(int, Cell, int);
@@ -775,16 +776,23 @@ List elimPredsUsing(List ps, List sps) {
     return sps;
 }
 
-/* Context reduce predicates: uggh! */
-void reducePreds(void) {
-    List rems = NIL;         /* (A last resort for defaulting)  */
+/* Reduce each predicate in preds, at depth d, and then, at depth d+1, the
+ * predicates its reduction adds to preds, before the next; those that make
+ * no progress are put on rems, which is returned.  As in inEntail, an
+ * instance whose context only grows, such as instance C [[a]] => C [a],
+ * stops at the cutoff. */
+static List reduceFrom(int d, List rems) {
     while (nonNull(preds)) { /* Pick a predicate from preds        */
         Cell p = preds;
         Cell pi = fst3(hd(p));
         int o = intOf(snd3(hd(p)));
         int beta;
-        Inst in = findInstFor(pi, o, &beta);
-        preds = tl(preds);
+        Inst in;
+        List ps = tl(preds); /* The predicates after p             */
+        if (d >= cutoff)
+            cutoffExceeded(pi, o, NIL);
+        preds = NIL;
+        in = findInstFor(pi, o, &beta);
         if (nonNull(in)) {
             Cell ev = applyToEvid(in, beta);
             overEvid(thd3(hd(p)), ev);
@@ -797,8 +805,16 @@ void reducePreds(void) {
                 rems = p;
             }
         }
+        rems = reduceFrom(d + 1, rems); /* What the evidence for p needs */
+        preds = ps;
     }
-    preds = scSimplify(rems); /* Return any remaining predicates */
+    return rems;
+}
+
+/* Context reduce predicates: uggh! */
+void reducePreds(void) {
+    List rems = reduceFrom(0, NIL); /* (A last resort for defaulting)  */
+    preds = scSimplify(rems);       /* Return any remaining predicates */
 }
 
 /* Normalize each element of preds in some appropriate manner */
