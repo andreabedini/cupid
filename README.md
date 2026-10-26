@@ -52,8 +52,9 @@ What has been added is what real code needs.  The Prelude and `base`
 follow GHC's base, with `Applicative` under `Monad`, `Semigroup` under
 `Monoid`, and `Foldable` and `Traversable`, and the transformers
 package loads unchanged.  That doesn't mean following GHC: a feature
-gets in when programs need it and it fits the one type checker, and
-type families, unboxed types, Template Haskell and STM are not in.
+gets in when real code needs it and it fits the one type checker.
+Unboxed types, Template Haskell and STM are out, and type families are
+undecided.
 [Language extensions](docs/reference/extensions.md) lists what is
 accepted and what is left out.
 
