@@ -46,7 +46,7 @@ which range of integers it falls in:
 | 0 | `NIL`: the empty list, and the general "nothing" |
 | `TAGMIN` .. `BCSTAG`-1 | a *box tag*: the first component of a pair whose second component is not a cell (`INTCELL`, `STRCELL`, `VARIDCELL`, ...), and the indirection tags `INDIRECT` and `INDIRECT1` |
 | `BCSTAG` .. `SPECMIN`-1 | a *constructor tag*: the first component of a pair whose second component is a cell (`FROMQUAL`, `LETREC`, `FATBAR`, ...) |
-| `SPECMIN` .. | special constants such as `UNIT`, `WILDCARD`, `STAR` |
+| `SPECMIN` .. | special constants such as `WILDCARD`, `STAR`, `SKOLEM` |
 | `TUPMIN` .. | the tuple constructors, `mkTuple(n)` |
 | `OFFMIN` .. | offsets, `mkOffset(n)`: type variables in a type scheme, bound variables in compiled code |
 | `MODMIN`, `TYCMIN`, `NAMEMIN`, `INSTMIN`, `CLASSMIN` .. | handles into the module, type constructor, name, instance and class tables |
