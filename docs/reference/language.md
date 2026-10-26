@@ -23,8 +23,8 @@ extensions are used.
 The extensions of the 2006 release that were guarded by compile-time
 flags are gone: TREX extensible records, implicit parameters, the
 `observe` debugger, recursive do (`mdo`), parallel list comprehensions,
-multi-instance resolution, here documents and restricted type synonyms
-(see [the design](../explanation/design.md#deleting-instead-of-switching-off)).
+multi-instance resolution and here documents (see
+[the design](../explanation/design.md#deleting-instead-of-switching-off)).
 
 ## Known deviations from the Report
 
