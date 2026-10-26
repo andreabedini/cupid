@@ -6,65 +6,24 @@
   <h1>Cupid</h1>
   <p class="tagline">{{ config.extra.tagline }}</p>
   <p class="lede">
-    A fork of Hugs 98, the interpreter Mark P Jones started in 1994, reworked
-    so that one person can read all of it, from the lexer to the abstract
-    machine.  Its libraries follow GHC&rsquo;s base, so it runs much of the
-    Haskell written today.
+    A small Haskell interpreter in plain C, with modern base, that builds in a
+    minute.  Hugs is the interpreter Mark P Jones started in 1994, and the
+    Haskell many people learned with; its last release was in 2006, and in time
+    it stopped building on current compilers.  Cupid picks up from that release
+    and runs today&rsquo;s Haskell on today&rsquo;s systems.
   </p>
   <p class="cta">
-    <a class="button" href="{{ get_url(path='@/docs/explanation/how-cupid-runs-a-program.md') }}">See how it works</a>
-    <a class="button ghost" href="{{ get_url(path='@/docs/tutorials/getting-started.md') }}">Get started</a>
-  </p>
-</section>
-
-<section class="aim">
-  <h2>The aim is one sentence</h2>
-  <p class="big">A Haskell implementation you can sit down and read.</p>
-  <p>
-    Not the fastest one, not the most complete one.  The one where you can
-    follow an expression from the characters you typed to the value that comes
-    back, and never lose the thread.  Three things follow from that, and they
-    don&rsquo;t change:
-  </p>
-  <div class="cards">
-    <article>
-      <h3>An interpreter in C</h3>
-      <p>Source text is compiled to the code of a small abstract machine and run
-      in the same process.  No native code generation, no linker, no separate
-      compilation step.</p>
-    </article>
-    <article>
-      <h3>No self-hosting</h3>
-      <p>Nothing in the implementation is written in Haskell except the
-      libraries it ships.  You need a C compiler and a few build tools, but no
-      Haskell compiler, and the thing you are reading is the thing that
-      runs.</p>
-    </article>
-    <article>
-      <h3>It stays small</h3>
-      <p>The whole interpreter is under fifty thousand lines of C, and it is
-      kept that way.  The libraries are Haskell, with a few small C helpers in
-      <code>base</code>, and grow with what programs import; the
-      interpreter&rsquo;s C grows only where a library can&rsquo;t do the
-      job.  Anything that doesn&rsquo;t serve the aim gets deleted rather than
-      parked behind a flag.</p>
-    </article>
-  </div>
-  <p class="aside">
-    That third one does most of the work.  A flag is a promise to keep two code
-    paths working forever, and a tree full of them is exactly the tree you
-    can&rsquo;t read.  So when something has to go, it goes.  What stays, and
-    why, is in
-    <a href="{{ get_url(path='@/docs/explanation/design.md') }}">the design</a>.
+    <a class="button" href="{{ get_url(path='@/docs/tutorials/getting-started.md') }}">Get started</a>
+    <a class="button ghost" href="{{ get_url(path='@/docs/explanation/how-cupid-runs-a-program.md') }}">See how it works</a>
   </p>
 </section>
 
 <section class="runs">
   <h2>What it runs</h2>
   <p>
-    An implementation that only runs textbook examples can&rsquo;t show you how
-    Haskell works, so Cupid runs real code.  Its libraries follow GHC&rsquo;s
-    base, roughly version 4.18, because that is what programs import:
+    Cupid runs real code, not only textbook examples.  Its libraries follow
+    GHC&rsquo;s base, roughly version 4.18, because that is what programs
+    import:
     <code>Applicative</code> under <code>Monad</code>, <code>Semigroup</code>
     under <code>Monoid</code>, and the Prelude&rsquo;s folds those of
     <code>Foldable</code>.  Deriving via, standalone deriving and
@@ -115,6 +74,50 @@ CUPIDDIR=build/libraries/cupiddir build/src/cupid</code></pre>
     has the detail, and
     <a href="{{ get_url(path='@/docs/how-to/build-on-windows.md') }}">Build Cupid on Windows</a>
     covers the native MinGW-w64 build.
+  </p>
+</section>
+
+<section class="aim">
+  <h2>Written to be read</h2>
+  <p class="big">A Haskell implementation you can sit down and read.</p>
+  <p>
+    Not the fastest one, not the most complete one.  The one where you can
+    follow an expression from the characters you typed to the value that comes
+    back, and never lose the thread.  It isn&rsquo;t there yet: much of the C
+    is still Hugs&rsquo;s, tidied rather than rewritten.  But every change is
+    judged against that aim, and three things follow from it that don&rsquo;t
+    change:
+  </p>
+  <div class="cards">
+    <article>
+      <h3>An interpreter in C</h3>
+      <p>Source text is compiled to the code of a small abstract machine and run
+      in the same process.  No native code generation, no linker, no separate
+      compilation step.</p>
+    </article>
+    <article>
+      <h3>No self-hosting</h3>
+      <p>Nothing in the implementation is written in Haskell except the
+      libraries it ships.  You need a C compiler and a few build tools, but no
+      Haskell compiler, and the thing you are reading is the thing that
+      runs.</p>
+    </article>
+    <article>
+      <h3>It stays small</h3>
+      <p>The whole interpreter is under fifty thousand lines of C, and it is
+      kept that way.  The libraries are Haskell, with a few small C helpers in
+      <code>base</code>, and grow with what programs import; the
+      interpreter&rsquo;s C grows only where a library can&rsquo;t do the
+      job.  Anything that doesn&rsquo;t serve the aim gets deleted rather than
+      parked behind a flag.</p>
+    </article>
+  </div>
+  <p class="aside">
+    That third one does most of the work.  A flag is a promise to keep two code
+    paths working forever, and a tree full of them is exactly the tree you
+    can&rsquo;t read.  So when something has to go, it goes.  What stays, and
+    why, is in
+    <a href="{{ get_url(path='@/docs/explanation/design.md') }}">the design</a>.
   </p>
 </section>
 
