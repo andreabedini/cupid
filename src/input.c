@@ -1212,7 +1212,8 @@ int yylex(void) {
     static bool inADo = false;
     static Text textRepeat;
     bool readingRepeat =
-        repeatStr && (reading == KEYBOARD || reading == STRING);
+        repeatStr &&
+        (reading == KEYBOARD || reading == NOKEYBOARD || reading == STRING);
 
 #define lookAhead(t)                                                           \
     {                                                                          \
