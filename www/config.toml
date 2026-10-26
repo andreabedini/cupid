@@ -3,7 +3,7 @@
 base_url = "https://andreabedini.github.io/cupid"
 
 title = "Cupid"
-description = "A small Haskell interpreter, written in C.  A fork of Hugs 98 with one aim: an implementation you can read."
+description = "Hugs, revived: a small Haskell interpreter in plain C, with modern base, that builds in a minute."
 
 compile_sass = true
 build_search_index = false
@@ -25,7 +25,7 @@ add_color_scheme = true
 
 [extra]
 repo_url = "https://github.com/andreabedini/cupid"
-tagline = "A small Haskell interpreter, written in C."
+tagline = "Hugs, revived."
 
 # The documentation sections, in navigation order.  sync-docs.py creates these
 # from docs/; keep the two lists in step.
