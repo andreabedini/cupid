@@ -1,11 +1,14 @@
 # Language extensions
 
 The language features Cupid accepts beyond Haskell 2010.  They are
-always enabled; there is no option to turn them off (see
-[the design](../explanation/design.md#the-language)).  Most are needed by
-the shipped libraries (see [The libraries](libraries.md)) and
-correspond to GHC extensions, though GHC's versions are often more
-general.
+always enabled; there is no option to turn them off.  Each is here
+because real code needs it, the shipped libraries (see
+[The libraries](libraries.md)) or packages written for GHC, and each is
+written the way GHC writes it, though GHC's versions are often more
+general.  The differences are listed under each feature, and
+[Not accepted](#not-accepted) lists what is left out.
+[The design](../explanation/design.md#the-language) says how a feature
+gets in.
 
 ## Type classes
 
@@ -817,6 +820,23 @@ type Table = [(String, Int)] in
 
 The demo `demos/Stack.hs` uses this.  The same effect is available
 portably with a `newtype` or by not exporting a type's constructors.
+
+## Not accepted
+
+These parts of GHC's language are not in Cupid.  A program that uses
+one of them does not load, and no option changes that.
+
+| Feature | Why |
+|---|---|
+| Type families, open, closed or associated | Not decided.  They would have to be solved by the one solver, and whether that can be done is open.  Functional dependencies cover many of the same uses |
+| Unboxed types and `MagicHash` | They change the abstract machine and the storage below the type checker |
+| Template Haskell | It needs the interpreter to run code while it is checking a module, a second pipeline inside the first |
+| Rewrite rules | Cupid does not optimise, so there is nothing for them to rewrite; `RULES` pragmas are ignored |
+| Linear types | A second discipline in the type checker, for a guarantee nothing in Cupid uses |
+| STM and asynchronous exceptions | They need a different run-time system; `mask` is a no-op and `throwTo` is absent |
+
+[The language Cupid accepts](language.md) lists the smaller
+deviations from Haskell 2010 and from GHC.
 
 ## See also
 

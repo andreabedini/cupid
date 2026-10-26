@@ -27,10 +27,11 @@ Three things follow from that, and they don't change:
 - **It does not self-host.**  Nothing in the implementation is written in
   Haskell except the libraries it ships.  You need a C compiler and
   nothing else, and the thing you are reading is the thing that runs.
-- **It stays small.**  Haskell 2010, plus the type-system extensions the
-  libraries actually need — multi-parameter classes, functional
-  dependencies, existentials, rank-n types — always on.  Anything that
-  doesn't serve the aim gets deleted rather than parked behind a flag.
+- **It stays small.**  Haskell 2010, plus the parts of modern Haskell
+  that real programs need and one type checker can hold — classes with
+  several parameters and functional dependencies, rank-n types, GADT
+  syntax, GHC's deriving strategies — always on.  Anything that doesn't
+  serve the aim gets deleted rather than parked behind a flag.
 
 That third one does most of the work.  A flag is a promise to keep two
 code paths working forever, and a tree full of them is exactly the tree
@@ -45,6 +46,15 @@ the platforms nobody has run this century.  None of that was deleted on
 a whim: [The design of Cupid](docs/explanation/design.md) says what
 stayed and why.  If you want the longer story of where the code came
 from, that's [History](docs/explanation/history.md).
+
+What has been added is what real code needs.  The Prelude and `base`
+follow GHC's base, with `Applicative` under `Monad`, `Semigroup` under
+`Monoid`, and `Foldable` and `Traversable`, and the transformers
+package loads unchanged.  That doesn't mean following GHC: a feature
+gets in when programs need it and it fits the one type checker, and
+type families, unboxed types, Template Haskell and STM are not in.
+[Language extensions](docs/reference/extensions.md) lists what is
+accepted and what is left out.
 
 It builds and runs.  The code is standard C23 and builds with meson on
 64-bit Linux, macOS, Windows and the BSDs.  Linux, macOS and Windows are
@@ -142,6 +152,5 @@ license in [License](License).  Cupid is distributed under the same
 license.
 
 The people who built Hugs 98 are listed in [Credits](Credits).  The type
-checker, the abstract machine and the libraries are their design, and
-this tree would not exist without their work.  What's changed here is
-mostly subtraction.
+checker and the abstract machine are their design, and so is the base
+the libraries grew from; this tree would not exist without their work.

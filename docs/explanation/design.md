@@ -18,10 +18,11 @@ language-extension flags and no compatibility modes.  The extensions it
 has are always on, and the extensions Hugs had that it doesn't keep
 are gone from the source.
 
-Compatibility with code written for other systems is not a goal.
-Programs written for GHC, nhc98 or Hugs in 2006 load if they are
-Haskell 2010 plus the extensions described below.  Programs that rely
-on anything else don't, and Cupid doesn't try to make them.
+Cupid is meant to run real Haskell, because an implementation that
+runs only examples shows little of how Haskell works.  That is not the
+same as following GHC.  A program written for GHC loads if it keeps to
+the language and libraries described below; for one that doesn't,
+Cupid grows no compatibility mode and no flag.
 
 ## What is inherited and what is not
 
@@ -50,16 +51,19 @@ its static cells in each file's `MARK` case; Cupid registers them
 once.  Gofer kept old features compilable behind definitions, with a
 footnote wishing it could remove some; Cupid deletes them.  And Gofer
 aimed at compatibility with a moving target, which its author came to
-find "a little frustrating"; Cupid fixes the language at Haskell 2010
-plus a listed set of extensions and does not chase anything.
+find "a little frustrating"; Cupid does not chase GHC either.  A
+feature gets in when real code needs it and it fits the type checker
+Cupid has, and what is in and what is out are both written down.
 
 ## The language
 
-**Haskell 2010, plus what the libraries need.**  The accepted language
-is Haskell 2010 with multi-parameter type classes, functional
-dependencies, flexible contexts and instances, existential types,
-rank-n types, kind signatures, GADT syntax and equality constraints, all
-always on.  `forall` is always a keyword.  Literate scripts are not
+**Haskell 2010, plus what real code needs and one type checker can
+hold.**  The accepted language is Haskell 2010 with multi-parameter
+type classes, functional dependencies, flexible contexts and instances,
+existential and rank-n types, polymorphic and constraint synonyms, kind
+signatures, GADT syntax, equality constraints, type operators, tuple
+sections and GHC's deriving strategies, all always on.  `forall` is
+always a keyword.  Literate scripts are not
 read.  A `#!` first line is read as a blank line, so an executable
 script is an ordinary Haskell file.  The details are in
 [The language Cupid accepts](../reference/language.md) and
@@ -69,6 +73,12 @@ script is an ordinary Haskell file.  The details are in
 feature at a time.  Each feature is held to the following rules, which
 exist to keep the type checker one pipeline that a reader can follow:
 
+- *Needed by real code.*  A feature comes in because programs people
+  have written need it, found by loading packages from Hackage and
+  seeing what stops them.  Without that evidence a feature stays out,
+  however small.  Where a need can be met by a library module, or by a
+  tool such as the C preprocessor before loading, it is met there and
+  not in the C.
 - *Always on.*  There is no `-X` flag.  A feature is good enough for
   every program, or it is not in the tree.
 - *One solver.*  A feature extends the existing constraint solver; it
@@ -85,6 +95,15 @@ exist to keep the type checker one pipeline that a reader can follow:
 - *Nothing below the type checker changes.*  Evidence is erased before
   code generation, a GADT match compiles as an existential match, and
   a feature that needs evidence at run time is not a candidate.
+
+**What stays out.**  Some of GHC's language can't meet those rules.
+Unboxed types and `MagicHash` change the machine below the type
+checker.  Template Haskell, rewrite rules and linear types each need
+a mechanism of their own, and STM and asynchronous exceptions need a
+different run-time system.  None of them is in.  Type families are
+not in either; whether they can be added without a second solver is
+an open question.  [Language extensions](../reference/extensions.md#not-accepted)
+lists what is left out and why.
 
 Equality constraints show the rules at work.  `a ~ b` is a predicate
 with no evidence.  A given equality is unified at the point it is
@@ -116,7 +135,11 @@ of an operator chain, and bison cannot parameterise a rule.
 
 Cupid owns its libraries.  `libraries/base` and `libraries/cupid` are
 plain Haskell, written for Cupid, with no conditional code for other
-compilers.  The parts that depend on the platform, such as the C types
+compilers.  Their API follows GHC's base, roughly base 4.18: the class
+hierarchy, and the modules and functions that code written since 2006
+imports.  That is a choice about what programs can import, not about
+the interpreter.  The C is what a reader of Cupid reads, so it stays
+small; a library module is plain Haskell, and adds nothing to it.  The parts that depend on the platform, such as the C types
 behind `CInt` and `CSize` and the values of `errno` constants, are
 generated at build time by `libraries/tools/mksysconfig.c` into the
 module `Cupid.SysConfig` and the header `HsBaseConfig.h`.  A small C
@@ -131,8 +154,8 @@ Nothing in it targets GHC now, so they serve no purpose.
 
 ## Platforms and the build
 
-**Modern 64-bit systems only.**  Cupid targets 64-bit Linux, macOS,
-the BSDs and Windows on x86-64 and ARM64.  On these, the questions
+**Modern 64-bit systems only.**  Cupid targets 64-bit Linux, macOS
+and the BSDs on x86-64 and ARM64, and Windows on x86-64.  On these, the questions
 autoconf used to ask all have the same answer: `int` is four bytes,
 pointers eight, floating point is IEEE, the stack grows down, and every
 C99 header is present.  `src/sysdeps.h` writes those answers down, and
