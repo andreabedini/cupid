@@ -20,7 +20,7 @@ chapter 9 and the libraries of Part II.  Most programs written to the
 Report load and run.  These are the exceptions a program is likely to
 meet, each explained in its chapter below:
 
-- Literate scripts are not read, and n+k patterns are not accepted.
+- Literate scripts are not read.
 - `Int` and `Word` are 32 bits wide, on every target.
 - The Prelude's classes are those of GHC's base, not the Report's:
   `Applicative` sits between `Functor` and `Monad`, `fail` belongs to
@@ -121,10 +121,11 @@ parses as `x op (e)`.  Left sections are checked: `(1 + 2 *)` is
 rejected with `Operator "(*)" in a left section does not apply to the
 whole operand`.
 
-**A guard that ends in an unparenthesised type signature is rejected**
-(3.13).  The Report's `| let b = not a in b :: Bool -> a` is a syntax
-error; the Report notes that a limited-lookahead parser may reject it.
-Parenthesise the signature.
+**A guard in a `case` alternative that ends in an unparenthesised type
+signature is rejected** (3.13).  The Report's `| let b = not a in b ::
+Bool -> a` is a syntax error there; the Report notes that a
+limited-lookahead parser may reject it.  Parenthesise the signature.
+In a function's guard it is accepted.
 
 **A failed pattern bind in `IO` carries no location.**  `Just x <-
 return Nothing` fails with `user error (match fails)`; the Report
@@ -138,9 +139,9 @@ defines `fail` is rejected (see chapter 6).
 **Tuples** of any size can be built and matched, but have class
 instances only up to five components (see chapter 6).
 
-**n+k patterns** are not accepted (3.17), and neither is anything
-Haskell 2010 does not have: `f !x = x` defines the operator `!`, as the
-Report says it should.
+**n+k patterns** are not accepted (3.17), as Haskell 2010 removed them,
+and neither is anything else Haskell 2010 does not have: `f !x = x`
+defines the operator `!`, as the Report says it should.
 
 Unspecified: `error` and `undefined` print `Program error: message`
 and `Program error: Prelude.undefined` and exit with status 1; they
@@ -225,11 +226,12 @@ fails even if a later use would fix it: `total = sum` reports
 `Unresolved top-level overloading` with `Foldable` outstanding.  A
 type signature avoids all of these.
 
-**Accepted though the Report rejects them**, because the extensions
-are always on: a context on a type that is not a type variable
-(`Eq Int => ...`), an instance for a synonym, a type with an operator
-name, an instance whose head is not a constructor applied to distinct
-variables.  See [Language extensions](extensions.md).
+**Accepted though the Report rejects them**, because the extensions are
+always on (overlapping instances excepted; they need `+o`): a context on
+a type that is not a type variable (`Eq Int => ...`), an instance for a
+synonym, a type with an operator name, an instance whose head is not a
+constructor applied to distinct variables.  See [Language
+extensions](extensions.md).
 
 ### 5 Modules
 
@@ -543,7 +545,7 @@ at the same indentation are rejected as the Report says.
 **Literate comments** (10.4) are not supported.  Every file is read as
 ordinary Haskell source, so a literate script, with `>` lines or
 `\begin{code}` blocks, is rejected, and `.lhs` is not on the suffix
-list.  A line beginning with `#!` is read as a blank line, so an
+list.  A `#!` first line is read as a blank line, so an
 executable script needs no literate wrapper.
 
 **Fixity resolution** (10.6) is done after parsing, on the tree the
@@ -606,7 +608,8 @@ accepted and ignored.
 
 **`LINE` pragmas are ignored.**  They are not part of chapter 12, but
 `{-# LINE 100 "foo.hs" #-}` has no effect on the position in an error
-message.  See [Preprocess source files](../how-to/preprocess-sources.md).
+message.  See
+[Preprocess source files before loading](../how-to/preprocess-sources.md).
 
 ## Part II: the libraries
 
