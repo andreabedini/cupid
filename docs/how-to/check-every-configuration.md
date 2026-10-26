@@ -6,7 +6,7 @@ be set up with.
 
 ## Prerequisites
 
-- meson, ninja, bison and a C compiler, as for an ordinary build
+- meson, ninja, bison, python3 and a C compiler, as for an ordinary build
 - a few minutes: four configurations
 
 ## Steps
@@ -23,12 +23,16 @@ its own, and all of them together, and prints a line per configuration:
 ```
 4 configurations, 4 at a time, under build-configurations
 
-ok   default                        41 tests, 0 failed
-ok   profiling                      41 tests, 0 failed
-ok   checks                         41 tests, 0 failed
-ok   all                            41 tests, 0 failed
+ok   default                        126 tests, 0 failed
+ok   profiling                      126 tests, 0 failed
+ok   checks                         126 tests, 0 failed
+ok   all                            126 tests, 0 failed
+
 4 configurations, 0 failed
 ```
+
+The lines come out in the order the configurations finish, so the order
+varies.
 
 A configuration that fails prints the last forty lines of whichever
 stage failed -- setup, build or test -- after the summary, and the
