@@ -30,8 +30,8 @@ SECTIONS = [
     ("install", "Install", "Get Cupid onto your machine: a release archive, or a build from source."),
     ("tutorials", "Tutorials", "Lessons that take you through a first session, start to finish."),
     ("how-to", "How-to guides", "Recipes for a specific task you already know you need."),
-    ("reference", "Reference", "The dry description of commands, options and the accepted language."),
     ("explanation", "Explanation", "How the pieces fit, and why they are shaped the way they are."),
+    ("reference", "Reference", "The dry description of commands, options and the accepted language."),
     ("contributing", "Contributing", "For people who change Cupid: how it is checked and released."),
 ]
 
