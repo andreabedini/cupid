@@ -80,22 +80,6 @@ the expression above prints `2.5`.
 
 ## Alternatives
 
-### Name the header on the command line instead
-
-If you would rather keep the import declaration short:
-
-```haskell
-foreign import ccall "half_hypot" halfHypot :: Double -> Double -> Double
-```
-
-then tell `fficupid` what to include with `-i`.  The argument is exactly
-what would follow `#include` in C, so it needs its own quotes:
-
-```sh
-fficupid '-i"clib.h"' Hyp.hs clib.c -lm
-fficupid '-i<math.h>' Trig.hs -lm
-```
-
 ### Several FFI modules
 
 If `A.hs` imports `B.hs` and both contain foreign imports, run
@@ -110,8 +94,7 @@ until `B.so` exists, loading `A` fails with `Error while importing DLL
 **Cause**: the generated C calls the function without a prototype in
 scope.
 
-**Fix**: name a header in the import string, or pass one with `-i`, as
-in step 1 and the first alternative above.
+**Fix**: name a header in the import string, as in step 1.
 
 ### `Error while importing DLL "./Hyp.so"`
 

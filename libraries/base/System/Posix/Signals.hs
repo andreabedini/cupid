@@ -262,7 +262,7 @@ signalProcess :: Signal -> ProcessID -> IO ()
 signalProcess sig pid 
  = throwErrnoIfMinus1_ "signalProcess" (c_kill (fromIntegral pid) sig)
 
-foreign import ccall unsafe "kill"
+foreign import ccall unsafe "HsBase.h kill"
   c_kill :: CPid -> CInt -> IO CInt
 
 -- | @signalProcessGroup int pgid@ calls @kill@ to signal 
@@ -271,7 +271,7 @@ signalProcessGroup :: Signal -> ProcessGroupID -> IO ()
 signalProcessGroup sig pgid 
   = throwErrnoIfMinus1_ "signalProcessGroup" (c_killpg (fromIntegral pgid) sig)
 
-foreign import ccall unsafe "killpg"
+foreign import ccall unsafe "HsBase.h killpg"
   c_killpg :: CPid -> CInt -> IO CInt
 
 -- | @raiseSignal int@ calls @kill@ to signal the current process
@@ -279,7 +279,7 @@ foreign import ccall unsafe "killpg"
 raiseSignal :: Signal -> IO ()
 raiseSignal sig = throwErrnoIfMinus1_ "raiseSignal" (c_raise sig)
 
-foreign import ccall unsafe "raise"
+foreign import ccall unsafe "HsBase.h raise"
   c_raise :: CInt -> IO CInt
 
 -- -----------------------------------------------------------------------------
@@ -292,7 +292,7 @@ scheduleAlarm secs = do
    r <- c_alarm (fromIntegral secs)
    return (fromIntegral r)
 
-foreign import ccall unsafe "alarm"
+foreign import ccall unsafe "HsBase.h alarm"
   c_alarm :: CUInt -> IO CUInt
 
 -- -----------------------------------------------------------------------------
@@ -395,18 +395,18 @@ awaitSignal maybe_sigset = do
   -- ignore the return value; according to the docs it can only ever be
   -- (-1) with errno set to EINTR.
  
-foreign import ccall unsafe "sigsuspend"
+foreign import ccall unsafe "HsBase.h sigsuspend"
   c_sigsuspend :: Ptr CSigset -> IO CInt
 
-foreign import ccall unsafe "sigdelset"
+foreign import ccall unsafe "HsBase.h sigdelset"
   c_sigdelset   :: Ptr CSigset -> CInt -> IO CInt
 
-foreign import ccall unsafe "sigfillset"
+foreign import ccall unsafe "HsBase.h sigfillset"
   c_sigfillset  :: Ptr CSigset -> IO CInt
 
-foreign import ccall unsafe "sigismember"
+foreign import ccall unsafe "HsBase.h sigismember"
   c_sigismember :: Ptr CSigset -> CInt -> IO CInt
 
-foreign import ccall unsafe "sigpending"
+foreign import ccall unsafe "HsBase.h sigpending"
   c_sigpending :: Ptr CSigset -> IO CInt
 

@@ -86,15 +86,15 @@ newtype IntPtr = IntPtr CIntPtr deriving (Eq, Ord) ; instance Num IntPtr where {
 
 {-# CFILES cbits/PrelIOUtils.c #-}
 
-foreign import ccall unsafe "__hscore_to_uintptr"
+foreign import ccall unsafe "HsBase.h __hscore_to_uintptr"
     ptrToWordPtr :: Ptr a -> WordPtr
 
-foreign import ccall unsafe "__hscore_from_uintptr"
+foreign import ccall unsafe "HsBase.h __hscore_from_uintptr"
     wordPtrToPtr :: WordPtr -> Ptr a
 
-foreign import ccall unsafe "__hscore_to_intptr"
+foreign import ccall unsafe "HsBase.h __hscore_to_intptr"
     ptrToIntPtr :: Ptr a -> IntPtr
 
-foreign import ccall unsafe "__hscore_from_intptr"
+foreign import ccall unsafe "HsBase.h __hscore_from_intptr"
     intPtrToPtr :: IntPtr -> Ptr a
 

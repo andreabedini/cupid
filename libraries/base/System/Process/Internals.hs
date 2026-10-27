@@ -59,10 +59,10 @@ import Foreign
 
 -- this function disables the itimer, which would otherwise cause confusing
 -- signals to be sent to the new process.
-foreign import ccall unsafe "pPrPr_disableITimers"
+foreign import ccall unsafe "HsBase.h pPrPr_disableITimers"
   pPrPr_disableITimers :: IO ()
 
-foreign import ccall unsafe "execvpe"
+foreign import ccall unsafe "HsBase.h execvpe"
   c_execvpe :: CString -> Ptr CString -> Ptr CString -> IO CInt
 
 ignoreSignal  = const_SIG_IGN :: CLong

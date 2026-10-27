@@ -299,14 +299,6 @@ a C header file containing the prototype of the function, as in
 \fBforeign import ccall "test.h f" f :: Int -> Int\fP;
 the generated C calls the function by name and the compiler requires a
 prototype.
-Alternatively, \fBfficupid\fP provides the following option:
-.TP
-.BI \-i str
-Specify an include for the generated C file.
-The include string should be something that can follow "\fB#include\fP"
-in a C program, as in
-.IP
-\fBfficupid '-i<math.h>' '-i"mydefs.h"' Test.hs test.c -lm\fP
 .SH ENVIRONMENT
 .TP
 .B CUPIDFLAGS

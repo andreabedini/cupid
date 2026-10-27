@@ -284,7 +284,6 @@ extern List foreignExports; /* foreign export declarations     */
 extern void foreignHeader(char *);
 extern void foreignFooter(char *, Text, List, List);
 extern void ffiSetFlags(char *);
-extern void ffiAddCppInclude(char *);
 extern void implementForeignImport(int, Name, int, Text, Text, bool, Text, List,
                                    bool, Type);
 extern void implementForeignImportDynamic(int, int, Text, List, bool, Type);
