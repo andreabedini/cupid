@@ -23,7 +23,7 @@ Cupid> :set -F"cpp -P -traditional"
 or on the command line:
 
 ```sh
-cupid -F"cpp -P -traditional" Main.hs
+cupid -F"cpp -P -traditional" -i Main.hs
 ```
 
 `-P` stops cpp from emitting line markers, which Cupid would take for

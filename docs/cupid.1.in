@@ -6,30 +6,35 @@
 .ds HS @CUPIDSUFFIXES@
 .ds VI vi
 .SH NAME
-cupid, runcupid, fficupid \- Cupid, a Haskell interpreter
+cupid \- Cupid, a Haskell interpreter
 .SH SYNOPSIS
 .B cupid
 [
 .I options
 ]
-[
-.I modules
-]
 .br
-.B runcupid
+.B cupid
 [
 .I options
 ]
-.I module
+.I file
 [
 .I args
-]
+] ...
 .br
-.B fficupid
+.B cupid
 [
 .I options
 ]
-.I module
+.B \-i
+.I files
+.br
+.B cupid
+[
+.I options
+]
+.B \-\-ffi
+.I file
 [
 .I compiler_argument
 ] ...
@@ -44,11 +49,24 @@ that are always enabled, except for overlapping instances, which need
 The name \fBCupid\fP comes from the date of the first release of Hugs,
 14 February 1995.
 .PP
-The interpreter is started using the
+The
 .I cupid
-command.
-After processing options, it loads the standard module \fBPrelude\fP
-and any other modules listed on the command line.
+command chooses what to do from its arguments.
+With no file, it loads the standard module \fBPrelude\fP and shows a
+prompt, at which expressions and commands (see \fBCOMMANDS\fP) are typed.
+With a \fIfile\fP, it runs the program in the file (see
+\fBSTANDALONE PROGRAMS\fP).
+With \fB\-i\fP, it loads the \fIfiles\fP at the prompt instead, without
+running \fBmain\fP.
+With \fB\-\-ffi\fP, it compiles the C stubs for the foreign imports of the
+\fIfile\fP (see \fBC INTERFACE\fP).
+The file is the first argument that does not begin with \fB+\fP or
+\fB\-\fP, and \fB\-i\fP and \fB\-\-ffi\fP are recognised only before
+it.
+They are read from the command line only, not from \fBCUPIDFLAGS\fP or
+\fB:set\fP, and cannot be used together.
+When it is given no file, \fIcupid\fP also reads commands from its
+standard input if that is not a terminal.
 .PP
 Each Haskell module is stored in a separate file.
 When loading a module \fIname\fP, \fICupid\fP replaces each `\fB.\fP'
@@ -162,7 +180,7 @@ Instead of reading a source file directly,
 .TP
 .BI \-X str
 The string \fIstr\fP is interpreted as an option string.
-This is useful, for example, for passing multiple arguments to \fBruncupid\fP
+This is useful, for example, for passing multiple arguments to \fBcupid\fP
 in a \fB#!\fP script.
 .SH COMMANDS
 Once the interpreter has been loaded, the following commands are available:
@@ -245,30 +263,39 @@ function definitions or the evaluation  of  an  expression.  When the
 interrupt is detected, \fICupid\fP prints the string "\fB{Interrupted!}\fP"
 and prints the prompt so that further commands can be entered.
 .SH "STANDALONE PROGRAMS"
-The
-.I runcupid
-command is an interpreter for an executable Cupid script,
+Given a file and no \fB\-i\fP, the
+.I cupid
+command runs it as an executable Cupid script,
 which must contain a Haskell \fBMain\fP module.
+Options come before the file; everything after the file is left for the
+program.
 For example, the executable file \fBhello\fP might contain the lines
 .LP
 .nf
 .RS
-\fB#!\*(BN/runcupid
+\fB#!\*(BN/cupid
 module Main where
 main = putStr "Hello, World\\n"\fP
 .RE
 .fi
 .LP
 When this file is executed,
-.I runcupid
+.I cupid
 will invoke the
 .B main
 function.
 Any arguments given on the command line will be available through
-.BR getArgs .
+.BR getArgs ,
+and the name of the file through
+.BR getProgName .
+The exit status is 0 when \fBmain\fP completes, 1 when the file cannot be
+loaded or \fBmain\fP raises an error, and \fIn\fP when \fBmain\fP calls
+\fBexitWith (ExitFailure \fIn\fB)\fR.
 .LP
 Note that \fB#!\fP passes only one argument to the script.
-The \fB\-X\fP option may be used to get around this.
+One option may be given directly, as in \fB#!\*(BN/cupid \-h4M\fP.
+To give several, use the \fB\-X\fP option, as in
+\fB#!\*(BN/cupid \-X+o \-h4M\fP.
 .SH "C INTERFACE"
 .I Cupid
 implements the part of the Haskell
@@ -279,9 +306,8 @@ architectures.
 Modules containing such
 .B foreign
 declarations must be compiled using the
-.I fficupid
-command before use with
-.BR cupid .
+.B cupid \-\-ffi
+command before use.
 Additional arguments for the C compiler may be supplied via \fIcompiler_argument\fPs.
 For example,
 suppose you have some C functions in \fBtest.c\fP and some FFI declarations
@@ -289,7 +315,7 @@ for those functions in \fBTest.hs\fP and the code in \fBtest.c\fP needs to be
 compiled with \fB\-lm\fP.
 Then you would compile the module with the command
 .IP
-\fBfficupid Test.hs test.c \-lm \fP
+\fBcupid \-\-ffi Test.hs test.c \-lm \fP
 .LP
 which generates an object file \fBTest.so\fP.
 Then when \fIcupid\fP loads \fBTest.hs\fP, it will also load \fBTest.so\fP.
@@ -325,8 +351,8 @@ executable binary.
 directory containing support files.
 .SH "SEE ALSO"
 The documentation installed in \fB\*(LB/docs\fP: a tutorial,
-how-to guides, and reference pages for the commands, options,
-\fIruncupid\fP and \fIfficupid\fP.
+how-to guides, and reference pages for the commands, options
+and the \fIcupid\fP command.
 .PP
 Simon Marlow (editor).
 \fIHaskell 2010 Language Report\fP.

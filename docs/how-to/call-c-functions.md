@@ -1,14 +1,14 @@
 # Call C functions from Haskell
 
 Compile a module that contains `foreign import` declarations with
-`fficupid` so that Cupid can load it.
+`cupid --ffi` so that Cupid can load it.
 
 ## Prerequisites
 
-- `fficupid`, either installed or reachable from the build tree with
+- `cupid`, either installed or reachable from the build tree with
   `CUPIDDIR` set (see [Run it from the build tree](../install/build-on-linux-and-macos.md#run-it-from-the-build-tree))
-- the C compiler that Cupid was built with, since `fficupid` runs the
-  same command
+- the C compiler that Cupid was built with, since `cupid --ffi` runs
+  the same command
 
 ## Steps
 
@@ -31,7 +31,7 @@ and the definition in `clib.c`:
 double half_hypot(double a, double b) { return hypot(a, b) / 2; }
 ```
 
-The header is not optional.  The C that `fficupid` generates calls the
+The header is not optional.  The C that `cupid --ffi` generates calls the
 function by name, and a C23 compiler rejects a call to a function that
 has not been declared.
 
@@ -46,14 +46,14 @@ module Hyp where
 foreign import ccall "clib.h half_hypot" halfHypot :: Double -> Double -> Double
 ```
 
-### 3. Compile the module with fficupid
+### 3. Compile the module with `cupid --ffi`
 
-Cupid options, if any, go before the module name.  Everything after the
-module name is passed to the C compiler: extra sources, include paths,
+Cupid options, if any, go before the module name.  Everything after
+the module name is passed to the C compiler: extra sources, include paths,
 libraries.
 
 ```sh
-fficupid Hyp.hs clib.c -lm
+cupid --ffi Hyp.hs clib.c -lm
 ```
 
 This writes `Hyp.c`, the glue between the interpreter and the C
@@ -62,10 +62,11 @@ function, and compiles it together with `clib.c` into `Hyp.so`
 
 ### 4. Use the module
 
-Cupid loads `Hyp.so` whenever it loads `Hyp.hs`:
+Cupid loads `Hyp.so` whenever it loads `Hyp.hs`.  Load the module at
+the prompt with `-i`:
 
 ```sh
-cupid Hyp.hs
+cupid -i Hyp.hs
 ```
 
 ```
@@ -83,7 +84,7 @@ the expression above prints `2.5`.
 ### Several FFI modules
 
 If `A.hs` imports `B.hs` and both contain foreign imports, run
-`fficupid` on each of them.  Compiling `A` does not compile `B`, and
+`cupid --ffi` on each of them.  Compiling `A` does not compile `B`, and
 until `B.so` exists, loading `A` fails with `Error while importing DLL
 "./B.so"`.
 
@@ -99,9 +100,9 @@ scope.
 ### `Error while importing DLL "./Hyp.so"`
 
 **Cause**: `Hyp.hs` was loaded but `Hyp.so` does not exist next to it,
-usually because `fficupid` failed or was never run.
+usually because `cupid --ffi` failed or was never run.
 
-**Fix**: run `fficupid` and read its output; the compile command it ran
+**Fix**: run `cupid --ffi` and read its output; the compile command it ran
 is printed on failure.
 
 ### `Error while running compilation command`
@@ -116,14 +117,14 @@ Cupid with `CC` naming the real compiler.
 
 ### A generated file clashes with your own
 
-**Cause**: `fficupid` writes a C file with the same base name as the
+**Cause**: `cupid --ffi` writes a C file with the same base name as the
 Haskell module, so `Hyp.hs` produces `Hyp.c`.
 
 **Fix**: give your own C sources a different base name.
 
 ## See also
 
-- [fficupid](../reference/fficupid.md) for the full command line
+- [Running cupid](../reference/cupid.md) for the full command line
 - [The language Cupid accepts](../reference/language.md#foreign-function-interface)
   for what the FFI does and does not support
 - [Foreign import wrappers](../explanation/foreign-import-wrappers.md)

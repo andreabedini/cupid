@@ -13,7 +13,7 @@ By the end you will be able to:
 
 - evaluate expressions and ask for their types at the prompt
 - write a module in a file, load it, and fix an error in it
-- run a program's `main` from the shell with `runcupid`
+- run a program's `main` from the shell with `cupid`
 
 ## Prerequisites
 
@@ -100,10 +100,12 @@ never defined.  You will see how Cupid reports that next.
 
 ## Step 3: Load the module and fix the error
 
-Start Cupid with the file name on the command line:
+Start Cupid with the `-i` option and the file name on the command
+line.  The option asks Cupid to load the file at the prompt rather than
+run it:
 
 ```sh
-cupid Stats.hs
+cupid -i Stats.hs
 ```
 
 After the banner, Cupid tries to load the file and stops at the error:
@@ -163,11 +165,11 @@ main = do
   putStrLn ("variance: " ++ show (variance xs))
 ```
 
-Leave the interpreter with `:quit` and run the program with `runcupid`,
+Leave the interpreter with `:quit` and run the program with `cupid`,
 giving it some numbers as arguments:
 
 ```sh
-runcupid Main.hs 1 2 3 4
+cupid Main.hs 1 2 3 4
 ```
 
 ```
@@ -175,14 +177,15 @@ mean:     2.5
 variance: 1.25
 ```
 
-`runcupid` loads `Main.hs`, finds `Stats.hs` in the same directory
-because `Main` imports it, runs `main`, and exits.  The words after
-the file name are what `getArgs` returns.
+Given a file and no `-i`, `cupid` loads `Main.hs`, finds `Stats.hs` in
+the same directory because `Main` imports it, runs `main`, and exits.
+The words after the file name are what `getArgs` returns.
 
-You can run the same program from inside the interpreter with `:main`:
+You can run the same program from inside the interpreter by loading it
+with `-i` and using `:main`:
 
 ```sh
-cupid Main.hs
+cupid -i Main.hs
 ```
 
 ```
@@ -199,7 +202,7 @@ two-module program both from the shell and from the prompt.
 
 ## Next steps
 
-- [Write a script that runs with runcupid](../how-to/write-a-script.md)
+- [Write a script that runs with cupid](../how-to/write-a-script.md)
   shows how to make `Main.hs` an executable file.
 - [Make `:edit` open your editor](../how-to/configure-the-editor.md)
   lets you jump to an error's line without leaving Cupid.

@@ -265,10 +265,11 @@ since the monomorphism restriction leaves `Monad m` unresolved and the
 rule that `main` has type `IO t` is not used to resolve it.  Write
 `main :: IO ()`.
 
-**`runcupid` runs `main >> return ()` in `Main`'s scope.**  A `Main`
+**`cupid` runs `main >> return ()` in `Main`'s scope.**  A `Main`
 module that imports the Prelude qualified, hides `>>` or `return`, or
 imports only some Prelude names, loads and evaluates `main` at the
-prompt but fails under `runcupid` with `Undefined variable ">>"`.  The
+prompt but fails when `cupid` runs the file, with
+`Undefined variable ">>"`.  The
 Report's `import qualified Prelude` style of 5.3.2 is therefore
 unusable in `Main`.
 
@@ -309,8 +310,8 @@ scope.
 
 Unspecified: a module is found by its name, `A.B.C` in `A/B/C.hs` on
 the search path, so a file whose header names a different module
-cannot be imported; `runcupid` on such a file reports that `Main`
-cannot be found.
+cannot be imported; `cupid` run on such a file reports that it
+cannot find a `Main` module.
 
 ### 6 Predefined types and classes
 
@@ -432,7 +433,7 @@ yields the new contents.
 
 The FFI of chapter 8 is implemented for imports, with the limits
 below.  A module with `foreign` declarations must be compiled with
-[fficupid](fficupid.md) before it can be loaded.  Every form of
+[`cupid --ffi`](cupid.md) before it can be loaded.  Every form of
 `foreign import` in 8.4 is accepted and works: `static` with and
 without a header, `&` address imports, `dynamic`, `safe` and `unsafe`,
 an omitted entity string, and the marshallable types of 8.6 including
@@ -442,7 +443,7 @@ requires.  The 8.4.3 example of an import named `sin` behaves as
 described.
 
 **`foreign export` is not implemented.**  A declaration parses, and
-`fficupid` writes its C stub, but loading the module fails with
+`cupid --ffi` writes its C stub, but loading the module fails with
 `Foreign export not implemented yet.`  The entity string also cannot
 be omitted in an export, which the Report allows.
 

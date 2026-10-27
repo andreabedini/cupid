@@ -345,7 +345,7 @@ contributes one `Subsystem` row, with named functions such as
 `evaluator.c` fixes the install order, and five functions walk it, one
 for each phase.  Before this, the order existed only in a comment, and
 what each module did in each phase was hidden in a `switch`.
-Primitive modules and the stubs `fficupid` generates carry the same
+Primitive modules and the stubs `cupid --ffi` generates carry the same
 hooks.
 
 **Interrupts are taken at polls only.**  Ctrl-C only sets a flag.  The
@@ -366,13 +366,13 @@ its owner's decision, not a library's.
 
 **Output goes to a sink the program chooses.**  All interpreter output
 goes through `Printf` and its siblings to an `OutputSink`, or to the
-standard streams when none is set.  `runcupid` collects output into a
+standard streams when none is set.  When `cupid` runs a file, it collects output into a
 growable buffer and prints it on error, so long messages are printed
 in full.  Where output goes is decided by the program that starts the
 interpreter.
 
 **Commands run without a shell.**  The `-F` preprocessor, the `-E`
-editor and the C compiler that `fficupid` uses are each built as an
+editor and the C compiler that `cupid --ffi` uses are each built as an
 argument vector and started directly (fork and `execvp`, or
 `_spawnvp` on Windows).  A file name arrives as one argument, byte for
 byte, so there is nothing to quote and nothing to inject.  A
@@ -385,15 +385,21 @@ running a shell is what they are for.
 are split into words by `opts.c` itself, so reading options never
 disturbs the lexer's input.
 
-**`runcupid` is the interpreter without the prompt.**  There is no C
-API for embedding Cupid in another program.  `runcupid` loads a module
-and runs `main` through the same pipeline the prompt uses, and
-`fficupid` is `runcupid` built to compile foreign-import stubs
-instead.
+**One executable, three modes.**  There is no C API for embedding Cupid
+in another program.  `cupid` is the only program, and it picks its mode
+from its arguments, as python does.  `chooseMode` in `src/cupid.c` looks
+at the arguments before the interpreter starts: with no file it gives the
+prompt, with `-i` it loads the files at the prompt, and with a file it
+hands over to `runFile` in `src/run.c`.  `-i` and `--ffi` count only
+among the options before the file, and `chooseMode` removes them from the
+arguments, so `CUPIDFLAGS` and `:set` never see them.  `runFile` is the
+interpreter without the prompt: it loads a module and runs `main`
+through the same pipeline the prompt uses, or, with `--ffi`, compiles the
+module's foreign-import stubs instead of running it.
 
 ## The FFI
 
-`fficupid` generates a C stub for each module with foreign imports.
+`cupid --ffi` generates a C stub for each module with foreign imports.
 Each marshallable type is one row of a table in `ffi.c`, so adding a
 type means adding a row.  Every stub records the `CUPID_API_VERSION` it
 was built for, and the interpreter refuses a stub whose layout it cannot

@@ -13,10 +13,10 @@ commands stop with a message saying so; follow
 ## Prerequisites
 
 - Linux with glibc 2.35 or later (Ubuntu 22.04, Debian 12, Fedora 36 or
-  later), or macOS 13 or later; on x86-64 or ARM64.  The Linux programs
-  need nothing beyond glibc; line editing is built in
+  later), or macOS 13 or later; on x86-64 or ARM64.  On Linux, `cupid`
+  needs nothing beyond glibc; line editing is built in
 - or Windows 10 or later, on x86-64
-- a C compiler, only to use `fficupid`: on Windows, MinGW-w64 gcc for
+- a C compiler, only to use `cupid --ffi`: on Windows, MinGW-w64 gcc for
   the UCRT
 
 ## The one-line install
@@ -35,11 +35,11 @@ irm https://andreabedini.github.io/cupid/install.ps1 | iex
 
 Either script finds the latest release, downloads the archive for your
 system, checks it against `SHA256SUMS` from the same release, unpacks
-it and puts the programs on your PATH.  If `gh` is installed and signed
+it and puts `cupid` on your PATH.  If `gh` is installed and signed
 in, it also checks the archive's build attestation (see
 [Check that CI built it](#2-check-that-ci-built-it)) and refuses an
 archive that fails.  Nothing needs root or administrator rights.  On Linux and macOS the release goes in
-`~/.local/opt/cupid-VERSION-TARGET` and the programs are linked into
+`~/.local/opt/cupid-VERSION-TARGET` and `cupid` is linked into
 `~/.local/bin`; on Windows it goes in `%LOCALAPPDATA%\Programs` and its
 `bin` directory is added to your user PATH.
 
@@ -121,10 +121,10 @@ Expand-Archive cupid-VERSION-x86_64-windows.zip $env:LOCALAPPDATA\Programs
 ```
 
 The archive has one directory, `cupid-VERSION-TARGET`, with `bin`,
-`lib/cupid` and `share/man` inside.  The programs find their libraries
-next to themselves, so the directory can go anywhere and move later.
+`lib/cupid` and `share/man` inside.  `cupid` finds its libraries
+next to itself, so the directory can go anywhere and move later.
 
-### 4. Put the programs on your PATH
+### 4. Put `cupid` on your PATH
 
 ```sh
 ln -s ~/.local/opt/cupid-VERSION-TARGET/bin/* ~/.local/bin/

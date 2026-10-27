@@ -246,12 +246,12 @@ The FFI of Haskell 2010 is implemented with these limits:
   targets this tree builds for are among them, and that code has been
   removed, so it fails at run time everywhere.
   See [Foreign import wrappers](../explanation/foreign-import-wrappers.md).
-- `foreign export` declarations parse and `fficupid` generates C for
+- `foreign export` declarations parse and `cupid --ffi` generates C for
   them, but loading the module fails with `Foreign export not
   implemented yet.`
 
 A module containing foreign declarations must be compiled with
-[fficupid](fficupid.md) before it can be loaded.
+[`cupid --ffi`](cupid.md) before it can be loaded.
 
 ## Hierarchical modules
 

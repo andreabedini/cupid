@@ -46,8 +46,6 @@ With the default prefix:
 | Path | Contents |
 |---|---|
 | `/usr/local/bin/cupid` | The interpreter |
-| `/usr/local/bin/runcupid` | The script runner |
-| `/usr/local/bin/fficupid` | The FFI stub compiler |
 | `/usr/local/lib/cupid/packages/cupid/` | `Cupid.Prelude` and the other `Cupid.*` modules |
 | `/usr/local/lib/cupid/packages/base/` | The `base` library, with the `Prelude` module |
 | `/usr/local/lib/cupid/include/HsFFI.h` | Header for FFI stubs |
@@ -64,7 +62,7 @@ be moved with `-Dcupiddir=DIR`; the compiled-in default search path and
 
 | Path | Contents |
 |---|---|
-| `build/src/cupid`, `runcupid`, `fficupid` | The programs |
+| `build/src/cupid` | The program |
 | `build/src/config.h`, `platform.h` | Generated headers |
 | `build/libraries/cupiddir/` | The assembled libraries, in install layout |
 | `build/libraries/mksysconfig` | The generator for the platform-dependent library parts |

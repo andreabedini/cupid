@@ -27,7 +27,7 @@ cp -r mylib ~/lib/cupid/packages/
 ```
 
 Its modules can now be imported.  If a module has foreign imports,
-compile it there with `fficupid` so that its `.so` file sits next to it.
+compile it there with `cupid --ffi` so that its `.so` file sits next to it.
 
 ### 2. Or extend the search path
 

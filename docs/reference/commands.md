@@ -5,13 +5,15 @@ What the `cupid` prompt accepts.
 ## Synopsis
 
 ```
-cupid [option ...] [file-or-module ...]
+cupid [option ...]
+cupid [option ...] -i file-or-module ...
 ```
 
 Cupid reads its options (see [Options](options.md)), loads the `Prelude`
-and any modules named on the command line, and shows a prompt.  The
-prompt names the current module; at the start this is the empty module
-`Cupid`, so the prompt is `Cupid>`.
+and, with `-i`, the modules named on the command line, and shows a
+prompt.  Without `-i`, a name on the command line is a program to run;
+see [Running cupid](cupid.md).  The prompt names the current module; at
+the start this is the empty module `Cupid`, so the prompt is `Cupid>`.
 
 At the prompt, a line is either a Haskell expression or a command.
 Commands begin with `:` and may be abbreviated to their first letter:

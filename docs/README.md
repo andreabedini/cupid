@@ -15,7 +15,7 @@ Contributing, for the people who change Cupid rather than use it.
 New to Cupid?  [Install a release](install/install-a-release.md), then
 work through [Getting started with Cupid](tutorials/getting-started.md):
 it evaluates a few expressions, loads a module and runs a program with
-`runcupid`.
+`cupid`.
 
 ## Install
 
@@ -33,7 +33,7 @@ it evaluates a few expressions, loads a module and runs a program with
 
 ## How-to guides
 
-- [Write a script that runs with runcupid](how-to/write-a-script.md)
+- [Write a script that runs with cupid](how-to/write-a-script.md)
 - [Call C functions from Haskell](how-to/call-c-functions.md)
 - [Make `:edit` open your editor](how-to/configure-the-editor.md)
 - [Preprocess source files before loading](how-to/preprocess-sources.md)
@@ -75,8 +75,8 @@ it evaluates a few expressions, loads a module and runs a program with
 - [Options](reference/options.md) — toggles and parameters, and where
   they are read from
 - [Environment variables](reference/environment-variables.md)
-- [runcupid](reference/runcupid.md)
-- [fficupid](reference/fficupid.md)
+- [Running cupid](reference/cupid.md) — the command: prompt, run a
+  file, load with `-i`, compile stubs with `--ffi`
 - [Build options and install layout](reference/build-options.md)
 - [The language Cupid accepts](reference/language.md) — Haskell 2010
   conformance, known deviations and bugs

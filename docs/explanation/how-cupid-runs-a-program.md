@@ -76,27 +76,30 @@ and exceptions, `prims/bignums.c` the `Integer` type, `char.c` Unicode
 classification and the encodings described in [Character
 encoding](character-encoding.md).
 
-## The front ends
+## The front end
 
-Three programs share all of the above.
+One program, `cupid`, uses all of the above, in three modes.
 
 `cupid.c` is the interactive interpreter: the prompt, the commands, and
 the loop that reads a line, decides whether it is a command or an
-expression, and acts.  `edit.c` starts the external editor for `:edit` and
+expression, and acts.  Its `main` also chooses the mode, in
+`chooseMode`: with no file, or with `-i`, it shows the prompt; with a
+file it calls `runFile`; with `--ffi` it calls `runFile` to compile
+stubs.  `edit.c` starts the external editor for `:edit` and
 `:find`; line editing through readline or libedit, when one was found
 at build time, is in `input.c`.
 
-`runcupid.c` is the same interpreter without the prompt: it starts the
-evaluator, loads the Prelude and the file it is given, and calls
-`runProgram`, which is the expression pipeline the prompt uses, applied
-to `main >> return () :: IO ()` in module `Main`.  The exit code is
-whatever the program asked for.
+`run.c` holds `runFile`, the same interpreter without the prompt: it
+starts the evaluator, loads the Prelude and the file it is given, and
+calls `runProgram`, which is the expression pipeline the prompt uses,
+applied to `main >> return () :: IO ()` in module `Main`.  The exit code
+is whatever the program asked for.
 
-`fficupid` is `runcupid.c` compiled with `FFI_COMPILER` defined.  In
-that mode, loading a module with `foreign` declarations makes `ffi.c`
-write a C file of stubs and run the C compiler on it instead of
-looking for an object to load.  `script.c` keeps the list of loaded
-files that all three share, and `opts.c` reads the options.
+With `--ffi`, `runFile` sets `generateFFI`, and loading a module with
+`foreign` declarations makes `ffi.c` write a C file of stubs and run the
+C compiler on it instead of looking for an object to load; `main` is not
+run.  `script.c` keeps the list of loaded files that all three modes
+share, and `opts.c` reads the options.
 
 ## Where the platform comes in
 
