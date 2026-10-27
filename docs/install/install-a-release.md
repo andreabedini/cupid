@@ -14,8 +14,7 @@ commands stop with a message saying so; follow
 
 - Linux with glibc 2.35 or later (Ubuntu 22.04, Debian 12, Fedora 36 or
   later), or macOS 13 or later; on x86-64 or ARM64.  The Linux programs
-  need nothing beyond glibc and libtinfo, which every distribution has
-  because bash does; line editing is built in
+  need nothing beyond glibc; line editing is built in
 - or Windows 10 or later, on x86-64
 - a C compiler, only to use `fficupid`: on Windows, MinGW-w64 gcc for
   the UCRT
