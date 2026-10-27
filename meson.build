@@ -81,12 +81,16 @@ readline_opt = get_option('readline')
 static_readline = is_windows or get_option('static-readline')
 
 # The terminal database library that readline and libedit call into; the
-# Windows console needs none.  Always linked shared: libtinfo is in every
-# base system, because bash needs it.
+# Windows console needs none.  Static along with the line editor when
+# asked: distributions build libtinfo with and without symbol versions,
+# and the dynamic loader warns at every start when they do not match.
 termcap = []
 foreach name : is_windows ? [] : ['tinfo', 'ncurses', 'termcap', 'curses']
   if termcap.length() == 0
-    lib = cc.find_library(name, required: false)
+    lib = cc.find_library(name, required: false, static: static_readline)
+    if not lib.found() and static_readline
+      lib = cc.find_library(name, required: false)
+    endif
     if lib.found()
       termcap += lib
     endif
@@ -100,7 +104,7 @@ endif
 if readline_dep.found() and static_readline
   # pkg-config names the terminal library among the private libraries, and
   # a static link resolves that to libncurses.a, whose terminfo functions
-  # are in libtinfo; name the shared one too.
+  # are in libtinfo; name that too.
   readline_dep = declare_dependency(dependencies: [readline_dep] + termcap)
 endif
 if not readline_dep.found() and not readline_opt.disabled()
