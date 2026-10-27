@@ -6,8 +6,8 @@ libraries follow GHC's base, and it evaluates expressions at an
 interactive prompt or runs a program's `main` from a script.
 
 The documentation follows the [Diátaxis](https://diataxis.fr/) scheme:
-tutorials teach, how-to guides solve a task, reference pages describe,
-and explanations discuss.  Before them comes Install, and after them
+tutorials teach, how-to guides solve a task, explanations discuss,
+and reference pages describe.  Before them comes Install, and after them
 Contributing, for the people who change Cupid rather than use it.
 
 ## Start here
@@ -41,24 +41,6 @@ it evaluates a few expressions, loads a module and runs a program with
 - [Measure time and memory use](how-to/measure-time-and-memory.md)
 - [Run the static analysis](how-to/run-clang-tidy.md)
 
-## Reference
-
-- [Interpreter commands](reference/commands.md) — `:load`, `:type`,
-  `:set` and the rest
-- [Options](reference/options.md) — toggles and parameters, and where
-  they are read from
-- [Environment variables](reference/environment-variables.md)
-- [runcupid](reference/runcupid.md)
-- [fficupid](reference/fficupid.md)
-- [Build options and install layout](reference/build-options.md)
-- [The language Cupid accepts](reference/language.md) — Haskell 2010
-  conformance, known deviations and bugs
-- [Haskell 2010 conformance](reference/haskell-2010.md) — the Report
-  chapter by chapter, language and libraries
-- [Language extensions](reference/extensions.md) — what Cupid accepts
-  beyond Haskell 2010, and what it leaves out
-- [The libraries](reference/libraries.md) — packages and modules shipped
-
 ## Explanation
 
 - [The design of Cupid](explanation/design.md) — the aim, and the choices
@@ -86,6 +68,24 @@ it evaluates a few expressions, loads a module and runs a program with
   how callbacks into Haskell were implemented, and why they are not
   available on current targets
 - [History](explanation/history.md) — from Gofer to this tree
+
+## Reference
+
+- [Interpreter commands](reference/commands.md) — `:load`, `:type`,
+  `:set` and the rest
+- [Options](reference/options.md) — toggles and parameters, and where
+  they are read from
+- [Environment variables](reference/environment-variables.md)
+- [runcupid](reference/runcupid.md)
+- [fficupid](reference/fficupid.md)
+- [Build options and install layout](reference/build-options.md)
+- [The language Cupid accepts](reference/language.md) — Haskell 2010
+  conformance, known deviations and bugs
+- [Haskell 2010 conformance](reference/haskell-2010.md) — the Report
+  chapter by chapter, language and libraries
+- [Language extensions](reference/extensions.md) — what Cupid accepts
+  beyond Haskell 2010, and what it leaves out
+- [The libraries](reference/libraries.md) — packages and modules shipped
 
 ## Contributing
 
