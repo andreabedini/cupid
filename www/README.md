@@ -43,4 +43,16 @@ GitHub Pages URL for `andreabedini/cupid`.  Every URL on the site is built
 from it, so it has to match wherever the site is actually served — change it
 before pointing a custom domain at this.
 
-There is no deploy workflow yet.
+CI deploys it.  The `site` job in `.github/workflows/ci.yml` runs
+`sync-docs.py` and `zola build` on every pull request and push, so a
+stale link fails CI, and uploads `public/` as the Pages artifact.  The
+`pages` job deploys that artifact after each release, so the site
+documents the latest release rather than `main`.  To deploy `main`
+without a release, run CI by hand on it:
+
+```sh
+gh workflow run ci.yml --ref main
+```
+
+The zola version is pinned in `../mise.toml`; the `site` job pins the
+same one, with the checksum of its Linux archive.  Change them together.
