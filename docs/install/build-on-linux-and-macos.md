@@ -70,7 +70,7 @@ CC=gcc meson setup build --prefix=/usr/local
 ```
 
 meson takes the compiler from `CC`.  Name the real compiler, not a
-wrapper such as `sccache cc`: the same command is baked into `fficupid`,
+wrapper such as `sccache cc`: the same command is baked into `cupid`,
 which runs it during the library build and again at run time to compile
 the C stubs of modules with foreign imports.  A wrapper that does not
 work as a plain command breaks the library step even though the C
@@ -95,16 +95,16 @@ later with `meson configure build`.  They are listed in
 ninja -C build
 ```
 
-This compiles `cupid`, `runcupid` and `fficupid` into `build/src`, then
+This compiles `cupid` into `build/src`, then
 assembles the Haskell libraries into `build/libraries/cupiddir`.  The
 source tree is not written to.  The whole thing takes a minute or two,
 and the last lines of output look like this:
 
 ```
 [52/53] Generating libraries/cupid-libraries with a custom command
-fficupid cupid/Cupid/Storable.hs
+cupid --ffi cupid/Cupid/Storable.hs
 ...
-fficupid base/Data/ByteString/Base.hs
+cupid --ffi base/Data/ByteString/Base.hs
 ```
 
 To run the regression tests on what you built:
@@ -119,7 +119,7 @@ meson test -C build
 ninja -C build install
 ```
 
-With the default prefix this puts the binaries in `/usr/local/bin`, the
+With the default prefix this puts `cupid` in `/usr/local/bin`, the
 libraries in `/usr/local/lib/cupid` (or `lib64/cupid` where the
 distribution uses it) and the manual page in `/usr/local/share/man`.
 `DESTDIR` is honoured for staged installs:
@@ -150,7 +150,7 @@ Then run one of the installed demos.  Where the distribution uses
 `lib64`, the path is `/usr/local/lib64/cupid/demos/Say.hs`:
 
 ```sh
-cupid /usr/local/lib/cupid/demos/Say.hs
+cupid -i /usr/local/lib/cupid/demos/Say.hs
 ```
 
 ```
@@ -167,7 +167,7 @@ C      U   U  P        I    D   D
 
 You do not have to install to use what you built.  The interpreter
 only needs to know where the libraries are: the build puts them in
-`build/libraries/cupiddir`, and the binaries in `build/src`.
+`build/libraries/cupiddir`, and the binary in `build/src`.
 
 For an interactive session, point `CUPIDDIR` at the built library
 directory:
@@ -180,7 +180,7 @@ For a script, either set `CUPIDDIR` in the same way, or pass the
 library search path with `-P`:
 
 ```sh
-build/src/runcupid -P'build/libraries/cupiddir/packages/*' Main.hs
+build/src/cupid -P'build/libraries/cupiddir/packages/*' Main.hs
 ```
 
 For the rest of a shell session, export the two settings once:
@@ -190,7 +190,7 @@ export PATH="$PWD/build/src:$PATH"
 export CUPIDDIR="$PWD/build/libraries/cupiddir"
 ```
 
-After this `cupid`, `runcupid` and `fficupid` work as if installed.  If
+After this `cupid` works as if installed.  If
 the libraries cannot be found, the interpreter stops before the prompt
 with a message that the `Prelude` cannot be located.
 [Environment variables](../reference/environment-variables.md)
@@ -199,7 +199,7 @@ describes `CUPIDDIR`, and [Options](../reference/options.md) describes
 
 ## Troubleshooting
 
-### `fficupid` reports "Error while running compilation command"
+### `cupid --ffi` reports "Error while running compilation command"
 
 **Cause**: `CC` named a compiler wrapper that cannot be run as a plain
 command in the library build.

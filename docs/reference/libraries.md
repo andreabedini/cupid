@@ -88,7 +88,7 @@ differ from GHC's:
 ## Modules with foreign imports
 
 Nine modules call C through the FFI.  Their stubs are compiled by
-`fficupid` when the libraries are built, and the objects are installed
+`cupid --ffi` when the libraries are built, and the objects are installed
 next to them:
 
 - `Cupid.Storable`

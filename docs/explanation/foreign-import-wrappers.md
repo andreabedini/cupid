@@ -30,7 +30,7 @@ rty thunk(ty1 a1, ..., tym am) {
 }
 ```
 
-where `app` is the entry point that `fficupid` generated for the
+where `app` is the entry point that `cupid --ffi` generated for the
 declaration.  `app` is ordinary C compiled ahead of time; only the
 step of adding `s` to the argument list must be created per closure.
 
@@ -92,7 +92,7 @@ shipped library uses one.
 - `foreign import "dynamic"` calls *out* through a `FunPtr` obtained
   from C, and works everywhere.
 - A C library that takes a callback can often be driven with a
-  C-side trampoline compiled by `fficupid` along with the module: a
+  C-side trampoline compiled by `cupid --ffi` along with the module: a
   fixed C function that looks up what to do in a table the Haskell side
   fills through ordinary imports.
 

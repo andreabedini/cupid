@@ -13,6 +13,10 @@ Options start at their defaults and are then read, in this order, from:
 Later settings override earlier ones.  Most options can also be
 changed while the interpreter is running with the `:set` command.
 
+The mode flags `-i` and `--ffi` are not options in this sense: they are
+read from the command line only, as described in
+[Running cupid](cupid.md).
+
 In `CUPIDFLAGS`, options are separated by whitespace.  To include a
 space in an option, precede it with a backslash or wrap the option in
 double quotes; inside double quotes `\ `, `\"` and `\\` are escapes
@@ -35,7 +39,7 @@ difference.
 Re-read *str* as an option string containing several options.  This
 exists for `#!` scripts, where the kernel passes everything after the
 program name as one argument.  See
-[Write a script that runs with runcupid](../how-to/write-a-script.md).
+[Write a script that runs with cupid](../how-to/write-a-script.md).
 
 ## Language
 

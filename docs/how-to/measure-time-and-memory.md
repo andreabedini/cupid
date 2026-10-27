@@ -81,7 +81,7 @@ restart with a bigger heap.  The unit is cells, and `k`, `M` and `G`
 suffixes are accepted:
 
 ```sh
-cupid -h4M Main.hs
+cupid -h4M -i Main.hs
 ```
 
 The default is one million cells.  Setting `-h` with `:set` does not
@@ -93,7 +93,7 @@ A Cupid built with `-Dprofiling=true` writes a heap profile to
 `profile.hp` when told to sample every `n` reductions with `-dn`:
 
 ```sh
-cupid -d100 Main.hs
+cupid -d100 -i Main.hs
 ```
 
 View it with hp2ps:

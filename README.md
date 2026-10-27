@@ -108,10 +108,10 @@ The whole build takes a minute or two and never writes to the source
 tree.  Two things worth knowing up front:
 
 - Name a **real** compiler in `$CC`.  meson bakes the command into
-  `fficupid`, which runs it at library-build time and again at run time
+  `cupid`, which runs it at library-build time and again at run time
   to compile the C stubs of modules with foreign imports.  A wrapper like
   `sccache cc` breaks that step even when the C sources compiled fine;
-  the symptom is `fficupid` reporting "Error while running compilation
+  the symptom is `cupid --ffi` reporting "Error while running compilation
   command".
 - meson remembers the compiler it found, so changing it in an existing
   build directory needs `meson setup --wipe build`.  A plain
@@ -140,15 +140,16 @@ the useful starting points are:
 - [The language Cupid accepts](docs/reference/language.md) — Haskell 2010
   conformance, and the deviations and bugs that are known.
 - [Call C functions from Haskell](docs/how-to/call-c-functions.md) — the
-  FFI and `fficupid`.
+  FFI and `cupid --ffi`.
 - [The design of Cupid](docs/explanation/design.md) — why the tree
   looks the way it does.
 
 ## Layout
 
 - `src/` — the interpreter: lexer, parser (`parser.y`), type checker,
-  bytecode compiler, evaluator, storage, and the `cupid`, `runcupid`
-  and `fficupid` front ends
+  bytecode compiler, evaluator, storage, and the `cupid` front end,
+  which shows the prompt, runs a program or compiles foreign-import
+  stubs
 - `libraries/` — the Haskell it ships: `cupid` (`Cupid.Prelude`, where
   most of the Prelude is defined, and the interpreter-specific `Cupid.*`
   modules) and `base` (the `Prelude` module and the rest of base, with a

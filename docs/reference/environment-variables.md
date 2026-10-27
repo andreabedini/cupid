@@ -1,6 +1,6 @@
 # Environment variables
 
-Variables that `cupid`, `runcupid` and `fficupid` consult.
+Variables that `cupid` consults.
 
 ### `CUPIDFLAGS`
 
@@ -22,8 +22,8 @@ it has a `packages/` directory, so an installation that has been moved,
 such as an unpacked release archive, still finds its libraries;
 otherwise the directory chosen at build time, `libdir/cupid` under the
 prefix (`lib/cupid` or `lib64/cupid`).  It is substituted
-for `{Cupid}` in the search path and must contain `packages/`, and for
-`fficupid` also `include/HsFFI.h`.  Set it to `build/libraries/cupiddir`
+for `{Cupid}` in the search path and must contain `packages/`, and with
+`--ffi` also `include/HsFFI.h`.  Set it to `build/libraries/cupiddir`
 to run from the build tree.
 
 ### `HOME`
@@ -43,7 +43,7 @@ The shell that `:!` starts when it is given no command.  Default:
 ### `CC`
 
 Read by meson at configuration time, not by Cupid.  The compiler it
-names is also the one `fficupid` runs.  See
+names is also the one `cupid --ffi` runs.  See
 [Build Cupid on Linux and macOS](../install/build-on-linux-and-macos.md).
 
 ## See also

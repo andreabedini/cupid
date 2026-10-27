@@ -62,9 +62,9 @@ compile small helper programs with the gcc on PATH.
 ninja -C build install
 ```
 
-The programs go in `C:\cupid\bin` and the libraries in
-`C:\cupid\lib\cupid`.  The programs find the libraries relative to
-themselves, so the whole directory can be moved later.  Add its `bin`
+`cupid` goes in `C:\cupid\bin` and the libraries in
+`C:\cupid\lib\cupid`.  It finds the libraries relative to
+itself, so the whole directory can be moved later.  Add its `bin`
 to your PATH.
 
 ## Verify it worked
@@ -80,7 +80,7 @@ Cupid VERSION, a Haskell interpreter written in C
 ## Run it from the build tree
 
 You do not have to install to use what you built.  Point `CUPIDDIR` at
-the built library directory and run the programs from `build\src`:
+the built library directory and run `cupid` from `build\src`:
 
 ```powershell
 $env:CUPIDDIR = "$PWD\build\libraries\cupiddir"
@@ -100,10 +100,10 @@ describes `CUPIDDIR`.
   `System.Process.Internals` are not there, and `System.Posix.Types`
   has only the types Windows has; see
   [the libraries](../reference/libraries.md#windows).
-- Line editing at the prompt comes from WinEditLine, linked into the
-  programs.
-- `fficupid` compiles with the gcc on PATH, so it needs MinGW-w64 gcc
-  for the UCRT.
+- Line editing at the prompt comes from WinEditLine, linked into
+  `cupid`.
+- `cupid --ffi` compiles with the gcc on PATH, so it needs MinGW-w64
+  gcc for the UCRT.
 - The two tests that limit the C stack are skipped: Windows fixes the
   stack size when a program is linked.
 
