@@ -79,9 +79,29 @@ readline_opt = get_option('readline')
 # statically, because distributions disagree on its soname (libedit.so.2
 # on Debian and its derivatives, libedit.so.0 everywhere else).
 static_readline = is_windows or get_option('static-readline')
+
+# The terminal database library that readline and libedit call into; the
+# Windows console needs none.  Always linked shared: libtinfo is in every
+# base system, because bash needs it.
+termcap = []
+foreach name : is_windows ? [] : ['tinfo', 'ncurses', 'termcap', 'curses']
+  if termcap.length() == 0
+    lib = cc.find_library(name, required: false)
+    if lib.found()
+      termcap += lib
+    endif
+  endif
+endforeach
+
 readline_dep = dependency('readline', required: false, static: static_readline)
 if not readline_dep.found()
   readline_dep = dependency('libedit', required: false, static: static_readline)
+endif
+if readline_dep.found() and static_readline
+  # pkg-config names the terminal library among the private libraries, and
+  # a static link resolves that to libncurses.a, whose terminfo functions
+  # are in libtinfo; name the shared one too.
+  readline_dep = declare_dependency(dependencies: [readline_dep] + termcap)
 endif
 if not readline_dep.found() and not readline_opt.disabled()
   rl = cc.find_library('readline', required: false, static: static_readline)
@@ -89,16 +109,6 @@ if not readline_dep.found() and not readline_opt.disabled()
     rl = cc.find_library('edit', required: false, static: static_readline)
   endif
   if rl.found()
-    termcap = []
-    # The Windows console needs no terminal database
-    foreach name : is_windows ? [] : ['ncurses', 'tinfo', 'termcap', 'curses']
-      if termcap.length() == 0
-        lib = cc.find_library(name, required: false)
-        if lib.found()
-          termcap += lib
-        endif
-      endif
-    endforeach
     readline_dep = declare_dependency(dependencies: [rl] + termcap)
   endif
 endif
