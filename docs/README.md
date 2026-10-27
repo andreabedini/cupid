@@ -39,7 +39,6 @@ it evaluates a few expressions, loads a module and runs a program with
 - [Preprocess source files before loading](how-to/preprocess-sources.md)
 - [Add a library to the search path](how-to/add-a-library.md)
 - [Measure time and memory use](how-to/measure-time-and-memory.md)
-- [Run the static analysis](how-to/run-clang-tidy.md)
 
 ## Explanation
 
@@ -90,6 +89,7 @@ it evaluates a few expressions, loads a module and runs a program with
 ## Contributing
 
 - [Check every build configuration](contributing/check-every-configuration.md)
+- [Run the static analysis](contributing/run-clang-tidy.md)
 - [Make a release](contributing/make-a-release.md)
 
 ## Manual page

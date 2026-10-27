@@ -233,4 +233,4 @@ in the prerequisites.
   to unpack
 - [Build Cupid on Windows](build-on-windows.md)
 - [Build options and install layout](../reference/build-options.md)
-- [Run the static analysis](../how-to/run-clang-tidy.md)
+- [Run the static analysis](../contributing/run-clang-tidy.md)

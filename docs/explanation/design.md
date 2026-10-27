@@ -286,7 +286,7 @@ by hand, never auto-fixed.  A finding is checked against a build with
 every feature option on before anyone acts on it, because one
 configuration is not the whole tree.  An `#include` that only a
 feature option needs carries an `IWYU pragma: keep` comment naming
-that option.  See [Run the static analysis](../how-to/run-clang-tidy.md).
+that option.  See [Run the static analysis](../contributing/run-clang-tidy.md).
 
 ## Data and memory
 
