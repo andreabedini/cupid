@@ -50,10 +50,10 @@ PAGE_ORDER = {
         "preprocess-sources.md",
         "add-a-library.md",
         "measure-time-and-memory.md",
-        "run-clang-tidy.md",
     ],
     "contributing": [
         "check-every-configuration.md",
+        "run-clang-tidy.md",
         "make-a-release.md",
     ],
     "reference": [
