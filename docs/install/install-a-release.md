@@ -13,11 +13,10 @@ commands stop with a message saying so; follow
 ## Prerequisites
 
 - Linux with glibc 2.35 or later (Ubuntu 22.04, Debian 12, Fedora 36 or
-  later), or macOS 13 or later; on x86-64 or ARM64
+  later), or macOS 13 or later; on x86-64 or ARM64.  The Linux programs
+  need nothing beyond glibc and libtinfo, which every distribution has
+  because bash does; line editing is built in
 - or Windows 10 or later, on x86-64
-- on Linux, libedit, for line editing at the prompt: the mainstream
-  distributions install it with OpenSSH; otherwise install `libedit2`
-  (Debian, Ubuntu) or `libedit` (Fedora)
 - a C compiler, only to use `fficupid`: on Windows, MinGW-w64 gcc for
   the UCRT
 

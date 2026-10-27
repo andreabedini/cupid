@@ -4,6 +4,8 @@ option('libraries', type: 'boolean', value: true,
        description: 'Build the Haskell libraries')
 option('readline', type: 'feature', value: 'auto',
        description: 'Command-line editing with GNU readline or libedit')
+option('static-readline', type: 'boolean', value: false,
+       description: 'Link the line-editing library statically (always on Windows)')
 option('char-encoding', type: 'combo', choices: ['utf8', 'locale', 'none'], value: 'utf8',
        description: 'Encoding used for character I/O')
 

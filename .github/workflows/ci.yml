@@ -134,12 +134,33 @@ jobs:
         run: |
           sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
           sudo apt-get update
-          sudo apt-get remove -y libreadline-dev || true
-          sudo apt-get install -y gcc-13 ninja-build bison libedit-dev python3-pip
+          sudo apt-get remove -y libreadline-dev libedit-dev || true
+          sudo apt-get install -y gcc-13 ninja-build bison libncurses-dev python3-pip
           sudo ln -sf gcc-13 /usr/bin/gcc
           python3 -m pip install --user meson==1.5.2
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           echo "CC=gcc" >> "$GITHUB_ENV"
+
+      # libedit is linked statically, from upstream's source rather than
+      # Ubuntu's package: Ubuntu's libedit.so.2 is a Debian soname that no
+      # other distribution has (upstream's is libedit.so.0), and Ubuntu's
+      # static library would pull in libbsd. Only libtinfo stays shared; it
+      # is in every base system, because bash needs it.
+      - name: Build libedit (Linux)
+        if: runner.os == 'Linux'
+        env:
+          LIBEDIT: libedit-20260512-3.1
+          LIBEDIT_SHA256: 432d5e7ea8b0116dd39f2eca7bc11d0eed77faa6b77ea526ace89907c23ea4a0
+        working-directory: ${{ runner.temp }}
+        run: |
+          curl -fsSLO "https://thrysoee.dk/editline/$LIBEDIT.tar.gz"
+          echo "$LIBEDIT_SHA256  $LIBEDIT.tar.gz" | sha256sum -c -
+          tar -xzf "$LIBEDIT.tar.gz"
+          cd "$LIBEDIT"
+          ./configure --prefix="$RUNNER_TEMP/libedit" --disable-shared --enable-static --quiet
+          make --quiet -j"$(nproc)"
+          make --quiet install
+          echo "PKG_CONFIG_PATH=$RUNNER_TEMP/libedit/lib/pkgconfig" >> "$GITHUB_ENV"
 
       # macOS's own libedit, in /usr/lib, provides the readline interface.
       # bison from Homebrew is not on PATH by default, and the one macOS
@@ -153,8 +174,10 @@ jobs:
       # The prefix does not matter: an installation that has been moved
       # finds its libraries next to its executables. libdir is set so that
       # the archive has lib/cupid and not lib/x86_64-linux-gnu/cupid.
+      # Line editing is required, not auto: a release without it would
+      # otherwise pass unnoticed. On Linux it is the static libedit above.
       - name: Configure
-        run: meson setup build --prefix=/usr/local --libdir=lib -Dbuildtype=release
+        run: meson setup build --prefix=/usr/local --libdir=lib -Dbuildtype=release -Dreadline=enabled -Dstatic-readline=${{ runner.os == 'Linux' }}
 
       - name: Build
         run: |
@@ -183,8 +206,9 @@ jobs:
         run: codesign --force --sign - cupid runcupid fficupid
 
       # The binaries must only need libraries that every distribution has,
-      # with a stable ABI. libedit and ncurses come with the base system of
-      # the mainstream distributions (OpenSSH needs libedit).
+      # with a stable ABI: glibc and libtinfo. libedit is not one of them
+      # (its soname differs between distributions), so it is linked
+      # statically above and must not appear here.
       - name: Check shared libraries
         if: runner.os == 'Linux'
         working-directory: out/${{ env.ARCHIVE }}/bin
@@ -192,7 +216,7 @@ jobs:
           for exe in cupid runcupid fficupid; do
             needed=$(readelf -d "$exe" | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p')
             printf '%s:\n%s\n' "$exe" "$needed"
-            if grep -vxE 'libc\.so\.6|libm\.so\.6|libdl\.so\.2|libedit\.so\.2|libtinfo\.so\.6|libncursesw?\.so\.6|ld-linux-.*\.so\.[0-9]+' <<< "$needed"; then
+            if grep -vxE 'libc\.so\.6|libm\.so\.6|libdl\.so\.2|libtinfo\.so\.6|libncursesw?\.so\.6|ld-linux-.*\.so\.[0-9]+' <<< "$needed"; then
               echo "::error::unexpected shared library dependencies of $exe (above)"
               exit 1
             fi

@@ -75,11 +75,18 @@ libdl = cc.find_library('dl', required: false)
 readline_opt = get_option('readline')
 # Static on Windows, where nothing else would find the DLL next to an
 # installed cupid.exe; MSYS2's libedit is WinEditLine, for the console.
-readline_dep = dependency('readline', required: false, static: is_windows)
+# Static on request elsewhere: the release archives link libedit
+# statically, because distributions disagree on its soname (libedit.so.2
+# on Debian and its derivatives, libedit.so.0 everywhere else).
+static_readline = is_windows or get_option('static-readline')
+readline_dep = dependency('readline', required: false, static: static_readline)
+if not readline_dep.found()
+  readline_dep = dependency('libedit', required: false, static: static_readline)
+endif
 if not readline_dep.found() and not readline_opt.disabled()
-  rl = cc.find_library('readline', required: false, static: is_windows)
+  rl = cc.find_library('readline', required: false, static: static_readline)
   if not rl.found()
-    rl = cc.find_library('edit', required: false, static: is_windows)
+    rl = cc.find_library('edit', required: false, static: static_readline)
   endif
   if rl.found()
     termcap = []
@@ -93,6 +100,14 @@ if not readline_dep.found() and not readline_opt.disabled()
       endif
     endforeach
     readline_dep = declare_dependency(dependencies: [rl] + termcap)
+  endif
+endif
+if not readline_dep.found() and not readline_opt.disabled() and host_machine.system() == 'darwin'
+  # macOS ships libedit as part of the system, but the SDK has only a .tbd
+  # stub for it, which find_library does not see and the linker does.
+  code = '#include <editline/readline.h>\nint main(void) { return readline(0) == 0; }'
+  if cc.links(code, args: ['-ledit'], name: 'libedit from the macOS SDK')
+    readline_dep = declare_dependency(link_args: ['-ledit'])
   endif
 endif
 if readline_opt.enabled() and not readline_dep.found()
