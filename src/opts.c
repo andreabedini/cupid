@@ -448,7 +448,7 @@ bool processOption(char *s) {
 
         case 'L':
             Printf(
-                "ERROR: +L is no longer supported for fficupid - put the argument (without +L) *after* the module - ignoring it.\n");
+                "ERROR: +L is no longer supported for cupid --ffi - put the argument (without +L) *after* the module - ignoring it.\n");
             return true;
 
         default:

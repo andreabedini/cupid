@@ -20,6 +20,7 @@
 #include "machdep.h"
 #include "output.h"
 #include "module.h"
+#include "run.h"
 #include <setjmp.h>
 #include <ctype.h>
 
@@ -108,20 +109,67 @@ static void printBanner(void) {
 }
 
 /* --------------------------------------------------------------------------
+ * Choosing what to do:
+ *
+ * As python does, cupid runs the program in the file it is given, and
+ * gives the prompt when it is given no file.  -i loads the files at the
+ * prompt instead, and --ffi compiles the stubs for the foreign imports of
+ * the file.  They count only among the options before the first file, and
+ * they are taken out of argv here, so nothing else sees them: they are not
+ * options that CUPIDFLAGS or :set could hold, where they would apply to
+ * every file.
+ * ------------------------------------------------------------------------*/
+typedef enum { PROMPT_MODE, RUN_MODE, FFI_MODE } Mode;
+
+static bool chooseMode(int *, char *[], Mode *);
+
+static bool chooseMode(int *argc, char *argv[], Mode *mode) {
+    bool interactive = false, ffi = false, file = false;
+    int i, j;
+
+    for (i = j = 1; i < *argc; ++i) {
+        if (!file && strcmp(argv[i], "-i") == 0)
+            interactive = true;
+        else if (!file && strcmp(argv[i], "--ffi") == 0)
+            ffi = true;
+        else {
+            file = file || !isOption(argv[i]);
+            argv[j++] = argv[i];
+        }
+    }
+    argv[j] = NULL;
+    *argc = j;
+
+    if (interactive && ffi) {
+        fprintf(stderr, "cupid: -i and --ffi cannot be used together\n");
+        return false;
+    }
+    *mode = ffi ? FFI_MODE : interactive || !file ? PROMPT_MODE : RUN_MODE;
+    return true;
+}
+
+/* --------------------------------------------------------------------------
  * Cupid entry point:
  * ------------------------------------------------------------------------*/
 
 int main(int, char *[]); /* now every func has a prototype  */
 
 int main(int argc, char *argv[]) {
+    Mode mode;
 
     CStackBase = &argc; /* Save stack base for use in gc   */
+
+    if (!chooseMode(&argc, argv, &mode))
+        exit(1);
 
     if (!initSystem()) {
         Printf("%0: failed to initialize, exiting\n", (argv ? argv[0] : ""));
         return 1;
     }
     installSignalHandlers();
+
+    if (mode != PROMPT_MODE)
+        exit(runFile(argc, argv, mode == FFI_MODE));
 
     printBanner();
 

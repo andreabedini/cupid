@@ -70,16 +70,7 @@ endif
 # macOS give, so a program recurses as deep on every platform.
 link_args = is_windows ? ['-Wl,--stack,8388608'] : []
 
-cupid = executable('cupid', files('cupid.c', 'edit.c'),
-  objects: core_objs, include_directories: src_inc, dependencies: deps,
-  link_args: link_args, install: true)
-
-runcupid = executable('runcupid', files('runcupid.c'),
-  objects: core_objs, include_directories: src_inc, dependencies: deps,
-  link_args: link_args, install: true)
-
-fficupid = executable('fficupid', files('runcupid.c'),
-  c_args: '-DFFI_COMPILER',
+cupid = executable('cupid', files('cupid.c', 'edit.c', 'run.c'),
   objects: core_objs, include_directories: src_inc, dependencies: deps,
   link_args: link_args, install: true)
 

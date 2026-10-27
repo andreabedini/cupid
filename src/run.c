@@ -1,10 +1,10 @@
 /* --------------------------------------------------------------------------
- * Run a Haskell program, and, built as fficupid, generate the C stubs for
- * a module's foreign imports.
+ * Run a Haskell program, or, with --ffi, generate the C stubs for a
+ * module's foreign imports.
  *
  * This is the interpreter without the prompt: it starts the same evaluator
- * cupid starts, loads the Prelude and the module it is given, and runs
- * main.
+ * the prompt starts, loads the Prelude and the module it is given, and
+ * runs main.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
@@ -24,10 +24,11 @@
 #include "machdep.h"
 #include "opts.h"
 #include "script.h"
+#include "run.h"
 
-/* The name in the error messages is fixed: fficupid is this program built
- * with FFI_COMPILER, and its errors have always come out as runcupid'.  */
-static const char *progName = "runcupid";
+/* The name in the error messages is fixed rather than taken from argv[0],
+ * so that they read the same however cupid was started.  */
+static const char *progName = "cupid";
 
 /* The interpreter's own output is collected here rather than printed, so
  * that an error can be shown once, under a heading, on the way out; a run
@@ -71,21 +72,11 @@ static void usageError(const char *message, char *arg) {
     exit(1);
 }
 
-int main(int argc, char *argv[]);
-
-int main(int argc, char *argv[]) {
+int runFile(int argc, char *argv[], bool ffi) {
     int exitCode = 0;
     int i;
 
-    CStackBase = &argc; /* Save stack base for use in gc   */
-
-    if (!initSystem())
-        usageError("failed to initialize, exiting", 0);
-    installSignalHandlers();
-
-#if defined(FFI_COMPILER)
-    generateFFI = true;
-#endif
+    generateFFI = ffi;
 
     if (setjmp(catch_error)) { /* every interpreter error lands here */
         reportError();
@@ -96,7 +87,7 @@ int main(int argc, char *argv[]) {
     readOptionSettings();
 
     /* The options come before the module name; everything after it belongs
-     * to the program, or, for fficupid, to the C compiler.            */
+     * to the program, or, with --ffi, to the C compiler.              */
     for (i = 1; i < argc && argv[i] && (argv[i][0] == '+' || argv[i][0] == '-');
          ++i)
         if (!processOption(argv[i]))
@@ -113,30 +104,28 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-#if defined(FFI_COMPILER)
-    for (i = 1; i < argc; ++i) /* the C compiler's flags */
-        ffiSetFlags(argv[i]);
-#endif
+    if (ffi)
+        for (i = 1; i < argc; ++i) /* the C compiler's flags */
+            ffiSetFlags(argv[i]);
 
     addScriptName(argv[0], true);
     readScripts(0);
     resetSubsystems();
 
-#if !defined(FFI_COMPILER)
-    {
+    if (!ffi) {
         Module main = findModule(findText("Main"));
         if (isNull(main))
-            usageError("can't find \"Main\" module", 0);
+            usageError(
+                "can't find \"Main\" module; to load the file at the prompt instead, use cupid -i ",
+                argv[0]);
         setCupidArgs(argc, argv); /* what getArgs returns */
         exitCode = runProgram(main);
     }
-#endif
 
     clearStack();
     stopAnyPrinting();
     exitSubsystems();
     stopEvaluator();
 
-    exit(exitCode);
-    return 0; /*NOTUSED*/
+    return exitCode;
 }

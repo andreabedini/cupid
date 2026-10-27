@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "monoid-needs-semigroup.hs":6 - Cannot build superclass instance
 *** Instance            : Monoid Count
 *** Context supplied    : ()

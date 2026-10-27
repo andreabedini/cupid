@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "type-class-clash-signature.hs":6 - Ambiguous type constructor occurrence "T"
 *** Could refer to: ClashType.T ClashClass.T 
 

@@ -1756,7 +1756,7 @@ void compileAndLink(char *fn, char *flags) {
     argvInit(&cmd);
 
 #if defined(MKDLL_VISUAL_STUDIO)
-    /* find the location of fficupid.bat */
+    /* find the location of cupid.bat */
     /* is in the same directory */
     {
         char Buffer[MAX_PATH + 1];

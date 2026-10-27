@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "deriving-context-ground.hs":5 - Cannot derive Show (T a): its context would need Show (a Int), which is not a class applied to distinct type variables
 *** Give the context yourself in a standalone declaration: deriving instance ... => Show (T a)
 

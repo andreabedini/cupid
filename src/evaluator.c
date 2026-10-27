@@ -76,7 +76,7 @@ void stopEvaluator(void) {
 /* --------------------------------------------------------------------------
  * Compiling and running an expression:
  *
- * The prompt and runcupid both take an expression, check it against the
+ * The prompt and running a file both take an expression, check it against the
  * module it is to run in and build its graph; what they do with the result
  * is where they differ, so the three steps they share are here.
  * ------------------------------------------------------------------------*/

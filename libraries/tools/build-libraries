@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Assemble the Cupid libraries in the build directory.
 
-usage: build-libraries SRCROOT OUT FFICUPID MKSYSCONFIG PLATFORM_DIR SYSTEM STAMP
+usage: build-libraries SRCROOT OUT CUPID MKSYSCONFIG PLATFORM_DIR SYSTEM STAMP
 
 The library sources under libraries/ are plain Haskell that Cupid owns,
 so building them means copying them into OUT/packages,
 generating the two platform-dependent files with mksysconfig, and running
-fficupid over the modules that contain foreign imports to build their C
+cupid --ffi over the modules that contain foreign imports to build their C
 stubs.  OUT is what gets installed as cupiddir.
 
 SYSTEM is the operating system the libraries are for, as meson names it
@@ -22,7 +22,7 @@ import sys
 
 PACKAGES = ["cupid", "base"]
 
-# Modules with foreign imports, in dependency order: fficupid loads a
+# Modules with foreign imports, in dependency order: cupid --ffi loads a
 # module's imports, so a module's stub must exist before the modules that
 # import it are compiled.  Any others found are compiled afterwards.
 FFI_ORDER = [
@@ -51,7 +51,7 @@ PACKAGE_INCLUDE_DIRS = {"base": ["include"], "cupid": ["Cupid"]}
 def main(argv):
     if len(argv) != 7:
         raise SystemExit(__doc__)
-    srcroot, out, fficupid, mksysconfig, platform_dir, system, stamp = argv
+    srcroot, out, cupid, mksysconfig, platform_dir, system, stamp = argv
     lib = os.path.join(srcroot, "libraries")
     pkgdir = os.path.join(out, "packages")
 
@@ -102,12 +102,12 @@ def main(argv):
         cfiles = []
         for m in re.finditer(r"\{-#\s*CFILES\s+(.*?)\s*#-\}", text):
             cfiles += [os.path.join(pdir, c) for c in m.group(1).split()]
-        cmd = [fficupid, "-P" + search_path]
+        cmd = [cupid, "--ffi", "-P" + search_path]
         cmd.append(path)
         cmd += ["-I" + os.path.join(pdir, d) for d in PACKAGE_INCLUDE_DIRS.get(package, [])]
         cmd += ["-I" + os.path.join(out, "include"), "-I" + platform_dir]
         cmd += cfiles
-        print("fficupid", rel, flush=True)
+        print("cupid --ffi", rel, flush=True)
         subprocess.run(cmd, env=env, check=True)
 
     with open(stamp, "w"):

@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "missing-context-given.hs":5 - Cannot justify constraints in explicitly typed binding
 *** Expression    : k
 *** Type          : Show a => a -> b -> String

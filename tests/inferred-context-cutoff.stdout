@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "inferred-context-cutoff.hs" - 
 *** The type checker has reached the cutoff limit while trying to
 *** determine whether:

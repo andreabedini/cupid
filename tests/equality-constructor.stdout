@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "equality-constructor.hs":3 - Equality constraint in a context of "T", which is not supported: a constructor cannot refine its result type
 
 

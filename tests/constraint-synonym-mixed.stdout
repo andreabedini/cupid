@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "constraint-synonym-mixed.hs":5 - Undefined class "Int"
 
 

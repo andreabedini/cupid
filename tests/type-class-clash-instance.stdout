@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "type-class-clash-instance.hs":8 - Ambiguous class occurrence "T"
 *** Could refer to: ClashClass.T ClashType.T 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the regression tests under tests/.
 
-usage: run-tests CUPID RUNCUPID PACKAGES TESTDIR [NAME...]
+usage: run-tests CUPID PACKAGES TESTDIR [NAME...]
 
 Every NAME.hs in TESTDIR is one test (all of them when no NAME is given).
 The files that go with it, all optional except NAME.stdout:
@@ -11,9 +11,9 @@ The files that go with it, all optional except NAME.stdout:
                 the output expected on Windows, where it differs, as in
                 the paths the interpreter builds, which use backslashes
   NAME.stdin    if present, the test is a REPL session: NAME.hs is loaded
-                into `cupid +q`, NAME.stdin is fed to the prompt and the
-                banner is dropped from the output; otherwise NAME.hs is
-                run with runcupid
+                with `cupid +q -i`, NAME.stdin is fed to the prompt and
+                the banner is dropped from the output; otherwise NAME.hs
+                is run with cupid
   NAME.args     extra command-line options, one shell word per line
   NAME.env      environment changes, one per line: VAR=VALUE sets,
                 -VAR unsets
@@ -89,7 +89,7 @@ def build_helpers(testdir, out):
             subprocess.run(cc + ["-o", exe, os.path.join(src, f)], check=True)
 
 
-def run_one(cupid, runcupid, packages, testdir, helpers, name):
+def run_one(cupid, packages, testdir, helpers, name):
     base = os.path.join(testdir, name)
     expected = None
     if os.name == "nt":
@@ -117,9 +117,9 @@ def run_one(cupid, runcupid, packages, testdir, helpers, name):
         env["PATH"] = helpers + os.pathsep + env.get("PATH", "")
 
         if stdin is None:
-            cmd = [runcupid, "-P" + packages] + args + [name + ".hs"]
+            cmd = [cupid, "-P" + packages] + args + [name + ".hs"]
         else:
-            cmd = [cupid, "+q", "-P" + packages] + args + [name + ".hs"]
+            cmd = [cupid, "+q", "-i", "-P" + packages] + args + [name + ".hs"]
 
         def limit_stack():
             if stack_kb:
@@ -155,17 +155,16 @@ def run_one(cupid, runcupid, packages, testdir, helpers, name):
 
 
 def main(argv):
-    if len(argv) < 5:
+    if len(argv) < 4:
         sys.exit(__doc__)
-    cupid, runcupid, packages, testdir = [os.path.abspath(a) for a in argv[1:5]]
-    names = argv[5:] or sorted(
+    cupid, packages, testdir = [os.path.abspath(a) for a in argv[1:4]]
+    names = argv[4:] or sorted(
         f[:-3] for f in os.listdir(testdir) if f.endswith(".hs"))
     failed = skipped = 0
     with tempfile.TemporaryDirectory(prefix="helpers.") as helpers:
         build_helpers(testdir, helpers)
         for name in names:
-            ok, detail = run_one(cupid, runcupid, packages, testdir, helpers,
-                                 name)
+            ok, detail = run_one(cupid, packages, testdir, helpers, name)
             if ok is None:
                 skipped += 1
                 print("SKIP " + name + ": " + detail)

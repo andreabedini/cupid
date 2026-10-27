@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "deriving-context-depth.hs":12 - 
 *** Cannot derive C (L a): its context is still reducing at depth 40.
 *** This may indicate that the problem is undecidable.  However,

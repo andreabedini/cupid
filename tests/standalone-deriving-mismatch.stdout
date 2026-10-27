@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "standalone-deriving-mismatch.hs":5 - Cannot derive Show Age via Bool: the two types are not the same at run time
 
 

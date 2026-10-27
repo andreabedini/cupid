@@ -144,7 +144,7 @@ endif
 # hp2ps runs where Cupid runs, so a cross build cannot look for it here
 have_hp2ps = not meson.is_cross_build() and find_program('hp2ps', required: false).found()
 
-# The command fficupid runs to turn generated C into a loadable library
+# The command cupid --ffi runs to turn generated C into a loadable library
 cc_cmd = ' '.join(cc.cmd_array())
 if host == 'darwin'
   dll_flags = '-bundle -undefined dynamic_lookup'
@@ -223,5 +223,5 @@ summary({
   'readline': use_readline,
   'character encoding': get_option('char-encoding'),
   'Haskell libraries': get_option('libraries'),
-  'fficupid compile command': mkdll_cmd,
+  'cupid --ffi compile command': mkdll_cmd,
 }, section: 'Configuration')

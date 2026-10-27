@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "long-error-message.hs":4 - Type error in application
 *** Expression     : putStrLn x
 *** Term           : x
