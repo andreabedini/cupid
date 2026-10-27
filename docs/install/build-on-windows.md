@@ -77,6 +77,23 @@ cupid
 Cupid VERSION, a Haskell interpreter written in C
 ```
 
+## Run it from the build tree
+
+You do not have to install to use what you built.  Point `CUPIDDIR` at
+the built library directory and run the programs from `build\src`:
+
+```powershell
+$env:CUPIDDIR = "$PWD\build\libraries\cupiddir"
+$env:PATH = "$PWD\build\src;$env:PATH"
+cupid
+```
+
+The two settings last for the current PowerShell session.  If the
+libraries cannot be found, the interpreter stops before the prompt with
+a message that the `Prelude` cannot be located.
+[Environment variables](../reference/environment-variables.md)
+describes `CUPIDDIR`.
+
 ## What is different on Windows
 
 - `System.Posix.Internals`, `System.Posix.Signals` and
@@ -94,5 +111,5 @@ Cupid VERSION, a Haskell interpreter written in C
 
 - [Install a release](install-a-release.md), for a build that is ready
   to unpack
-- [Build and install Cupid](build-and-install.md)
+- [Build Cupid on Linux and macOS](build-on-linux-and-macos.md)
 - [Build options and install layout](../reference/build-options.md)

@@ -22,23 +22,28 @@ WWW = Path(__file__).resolve().parent
 CONTENT = WWW / "content" / "docs"
 STATIC = WWW / "static"
 
-# The four Diátaxis quadrants.  The order here is the order they appear in the
-# site navigation, and it has to match extra.doc_sections in config.toml.
+# The documentation sections: the four Diátaxis quadrants, with Install in
+# front of them and Contributing after.  The order here is the order they
+# appear in the site navigation, and it has to match extra.doc_sections in
+# config.toml.
 SECTIONS = [
+    ("install", "Install", "Get Cupid onto your machine: a release archive, or a build from source."),
     ("tutorials", "Tutorials", "Lessons that take you through a first session, start to finish."),
     ("how-to", "How-to guides", "Recipes for a specific task you already know you need."),
     ("reference", "Reference", "The dry description of commands, options and the accepted language."),
     ("explanation", "Explanation", "How the pieces fit, and why they are shaped the way they are."),
+    ("contributing", "Contributing", "For people who change Cupid: how it is checked and released."),
 ]
 
 # Page order within a section, where alphabetical is the wrong order.  Pages not
 # listed sort alphabetically after the listed ones.
 PAGE_ORDER = {
-    "how-to": [
+    "install": [
         "install-a-release.md",
-        "build-and-install.md",
-        "run-from-the-build-tree.md",
+        "build-on-linux-and-macos.md",
         "build-on-windows.md",
+    ],
+    "how-to": [
         "write-a-script.md",
         "call-c-functions.md",
         "configure-the-editor.md",
@@ -47,7 +52,6 @@ PAGE_ORDER = {
         "measure-time-and-memory.md",
         "run-clang-tidy.md",
         "check-every-configuration.md",
-        "make-a-release.md",
     ],
     "reference": [
         "commands.md",

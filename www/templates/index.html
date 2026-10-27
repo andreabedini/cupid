@@ -16,7 +16,8 @@
     and runs today&rsquo;s Haskell on today&rsquo;s systems.
   </p>
   <p class="cta">
-    <a class="button" href="{{ get_url(path='@/docs/tutorials/getting-started.md') }}">Get started</a>
+    <a class="button" href="#install">Install</a>
+    <a class="button ghost" href="{{ get_url(path='@/docs/tutorials/getting-started.md') }}">Get started</a>
     <a class="button ghost" href="{{ get_url(path='@/docs/explanation/how-cupid-runs-a-program.md') }}">See how it works</a>
   </p>
 </section>
@@ -58,25 +59,30 @@ Nothing
   </p>
 </section>
 
-<section class="start">
-  <h2>Build it</h2>
-  <p>You need a C compiler, meson 1.1 or later, ninja, python3 and bison.  The
-  build takes a minute or two and never writes to the source tree.</p>
-  <pre><code class="language-sh">git clone {{ config.extra.repo_url }}.git cupid
-cd cupid
-CC=gcc meson setup build
-ninja -C build
-CUPIDDIR=build/libraries/cupiddir build/src/cupid</code></pre>
-  <pre class="session"><code><span class="prompt">Cupid&gt;</span> map (*2) [1..10]
+<section class="start" id="install">
+  <h2>Install it</h2>
+  <p>One line on Linux or macOS:</p>
+  <pre><code class="language-sh">curl -fsSL {{ get_url(path='install.sh') }} | sh</code></pre>
+  <p>Or on Windows, in PowerShell:</p>
+  <pre><code class="language-powershell">irm {{ get_url(path='install.ps1') }} | iex</code></pre>
+  <p>
+    Either one downloads the latest release for your system, checks it against
+    the published checksums, unpacks it under your home directory and puts
+    <code>cupid</code> on your PATH.  No root, no package manager.
+  </p>
+  <pre class="session"><code><span class="prompt">$</span> cupid
+Cupid&gt; map (*2) [1..10]
 [2,4,6,8,10,12,14,16,18,20]
 <span class="prompt">Cupid&gt;</span> :quit</code></pre>
   <p class="aside">
-    Cupid builds on 64-bit Linux, macOS, the BSDs and Windows, and Linux, macOS
-    and Windows are built and tested on every change.
-    <a href="{{ get_url(path='@/docs/how-to/build-and-install.md') }}">Build and install Cupid</a>
-    has the detail, and
-    <a href="{{ get_url(path='@/docs/how-to/build-on-windows.md') }}">Build Cupid on Windows</a>
-    covers the native MinGW-w64 build.
+    <a href="{{ get_url(path='@/docs/install/install-a-release.md') }}">Install a release</a>
+    has the same steps by hand.  Prefer to build it yourself?  You need a C
+    compiler, meson, ninja, python3 and bison, and the build takes a minute or
+    two:
+    <a href="{{ get_url(path='@/docs/install/build-on-linux-and-macos.md') }}">Build Cupid on Linux and macOS</a>
+    or
+    <a href="{{ get_url(path='@/docs/install/build-on-windows.md') }}">Build Cupid on Windows</a>.
+    Linux, macOS and Windows are built and tested on every change.
   </p>
 </section>
 
