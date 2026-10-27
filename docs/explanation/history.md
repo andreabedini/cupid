@@ -85,8 +85,9 @@ compilers.
 
 ## This tree
 
-This tree starts from the September 2006 release with one aim: a
-Haskell implementation you can sit down and read.  It is not an attempt
+This tree is Andrea Bedini's.  It starts from the September 2006
+release with one aim: a Haskell implementation you can sit down and
+read.  It is not an attempt
 to keep up with GHC, but it is meant to run the Haskell people write.
 The language is Haskell 2010 plus the parts of modern Haskell that
 real code needs and one type checker can hold; everything from 2006
