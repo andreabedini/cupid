@@ -37,8 +37,10 @@ irm https://andreabedini.github.io/cupid/install.ps1 | iex
 
 Either script finds the latest release, downloads the archive for your
 system, checks it against `SHA256SUMS` from the same release, unpacks
-it and puts the programs on your PATH.  Nothing needs root or
-administrator rights.  On Linux and macOS the release goes in
+it and puts the programs on your PATH.  If `gh` is installed and signed
+in, it also checks the archive's build attestation (see
+[Check that CI built it](#2-check-that-ci-built-it)) and refuses an
+archive that fails.  Nothing needs root or administrator rights.  On Linux and macOS the release goes in
 `~/.local/opt/cupid-VERSION-TARGET` and the programs are linked into
 `~/.local/bin`; on Windows it goes in `%LOCALAPPDATA%\Programs` and its
 `bin` directory is added to your user PATH.
@@ -82,13 +84,32 @@ archive in `SHA256SUMS`:
 (Get-FileHash cupid-VERSION-x86_64-windows.zip).Hash
 ```
 
-With gh, you can also check that CI built it:
+The checksum shows the download is intact.  It does not show who made
+the file, since `SHA256SUMS` comes from the same place; the next step
+does that.
+
+### 2. Check that CI built it
+
+When CI publishes a release it records a
+[build attestation](https://docs.github.com/en/actions/concepts/security/artifact-attestations)
+for every file in it: a statement, signed through Sigstore with a
+certificate GitHub issues to the workflow run, that the file was
+produced by this repository's `ci.yml` workflow on `main`.  Checking it
+proves the archive is the one CI built, not a substitute.  It needs
+`gh`, signed in to any GitHub account:
 
 ```sh
-gh attestation verify cupid-VERSION-TARGET.tar.gz --repo andreabedini/cupid
+gh attestation verify cupid-VERSION-TARGET.tar.gz --repo andreabedini/cupid --signer-workflow andreabedini/cupid/.github/workflows/ci.yml
 ```
 
-### 2. Unpack it anywhere
+The command fetches the attestation from GitHub, checks the signature
+and that the file's digest is the one attested, and exits with a
+failure if anything does not match.  The `--signer-workflow` option
+pins the identity to the release workflow; without it, an attestation
+from any workflow in the repository would pass.  The same command
+checks `SHA256SUMS` and the source distribution.
+
+### 3. Unpack it anywhere
 
 ```sh
 mkdir -p ~/.local/opt ~/.local/bin
@@ -105,7 +126,7 @@ The archive has one directory, `cupid-VERSION-TARGET`, with `bin`,
 `lib/cupid` and `share/man` inside.  The programs find their libraries
 next to themselves, so the directory can go anywhere and move later.
 
-### 3. Put the programs on your PATH
+### 4. Put the programs on your PATH
 
 ```sh
 ln -s ~/.local/opt/cupid-VERSION-TARGET/bin/* ~/.local/bin/

@@ -56,8 +56,15 @@ publishes a GitHub release, which creates the tag `vVERSION`, with:
 
 ```sh
 gh release verify vVERSION
-gh attestation verify cupid-VERSION-x86_64-linux.tar.gz --repo andreabedini/cupid
+gh attestation verify cupid-VERSION-x86_64-linux.tar.gz --repo andreabedini/cupid --signer-workflow andreabedini/cupid/.github/workflows/ci.yml
 ```
+
+The second command checks the build attestation that the `release` job
+records for every file in `dist/` with `actions/attest-build-provenance`.
+It is the check [Install a release](../install/install-a-release.md#2-check-that-ci-built-it)
+gives users, and the one the install scripts run when `gh` is signed
+in, so the signer workflow must stay `ci.yml` on `main` or that page
+and the scripts need updating.
 
 Releases are immutable: a published version cannot change.  If a
 release is wrong, fix it and make a new one.  If the `release` job fails
