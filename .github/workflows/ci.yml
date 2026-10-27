@@ -7,10 +7,11 @@ name: CI
 # as an archive; test unpacks that archive on a separate runner, without a
 # build tree, and runs the regression tests on it; build-windows and
 # test-windows do the same for Windows, with native Windows programs only;
-# sdist makes the source distribution; commits checks the commit messages of
-# a PR; ci-ok is the one check that the ruleset requires; release publishes
-# the tested archives and the source distribution when the head of main is
-# a release commit, made by `mise run release-pr`. Nothing is rebuilt after
+# sdist makes the source distribution; site builds the website; commits
+# checks the commit messages of a PR; ci-ok is the one check that the
+# ruleset requires; release publishes the tested archives and the source
+# distribution when the head of main is a release commit, made by `mise run
+# release-pr`; pages then deploys the website. Nothing is rebuilt after
 # testing.
 
 on:
@@ -484,6 +485,38 @@ jobs:
           path: build/meson-dist/*.tar.gz
           if-no-files-found: error
 
+  # The website: www/ with docs/ mirrored into it. zola build fails on a
+  # stale internal link, so a PR that breaks one fails here. Every run
+  # uploads the site as the Pages artifact; only pages deploys it.
+  site:
+    name: site
+    runs-on: ubuntu-latest
+    env:
+      # The same version as in mise.toml.
+      ZOLA_VERSION: 0.23.4
+      ZOLA_SHA256: 54d1a347781b2f32330914fcc02def81c7e3ddb6111b36d1cc89c06557aed1de
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install zola
+        run: |
+          archive=zola-v$ZOLA_VERSION-x86_64-unknown-linux-gnu.tar.gz
+          curl -fsSLO --retry 3 "https://github.com/getzola/zola/releases/download/v$ZOLA_VERSION/$archive"
+          echo "$ZOLA_SHA256  $archive" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/zola"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/zola" zola
+          echo "$RUNNER_TEMP/zola" >> "$GITHUB_PATH"
+
+      - name: Build the site
+        working-directory: www
+        run: |
+          ./sync-docs.py
+          zola build
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: www/public
+
   # Every commit of a PR must follow Conventional Commits, with a type that a
   # commit parser in cliff.toml knows: the release task reads them to choose
   # the next version and to write CHANGELOG.md. git-cliff checks the PR's
@@ -516,7 +549,7 @@ jobs:
   ci-ok:
     name: ci-ok
     if: always()
-    needs: [configurations, warnings, format, build, test, build-windows, test-windows, sdist, commits]
+    needs: [configurations, warnings, format, build, test, build-windows, test-windows, sdist, site, commits]
     runs-on: ubuntu-latest
     steps:
       - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
@@ -618,3 +651,28 @@ jobs:
           gh release upload "$TAG" dist/* --clobber
           # Publishing creates the tag and locks the tag and the assets.
           gh release edit "$TAG" --draft=false --latest
+
+  # Deploys the site that site built in this run to GitHub Pages, after a
+  # release, so the documentation describes the latest release. A manual run
+  # on main deploys main's site without a release: for the first deploy, or
+  # to fix the site between releases.
+  pages:
+    name: pages
+    needs: [ci-ok, release]
+    if: >-
+      !cancelled() && needs.ci-ok.result == 'success'
+      && github.ref == 'refs/heads/main'
+      && (needs.release.result == 'success' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        id: deploy

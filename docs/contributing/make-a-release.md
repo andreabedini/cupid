@@ -52,6 +52,10 @@ publishes a GitHub release, which creates the tag `vVERSION`, with:
 - `SHA256SUMS` for all of them
 - the version's section of `CHANGELOG.md` as the release notes
 
+Once the release is published, the `pages` job deploys the website,
+built from the same commit, to <https://andreabedini.github.io/cupid/>.
+The site therefore documents the latest release, not `main`.
+
 ### 4. Verify it
 
 ```sh
@@ -69,7 +73,7 @@ and the scripts need updating.
 Releases are immutable: a published version cannot change.  If a
 release is wrong, fix it and make a new one.  If the `release` job fails
 before it publishes, rerun the failed jobs; it continues the draft
-release.
+release.  If only `pages` fails, rerun it: it deploys the same site.
 
 ## Versions
 
