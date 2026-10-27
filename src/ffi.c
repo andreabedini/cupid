@@ -516,28 +516,6 @@ void ffiSetFlags(char *s) {
     }
 }
 
-static char *cppDirectives = 0; /* extra C preprocessor directives */
-
-void ffiAddCppInclude(char *s) {
-    int l;
-    char *t;
-    int needed = (int)strlen(s) + 11;
-    if (cppDirectives) {
-        l = (int)strlen(cppDirectives);
-        t = (char *)realloc(cppDirectives, l + needed);
-    } else {
-        l = 0;
-        t = (char *)malloc(needed);
-    }
-    if (t == 0) { /* keep old cppDirectives on error  */
-        errHead(0);
-        errPrintf("String storage space exhausted");
-        errFail();
-    }
-    cppDirectives = t;
-    snprintf(cppDirectives + l, needed, "#include %s\n", s);
-}
-
 bool foreignNeedStubs(List imps, List exps) {
     return (nonNull(imps) || nonNull(exps));
 }
@@ -554,8 +532,6 @@ void foreignHeader(char *fn) {
     fprintf(out, "/* Machine generated file, do not modify */\n");
     fprintf(out, "#include <stdlib.h>\n");
     fprintf(out, "#include \"HsFFI.h\"\n");
-    if (cppDirectives)
-        fprintf(out, "%s", cppDirectives);
     fprintf(out, "\n");
     fprintf(out, "static CupidAPI5 *cupid = 0;\n");
 }

@@ -6,7 +6,7 @@ object.
 ## Synopsis
 
 ```
-fficupid [option ...] [-iinclude ...] file [compiler-argument ...]
+fficupid [option ...] file [compiler-argument ...]
 ```
 
 ## Description
@@ -35,14 +35,13 @@ imports must have been compiled before any module that imports it is.
 | Position | Meaning |
 |---|---|
 | Before *file*, beginning with `+` or `-` | Options for the interpreter, as in [Options](options.md), such as `-P` |
-| `-i`*include* | Add `#include` *include* to the generated C.  *include* is what follows `#include` in C, so `'-i<math.h>'` or `'-i"defs.h"'`, quoted for the shell |
 | *file* | The first argument that does not begin with `+` or `-` |
 | After *file* | Passed unchanged to the C compiler: extra sources, `-I`, `-l`, `-L` and so on |
 
-A `foreign import` string of the form `"header.h name"` has the same
-effect as `-i"header.h"` for that declaration.  Since the generated
-code calls the function by name, one of the two is needed under C23,
-which does not allow implicit declarations.
+A `foreign import` string of the form `"header.h name"` adds
+`#include "header.h"` to the generated C.  Since the generated code
+calls the function by name, every import needs a header that declares
+it: C23 does not allow implicit declarations.
 
 ## Files
 
@@ -56,7 +55,6 @@ which does not allow implicit declarations.
 
 ```sh
 fficupid Hyp.hs clib.c -lm
-fficupid '-i"clib.h"' Hyp.hs clib.c -lm
 ```
 
 ## See also

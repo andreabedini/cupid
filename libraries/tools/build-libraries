@@ -45,8 +45,6 @@ POSIX_ONLY = [
     "base/System/Process/Internals.hs",
 ]
 
-# Header every base module's stub includes, as its .cabal file used to say
-PACKAGE_INCLUDES = {"base": ["HsBase.h"]}
 PACKAGE_INCLUDE_DIRS = {"base": ["include"], "cupid": ["Cupid"]}
 
 
@@ -104,11 +102,7 @@ def main(argv):
         cfiles = []
         for m in re.finditer(r"\{-#\s*CFILES\s+(.*?)\s*#-\}", text):
             cfiles += [os.path.join(pdir, c) for c in m.group(1).split()]
-        includes = PACKAGE_INCLUDES.get(package, [])
-        for m in re.finditer(r"\{-#\s*INCLUDE\s+(.*?)\s*#-\}", text):
-            includes += m.group(1).replace('"', "").split()
         cmd = [fficupid, "-P" + search_path]
-        cmd += ['-i"%s"' % inc for inc in includes]
         cmd.append(path)
         cmd += ["-I" + os.path.join(pdir, d) for d in PACKAGE_INCLUDE_DIRS.get(package, [])]
         cmd += ["-I" + os.path.join(out, "include"), "-I" + platform_dir]
