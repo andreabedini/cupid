@@ -85,7 +85,7 @@ accepted and what is left out.
 It builds and runs.  The code is standard C23 and builds with meson on
 64-bit Linux, macOS, Windows and the BSDs.  Linux, macOS and Windows are
 built and tested on every change; on Windows it builds natively with
-MinGW-w64, see [Build Cupid on Windows](docs/how-to/build-on-windows.md).
+MinGW-w64, see [Build Cupid on Windows](docs/install/build-on-windows.md).
 
 ## Quick start
 
@@ -118,7 +118,7 @@ tree.  Two things worth knowing up front:
   `--reconfigure` keeps the old one.
 
 Tests are `meson test -C build`, and installing is `ninja -C build
-install`.  [Build and install Cupid](docs/how-to/build-and-install.md)
+install`.  [Build Cupid on Linux and macOS](docs/install/build-on-linux-and-macos.md)
 has the detail, and [Build options and install
 layout](docs/reference/build-options.md) lists every `-Dname=value` you
 can set.

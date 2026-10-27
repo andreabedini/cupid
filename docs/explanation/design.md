@@ -176,7 +176,7 @@ every C99 header is present.  `src/sysdeps.h` writes those answers down,
 and `static_assert`s in `prelude.h` check them.  The only real
 differences left are Windows against POSIX, and sometimes macOS.  Linux,
 macOS and Windows are built and tested on every change; on Windows, see
-[Build Cupid on Windows](../how-to/build-on-windows.md).
+[Build Cupid on Windows](../install/build-on-windows.md).
 
 **meson, with generated files kept in the build tree.**  The build is
 meson only.  Three kinds of file are generated:

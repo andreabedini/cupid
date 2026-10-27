@@ -2,10 +2,13 @@
 
 Install Cupid from a binary archive on the
 [releases page](https://github.com/andreabedini/cupid/releases),
-without building it.
+without building it.  One command does the whole job; the steps it
+takes are also written out below, for doing them by hand.
 
-No release has been published yet.  Until there is one, follow
-[Build and install Cupid](build-and-install.md).
+No release has been published yet.  Until there is one, the install
+commands stop with a message saying so; follow
+[Build Cupid on Linux and macOS](build-on-linux-and-macos.md) or
+[Build Cupid on Windows](build-on-windows.md) instead.
 
 ## Prerequisites
 
@@ -18,7 +21,47 @@ No release has been published yet.  Until there is one, follow
 - a C compiler, only to use `fficupid`: on Windows, MinGW-w64 gcc for
   the UCRT
 
-## Steps
+## The one-line install
+
+On Linux and macOS:
+
+```sh
+curl -fsSL https://andreabedini.github.io/cupid/install.sh | sh
+```
+
+On Windows, in PowerShell:
+
+```powershell
+irm https://andreabedini.github.io/cupid/install.ps1 | iex
+```
+
+Either script finds the latest release, downloads the archive for your
+system, checks it against `SHA256SUMS` from the same release, unpacks
+it and puts the programs on your PATH.  Nothing needs root or
+administrator rights.  On Linux and macOS the release goes in
+`~/.local/opt/cupid-VERSION-TARGET` and the programs are linked into
+`~/.local/bin`; on Windows it goes in `%LOCALAPPDATA%\Programs` and its
+`bin` directory is added to your user PATH.
+
+Three environment variables change what the scripts do:
+
+| Variable            | Meaning                                   | Default                          |
+|---------------------|-------------------------------------------|----------------------------------|
+| `CUPID_VERSION`     | the version to install, such as `0.2.0`   | the latest release               |
+| `CUPID_INSTALL_DIR` | where the release directory goes          | `~/.local/opt` or `%LOCALAPPDATA%\Programs` |
+| `CUPID_BIN_DIR`     | where the links go (Linux and macOS only) | `~/.local/bin`                   |
+
+For example, to install a particular version somewhere else:
+
+```sh
+CUPID_VERSION=0.2.0 CUPID_INSTALL_DIR=/opt curl -fsSL https://andreabedini.github.io/cupid/install.sh | sh
+```
+
+Read the script before you run it if you like:
+[install.sh](https://andreabedini.github.io/cupid/install.sh),
+[install.ps1](https://andreabedini.github.io/cupid/install.ps1).
+
+## The same by hand
 
 ### 1. Download and check the archive
 
@@ -88,3 +131,10 @@ Cupid VERSION, a Haskell interpreter written in C
 
 If it stops with `FATAL ERROR: Unable to load Prelude`, `CUPIDDIR` is
 probably set in your environment and points somewhere else; unset it.
+
+## See also
+
+- [Build Cupid on Linux and macOS](build-on-linux-and-macos.md) and
+  [Build Cupid on Windows](build-on-windows.md), to build from source
+- [Getting started with Cupid](../tutorials/getting-started.md), for a
+  first session once it is installed

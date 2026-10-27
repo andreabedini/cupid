@@ -7,26 +7,32 @@ interactive prompt or runs a program's `main` from a script.
 
 The documentation follows the [Diátaxis](https://diataxis.fr/) scheme:
 tutorials teach, how-to guides solve a task, reference pages describe,
-and explanations discuss.
+and explanations discuss.  Before them comes Install, and after them
+Contributing, for the people who change Cupid rather than use it.
 
 ## Start here
 
-New to Cupid?  Work through
-[Getting started with Cupid](tutorials/getting-started.md).  It builds
-the interpreter, evaluates a few expressions, loads a module and runs a
-program with `runcupid`.
+New to Cupid?  [Install a release](install/install-a-release.md), then
+work through [Getting started with Cupid](tutorials/getting-started.md):
+it evaluates a few expressions, loads a module and runs a program with
+`runcupid`.
+
+## Install
+
+- [Install a release](install/install-a-release.md) — one command, or
+  the same steps by hand
+- [Build Cupid on Linux and macOS](install/build-on-linux-and-macos.md)
+  — from source, with meson; installed or run from the build tree
+- [Build Cupid on Windows](install/build-on-windows.md) — the native
+  MinGW-w64 build
 
 ## Tutorials
 
-- [Getting started with Cupid](tutorials/getting-started.md) — build the
-  interpreter, use the prompt, load a module, run a program.
+- [Getting started with Cupid](tutorials/getting-started.md) — use the
+  prompt, load a module, run a program.
 
 ## How-to guides
 
-- [Install a release](how-to/install-a-release.md)
-- [Build and install Cupid](how-to/build-and-install.md)
-- [Run Cupid from the build tree](how-to/run-from-the-build-tree.md)
-- [Build Cupid on Windows](how-to/build-on-windows.md)
 - [Check every build configuration](how-to/check-every-configuration.md)
 - [Write a script that runs with runcupid](how-to/write-a-script.md)
 - [Call C functions from Haskell](how-to/call-c-functions.md)
@@ -35,7 +41,6 @@ program with `runcupid`.
 - [Add a library to the search path](how-to/add-a-library.md)
 - [Measure time and memory use](how-to/measure-time-and-memory.md)
 - [Run the static analysis](how-to/run-clang-tidy.md)
-- [Make a release](how-to/make-a-release.md)
 
 ## Reference
 
@@ -82,6 +87,10 @@ program with `runcupid`.
   how callbacks into Haskell were implemented, and why they are not
   available on current targets
 - [History](explanation/history.md) — from Gofer to this tree
+
+## Contributing
+
+- [Make a release](contributing/make-a-release.md)
 
 ## Manual page
 

@@ -6,7 +6,7 @@ Compile a module that contains `foreign import` declarations with
 ## Prerequisites
 
 - `fficupid`, either installed or reachable from the build tree with
-  `CUPIDDIR` set (see [Run Cupid from the build tree](run-from-the-build-tree.md))
+  `CUPIDDIR` set (see [Run it from the build tree](../install/build-on-linux-and-macos.md#run-it-from-the-build-tree))
 - the C compiler that Cupid was built with, since `fficupid` runs the
   same command
 

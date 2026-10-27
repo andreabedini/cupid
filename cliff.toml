@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and versions follow [Semantic Versioning](https://semver.org/), as described in
-[Make a release](docs/how-to/make-a-release.md).\n
+[Make a release](docs/contributing/make-a-release.md).\n
 """
 # A Tera template to be rendered for each release in the changelog.
 # See https://keats.github.io/tera/#getting-started

@@ -44,7 +44,7 @@ The shell that `:!` starts when it is given no command.  Default:
 
 Read by meson at configuration time, not by Cupid.  The compiler it
 names is also the one `fficupid` runs.  See
-[Build and install Cupid](../how-to/build-and-install.md).
+[Build Cupid on Linux and macOS](../install/build-on-linux-and-macos.md).
 
 ## See also
 

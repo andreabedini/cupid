@@ -1,9 +1,9 @@
 # Getting started with Cupid
 
-Learn to use Cupid by building it, evaluating expressions at its prompt,
-loading a module of your own and running a program from the shell.
+Learn to use Cupid by evaluating expressions at its prompt, loading a
+module of your own and running a program from the shell.
 
-**Time**: about 20 minutes.
+**Time**: about 15 minutes.
 **Level**: you have written a little Haskell before, or are following a
 Haskell text alongside this.
 
@@ -11,75 +11,22 @@ Haskell text alongside this.
 
 By the end you will be able to:
 
-- build Cupid from source and run it without installing it
 - evaluate expressions and ask for their types at the prompt
 - write a module in a file, load it, and fix an error in it
 - run a program's `main` from the shell with `runcupid`
 
 ## Prerequisites
 
-You need a C compiler (gcc 13 or later, or clang), meson 1.1 or later,
-ninja, python3 and bison.  On Fedora:
+You need Cupid on your PATH.  [Install a release](../install/install-a-release.md)
+does that in one command; if you would rather build it yourself,
+[Build Cupid on Linux and macOS](../install/build-on-linux-and-macos.md)
+and [Build Cupid on Windows](../install/build-on-windows.md) show how,
+and how to run the result without installing it.
 
-```sh
-sudo dnf install gcc meson ninja-build python3 bison
-```
+You also need a text editor and an empty directory to work in.  Every
+step below is done from that directory.
 
-On Debian 13 or Ubuntu 24.04 and later:
-
-```sh
-sudo apt install gcc meson ninja-build python3 bison
-```
-
-Older releases ship a meson older than 1.1; install a newer one with
-`python3 -m pip install --user meson`.  They also ship a gcc older than
-13, which cannot compile Cupid's C23 sources (Ubuntu 22.04 has gcc 11).
-Install gcc 13 or later and name it in `CC` below.
-
-On macOS with Homebrew:
-
-```sh
-brew install meson ninja bison
-export PATH="$(brew --prefix bison)/bin:$PATH"
-```
-
-The bison that macOS ships is too old for Cupid's grammar, so the
-Homebrew one has to come first on the path.
-
-Everything else in this tutorial is done from the top of the Cupid
-source tree.
-
-## Step 1: Build Cupid
-
-Configure a build directory and build in it:
-
-```sh
-CC=gcc meson setup build
-ninja -C build
-```
-
-The build compiles three programs into `build/src` and then assembles
-the Haskell libraries into `build/libraries/cupiddir`.  It takes a
-minute or two.  The last lines of output look like this:
-
-```
-[52/53] Generating libraries/cupid-libraries with a custom command
-fficupid cupid/Cupid/Storable.hs
-...
-fficupid base/Data/ByteString/Base.hs
-```
-
-Now tell the shell where the programs and the libraries are:
-
-```sh
-export PATH="$PWD/build/src:$PATH"
-export CUPIDDIR="$PWD/build/libraries/cupiddir"
-```
-
-These two settings last for the current shell session.  Every later
-step assumes them.
-
-## Step 2: Evaluate expressions
+## Step 1: Evaluate expressions
 
 Start the interpreter:
 
@@ -132,7 +79,7 @@ Cupid> :quit
 [Leaving Cupid]
 ```
 
-## Step 3: Write a module
+## Step 2: Write a module
 
 The prompt accepts expressions, not definitions.  Definitions go in a
 file.  Create a file called `Stats.hs` in the current directory with
@@ -151,7 +98,7 @@ variance xs = mean [ (x - m) ^ 2 | x <- xs ]
 The file is deliberately incomplete: `variance` uses a name `m` that is
 never defined.  You will see how Cupid reports that next.
 
-## Step 4: Load the module and fix the error
+## Step 3: Load the module and fix the error
 
 Start Cupid with the file name on the command line:
 
@@ -197,7 +144,7 @@ variance :: [Double] -> Double
 
 Every time you change the file, `:reload` picks up the new version.
 
-## Step 5: Run a program from the shell
+## Step 4: Run a program from the shell
 
 A program is a module called `Main` that defines `main`.  Create
 `Main.hs` next to `Stats.hs`:
@@ -246,9 +193,9 @@ variance: 25.0
 
 ## What you have done
 
-You built Cupid, evaluated expressions at its prompt, wrote a module,
-found and fixed an error in it with the help of Cupid's error message,
-and ran a two-module program both from the shell and from the prompt.
+You evaluated expressions at Cupid's prompt, wrote a module, found and
+fixed an error in it with the help of Cupid's error message, and ran a
+two-module program both from the shell and from the prompt.
 
 ## Next steps
 
@@ -260,5 +207,3 @@ and ran a two-module program both from the shell and from the prompt.
   prompt understands.
 - [The libraries](../reference/libraries.md) lists the modules you can
   import.
-- [Build and install Cupid](../how-to/build-and-install.md) explains
-  how to install so that the two `export` lines are no longer needed.
