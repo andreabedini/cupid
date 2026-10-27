@@ -223,7 +223,7 @@ of eight.  `char-encoding` and `readline` are not swept.  No feature
 option changes what a program prints (a build with `checks` adds the
 `+D` toggle to the `:set` listing), so every configuration is compared
 against the same expected output, with no filters.  See [Check every
-build configuration](../how-to/check-every-configuration.md).
+build configuration](../contributing/check-every-configuration.md).
 
 ## The C code
 

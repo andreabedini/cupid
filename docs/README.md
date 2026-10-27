@@ -33,7 +33,6 @@ it evaluates a few expressions, loads a module and runs a program with
 
 ## How-to guides
 
-- [Check every build configuration](how-to/check-every-configuration.md)
 - [Write a script that runs with runcupid](how-to/write-a-script.md)
 - [Call C functions from Haskell](how-to/call-c-functions.md)
 - [Make `:edit` open your editor](how-to/configure-the-editor.md)
@@ -90,6 +89,7 @@ it evaluates a few expressions, loads a module and runs a program with
 
 ## Contributing
 
+- [Check every build configuration](contributing/check-every-configuration.md)
 - [Make a release](contributing/make-a-release.md)
 
 ## Manual page
