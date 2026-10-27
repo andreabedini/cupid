@@ -3,9 +3,11 @@
 #   irm https://andreabedini.github.io/cupid/install.ps1 | iex
 #
 # Downloads the x86-64 Windows archive from the GitHub releases of
-# andreabedini/cupid, checks it against the SHA256SUMS of the same release,
-# unpacks it under $env:LOCALAPPDATA\Programs and adds its bin directory to
-# the user PATH.  Nothing needs administrator rights.  Settings, all optional:
+# andreabedini/cupid, checks it against the SHA256SUMS of the same release
+# and, when gh is installed and signed in, against its build attestation,
+# then unpacks it under $env:LOCALAPPDATA\Programs and adds its bin
+# directory to the user PATH.  Nothing needs administrator rights.
+# Settings, all optional:
 #
 #   $env:CUPID_VERSION      the version to install, such as 0.2.0; default the latest
 #   $env:CUPID_INSTALL_DIR  where the release directory goes; default $env:LOCALAPPDATA\Programs
@@ -56,6 +58,26 @@ try {
     $actual = (Get-FileHash -Algorithm SHA256 -Path (Join-Path $tmp $archive)).Hash
     if ($actual -ne $expected) { throw "$archive does not match SHA256SUMS" }
 
+    # -- provenance -----------------------------------------------------------
+    #
+    # CI records a build attestation for every release file.  gh can check
+    # it, but only when signed in, so the check is made when it can be and
+    # said to be skipped otherwise.
+
+    $attested = $false
+    if (Get-Command gh -ErrorAction SilentlyContinue) {
+        & gh auth token *> $null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Checking the build attestation with gh"
+            $out = & gh attestation verify (Join-Path $tmp $archive) --repo $repo --signer-workflow "$repo/.github/workflows/ci.yml" 2>&1
+            if ($LASTEXITCODE -ne 0) {
+                $out | ForEach-Object { Write-Host $_ }
+                throw "$archive has no valid build attestation from $repo's CI"
+            }
+            $attested = $true
+        }
+    }
+
     # -- installing -----------------------------------------------------------
 
     $dir = Join-Path $installDir "cupid-$version-$target"
@@ -73,6 +95,9 @@ try {
 
     Write-Host "Installed Cupid $version in $dir"
     Write-Host "Added $bin to your user PATH. It is already on the PATH of this session; other terminals pick it up when reopened."
+    if (-not $attested) {
+        Write-Host "The checksum matched; the build attestation was not checked because gh is not installed or not signed in."
+    }
 } finally {
     Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }

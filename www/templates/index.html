@@ -67,8 +67,9 @@ Nothing
   <pre><code class="language-powershell">irm {{ get_url(path='install.ps1') }} | iex</code></pre>
   <p>
     Either one downloads the latest release for your system, checks it against
-    the published checksums, unpacks it under your home directory and puts
-    <code>cupid</code> on your PATH.  No root, no package manager.
+    the published checksums and, if <code>gh</code> is signed in, against the
+    build attestation CI recorded, then unpacks it under your home directory
+    and puts <code>cupid</code> on your PATH.  No root, no package manager.
   </p>
   <pre class="session"><code><span class="prompt">$</span> cupid
 Cupid&gt; map (*2) [1..10]

@@ -4,9 +4,10 @@
 #   curl -fsSL https://andreabedini.github.io/cupid/install.sh | sh
 #
 # Downloads the archive for this machine from the GitHub releases of
-# andreabedini/cupid, checks it against the SHA256SUMS of the same release,
-# unpacks it under ~/.local/opt and links the programs into ~/.local/bin.
-# Nothing needs root.  Settings, all optional:
+# andreabedini/cupid, checks it against the SHA256SUMS of the same release
+# and, when gh is installed and signed in, against its build attestation,
+# then unpacks it under ~/.local/opt and links the programs into
+# ~/.local/bin.  Nothing needs root.  Settings, all optional:
 #
 #   CUPID_VERSION      the version to install, such as 0.2.0; default the latest
 #   CUPID_INSTALL_DIR  where the release directory goes; default ~/.local/opt
@@ -87,6 +88,23 @@ fi
 expected=$(grep " $archive\$" "$tmp/SHA256SUMS") || die "SHA256SUMS has no line for $archive"
 ( cd "$tmp" && printf '%s\n' "$expected" | check ) || die "$archive does not match SHA256SUMS"
 
+# -- provenance --------------------------------------------------------------
+#
+# CI records a build attestation for every release file.  gh can check it,
+# but only when signed in, so the check is made when it can be and said to
+# be skipped otherwise.
+
+attested=no
+if command -v gh >/dev/null 2>&1 && gh auth token >/dev/null 2>&1; then
+  say "Checking the build attestation with gh"
+  if ! gh attestation verify "$tmp/$archive" --repo "$repo" \
+       --signer-workflow "$repo/.github/workflows/ci.yml" >"$tmp/gh.out" 2>&1; then
+    cat "$tmp/gh.out" >&2
+    die "$archive has no valid build attestation from $repo's CI"
+  fi
+  attested=yes
+fi
+
 # -- installing --------------------------------------------------------------
 
 dir=$install_dir/cupid-$version-$target
@@ -104,6 +122,9 @@ done
 
 say "Installed Cupid $version in $dir"
 say "Linked$programs into $bin_dir"
+if [ "$attested" = no ]; then
+  say "The checksum matched; the build attestation was not checked because gh is not installed or not signed in."
+fi
 case ":$PATH:" in
   *":$bin_dir:"*) ;;
   *)
