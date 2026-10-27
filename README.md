@@ -173,9 +173,11 @@ first released on Valentine's Day, 14 February 1995, which made Cupid
 the obvious choice.  The grin on the logo is his: Cupid has always been
 a bit of a troublemaker.
 
-## Origin and licence
+## Author, origin and licence
 
-Cupid is derived from Hugs 98, which is Copyright (c) Mark P Jones,
+Cupid is written and maintained by [Andrea Bedini](https://github.com/andreabedini).
+
+It is derived from Hugs 98, which is Copyright (c) Mark P Jones,
 Alastair Reid, the Yale Haskell Group, and the OGI School of Science &
 Engineering at OHSU, 1994-2005, and distributed under the BSD-style
 licence in [License](License).  Cupid is distributed under the same

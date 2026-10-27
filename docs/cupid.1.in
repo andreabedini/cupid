@@ -343,7 +343,9 @@ Simon Marlow (editor).
 Paul Hudak & Joseph H. Fasel.  A gentle introduction to Haskell.
 \fIACM SIGPLAN Notices\fP, 27(5), May 1992.
 .SH AUTHOR
-Hugs 98: Mark Jones and others, 1994-2005.
+Cupid: Andrea Bedini.
+.PP
+Hugs 98, from which it derives: Mark Jones and others, 1994-2005.
 .PP
 Manual page: Jonathan Bowen, modified by Gary Leavens, and then
 (with apologies to the original authors) by Mark Jones.
