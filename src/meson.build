@@ -47,8 +47,11 @@ core = files(
 no_opt = cc.get_argument_syntax() == 'msvc' ? '/Od' : '-O0'
 libgc = static_library('cupid-gcsafe', gc_sensitive,
   c_args: no_opt, include_directories: src_inc)
+# input.c includes the line-editing header, so the core library needs the
+# dependency's include path; the programs below link the library itself
 libcore = static_library('cupid-core', core, parser,
-  include_directories: src_inc)
+  include_directories: src_inc,
+  dependencies: use_readline ? [readline_dep] : [])
 
 # The two groups reference each other, so link them as objects rather than
 # as archives to avoid link-order problems
