@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "equality-superclass.hs":2 - Equality constraint as a superclass of "C" is not supported
 
 

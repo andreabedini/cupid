@@ -2,7 +2,7 @@
 -- down, #! is an operator symbol, which cannot start a declaration.
 module Main where
 
-#! /usr/local/bin/runcupid
+#! /usr/local/bin/cupid
 
 main :: IO ()
 main = putStrLn "ran"

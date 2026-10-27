@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "gadt-syntax-newtype.hs":2 - A newtype declaration must have exactly one constructor
 
 

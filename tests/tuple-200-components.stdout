@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "tuple-200-components.hs" - Tuples with more than 100 components are not supported
 
 

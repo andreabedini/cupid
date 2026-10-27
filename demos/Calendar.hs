@@ -108,10 +108,10 @@ cal year = unlines (banner year `above` body year)
 
 -- For a standalone calendar program:
 --
--- To use this with "runcupid" on Unix:
+-- To use this with "cupid" on Unix:
 --
 --   cat >cal
---   #! /usr/local/bin/runcupid
+--   #! /usr/local/bin/cupid
 --   
 --   > module Main( main ) where
 --   > import Calendar

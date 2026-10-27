@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "kind-annotation-misplaced.hs":2 - Kind annotation on "a": a kind may be given only to the variables a declaration binds
 
 

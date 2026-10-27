@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "poly-synonym-impredicative.hs":6 - A forall or a context cannot be here: a polymorphic type may be the whole of a signature, an argument of a function in one, or a constructor's field
 
 

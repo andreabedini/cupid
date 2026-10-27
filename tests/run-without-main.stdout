@@ -1,0 +1,1 @@
+cupid: can't find "Main" module; to load the file at the prompt instead, use cupid -i run-without-main.hs

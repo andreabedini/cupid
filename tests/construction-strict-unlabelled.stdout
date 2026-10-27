@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "construction-strict-unlabelled.hs":8 - Construction does not define strict field
 Expression : C {}
 Field      : argument 2 of "C"

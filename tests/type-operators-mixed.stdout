@@ -1,4 +1,4 @@
-runcupid: Error occurred
+cupid: Error occurred
 ERROR "type-operators-mixed.hs":10 - Type operators ":+:" and ":*:" must be grouped with parentheses
 
 

@@ -130,7 +130,7 @@ jobs:
       # 13), so GCC 13 comes from the Ubuntu toolchain PPA. The binaries
       # still need only the glibc of 22.04. GCC 13 is made the system gcc
       # rather than named in CC, because meson bakes the compiler command
-      # into fficupid, and the users of the archive have a gcc but rarely
+      # into cupid for --ffi, and the users of the archive have a gcc but rarely
       # a gcc-13.
       - name: Install build dependencies (Linux)
         if: runner.os == 'Linux'
@@ -214,13 +214,13 @@ jobs:
 
       - name: Strip
         working-directory: out/${{ env.ARCHIVE }}/bin
-        run: strip cupid runcupid fficupid
+        run: strip cupid
 
       # strip invalidates the linker's ad-hoc signature.
       - name: Sign
         if: runner.os == 'macOS'
         working-directory: out/${{ env.ARCHIVE }}/bin
-        run: codesign --force --sign - cupid runcupid fficupid
+        run: codesign --force --sign - cupid
 
       # The binaries must only need glibc, the one library every
       # distribution has with a stable ABI. libedit (its soname differs
@@ -230,7 +230,7 @@ jobs:
         if: runner.os == 'Linux'
         working-directory: out/${{ env.ARCHIVE }}/bin
         run: |
-          for exe in cupid runcupid fficupid; do
+          for exe in cupid; do
             needed=$(readelf -d "$exe" | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p')
             printf '%s:\n%s\n' "$exe" "$needed"
             if grep -vxE 'libc\.so\.6|libm\.so\.6|libdl\.so\.2|ld-linux-.*\.so\.[0-9]+' <<< "$needed"; then
@@ -244,7 +244,7 @@ jobs:
         if: runner.os == 'macOS'
         working-directory: out/${{ env.ARCHIVE }}/bin
         run: |
-          for exe in cupid runcupid fficupid; do
+          for exe in cupid; do
             needed=$(otool -L "$exe" | tail -n +2 | awk '{print $1}')
             printf '%s:\n%s\n' "$exe" "$needed"
             if grep -vE '^(/usr/lib/|/System/Library/)' <<< "$needed"; then
@@ -289,12 +289,12 @@ jobs:
         run: |
           unset CUPIDDIR
           printf 'main :: IO ()\nmain = putStrLn "hello"\n' > "$RUNNER_TEMP/Hello.hs"
-          out=$("$CUPID/bin/runcupid" "$RUNNER_TEMP/Hello.hs")
+          out=$("$CUPID/bin/cupid" "$RUNNER_TEMP/Hello.hs")
           echo "$out"
           [ "$out" = hello ]
 
       - name: Test
-        run: python3 tests/run-tests "$CUPID/bin/cupid" "$CUPID/bin/runcupid" "$CUPID/lib/cupid/packages/*" tests
+        run: python3 tests/run-tests "$CUPID/bin/cupid" "$CUPID/lib/cupid/packages/*" tests
 
   # build and test for Windows, built with MinGW-w64 against the UCRT. The
   # steps are those of build and test, but with native Windows programs
@@ -376,7 +376,7 @@ jobs:
         working-directory: out/${{ env.ARCHIVE }}/bin
         run: |
           $env:PATH = $env:NATIVE_PATH
-          strip cupid.exe runcupid.exe fficupid.exe
+          strip cupid.exe
 
       # Only the DLLs of Windows itself: the C runtime is the UCRT, which
       # Windows 10 and later have, and the line editor is linked in.
@@ -385,7 +385,7 @@ jobs:
         run: |
           $env:PATH = $env:NATIVE_PATH
           $bad = $false
-          foreach ($exe in 'cupid.exe', 'runcupid.exe', 'fficupid.exe') {
+          foreach ($exe in 'cupid.exe') {
             $dlls = objdump -p $exe | Select-String 'DLL Name: (\S+)' | ForEach-Object { $_.Matches[0].Groups[1].Value }
             "${exe}:"; $dlls
             $other = $dlls | Where-Object { $_ -notmatch '^(KERNEL32|api-ms-win-crt-[a-z0-9-]+)\.dll$' }
@@ -450,14 +450,14 @@ jobs:
           $env:PATH = $env:NATIVE_PATH
           Remove-Item Env:CUPIDDIR -ErrorAction SilentlyContinue
           Set-Content "$env:RUNNER_TEMP\Hello.hs" "main :: IO ()`nmain = putStrLn `"hello`""
-          $out = & "$env:CUPID\bin\runcupid.exe" "$env:RUNNER_TEMP\Hello.hs"
+          $out = & "$env:CUPID\bin\cupid.exe" "$env:RUNNER_TEMP\Hello.hs"
           $out
           if ($out -ne 'hello') { exit 1 }
 
       - name: Test
         run: |
           $env:PATH = $env:NATIVE_PATH
-          python tests/run-tests "$env:CUPID\bin\cupid.exe" "$env:CUPID\bin\runcupid.exe" "$env:CUPID\lib\cupid\packages\*" tests
+          python tests/run-tests "$env:CUPID\bin\cupid.exe" "$env:CUPID\lib\cupid\packages\*" tests
 
   # The source distribution, as meson dist makes it: a git archive of the
   # commit, which has every file that the build needs. The build and test

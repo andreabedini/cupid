@@ -291,7 +291,7 @@ extern void implementForeignImportWrapper(int, int, Text, List, bool, Type);
 extern void implementForeignImportLabel(int, int, Text, Text, Text, Type);
 extern void implementForeignExport(int, int, Text, List, bool, Type);
 extern bool foreignNeedStubs(List, List);
-extern bool generateFFI;  /* running fficupid? */
+extern bool generateFFI;  /* running cupid --ffi? */
 extern bool generate_ffi; /* generate FFI for the current module? */
 
 extern void installTypeChecker(void);
