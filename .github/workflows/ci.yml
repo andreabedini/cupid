@@ -153,7 +153,10 @@ jobs:
           LIBEDIT_SHA256: 432d5e7ea8b0116dd39f2eca7bc11d0eed77faa6b77ea526ace89907c23ea4a0
         working-directory: ${{ runner.temp }}
         run: |
-          curl -fsSLO "https://thrysoee.dk/editline/$LIBEDIT.tar.gz"
+          # A small site; one runner has failed to connect at all. Retry
+          # for a few minutes before giving up.
+          curl -fsSLO --retry 8 --retry-all-errors --retry-delay 15 --connect-timeout 30 \
+            "https://thrysoee.dk/editline/$LIBEDIT.tar.gz"
           echo "$LIBEDIT_SHA256  $LIBEDIT.tar.gz" | sha256sum -c -
           tar -xzf "$LIBEDIT.tar.gz"
           cd "$LIBEDIT"
