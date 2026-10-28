@@ -66,6 +66,8 @@ PAGE_ORDER = {
         "haskell-2010.md",
         "extensions.md",
         "libraries.md",
+        "differences-from-hugs.md",
+        "further-reading.md",
     ],
     "explanation": [
         "design.md",

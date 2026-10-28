@@ -124,9 +124,15 @@ flags.  In order:
   layer, and CI builds release archives for Linux, macOS and Windows
 
 [The design of Cupid](design.md) explains the choices that came out of
-these changes, and why they were made.
+these changes, and why they were made.  [Differences from Hugs
+98](../reference/differences-from-hugs.md) lists what they mean for
+someone who used Hugs.
 
 ## See also
 
 - [How Cupid runs a program](how-cupid-runs-a-program.md)
 - [The language Cupid accepts](../reference/language.md)
+- [The Hugs home page](https://www.haskell.org/hugs/) and [*The Hugs 98
+  User's Guide*](https://www.haskell.org/hugs/pages/users_guide/index.html),
+  still online
+- [Further reading](../reference/further-reading.md)

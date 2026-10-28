@@ -143,6 +143,8 @@ the useful starting points are:
   FFI and `cupid --ffi`.
 - [The design of Cupid](docs/explanation/design.md) — why the tree
   looks the way it does.
+- [Differences from Hugs 98](docs/reference/differences-from-hugs.md)
+  — what changed, if you used Hugs.
 
 ## Layout
 

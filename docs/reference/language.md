@@ -264,3 +264,4 @@ A module name may contain dots.  To find `A.B.C`, Cupid looks for
 - [Haskell 2010 conformance](haskell-2010.md)
 - [Language extensions](extensions.md)
 - [The libraries](libraries.md)
+- [Differences from Hugs 98](differences-from-hugs.md)
