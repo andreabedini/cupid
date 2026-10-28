@@ -180,8 +180,25 @@ static char *nextChar;
 #  define HAVE_RL_EVENT_HOOK 1
 # endif
 #else
-# define nextConsoleChar() FGetChar(stdin)
+# define nextConsoleChar() consoleGetChar()
 #endif
+
+/* When the console is read from stdin rather than through readline, a
+ * command that stops before the end of its line, such as an unknown one
+ * or one with a syntax error, leaves the rest in the stream.  The next
+ * prompt discards it, as readline does by reading a fresh line.        */
+static bool consoleLinePending = false; /* rest of a stdin line unread? */
+
+static Char consoleGetChar(void) {
+    Char c = FGetChar(stdin);
+    consoleLinePending = c != '\n' && c != EOF;
+    return c;
+}
+
+static void discardConsoleLine(void) {
+    while (consoleLinePending)
+        consoleGetChar();
+}
 
 bool startsQual(Char c) {
     return isConStart(c);
@@ -214,6 +231,7 @@ static int readlineInterrupted(void) {
 
 /* Prepare to input characters from standard in (i.e. console/kbd) */
 void consoleInput(char *prompt) {
+    discardConsoleLine();
     reading = KEYBOARD; /* keyboard input is Line oriented, */
     c0 =                /* i.e. input terminated by '\n'    */
         c1 = ' ';
@@ -397,7 +415,7 @@ static void skip(void) {
                 }
             }
         } else if (reading == NOKEYBOARD) {
-            c1 = c0 == '\n' ? EOF : FGetChar(stdin);
+            c1 = c0 == '\n' ? EOF : consoleGetChar();
         } else if (reading == STRING) {
             c1 = ExtractChar(nextStringChar);
             if (c1 == '\0')

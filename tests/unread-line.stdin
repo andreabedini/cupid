@@ -1,0 +1,4 @@
+:kind Maybe
+x = 1
+1 + 1
+:quit now
