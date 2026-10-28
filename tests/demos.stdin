@@ -1,0 +1,57 @@
+:load ../demos/ArrayEx.hs
+timesTable ! (7,8)
+listwave 4
+eg1 ! 20
+:load ../demos/Calendar.hs
+putStr (unlines (take 10 (lines (calendar 1995))))
+:load ../demos/CommaInt.hs
+commaint "1234567"
+:load ../demos/EvalRed.hs
+length nfs0
+head rsq0
+:load ../demos/Examples.hs
+take 10 primes
+take 10 hamming
+take 5 pascal
+:load ../demos/Expr.hs
+eval "1+2*3"
+:load ../demos/FastSort.hs
+msort [3,1,4,1,5,9,2,6,5,3,5]
+:load ../demos/Gofer.hs
+putStr (layn ["one","two"])
+:load ../demos/Interact.hs
+readLine "> " (\l -> writeStr (reverse l) end) "hello\n"
+:load ../demos/Eliza.hs
+session initial [] "I feel sad\n\nbye\n"
+:load ../demos/Lattice.hs
+elements :: [(Bool,Bool)]
+:load ../demos/Ldfs.hs
+figure7
+:load ../demos/Matrix.hs
+multiplyMat (idMat 2) (idMat 2)
+echelon (idMat 2)
+:load ../demos/Mersenne.hs
+take 8 smallMP
+smallMP == smallMP'
+:load ../demos/Minsrand.hs
+take 5 (min_stand_randoms 1)
+:load ../demos/Queens.hs
+length (queens 8)
+q 5
+:load ../demos/Say.hs
+sayit "Cupid"
+:load ../demos/Stack.hs
+topOf (pop (push 1 (push 2 emptyStack)))
+:load ../demos/Tree.hs
+leaves sample
+drawTree (replaceWithMin sample)
+:load ../demos/AnsiDemo.hs
+:load ../demos/Demos.hs
+:cd ../demos/prolog
+:load Main.hs
+main
+??
+?- append(X,Y,cons(1,cons(2,nil)))
+;;;
+?- not(equals(1,2))
+bye
