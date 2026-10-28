@@ -12,6 +12,7 @@ module Eliza where
 
 import Interact
 import Data.Char (toUpper)
+import Data.List (tails)
 
 eliza = interact (writeStr hi $ session initial [])
  where hi = "\n\
@@ -47,16 +48,12 @@ answer st l            = (response, newKeyTab kt st)
 replies                 :: Words -> Words -> [String]
 replies key l            = ( map (conjug l . drop (length key))
                            . filter (prefix key . map ucase)
-                           . netails) l
+                           . tails) l
 
 prefix                  :: Eq a => [a] -> [a] -> Bool
 []     `prefix` xs       = True
 (x:xs) `prefix` []       = False
 (x:xs) `prefix` (y:ys)   = x==y && (xs `prefix` ys)
-
-netails                 :: [a] -> [[a]]          -- non-empty tails of list
-netails []               = []
-netails xs               = xs : netails (tail xs)
 
 ucase                   :: String -> String      -- map string to upper case
 ucase                    = map toUpper

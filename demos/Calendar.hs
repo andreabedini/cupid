@@ -108,14 +108,13 @@ cal year = unlines (banner year `above` body year)
 
 -- For a standalone calendar program:
 --
--- To use this with "cupid" on Unix:
+-- To use this with "cupid" on Unix, in this directory:
 --
 --   cat >cal
 --   #! /usr/local/bin/cupid
---   
---   > module Main( main ) where
---   > import Calendar
---   > main = calProg
+--   module Main( main ) where
+--   import Calendar
+--   main = calProg
 --   <ctrl-D>
 --
 --   chmod 755 cal

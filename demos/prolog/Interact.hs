@@ -1,0 +1,57 @@
+-----------------------------------------------------------------------------
+-- The parts of ../Interact.hs that Mini Prolog uses, copied here so that
+-- the interpreter loads from this directory on its own.  Keep the two in
+-- step.
+-----------------------------------------------------------------------------
+
+module Interact(
+	Interact(..),
+	end,
+	readChar,
+	writeStr,
+	readLine
+	) where
+
+--- Interactive program combining forms:
+
+type Interact = String -> String
+
+end                      :: Interact
+readChar                 :: Interact -> (Char -> Interact) -> Interact
+writeStr                 :: String -> Interact -> Interact
+readLine                 :: String -> (String -> Interact) -> Interact
+
+end cs                    = ""
+
+readChar eof use []       = eof []
+readChar eof use (c:cs)   = use c cs
+
+writeStr s prog cs        = s ++ prog cs
+
+readLine prompt g is  = prompt ++ if null is then "" -- end of input
+                                 else lineOut 0 line ++ "\n"
+                                      ++ g (noBackSpaces line) input'
+ where line     = before '\n' is
+       input'   = after  '\n' is
+       after x  = drop 1 . dropWhile (x/=)
+       before x = takeWhile (x/=)
+
+       rubout  :: Char -> Bool
+       rubout c = (c=='\DEL' || c=='\BS')
+
+       lineOut                      :: Int -> String -> String
+       lineOut n ""                  = ""
+       lineOut n (c:cs)
+                 | n>0  && rubout c  = "\BS \BS" ++ lineOut (n-1) cs
+                 | n==0 && rubout c  = lineOut 0 cs
+                 | otherwise         = c:lineOut (n+1) cs
+
+       noBackSpaces :: String -> String
+       noBackSpaces  = reverse . delete 0 . reverse
+                       where delete n ""          = ""
+                             delete n (c:cs)
+                                      | rubout c  = delete (n+1) cs
+                                      | n>0       = delete (n-1) cs
+                                      | otherwise = c:delete 0 cs
+
+-----------------------------------------------------------------------------

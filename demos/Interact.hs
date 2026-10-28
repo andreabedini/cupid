@@ -44,11 +44,12 @@ writeStr s prog cs        = s ++ prog cs
 
 ringBell                  = writeChar '\BEL'
 
-readLine prompt g is  = prompt ++ lineOut 0 line ++ "\n"
-                               ++ g (noBackSpaces line) input'
+readLine prompt g is  = prompt ++ if null is then "" -- end of input
+                                 else lineOut 0 line ++ "\n"
+                                      ++ g (noBackSpaces line) input'
  where line     = before '\n' is
        input'   = after  '\n' is
-       after x  = tail . dropWhile (x/=)
+       after x  = drop 1 . dropWhile (x/=)
        before x = takeWhile (x/=)
 
        rubout  :: Char -> Bool
