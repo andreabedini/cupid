@@ -65,6 +65,18 @@ Cupid> :type map (*2)
 map (flip (*) 2) :: Num a => [a] -> [a]
 ```
 
+An expression must fit on one line, but it can have local definitions
+of its own, with `let` or `where`:
+
+```
+Cupid> let n = 10 in sum [1..n]
+55
+Cupid> take 5 squares where squares = [ x * x | x <- [1..] ]
+[1,4,9,16,25]
+```
+
+Those names last only for the one expression.
+
 Expressions of type `IO` are run rather than shown:
 
 ```
@@ -81,8 +93,10 @@ Cupid> :quit
 
 ## Step 2: Write a module
 
-The prompt accepts expressions, not definitions.  Definitions go in a
-file.  Create a file called `Stats.hs` in the current directory with
+The prompt accepts expressions, not definitions.  If you are used to
+GHCi, this is the first difference you will meet: `x = 1` and
+`let x = 1` are syntax errors at Cupid's prompt.  Definitions that
+last go in a file.  Create a file called `Stats.hs` in the current directory with
 this content:
 
 ```haskell

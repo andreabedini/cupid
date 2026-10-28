@@ -242,7 +242,25 @@ Force a garbage collection and report how many cells were recovered.
 Explain how the instances for *context* are resolved, printing each
 entailment tried and each instance used.
 
+## Differences from GHCi
+
+The commands look like GHCi's, and `:load`, `:reload`, `:type`,
+`:info`, `:browse`, `:main`, `:cd` and `:!` do much the same.  These
+are the places where a GHCi habit does not carry over:
+
+| In GHCi | In Cupid |
+|---|---|
+| `x = 1` or `let x = 1` defines `x` for the session | A syntax error: the prompt takes expressions only.  Use `let x = 1 in ...` or `... where x = 1` inside one expression, or put the definition in a file and load it |
+| `:{` and `:}` enter several lines | Not available: an expression must fit on one line |
+| `it` is the last value | `$$` is the last expression, evaluated again; see [`-r`](options.md#-rstr) |
+| An `IO` action's result is shown unless it is `()` | The result is discarded unless `+I` is set |
+| `:module + A B` puts several modules in scope | `:module` takes one module, and the scope is that module's top level.  To use names from several, load a module that imports them all |
+| `:kind T` | Not a command.  `:info T` describes `T`, and shows its kind when `+k` is set |
+| `:set -XExtension` turns on an extension | Every extension is always on except overlapping instances, which need `+o`; `-X` re-reads an option string.  See [Language extensions](extensions.md) |
+| `:set +s` shows time and bytes allocated | `+s` shows reductions and cells used |
+
 ## See also
 
 - [Options](options.md)
 - [Getting started with Cupid](../tutorials/getting-started.md)
+- [Differences from Hugs 98](differences-from-hugs.md)

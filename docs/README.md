@@ -85,6 +85,10 @@ it evaluates a few expressions, loads a module and runs a program with
 - [Language extensions](reference/extensions.md) — what Cupid accepts
   beyond Haskell 2010, and what it leaves out
 - [The libraries](reference/libraries.md) — packages and modules shipped
+- [Differences from Hugs 98](reference/differences-from-hugs.md) — the
+  programs, options, variables, modules and extensions that changed
+- [Further reading](reference/further-reading.md) — the Report, the
+  Hugs manuals and the papers the implementation follows
 
 ## Contributing
 
