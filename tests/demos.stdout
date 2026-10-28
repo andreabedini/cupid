@@ -1,0 +1,94 @@
+Main> ArrayEx> 56
+ArrayEx> [[1,1,1,1],[1,3,5,7],[1,5,13,25],[1,7,25,63]]
+ArrayEx> 2432902008176640000
+ArrayEx> Calendar> January 1995             February 1995            March 1995               
+                                                                           
+Sun  1  8 15 22 29       Sun     5 12 19 26       Sun     5 12 19 26       
+Mon  2  9 16 23 30       Mon     6 13 20 27       Mon     6 13 20 27       
+Tue  3 10 17 24 31       Tue     7 14 21 28       Tue     7 14 21 28       
+Wed  4 11 18 25          Wed  1  8 15 22          Wed  1  8 15 22 29       
+Thu  5 12 19 26          Thu  2  9 16 23          Thu  2  9 16 23 30       
+Fri  6 13 20 27          Fri  3 10 17 24          Fri  3 10 17 24 31       
+Sat  7 14 21 28          Sat  4 11 18 25          Sat  4 11 18 25          
+                                                                           
+
+Calendar> CommaInt> "1,234,567"
+CommaInt> EvalRed> 547
+EvalRed> [sqr sqr (3+7),(sqr (3+7)*sqr (3+7)),(sqr (3+7)*((3+7)*(3+7))),(sqr (3+7)*((3+7)*10)),(sqr (3+7)*(10*10)),(sqr (3+7)*100),(((3+7)*(3+7))*100),(((3+7)*10)*100),((10*10)*100),(100*100),10000]
+EvalRed> Examples> [2,3,5,7,11,13,17,19,23,29]
+Examples> [1,2,3,4,5,6,8,9,10,12]
+Examples> [[1],[1,1],[1,2,1],[1,3,3,1],[1,4,6,4,1]]
+Examples> Expr> 7
+Expr> FastSort> [1,1,2,3,3,4,5,5,5,6,9]
+FastSort> Gofer>    1) one
+   2) two
+
+Gofer> Interact> "> hello\nolleh"
+Interact> Eliza> "> I feel sad\nTell me more about such feelings.\n\n> \nI'm not sure I understand you fully.\n\n> bye\nWhat does that suggest to you?\n\n> "
+Eliza> Lattice> [(False,False),(False,True),(True,False),(True,True)]
+Lattice> Ldfs> [Node {rootLabel = "ab", subForest = [Node {rootLabel = "bcd", subForest = []}]},Node {rootLabel = "aehi", subForest = [Node {rootLabel = "efg", subForest = []}]}]
+Ldfs> Matrix> [[1,0],[0,1]]
+Matrix> [[1,0],[0,-1]]
+Matrix> Mersenne> [3,7,31,127,8191,131071,524287,2147483647]
+Mersenne> True
+Mersenne> Minsrand> [1,16807,282475249,1622650073,984943658]
+Minsrand> Queens> 92
+Queens>    1) [1,3,5,2,4]
+   2) [1,4,2,5,3]
+   3) [2,4,1,3,5]
+   4) [2,5,3,1,4]
+   5) [3,1,4,2,5]
+   6) [3,5,2,4,1]
+   7) [4,1,3,5,2]
+   8) [4,2,5,3,1]
+   9) [5,2,4,1,3]
+  10) [5,3,1,4,2]
+
+Queens> Say> 
+ CCCC  U   U  PPPP   IIIII  DDDD 
+C      U   U  P   P    I    D   D
+C      U   U  PPPP     I    D   D
+C      U   U  P        I    D   D
+ CCCC   UUU   P      IIIII  DDDD 
+
+Say> Stack> 2
+Stack> Tree> [12,23,13,10]
+Tree>     ,--- 10
+ ,--| 
+ |  |  ,--- 10
+ |  `--| 
+ |     `--- 10
+-| 
+ `--- 10
+
+Tree> AnsiDemo> Demos> Demos> Main> Mini Prolog Version 1.5g (stack based)
+
+Reading stdlib........done
+> ??
+append(nil,X,X).
+append(cons(X,Y),Z,cons(X,W)):-append(Y,Z,W).
+
+equals(X,X).
+
+not(X):-X,!,false.
+not(X).
+
+or(X,Y):-X.
+or(X,Y):-Y.
+
+true.
+> ?- append(X,Y,cons(1,cons(2,nil)))
+X = nil
+Y = cons(1,cons(2,nil)) ;
+X = cons(1,nil)
+Y = cons(2,nil) ;
+X = cons(1,cons(2,nil))
+Y = nil ;
+no.
+> 
+> ?- not(equals(1,2))
+yes.
+> bye
+Thank you and goodbye
+
+Main> [Leaving Cupid]
