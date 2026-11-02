@@ -194,10 +194,13 @@ same file at once may see inconsistent data instead of failing.
 
 ### Syntax reference
 
-**Literate comments are not supported.**  Every file is read as
-ordinary Haskell source, so a literate script (section 10.4), with `>`
-lines or `\begin{code}` blocks, is rejected, and `.lhs` is not on the
-default suffix list.  A `#!` first line is read as a blank
+**Literate scripts are read in the Bird-track form only.**  A file
+whose name ends in `.lhs` is a literate script (section 10.4): the
+lines that begin with `>` are the program and every other line is
+commentary.  A program line next to a non-blank comment line is an
+error.  The other form, with the program between `\begin{code}` and
+`\end{code}`, is not read, and a script written that way is rejected
+for having no program lines.  A `#!` first line is read as a blank
 line, so an executable script needs no literate wrapper.
 
 ## Other known bugs

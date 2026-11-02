@@ -126,7 +126,8 @@ message and the old path kept.
 ### `-S`*str*
 
 The suffixes tried when looking for a module's file, as a
-colon-separated list (semicolons on Windows).  Default: `.hs`.
+colon-separated list (semicolons on Windows).  Default: `.hs:.lhs`
+(`.hs;.lhs` on Windows).
 An empty entry stands for the previous list and an empty *str* restores
 the default, as for `-P`.  The list must keep `.hs`, or the `Prelude`
 could not be found.

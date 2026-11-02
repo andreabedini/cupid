@@ -10,11 +10,12 @@ recursive modules.  A file may be loaded by its path, in which case it
 may contain a module of any name, or by its module name, in which case
 Cupid has to find it.
 
-To find module `M`, Cupid tries `dir/M.hs` for each directory `dir`
-on the search path, in order.  A hierarchical name is mapped to a path:
-`A.B.C` becomes `dir/A/B/C.hs`.  The suffix list is the `-S` option and
-the search path the `-P` option.  Literate scripts (`.lhs`) are not
-supported.
+To find module `M`, Cupid tries `dir/M.hs` and then `dir/M.lhs` for
+each directory `dir` on the search path, in order.  A hierarchical name
+is mapped to a path: `A.B.C` becomes `dir/A/B/C.hs`.  The suffix list is
+the `-S` option and the search path the `-P` option.  A `.lhs` file is
+a literate script, read as [The language Cupid
+accepts](../reference/language.md) describes.
 
 ## Imports are chased
 

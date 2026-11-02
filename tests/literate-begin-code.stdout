@@ -1,0 +1,4 @@
+cupid: Error occurred
+ERROR "literate-begin-code.lhs" - No program lines in literate script: they begin with `>', and \begin{code} blocks are not read
+
+

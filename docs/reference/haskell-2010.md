@@ -20,7 +20,8 @@ chapter 9 and the libraries of Part II.  Most programs written to the
 Report load and run.  These are the exceptions a program is likely to
 meet, each explained in its chapter below:
 
-- Literate scripts are not read.
+- Literate scripts are read with `>` program lines only, not
+  `\begin{code}` blocks.
 - `Int` and `Word` are 32 bits wide, on every target.
 - The Prelude's classes are those of GHC's base, not the Report's:
   `Applicative` sits between `Functor` and `Monad`, `fail` belongs to
@@ -543,11 +544,16 @@ algorithm inserts `{}` and the empty `do` is a parse error.  This is
 GHC's `NondecreasingIndentation`, applied only to `do`; `of` and `let`
 at the same indentation are rejected as the Report says.
 
-**Literate comments** (10.4) are not supported.  Every file is read as
-ordinary Haskell source, so a literate script, with `>` lines or
-`\begin{code}` blocks, is rejected, and `.lhs` is not on the suffix
-list.  A `#!` first line is read as a blank line, so an
-executable script needs no literate wrapper.
+**Literate comments** (10.4) are read in the Bird-track style only.
+A file whose name ends in `.lhs` is literate: the lines that begin
+with `>` are program text, read with the `>` as a space so that the
+layout keeps its columns, and every other line is commentary.  As the
+Report requires, a program line next to a non-blank comment line is an
+error.  The alternative the Report describes, the program between
+`\begin{code}` and `\end{code}`, is not read.  `.lhs` follows `.hs`
+on the default suffix list, so `import M` finds `M.lhs`.  A `#!` first
+line is read as a blank line, so an executable script needs no
+literate wrapper.
 
 **Fixity resolution** (10.6) is done after parsing, on the tree the
 parser builds, and is right for every legal program: `- x ^ 2` is

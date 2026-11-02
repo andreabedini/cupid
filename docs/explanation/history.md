@@ -122,6 +122,7 @@ flags.  In order:
   GHC's deriving strategies with `Generic` and `Data`
 - Windows became a supported platform, built natively without a POSIX
   layer, and CI builds release archives for Linux, macOS and Windows
+- literate scripts came back, in the Bird-track form only
 
 [The design of Cupid](design.md) explains the choices that came out of
 these changes, and why they were made.  [Differences from Hugs
