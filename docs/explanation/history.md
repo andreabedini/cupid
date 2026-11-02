@@ -4,13 +4,14 @@ Where Hugs came from, what happened to it, and what this tree is.
 
 ## Gofer and Hugs
 
-In September 1991 Mark Jones released Gofer, a compact and portable
-implementation of a Haskell-like language that also served as a test
-bed for type-system ideas, several of which later entered Haskell:
-constructor classes, and the treatment of type classes that became
-multi-parameter classes and functional dependencies.  Gofer was small
-enough to run on the machines of the day and was widely used for
-teaching.
+In August 1991 Mark Jones, then a D.Phil. student at Oxford, released
+Gofer, a compact and portable implementation of a Haskell-like language
+that also served as a test bed for type-system ideas, several of which
+later entered Haskell: constructor classes, and the treatment of type
+classes that became multi-parameter classes and functional
+dependencies.  Gofer was small enough to run on the machines of the day
+and was widely used for teaching.  Jones went on developing it at Yale,
+as a postdoctoral researcher from 1992.
 
 Jones described its implementation in a 1994 research report, [*The
 implementation of the Gofer functional programming
@@ -33,16 +34,27 @@ new, cleaner version of the system, building on this experience";
 Cupid's aim of an implementation one person can read is in that
 spirit, if thirty years late.
 
-On 14 February 1995 Jones released Hugs, the Haskell User's Gofer
-System, a derivative of Gofer with much closer conformance to Haskell.
-Hugs versions were named after the version of Haskell they
-implemented: Hugs 1.3, Hugs 1.4, and from January 1999 Hugs 98.  Hugs
-98 was the first released implementation of the Haskell 98 standard.
-Like Gofer before it, every release of Hugs came with its full source
-code and a liberal licence, as was common for academic software.
-Jones gave up maintainership in January 2000;
-development continued at Yale, at OGI and among a group of volunteers,
-chiefly Ross Paterson, Sigbjorn Finne and Alastair Reid.
+After leaving Yale in the summer of 1994, Jones rewrote Gofer to
+follow the Haskell standard more closely, and on 14 February 1995, by
+then at the University of Nottingham, released the result as Hugs, the
+Haskell User's Gofer System.  Once Hugs was available, Yale hired
+Alastair Reid to work on it.  Reid added the Haskell module system,
+which first appeared in Yale's Hugs0 release in June 1996, while Jones
+released Hugs 1.3 from Nottingham in August 1996.  The two lines came
+together in Hugs 1.4, in January 1998, and in Hugs 98 the next year,
+the first Hugs to support the Haskell 98 standard; the versions were
+named after the version of Haskell they implemented.  Like Gofer
+before it, every release of Hugs came with its full source code and a
+liberal licence, as was common for academic software.
+
+After Hugs 98, Jones moved to OGI and Reid to the University of Utah.
+Both went on contributing, at a reduced level, alongside John
+Peterson, Andy Gill, Johan Nordlander, Jeff Lewis, Sigbjorn Finne,
+Ross Paterson and Dimitry Golubovsky.  Section 9.3 of [*A History of
+Haskell: Being Lazy with
+Class*](https://doi.org/10.1145/1238844.1238856) (Hudak, Hughes,
+Peyton Jones and Wadler, HOPL III, 2007), largely written by Jones,
+tells the story of Gofer and Hugs in more detail.
 
 ## Hugs 98, 1999 to 2006
 
