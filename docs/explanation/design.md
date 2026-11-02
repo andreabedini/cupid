@@ -65,7 +65,7 @@ existential and rank-2 types, polymorphic and constraint synonyms, kind
 signatures, GADT syntax, equality constraints, type operators, tuple
 sections and GHC's deriving strategies, all always on, except overlapping
 instances (`+o`, `+O`).  `forall` is always a keyword.  Literate
-scripts are not read.  A `#!` first line is read as a blank line, so
+scripts are read in the Bird-track form only.  A `#!` first line is read as a blank line, so
 an executable script is an ordinary Haskell file.  The details are in
 [The language Cupid accepts](../reference/language.md) and
 [Language extensions](../reference/extensions.md).

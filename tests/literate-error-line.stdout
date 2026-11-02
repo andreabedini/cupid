@@ -1,0 +1,9 @@
+cupid: Error occurred
+ERROR "literate-error-line.lhs":6 - Type error in application
+*** Expression     : putStrLn True
+*** Term           : True
+*** Type           : Bool
+*** Does not match : [Char]
+
+
+

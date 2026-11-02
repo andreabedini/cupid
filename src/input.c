@@ -61,6 +61,8 @@ char *preprocessor = 0;
 
 static bool fileInput(char *, long);
 static int nextLine(void);
+static bool literateFile(char *);
+static void literateLine(void);
 static void skip(void);
 
 static void endToken(void);
@@ -209,6 +211,21 @@ static ShortChar lineBuffer[LINEBUFFER_SIZE];
 static int lineLength = 0;
 static int linePtr = 0;
 static bool firstLine = false; /* is nextLine to read a file's first? */
+static bool atLineStart;       /* does the line buffer start a line? */
+
+/* Literate scripts (Haskell 2010 Report, section 10.4), in the Bird-track
+ * form only.  In a file whose name ends in .lhs, a line that begins with
+ * '>' is program text, read with the '>' as a space so that the layout
+ * keeps its columns, and every other line is commentary, read as a blank
+ * line so that line numbers stay those of the file.  A program line next
+ * to a non-blank comment line is an error.  \begin{code} blocks are not
+ * read.                                                                  */
+static bool thisLiterate; /* is the file being read literate?   */
+static int litLines;      /* program lines read from it so far  */
+static int litLast;       /* the kind of the line before:       */
+#define LIT_BLANK 0       /* - blank, or none yet               */
+#define LIT_COMMENT 1     /* - commentary                       */
+#define LIT_PROGRAM 2     /* - program text                     */
 
 #if HAVE_RL_EVENT_HOOK
 static int readlineInterrupted(void) {
@@ -312,6 +329,11 @@ static bool fileInput(char *nm, long len) {
         linePtr = 0;
         lineLength = 0;
         firstLine = true;
+        atLineStart = true;
+
+        thisLiterate = literateFile(nm);
+        litLines = 0;
+        litLast = LIT_BLANK;
 
         readSoFar = 0;
         setGoal("Parsing", (Target)len);
@@ -365,15 +387,75 @@ static int nextLine(void) {
     lineBuffer[lineLength] = '\0';
 
     if (lineLength <= 0) { /* EOF / IO error, who knows.. */
+        if (thisLiterate && litLines == 0) {
+            thisLiterate = false; /* report it once                  */
+            errHead(0);
+            errPrintf("No program lines in literate script: they begin "
+                      "with `>', and \\begin{code} blocks are not read");
+            errFail();
+        }
         return lineLength;
-    } else if (firstLine && lineLength >= 2 && lineBuffer[0] == '#' &&
-               lineBuffer[1] == '!') {
+    }
+    bool startsLine = atLineStart;
+    atLineStart = lineBuffer[lineLength - 1] == '\n';
+    if (firstLine && lineLength >= 2 && lineBuffer[0] == '#' &&
+        lineBuffer[1] == '!') {
         lineBuffer[0] = '\n'; /* a script's #! line: pretend it's blank */
         lineBuffer[1] = '\0';
         lineLength = 1;
+    } else if (thisLiterate && startsLine) {
+        literateLine();
     }
     firstLine = false;
     return lineLength;
+}
+
+static bool literateFile(char *nm) {
+    size_t n = strlen(nm);
+    return n >= 4 && filenamecmp(nm + n - 4, ".lhs") == 0;
+}
+
+/* Read the line just put in the line buffer as a line of a literate
+ * script: keep program text, with its '>' as a space, and blank out
+ * commentary, reading the rest of a comment line that did not fit.     */
+static void literateLine(void) {
+    int kind;
+    if (lineBuffer[0] == '>') {
+        kind = LIT_PROGRAM;
+        lineBuffer[0] = ' ';
+        litLines++;
+    } else {
+        bool blank = true;
+        for (int i = 0; i < lineLength; i++)
+            if (lineBuffer[i] != '\n' && !isIn(lineBuffer[i], SPACE))
+                blank = false;
+        if (!atLineStart) { /* the line goes on past the buffer */
+            int ch;
+            while ((ch = FGetChar(inputStream)) != EOF && ch != '\n') {
+                if (ch == '\r') {
+                    ch = fgetc(inputStream);
+                    if ((char)ch != '\n')
+                        ungetc(ch, inputStream);
+                    break;
+                }
+                if (!isIn(ch, SPACE))
+                    blank = false;
+            }
+            atLineStart = true;
+        }
+        kind = blank ? LIT_BLANK : LIT_COMMENT;
+        lineBuffer[0] = '\n';
+        lineBuffer[1] = '\0';
+        lineLength = 1;
+    }
+    if ((kind == LIT_PROGRAM && litLast == LIT_COMMENT) ||
+        (kind == LIT_COMMENT && litLast == LIT_PROGRAM)) {
+        errHead(row + 1);
+        errPrintf("Program line next to comment: put a blank line "
+                  "between them");
+        errFail();
+    }
+    litLast = kind;
 }
 
 /* Move forward one char in input stream, updating c0, c1, ... */

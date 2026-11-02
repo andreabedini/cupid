@@ -41,10 +41,11 @@ cupid \- Cupid, a Haskell interpreter
 .SH DESCRIPTION
 Cupid is an interpreter for Haskell, a standard non-strict functional
 programming language.  Cupid implements Haskell 2010 with the
-deviations listed in its documentation (among them: no literate
-scripts and no mutually recursive modules, and the classes of the
-Prelude follow those of GHC's base), together with language extensions
-that are always enabled, except for overlapping instances, which need
+deviations listed in its documentation (among them: literate scripts
+in the Bird-track form only, no mutually recursive modules, and the
+classes of the Prelude follow those of GHC's base), together with
+language extensions that are always enabled, except for overlapping
+instances, which need
 \fB+o\fP or \fB+O\fP.
 The name \fBCupid\fP comes from the date of the first release of Hugs,
 14 February 1995.

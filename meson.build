@@ -60,10 +60,11 @@ endif
 if is_windows
   # Doubled: the string becomes a C string literal
   cupidpath = '.;{Cupid}\\\\packages\\\\*'
+  cupidsuffixes = '.hs;.lhs'
 else
   cupidpath = '.:{Home}/lib/cupid/packages/*:/usr/local/lib/cupid/packages/*:{Cupid}/packages/*'
+  cupidsuffixes = '.hs:.lhs'
 endif
-cupidsuffixes = '.hs'
 
 # ---------------------------------------------------------------------------
 # Dependencies

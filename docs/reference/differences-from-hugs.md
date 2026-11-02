@@ -52,7 +52,7 @@ lists them.
 | Hugs | Cupid |
 |---|---|
 | `+98` and `-98` switch the extensions off and on | The extensions are always on.  Both options are ignored with a message |
-| `+l`, and `.lhs` in the `-S` default | Literate scripts are not read.  `-S` defaults to `.hs`; `+l` is an unknown toggle |
+| `+l`, and literate `\begin{code}` blocks | Only a `.lhs` file is literate, and only `>` lines are its program: `\begin{code}` blocks are not read.  `+l` is an unknown toggle |
 | `+H` (here documents) | Gone with here documents |
 | `+R` (root optimisation) | Always on; `+R` is an unknown toggle |
 | `-h` defaults to 250k cells | `-h` defaults to 1000000 cells |

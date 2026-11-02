@@ -3,8 +3,9 @@
 
 usage: run-tests CUPID PACKAGES TESTDIR [NAME...]
 
-Every NAME.hs in TESTDIR is one test (all of them when no NAME is given).
-The files that go with it, all optional except NAME.stdout:
+Every NAME.hs in TESTDIR is one test (all of them when no NAME is given),
+and so is every NAME.lhs, a literate script, which stands in for NAME.hs
+below.  The files that go with it, all optional except NAME.stdout:
 
   NAME.stdout   the exact output expected (stdout and stderr together)
   NAME.stdout-windows
@@ -114,10 +115,13 @@ def run_one(cupid, packages, testdir, helpers, name):
                 env[var] = value
         env["PATH"] = helpers + os.pathsep + env.get("PATH", "")
 
+        source = name + ".hs"
+        if not os.path.exists(os.path.join(testdir, source)):
+            source = name + ".lhs"
         if stdin is None:
-            cmd = [cupid, "-P" + packages] + args + [name + ".hs"]
+            cmd = [cupid, "-P" + packages] + args + [source]
         else:
-            cmd = [cupid, "+q", "-i", "-P" + packages] + args + [name + ".hs"]
+            cmd = [cupid, "+q", "-i", "-P" + packages] + args + [source]
 
         def limit_stack():
             if stack_kb:
@@ -157,7 +161,8 @@ def main(argv):
         sys.exit(__doc__)
     cupid, packages, testdir = [os.path.abspath(a) for a in argv[1:4]]
     names = argv[4:] or sorted(
-        f[:-3] for f in os.listdir(testdir) if f.endswith(".hs"))
+        os.path.splitext(f)[0] for f in os.listdir(testdir)
+        if f.endswith((".hs", ".lhs")))
     failed = skipped = 0
     with tempfile.TemporaryDirectory(prefix="helpers.") as helpers:
         build_helpers(testdir, helpers)

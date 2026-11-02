@@ -411,7 +411,7 @@ char *findPathname(char *filename) {
     find maybe_dir nm = [ d ++ map dot2slash nm ++ e | d <- dirs, e <- exts ]
       where 
         dirs          = maybeToList maybe_dir ++ cupidPath
-        exts          = cupidSuffixes          -- default: [".hs"]
+        exts          = cupidSuffixes          -- default: [".hs",".lhs"]
 
         -- the dir is added if the importing module was found there, or
         -- was specified as an explicit filename.
