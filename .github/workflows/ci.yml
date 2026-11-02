@@ -50,19 +50,21 @@ jobs:
 
       - name: Install build dependencies (macOS)
         if: runner.os == 'macOS'
-        run: brew install meson ninja bison readline
+        run: brew install meson ninja readline
+
+      # The grammar keeps to what bison 2.3 reads, so that the bison macOS
+      # ships, /usr/bin/bison, builds Cupid.  Make sure it is that one the
+      # build finds, not one installed by something else on the runner.
+      - name: Check that bison is Apple's (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          test "$(command -v bison)" = /usr/bin/bison
+          bison --version | head -n 1
 
       - name: Build and test every configuration
         env:
           CC: ${{ matrix.cc }}
-        run: |
-          # bison from Homebrew is not on PATH by default, and the one macOS
-          # ships is too old for the grammar.
-          if [ "$RUNNER_OS" = macOS ]; then
-            PATH="$(brew --prefix bison)/bin:$PATH"
-            export PATH
-          fi
-          tools/check-configurations
+        run: tools/check-configurations
 
   warnings:
     # The tree builds without a compiler warning; -Werror says so rather
@@ -180,14 +182,11 @@ jobs:
         if: runner.os == 'Linux'
         run: echo "PKG_CONFIG_PATH=$RUNNER_TEMP/libedit/lib/pkgconfig" >> "$GITHUB_ENV"
 
-      # macOS's own libedit, in /usr/lib, provides the readline interface.
-      # bison from Homebrew is not on PATH by default, and the one macOS
-      # ships is too old for the grammar.
+      # macOS's own libedit, in /usr/lib, provides the readline interface,
+      # and its own bison, /usr/bin/bison, generates the parser.
       - name: Install build dependencies (macOS)
         if: runner.os == 'macOS'
-        run: |
-          brew install meson ninja bison
-          echo "$(brew --prefix bison)/bin" >> "$GITHUB_PATH"
+        run: brew install meson ninja
 
       # The prefix does not matter: an installation that has been moved
       # finds its libraries next to its executables. libdir is set so that
