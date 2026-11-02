@@ -37,11 +37,12 @@ On 14 February 1995 Jones released Hugs, the Haskell User's Gofer
 System, a derivative of Gofer with much closer conformance to Haskell.
 Hugs versions were named after the version of Haskell they
 implemented: Hugs 1.3, Hugs 1.4, and from January 1999 Hugs 98.  Hugs
-98 was the first released implementation of the Haskell 98 standard
-and the first Hugs released as open source.  Jones gave up
-maintainership in January 2000; development continued at Yale, at OGI
-and among a group of volunteers, chiefly Ross Paterson, Sigbjorn
-Finne and Alastair Reid.
+98 was the first released implementation of the Haskell 98 standard.
+Like Gofer before it, every release of Hugs came with its full source
+code and a liberal licence, as was common for academic software.
+Jones gave up maintainership in January 2000;
+development continued at Yale, at OGI and among a group of volunteers,
+chiefly Ross Paterson, Sigbjorn Finne and Alastair Reid.
 
 ## Hugs 98, 1999 to 2006
 
