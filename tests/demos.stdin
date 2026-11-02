@@ -27,6 +27,8 @@ session initial [] "I feel sad\n\nbye\n"
 elements :: [(Bool,Bool)]
 :load ../demos/Ldfs.hs
 figure7
+:load ../demos/Literate.lhs
+process "Prose.\n\n> x = 1\nMore prose.\n"
 :load ../demos/Matrix.hs
 multiplyMat (idMat 2) (idMat 2)
 echelon (idMat 2)

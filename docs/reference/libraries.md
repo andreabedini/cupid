@@ -169,8 +169,10 @@ Windows), `System.Posix.Signals` (not on Windows), `System.Posix.Types`,
 `demos/` in the source tree, installed under the library directory,
 holds example programs from the original distribution: a banner
 printer (`Say`), a Prolog interpreter (`prolog/`), N queens, a
-calendar, Eliza and others.  `Demos.hs` imports most of them so that
-one `:load` brings them all in.
+calendar, Eliza and others.  `Literate.lhs` is a literate script, the
+program from the Haskell 1.2 Report that converts literate scripts to
+ordinary ones.  `Demos.hs` imports most of them so that one `:load`
+brings them all in.
 
 ## See also
 

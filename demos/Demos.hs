@@ -8,6 +8,7 @@ import Examples
 import Say
 import Calendar
 import CommaInt
+import Literate
 import Tree
 import Queens
 import Mersenne
