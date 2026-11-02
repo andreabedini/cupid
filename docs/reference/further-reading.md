@@ -47,6 +47,18 @@ It describes Hugs 98, not Cupid: [Differences from Hugs
   Research Report YALEU/DCS/RR-1030, Yale University (1994).  The
   architecture Cupid still has; [History](../explanation/history.md#gofer-and-hugs)
   says what it covers.
+- Mark P. Jones, [the Hugs archive](https://web.cecs.pdx.edu/~mpj/hugsarc/):
+  the sources and PC builds of the releases before Hugs 98, from Hugs
+  1.0 (1995) to Hugs 1.3c, and the manual of the time.
+- Mark P. Jones, [the Gofer archive](https://web.cecs.pdx.edu/~mpj/goferarc/):
+  the sources of Gofer 2.30a and 2.30b, and builds of Gofer for the PC,
+  Atari and Macintosh.
+- Paul Hudak, John Hughes, Simon Peyton Jones and Philip Wadler, [*A
+  History of Haskell: Being Lazy with
+  Class*](https://doi.org/10.1145/1238844.1238856) (HOPL III, 2007).
+  How Haskell came about and how it grew; section 9.3, largely written
+  by Jones, is the story of Gofer and Hugs that
+  [History](../explanation/history.md#gofer-and-hugs) follows.
 
 ## Types and classes
 
