@@ -99,11 +99,7 @@ static void initialize(int argc, char *argv[]) {
 static void printBanner(void);
 
 static void printBanner(void) {
-    Printf("Cupid %s, a Haskell interpreter written in C\n", versionString);
-    Printf(
-        "Derived from Hugs 98, Copyright (c) 1994-2005 Mark P Jones, Alastair Reid,\n");
-    Printf(
-        "the Yale Haskell Group and the OGI School of Science & Engineering at OHSU\n\n");
+    Printf("Cupid %s, a Haskell interpreter based on Hugs 98\n", versionString);
 
     FlushStdout();
 }
@@ -242,7 +238,7 @@ static void guidance(void) {
 }
 
 static void forHelp(void) {
-    Printf("Type :? for help\n");
+    Printf("Type :? for help.\n");
 }
 
 /* --------------------------------------------------------------------------

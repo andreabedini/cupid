@@ -37,11 +37,8 @@ cupid
 You will see the banner and a prompt:
 
 ```
-Cupid 0.1.0, a Haskell interpreter written in C
-Derived from Hugs 98, Copyright (c) 1994-2005 Mark P Jones, Alastair Reid,
-the Yale Haskell Group and the OGI School of Science & Engineering at OHSU
-
-Type :? for help
+Cupid 0.1.0, a Haskell interpreter based on Hugs 98
+Type :? for help.
 Cupid>
 ```
 
