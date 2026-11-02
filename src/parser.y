@@ -2,8 +2,8 @@
  * Cupid parser.  The lexer is in input.c; the two meet through the token
  * numbers and yylval in the generated parser.h, and through yylex.
  *
- * Regenerate parser.c and parser.h with:  bison -o parser.c parser.y
- * (in this directory, GNU Bison 3.8).  Expect 6 shift/reduce conflicts;
+ * The build generates parser.c and parser.h with bison 2.3 or later; keep
+ * to what 2.3 reads, as macOS ships it.  Expect 7 shift/reduce conflicts;
  * they are all resolved in an appropriate manner.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
@@ -11,10 +11,6 @@
  * 1994-2003, All rights reserved.  It is distributed as free software under
  * the license in the file "License", which is included in the distribution.
  * ------------------------------------------------------------------------*/
-
-%code requires {
-#define YYSTYPE			 Cell
-}
 
 %{
 #include "prelude.h"

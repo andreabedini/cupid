@@ -2,8 +2,8 @@
 
 Build the interpreter and its libraries from source with meson, and
 either install them under a prefix or run them from the build tree.
-The steps are the same on Linux and macOS; only the package manager and
-one detail about bison differ.  The BSDs build the same way with their
+The steps are the same on Linux and macOS; only the package manager
+differs.  The BSDs build the same way with their
 own packages, but are not tested on every change.
 
 For Windows, see [Build Cupid on Windows](build-on-windows.md).  If you
@@ -15,7 +15,8 @@ quicker.
 - a C compiler: gcc 13 or later, or clang (the sources are standard C23)
 - meson 1.1 or later, and ninja
 - python3 (meson needs it anyway; the library build script uses it too)
-- bison, which generates the parser from `src/parser.y` at build time
+- bison 2.3 or later, which generates the parser from `src/parser.y` at
+  build time
 - optionally readline or libedit, for command-line editing at the prompt
 - optionally hp2ps, to view heap profiles from a profiling build
 - git, to get the sources
@@ -40,13 +41,12 @@ Install gcc 13 or later and name it in `CC` below.
 On macOS with Homebrew:
 
 ```sh
-brew install meson ninja bison
-export PATH="$(brew --prefix bison)/bin:$PATH"
+brew install meson ninja
 ```
 
-The bison that macOS ships is too old for Cupid's grammar, so the
-Homebrew one has to come first on the path.  The C compiler is the one
-Xcode's command line tools install; `CC=cc` below picks it up.
+The bison that macOS ships, 2.3, is enough, so Homebrew's is not
+needed.  The C compiler is the one Xcode's command line tools install;
+`CC=cc` below picks it up.
 
 ## Steps
 
@@ -219,13 +219,11 @@ installed.
 the option; the default `auto` uses a library if one is found and does
 without otherwise.
 
-### The build stops in `parser.y` with a bison error
+### `meson setup` stops because it cannot find bison
 
-**Cause**: the bison on the path is too old for the grammar.  On macOS
-this is the one the system ships.
+**Cause**: no bison 2.3 or later is on the path.
 
-**Fix**: install bison from Homebrew and put it first on the path, as
-in the prerequisites.
+**Fix**: install it, as in the prerequisites.
 
 ## See also
 

@@ -11,7 +11,9 @@
 #include "storage.h"
 #include "connect.h"
 #include "input.h"
-#include "parser.h" /* tokens, yylval and yyparse, from parser.y */
+#include "parser.h" /* tokens and yylval, from parser.y */
+
+extern int yyparse(void); /* not in parser.h from older bisons, as 2.3 */
 #include "command.h"
 #include "errors.h"
 #include "script.h"
