@@ -145,7 +145,8 @@ cupid
 ```
 
 ```
-Cupid VERSION, a Haskell interpreter written in C
+Cupid VERSION, a Haskell interpreter based on Hugs 98
+Type :? for help.
 ```
 
 If it stops with `FATAL ERROR: Unable to load Prelude`, `CUPIDDIR` is

@@ -74,7 +74,8 @@ cupid
 ```
 
 ```
-Cupid VERSION, a Haskell interpreter written in C
+Cupid VERSION, a Haskell interpreter based on Hugs 98
+Type :? for help.
 ```
 
 ## Run it from the build tree
