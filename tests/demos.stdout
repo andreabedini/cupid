@@ -27,7 +27,8 @@ Gofer> Interact> "> hello\nolleh"
 Interact> Eliza> "> I feel sad\nTell me more about such feelings.\n\n> \nI'm not sure I understand you fully.\n\n> bye\nWhat does that suggest to you?\n\n> "
 Eliza> Lattice> [(False,False),(False,True),(True,False),(True,True)]
 Lattice> Ldfs> [Node {rootLabel = "ab", subForest = [Node {rootLabel = "bcd", subForest = []}]},Node {rootLabel = "aehi", subForest = [Node {rootLabel = "efg", subForest = []}]}]
-Ldfs> Matrix> [[1,0],[0,1]]
+Ldfs> Literate> ("Line 3: program line before comment line.\n","\n\n  x = 1\n\n")
+Literate> Matrix> [[1,0],[0,1]]
 Matrix> [[1,0],[0,-1]]
 Matrix> Mersenne> [3,7,31,127,8191,131071,524287,2147483647]
 Mersenne> True
