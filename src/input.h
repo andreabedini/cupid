@@ -9,6 +9,11 @@
 #include "prelude.h"
 #include "storage.h"
 
+/* The type of yylval and of the values on the parser's stack.  parser.y
+ * and input.c both include this file before the bison-generated code,
+ * which defines YYSTYPE as int only when it is not defined already.     */
+#define YYSTYPE Cell
+
 extern int yylex(void);          /* next token; its value is in yylval */
 extern int row;                  /* current input line, for errors     */
 extern void closeAnyInput(void); /* end of a module: close the source  */
