@@ -40,7 +40,7 @@ preprocessor (see [Load a package written for
 GHC](../how-to/preprocess-sources.md#load-a-package-written-for-ghc)).
 The older modules have the functions added to them since, such as
 `Data.List.intercalate`, `Data.Ord.Down` and `Text.Read.readMaybe`.  Six
-differ from GHC's:
+of the added modules differ from GHC's:
 
 - `Proxy` stands for a type of kind `Type` only, since kinds are not
   polymorphic: `Proxy :: Proxy Int` but not `Proxy :: Proxy Maybe`.
@@ -74,9 +74,9 @@ data BankError = InsufficientFunds Int deriving Show
 instance Exception BankError
 ```
 
-One that nothing catches is reported with its `displayException`, after
-`Program error:`, and the program exits with status 1.  Four things
-differ from GHC's:
+An exception that nothing catches is reported with its
+`displayException`, after `Program error:`, and the program exits with
+status 1.  Four things differ from GHC's:
 
 - Cupid's threads cannot be interrupted, so there are no asynchronous
   exceptions to mask: `mask` and its kin only run the action, and there
@@ -100,12 +100,11 @@ next to them:
 
 ## Windows
 
-On Windows the libraries leave out the three POSIX-only modules,
-`System.Posix.Internals`, `System.Posix.Signals` and
-`System.Process.Internals`, and `System.Posix.Types` has only the types
-Windows has: not `CGid`, `CNlink`, `CUid`, `CCc`, `CSpeed`, `CTcflag`,
-`CRLim`, `LinkCount`, `UserID` or `GroupID`.  The Windows version of a
-module is under `libraries/windows`.
+On Windows the libraries leave out the three POSIX-only modules above,
+and `System.Posix.Types` has only the types Windows has: not `CGid`,
+`CNlink`, `CUid`, `CCc`, `CSpeed`, `CTcflag`, `CRLim`, `LinkCount`,
+`UserID` or `GroupID`.  The Windows version of a module is under
+`libraries/windows`.
 
 ## The generated module
 

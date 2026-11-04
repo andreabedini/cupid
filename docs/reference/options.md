@@ -45,15 +45,14 @@ program name as one argument.  See
 
 The extensions beyond Haskell 2010 listed in
 [Language extensions](extensions.md) are always enabled, except
-overlapping instances, which need `+o` (or `+O`).  The `+98`
-and `-98` options of earlier releases, which switched them off and
-on, are accepted and ignored with a message.
+overlapping instances, which need `+o` (or `+O`).
 
 ### `-c`*num*
 
 The constraint cutoff in the type checker.  Default: 40.  Range: 1 to
-1024.  With flexible contexts and instances, constraint checking need
-not terminate; Cupid gives up when the depth reaches this limit.
+1024; a value outside it is ignored without a message.  With flexible
+contexts and instances, constraint checking need not terminate; Cupid
+gives up when the depth reaches this limit.
 Hitting it usually means the type checker would not have terminated.
 
 ### `+o`
@@ -75,13 +74,15 @@ Default: off.
 
 Explain instance resolution as it happens: print each entailment the
 type checker tries and each instance it uses.  Default: off.  The
-`:xplain` command shows the same for one context.
+`:xplain` command shows the same for one constraint.
 
 ## Loading
 
 ### `+.`
 
-Print a dot for each module as it loads.  Default: off.
+With `-q`, follow the name of each loading phase with a row of dots
+across the terminal, rather than showing the name and erasing it.
+Default: off.  While `+q` is on, which is the default, it does nothing.
 
 ### `+q`
 
@@ -147,11 +148,10 @@ environment variable.  *str* is a template:
 If neither `%s` nor `%f` appears, the file name is appended.
 
 The template is split into words on whitespace and the editor is run
-directly, without a shell, so nothing needs quoting: a file name that
-contains a space, a quote or a `$` is one argument whatever it holds.
-By the same token the template's own words are separated on whitespace
-and on nothing else - shell syntax in it is not interpreted.  A leading
-`&` starts the editor without waiting for it.
+directly, without a shell, so shell syntax in it is not interpreted and
+nothing needs quoting: a file name that contains a space, a quote or a
+`$` is one argument whatever it holds.  A leading `&` starts the editor
+without waiting for it.
 
 ```
 -E"vi +%d %s"
@@ -261,7 +261,8 @@ ERROR "Test.hs":4 - Kind error in class constraint
 
 ### `-h`*num*
 
-The heap size in cells.  Default: 1000000.  Minimum: 19000.  *num*
+The heap size in cells.  Default: 1000000.  Values below 19000 are
+raised to it, but the `Prelude` needs more: about 35000 cells.  *num*
 may carry a `k`, `M` or `G` suffix, in either case.  The heap is
 allocated at start-up; setting `-h` with `:set` has no effect on the
 running interpreter.
@@ -300,9 +301,10 @@ built with `-Dprofiling=true`.
 ## Obsolete options
 
 `+98`, `-98`, `-e`, `-f`, `-N`, `-W`, `-G` and `+L` from older
-releases are accepted with a message and ignored.  The `+H`, `+R` and
-`+m` toggles of the 2006 release are gone with the extensions they
-controlled.
+releases are accepted with a message and ignored.  `+H`, `+R` and `+l`
+from the 2006 release are now unknown toggles, which give a warning:
+here documents are gone, root optimisation is always on, and only a
+`.lhs` file is literate.
 
 ## See also
 

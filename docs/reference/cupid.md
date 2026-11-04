@@ -8,7 +8,7 @@ imports.
 ```
 cupid [option ...]
 cupid [option ...] file [argument ...]
-cupid [option ...] -i file ...
+cupid [option ...] -i file-or-module ...
 cupid [option ...] --ffi file [compiler-argument ...]
 ```
 
@@ -22,9 +22,11 @@ commands from standard input when that is not a terminal.
 
 **With a file**, `cupid` loads *file*, which must contain a `Main`
 module, runs `main`, and exits with the exit code of the action.  The
-interpreter's own output about loading is suppressed.  Errors go to
-standard error, headed `cupid: Error occurred`, and give an exit code of
-1.  A file without a `Main` module is an error:
+interpreter's own output about loading is suppressed.  An error in
+loading goes to standard error, headed `cupid: Error occurred`.  An
+exception that `main` does not catch is printed on standard output
+after `Program error:`.  Either gives an exit code of 1.  A file without
+a `Main` module is an error:
 
 ```
 cupid: can't find "Main" module; to load the file at the prompt instead, use cupid -i FILE
@@ -33,16 +35,16 @@ cupid: can't find "Main" module; to load the file at the prompt instead, use cup
 Modules that *file* imports are found first in the directory of *file*,
 then on the search path.
 
-**With `-i`**, `cupid` loads each *file* at the prompt without running
-`main`, and shows the prompt.  The last file loaded is the current
-module.  Several files may be given.
+**With `-i`**, `cupid` loads each *file-or-module* at the prompt without
+running `main`, and shows the prompt.  The last one loaded is the
+current module.  Several may be given.
 
 **With `--ffi`**, `cupid` loads *file* and, for the module in it,
 writes a C file with the same base name containing a stub for each
 `foreign import`.  It then compiles that file with the C compiler Cupid
 was built with, producing `Module.so` (`Module.dll` on Windows) next to
-the source.  When `cupid` later loads the module it loads the object as
-well.
+the source.  `Module` stands for the base name of *file*.  When `cupid`
+later loads the module it loads the object as well.
 
 The compile command is
 
@@ -55,6 +57,13 @@ whole command is printed.
 
 Modules imported by *file* are loaded first, so a module with foreign
 imports must have been compiled before any module that imports it is.
+
+A `foreign import` string of the form `"header.h name"` adds
+`#include "header.h"` to the generated C.  The generated code calls a
+named function directly, and C23 does not allow implicit declarations,
+so an import of a named function needs a header that declares it, unless
+it is in `<stdlib.h>`, which the generated C always includes.  `wrapper`
+and `dynamic` imports name no function.
 
 `-i` and `--ffi` count only among the options before *file*, and are
 read from the command line only: in `CUPIDFLAGS` or after `:set` the
@@ -74,14 +83,9 @@ cupid: -i and --ffi cannot be used together
 | After *file* | With no mode flag: arguments for the program, which `getArgs` returns. With `--ffi`: passed unchanged to the C compiler, such as extra sources, `-I`, `-l`, `-L` |
 
 With `-i` every argument that does not begin with `+` or `-` is a file
-to load.
+or module to load.
 
 When a program runs, `getProgName` returns *file*.
-
-A `foreign import` string of the form `"header.h name"` adds
-`#include "header.h"` to the generated C.  Since the generated code
-calls the function by name, every import needs a header that declares
-it: C23 does not allow implicit declarations.
 
 ## Exit status
 

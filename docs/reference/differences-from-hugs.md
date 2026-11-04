@@ -3,8 +3,7 @@
 What changed for someone who used Hugs, the September 2006 release
 that Cupid starts from.  Each table gives the Hugs name on the left and
 what to use in Cupid on the right.  The commands at the prompt are
-Hugs's, and so are most options; anything this page does not mention
-works as it did.
+Hugs's, and so are most options.
 
 ## Programs
 
@@ -42,9 +41,8 @@ first line as a blank line, so a script is an ordinary `.hs` file; see
 | Hugs | Cupid |
 |---|---|
 | The empty module `Hugs` and the prompt `Hugs>` | The empty module `Cupid` and the prompt `Cupid>` |
-| `:reload` reads every loaded module again | `:reload` reads the first module whose file changed and those loaded after it, and nothing if no file changed |
 
-The other commands are unchanged; [Interpreter commands](commands.md)
+Every command is one that Hugs had; [Interpreter commands](commands.md)
 lists them.
 
 ## Options
@@ -53,10 +51,9 @@ lists them.
 |---|---|
 | `+98` and `-98` switch the extensions off and on | The extensions are always on.  Both options are ignored with a message |
 | `+l`, and literate `\begin{code}` blocks | Only a `.lhs` file is literate, and only `>` lines are its program: `\begin{code}` blocks are not read.  `+l` is an unknown toggle |
-| `+H` (here documents) | Gone with here documents |
+| `+H` (here documents) | Here documents are gone; `+H` is an unknown toggle |
 | `+R` (root optimisation) | Always on; `+R` is an unknown toggle |
-| `-h` defaults to 250k cells | `-h` defaults to 1000000 cells |
-| `-e`, `-f`, `-N`, `-W`, `-G`, `+L` | Ignored with a message |
+| `-E` and `-F` commands run through a shell | Run directly and split on whitespace: shell syntax is not interpreted |
 
 [Options](options.md) describes every option Cupid has.
 
@@ -66,7 +63,7 @@ Cupid accepts Haskell 2010 rather than Haskell 98.  For a Hugs program
 the changes that matter are these:
 
 - **n+k patterns are not accepted**, as in Haskell 2010.
-- **Pattern guards are.**
+- **Pattern guards are accepted.**
 - **The extensions are always on**, except overlapping instances,
   which still need `+o` or `+O`.  So `forall` is always a keyword.
 - **These extensions are gone:** TREX extensible records, implicit
@@ -78,8 +75,8 @@ the changes that matter are these:
   constraints, type operators, tuple sections, polymorphic and
   constraint synonyms, and GHC's deriving strategies with `Generic`
   and `Data`.  See [Language extensions](extensions.md).
-- **Restricted type synonyms are kept**, the one Hugs-only extension
-  that is.
+- **Restricted type synonyms are kept**, the only Hugs-only extension
+  to survive.
 
 [The language Cupid accepts](language.md) lists the deviations from
 the Report; most of those in Hugs's list are still there.
@@ -94,7 +91,7 @@ of `Monad` and `fail` belongs to `MonadFail`, so a Hugs program that
 defines a `Monad` instance on its own needs `Functor` and
 `Applicative` instances as well.  `Semigroup` is a superclass of
 `Monoid`, and the Prelude exports `Foldable` and `Traversable`.
-[The language Cupid accepts](language.md#predefined-types-and-classes) has the full list.
+[Haskell 2010 conformance](haskell-2010.md#6-predefined-types-and-classes) has the full list.
 
 **The Haskell 98 module names are gone.**  Hugs shipped the flat names
 of the Haskell 98 Report in its `haskell98` package; in Cupid,
@@ -123,9 +120,9 @@ hierarchical names:
 
 **The interpreter's own modules are `Cupid.*`.**  What was
 `Hugs.Prelude`, `Hugs.IOExts` and so on is `Cupid.Prelude`,
-`Cupid.IOExts` and so on.  `Hugs.Trex` and `Hugs.Observe` went with
-their extensions.  [The libraries](libraries.md) lists the modules that
-ship.
+`Cupid.IOExts` and so on.  `Hugs.Trex` and `Hugs.Observe` have no
+counterpart, since their extensions are gone.
+[The libraries](libraries.md) lists the modules that ship.
 
 ## See also
 
