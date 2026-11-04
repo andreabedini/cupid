@@ -11,19 +11,12 @@ be checked against the same reasons.
 ## Deleting instead of switching off
 
 The rule behind most of what follows is that a feature which doesn't
-serve the aim is deleted, not left in the tree behind a flag.  A flag
-is a promise to keep two code paths working forever, and every such
-promise makes the code harder to read.  So Cupid has no
-language-extension flags and no compatibility modes.  The extensions it
-has are always on, except overlapping instances, which need the `+o`
-toggle (`+O` for the unsafe kind).  The extensions Hugs had that it
-doesn't keep are gone from the source.
-
-Cupid is meant to run real Haskell, because an implementation that
-runs only examples shows little of how Haskell works.  That is not the
-same as following GHC.  A program written for GHC loads if it keeps to
-the language and libraries described below; for one that doesn't,
-Cupid grows no compatibility mode and no flag.
+serve the aim is deleted.  A flag would be a promise to keep two code
+paths working forever, and every such promise makes the code harder to
+read.  So Cupid has no language-extension flags and no compatibility
+modes.  The extensions it has are always on, except overlapping
+instances, which need the `+o` toggle (`+O` for the unsafe kind).  The
+extensions Hugs had that it doesn't keep are gone from the source.
 
 ## What is inherited and what is not
 
@@ -40,33 +33,38 @@ the program in place, and a small abstract machine.  Where the report
 gives a reason for a choice, the explanation pages repeat it, because
 the reason is usually still the reason.
 
-The departures follow from the different aim.  Gofer was written for
-K&R compilers and 16-bit machines, so it leaned on the preprocessor:
-`Args(...)` prototypes, map-like macros, a source file included
-several times as a template, error reporting as macros.  Cupid targets
-C23 on 64-bit systems and makes each of these a function or a plain
-declaration.  Gofer's components were driven by a `control` function
-per file answering `INSTALL`, `RESET`, `MARK` and `EXIT` codes; Cupid
-makes each phase a named function in a subsystem table.  Gofer marked
-its static cells in each file's `MARK` case; Cupid registers them
+The departures follow from the code's age and the different aim.  Gofer
+was written for K&R compilers and 16-bit machines, so it leaned on the
+preprocessor: `Args(...)` prototypes, map-like macros, a source file
+included several times as a template, error reporting as macros.  Cupid
+targets C23 on 64-bit systems and makes each of these a function or a
+plain declaration.  Gofer's components were driven by a `control`
+function per file answering `INSTALL`, `RESET`, `MARK` and `EXIT` codes;
+Cupid makes each phase a named function in a subsystem table.  Gofer
+marked its static cells in each file's `MARK` case; Cupid registers them
 once.  Gofer kept old features compilable behind definitions, with a
 footnote wishing it could remove some; Cupid deletes them.  And Gofer
 aimed at compatibility with a moving target, which its author came to
-find "a little frustrating"; Cupid does not chase GHC.  A feature
-gets in by the rules under [The language](#the-language), and what is
-left out is written down as well as what is in.
+find "a little frustrating"; Cupid does not chase GHC.  A feature gets
+in by the rules under [The language](#the-language), and what is left
+out is written down as well as what is in.
 
 ## The language
+
+Cupid is meant to run real Haskell, because an implementation that
+runs only examples shows little of how Haskell works.  That is not the
+same as following GHC.  A program written for GHC loads if it keeps to
+the language and libraries described below.
 
 **Haskell 2010, plus what real code needs and one type checker can
 hold.**  The accepted language is Haskell 2010 with multi-parameter
 type classes, functional dependencies, flexible contexts and instances,
 existential and rank-2 types, polymorphic and constraint synonyms, kind
 signatures, GADT syntax, equality constraints, type operators, tuple
-sections and GHC's deriving strategies, all always on, except overlapping
-instances (`+o`, `+O`).  `forall` is always a keyword.  Literate
-scripts are read in the Bird-track form only.  A `#!` first line is read as a blank line, so
-an executable script is an ordinary Haskell file.  The details are in
+sections and GHC's deriving strategies, all always on.  `forall` is
+always a keyword.  Literate scripts are read in the Bird-track form
+only.  A `#!` first line is read as a blank line, so an executable
+script is an ordinary Haskell file.  The details are in
 [The language Cupid accepts](../reference/language.md) and
 [Language extensions](../reference/extensions.md).
 
@@ -79,15 +77,12 @@ exist to keep the type checker one pipeline that a reader can follow:
   seeing what stops them.  Without that evidence a feature stays out,
   however small; restricted type synonyms, kept from Hugs, are the one
   exception.  Where a need can be met by a library module, or by a
-  tool such as the C preprocessor before loading, it is met there and
-  not in the C.
-- *Always on.*  There are no language-extension flags like GHC's
-  `-XFoo` (Cupid's `-X` only re-reads an option string).  A feature is
-  good enough for every program, or it is not in the tree.  The one
-  exception is overlapping instances, which need `+o` or `+O`.
+  tool such as the C preprocessor before loading, it is met there.
+- *Always on.*  [Overlapping instances
+  aside](#deleting-instead-of-switching-off), a feature is good enough
+  for every program, or it is not in the tree.
 - *One solver.*  A feature extends the existing constraint solver; it
-  never adds a second one.  Separate engines are how the extensions
-  Hugs used to have were written, and they are why those are gone.
+  never adds a second one.
 - *Take the common case, reject the rest.*  Where inference is the hard
   part, a type signature is required.  Where termination is the hard
   part, the existing `-c` depth bound comes before any new termination
@@ -123,9 +118,10 @@ the solver in detail.
 
 **Desugar early.**  Where a construct can be expressed in terms the
 rest of the system already handles, the parser rewrites it, and no
-later stage knows it existed.  Pattern guards become a hidden `Maybe`
-binding and a boolean guard.  GADT syntax becomes ordinary
-constructors with existential variables.  The alternative, a new node
+later stage knows it existed.  Pattern guards are [one
+case](how-cupid-runs-a-program.md#from-text-to-code); GADT syntax, which
+becomes ordinary constructors with existential variables, is another.
+The alternative, a new node
 in the syntax tree, would have to be taught to every stage after the
 parser.
 
@@ -136,7 +132,7 @@ specific instance may apply later.
 
 **The grammar's `a`/`b` split stays.**  `parser.y` has paired rules
 such as `infixExpa` and `infixExpb`.  They look like duplication, but
-the split confines a lambda, `let`, `if` or `do` to the last operand
+the split confines a lambda, `let` or `if` to the last operand
 of an operator chain, and bison cannot parameterise a rule.
 
 ## The libraries
@@ -153,17 +149,18 @@ few small C helpers in `base`, and adds no C to the interpreter, so the
 libraries can follow what programs import without working against the
 aim.
 
-The parts that depend on the platform, such as the C types behind
-`CInt` and `CSize` and the values of `errno` constants, are
-generated at build time by `libraries/tools/mksysconfig.c` into the
-module `Cupid.SysConfig` and the header `HsBaseConfig.h`.  A small C
-program answers those questions by asking the compiler, so the build
-needs no Haskell tools at all: a C compiler, meson, ninja, python3 and
-bison are the whole list.
+The parts that depend on the platform are generated at build time by
+`libraries/tools/mksysconfig.c` into the module `Cupid.SysConfig` and
+the header `HsBaseConfig.h`.  A small C program answers those questions
+by asking the compiler, so the build needs no Haskell tools at all: a C
+compiler, meson, ninja, python3 and bison are the whole list.  [How
+Cupid runs a
+program](how-cupid-runs-a-program.md#where-the-platform-comes-in) says
+what the answers are.
 
 Shared library sources and the cpp, cpphs and hsc2hs bootstrap they
 needed used to be the largest single source of complexity in the tree.
-Nothing in it targets GHC now, so they serve no purpose.
+Both are gone: nothing in the tree targets GHC now.
 [The libraries](../reference/libraries.md) lists what is shipped.
 
 ## Platforms and the build
@@ -173,7 +170,7 @@ the BSDs on x86-64 and ARM64, and Windows on x86-64.  On these, the
 questions autoconf used to ask all have the same answer: `int` is four
 bytes, pointers eight, floating point is IEEE, the stack grows down, and
 every C99 header is present.  `src/sysdeps.h` writes those answers down,
-and `static_assert`s in `prelude.h` check them.  The only real
+and static assertions in `prelude.h` check the sizes.  The only real
 differences left are Windows against POSIX, and sometimes macOS.  Linux,
 macOS and Windows are built and tested on every change; on Windows, see
 [Build Cupid on Windows](../install/build-on-windows.md).
@@ -198,21 +195,23 @@ The library build also generates `HsBaseConfig.h` and
 
 **Two feature options.**  A build option is a flag like any other, so
 each of the ten inherited from Hugs had to justify its second code
-path, and eight didn't.  Where an option chose between two behaviours,
-the less surprising one stays: the one the default build already had,
-unless that left a documented feature missing.  So the one-line
-banner, the build without a fatal-signal handler, absolute file names
-in messages, the elapsed-time line after each command and the "while
-evaluating:" lines after a stack overflow are gone, with the code only
-they compiled.  So are the primitives that exposed the interpreter's
-cells and bytecode, and the three experimental modules over them that
-nothing imported.  `:xplain` and `+x` are documented, so they are
-always built instead, and `+x` is off by default.  Two options are
-left.  `profiling` changes the layout of every heap cell, so it can't
-become a run-time switch without costing every build.  `checks` is a
-developer build that keeps assertions, checks cell tags and adds the
-`+D` bytecode listing.  `char-encoding` and `readline` remain as
-well, but they choose a character set and a library, not a feature.
+path.  `profiling` and `checks` did.  `profiling` changes the layout of
+every heap cell, so it can't become a run-time switch without costing
+every build.  `checks` is a developer build that keeps assertions,
+checks cell tags and adds the `+D` bytecode listing.  `char-encoding`
+and `readline` remain as well, but they choose a character set and a
+library, not a feature.
+
+Where a deleted option chose between two behaviours, the less
+surprising one stayed: the one the default build already had, unless
+that left a documented feature missing.  So the one-line banner, the
+build without a fatal-signal handler, absolute file names in messages,
+the elapsed-time line after each command and the "while evaluating:"
+lines after a stack overflow are gone, with the code only they
+compiled.  So are the primitives that exposed the interpreter's cells
+and bytecode, and the three experimental modules over them that nothing
+imported.  `:xplain` and `+x` are documented, so they are always built
+instead, and `+x` is off by default.
 
 **Every configuration is tested.**  An option nothing exercises rots.
 So the regression suite has to pass in the default build, with each
@@ -220,8 +219,8 @@ option on alone and with both on, and `tools/check-configurations`
 builds and tests all four.  With two feature options those four are
 every combination of them; a third would make the sweep a sample, five
 of eight.  `char-encoding` and `readline` are not swept.  No feature
-option changes what a program prints (a build with `checks` adds the
-`+D` toggle to the `:set` listing), so every configuration is compared
+option changes what a program prints (`checks` and `profiling` each add
+entries to the `:set` listing), so every configuration is compared
 against the same expected output, with no filters.  See [Check every
 build configuration](../contributing/check-every-configuration.md).
 
@@ -230,12 +229,12 @@ build configuration](../contributing/check-every-configuration.md).
 The C is meant to be read, so it is written in a small number of
 consistent ways.
 
-**Standard C23, written in its C17-compatible subset.**  The GNU
+**Standard C23, using little of what is new in it.**  The GNU
 extensions are computed-goto dispatch in `machine.c`, with a `switch`
 fallback for compilers that don't have it, and a few function attributes
-in `prelude.h`, each with a fallback for other compilers.  Newer C23
-features such as `nullptr`, `typeof` and `constexpr` are not used
-casually.
+in `prelude.h`, each with a fallback for other compilers.  The sources
+rely on `bool` as a keyword and on `[[maybe_unused]]`; `nullptr`,
+`typeof` and `constexpr` are not used.
 
 **One file is one translation unit.**  No `.c` file includes another.
 A fragment included into several files shares their static state and
@@ -244,8 +243,8 @@ fragment used to be a macro template, it is now a function that takes
 callbacks.
 
 **Every header compiles on its own.**  A header includes what it uses,
-so it can be the first line of a translation unit.  In practice the
-only prerequisites are `prelude.h` and `storage.h`.  The include block
+so it can be the first line of a translation unit.  In practice most
+need only `prelude.h` and `storage.h`.  The include block
 of a `.c` file lists what the file calls, and its order doesn't matter.
 
 **A function unless C cannot express it.**  A macro evaluates its
@@ -263,21 +262,22 @@ needs `sizeof` of the caller's array.
 understand them, and the compiler checks every format string.
 
 **Plain C spelling.**  Standard types are used (`bool`, `int8_t` and
-so on), not private aliases for them.  `Char` and the domain types
-(`Cell`, `Text`, `Name`, `Type` and so on) are kept, because they
-carry meaning.  Output goes through `snprintf`, never `sprintf`.  Each
-function's description is a block comment above its header.
+so on).  `Char` and the domain types (`Cell`, `Text`, `Name`, `Type`
+and so on) are the aliases kept, because they carry meaning.  Output
+goes through `snprintf`, never `sprintf`.  Each function's description
+is a block comment above its definition.
 
 **Switches over cell tags say what they mean.**  Cell tags are a
-`typedef enum CellTag`.  A `switch (whatIs(c))` either lists every tag
-it can meet and has no `default`, so that `-Wswitch` checks it, or
-ends in `default : break;`, which says on purpose that the other tags
-are ignored.
+`typedef enum CellTag`.  Every `switch (whatIs(c))` has a `default`.
+`default : break;` says on purpose that the other tags are ignored,
+and `default : internal(...)` that they cannot occur; the rest handle
+the remaining tags there.
 
 **Formatting is clang-format's.**  `.clang-format` formats the sources
-in `src/` and `src/prims/`, and generated files are left alone.
-String literals are never split, so every message stays searchable
-with grep.  New code is formatted before it is committed.
+in `src/` and `src/prims/`, and generated files are left alone.  It
+never splits a string literal, so reformatting can't break a search for
+a message; some long messages are split by hand.  New code is formatted
+before it is committed.
 
 **Static analysis is a short list, reviewed by hand.**  `.clang-tidy`
 enables only checks whose findings are worth a person's time here; it
@@ -307,24 +307,28 @@ such as `nameRec(n)` turns a handle into a pointer to its record, and
 the pointer stays good because the arrays never move.  The table sizes
 are in `src/sizes.h`.  The values that partition the cell space are
 order-sensitive, so `static_assert`s at the end of `storage.h` check
-them all.  A full table is reported as "storage space exhausted", not
-handled by growing the table.
+them all.  A full table is reported as "storage space exhausted".
 
-**State is passed, not left in globals.**  The code generator's state
-is a `CodeGen` record that its entry points create and pass on.  The
-type checker returns a `Typing` record instead of leaving its result
-in four global registers.  A function's signature then says what it
-reads and writes.
+**The code generator's state and the type checker's result are passed,
+not left in globals.**  The code generator's state is a `CodeGen` record
+that its entry points create and pass on.  The type checker returns a
+`Typing` record.  Those signatures then say what the functions read and
+write; the rest of `type.c`'s working state is still file-scope.
 
-**Garbage collection: roots are registered.**  The collector scans the
-C stack conservatively and marks the root tables that modules register
-at install time, each with `registerRoots(xRoots)`.  A `gcMark` hook is
-needed only for structured data.  The fifteen files that hold cells in
-C local variables during allocation, listed as `gc_sensitive` in
-`src/meson.build`, are compiled at `-O0`.  An optimiser could keep
-only an interior pointer to a cell, which the conservative scan would
-not find.  The type checker relies on that scan, so it must never run
-with conservative collection switched off.
+**Garbage collection: roots are registered.**  The collector marks the
+root tables that modules register at install time, each with
+`registerRoots(xRoots)`.  A `gcMark` hook is needed only for structured
+data.  While a program is loaded and checked it also scans the C stack
+conservatively.  The fifteen files that hold cells in C local variables
+during allocation, listed as `gc_sensitive` in `src/meson.build`, are
+compiled at `-O0`.  An optimiser could keep only an interior pointer to
+a cell, which the conservative scan would not find.  The type checker
+relies on that scan, so it must never run with conservative collection
+switched off.  During evaluation the scan is off (`startEval` clears
+`consGC`), so `machine.c` and the primitives are written not to depend
+on it and are optimised as usual.  The exception is `digitsQrm` in
+`prims/bignums.c`, which turns the scan on for its own duration although
+it is optimised too.
 
 **No code is generated during evaluation.**  `run()` keeps a raw
 pointer into the code area, which would be invalid if the area grew
@@ -343,10 +347,8 @@ install, reset, mark, clean up at exit or tidy after an interrupt
 contributes one `Subsystem` row, with named functions such as
 `resetTypeChecker` and `markStorage`.  The `subsystems[]` array in
 `evaluator.c` fixes the install order, and five functions walk it, one
-for each phase.  Before this, the order existed only in a comment, and
-what each module did in each phase was hidden in a `switch`.
-Primitive modules and the stubs `cupid --ffi` generates carry the same
-hooks.
+for each phase.  Primitive modules and the stubs `cupid --ffi` generates
+carry the same hooks.
 
 **Interrupts are taken at polls only.**  Ctrl-C only sets a flag.  The
 flag is acted on at `allowBreak()` polls, which sit in the evaluator,
@@ -357,19 +359,17 @@ there would make every allocation an interrupt point.  After an
 interrupt the interpreter is in the same state as after an error: it
 jumps back to the prompt and resets the subsystems.
 
-**Fatal signals belong to the program.**  The handler for a crash
+**Fatal signals are re-raised.**  The handler for a crash
 makes only async-signal-safe calls: it restores the terminal, writes
 one line, and re-raises the signal.  The process then ends with the
-signal, so the shell sees it and a core dump is still written.  Each
-program's `main` installs the handler, because how a process ends is
-its owner's decision, not a library's.
+signal, so the shell sees it and a core dump is still written.  `main`
+in `src/cupid.c` installs the handler.
 
-**Output goes to a sink the program chooses.**  All interpreter output
-goes through `Printf` and its siblings to an `OutputSink`, or to the
-standard streams when none is set.  When `cupid` runs a file, it collects output into a
+**Output goes through a sink.**  All interpreter output goes through
+`Printf` and its siblings to an `OutputSink`, or to the standard streams
+when none is set.  When `cupid` runs a file, it collects output into a
 growable buffer and prints it on error, so long messages are printed
-in full.  Where output goes is decided by the program that starts the
-interpreter.
+in full.
 
 **Commands run without a shell.**  The `-F` preprocessor, the `-E`
 editor and the C compiler that `cupid --ffi` uses are each built as an
@@ -387,20 +387,18 @@ disturbs the lexer's input.
 
 **One executable, three modes.**  There is no C API for embedding Cupid
 in another program.  `cupid` is the only program, and it picks its mode
-from its arguments, as python does.  `chooseMode` in `src/cupid.c` looks
-at the arguments before the interpreter starts: with no file it gives the
-prompt, with `-i` it loads the files at the prompt, and with a file it
-hands over to `runFile` in `src/run.c`.  `-i` and `--ffi` count only
-among the options before the file, and `chooseMode` removes them from the
-arguments, so `CUPIDFLAGS` and `:set` never see them.  `runFile` is the
-interpreter without the prompt: it loads a module and runs `main`
-through the same pipeline the prompt uses, or, with `--ffi`, compiles the
-module's foreign-import stubs instead of running it.
+from its arguments, as python does.  The three modes are the prompt,
+running a file, and compiling a module's foreign-import stubs with
+`--ffi`.  `-i` and `--ffi` count only before the first file and stay out
+of `CUPIDFLAGS` and `:set`, where they would apply to every file.  [How
+Cupid runs a program](how-cupid-runs-a-program.md#the-program-and-its-modes)
+follows the code each mode reaches.
 
 ## The FFI
 
-`cupid --ffi` generates a C stub for each module with foreign imports.
-Each marshallable type is one row of a table in `ffi.c`, so adding a
+`cupid --ffi M.hs` generates a C file of stubs for the foreign imports
+of `M`.  Modules it imports get none, and need their own run.  Each
+marshallable type is one row of a table in `ffi.c`, so adding a
 type means adding a row.  Every stub records the `CUPID_API_VERSION` it
 was built for, and the interpreter refuses a stub whose layout it cannot
 read (the current version 6 and the older 2 to 4 are accepted; version 5

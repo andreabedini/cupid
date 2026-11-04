@@ -9,14 +9,15 @@ result and says where each stage lives in `src/`.
 
 **Reading.**  `input.c` turns a file into tokens.  The layout rule is
 applied here: the lexer inserts the braces and semicolons that
-indentation implies, so the parser never sees layout.
+indentation implies.  The parser's part is Haskell's parse-error rule:
+it closes an implicit block when the next token cannot continue it.
 
-**Parsing.**  `parser.y` is a bison grammar.  Its output is not an
-abstract syntax tree in the usual sense but heap cells of the same
-kind the evaluator uses; the whole interpreter works on one
-representation.  Some desugaring happens in the parser itself.
-Pattern guards, for example, are turned into a hidden `Maybe` binding
-and a boolean guard before the rest of the system sees them.
+**Parsing.**  `parser.y` is a bison grammar.  Its output is a syntax
+tree made of heap cells, the same kind the evaluator uses.  Some
+desugaring happens in the parser itself ([The design of
+Cupid](design.md#the-language) says why).  Pattern guards, for example,
+are turned into a hidden `Maybe` binding and a boolean guard before the
+rest of the system sees them.
 
 **Static analysis.**  `static.c` is the driver: its `checkDefns` runs
 the checks over a script in the order they must happen.  Each stage is
@@ -37,7 +38,7 @@ follows these first three stages in detail.
 with type classes, one binding group at a time in dependency order.
 `preds.c` solves class constraints and builds dictionaries;
 `subst.c` is the substitution machinery.  This is where the
-extensions beyond Haskell 2010 live: multi-parameter classes and
+type-system extensions live: multi-parameter classes and
 functional dependencies change what `preds.c` accepts, rank-2 types
 change what `type.c` will unify.  [How types are
 inferred](how-types-are-inferred.md) describes the machinery and
@@ -60,14 +61,12 @@ the interpreter starts, and is collected by a mark-and-sweep
 collector.  [Cells, text and tables](cells-text-and-tables.md)
 explains the representation.
 
-The collector is conservative about the C stack: any word on it that
-looks like a cell pointer keeps that cell alive.  That is why the
-source files that hold cell pointers in C variables across allocations
-(the static analysis files other than `ffi.c` and `fixity.c`, and
-`compiler.c`, `module.c`, `preds.c`, `scc.c`, `subst.c` and `type.c`:
-fifteen in all) are compiled without optimisation.  An
-optimiser could keep only a derived pointer, which the scan would not
-recognise.
+While a program is loaded, the collector is conservative about the C
+stack: any word on it that looks like a cell pointer keeps that cell
+alive.  During evaluation the scan is off, apart from bignum division,
+so `machine.c` and the primitives are written not to depend on it.
+[The design of Cupid](design.md#data-and-memory) says which source
+files rely on the scan and why they are compiled without optimisation.
 
 `prims/builtin.c` holds the primitive functions the `Prelude` is built
 on: arithmetic, characters, the pieces of the FFI.  `prims/array.c`
@@ -76,9 +75,10 @@ and exceptions, `prims/bignums.c` the `Integer` type, `char.c` Unicode
 classification and the encodings described in [Character
 encoding](character-encoding.md).
 
-## The front end
+## The program and its modes
 
-One program, `cupid`, uses all of the above, in three modes.
+One program, `cupid`, uses all of the above, in [three
+modes](design.md#the-running-interpreter).
 
 `cupid.c` is the interactive interpreter: the prompt, the commands, and
 the loop that reads a line, decides whether it is a command or an
@@ -95,11 +95,11 @@ calls `runProgram`, which is the expression pipeline the prompt uses,
 applied to `main >> return () :: IO ()` in module `Main`.  The exit code
 is whatever the program asked for.
 
-With `--ffi`, `runFile` sets `generateFFI`, and loading a module with
-`foreign` declarations makes `ffi.c` write a C file of stubs and run the
-C compiler on it instead of looking for an object to load; `main` is not
-run.  `script.c` keeps the list of loaded files that all three modes
-share, and `opts.c` reads the options.
+With `--ffi`, `runFile` sets `generateFFI`, and loading the named
+module, if it has `foreign` declarations, makes `ffi.c` write a C file
+of stubs and run the C compiler on it instead of looking for an object
+to load; `main` is not run.  `script.c` keeps the list of loaded files
+that all three modes share, and `opts.c` reads the options.
 
 ## Where the platform comes in
 
@@ -117,8 +117,8 @@ The libraries have one platform-dependent piece too, the widths of C
 types and the values of `errno` and signal constants.  These are asked
 of the C compiler at build time by `libraries/tools/mksysconfig.c` and
 written into the module `Cupid.SysConfig`.
-[The design of Cupid](design.md#platforms-and-the-build) says why it is
-done this way.
+[The design of Cupid](design.md#the-libraries) says why it is done this
+way.
 
 ## What this design gives up
 
@@ -127,7 +127,7 @@ modules, so starting Cupid recompiles the `Prelude`, and `:reload`
 recompiles the first module whose file has changed and every module
 loaded after it, whether or not they depend on it.  Programs
 run perhaps a hundred times slower than compiled code.  In exchange
-the whole implementation is under fifty thousand lines of C that one
+the whole interpreter is under fifty thousand lines of C that one
 person can read, and the turnaround from editing a file to seeing the
 result is a `:reload`.
 

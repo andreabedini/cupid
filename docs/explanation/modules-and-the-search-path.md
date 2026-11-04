@@ -19,18 +19,18 @@ accepts](../reference/language.md) describes.
 
 ## Imports are chased
 
-Loading a module loads the modules it imports, recursively.  For these,
-one extra directory is tried before the search path: the directory in
-which the importing module was found, when that module was itself
-loaded by file name or found relative to that directory.  So
+Loading a module loads the modules it imports, recursively.  A module
+loaded by file name makes its own directory a root for its imports:
+that root is tried before the search path, and a module found under it
+passes the same root to its own imports.  So
 
 ```
 Cupid> :load /path/to/project/Main.hs
 ```
 
 resolves `import A.B.C` to `/path/to/project/A/B/C.hs` without the
-project directory being on the search path, and an `import D` in that
-module to `/path/to/project/D.hs`.  Modules found on the search path
+project directory being on the search path, and an `import D` in
+`A.B.C` to `/path/to/project/D.hs`.  Modules found on the search path
 proper do not get this extra directory; their imports are resolved from
 the search path alone.
 
@@ -82,10 +82,11 @@ a module that imports them and make that one current.
 ## Why `Cupid.Prelude`
 
 Haskell defines the `Prelude` and the standard libraries as mutually
-recursive, which Cupid does not support.  Instead almost everything is
-defined in `Cupid.Prelude`, which the `Prelude` and the library modules
-import.  This is why `:names` shows `Cupid.Prelude.map` rather than
-`Prelude.map`, and why an error message may mention `Cupid.Prelude`.
+recursive, which Cupid does not support.  Instead almost everything the
+`Prelude` exports is defined in `Cupid.Prelude`, which the `Prelude` and
+the library modules import.  This is why `:names` shows
+`Cupid.Prelude.map` rather than `Prelude.map`, and why an error message
+may mention `Cupid.Prelude`.
 
 ## See also
 

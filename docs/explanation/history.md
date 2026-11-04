@@ -6,25 +6,21 @@ Where Hugs came from, what happened to it, and what this tree is.
 
 In August 1991 Mark Jones, then a D.Phil. student at Oxford, released
 Gofer, a compact and portable implementation of a Haskell-like language
-that also served as a test bed for type-system ideas, several of which
-later entered Haskell: constructor classes, and the treatment of type
-classes that became multi-parameter classes and functional
-dependencies.  Gofer was small enough to run on the machines of the day
-and was widely used for teaching.  Jones went on developing it at Yale,
-as a postdoctoral researcher from 1992.
+that also served as a test bed for type-system ideas, among them
+constructor classes, which later entered Haskell, and the treatment of
+type classes that led to multi-parameter classes and functional
+dependencies, which entered its implementations.  Gofer was small enough
+to run on the machines of the day and was widely used for teaching.
+Jones went on developing it at Yale, as a postdoctoral researcher from
+1992.
 
 Jones described its implementation in a 1994 research report, [*The
 implementation of the Gofer functional programming
 system*](http://web.cecs.pdx.edu/~mpj/pubs/RR-1030.pdf) (Yale
 University, YALEU/DCS/RR-1030, May 1994).  It covers Gofer 2.30,
-before the module system, but the architecture
-it sets out is the one this tree still has: everything a cell in one
-heap, fixed tables with high-water marks as checkpoints, a
-mark-and-sweep collector that scans the C stack, a bison parser whose
-stack is shadowed so the collector can see it, structure-shared types
-in a type checker that rewrites the program in place, lambda lifting
-to supercombinators and a G-machine variant with the root
-optimisation.  The explanation pages on
+before the module system, but the architecture it sets out is [the one
+this tree still has](design.md#what-is-inherited-and-what-is-not).  The
+explanation pages on
 [storage](cells-text-and-tables.md), [the front
 end](how-source-is-read.md), [type inference](how-types-are-inferred.md)
 and [the compiler and machine](how-code-is-compiled-and-run.md) draw on
@@ -73,7 +69,7 @@ The releases were named by month:
   the `observe` debugger, parallel list comprehensions, recursive
   `mdo`, classic Mac OS support.
 - **December 2001** — Hierarchical module names, the missing standard
-  libraries, most of `hslibs`, macOS X.
+  libraries, most of `hslibs`, Mac OS X.
 - **November 2002** — The FFI brought close to the specification, a
   large part of GHC's hierarchical libraries, a complete module
   system.
@@ -100,12 +96,9 @@ compilers.
 
 This tree is Andrea Bedini's.  It starts from the September 2006
 release with one aim: a Haskell implementation you can sit down and
-read.  It is not an attempt
-to keep up with GHC, but it is meant to run the Haskell people write.
-The language is Haskell 2010 plus the parts of modern Haskell that
-real code needs and one type checker can hold; everything from 2006
-that did not serve the aim has been removed rather than kept behind
-flags.  In order:
+read.  The language is Haskell 2010 plus the parts of modern Haskell
+that real code needs and one type checker can hold; everything from
+2006 that did not serve the aim has been removed.  In order:
 
 - the sources were made standard C23 and the K&R definitions converted
 - autoconf was replaced by meson, with the platform facts written down
@@ -118,8 +111,8 @@ flags.  In order:
   Cabal/cpphs/hsc2hs bootstrap removed
 - the packaging, the DocBook user's guide and the release notes were
   replaced with this documentation
-- the `-98` switch was dropped, so the extensions are always on,
-  apart from overlapping instances
+- the `-98` switch was dropped, so the extensions it guarded are always
+  on
 - the fork was first called Cuddles, and everything that carried the
   Hugs name was renamed; the `haskell98` flat-module package, the .NET
   remnants and the unbuilt 2006 `lib/` and `include/` trees were
