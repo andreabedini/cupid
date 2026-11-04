@@ -6,7 +6,8 @@ instructions for an abstract machine and runs them.  The machine is a
 variant of the Chalmers G-machine; the compiler is the sequence of
 transformations needed to reach it.  This page explains both and the
 choices in them.  Most of the design is Gofer's and the reasons given
-are its author's; the places where Hugs changed it are noted.
+are from [its author's report](http://web.cecs.pdx.edu/~mpj/pubs/RR-1030.pdf);
+the places where Hugs changed it are noted.
 
 ## From typed bindings to a core language
 
@@ -46,15 +47,17 @@ when one is needed at all).
 
 The output has an unusual property: **it contains no binding
 occurrences of variables.**  A function is annotated with its arity,
-and a bound variable is an `OFFSET` whose value is its position
-counting from the first argument; the patterns in a `CASE` list only
-constructors.  The functions in `compiler.c` carry a "current offset"
-parameter, `co`, to know what the next variable's offset will be.  The
-report gave two reasons.  Leaving out the binders saves space, which
-mattered on the PC.  More importantly, the offsets are chosen to be the
-variables' positions on the machine's stack when the function runs, so
-the code generator needs no environment mapping variables to stack
-slots.
+and a bound variable is an `OFFSET` numbered from the last argument:
+the last of `a` arguments is offset 1 and the first is offset `a`; the
+patterns in a `CASE` list only constructors.  The functions in
+`compiler.c` carry a "current offset" parameter, `co`, to know what the
+next variable's offset will be.  The report gave two reasons.  Leaving
+out the binders saves space, which mattered on the PC.  More
+importantly, in Gofer the offsets were the variables' positions on the
+machine's stack when the function ran, so its code generator needed no
+environment mapping variables to stack slots.  Cupid's has such a map,
+`offsPosn[]`, since Hugs made it track the stack at compile time
+(below).
 
 The same pass collects, for each local function definition, its free
 variables and the local functions it calls, into a record
@@ -79,21 +82,17 @@ arguments added; rather than substituting through the bodies, `lift`
 carries an environment `tr` that maps each local function to its
 lifted call, extended before the scope of each `let` is entered.
 
-Lifting is not required for a lazy implementation (Turner's and
-Peyton Jones's machines do without it); it is here because the
-G-machine wants supercombinators.
-
 ## The pre-compiler
 
-Adding parameters to a lifted function breaks the offsets in its body,
-because the offsets were counted from the original first argument.
-`preComp` renumbers them.  When the function runs, its original
-arguments are at offsets `1..a`, the `e` extra parameters at
-`a+1..a+e`, and its temporaries above that, so an offset below the
-original right-hand side's base maps into the extra-parameter range by
-its position in `extraVars`, an original parameter keeps its position,
-and a temporary moves up by `e`.  The calculation is small; it exists
-only because binders are implicit.
+A lifted function's body still carries the offsets of the place it was
+defined: they continue the enclosing function's numbering, and its free
+variables are the enclosing function's offsets.  `preComp` renumbers
+them.  When the function runs, its original arguments are at offsets
+`1..a`, the `e` extra parameters at `a+1..a+e`, and its temporaries
+above that, so an offset below the original right-hand side's base maps
+into the extra-parameter range by its position in `extraVars`, an
+original parameter is rebased to `1..a`, and a temporary is rebased and
+moves up by `e`.
 
 ## The machine
 
@@ -102,7 +101,8 @@ constants, names, and indirections.  `eval(e)` reduces `e` to weak head
 normal form.  It walks down the spine of applications pushing each
 node, until it reaches the head:
 
-- A constant or a constructor is already in normal form.  The head is
+- A constant, a constructor or a function with too few arguments is
+  already in weak head normal form.  The head is
   left in the register `whnfHead` (and an integer's value in
   `whnfInt`), and the arguments of a constructor are left on the stack
   in place of the application nodes, so C code can take them.  This is
@@ -143,7 +143,7 @@ position of the application being reduced and `sp` the stack pointer:
 | `TEST c l` | if `whnfHead` is not `c`, jump to `l`; the heart of pattern matching |
 | `GOTO l`, `RETURN` | control |
 | `FAIL` | the match failed |
-| `SETSTK n` | set `sp` to `root + n`, where the stack depth is not known at compile time |
+| `SETSTK n` | set `sp` to `root + n`, discarding whatever a failed branch left on the stack |
 | `ROOT n` | push the application obtained by removing the last `n` arguments from the one at `root` |
 | `TABLE` | not executed: marks a table of a type's constructors stored in the code area, which derived instances use |
 
@@ -187,10 +187,10 @@ reports an overflow instead of crashing.
 
 A `checks` build has the `+D` option, which prints each definition as
 the code generator receives it and the instructions it produces, and
-traces `run` and `eval` as they go.  The report's advice holds: the
-best way to understand the compiler and the machine is to read what
-they produce for `id`, `(.)`, `(&&)` and `map`, and then to work out
-how the listing for `map` implements it.
+traces `run` and `eval` as they go.  The best way to understand the
+compiler and the machine is to read what they produce for `id`, `(.)`,
+`(&&)` and `map`, and then to work out how the listing for `map`
+implements it.
 
 ## See also
 

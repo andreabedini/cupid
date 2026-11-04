@@ -81,12 +81,15 @@ allocated, is what now has to be entailed.  Each of those predicates
 goes back through `entail`, and the dictionary is the instance's
 *builder* applied to their dictionaries.  The recursion is bounded by
 the `cutoff` depth, the `-c` option, since with flexible contexts and
-instances it need not terminate.
+instances it need not terminate.  One class goes beyond the instance
+declarations: a `Typeable t` that no instance matches is solved by
+`typeableEvid`, which builds the evidence from the structure of `t`.
 
 With overlapping instances allowed (`+o`), `findInstFor` also refuses a
 match when a more specific instance could still apply once more is
-known about the type; this is why context reduction is unsound under
-overlap and `elimTauts` falls back to plain entailment then.
+known about the type; `+O` skips that refusal.  Reducing a predicate to
+an instance's context could then commit to the wrong instance, so under
+either option `elimTauts` removes only what entailment proves outright.
 
 ## Improvement
 
@@ -106,8 +109,10 @@ the recursion too.
 
 A binding group is checked with `preds` emptied; `savePreds` holds the
 enclosing group's list meanwhile.  When the group's bindings have been
-typed, `unrestricted` or `monorestrict` runs the solver over what has
-accumulated, in this order:
+typed, the solver runs over what has accumulated.  `monorestrict`
+improves, reduces with `elimTauts`, defers everything left, defaults
+only at the top level, and generalises no constrained variable.
+`unrestricted` goes through these steps in order:
 
 1. **Improve** (`improve`), so that the types are as specific as the
    constraints make them before anything is decided.
@@ -116,29 +121,28 @@ accumulated, in this order:
    the instance's context; `scSimplify` then drops any predicate that
    another in the list entails through superclasses.  Where a
    signature or an instance context is given, `elimPredsUsing`
-   discharges each predicate the givens entail and complains about
-   those that cannot be, since a declared context must be enough
-   (`cantEstablish`).
+   discharges each predicate the givens entail and leaves the rest to
+   the steps below.
 3. **Defer** what belongs further out.  A predicate none of whose
-   variables are generic in this group, that is, one that mentions
-   only the enclosing scope's variables, cannot be decided here and
-   is handed back to `savePreds` (`elimOuterPreds`, or
-   `elimPredsUsing` when there are givens, which also splits a
-   predicate that mixes generic and fixed variables by an instance
-   if one applies).
+   variables are generic in this group mentions only the enclosing
+   scope's variables, so it cannot be decided here and is handed back
+   to `savePreds` (`elimOuterPreds`, or `elimPredsUsing` when there are
+   givens).  `elimPredsUsing` also reduces a predicate that has generic
+   variables by an instance, if one matches.
 4. **Default** what is left over.  At the top level, and for
    predicates on variables the group's types do not mention,
    `resolveDefs` applies the `default` declaration: a variable
    constrained only by standard classes, at least one of them
    numeric, is set to the first default type that satisfies them all,
-   and the loop goes round again.
+   and steps 2 and 3 run again.
 5. **Generalise** the rest.  Each predicate still in `preds` goes into
    the inferred type's context (`generalize`) and its dictionary
    variable becomes a parameter (`qualifyBinding`).  For a binding
    with a signature there is no rest: the signature's context was
    given, the inferred type must be at least as general as the
    declared one (`sameSchemes`, else `tooGeneral`), and anything the
-   givens could not discharge is an error.
+   givens could not discharge is an error (`cantEstablish`), since a
+   declared context must be enough.
 
 At the very top of a module, nothing is left to defer to, so
 `typeDefnGroup` reports whatever survives as an unresolved instance.
@@ -162,8 +166,8 @@ skolems it bound and the givens it was handed (`enterScope`,
 discharged against the scope's givens where they can be
 (`elimPredsUsing` again) and the rest passed outward, and the inferred
 type and the assumptions are checked for skolems that would escape.
-The scope stack is where a future given that holds for one alternative
-only, as a GADT match provides, would live.
+The scope stack is where a type equality that holds for one alternative
+only, as a GADT match would provide, would live.
 
 ## Where to read
 
