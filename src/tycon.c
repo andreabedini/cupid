@@ -7,8 +7,6 @@
  * for cycles, and deriving requests are handed to deriving.c.  The
  * expansion of synonyms and newtypes in a type also lives here.
  *
- * Split out of static.c.
- *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
@@ -26,10 +24,6 @@
 #include "binding.h"
 #include "tycon.h"
 
-/* --------------------------------------------------------------------------
- * local function prototypes:
- * ------------------------------------------------------------------------*/
-
 static void depConstrs(Tycon, List, Cell);
 static void noEqualities(int, List, Tycon);
 static List addSels(int, Name, List, List);
@@ -40,23 +34,10 @@ static Type instantiateSyn(Type, Type);
 
 /* --------------------------------------------------------------------------
  * Static analysis of type declarations:
- *
- * Type declarations come in two forms:
- * - data declarations - define new constructed data types
- * - type declarations - define new type synonyms
- *
- * A certain amount of work is carried out as the declarations are
- * read during parsing.  In particular, for each type constructor
- * definition encountered:
- * - check that there is no previous definition of constructor
- * - ensure type constructor not previously used as a class name
- * - make a new entry in the type constructor table
- * - record line number of declaration
- * - Build separate lists of newly defined constructors for later use.
  * ------------------------------------------------------------------------*/
 
-/* Process new type definition definition line number left hand side of
- * definition right hand side of definition SYNONYM/DATATYPE/etc... */
+/* Process new type definition: line number, left hand side, right hand side,
+ * SYNONYM/DATATYPE/etc... */
 void tyconDefn(int line, Cell lhs, Cell rhs, Cell what) {
     Text t = textOf(getHead(lhs));
     Tycon tc = findTycon(t);
@@ -114,7 +95,6 @@ void setTypeIns(List bs) {
     }
 }
 
-/* Clear list of local synonyms */
 void clearTypeIns(void) {
     for (; nonNull(typeInDefns); typeInDefns = tl(typeInDefns))
         tyconRec(fst(hd(typeInDefns)))->what = RESTRICTSYN;
@@ -163,8 +143,8 @@ void clearTypeIns(void) {
  * In a context, MonadIOFail m then gives what its parts give, and it
  * holds wherever they all hold.  A body is a constraint when it is
  * annotated with Constraint, or is a class applied to types, or is a
- * tuple with one of those in it; a bare () is the unit type.  Synonyms for synonyms are found by repeating the
- * search until it finds no more.
+ * tuple with one of those in it; a bare () is the unit type.  Synonyms for
+ * synonyms are found by repeating the search until it finds no more.
  * ------------------------------------------------------------------------*/
 
 /* Whether t is a class applied to types */
@@ -179,9 +159,11 @@ static bool isConstraintBody(Type t) {
         return snd(snd(t)) == CONSTRAINT;
     }
     if (isTuple(getHead(t)) && argCount == tupleOf(getHead(t))) {
-        for (; isAp(t); t = fun(t)) {  /* one class makes it a constraint, */
-            if (isClassPred(arg(t))) { /* so that a type in it is an      */
-                return true;           /* undefined class                 */
+        /* one class makes it a constraint, so that a type in it is an
+         * undefined class */
+        for (; isAp(t); t = fun(t)) {
+            if (isClassPred(arg(t))) {
+                return true;
             }
         }
         return false;
@@ -317,7 +299,6 @@ void checkTyconDefns(List ts) {
     }
 }
 
-/* Validate type constructor defn */
 void checkTyconDefn(Tycon d) {
     Cell lhs = fst(tyconRec(d)->defn);
     Cell rhs = snd(tyconRec(d)->defn);
@@ -567,8 +548,6 @@ Cell kindedHeader(Cell line, Cell lhs, Kind k) {
     return pop();
 }
 
-/* Define constructor functions and do dependency analysis for data definitions
- * (w or w/o deriving) */
 /* An equality in the context of a data declaration or of one of its
  * constructors would refine the result type on a match, which makes a GADT
  * proper, and that waits for given equalities in the solver. */
@@ -584,6 +563,8 @@ static void noEqualities(int line, List ps, Tycon t) {
         }
 }
 
+/* Define constructor functions and do dependency analysis for data definitions
+ * (w or w/o deriving) */
 static void depConstrs(Tycon t, List tyvars, Cell cd) {
     int line = tyconRec(t)->line;
     List ctxt = NIL;
@@ -839,11 +820,10 @@ int userArity(Name c) {
     return a;
 }
 
-List cfunSfuns; /* List of (Cfun,[SelectorVar])     */
-                /*  - used for deriving Show       */
+List cfunSfuns; /* List of (Cfun,[SelectorVar]), used for deriving */
 
-/* Add fields to selector list line number of constructor corresponding constr
- * function list of fields (varids) list of existing selectors */
+/* Add fields to selector list: line number, constructor function, list of
+ * fields (varids), list of existing selectors */
 static List addSels(int line, Name c, List fs, List ss) {
     int sn = 1;
     cfunSfuns = cons(pair(c, fs), cfunSfuns);
@@ -891,7 +871,6 @@ static List addSels(int line, Name c, List fs, List ss) {
     return ss;
 }
 
-/* Calculate subset of context */
 static List selectCtxt(List ctxt, List vs) {
     if (isNull(vs)) {
         return NIL;
@@ -909,7 +888,6 @@ static List selectCtxt(List ctxt, List vs) {
     }
 }
 
-/* Check for mutually recursive synonyms */
 void checkSynonyms(List ts) {
     List syns = NIL;
     for (; nonNull(ts); ts = tl(ts)) { /* build list of all synonyms       */
@@ -984,10 +962,8 @@ Type fullerExpand(Type t) {
         t = fullerExpand(t); /* chase synonym chains. */
     } else if (isNewtype(h) && n == tyconRec(h)->arity && h != typeIO) {
         if (n != 0) {
-            /* Not supported because I don't understand the typechecker
-             * well enough.  For those that grok the data structures, it
-             * should be simple.
-             */
+            /* Not supported: instantiateNewtype does not instantiate a
+             * newtype's parameters. */
             errHead(nameRec(h)->line);
             errPrintf("Use of polymorphic newtype '");
             errType(t);
@@ -1013,8 +989,9 @@ bool hasIOResultType(Type ty) {
     return (getHead(t) == typeIO && argCount == 1);
 }
 
-/* Instantiate type using env to determine appropriate values for OFFSET type
- * vars */
+/* The type of the field of newtype constructor c.  env is not used:
+ * fullerExpand rejects a newtype with parameters, so the field has no OFFSET
+ * to replace. */
 static Type instantiateNewtype(Name c, Type env) {
     Type t = NIL;
     assert(isName(c));
@@ -1024,7 +1001,6 @@ static Type instantiateNewtype(Name c, Type env) {
     }
     assert(getHead(t) == typeArrow && argCount == 2);
     t = arg(fun(t));
-    /* This is probably where we should invoke instantiateSyn(t,env) */
     return t;
 }
 
@@ -1056,7 +1032,7 @@ Type fullExpand(Type t) {
     return t;
 }
 
-/* Instantiate type according using env to determine appropriate values for
+/* Instantiate type using env to determine appropriate values for
  * OFFSET type vars */
 static Type instantiateSyn(Type t, Type env) {
     switch (whatIs(t)) {
@@ -1071,22 +1047,14 @@ static Type instantiateSyn(Type t, Type env) {
     }
 }
 
-/* --------------------------------------------------------------------------
- * Control:
- * ------------------------------------------------------------------------*/
-
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const tyconRoots[] = {
     &cfunSfuns,
 };
 
-/* Clear the list of constructors' selector variables. */
 void resetTycon(void) {
     cfunSfuns = NIL;
 }
 
-/* Register the roots and reset; done once, before the Prelude is read. */
 void installTycon(void) {
     registerRoots(tyconRoots);
     resetTycon();

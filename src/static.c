@@ -7,7 +7,6 @@
  * and ffi.c.  What stays here is the module import checks, the primitive
  * declarations, the entry points and the per-script reset.
  *
- *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
@@ -32,10 +31,6 @@
 #include "depend.h"
 #include "static.h"
 
-/* --------------------------------------------------------------------------
- * local function prototypes:
- * ------------------------------------------------------------------------*/
-
 static void checkQualImport(Pair);
 static void checkUnqualImport(Pair);
 static List checkPrimDefn(Triple);
@@ -49,7 +44,6 @@ static void checkTypeIn(Pair);
  * Static analysis of modules:
  * ------------------------------------------------------------------------*/
 
-/* Switch to a new module */
 void startModule(Cell nm) {
     Module m;
     Text t = textOf(nm);
@@ -69,12 +63,10 @@ void startModule(Cell nm) {
     setCurrModule(m);
 }
 
-/* Add export list to current module */
 void setExportList(List exps) {
     moduleRec(currentModule)->exports = exps;
 }
 
-/* Process qualified import */
 static void checkQualImport(Pair i) {
     Module m = findModid(snd(i));
     if (isNull(m)) {
@@ -86,7 +78,6 @@ static void checkQualImport(Pair i) {
     snd(i) = m;
 }
 
-/* Process unqualified import */
 static void checkUnqualImport(Pair i) {
     Module m = findModid(fst(i));
     if (isNull(m)) {
@@ -98,20 +89,16 @@ static void checkUnqualImport(Pair i) {
     fst(i) = m;
 }
 
-/* the bulk of the module system implementation now resides in module.c */
-
 /* --------------------------------------------------------------------------
  * Primitive definitions are usually only included in the first script
  * file read - the prelude.  A primitive definition associates a variable
  * name with a string (which identifies a built-in primitive) and a type.
  * ------------------------------------------------------------------------*/
 
-/* Handle primitive definitions */
 void primDefn(Cell line, List prims, Cell type) {
     primDefns = cons(triple(line, prims, type), primDefns);
 }
 
-/* Check primitive definition */
 static List checkPrimDefn(Triple pd) {
     int line = intOf(fst3(pd));
     List prims = snd3(pd);
@@ -150,20 +137,22 @@ static Name addNewPrim(int l, Text vn, char *s, Cell t) {
 /* Top level static check on Expr */
 void checkExp(void) {
     resetStaticAnalysis();
-    clearScope();     /* Analyse expression in the scope */
-    withinScope(NIL); /* of no local bindings              */
+    /* Analyse expression in the scope of no local bindings */
+    clearScope();
+    withinScope(NIL);
     inputExpr = depExpr(0, inputExpr);
     leaveScope();
     resetStaticAnalysis();
 }
 
-/* Top level static check on Expr */
+/* Top level static check on the context :xplain reads */
 void checkContext(void) {
     List vs, qs;
 
     resetStaticAnalysis();
-    clearScope();     /* Analyse expression in the scope */
-    withinScope(NIL); /* of no local bindings              */
+    /* Analyse the context in the scope of no local bindings */
+    clearScope();
+    withinScope(NIL);
     qs = inputContext;
     for (vs = NIL; nonNull(qs); qs = tl(qs)) {
         vs = typeVarsIn(hd(qs), NIL, NIL, vs);
@@ -173,7 +162,6 @@ void checkContext(void) {
     resetStaticAnalysis();
 }
 
-/* Top level static analysis */
 void checkDefns(void) {
     List tcs;
     Module thisModule = lastModule();
@@ -197,28 +185,21 @@ void checkDefns(void) {
     /* And,  finally, fix-up the effective import lists. */
     fixupImportExports(moduleRec(currentModule)->modImports);
 
-    /* Note: there's a lot of side-effecting going on here, so
-       don't monkey about with the order of operations here unless
-       you know what you are doing */
+    /* These steps work by side effect, so their order matters. */
     linkPreludeTC();                     /* Get prelude tycons and classes  */
-    constraintSynonyms();                /* synonyms for constraints become */
-                                         /* classes                         */
+    constraintSynonyms();                /* constraint synonyms are classes */
     checkTyconDefns(tyconDefns);         /* validate tycon definitions     */
     checkSynonyms(tyconDefns);           /* check synonym definitions      */
     mapProc(checkClassDefn, classDefns); /* process class definitions      */
-    tcs = tcscc(tyconDefns, classDefns); /* calc dependencies for type      */
-                                         /* constructors and classes        */
+    tcs = tcscc(tyconDefns, classDefns); /* calc dependencies              */
     mapProc(kindTCGroup, tcs); /* attach kinds                           */
     noUnclaimedKinds();        /* every kind signature met its decl      */
-    mapProc(visitClass, classDefns);    /* check class hierarchy          */
-    mapProc(extendFundeps, classDefns); /* finish class definitions       */
-                                        /* (convenient if we do this after */
-                                        /* calling `visitClass' so that we */
-                                        /* know the class hierarchy is     */
-                                        /* acyclic)                        */
-    mapProc(checkClassDefn2_, tcs);     /* process class definitions again */
-    mapProc(addMembers, classDefns);    /* add definitions for member funs */
-    linkPreludeCM();                    /* Get prelude cfuns and mfuns    */
+    mapProc(visitClass, classDefns); /* check class hierarchy          */
+    /* finish class definitions: visitClass has shown the hierarchy acyclic */
+    mapProc(extendFundeps, classDefns);
+    mapProc(checkClassDefn2_, tcs);  /* process class definitions again */
+    mapProc(addMembers, classDefns); /* add definitions for member funs */
+    linkPreludeCM();                 /* Get prelude cfuns and mfuns    */
 
     mapOver(checkPrimDefn, primDefns); /* check primitive declarations     */
 
@@ -259,11 +240,9 @@ void checkDefns(void) {
             mapProc(linkForeign, foreignImports);
         }
 
-        /* We are now finished with foreign import declarations but
-         * foreign export declarations need to pass through the
-         * typechecker so that we can check that the exported type is
-         * an instance of the actual type and so that we can gnerate
-         * code which inserts any dictionaries we might need.
+        /* We are now finished with foreign import declarations.  Foreign
+         * export declarations stay for the type checker, which rejects them
+         * as not implemented (typeForeignExport).
          */
         foreignImports = NIL;
     }
@@ -288,20 +267,6 @@ void checkDefns(void) {
     /* ToDo: evalDefaults should match current evaluation module */
     evalDefaults = defaultDefns; /* Set defaults for evaluator     */
 
-    /* A module's 'modImports' list is only used to construct a precise export
-     * list in the presence of module re-exportation. We've now finished
-     * computing the export list, so 'modImports' can now be stubbed out.
-     *
-     * 10/02 refinement: hold on to the 'modImports' a little bit longer;
-     * until we switch to another module. This lets the user have access
-     * to the effective imports when eval/querying from the read-eval-print
-     * loop. However, once we switch to another module, the info is gone.
-     * (i.e., there's potential for confusion wrt. the :m command.)
-     *
-     * This is an approximation to simply holding on to a module's
-     * effective imports until it is unloaded. This isn't done due to the
-     * storage overhead imposed.
-     */
     resetStaticAnalysis();
 }
 
@@ -316,7 +281,6 @@ static void addRSsigdecls(Pair pr) {
     }
 }
 
-/* Ensure no previous bindings for variables in new binding */
 static void allNoPrevDef(Cell b) {
     if (isVar(fst(b))) {
         noPrevDef(rhsLine(snd(hd(snd(snd(b))))), fst(b));
@@ -326,7 +290,6 @@ static void allNoPrevDef(Cell b) {
     }
 }
 
-/* Ensure no previous binding for new variable */
 static void noPrevDef(int line, Cell v) {
     Name n = findName(textOf(v));
 
@@ -347,7 +310,6 @@ static void noPrevDef(int line, Cell v) {
     nameRec(n)->line = line;
 }
 
-/* Report duplicate defn */
 void duplicateError(int line, Module mod, Text t, char *kind) {
     if (mod == currentModule) {
         errHead(line);
@@ -376,12 +338,7 @@ static void checkTypeIn(Pair cvs) {
         }
     }
 }
-/* --------------------------------------------------------------------------
- * Static Analysis control:
- * ------------------------------------------------------------------------*/
 
-/* Register the six sub-modules' roots and reset them; done once, before
- * the Prelude is read. */
 void installStaticAnalysis(void) {
     installKind();
     installTycon();
@@ -391,8 +348,6 @@ void installStaticAnalysis(void) {
     installDeriving();
 }
 
-/* Reset the six sub-modules' per-script state together, as they always
- * reset together. */
 void resetStaticAnalysis(void) {
     resetKind();
     resetTycon();

@@ -110,10 +110,6 @@ Name nameDivideByZero;
 Name nameIndexOutOfBounds;
 Name nameUndefinedElement;
 
-/* --------------------------------------------------------------------------
- * Local function prototypes:
- * ------------------------------------------------------------------------*/
-
 static void emptyAssumption(void);
 static void enterBindings(void);
 static void leaveBindings(void);
@@ -232,12 +228,12 @@ static Cell predMonadFail;  /* MonadFail (mkOffset(0))             */
  *
  * To deal with polymorphic recursion, variables defined in bindings can be
  * assigned types of the form (POLYREC,(def,use)), where def is a type
- * variable for the type of the defining occurence, and use is a type
+ * variable for the type of the defining occurrence, and use is a type
  * scheme for (recursive) calls/uses of the variable.
  * ------------------------------------------------------------------------*/
 
 static List defnBounds; /*::[[(Var,Type)]] possibly ovrlded*/
-static List varsBounds; /*::[[(Var,Type)]] not overloaded  */
+static List varsBounds; /*::[[(Var,Type)]] settled bindings*/
 static List depends;    /*::[?[Var]] dependents/NODEPENDS  */
 static Cell dummyVar;   /* Used to put extra tvars into ass*/
 
@@ -256,7 +252,6 @@ static int maxScopes = 0;
 #define addVarAssump(v, t) hd(varsBounds) = cons(pair(v, t), hd(varsBounds))
 #define findTopBinding(v) findInAssumList(textOf(v), hd(defnBounds))
 
-/* Set empty type assumption */
 static void emptyAssumption(void) {
     defnBounds = NIL;
     varsBounds = NIL;
@@ -264,14 +259,12 @@ static void emptyAssumption(void) {
     numScopes = 0;
 }
 
-/* Add new level to assumption sets */
 static void enterBindings(void) {
     defnBounds = cons(NIL, defnBounds);
     varsBounds = cons(NIL, varsBounds);
     depends = cons(NIL, depends);
 }
 
-/* Drop one level of assumptions */
 static void leaveBindings(void) {
     defnBounds = tl(defnBounds);
     varsBounds = tl(varsBounds);
@@ -308,7 +301,7 @@ static void markEnclosing(List sps) {
     markBtyvs();
 }
 
-/* Find most recent assumption about variable named t, if any return translated
+/* Find most recent assumption about variable named t; if any, return translated
  * variable, with its type in *type */
 static Cell findAssum(Text t, Type *type) {
     List defnBounds1 = defnBounds;
@@ -345,7 +338,6 @@ static Cell findAssum(Text t, Type *type) {
     return NIL;
 }
 
-/* Search for assumption for var named t in list of assumptions as */
 static Pair findInAssumList(Text t, List as) {
     for (; nonNull(as); as = tl(as))
         if (textOf(fst(hd(as))) == t)
@@ -353,7 +345,6 @@ static Pair findInAssumList(Text t, List as) {
     return NIL;
 }
 
-/* Calculate intersection of lists of integers (as sets) */
 static List intsIntersect(List as, List bs) {
     List ts = NIL; /* destructively modifies as      */
     while (nonNull(as))
@@ -530,12 +521,13 @@ static void leaveScope(int l, Type t, int o, int m) {
         preds = revOnto(preds, sps);
     }
 
-    if (nonNull(sc->skolems)) { /* Check that Skolem vars do not   */
-        List vs;                /* escape their scope              */
+    /* Check that Skolem vars do not escape their scope */
+    if (nonNull(sc->skolems)) {
+        List vs;
         int i = 0;
 
-        clearMarks();      /* Look for occurences in the           */
-        for (; i < m; i++) /* inferred type                */
+        clearMarks(); /* Look for occurrences in the inferred type */
+        for (; i < m; i++)
             markTyvar(o + i);
         markType(t, o);
 
@@ -583,8 +575,9 @@ static void leaveScope(int l, Type t, int o, int m) {
  * Type errors:
  * ------------------------------------------------------------------------*/
 
-/* Line number near type error source of error context if any (NIL if not)
- * place in which error occurs type inferred is got should be of type (t,o) */
+/* l: line number near type error; e: source of error; in: context if any (NIL
+ * if not); wh: place in which error occurs; got: type inferred; (t,o): type it
+ * should be */
 static void typeError(int l, Cell e, Cell in, char *wh, Typing got, Type t,
                       int o) {
 
@@ -594,7 +587,6 @@ static void typeError(int l, Cell e, Cell in, char *wh, Typing got, Type t,
     reportTypeError(l, e, in, wh, copyType(got.type, got.offs), copyType(t, o));
 }
 
-/* Error printing part of typeError */
 static void reportTypeError(int l, Cell e, Cell in, char *wh, Type inft,
                             Type expt) {
     errHead(l);
@@ -648,7 +640,6 @@ static void cantEstablish(int line, char *wh, Cell e, Type t, List ps) {
     errFail();
 }
 
-/* Explicit type sig. too general */
 static void tooGeneral(int l, Cell e, Type dt, Type it) {
     errHead(l);
     errPrintf("Inferred type is not general enough");
@@ -1013,7 +1004,7 @@ static Cell dropDollar(Cell e) {
 }
 
 /* Type check expression e in wh at line l, expecting type reqd, and treating
- * vars alpha through (alpha+n-1) as fixed. true => add \ev -> ... The type
+ * vars alpha through (alpha+n-1) as fixed.  addEvid => add \ev -> ...  The type
  * of the result, the instance of reqd, goes in *ty when ty is not NULL. */
 static Cell typeExpected(int l, char *wh, Cell e, Type reqd, int alpha, int n,
                          bool addEvid, Typing *ty) {
@@ -1040,9 +1031,10 @@ static Cell typeExpected(int l, char *wh, Cell e, Type reqd, int alpha, int n,
     mapProc(markPred, savePreds);
     markBtyvs();
 
-    if (n > 0) {                 /* mark alpha thru alpha+n-1, plus any   */
-                                 /* type vars that are functionally        */
-        List us = NIL, vs = NIL; /* dependent on them                      */
+    /* mark alpha thru alpha+n-1, plus any type vars that are functionally
+     * dependent on them */
+    if (n > 0) {
+        List us = NIL, vs = NIL;
         List fds = calcFunDepsPreds(preds);
         for (i = 0; i < n; i++) {
             Type t1 = zonkTyvar(alpha + i);
@@ -1064,8 +1056,9 @@ static Cell typeExpected(int l, char *wh, Cell e, Type reqd, int alpha, int n,
         cantEstablish(l, wh, e, ty, qs);
     }
 
-    resetGenerics(); /* the variables the givens left free must still be  */
-    for (i = 0, j = 0; i < m; i++) /* free, and distinct               */
+    /* the variables the givens left free must still be free, and distinct */
+    resetGenerics();
+    for (i = 0, j = 0; i < m; i++)
         if (!intIsMember(i, determined) && copyTyvar(o + i) != mkOffset(j++)) {
             List qs = copyPreds(ps);
             Type it = copyType(t, o);
@@ -1178,8 +1171,8 @@ static int funcType(int n) {
     return beta;
 }
 
-/* Type check case: pat -> rhs (case given by c == (pat,rhs)) need: pat ::
- * (var,beta) rhs :: (var,beta+1) */
+/* Type check case: pat -> rhs (case given by c == (pat,rhs)).  Need pat ::
+ * (var,beta) and rhs :: (var,beta+1). */
 static void typeCase(int l, int beta, Cell c) {
     static char *casePat = "case pattern";
     static char *caseExpr = "case expression";
@@ -1252,7 +1245,6 @@ static Typing typeComp(int l, Type m, Cell e, List qs) {
     return body;
 }
 
-/* Type check monad comprehension */
 static Cell typeMonadComp(int l, Cell e, Typing *ty) {
     int alpha = newTyvars(1);
     int beta = newTyvars(1);
@@ -1300,7 +1292,6 @@ static Typing typeDo(int l, Cell e) {
     return body;
 }
 
-/* Type check a construction */
 static Typing typeConFlds(int l, Cell e) {
     static char *conExpr = "value construction";
     Name c = fst(snd(e));
@@ -1335,8 +1326,6 @@ static Typing typeConFlds(int l, Cell e) {
     return typing(tc, to);
 }
 
-/* Type check an update (Written in what might seem a bizarre manner for the
- * benefit of as yet unreleased extensions) */
 static Typing typeUpdFlds(int line, Cell e) {
     static char *update = "update";
     List cs = snd3(snd(e)); /* List of constructors              */
@@ -1456,15 +1445,13 @@ static Cell typeFreshPat(int l, Cell p, Typing *ty) {
  * Type check group of bindings:
  * ------------------------------------------------------------------------*/
 
-/* Type check a binding group */
 static void typeBindings(List bs) {
     bool usesPatBindings = false; /* true => pattern binding in bs   */
     bool usesUntypedVar = false;  /* true => var bind w/o type decl  */
     List bs1;
 
     /* The following loop is used to determine whether the monomorphism    */
-    /* restriction should be applied.  It could be written marginally more */
-    /* efficiently by using breaks, but clarity is more important here ... */
+    /* restriction should be applied.                                      */
 
     for (bs1 = bs; nonNull(bs1); bs1 = tl(bs1)) { /* Analyse binding group    */
         Cell b = hd(bs1);
@@ -1480,9 +1467,7 @@ static void typeBindings(List bs) {
     else
         unrestricted(bs);
 
-    elimTauts(); /* clean up any additional */
-                 /* tauts that arose due to */
-                 /* late-stage `improvement' */
+    elimTauts(); /* clean up any tauts that arose from late `improvement' */
 
     mapProc(removeTypeSigs, bs);              /* Remove binding type info */
     hd(varsBounds) = revOnto(hd(defnBounds),  /* transfer completed assmps*/
@@ -1491,7 +1476,6 @@ static void typeBindings(List bs) {
     hd(depends) = NIL;
 }
 
-/* Remove type info from a binding */
 static void removeTypeSigs(Cell b) {
     snd(b) = snd(snd(b));
 }
@@ -1500,7 +1484,6 @@ static void removeTypeSigs(Cell b) {
  * Type check a restricted binding group:
  * ------------------------------------------------------------------------*/
 
-/* Type restricted binding group */
 static void monorestrict(List bs) {
     List savePreds = preds;
     int line = isVar(fst(hd(bs))) ? rhsLine(snd(hd(snd(snd(hd(bs))))))
@@ -1531,7 +1514,7 @@ static void monorestrict(List bs) {
         reducePreds();
         improve(line, NIL, preds);
         if (nonNull(preds))
-            resolveDefs(NIL, false); /* Nearly Haskell 1.4?                */
+            resolveDefs(NIL, false);
         elimTauts();
 
         if (nonNull(preds)) { /* Look for unresolved overloading */
@@ -1607,7 +1590,6 @@ static void restrictedAss(int l, Cell v, Type t) {
  * Unrestricted binding group:
  * ------------------------------------------------------------------------*/
 
-/* Type unrestricted binding group */
 static void unrestricted(List bs) {
     List savePreds = preds;
     List imps = NIL; /* Implicitly typed bindings          */
@@ -1616,7 +1598,7 @@ static void unrestricted(List bs) {
 
     /* ----------------------------------------------------------------------
      * STEP 1: Separate implicitly typed bindings from explicitly typed 
-     * bindings and do a dependency analyis, where f depends on g iff f
+     * bindings and do a dependency analysis, where f depends on g iff f
      * is implicitly typed and involves a call to g.
      * --------------------------------------------------------------------*/
 
@@ -1773,7 +1755,6 @@ static void itbSetDepends(Cell t, Cell v) {
     fst(snd(t)) = v;
 }
 
-/* Scc for implicitly typed binds */
 static List itbscc(List bs) {
     return sccSort(bs, NIL, itbDepends, itbSetDepends);
 }
@@ -1798,7 +1779,6 @@ static void addEvidParams(List qs, Cell v) {
  * Type check bodies of class and instance declarations:
  * ------------------------------------------------------------------------*/
 
-/* Type check implementations of defaults for class c */
 static void typeClassDefn(Class c) {
 
     /* ----------------------------------------------------------------------
@@ -1875,7 +1855,6 @@ static void typeClassDefn(Class c) {
     }
 }
 
-/* Type check implementations of member functions for instance in */
 static void typeInstDefn(Inst in) {
 
     /* ----------------------------------------------------------------------
@@ -1903,12 +1882,8 @@ static void typeInstDefn(Inst in) {
     int beta = newKindedVars(instRec(in)->kinds);
     List params = assumeGivens(instRec(in)->line, instRec(in)->specifics, beta);
     Cell d = inventDictVar();
-    /* A previous comment indicated that evids may be wrong
-       in some cases when you have overlapping instances.
-       (the fix was to add self to the list of evidence)
-       I can't reconstruct what I meant by that comment,
-       and adding self can cause definitions that are unintentionally
-       self-recursive. */
+    /* Do not add the dictionary itself to evids: that can make definitions
+       unintentionally self-recursive. */
     List evids = dupList(params);
 
     List imps = instRec(in)->implements;
@@ -2085,7 +2060,6 @@ static void typeMember(char *wh, Name mem, Cell alts, List evids, Cell head,
  * Type check bodies of bindings:
  * ------------------------------------------------------------------------*/
 
-/* Type check binding */
 static void typeBind(Cell b) {
     if (isVar(fst(b))) { /* function binding */
         Cell ass = findTopBinding(fst(b));
@@ -2119,7 +2093,6 @@ static void typeBind(Cell b) {
     }
 }
 
-/* Type check alt in func. binding */
 static void typeDefAlt(int beta, Cell v, Pair a) {
     static char *valDef = "function binding";
     typeAlt(valDef, v, a, aVar, beta, 0);
@@ -2168,7 +2141,6 @@ static void guardedType(int beta, Cell gded) {
     snd(gded) = check(line, snd(gded), NIL, guarded, aVar, beta);
 }
 
-/* Find first expression on a rhs */
 Cell rhsExpr(Cell rhs) {
     stackCheck();
     switch (whatIs(rhs)) {
@@ -2183,7 +2155,6 @@ Cell rhsExpr(Cell rhs) {
     }
 }
 
-/* Find line number associated with a right hand side */
 int rhsLine(Cell rhs) {
     stackCheck();
     switch (whatIs(rhs)) {
@@ -2311,7 +2282,6 @@ et:
  * Entry points to type checker:
  * ------------------------------------------------------------------------*/
 
-/* Type check top level expression using defaults if reqd */
 Type typeCheckExp(bool useDefs) {
     Typing ty;
     Type type;
@@ -2332,7 +2302,7 @@ Type typeCheckExp(bool useDefs) {
     if (useDefs && nonNull(preds)) {
         clearMarks();
         reducePreds();
-        if (nonNull(preds) && resolveDefs(NIL, true)) /* Nearly Haskell 1.4? */
+        if (nonNull(preds) && resolveDefs(NIL, true))
             elimTauts();
     }
     resetGenerics();
@@ -2344,7 +2314,6 @@ Type typeCheckExp(bool useDefs) {
     return type;
 }
 
-/* Type check top level bindings */
 void typeCheckDefns(void) {
     Target t = length(selDefns) + length(valDefns) + length(instDefns) +
                length(classDefns);
@@ -2429,7 +2398,6 @@ static void typeDefnGroup(List bs) {
     hd(varsBounds) = NIL;
 }
 
-/* Typecheck a foreign export decl */
 static void typeForeignExport(Name n) {
     int line = nameRec(n)->line;
     /* todo */
@@ -2438,7 +2406,6 @@ static void typeForeignExport(Name n) {
     errFail();
 }
 
-/* Calculate a suitable type for a particular selector, s. */
 static Pair typeSel(Name s) {
     List cns = nameRec(s)->defn;
     int line = nameRec(s)->line;
@@ -2537,12 +2504,6 @@ static Pair typeSel(Name s) {
     return pair(s, alts);
 }
 
-/* --------------------------------------------------------------------------
- * Type checker control:
- * ------------------------------------------------------------------------*/
-
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const typeRoots[] = {
     &defnBounds, &varsBounds, &depends,       &pendingBtyvs,
     &dummyVar,   &preds,      &stdDefaults,   &arrow,
@@ -2550,8 +2511,6 @@ static Cell *const typeRoots[] = {
     &starToStar, &predMonad,  &predMonadFail, &typeProgIO,
 };
 
-/* Reset the current type-checking mode, the predicates and pending
- * scoped type variables collected so far, and the assumption stack. */
 void resetTypeChecker(void) {
     tcMode = EXPRESSION;
     preds = NIL;
@@ -2562,17 +2521,14 @@ void resetTypeChecker(void) {
 /* Mark the scope stack; the rest of the module's state is in
  * typeRoots. */
 void markTypeChecker(void) {
-    int i = 0;                   /* the scope stack; the rest  */
-    for (; i < numScopes; i++) { /* is in typeRoots    */
+    int i = 0;
+    for (; i < numScopes; i++) {
         mark(scopes[i].skolems);
         mark(scopes[i].givens);
         mark(scopes[i].savedPreds);
     }
 }
 
-/* Register the roots, reset, and build the wired-in types and
- * constructors every later phase depends on; done once, before the
- * Prelude is read. */
 void installTypeChecker(void) {
     registerRoots(typeRoots);
     resetTypeChecker();
@@ -2604,7 +2560,7 @@ void installTypeChecker(void) {
 
     tyconRec(typeList)->defn = cons(nameNil, cons(nameCons, NIL));
 
-    /* bogus definitions to avoid changing the prelude */
+    /* no library refers to these constructors */
     addPrimCfun(findText("Rec"), 0, 0, typeUnit);
     addPrimCfun(findText("EmptyRow"), 0, 0, typeUnit);
     addPrimCfun(findText("EmptyRec"), 0, 0, typeUnit);
@@ -2652,7 +2608,7 @@ void linkPreludeTC(void) {
         typeInt16 = linkTycon("Int16");
         typeInt32 = linkTycon("Int32");
         typeInt64 = linkTycon("Int64");
-        typeWord = linkTycon("Word"); /* deprecated */
+        typeWord = linkTycon("Word");
         typeWord8 = linkTycon("Word8");
         typeWord16 = linkTycon("Word16");
         typeWord32 = linkTycon("Word32");
@@ -2797,7 +2753,6 @@ void linkPreludeCM(void) {
     }
 }
 
-/* Hook to cfuns and mfuns in prelude when first loaded */
 void linkPreludeFuns(void) {
 }
 /*-------------------------------------------------------------------------*/

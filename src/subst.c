@@ -24,10 +24,6 @@ Tyvar *tyvars = 0;  /* storage for type variables          */
 List genericVars;   /* list of generic vars                */
 List btyvars = NIL; /* explicitly scoped type vars         */
 
-/* --------------------------------------------------------------------------
- * local function prototypes:
- * ------------------------------------------------------------------------*/
-
 static void expandSubst(int);
 static int findBtyvsInt(Text);
 static Type makeTupleType(int);
@@ -58,24 +54,17 @@ static bool kvarToTypeBind(Tyvar *, Type, int);
 /* --------------------------------------------------------------------------
  * The substitution, types, and kinds:
  *
- * In early versions of Gofer, the `substitution' data structure was only
- * used by the type checker, so it made sense to include support for it in
- * type.c.  This changed when kinds and kind inference where introduced,
- * which required access to the substitution during static analysis.  The
- * links between type.c and static.c that were intially used to accomplish
- * this have now been avoided by making the substitution visible as an
- * independent data structure in storage.c.
- *
  * In the same way that values have types, type constructors (and more
  * generally, expressions built from such constructors) have kinds.
  * The syntax of kinds in the current implementation is very simple:
  *
  *        kind ::= STAR         -- the kind of types
- *              |  kind => kind -- constructors
+ *              |  CONSTRAINT   -- the kind of a class
+ *              |  kind -> kind -- constructors
  *              |  variables    -- either INTCELL or OFFSET
  *
  * For various reasons, this implementation uses structure sharing, instead
- * of a copying approach.  In principal, this is fast and avoids the need to
+ * of a copying approach.  In principle, this is fast and avoids the need to
  * build new type expressions.  Unfortunately, this implementation will not
  * be able to handle *very* large expressions.
  *
@@ -85,16 +74,15 @@ static bool kvarToTypeBind(Tyvar *, Type, int);
  *              is not bound, or SKOLEM for a Skolem constant (i.e., an
  *              uninstantiable variable).
  *      offs    offset of skeleton in bound.  If isNull(bound), then offs is
- *              used to indicate whether that variable is generic (i.e. free
- *              in the current assumption set) or fixed (i.e. bound in the
- *              current assumption set).  Generic variables are assigned
+ *              used to indicate whether that variable is generic (i.e. not
+ *              free in the current assumption set, so it may be quantified)
+ *              or fixed (i.e. free in it).  Generic variables are assigned
  *              offset numbers whilst copying type expressions (t,o) to
  *              obtain their most general form.
  *      kind    kind of value bound to type variable (`type variable' is
  *              rather inaccurate -- `constructor variable' would be better).
  * ------------------------------------------------------------------------*/
 
-/* Clear current substitution */
 void emptySubstitution(void) {
     numTyvars = 0;
     /* If the table has grown larger than NUM_TYVARS, free 'tyvars'.
@@ -112,7 +100,7 @@ void emptySubstitution(void) {
     btyvars = NIL;
 }
 
-/* Add further n type variables to current substitution */
+/* Make room for n further type variables; this may move tyvars. */
 static void expandSubst(int n) {
     if (numTyvars + n > maxTyvars) { /* need to expand substitution */
         int newMax = maxTyvars + NUM_TYVARS;
@@ -125,14 +113,6 @@ static void expandSubst(int n) {
             errFail();
         }
 
-        /* It would be better to realloc() here, but that isn't portable
-         * enough for calloc()ed arrays.  The following code could cause
-         * a space leak if an interrupt occurs while we're copying the
-         * array ... we won't worry about this for the time being because
-         * we don't expect to have to go through this process much (if at
-         * all) in normal use of the type checker.
-         */
-
         newTvs = (Tyvar *)calloc(newMax, sizeof(Tyvar));
         if (!newTvs) {
             errHead(0);
@@ -144,7 +124,7 @@ static void expandSubst(int n) {
             newTvs[i].bound = tyvars[i].bound;
             newTvs[i].kind = tyvars[i].kind;
         }
-        maxTyvars = 0; /* protection from SIGINT? */
+        maxTyvars = 0;
         if (tyvars)
             free(tyvars);
         tyvars = newTvs;
@@ -165,12 +145,13 @@ int newTyvars(int n) {
     return beta;
 }
 
-/* Allocate new variables with specified kinds */
+/* If k = k0 -> k1 -> ... -> kn then allocate n vars with kinds k0, k1, ...,
+ * k(n-1). */
 int newKindedVars(Kind k) {
     assertKinds(k);
-    int beta = numTyvars;           /* if k = k0 -> k1 -> ... -> kn        */
-    for (; isPair(k); k = snd(k)) { /* then allocate n vars with kinds */
-        expandSubst(1);             /* k0, k1, ..., k(n-1)                 */
+    int beta = numTyvars;
+    for (; isPair(k); k = snd(k)) {
+        expandSubst(1);
         tyvars[numTyvars].offs = UNUSED_GENERIC;
         tyvars[numTyvars].bound = NIL;
         tyvars[numTyvars].kind = fst(k);
@@ -210,7 +191,6 @@ Typing instantiate(Type type, int o) {
  * Bound type variables:
  * ------------------------------------------------------------------------*/
 
-/* Look for bound tyvar */
 Pair findBtyvs(Text t) {
     List bts = btyvars;
     for (; nonNull(bts); bts = tl(bts)) {
@@ -230,7 +210,6 @@ static int findBtyvsInt(Text t) {
     return intOf(snd(p));
 }
 
-/* Mark explicitly scoped vars */
 void markBtyvs(void) {
     List bts = btyvars;
     for (; nonNull(bts); bts = tl(bts)) {
@@ -268,10 +247,10 @@ Type localizeBtyvs(Type t) {
 }
 
 /* --------------------------------------------------------------------------
- * Dereference or bind types in subsitution:
+ * Dereference or bind types in substitution:
  * ------------------------------------------------------------------------*/
 
-/* Get number of type variable represented by (t,o) [if any]. */
+/* The type variable represented by (t,o), or null if it is not one. */
 Tyvar *getTypeVar(Type t, int o) {
     switch (whatIs1(t)) {
     case INTCELL:
@@ -313,14 +292,13 @@ Typing tyvarType(int vn) {
     return typing(aVar, vn);
 }
 
-/* Set type variable vn to (t,o) */
 void bindTv(int vn, Type t, int o) {
     Tyvar *tyv = tyvar(vn);
     tyv->bound = t;
     tyv->offs = o;
 }
 
-/* Get value at head of type exp. */
+/* Get value at head of type exp.; leaves its number of args in argCount. */
 Cell getDerefHead(Type t, int o) {
     Tyvar *tyv;
     argCount = 0;
@@ -342,31 +320,33 @@ Cell getDerefHead(Type t, int o) {
  * Expand type synonyms:
  * ------------------------------------------------------------------------*/
 
-/* Expand type synonym with: head h ar args (NB. ar>=tyconRec(h)->arity)
- * original expression (*at,*ao) expansion returned in (*at,*ao) */
+/* Expand type synonym with head h and ar args (NB. ar>=tyconRec(h)->arity):
+ * the original expression is (*at,*ao), and the expansion is returned there. */
 void expandSyn(Tycon h, int ar, Type *at, int *ao) {
-    ar -= tyconRec(h)->arity; /* calculate surplus arguments           */
+    ar -= tyconRec(h)->arity;
     if (ar == 0)
         expandSyn1(h, at, ao);
-    else {               /* if there are more args than the */
-        Type t = *at;    /* arity, we have to do a little   */
-        int o = *ao;     /* bit of work to isolate args that*/
-        Type args = NIL; /* will not be changed by expansion*/
+    else {
+        /* With more args than the arity, isolate the args that the expansion
+         * will not change, then embed its result back in (*at,*ao). */
+        Type t = *at;
+        int o = *ao;
+        Type args = NIL;
         int i;
-        while (ar-- > 0) {             /* find part to expand, and the     */
-            args = cons(arg(t), args); /* unused arguments                 */
+        while (ar-- > 0) {
+            args = cons(arg(t), args);
             t = fun(t);
             deRef(&t, &o);
         }
-        expandSyn1(h, &t, &o);            /* do the expansion              */
-        bindTv((i = newTyvars(1)), t, o); /* and embed the results back in   */
-        tyvar(i)->kind = getKind(t, o);   /* (*at, *ao) as required        */
+        expandSyn1(h, &t, &o);
+        bindTv((i = newTyvars(1)), t, o);
+        tyvar(i)->kind = getKind(t, o);
         *at = applyToArgs(mkInt(i), args);
     }
 }
 
-/* Expand type synonym with: head h, tyconRec(h)->arity args, original
- * expression (*at,*ao) expansion returned in (*at,*ao) */
+/* Expand type synonym with head h and exactly tyconRec(h)->arity args: the
+ * original expression is (*at,*ao), and the expansion is returned there. */
 static void expandSyn1(Tycon h, Type *at, int *ao) {
     int n = tyconRec(h)->arity;
     Type t = *at;
@@ -407,7 +387,6 @@ void markAllVars(void) {
     nextGeneric = 0;
 }
 
-/* Reset all generic vars to unused */
 void resetGenerics(void) {
     int i;
     for (i = 0; i < numTyvars; ++i)
@@ -417,7 +396,6 @@ void resetGenerics(void) {
     nextGeneric = 0;
 }
 
-/* Mark fixed vars in type bound to given type variable */
 void markTyvar(int vn) {
     Tyvar *tyv = tyvar(vn);
 
@@ -427,7 +405,6 @@ void markTyvar(int vn) {
         (tyv->offs) = FIXED_TYVAR;
 }
 
-/* Mark fixed vars in type (t,o) */
 void markType(Type t, int o) {
     stackCheck();
     allowBreak();
@@ -465,7 +442,6 @@ void markType(Type t, int o) {
     }
 }
 
-/* Marked fixed type vars in pi */
 void markPred(Cell pi) {
     Cell cl = fst3(pi);
     int o = intOf(snd3(pi));
@@ -531,10 +507,9 @@ Type copyType(Type t, int o) {
     return t;
 }
 
-/* Copy single predicate (or part thereof) ... */
 Cell copyPred(Cell pi, int o) {
     if (isAp(pi)) {
-        Cell temp = copyPred(fun(pi), o); /* to ensure correct order of eval.*/
+        Cell temp = copyPred(fun(pi), o); /* to ensure correct order of eval. */
         return ap(temp, copyType(arg(pi), o));
     } else
         return pi;
@@ -551,8 +526,6 @@ Type zonkTyvar(int vn) {
         return mkInt(vn);
 }
 
-/* Flatten type by chasing all references and collapsing OFFSETS to absolute
- * indexes */
 Type zonkType(Type t, int o) {
     stackCheck();
     allowBreak();
@@ -573,15 +546,13 @@ Type zonkType(Type t, int o) {
     return t;
 }
 
-/* Build kind attatched to variable */
 Kind copyKindvar(int vn) {
     Tyvar *tyv = tyvar(vn);
     if (tyv->bound)
         return copyKind(tyv->bound, tyv->offs);
-    return STAR; /* any unbound variable defaults to*/
-} /* the kind of all types         */
+    return STAR; /* any unbound variable defaults to the kind of all types */
+}
 
-/* Build kind expression from given skeleton */
 Kind copyKind(Kind k, int o) {
     switch (whatIs(k)) {
     case AP: {
@@ -670,10 +641,9 @@ static Cell copyNoMark(Cell t, int o) {
 }
 
 /* --------------------------------------------------------------------------
- * Droping and lifting of type schemes that appear in rank 2 position:
+ * Dropping and lifting of type schemes that appear in rank 2 position:
  * ------------------------------------------------------------------------*/
 
-/* Drop a (potentially) rank2 type */
 Type dropRank2(Type t, int alpha, int n) {
     if (whatIs(t) == RANK2) {
         Cell r = fst(snd(t));
@@ -806,7 +776,6 @@ bool eqKind(Kind k1, Kind k2) {
                         eqKind(snd(k1), snd(k2)));
 }
 
-/* Find kind of constr during type checking process */
 Kind getKind(Cell c, int o) {
     assertType(c);
     if (isAp(c)) /* application    */
@@ -849,8 +818,7 @@ Type genvarTyvar(int vn, List vs) {
         return vs;
 }
 
-/* Calculate list of generic vars in type expression (t,o) results are
- * prepended to vs */
+/* Calculate list of generic vars in type expression (t,o), prepended to vs */
 List genvarType(Type t, int o, List vs) {
     switch (whatIs(t)) {
     case AP:
@@ -872,7 +840,6 @@ List genvarType(Type t, int o, List vs) {
  * Occurs check:
  * ------------------------------------------------------------------------*/
 
-/* Return true if var lookFor isn't referenced in (t,o) */
 bool doesntOccurIn(Tyvar *lookFor, Type t, int o) {
     Tyvar *tyv;
 
@@ -910,7 +877,6 @@ static void unrestrictBind(void) {
     bindAbove = 0;
 }
 
-/* Make binding tyv1 := tyv2 */
 static bool varToVarBind(Tyvar *tyv1, Tyvar *tyv2) {
     if (tyv1 != tyv2) { /* If vars are same, nothing to do!*/
 
@@ -938,8 +904,8 @@ static bool varToVarBind(Tyvar *tyv1, Tyvar *tyv2) {
     return true;
 }
 
-/* Make binding tyv := (t,o) guaranteed not to be a v'ble or have synonym as
- * outermost constr */
+/* Make binding tyv := (t,o), where t is guaranteed not to be a variable or to
+ * have a synonym as outermost constructor */
 static bool varToTypeBind(Tyvar *tyv, Type t, int o) {
     if (tyvNum(tyv) < bindAbove) { /* Check that tyv is in range       */
         unifyFails = "types do not match";
@@ -948,8 +914,9 @@ static bool varToTypeBind(Tyvar *tyv, Type t, int o) {
         unifyFails = "cannot instantiate Skolem constant";
         return false;
     }
-    if (!doesntOccurIn(tyv, t, o)) { /* Carry out occurs check, seeing  */
-        int vn = tyvNum(tyv);        /* through synonyms that drop it   */
+    /* Carry out occurs check, seeing through synonyms that drop it */
+    if (!doesntOccurIn(tyv, t, o)) {
+        int vn = tyvNum(tyv);
         t = occursExpand(vn, t, o);
         o = 0;
         tyv = tyvar(vn); /* expanding may have moved the tyvars */
@@ -1000,7 +967,6 @@ static Type occursExpand(int vn, Type t, int o) {
     return t;
 }
 
-/* Main unification routine unify (t1,o1) with (t2,o2) */
 bool unify(Type t1, int o1, Type t2, int o2) {
     assertType(t1);
     assertType(t2);
@@ -1018,9 +984,10 @@ un:
         else {
             Cell h2 = getDerefHead(t2, o2); /* t1 variable, t2 not */
             if (isSynonym(h2) && argCount >= tyconRec(h2)->arity) {
-                expandSyn(h2, argCount, &t2, &o2); /* may grow (and re-   */
-                tyv1 = deRef(&t1, &o1);            /* alloc) tyvars, so   */
-                tyv2 = deRef(&t2, &o2);            /* re-derive tyv1 too  */
+                /* may grow (and realloc) tyvars, so re-derive tyv1 too */
+                expandSyn(h2, argCount, &t2, &o2);
+                tyv1 = deRef(&t1, &o1);
+                tyv2 = deRef(&t2, &o2);
                 goto un;
             }
             return varToTypeBind(tyv1, t2, o2);
@@ -1028,9 +995,10 @@ un:
     else if (tyv2) {
         Cell h1 = getDerefHead(t1, o1); /* t2 variable, t1 not */
         if (isSynonym(h1) && argCount >= tyconRec(h1)->arity) {
-            expandSyn(h1, argCount, &t1, &o1); /* may grow (and re-   */
-            tyv1 = deRef(&t1, &o1);            /* alloc) tyvars, so   */
-            tyv2 = deRef(&t2, &o2);            /* re-derive tyv2 too  */
+            /* may grow (and realloc) tyvars, so re-derive tyv2 too */
+            expandSyn(h1, argCount, &t1, &o1);
+            tyv1 = deRef(&t1, &o1);
+            tyv2 = deRef(&t2, &o2);
             goto un;
         }
         return varToTypeBind(tyv2, t1, o1);
@@ -1049,8 +1017,8 @@ un:
         /* equal, as it may drop them (type K a = Int): expand it below  */
         if (nonNull(h1) && h1 == h2 &&
             !(isSynonym(h1) && a1 >= tyconRec(h1)->arity)) {
-            if (a1 != a2) { /* Assuming well-formed types, both  */
-                            /* t1, t2 must have same no of args  */
+            /* Assuming well-formed types, both must have same no of args */
+            if (a1 != a2) {
                 unifyFails = "incompatible constructors";
                 return false;
             }
@@ -1079,8 +1047,8 @@ un:
             goto un;
         }
 
-        if ((isNull(h1) && a1 <= a2) || /* last attempt -- maybe   */
-            (isNull(h2) && a2 <= a1)) { /* one head is a variable? */
+        if ((isNull(h1) && a1 <= a2) || /* maybe one head is a variable? */
+            (isNull(h2) && a2 <= a1)) {
             for (;;) {
                 tyv1 = deRef(&t1, &o1);
                 tyv2 = deRef(&t2, &o2);
@@ -1113,8 +1081,7 @@ un:
     return false;
 }
 
-/* Repeatedly expand synonyms original expression (*at,*ao) expansion returned
- * in (*at,*ao) */
+/* Repeatedly expand synonyms at the head of (*at,*ao), in place */
 static void expandSynFully(Type *at, int *ao) {
     Type h;
     int a;
@@ -1133,8 +1100,7 @@ Type getProgType(List ks, Type type) {
     int alpha;
     int beta;
     if (isPolyOrQualType(type))
-        return 0; /* ZZ what's the correct name for the empty Cell? */
-    /* see below as well... */
+        return 0;
     emptySubstitution();
     alpha = newKindedVars(ks);
     expandSynFully(&type, &alpha);
@@ -1169,27 +1135,6 @@ Type getProgType(List ks, Type type) {
  * For (2) and (3), we need to use one-way matching, only allowing
  * variables in the class or instance head to be instantiated.  For
  * (4), we need two-way unification.
- *
- * Another situation in which both one-way and two-way unification might
- * be used is in an implementation of improvement.  Here, a one-way match
- * would be used to determine applicability of a rule for improvement
- * that would then be followed by unification with another predicate.
- * One possible syntax for this might be:
- *
- *     instance P => pi [improves pi'] where ...
- *
- * The intention here is that any predicate matching pi' can be unified
- * with pi to get more accurate types.  A simple example of this is:
- *
- *   instance Collection [a] a improves Collection [a] b where ...
- *
- * As soon as we know what the collection type is (in this case, a list),
- * we will also know what the element type is.  To ensure that the rule
- * for improvement is valid, the compilation system will also need to use
- * a one-way matching process to ensure that pi is a (substitution) instance
- * of pi'.  Another extension would be to allow more than one predicate pi'
- * in an improving rule.  Read the paper on simplification and improvement
- * for technical background.  Watch this space for implementation news!
  * ------------------------------------------------------------------------*/
 
 /* Test to see if predicates are the same, with no binding of the variables in
@@ -1203,19 +1148,19 @@ bool samePred(Cell pi1, int o1, Cell pi, int o) {
 }
 
 /* One way match predicate (pi1,o1) against (pi,o), allowing only vars in 2nd
- * pred to be bound. Assumes preds are kind correct with the same class and
- * that no */
+ * pred to be bound.  Assumes preds are kind correct with the same class and
+ * that no vars have been alloc'd since o. */
 bool matchPred(Cell pi1, int o1, Cell pi, int o) {
     assertPred(pi1);
     assertPred(pi);
-    bool result; /* vars have been alloc'd since o. */
+    bool result;
     bindOnlyAbove(o);
     result = unifyPred(pi1, o1, pi, o);
     unrestrictBind();
     return result;
 }
 
-/* Unify two predicates Assumes preds are kind correct with the same class. */
+/* Assumes preds are kind correct with the same class. */
 bool unifyPred(Cell pi1, int o1, Cell pi, int o) {
     assertPred(pi1);
     assertPred(pi);
@@ -1274,7 +1219,6 @@ Inst findInstFor(Cell pi, int o, int *beta) {
  * Improvement:
  * ------------------------------------------------------------------------*/
 
-/* Improve a list of predicates */
 void improve(int line, List sps, List ps) {
     bool improved;
     List ps1;
@@ -1293,7 +1237,6 @@ void improve(int line, List sps, List ps) {
     } while (improved);
 }
 
-/* Improve a single predicate */
 void improve1(int line, List sps, Cell pi, int o) {
     bool improved;
     Cell c = getHead(pi);
@@ -1325,9 +1268,8 @@ bool improveAgainst(int line, List ps, Cell pi, int o) {
     return improved;
 }
 
-/* should emulate findInsts behavior of shorting out if the
+/* should emulate findInstFor behaviour of shorting out if the
    predicate would match a more general signature... */
-
 bool instImprove(int line, Class c, Cell pi, int o) {
     bool improved = false;
     List ins = cclassRec(c)->instances;
@@ -1405,7 +1347,6 @@ bool pairImprove(int line, Class c, Cell pi1, int o1, Cell pi2, int o2,
  * Compare type schemes:
  * ------------------------------------------------------------------------*/
 
-/* Test to see whether two type schemes are the same */
 bool sameSchemes(Type s, Type s1) {
     int o = 0;
     int m = 0;
@@ -1507,8 +1448,8 @@ bool matchType(Type t1, int o1, Type t, int o) {
     return result;
 }
 
-/* Match, allowing only vars allocated since `a' to be bound this is deeply
- * hacky, since it relies on careful use of the substitution stack */
+/* Match, allowing only vars allocated since `a' to be bound.  This is deeply
+ * hacky, since it relies on careful use of the substitution stack. */
 static bool matchTypeAbove(Type t1, int o1, Type t, int o, int a) {
     bool result;
     bindOnlyAbove(a);
@@ -1521,7 +1462,6 @@ static bool matchTypeAbove(Type t1, int o1, Type t, int o, int a) {
  * Unify kind expressions:
  * ------------------------------------------------------------------------*/
 
-/* Make binding tyv1 := tyv2 for kind variable bindings */
 static bool kvarToVarBind(Tyvar *tyv1, Tyvar *tyv2) {
     if (tyv1 != tyv2) {
         tyv1->bound = aVar;
@@ -1530,8 +1470,8 @@ static bool kvarToVarBind(Tyvar *tyv1, Tyvar *tyv2) {
     return true;
 }
 
-/* Make binding tyv := (t,o) for kind variable bindings guaranteed not to be a
- * v'ble or have synonym as outermost constr */
+/* Make binding tyv := (t,o) for kind variable bindings, where t is guaranteed
+ * not to be a variable or to have a synonym as outermost constructor */
 static bool kvarToTypeBind(Tyvar *tyv, Type t, int o) {
     if (doesntOccurIn(tyv, t, o)) {
         tyv->bound = t;
@@ -1542,7 +1482,6 @@ static bool kvarToTypeBind(Tyvar *tyv, Type t, int o) {
     return false;
 }
 
-/* Unify kind expr (k1,o1) with (k2,o2) */
 bool kunify(Kind k1, int o1, Kind k2, int o2) {
     assertKind(k1);
     assertKind(k2);
@@ -1604,12 +1543,10 @@ static Type makeTupleType(int n) {
 
 /* --------------------------------------------------------------------------
  * Two forms of kind expression are used quite frequently:
- *      *  -> *  -> ... -> *  -> *      for kinds of ->, [], ->, (,) etc...
+ *      *  -> *  -> ... -> *  -> *      for kinds of ->, [], (,) etc...
  *      v1 -> v2 -> ... -> vn -> vn+1   skeletons for constructor kinds
  * Expressions of these forms are produced by the following functions which
  * use a cache to avoid repeated construction of commonly used values.
- * A similar approach is used to store the types of tuple constructors in the
- * main type checker.
  * ------------------------------------------------------------------------*/
 
 #define MAXKINDFUN 10
@@ -1624,7 +1561,6 @@ static Kind makeSimpleKind(int n) {
     return k;
 }
 
-/* Return (possibly cached) simple function kind */
 Kind simpleKind(int n) {
     if (n >= MAXKINDFUN)
         return makeSimpleKind(n);
@@ -1655,19 +1591,11 @@ Typing varKind(int n) {
     return typing(varKindCache[n], offs);
 }
 
-/* --------------------------------------------------------------------------
- * Substitutution control:
- * ------------------------------------------------------------------------*/
-
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const substRoots[] = {
     &btyvars,
     &genericVars,
 };
 
-/* Clear the current substitution, the binding restriction and the
- * explicitly-scoped type variables. */
 void resetSubstitution(void) {
     emptySubstitution();
     unrestrictBind();
@@ -1689,8 +1617,6 @@ void markSubstitution(void) {
         mark(tyvars[i].bound);
 }
 
-/* Register the roots, reset, and empty the tuple-constructor and kind
- * caches; done once, before the Prelude is read. */
 void installSubstitution(void) {
     int i;
 
@@ -1704,7 +1630,6 @@ void installSubstitution(void) {
     }
 }
 
-/* Free the type-variable table. */
 void exitSubstitution(void) {
     free(tyvars);
 }

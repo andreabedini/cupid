@@ -1,5 +1,5 @@
 /* --------------------------------------------------------------------------
- * The one thing the static analysis driver (static.c) lends its siblings.
+ * What static.c shares with the rest of static analysis.
  * The entry points are declared in connect.h.
  * ------------------------------------------------------------------------*/
 #ifndef __STATIC_H__

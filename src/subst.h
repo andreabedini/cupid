@@ -12,9 +12,6 @@
 #include "prelude.h"
 #include "storage.h"
 
-/* #define DEBUG_SELS     1 */
-/* #define DEBUG_DEPENDS  1 */
-
 typedef struct { /* Each type variable contains:           */
     Type bound;  /* A type skeleton (unbound==NIL)  */
     int offs;    /* Offset for skeleton            */

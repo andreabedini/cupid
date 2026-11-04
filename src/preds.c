@@ -17,10 +17,6 @@
 #include "preds.h"
 #include "tagcheck.h"
 
-/* --------------------------------------------------------------------------
- * Local function prototypes:
- * ------------------------------------------------------------------------*/
-
 static void overEvid(Cell, Cell);
 
 static void cutoffExceeded(Cell, int, List);
@@ -145,7 +141,6 @@ typedef struct {
     int d;   /* the depth of entailment                     */
 } TypeableSolve;
 
-/* Is c the Typeable class of Data.Typeable? */
 static bool isTypeableClass(Class c) {
     return cclassRec(c)->text == findText("Typeable") &&
            moduleRec(cclassRec(c)->mod)->text == findText("Data.Typeable");
@@ -285,7 +280,6 @@ List assumeGivens(int line, List qs, int o) {
     return rev(result);
 }
 
-/* Copy list of predicates */
 List copyPreds(List qs) {
     List result = NIL;
     for (; nonNull(qs); qs = tl(qs)) {
@@ -295,7 +289,7 @@ List copyPreds(List qs) {
     return rev(result);
 }
 
-/* Add extra dictionary args to qualify alt by predicates in qs :: ([Pat],Rhs) */
+/* Add dictionary args to qualify alt :: ([Pat],Rhs) by predicates in qs */
 void qualify(List qs, Cell alt) {
     List ds;
     for (ds = NIL; nonNull(qs); qs = tl(qs))
@@ -303,17 +297,16 @@ void qualify(List qs, Cell alt) {
     fst(alt) = revOnto(ds, fst(alt));
 }
 
-/* Add extra dict args to each alternative in function binding */
 void qualifyBinding(List qs, Cell b) {
     if (!isVar(fst(b))) /* check for function binding      */
         internal("qualifyBinding");
     map1Proc(qualify, qs, snd(snd(b)));
 }
 
-/* Add dictionary params to expr */
+/* Qualify input expression with additional dictionary params */
 Cell qualifyExpr(int l, List ps, Cell e) {
-    if (nonNull(ps)) {           /* Qualify input expression with   */
-        if (whatIs(e) != LAMBDA) /* additional dictionary params           */
+    if (nonNull(ps)) {
+        if (whatIs(e) != LAMBDA)
             e = ap(LAMBDA, pair(NIL, pair(mkInt(l), e)));
         qualify(ps, snd(e));
     }
@@ -356,7 +349,7 @@ static void overEvid(Cell dv, Cell ev) {
  *
  * This code assumes that the class hierarchy is acyclic, and that
  * each class has been assigned a `level', which is its height in
- * the hierachy.  The first of the assumptions guarantees that the
+ * the hierarchy.  The first of the assumptions guarantees that the
  * algorithm will terminate.  The comparison of levels is an
  * optimization that cuts down the search space: given that superclass
  * entailments can only be used to descend the hierarchy, there is no
@@ -380,7 +373,6 @@ static void overEvid(Cell dv, Cell ev) {
 
 int cutoff = 40; /* Used to limit depth of recursion*/
 
-/* Display error msg when cutoff */
 static void cutoffExceeded(Cell pi, int o, List ps) {
     clearMarks();
     errHead(0);
@@ -446,7 +438,7 @@ static Cell scFind(Cell e, Cell pi1, int o1, Cell pi, int o, int d) {
     return NIL;
 }
 
-/* Calc evidence for (pi,o) from ps Using superclasses and equality. */
+/* Calc evidence for (pi,o) from ps using superclasses and equality. */
 Cell scEntail(List ps, Cell pi, int o, int d) {
     if (d++ >= cutoff)
         cutoffExceeded(pi, o, ps);
@@ -496,7 +488,7 @@ Cell scEntail(List ps, Cell pi, int o, int d) {
  *
  * and this includes evidence expressions of the form  sc (mki d1 ... dn)
  * that can never be produced by either of the entail functions described
- * above.  This is good, from a practical perspective, because t means
+ * above.  This is good, from a practical perspective, because it means
  * that we won't waste effort building a dictionary (mki d1 ... dn) only
  * to extract just one superclass component and throw the rest away.
  * Moreover, conditions on instance decls already guarantee that any
@@ -508,8 +500,8 @@ Cell scEntail(List ps, Cell pi, int o, int d) {
  * to cause any further concern, except in pathological cases.)
  * ------------------------------------------------------------------------*/
 
-/* Calc evidence for (pi,o) from ps Uses superclasses, equality, tautology, and
- * construction */
+/* Calc evidence for (pi,o) from ps.  Uses superclasses, equality, tautology,
+ * and construction. */
 static Cell entail(List ps, Cell pi, int o, int d) {
     assertPred(pi);
     Cell ev = NIL;
@@ -601,27 +593,29 @@ Cell inEntail(List ps, Cell pi, int o, int d) {
     return NIL;
 }
 
-/* Find evidence for predicate pi assuming ps. If ps is null, then we get to
- * decide whether is tautological, and we can use */
+/* Find evidence for predicate pi assuming ps.  If ps is null, then we get to
+ * decide whether it is tautological, and we can use the evidence as a
+ * dictionary. */
 Cell provePred(Kinds ks, List ps, Cell pi) {
     assertKinds(ks);
     assertPred(pi);
-    int beta; /* the evidence as a dictionary.   */
+    int beta;
     Cell ev;
     emptySubstitution();
-    beta = newKindedVars(ks);   /* (ks provides kinds for any      */
-    ps = makePredAss(ps, beta); /*  vars that appear in pi.)       */
+    /* ks provides kinds for any vars that appear in pi */
+    beta = newKindedVars(ks);
+    ps = makePredAss(ps, beta);
     ev = entail(ps, pi, beta, 0);
     emptySubstitution();
     return ev;
 }
 
-/* Find evidence for predicate pi. Unlike `provePred', also uses desparate
- * measures like context */
+/* Find evidence for predicate pi.  Unlike provePred, also uses desperate
+ * measures like context reduction and defaulting. */
 Cell resolvePred(Kinds ks, Cell pi) {
     assertKinds(ks);
     assertPred(pi);
-    int beta; /* reduction and defaulting.       */
+    int beta;
     List qs;
 
     emptySubstitution();
@@ -641,7 +635,6 @@ Cell resolvePred(Kinds ks, Cell pi) {
  * Calculate a minimal equivalent subset of a given set of predicates.
  * ------------------------------------------------------------------------*/
 
-/* Simplify predicates in qs, returning equiv minimal subset */
 List scSimplify(List qs) {
     int n = length(qs);
 
@@ -670,8 +663,7 @@ List scSimplify(List qs) {
     return qs;
 }
 
-/* Simplify context of skeletons skeletons, offset o, using superclass
- * hierarchy */
+/* Simplify context of skeletons ps, offset o, using superclass hierarchy */
 List simpleContext(List ps, int o) {
     return copyPreds(scSimplify(makePredAss(ps, o)));
 }
@@ -680,13 +672,13 @@ List simpleContext(List ps, int o) {
  * Context splitting --- tautological and locally tautological predicates:
  * ------------------------------------------------------------------------*/
 
-/* Remove tautological constraints */
+/* Remove tautological constraints from preds.  Context reduction to head
+ * normal form is unsound with overlapping instances, so only entailed
+ * predicates are removed then. */
 void elimTauts(void) {
-    if (!allowOverlap && !allowUnsafeOverlap) { /* from preds              */
-        reducePreds(); /* Context reduction to head normal*/
-    } else {           /* form is unsound with overlapping*/
-        /* instances, so only entailed     */
-        /* predicates are removed then     */
+    if (!allowOverlap && !allowUnsafeOverlap) {
+        reducePreds();
+    } else {
         List ps = preds;
         preds = NIL;
         while (nonNull(ps)) {
@@ -705,10 +697,10 @@ void elimTauts(void) {
     }
 }
 
-/* Test for generic vars */
+/* This code is careful to expand synonyms; mark* & copy* do not. */
 static bool anyGenerics(Type t, int o) {
-    Type h = getDerefHead(t, o); /* This code is careful to expand  */
-    int a = argCount;            /* synonyms; mark* & copy* do not. */
+    Type h = getDerefHead(t, o);
+    int a = argCount;
     if (isSynonym(h) && a >= tyconRec(h)->arity) {
         expandSyn(h, a, &t, &o);
         return anyGenerics(t, o);
@@ -811,13 +803,11 @@ static List reduceFrom(int d, List rems) {
     return rems;
 }
 
-/* Context reduce predicates: uggh! */
 void reducePreds(void) {
     List rems = reduceFrom(0, NIL); /* (A last resort for defaulting)  */
     preds = scSimplify(rems);       /* Return any remaining predicates */
 }
 
-/* Normalize each element of preds in some appropriate manner */
 void normPreds(int line) {
 }
 

@@ -57,10 +57,6 @@ char *repeatStr = 0; /* Repeat last expr                */
 
 char *preprocessor = 0;
 
-/* --------------------------------------------------------------------------
- * Local function prototypes:
- * ------------------------------------------------------------------------*/
-
 static bool fileInput(char *, long);
 static int nextLine(void);
 static bool literateFile(char *);
@@ -144,7 +140,7 @@ List imps; /* List of imports to be chased    */
  *
  * At the lowest level of input, characters are read one at a time, with the
  * current character held in c0 and the following (lookahead) character in
- * c1.  The corrdinates of c0 within the file are held in (column,row).
+ * c1.  The coordinates of c0 within the file are held in (column,row).
  * The input stream is advanced by one character using the skip() function.
  * ------------------------------------------------------------------------*/
 
@@ -159,10 +155,10 @@ List imps; /* List of imports to be chased    */
 static int reading = NOTHING;
 
 static Target readSoFar;
-int row;                 /* current line, also used by the  */
-                         /* parser to report errors         */
-int column, startColumn; /* and the layout state the grammar */
-                         /* rules consult                   */
+/* The current line, also used by the parser to report errors, and the layout
+ * state the grammar rules consult */
+int row;
+int column, startColumn;
 static int c0, c1;
 static FILE *inputStream = 0;
 static bool inputIsPipe = false; /* is inputStream a -F filter?          */
@@ -248,7 +244,6 @@ static int readlineInterrupted(void) {
 }
 #endif
 
-/* Prepare to input characters from standard in (i.e. console/kbd) */
 void consoleInput(char *prompt) {
     discardConsoleLine();
     reading = KEYBOARD; /* keyboard input is Line oriented, */
@@ -266,13 +261,10 @@ void consoleInput(char *prompt) {
     }
 #endif
 #if USE_READLINE
-    /* Paranoid freeing code supplied by Sverker Nilsson (sverker@opq.se) 
-     * avoids accidentally freeing currentLine twice. 
-     */
     if (currentLine) {
         char *oldCurrentLine = currentLine;
-        currentLine = 0;      /* We may lose the space of currentLine */
-        free(oldCurrentLine); /* if interrupted here - unlikely       */
+        currentLine = 0;
+        free(oldCurrentLine);
     }
 # if HAVE_RL_EVENT_HOOK
     rl_event_hook = readlineInterrupted;
@@ -348,7 +340,6 @@ static bool fileInput(char *nm, long len) {
     return true;
 }
 
-/* Prepare to input characters from string */
 void stringInput(char *s) {
     reading = STRING;
     c0 = EOF;
@@ -388,7 +379,7 @@ static int nextLine(void) {
     }
     lineBuffer[lineLength] = '\0';
 
-    if (lineLength <= 0) { /* EOF / IO error, who knows.. */
+    if (lineLength <= 0) { /* EOF or IO error */
         if (thisLiterate && litLines == 0) {
             thisLiterate = false; /* report it once                  */
             errHead(0);
@@ -460,7 +451,6 @@ static void literateLine(void) {
     litLast = kind;
 }
 
-/* Move forward one char in input stream, updating c0, c1, ... */
 static void skip(void) {
     if (c0 != EOF) {
         if (c0 == '\n') { /* Adjusting cursor coords as nec. */
@@ -577,7 +567,6 @@ static void endToken(void) {
     *tokPtr = '\0';
 }
 
-/* Read operator symbol */
 static Text readOperator(void) {
     startToken();
     do {
@@ -589,7 +578,6 @@ static Text readOperator(void) {
     return findText(tokenStr);
 }
 
-/* Read identifier */
 static Text readIdent(void) {
     Char first = c0; /* remember the decoded first char */
     startToken();
@@ -627,7 +615,6 @@ static Cell readRadixNumber(int r) {
     }
 }
 
-/* Read numeric constant */
 static Cell readNumber(void) {
     int n = 0;
     bool intTooLarge = false;
@@ -698,7 +685,6 @@ static Cell readNumber(void) {
         return mkInt(n);
 }
 
-/* Read character constant */
 static Cell readChar(void) {
     Cell charRead;
 
@@ -721,7 +707,6 @@ static Cell readChar(void) {
     return charRead;
 }
 
-/* Read string literal */
 static Cell readString(void) {
     Cell c;
 
@@ -744,7 +729,6 @@ static Cell readString(void) {
     return mkStr(findText(tokenStr));
 }
 
-/* Save character in string */
 static void saveStrChr(Char c) {
 #if UNICODE_CHARS && !CHAR_ENCODING_UTF8
     if (!charIsRepresentable(c)) {
@@ -804,7 +788,7 @@ Char getStrChr(char **sp) {
     return c;
 }
 
-/* Read single char constant true => enable \& and gaps */
+/* Read single char constant; isStrLit => enable \& and gaps */
 static Cell readAChar(bool isStrLit) {
     Cell c = mkChar(c0);
 
@@ -857,7 +841,6 @@ static bool lazyReadMatches(char *s) {
     return s[i] == '\0';
 }
 
-/* Read escape character */
 static Cell readEscapeChar(bool isStrLit, bool skipEsc) {
     int i = 0;
 
@@ -912,7 +895,6 @@ static Cell readEscapeChar(bool isStrLit, bool skipEsc) {
     return NIL; /*NOTREACHED*/
 }
 
-/* Skip over gap in string literal (simplified in Haskell 1.1) */
 static void skipGap(void) {
     do
         skip();
@@ -940,7 +922,6 @@ static Cell readCtrlChar(void) {
     return mkChar((int)(which - controls));
 }
 
-/* Read octal character constant */
 static Cell readOctChar(void) {
     int n = 0;
     int d;
@@ -964,7 +945,6 @@ static Cell readOctChar(void) {
     return mkChar(n);
 }
 
-/* Read hex character constant */
 static Cell readHexChar(void) {
     int n = 0;
     int d;
@@ -988,7 +968,6 @@ static Cell readHexChar(void) {
     return mkChar(n);
 }
 
-/* Read single hex digit */
 static int readHexDigit(Char c) {
     if ('0' <= c && c <= '9')
         return c - '0';
@@ -999,7 +978,6 @@ static int readHexDigit(Char c) {
     return -1;
 }
 
-/* Read decimal character constant */
 static Cell readDecChar(void) {
     int n = 0;
 
@@ -1070,8 +1048,8 @@ void printString(char *s) {
  * Handle special types of input for use in interpreter:
  * -----------------------------------------------------------------------*/
 
-/* Read command at start of input line in interpreter characters introducing a
- * cmd character for shell escape */
+/* Read a command at the start of an input line; start is the character that
+ * introduces a command, and sys the one for a shell escape */
 Command readCommand(struct cmd *cmds, Char start, Char sys) {
     while (c0 == ' ' || c0 == '\t')
         skip();
@@ -1090,9 +1068,10 @@ Command readCommand(struct cmd *cmds, Char start, Char sys) {
         return SYSTEM;
     }
 
-    startToken();    /* All cmds start with start        */
-    if (c0 == start) /* except default (usually EVAL)    */
-        do {         /* which is empty                   */
+    /* All cmds start with start but default (usually EVAL), which is empty */
+    startToken();
+    if (c0 == start)
+        do {
             saveTokenChar(c0);
             skip();
         } while (c0 != EOF && !isIn(c0, SPACE));
@@ -1173,7 +1152,6 @@ char *readFilename(void) {
     return tokenStr;
 }
 
-/* Read command line from input */
 char *readLine(void) {
     while (c0 == ' ' || c0 == '\t') /* skip leading whitespace */
         skip();
@@ -1208,7 +1186,6 @@ static int layout[MAXINDENT + 1]; /* indentation stack                */
 #define HARD (-1)                 /* indicates hard indentation       */
 static int indentDepth = (-1);    /* current indentation nesting      */
 
-/* Insert offside marker for specified column */
 void goOffside(int col) {
     if (indentDepth >= MAXINDENT) {
         errHead(row);
@@ -1218,12 +1195,10 @@ void goOffside(int col) {
     layout[++indentDepth] = col;
 }
 
-/* Leave layout rule area */
 void unOffside(void) {
     indentDepth--;
 }
 
-/* Decide if unoffside permitted */
 bool canUnOffside(void) {
     return indentDepth >= 0 && layout[indentDepth] != HARD;
 }
@@ -1245,13 +1220,10 @@ static bool allDashes(char *s) {
 static bool foundDashedOp = false;
 
 /*
- * Haskell98 makes it harder to detect one-line comment markup,
- * "--" is now only the start of a one-line comment if it isn't
- * followed by symbol chars other than "-". i.e., need to tokenise
- * anything that starts with "--" as an operator and check whether
- * the lexeme consists of all dashes or not.
+ * "--" only starts a one-line comment if it isn't followed by symbol chars
+ * other than "-".  So tokenise anything that starts with "--" as an operator
+ * and check whether the lexeme consists of all dashes or not.
  */
-/* Skip over whitespace/comments */
 static void skipWhitespaceTok(void) {
     for (;;)           /* Strictly speaking, this code is  */
         if (c0 == EOF) /* a little more liberal than the   */
@@ -1306,7 +1278,6 @@ static void skipWhitespaceTok(void) {
 static bool firstToken;  /* Set to true for first token      */
 static int firstTokenIs; /* ... with token value stored here */
 
-/* Read next input token ... */
 int yylex(void) {
     static bool insertOpen = false;
     static bool insertClose = false;
@@ -1343,7 +1314,7 @@ int yylex(void) {
            not more indented than the current/enclosing, 
            empty braces are inserted.
            
-           cf. of Section B.3 (note 2) of the Haskell98 report.
+           cf. Section B.3 (note 2) of the Haskell98 report.
 
            Extension: adopt GHC's special (and useful) handling of
            the following (comment straight out of ghc/compiler/parser/Lex.lhs):
@@ -1417,7 +1388,6 @@ int yylex(void) {
     case EOF:
         return 0; /* End of file/input       */
 
-    /* The next 10 characters make up the `special' category in 1.3    */
     case '(':
         skip();
         return '(';
@@ -1641,14 +1611,12 @@ static int repeatLast(void) {
     return REPEAT;
 }
 
-/* Find default syntax of var named by t ... */
 Syntax defaultSyntax(Text t) {
     char *s = textToStr(t);
     Char c = ExtractChar(s);
     return isIn(c, SYMBOL) ? DEF_OPSYNTAX : APPLIC;
 }
 
-/* Find syntax for name */
 Syntax syntaxOf(Name n) {
     if (nameRec(n)->syntax == NO_SYNTAX) /* Return default if no syntax set */
         return defaultSyntax(nameRec(n)->text);
@@ -1666,24 +1634,25 @@ static void parseInput(int startWith) {
     firstTokenIs = startWith;
 
     clearStack();
-    if (yyparse()) { /* This can only be parser overflow */
+    /* This can only be parser overflow, as all syntax errors are caught in the
+     * parser */
+    if (yyparse()) {
         errHead(row);
-        errPrintf("Parser overflow" /* as all syntax errors are caught  */);
-        errFail(); /* in the parser...                 */
+        errPrintf("Parser overflow");
+        errFail();
     }
     drop();
     if (!stackEmpty()) /* stack should now be empty        */
         internal("parseInput");
 }
 
-/* Read a script from a string buffer */
 void parseScriptString(char *buf) {
     resetInput();
     stringInput(buf);
     parseInput(SCRIPT);
 }
 
-/* Read a script Used to set a target for reading */
+/* Read the script nm; len sets the target for the progress report */
 bool parseScript(char *nm, long len) {
     resetInput();
     if (fileInput(nm, len)) {
@@ -1697,23 +1666,15 @@ bool parseScript(char *nm, long len) {
     return false;
 }
 
-/* Read an expression to evaluate */
 void parseExp(void) {
     parseInput(EXPR);
     setLastExpr(inputExpr);
 }
 
-/* Read a context to prove */
 void parseContext(void) {
     parseInput(CTXT);
 }
 
-/* --------------------------------------------------------------------------
- * Input control:
- * ------------------------------------------------------------------------*/
-
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const inputRoots[] = {
     &tyconDefns,   &typeInDefns,   &kindSigDefns,   &valDefns,
     &classDefns,   &instDefns,     &selDefns,       &genDefns,
@@ -1723,9 +1684,6 @@ static Cell *const inputRoots[] = {
     &varQualified, &varAsMod,      &conMain,        &imps,
 };
 
-/* Register the roots, intern the keyword and symbol texts the lexer
- * and grammar compare against, and reset; done once, before the
- * Prelude is read. */
 void installInput(void) {
     registerRoots(inputRoots);
     textCase = findText("case");
@@ -1795,8 +1753,6 @@ void installInput(void) {
     resetInput();
 }
 
-/* Clear every per-script definition list and close whatever the lexer
- * had open. */
 void resetInput(void) {
     tyconDefns = NIL;
     typeInDefns = NIL;
