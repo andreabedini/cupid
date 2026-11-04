@@ -7,8 +7,6 @@
  * strongly connected components for the type checker.  The stacks are
  * also what lookupSyntax consults for the fixity of a local operator.
  *
- * Split out of static.c.
- *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
@@ -28,10 +26,6 @@
 #include "pattern.h"
 #include "binding.h"
 #include "depend.h"
-
-/* --------------------------------------------------------------------------
- * local function prototypes:
- * ------------------------------------------------------------------------*/
 
 static Cell bindPat(int, Cell);
 static void bindPats(int, List);
@@ -73,7 +67,6 @@ static List depends;  /* list of lists of dependents       */
 #define saveBvars() hd(bounds)           /* list of bvars in current scope   */
 #define restoreBvars(bs) hd(bounds) = bs /* restore list of bound variables  */
 
-/* Add new bound vars for pattern */
 static Cell bindPat(int line, Cell p) {
     patVars = NIL;
     p = checkPat(line, p);
@@ -81,7 +74,6 @@ static Cell bindPat(int line, Cell p) {
     return p;
 }
 
-/* Add new bound vars for patterns */
 static void bindPats(int line, List ps) {
     patVars = NIL;
     map1Over(checkPat, line, ps);
@@ -178,36 +170,30 @@ List topDependAnal(List bs) {
     return bs;
 }
 
-/* Add extra field to binding to hold list of dependents */
 static void addDepField(Cell b) {
     snd(snd(b)) = pair(NIL, snd(snd(b)));
 }
 
-/* Remove dependency field from list of bindings */
 static void remDepField(List bs) {
     mapProc(remDepField1, bs);
 }
 
-/* Remove dependency field from single binding */
 static void remDepField1(Cell b) {
     snd(snd(b)) = snd(snd(snd(b)));
 }
 
-/* Initialise dependency scoping */
 void clearScope(void) {
     bounds = NIL;
     bindings = NIL;
     depends = NIL;
 }
 
-/* Enter scope of bindings bs */
 void withinScope(List bs) {
     bounds = cons(NIL, bounds);
     bindings = cons(bs, bindings);
     depends = cons(NIL, depends);
 }
 
-/* Leave scope of last withinScope */
 void leaveScope(void) {
     List bs = hd(bindings); /* Remove fixity info from binds   */
     bool toplevel = isNull(tl(bindings));
@@ -275,7 +261,6 @@ static void saveSyntax(Cell v, Cell sy) {
  * - No free (i.e. unbound) variables are used in the declaration list.
  * ------------------------------------------------------------------------*/
 
-/* Find dependents of binding */
 static void depBinding(Cell b) {
     Cell defpart = snd(snd(snd(b))); /* definition part of binding         */
 
@@ -299,27 +284,24 @@ static void depBinding(Cell b) {
     depVal(b) = hd(depends);
 }
 
-/* Dependency analysis on defaults from class definition */
 void depDefaults(Class c) {
     depClassBindings(cclassRec(c)->defaults);
 }
 
-/* Dependency analysis on instance bindings */
 void depInsts(Inst in) {
     depClassBindings(instRec(in)->implements);
 }
 
-/* Dependency analysis on list of bindings, possibly containing NIL bindings
- * ... */
+/* bs may contain NIL bindings */
 static void depClassBindings(List bs) {
     for (; nonNull(bs); bs = tl(bs)) {
-        if (nonNull(hd(bs))) {            /* No need to add extra field for   */
-            mapProc(depAlt, snd(hd(bs))); /* dependency information...     */
+        if (nonNull(hd(bs))) {
+            /* No need to add extra field for dependency information */
+            mapProc(depAlt, snd(hd(bs)));
         }
     }
 }
 
-/* Dependency analysis on a letrec expr, containing a set of bindings */
 static Cell depLetRec(bool isRhs, int line, Cell e) {
 
     fst(snd(e)) = eqnsToBindings(fst(snd(e)), NIL, NIL, NIL);
@@ -335,7 +317,6 @@ static Cell depLetRec(bool isRhs, int line, Cell e) {
     return e;
 }
 
-/* Find dependents of alternative */
 static void depAlt(Cell a) {
     List obvs = saveBvars(); /* Save list of bound variables       */
     enterBtyvs();
@@ -345,7 +326,6 @@ static void depAlt(Cell a) {
     restoreBvars(obvs); /* restore original list of bvars  */
 }
 
-/* Find dependents of rhs */
 static void depRhs(Cell r) {
     switch (whatIs(r)) {
     case GUARDED:
@@ -368,12 +348,10 @@ static void depRhs(Cell r) {
     }
 }
 
-/* Find dependents of single guarded expression */
 static void depGuard(Cell g) {
     depPair(intOf(fst(g)), snd(g));
 }
 
-/* Find dependents of expression */
 Cell depExpr(int line, Cell e) {
     stackCheck();
     switch (whatIs(e)) {
@@ -475,20 +453,17 @@ Cell depExpr(int line, Cell e) {
     return e;
 }
 
-/* Find dependents of pair of exprs */
 static void depPair(int line, Cell e) {
     fst(e) = depExpr(line, fst(e));
     snd(e) = depExpr(line, snd(e));
 }
 
-/* Find dependents of triple exprs */
 static void depTriple(int line, Cell e) {
     fst3(e) = depExpr(line, fst3(e));
     snd3(e) = depExpr(line, snd3(e));
     thd3(e) = depExpr(line, thd3(e));
 }
 
-/* Find dependents of comprehension */
 static void depComp(int l, Cell e, List qs) {
     if (isNull(qs)) {
         fst(e) = depExpr(l, fst(e));
@@ -526,7 +501,6 @@ static void depComp(int l, Cell e, List qs) {
     }
 }
 
-/* Find dependents of case altern. */
 static void depCaseAlt(int line, Cell a) {
     List obvs = saveBvars(); /* Save list of bound variables       */
     enterBtyvs();
@@ -844,7 +818,6 @@ static void tcSetDepends(Cell c, Cell v) {
         cclassRec(c)->kinds = v;
 }
 
-/* Scc for tycons and classes */
 List tcscc(List ts, List cs) {
     return sccSort(ts, cs, tcDepends, tcSetDepends);
 }
@@ -857,31 +830,22 @@ static void bSetDepends(Cell b, Cell v) {
     depVal(b) = v;
 }
 
-/* Scc for bindings */
 static List bscc(List bs) {
     return sccSort(bs, NIL, bDepends, bSetDepends);
 }
 
-/* --------------------------------------------------------------------------
- * Control:
- * ------------------------------------------------------------------------*/
-
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const dependRoots[] = {
     &bounds,
     &bindings,
     &depends,
 };
 
-/* Clear the scope stacks and the dependency-analysis working lists. */
 void resetDepend(void) {
     bounds = NIL;
     bindings = NIL;
     depends = NIL;
 }
 
-/* Register the roots and reset; done once, before the Prelude is read. */
 void installDepend(void) {
     registerRoots(dependRoots);
     resetDepend();

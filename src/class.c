@@ -7,8 +7,6 @@
  * are checked, the member and dictionary selector names are made, and
  * each instance is checked against the class and inserted into it.
  *
- * Split out of static.c.
- *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
@@ -27,10 +25,6 @@
 #include "class.h"
 #include "deriving.h"
 
-/* --------------------------------------------------------------------------
- * local function prototypes:
- * ------------------------------------------------------------------------*/
-
 static void checkClassDefn2(Class);
 static void checkMems(Class, List, Cell);
 static void checkMems2(Class, Cell);
@@ -42,27 +36,8 @@ static List numInsert(int, Cell, List);
 static bool instCompare(Inst, Inst);
 static List inheritFundeps(Class, Cell, int);
 
-/* --------------------------------------------------------------------------
- * Static analysis of class declarations:
- *
- * Performed in a similar manner to that used for type declarations.
- *
- * The first part of the static analysis is performed as the declarations
- * are read during parsing.  The parser ensures that:
- * - the class header and all superclass predicates are of the form
- *   ``Class var''
- *
- * The classDefn() function:
- * - ensures that there is no previous definition for class
- * - checks that class name has not previously been used as a type constr.
- * - make new entry in class table
- * - record line number of declaration
- * - build list of classes defined in current script for use in later
- *   stages of static analysis.
- * ------------------------------------------------------------------------*/
-
-/* Process new class definition definition line number class header ::
- * ([Supers],Class) class definition body functional dependencies */
+/* Process a new class definition: line number, header :: ([Supers],Class),
+ * body, functional dependencies */
 void classDefn(int line, Cell head, List ms, List fds) {
     Text ct = textOf(getHead(snd(head)));
     int arity = argCount;
@@ -96,25 +71,8 @@ void classDefn(int line, Cell head, List ms, List fds) {
  * Full static analysis of class definitions must be postponed until the
  * complete script has been read and all static analysis on type definitions
  * has been completed.
- *
- * Once this has been achieved, we carry out the following checks on each
- * class definition:
- * - check that variables in header are distinct
- * - replace head by skeleton
- * - check superclass declarations, replace by skeletons
- * - split body of class into members and declarations
- * - make new name entry for each member function
- * - record member function number (eventually an offset into dictionary!)
- * - no member function has a previous definition ...
- * - no member function is mentioned more than once in the list of members
- * - each member function type is valid, replace vars by offsets
- * - qualify each member function type by class header
- * - only bindings for members appear in defaults
- * - only function bindings appear in defaults
- * - check that extended class hierarchy does not contain any cycles
  * ------------------------------------------------------------------------*/
 
-/* Validate class definition */
 void checkClassDefn(Class c) {
     List tyvars = NIL;
     Cell temp = cclassRec(c)->head;
@@ -224,7 +182,7 @@ void checkClassDefn2_(List cs) {
     mapProc(checkClassDefn2, cs);
 }
 
-/* Validate class definition, pt 2 can only finish this job after we've
+/* Validate class definition, pt 2: can only finish this job after we've
  * inherited fds and are in dependency order */
 static void checkClassDefn2(Class c) {
     if (!isTycon(c)) {
@@ -280,7 +238,6 @@ static List inheritFundeps(Class c, Cell pi, int o) {
     /* alloc additional vars for any vars in supers not in the head */
     newKindvars(length(cclassRec(c)->tyvars) - cclassRec(c)->arity);
 
-    /* better not fail ;-) */
     if (!matchPred(pi, o, cclassRec(c)->head, alpha)) {
         /* If the qualified type is not valid, for instance by
          * having type variables occurring free in the context,
@@ -324,7 +281,6 @@ void extendFundeps(Class c) {
     map1Proc(checkMems2, c, fst(cclassRec(c)->members));
 }
 
-/* Check member function details */
 static void checkMems(Class c, List tyvars, Cell m) {
     int line = intOf(fst3(m));
     Type t = thd3(m);
@@ -333,7 +289,8 @@ static void checkMems(Class c, List tyvars, Cell m) {
     bool explicit = isPolyType(t);
 
     t = expandPolyTypes(line, t, false);
-    if (isPolyType(t)) { /* a forall expansion brought is implicit */
+    /* only a written forall is explicit, not one expansion brought */
+    if (isPolyType(t)) {
         bs = polySigOf(t);
         if (explicit) {
             xtvs = boundVars(bs);
@@ -362,7 +319,6 @@ static void checkMems(Class c, List tyvars, Cell m) {
     take(cclassRec(c)->arity, tyvars); /* Delete extra type vars  */
 }
 
-/* Check member function details */
 static void checkMems2(Class c, Cell m) {
     int line = intOf(fst3(m));
     List vs = snd3(m);
@@ -412,16 +368,6 @@ void addMembers(Class c) {
         }
     }
 
-    /*  Not actually needed just yet; for the time being, dictionary code will
-    not be passed through the type checker.
-
-    cclassRec(c)->dtycon   = addPrimTycon(generateText("Dict.%s",c),
-                                      NIL,
-                                      cclassRec(c)->arity,
-                                      DATATYPE,
-                                      NIL);
-*/
-
     mno = cclassRec(c)->numSupers + cclassRec(c)->numMembers;
     cclassRec(c)->dcon = addPrimCfun(generateText("Make.%s", c), mno, 0, NIL);
     if (mno == 1) { /* Single entry dicts use newtype  */
@@ -433,7 +379,6 @@ void addMembers(Class c) {
     cclassRec(c)->defaults = classBindings("class", c, cclassRec(c)->defaults);
 }
 
-/* Make definition for member fn */
 static Name newMember(int l, int no, Cell v, Type t, Class parent) {
     Name m = findName(textOf(v));
 
@@ -462,7 +407,7 @@ static Name newMember(int l, int no, Cell v, Type t, Class parent) {
     return m;
 }
 
-/* Make definition for dict selectr */
+/* Make definition for dict selector */
 static Name newDSel(Class c, int no) {
     Name s;
     char buf[16];
@@ -516,7 +461,7 @@ int visitClass(Class c) {
  * Process class and instance declaration binding groups:
  * ------------------------------------------------------------------------*/
 
-/* Check validity of bindings bs for class c (or an inst of c) sort into
+/* Check validity of bindings bs for class c (or an inst of c), and sort into
  * approp. member order */
 List classBindings(char *where, Class c, List bs) {
     List nbs = NIL;
@@ -547,7 +492,7 @@ List classBindings(char *where, Class c, List bs) {
     return nbs;
 }
 
-/* Return name of member function with name t in class c return NIL if not a
+/* Return name of member function with name t in class c, or NIL if not a
  * member */
 static Name memberName(Class c, Text t) {
     List ms = cclassRec(c)->members;
@@ -574,17 +519,10 @@ static List numInsert(int n, Cell x, List xs) {
 
 /* --------------------------------------------------------------------------
  * Static analysis of instance declarations:
- *
- * The first part of the static analysis is performed as the declarations
- * are read during parsing:
- * - make new entry in instance table
- * - record line number of declaration
- * - build list of instances defined in current script for use in later
- *   stages of static analysis.
  * ------------------------------------------------------------------------*/
 
-/* Process new instance definition definition line number inst header ::
- * (context,Class) instance members */
+/* Process new instance definition: line number, inst header ::
+ * (context,Class), instance members */
 void instDefn(int line, Cell head, List ms) {
     Inst nw = newInst();
     instRec(nw)->line = line;
@@ -597,26 +535,21 @@ void instDefn(int line, Cell head, List ms) {
 /* --------------------------------------------------------------------------
  * Further static analysis of instance declarations:
  *
- * Makes the following checks:
- * - Class part of header has form C (T a1 ... an) where C is a known
- *   class, and T is a known datatype constructor (or restricted synonym),
- *   and there is no previous C-T instance, and (T a1 ... an) has a kind
- *   appropriate for the class C.
- * - Each element of context is a valid class expression, with type vars
- *   drawn from a1, ..., an.
- * - All bindings are function bindings
- * - All bindings define member functions for class C
- * - Arrange bindings into appropriate order for member list
- * - No top level type signature declarations
+ * Checks that:
+ * - the head is a known class applied to types of suitable kinds, and
+ *   neither conflicts with the class's functional dependencies nor
+ *   overlaps another instance, unless overlap is allowed;
+ * - every variable of the context is in the head, or determined by it
+ *   through the functional dependencies the context gives;
+ * - the bindings are function bindings of the class's members, put in
+ *   member order, with no signature or fixity declarations.
  * ------------------------------------------------------------------------*/
 
-bool allowOverlap = false;       /* true => allow overlapping insts */
-bool allowUnsafeOverlap = false; /* true => in addition, allow      */
-                                 /* potentially inconsistent        */
-                                 /* overlapping instances           */
-Name nameListMonad = NIL;        /* builder function for List Monad */
+bool allowOverlap = false; /* true => allow overlapping insts */
+/* true => in addition, allow potentially inconsistent overlapping instances */
+bool allowUnsafeOverlap = false;
+Name nameListMonad = NIL; /* builder function for List Monad */
 
-/* Validate instance declaration */
 void checkInstDefn(Inst in) {
     int line = instRec(in)->line;
     List tyvars = typeVarsIn(instRec(in)->head, NIL, NIL, NIL);
@@ -645,10 +578,12 @@ void checkInstDefn(Inst in) {
         errFail();
     }
 
-    instRec(in)->numSpecifics = 0; /* dictionary parameters of the builder: */
+    /* dictionary parameters of the builder: one per class predicate, none for
+     * an equality */
+    instRec(in)->numSpecifics = 0;
     for (List ps = instRec(in)->specifics; nonNull(ps); ps = tl(ps))
-        if (!isEquality(hd(ps))) /* one per class predicate, none for an */
-            instRec(in)->numSpecifics++; /* equality                  */
+        if (!isEquality(hd(ps)))
+            instRec(in)->numSpecifics++;
     instRec(in)->c = getHead(instRec(in)->head);
     if (!isClass(instRec(in)->c)) {
         errHead(line);
@@ -716,7 +651,6 @@ void checkInstDefn(Inst in) {
     }
 }
 
-/* Insert instance into class */
 void insertInst(Inst in) {
     Class c = instRec(in)->c;
     List ins = cclassRec(c)->instances;
@@ -831,7 +765,6 @@ Name newInstImp(Inst in) {
  * default will be used where necessary.
  * ------------------------------------------------------------------------*/
 
-/* Handle default types definition */
 void defaultDefn(int line, List defs) {
     if (defaultLine != 0) {
         errHead(line);

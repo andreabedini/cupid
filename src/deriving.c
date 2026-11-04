@@ -4,11 +4,9 @@
  * A "deriving" clause asks for an instance the programmer did not write.
  * This file decides what context such an instance needs, by iterating to a
  * fixed point over the requests, and then writes the bindings for it: Eq,
- * Ord, Enum, Ix, Show, Read, Bounded and Generic.  tycon.c collects the requests
- * and hands them over, and class.c hands over each standalone deriving
- * declaration once it has checked it as an instance.
- *
- * Split out of static.c.
+ * Ord, Enum, Ix, Show, Read, Bounded, Generic and Data.  tycon.c collects the
+ * requests and hands them over, and class.c hands over each standalone
+ * deriving declaration once it has checked it as an instance.
  *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
@@ -119,8 +117,10 @@ void checkDerive(Tycon t, List p, List ts, Cell ct) {
         errPrintf("Unknown class \"%s\" in derived instance", identToStr(ct));
         errFail();
     }
-    if (isTypeableClass(c)) { /* every type is, under its own name: see  */
-        return;               /* preds.c; a via type would lend its name */
+    /* Do nothing: every type is Typeable under its own name (see preds.c), and
+     * a via type would lend it another's */
+    if (isTypeableClass(c)) {
+        return;
     }
     if (isVia) {
         if (isNull(via)) { /* deriving newtype: via what it wraps */
@@ -147,7 +147,6 @@ void checkDerive(Tycon t, List p, List ts, Cell ct) {
     addDerInst(line, c, p, dupList(ts), t, tyconRec(t)->arity);
 }
 
-/* Add a derived instance */
 static Inst addDerInst(int line, Class c, List p, List cts, Type t, int a) {
     Inst in;
     Cell head = t; /* Build instance head          */
@@ -227,7 +226,6 @@ void addTupInst(Class c, int n) {
 
 static bool instsChanged;
 
-/* Calc contexts for derived insts */
 static void deriveContexts(List is) {
     emptySubstitution();
     mapProc(initDerInst, is); /* Prepare derived instances         */
@@ -240,7 +238,6 @@ static void deriveContexts(List is) {
     mapProc(tidyDerInst, is); /* Tidy up results                   */
 }
 
-/* Prepare instance for calculation of derived instance context */
 static void initDerInst(Inst in) {
     Cell spcs = instRec(in)->specifics;
     int beta = newKindedVars(instRec(in)->kinds);
@@ -318,13 +315,16 @@ static void calcInstPreds(Inst in) {
                         ps = cons(triple(hd(qs), off, mkInt(d + 1)), ps);
                     }
                     retain = cons(pair(off, qs), retain);
-                } else {           /* Previously def'd inst   */
-                    List qs1 = qs; /* improve the whole context first: */
-                    for (; nonNull(qs1); qs1 = tl(qs1)) { /* one of its  */
-                        if (!isEquality(hd(qs1))) {       /* preds may fix a */
+                } else { /* Previously def'd inst   */
+                    /* Improve the whole context first: one of its preds may
+                     * fix a variable of another, as Generic a r fixes the r of
+                     * GEq r */
+                    List qs1 = qs;
+                    for (; nonNull(qs1); qs1 = tl(qs1)) {
+                        if (!isEquality(hd(qs1))) {
                             improve1(instRec(in)->line, NIL, hd(qs1), at);
-                        } /* variable of another, as Generic a r fixes */
-                    } /* the r of GEq r                              */
+                        }
+                    }
                     for (; nonNull(qs); qs = tl(qs)) {
                         ps = cons(triple(hd(qs), off, mkInt(d + 1)), ps);
                     }
@@ -442,7 +442,6 @@ static Cell copyAdj(Cell c, int o, int beta) {
     return c;
 }
 
-/* Tidy up results of derived inst calculations */
 static void tidyDerInst(Inst in) {
     int o = instRec(in)->numSpecifics;
     List ps = tl(rev(fst(snd(instRec(in)->specifics))));
@@ -591,9 +590,9 @@ List standaloneDeriving(Inst in, List tyvars) {
     return stockBindings(in, t);
 }
 
-/* The instances is with the standalone deriving declarations of Typeable
- * left out, whatever their strategy: one via another type would give the
- * type that one's name */
+/* Remove the standalone deriving declarations of Typeable from an instance
+ * list, whatever their strategy: one via another type would give the type
+ * that type's name */
 List dropTypeableDerivings(List is) {
     List rs = NIL;
     for (; nonNull(is); is = tl(is)) {
@@ -612,7 +611,6 @@ List dropTypeableDerivings(List is) {
     return rev(rs);
 }
 
-/* A list of n fresh vars for derived instance generation */
 static List freshVars(int n) {
     List vs = NIL;
     for (; n > 0; n--) {
@@ -621,7 +619,6 @@ static List freshVars(int n) {
     return vs;
 }
 
-/* Make a binding for a variable */
 static Cell mkBind(char *s, List alts) {
     return pair(mkVar(findText(s)), pair(NIL, alts));
 }
@@ -758,7 +755,6 @@ static List makeDPats2(Cell h, int n) {
  * Deriving Ix and Enum:
  * ------------------------------------------------------------------------*/
 
-/* Construct definition of enumeration */
 static List deriveEnum(Tycon t) {
     int l = tyconRec(t)->line;
 
@@ -777,7 +773,6 @@ static List deriveEnum(Tycon t) {
                             NIL)))));
 }
 
-/* Construct definition of indexing */
 static List deriveIx(Tycon t) {
     if (isEnumType(t)) { /* Definitions for enumerations                   */
         return cons(
@@ -842,7 +837,6 @@ static List mkIxBinds(int line, Cell h, int n) {
                      cons(prodInRange(line, pats, ls, us, is), NIL)));
 }
 
-/* Make definition of range for a product type */
 static Cell prodRange(int line, List pats, Cell ls, Cell us, Cell is) {
     /* range :: (a,a) -> [a]
      * range (X a b c, X p q r)
@@ -861,13 +855,12 @@ static Cell prodRange(int line, List pats, Cell ls, Cell us, Cell is) {
     return mkBind("range", e);
 }
 
-/* Make definition of index for a product type */
 static Cell prodIndex(int line, List pats, Cell ls, Cell us, Cell is) {
-    /* index :: (a,a) -> a -> Bool
+    /* index :: (a,a) -> a -> Int
      * index (X a b c, X p q r) (X x y z)
      *  = index (c,r) z + rangeSize (c,r) * (
      *     index (b,q) y + rangeSize (b,q) * (
-     *      index (a,x) x))
+     *      index (a,p) x))
      */
     List xs = NIL;
     Cell e = NIL;
@@ -883,7 +876,6 @@ static Cell prodIndex(int line, List pats, Cell ls, Cell us, Cell is) {
     return mkBind("index", e);
 }
 
-/* Make definition of inRange for a product type */
 static Cell prodInRange(int line, List pats, Cell ls, Cell us, Cell is) {
     /* inRange :: (a,a) -> a -> Bool
      * inRange (X a b c, X p q r) (X x y z)
@@ -903,7 +895,6 @@ static Cell prodInRange(int line, List pats, Cell ls, Cell us, Cell is) {
  * Deriving Show:
  * ------------------------------------------------------------------------*/
 
-/* Construct definition of text conversion */
 static List deriveShow(Tycon t) {
     List alts = NIL;
     if (isTycon(t)) { /* deal with type constrs    */
@@ -920,7 +911,6 @@ static List deriveShow(Tycon t) {
     return singleton(mkBind("showsPrec", alts));
 }
 
-/* Make alt for showsPrec eqn */
 static Cell mkAltShow(int line, Cell h, int a) {
     List vs = freshVars(a + 1);
     Cell d = hd(vs);
@@ -1010,14 +1000,13 @@ static Cell showsPrecRhs(Cell d, Cell pat, int a) {
             /* For a binary constructor with prec p:
              * showsPrec d (a :* b) = showParen (d > p)
              *                          (showsPrec lp a . showChar ' ' .
-             *                           showsString s  . showChar ' ' .
+             *                           showString s   . showChar ' ' .
              *                           showsPrec rp b)
              */
             int p = precOf(s);
-            int lp =
-                (p +
-                 1); /* how it was in Haskell from Day 1 until 11/4/2002:  (assocOf(s)==LEFT_ASS)  ? p : (p+1); */
-            int rp = (p + 1); /* ditto:  (assocOf(s)==RIGHT_ASS) ? p : (p+1); */
+            /* associativity is ignored, as the Report requires */
+            int lp = (p + 1);
+            int rp = (p + 1);
             Cell rhs = ap(showsSP, ap2(nameShowsPrec, mkInt(rp), arg(pat)));
             if (defaultSyntax(nameRec(h)->text) == APPLIC) {
                 rhs = ap(showsBQ,
@@ -1083,7 +1072,6 @@ static Cell showsPrecRhs(Cell d, Cell pat, int a) {
  *                    ...
  *                    (readParen (d>pn) (\r -> [ (Cn ...,s) | ... ]) r) ... ))
  */
-/* Construct definition of text reader */
 static List deriveRead(Cell t) {
     Cell alt = NIL;
     Cell exp = NIL;
@@ -1107,7 +1095,6 @@ static List deriveRead(Cell t) {
     } else { /* Tuples */
         exp = ap(mkReadTuple(t), r);
     }
-    /* printExp(stdout,exp); putc('\n',stdout); */
     alt = pair(pat, pair(mkInt(line), exp));
     return singleton(mkBind("readsPrec", singleton(alt)));
 }
@@ -1119,7 +1106,6 @@ static List deriveRead(Cell t) {
  * for a (non-tuple) constructor "con" of precedence "p".
  */
 
-/* Generate reader for a constructor */
 static Cell mkReadCon(Name con, Cell d, Cell r) {
     Cell exp = NIL;
     int p = 0;
@@ -1157,7 +1143,6 @@ static Cell mkReadCon(Name con, Cell d, Cell r) {
  *                                        (tn,sn) <- readsPrec (APP_PREC+1) sn-1 ]
  *
  */
-/* ReadsPrec for prefix constructor */
 static Cell mkReadPrefix(Cell con) {
     int arity = userArity(con);
     Cell cn = mkStr(nameRec(con)->text);
@@ -1193,15 +1178,14 @@ static Cell mkReadPrefix(Cell con) {
  *                              ("con",s1) <- lex s0,
  *                              (v,s2)     <- readsPrec rp s1 ]
  *
- * where lp and rp are either p or p+1 depending on associativity
+ * where lp and rp are both p+1: derived Read ignores associativity
  */
 static Cell mkReadInfix(Cell con) {
     Syntax s = syntaxOf(con);
     int p = precOf(s);
-    int lp =
-        (p +
-         1); /* how it was in Haskell from Day 1 until 11/4/2002: assocOf(s)==LEFT_ASS  ? p : (p+1); */
-    int rp = (p + 1); /* ditto: assocOf(s)==RIGHT_ASS ? p : (p+1); */
+    /* associativity is ignored, as the Report requires */
+    int lp = (p + 1);
+    int rp = (p + 1);
     Cell cn = mkStr(nameRec(con)->text);
     Cell r = inventVar();
     Cell s0 = inventVar();
@@ -1221,14 +1205,13 @@ static Cell mkReadInfix(Cell con) {
 
 /* Given the n-ary tuple constructor return a lambda expression:
  *
- *   \ r -> [ ((t1,t2,...tn),s(2n+1)) | ("(",s0)      <- lex r,
- *                                      (t1, s1)      <- readsPrec 0 s0,
- *                                      ...
- *                                      (",",s(2n-1)) <- lex s(2n-2),
- *                                      (tn, s(2n))   <- readsPrec 0 s(2n-1),
- *                                      (")",s(2n+1)) <- lex s(2n) ]
+ *   \ r -> [ ((t1,t2,...tn),s(2n)) | ("(",s0)      <- lex r,
+ *                                    (t1, s1)      <- readsPrec 0 s0,
+ *                                    ...
+ *                                    (",",s(2n-2)) <- lex s(2n-3),
+ *                                    (tn, s(2n-1)) <- readsPrec 0 s(2n-2),
+ *                                    (")",s(2n))   <- lex s(2n-1) ]
  */
-/* ReadsPrec for n-tuple */
 static Cell mkReadTuple(Cell tup) {
     int arity = tupleOf(tup);
     Cell lp = mkStr(findText("("));
@@ -1269,9 +1252,9 @@ static Cell mkReadTuple(Cell tup) {
  *                                      ("{", s1)    <- lex s0,
  *                                      (t1,  s2)    <- readField "f1" s1,
  *                                      ...
- *                                      (",", s(2n-1)) <- lex s(2n),
- *                                      (tn,  s(2n)) <- readField "fn" s(2n+1),
- *                                      ("}", s(2n+1)) <- lex s(2n+2) ]
+ *                                      (",", s(2n-1)) <- lex s(2n-2),
+ *                                      (tn,  s(2n)) <- readField "fn" s(2n-1),
+ *                                      ("}", s(2n+1)) <- lex s(2n) ]
  *
  * where
  *
@@ -1280,7 +1263,6 @@ static Cell mkReadTuple(Cell tup) {
  *                          ("=",s2) <- lex s1,
  *                          r        <- reads s2 ]
  */
-/* ReadsPrec for record constructor */
 static Cell mkReadRecord(Cell con, List fs) {
     Cell cn = mkStr(nameRec(con)->text);
     Cell lb = mkStr(findText("{"));
@@ -1327,7 +1309,6 @@ static Cell mkReadRecord(Cell con, List fs) {
  * Deriving Bounded:
  * ------------------------------------------------------------------------*/
 
-/* Construct definition of bounds */
 static List deriveBounded(Tycon t) {
     if (isEnumType(t)) {
         Cell last = tyconRec(t)->defn;
@@ -1399,7 +1380,6 @@ static List mkBndBinds(int line, Cell h, int n) {
 
 static Module genModule; /* the module defining Generic, while deriving */
 
-/* Is c the Generic class of GHC.Generics? */
 /* Is c the Typeable class of Data.Typeable?  The type checker solves it
  * for every type built from type constructors, so deriving it does
  * nothing, as in GHC. */
@@ -1428,7 +1408,6 @@ static bool isTypeableClass(Class c) {
  * constructor, or a newtype, has 1 for its index, without looking at x.
  * ------------------------------------------------------------------------*/
 
-/* Is c the Data class of Data.Data? */
 static bool isDataClass(Class c) {
     return cclassRec(c)->text == findText("Data") &&
            moduleRec(cclassRec(c)->mod)->text == findText("Data.Data");
@@ -1941,9 +1920,9 @@ static Type runtimeType(Type t) {
     return t;
 }
 
-/* The type t with the synonyms at its head expanded, and its newtypes
- * unwrapped too if newtypes; which must be false if t may have a recursive
- * newtype at its head, as runtimeType deals with */
+/* Expand the synonyms at the head of t, and unwrap its newtypes too if
+ * newtypes; that must be false if t may have a recursive newtype at its head,
+ * which runtimeType deals with */
 static Type unwrapHead(Type t, bool newtypes) {
     Type u;
     while (nonNull(u = unwrapOnce(t, newtypes))) {
@@ -2113,30 +2092,22 @@ static bool holdsEvidence(Type t, List *seen) {
 }
 
 /* Implement every instance asked for by a deriving clause and hand the list
- * back to the caller.  The three steps have to happen in this order, which
- * is why the caller is given one call and not the list. */
+ * back to the caller.  addDerivImp inserts each instance into its class, and
+ * must do so before deriveContexts looks for instances. */
 List derivedInstances(void) {
     mapProc(addDerivImp, derivedInsts); /* Add impls for derived instances */
     deriveContexts(derivedInsts);       /* Calculate derived inst contexts */
     return derivedInsts;
 }
 
-/* --------------------------------------------------------------------------
- * Control:
- * ------------------------------------------------------------------------*/
-
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const derivingRoots[] = {
     &derivedInsts,
 };
 
-/* Clear the list of derived instances still to implement. */
 void resetDeriving(void) {
     derivedInsts = NIL;
 }
 
-/* Register the roots and reset; done once, before the Prelude is read. */
 void installDeriving(void) {
     registerRoots(derivingRoots);
     resetDeriving();

@@ -68,7 +68,7 @@ static Cell namedKind(Cell);
  *
  * Of the non-terminals used below, only start, topDecl & begin
  * do not leave any values on the Cupid stack.  The same is true for the
- * terminals EXPR and SCRIPT.  At the end of a successful parse, there
+ * terminals EXPR, CTXT and SCRIPT.  At the end of a successful parse, there
  * should only be one element left on the stack, containing the result
  * of the parse.
  */
@@ -101,15 +101,11 @@ start	  : EXPR exp wherePart		{inputExpr = letrec($3,$2); sp-=2;}
 	  | error			{syntaxError("input");}
 	  ;
 
-/*- Haskell module header/import parsing: -----------------------------------
- * Syntax for Haskell modules (module headers and imports) is parsed but
- * most of it is ignored.  However, module names in import declarations
- * are used, of course, if import chasing is turned on.
- *-------------------------------------------------------------------------*/
+/*- Haskell module header/import parsing: ----------------------------------*/
 
-/* In Haskell 1.2, the default module header was "module Main where"
- * In 1.3, this changed to "module Main(main) where".
- * We use the 1.2 header because it breaks much less pre-module code.
+/* A script with no header is "module Main where", exporting everything, not
+ * the Report's "module Main(main) where": that breaks much less headerless
+ * code.
  */
 topModule : startMain begin modBody end {
 					 setExportList(singleton(ap(MODULEENT,mkCon(moduleRec(currentModule)->text))));
@@ -202,7 +198,6 @@ chase	  : /* empty */			{if (chase(imps)) {
 					 $$ = gcShadow(0,NIL);
 					}
 	  ;
-/* Note that qualified import ignores the import list. */
 impDecl	  : IMPORT modid impspec	{addUnqualImport($2,NIL,$3);
 					 $$ = gcShadow(3,$2);}
 	  | IMPORT modid ASMOD modid impspec
@@ -913,7 +908,6 @@ stmts1	  : stmts1 ';' stmt		{$$ = gcShadow(3,cons($3,$1));}
 
 stmt      : exp_err FROM exp		{$$ = gcShadow(3,ap(FROMQUAL,pair($1,$3)));}
 	  | LET decls			{$$ = gcShadow(2,ap(QWHERE,$2));}
-/*	  | IF exp			{$$ = gcShadow(2,ap(BOOLQUAL,$2));}*/
 	  | exp_err			{$$ = gcShadow(1,ap(DOQUAL,$1));}
 	  ;
 fbinds	  : /* empty */			{$$ = gcShadow(0,NIL);}
@@ -1049,7 +1043,7 @@ static Cell gcShadow(int n, Cell e) {
      *           x1  |  ...  |  xn  |  la   ===>  e  |  la
      *                                top()            top()
      *
-     * Othwerwise, the transformation is:
+     * Otherwise, the transformation is:
      *   pushed: n-1             0        0
      *           x1  |  ...  |  xn  ===>  e
      *                         top()     top()
@@ -1064,13 +1058,11 @@ static Cell gcShadow(int n, Cell e) {
     return e;
 }
 
-/* Report on syntax error */
 static void syntaxError(char *s) {
     errHead(row); errPrintf("Syntax error in %s (unexpected %s)", s, unexpected());
     errFail();
 }
 
-/* Find name for unexpected token */
 static char *unexpected(void) {
     static char buffer[100];
     static char *fmt = "%s \"%s\"";
@@ -1149,7 +1141,6 @@ static char *unexpected(void) {
     }
 }
 
-/* Check for valid precedence value */
 static Cell checkPrec(Cell p) {
     if (!isInt(p) || intOf(p)<MIN_PREC || intOf(p)>MAX_PREC) {
 	errHead(row); errPrintf("Precedence value must be an integer in the range [%d..%d]",
@@ -1306,7 +1297,6 @@ static Cell buildOpType(List ts) {
     return t;
 }
 
-/* Validate context */
 static List checkCtxt(Type con) {
     mapOver(checkPred, con);
     return con;
@@ -1333,7 +1323,7 @@ static Pair checkDo(List dqs) {
 }
 
 
-/* Check that lhs is of the form T a1 ... a, with an ai possibly (a :: k) */
+/* Check that lhs is of the form T a1 ... an, with an ai possibly (a :: k) */
 static Cell checkTyLhs(Cell c) {
     Cell tlhs = c;
     while (isAp(tlhs) && (whatIs(arg(tlhs))==VARIDCELL || whatIs(arg(tlhs))==KINDED)) {
@@ -1442,7 +1432,6 @@ static Cell checkConstr(Cell c) {
  * Building declarations and types:
  * ------------------------------------------------------------------------*/
 
-/* Define tycon, popping n items */
 /* The kind written as an operator: only * */
 static Cell starKind(Cell op) {
     if (strcmp(textToStr(textOf(op)),"*")!=0) {
@@ -1466,6 +1455,7 @@ static Cell namedKind(Cell con) {
     errFail();
 }
 
+/* Define tycon, popping n items */
 static void defTycon(int n, Cell l, Cell lhs, Cell rhs, Cell w) {
     tyconDefn(intOf(l),lhs,rhs,w);
     sp -= n;

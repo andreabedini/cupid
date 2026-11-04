@@ -6,8 +6,6 @@
  * has been read.  It produces a flat INFIX cell instead, and this file
  * turns that into an ordinary application tree once the fixities are in.
  *
- * Split out of static.c.
- *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
@@ -34,7 +32,7 @@ static Pair attachFixity(int, Cell);
  *
  * (The algorithms here do not assume that negation can be applied only once,
  * i.e., that - - x is a syntax error, as required by the Haskell report.
- * Instead, that restriction is captured by the grammar itself, given above.)
+ * Instead, that restriction is captured by the grammar itself, in parser.y.)
  *
  * There are rules of precedence and grouping, expressed by two functions:
  *
@@ -87,7 +85,7 @@ static Pair attachFixity(int, Cell);
  * An InfixExp of the form (Neg e) means negate the last thing in
  * the InfixExp e; we can force this negation using:
  *
- *     tidyNeg              :: OpExp -> OpExp
+ *     tidyNeg              :: InfixExp -> InfixExp
  *     tidyNeg (Only e)      = Only (Negate e)
  *     tidyNeg (Infix a o b) = Infix a o (Negate b)
  *     tidyNeg (Neg e)       = tidyNeg (tidyNeg e)
@@ -95,7 +93,7 @@ static Pair attachFixity(int, Cell);
  * On the other hand, if we want to sneak application of an infix operator
  * under a negation, then we use:
  *
- *     underNeg                  :: Op -> Exp -> OpExp -> OpExp
+ *     underNeg                  :: Op -> Exp -> InfixExp -> InfixExp
  *     underNeg o b (Only e)      = Only (Apply o e b)
  *     underNeg o b (Neg e)       = Neg (underNeg o b e)
  *     underNeg o b (Infix e p f) = Infix e p (Apply o f b)
@@ -105,7 +103,7 @@ static Pair attachFixity(int, Cell);
  * value APPLIC is used to indicate that the syntax value is unknown.
  * ------------------------------------------------------------------------*/
 
-/* Convert infixExp to Exp :: OpExp */
+/* Convert an InfixExp to an Exp */
 Cell tidyInfix(int line, Cell e) {
     Cell s = NIL;        /* :: [(Op,Exp)]               */
     Syntax sye = APPLIC; /* Syntax of op in e (init unknown)*/
@@ -163,7 +161,7 @@ Cell tidyInfix(int line, Cell e) {
                 }
             }
 
-            /* Intentional fall-thru for nreduce and isNull(s) */
+            /* Intentional fall-thru for nred and isNull(s) */
 
             {
                 Cell prev = e; /* e := tidyNeg e  */
@@ -270,7 +268,6 @@ Cell tidySection(int line, Cell e) {
     return fun(t);
 }
 
-/* Attach fixity to operator in an infix expression */
 static Pair attachFixity(int line, Cell op) {
     Syntax sy = DEF_OPSYNTAX;
     Cell trop = op;
@@ -313,8 +310,7 @@ static Pair attachFixity(int line, Cell op) {
         sy = DEF_OPSYNTAX;
     }
     return pair(mkInt((int)sy),
-                pair(trop, op)); /* Pair fixity with (possibly) */
-                                 /* translated operator       */
+                pair(trop, op)); /* trop: (possibly) translated operator */
 }
 
 /*-------------------------------------------------------------------------*/

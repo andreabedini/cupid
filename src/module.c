@@ -24,9 +24,6 @@
  *
  * ------------------------------------------------------------------------*/
 
-/* --------------------------------------------------------------------------
- * local function prototypes:
- * ------------------------------------------------------------------------*/
 static Name lookupName(Text, List);
 static Module modOfEntity(Cell);
 static void reportAmbigEntity(Text, Text, List);
@@ -54,8 +51,8 @@ static void importClass(Module, Class);
 static void browseName(Name);
 static void browseEntity(Cell);
 
-/* Add to qualified import list Original name of module Name module is called
- * within this module (or NIL) List of entity names */
+/* Add to the qualified import list: the module's original name, its name
+ * within this module (or NIL), and the list of entity names */
 void addQualImport(Cell orig, Cell new, List entities) {
     /* Record the entities imported */
     moduleRec(currentModule)->qualImports =
@@ -66,7 +63,7 @@ void addQualImport(Cell orig, Cell new, List entities) {
              moduleRec(currentModule)->modAliases);
 }
 
-/* An unqualified import Name of module Local alias List of entity names */
+/* An unqualified import: name of module, local alias, list of entity names */
 void addUnqualImport(Cell mod, Cell new, List entities) {
     /* Add to unqualified import list */
     unqualImports = addEntity(mod, entities, unqualImports);
@@ -76,7 +73,6 @@ void addUnqualImport(Cell mod, Cell new, List entities) {
              moduleRec(currentModule)->modAliases);
 }
 
-/* Find text t in list of Names :: [Name] */
 static Name lookupName(Text t, List nms) {
     for (; nonNull(nms); nms = tl(nms)) {
         if (t == nameRec(hd(nms))->text) {
@@ -86,8 +82,8 @@ static Name lookupName(Text t, List nms) {
     return NIL;
 }
 
-/* :: [ Q?(Var|Con)(Id|Op) ] :: [Name] "<constructor>|<member> of
- * <type>|<class>" */
+/* named :: [Q?(Var|Con)(Id|Op)], wanted :: [Name], and description is
+ * "<constructor>|<member> of <type>|<class>" */
 static List checkSubentities(List imports, List named, List wanted,
                              char *description, Text textParent) {
     for (; nonNull(named); named = tl(named)) {
@@ -174,7 +170,8 @@ void fixupImportExports(List ls) {
     }
 }
 
-/* Accumulated list of things to import Entry from import/hiding list */
+/* imports is the accumulated list of things to import, and entity an entry
+ * from the import/hiding list */
 static List checkImportEntity(List imports, Module exporter, bool isHidden,
                               Cell entity) {
     bool impFound = false;
@@ -333,7 +330,7 @@ static List checkImportEntity(List imports, Module exporter, bool isHidden,
     return imports;
 }
 
-/* Exporting module */
+/* m is the exporting module */
 static List resolveImportList(Module m, Cell impList, bool isHidden) {
     List imports = NIL;
     if (DOTDOT == impList) {
@@ -464,7 +461,6 @@ static List mergeImportLists(List ls1, List ls2) {
     return ls2;
 }
 
-/* Import a module (un)qualified */
 void checkImportList(bool isQual, Pair importSpec) {
     Module m = fst(importSpec);
     Cell impList = snd(importSpec);
@@ -687,8 +683,9 @@ static void importClass(Module source, Class c) {
         clash != c
         /* See importName() comment. */
         && cclassRec(c)->mod != cclassRec(clash)->mod) {
-        /* Hmm..don't quite understand why we need to record the clash
-           on both the class values here..*/
+        /* Unlike importName and importTycon, this also records the clash on
+         * the new class, though addClass left the old one in the table; the
+         * reason is not known. */
         cclassRec(c)->clashes = cons(clash, cclassRec(c)->clashes);
         cclassRec(clash)->clashes = cons(c, cclassRec(clash)->clashes);
     }
@@ -697,7 +694,6 @@ static void importClass(Module source, Class c) {
     }
 }
 
-/* Get at the module of name/tycon/class */
 static Module modOfEntity(Cell ent) {
     if (isName(ent)) {
         return nameRec(ent)->mod;
@@ -892,7 +888,7 @@ static List checkExportModule(List exports, Text mt, Cell e) {
                 Class cc;
 
                 /* Build the (alias) qualified entity and test whether it's
-                  in scope -- ugly. */
+                  in scope. */
                 if (isName(hd(ents))) {
                     txtNm = nameRec(hd(ents))->text;
                     qid = mkQId(alias, mkVar(txtNm));
@@ -985,7 +981,6 @@ static List allMethodsOrDCons(List imps, Cell nm, Module mod,
     return resList;
 }
 
-/* Process entry in export list */
 static List checkExport(List exports, Text mt, Cell e) {
     if (isIdent(e)) {
         Name export;
@@ -999,15 +994,6 @@ static List checkExport(List exports, Text mt, Cell e) {
             expFound = true;
             exports = checkExportClass(exports, mt, false, NIL, export);
         } else if (nonNull(export = findQualName(e))) {
-            /* Data constructors cannot appear in export lists,
-             * so flag an error if they do.
-             *
-             * Notice that we have to be a bit careful when testing
-             * for this, as both data constructors and type synonyms
-             * have a tycon as parent. (In the case of type synonyms,
-             * the parent is the type on the RHS.)
-             *
-             */
             if (isCfun(export) && !isPreludeScript() &&
                 currentModule != moduleUserPrelude) {
                 /* Special case reqd for Prelude(s) to handle (:) */
@@ -1141,7 +1127,7 @@ List checkExports(List exports) {
  * Browsing module exports
  * ------------------------------------------------------------------------*/
 
-/* Include all names in scope in the module? */
+/* Print the exports of mod or, if all, all names in scope in it */
 void browseModule(Module mod, bool all) {
     List exports = resolveImportList(mod, DOTDOT, false);
     Printf("module %s where\n", textToStr(moduleRec(mod)->text));

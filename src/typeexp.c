@@ -7,8 +7,6 @@
  * and decides whether a qualified type is ambiguous, which is also where
  * the functional dependency closure lives.
  *
- * Split out of static.c.
- *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
@@ -22,10 +20,6 @@
 #include "subst.h"
 #include "kind.h"
 #include "typeexp.h"
-
-/* --------------------------------------------------------------------------
- * local function prototypes:
- * ------------------------------------------------------------------------*/
 
 static List maybeAppendVar(Cell, List);
 static List otvarsZonk(Cell, List, int);
@@ -80,7 +74,6 @@ List typeVarsIn(Cell ty, List us, List ws, List vs) {
     return vs;
 }
 
-/* Append variable to list if not already included */
 static List maybeAppendVar(Cell v, List vs) {
     Text t = textOf(v);
     List p = NIL;
@@ -156,9 +149,9 @@ List kindSlots(List tvs, List bs) {
  * argument is expanded where the body puts it, so it may be polymorphic if
  * that is a place for one, as in GenericQ GenericT, which is forall a b.
  * (Data a, Data b) => a -> b -> b; an ordinary synonym given such an
- * argument is expanded here too.  A forall
- * that expansion leaves to the right of an arrow moves, with its context,
- * to the front of the type around it, as in GHC before 9.0:
+ * argument is expanded here too.  A forall that expansion leaves to the
+ * right of an arrow moves, with its context, to the front of the type around
+ * it, as in GHC before 9.0:
  *
  *   lens :: (s -> a) -> (s -> b -> t) -> Lens s t a b
  *   lens :: Functor f => (s -> a) -> (s -> b -> t) -> (a -> f b) -> s -> f t
@@ -191,8 +184,8 @@ static Type copyTypeSyntax(Type);
 static Type prenex(List, List, Type);
 static void monoOnly(int, Type, char *);
 
-/* The type t, as the parser built it, at place p, with its polymorphic
- * synonyms expanded and its foralls moved to the front */
+/* Expand the polymorphic synonyms of t, as the parser built it, at place p,
+ * and move its foralls to the front */
 static Type expandPolys(int line, Type t, Place p) {
     Cell h;
     int n;
@@ -323,10 +316,10 @@ static Type expandPolySyn(int line, Tycon tc, Type t) {
     return e;
 }
 
-/* The body d of a synonym, as static analysis left it, made back into a
- * type as the parser builds one: each offset is the type at its position in
- * env, the synonym's arguments and then the variables of the foralls
- * around it, which get fresh names */
+/* Make the body d of a synonym, as static analysis left it, back into a type
+ * as the parser builds one.  Each offset becomes the type at its position in
+ * env, which holds the synonym's arguments and then the variables of the
+ * foralls around it, which get fresh names. */
 static Type fromSynBody(Type d, List *env) {
     switch (whatIs(d)) {
     case AP: {
@@ -460,7 +453,6 @@ Type depSynonymBody(int line, List tyvars, Type rhs) {
  *   - ensure that the type is well-kinded.
  * ------------------------------------------------------------------------*/
 
-/* Check validity of type expr in explicit type signature */
 Type checkSigType(int line, char *where, Cell e, Type type) {
     List tvs = NIL;
     List sunk = NIL;
@@ -469,7 +461,8 @@ Type checkSigType(int line, char *where, Cell e, Type type) {
     bool explicit = isPolyType(type);
 
     type = expandPolys(line, type, PLACE_TOP);
-    if (isPolyType(type)) { /* a forall expansion brought is implicit */
+    /* only a written forall is explicit, not one expansion brought */
+    if (isPolyType(type)) {
         bs = polySigOf(type);
         if (explicit) {
             xtvs = boundVars(bs);
@@ -508,7 +501,7 @@ Type checkSigType(int line, char *where, Cell e, Type type) {
     return type;
 }
 
-/* Explicitly quantified vars Implicitly quantified vars */
+/* xtvs: explicitly quantified vars; tvs: implicitly quantified vars */
 void checkOptQuantVars(int line, List xtvs, List tvs) {
     if (nonNull(xtvs)) {
         List vs = tvs;
@@ -537,7 +530,6 @@ void checkOptQuantVars(int line, List xtvs, List tvs) {
     }
 }
 
-/* Check top-level of type sig */
 Type depTopType(int l, List tvs, Type t) {
     Type prev = NIL;
     Type t1 = t;
@@ -564,7 +556,6 @@ Type depTopType(int l, List tvs, Type t) {
     return t;
 }
 
-/* Check component type for constr */
 Type depCompType(int l, List tvs, Type t) {
     int ntvs = length(tvs);
     List nfr = NIL;
@@ -579,11 +570,8 @@ Type depCompType(int l, List tvs, Type t) {
     if (isQualType(t)) {
         map2Over(depPredExp, l, tvs, fst(snd(t)));
         snd(snd(t)) = depTypeExp(l, tvs, snd(snd(t)));
-        /* it's premature to judge ambiguity (e.g. given functional deps)
-        if (isAmbiguous(t)) {
-            ambigError(l,"type component",NIL,t);
-        }
-        */
+        /* It's premature to judge ambiguity here, given functional
+         * dependencies. */
     } else {
         t = depTypeExp(l, tvs, t);
     }
@@ -677,8 +665,8 @@ Type depTypeVar(int line, List tyvars, Text tv) {
     return mkOffset(found);
 }
 
-/* Variables to quantify over variables already in scope type/constr for scope
- * of vars */
+/* vs: variables to quantify over; tvs: variables already in scope; body:
+ * type/constr for scope of vars */
 List checkQuantVars(int line, List vs, List tvs, Cell body) {
     if (nonNull(vs)) {
         List bvs = typeVarsIn(body, NIL, NIL, NIL);
@@ -704,10 +692,10 @@ List checkQuantVars(int line, List vs, List tvs, Cell body) {
 
 /* --------------------------------------------------------------------------
  * Check for ambiguous types:
- * A type  Preds => type  is ambiguous if not (TV(P) `subset` TV(type))
+ * A type  Preds => type  is ambiguous if not (TV(P) `subset` C), where C is
+ * TV(type) closed under the functional dependencies of Preds
  * ------------------------------------------------------------------------*/
 
-/* Add list of offset tyvars in t to list vs */
 List offsetTyvarsIn(Type t, List vs) {
     switch (whatIs(t)) {
     case AP:
@@ -746,9 +734,7 @@ List zonkTyvarsIn(Type t, List vs) {
         else
             return cons(t, vs);
 
-        /* this case will lead to a type error --
-           much better than reporting an internal error ;-) */
-        /* case OFFSET   : internal("zonkTyvarsIn"); */
+        /* an OFFSET leads to a type error here, not an internal one */
 
     default:
         return vs;
@@ -782,7 +768,6 @@ List odiff(List us, List vs) {
     return us;
 }
 
-/* Determine whether us is subset of vs */
 bool osubset(List us, List vs) {
     while (nonNull(us) && cellIsMember(hd(us), vs)) {
         us = tl(us);
@@ -790,7 +775,7 @@ bool osubset(List us, List vs) {
     return isNull(us);
 }
 
-/* Compute closure of vs wrt to fds */
+/* Compute closure of vs wrt fds */
 List oclose(List fds, List vs) {
     bool changed = true;
     while (changed) {
@@ -818,13 +803,13 @@ List oclose(List fds, List vs) {
     return vs;
 }
 
-/* Determine whether type is ambiguous */
 bool isAmbiguous(Type type) {
     if (isPolyType(type)) {
         type = monotypeOf(type);
     }
-    if (isQualType(type)) {       /* only qualified types can be           */
-        List ps = fst(snd(type)); /* ambiguous                     */
+    /* only qualified types can be ambiguous */
+    if (isQualType(type)) {
+        List ps = fst(snd(type));
         List tvps = offsetTyvarsIn(ps, NIL);
         List tvts = offsetTyvarsIn(snd(snd(type)), NIL);
         List fds = calcFunDeps(ps);
@@ -889,7 +874,6 @@ List calcFunDepsPreds(List ps) {
     return fds;
 }
 
-/* Produce error message for ambiguity */
 void ambigError(int line, char *where, Cell e, Type type) {
     errHead(line);
     errPrintf("Ambiguous type signature in %s", where);
@@ -990,22 +974,14 @@ static void errAmbigOccurrence(int line, const char *what, Text t, Module m,
     errFail();
 }
 
-/* --------------------------------------------------------------------------
- * Control:
- * ------------------------------------------------------------------------*/
-
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const typeexpRoots[] = {
     &tcDeps,
 };
 
-/* Clear the tycons and classes the declaration being checked uses. */
 void resetTypeexp(void) {
     tcDeps = NIL;
 }
 
-/* Register the roots and reset; done once, before the Prelude is read. */
 void installTypeexp(void) {
     registerRoots(typeexpRoots);
     resetTypeexp();

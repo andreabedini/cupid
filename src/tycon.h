@@ -9,13 +9,13 @@
 #include "prelude.h"
 #include "storage.h"
 
-extern List cfunSfuns; /* [(Cfun, [SelectorVar])], for Show and Read       */
+extern List cfunSfuns; /* [(Cfun, [SelectorVar])], for deriving       */
 
 extern void constraintSynonyms(void); /* make constraint synonyms classes  */
 extern void checkTyconDefns(List); /* validate the declarations, all now read */
 extern void checkTyconDefn(Tycon); /* validate a declaration, all now read   */
 extern void checkSynonyms(List);   /* check the synonyms for cycles          */
-extern int userArity(Name);     /* arity of a constructor, strictness aside */
+extern int userArity(Name);     /* arity of a constructor, dictionaries aside */
 extern Type fullerExpand(Type); /* expand synonyms and newtypes           */
 extern void resetTycon(void);   /* clear cfunSfuns                        */
 extern void installTycon(void); /* register roots and reset; INSTALL only */
