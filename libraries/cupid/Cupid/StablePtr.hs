@@ -2,7 +2,7 @@ module Cupid.StablePtr( StablePtr, module Cupid.StablePtr ) where
 
 import Cupid.Prelude( StablePtr, Ptr )
 
--- recently renamed
+-- The name Foreign.StablePtr exports.
 newStablePtr = makeStablePtr 
 
 primitive makeStablePtr      :: a -> IO (StablePtr a)

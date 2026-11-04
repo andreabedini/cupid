@@ -1,7 +1,5 @@
 -----------------------------------------------------------------------------
--- Library for simple interactive programs:
---
--- Suitable for use with Hugs 98
+-- Library for simple interactive programs.
 -----------------------------------------------------------------------------
 
 module Interact(

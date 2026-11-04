@@ -1,9 +1,6 @@
 -- Representation of Prolog Terms, Clauses and Databases
 -- Mark P. Jones November 1990, modified for Gofer 20th July 1991,
 -- and for Hugs 1.3 June 1996.
---
--- Suitable for use with Hugs 98.
---
 
 module Prolog
 	( Id, Term(..), Clause(..), Database
@@ -125,5 +122,3 @@ clause        = sp struct `pseq` (sptok ":-" `pseq` listOf term (sptok ",")
                                 `orelse` okay [])
                           `pseq` sptok "."
                      `pam` (\(head,(goals,dot))->head:-goals)
-
---- End of Prolog.hs

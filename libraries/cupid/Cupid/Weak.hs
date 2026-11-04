@@ -1,15 +1,8 @@
--- A first cut at implementing the (key,value) form of Weak pointers.
+-- The (key,value) form of weak pointers.
 --
--- Notes (please refer to the draft specification for background):
---
---  - Programmers using weak pointers should call runFinalizer at
---    regular intervals to ensure that finalizers are scheduled for
---    execution.  This implementation provides functions runFinalizer,
---    finalizerWaiting, and runAllFinalizers to provide programmers with
---    control over the execution of finalizers.  None of these functions
---    are part of the current specification.
---
--- Tested with Hugs 98.
+-- Programmers should call runFinalizer at regular intervals so that
+-- finalizers are scheduled for execution; finalizerWaiting and
+-- runAllFinalizers give further control.
 
 module Cupid.Weak(Weak,
 	    mkWeak, deRefWeak, finalize, replaceFinalizer,
@@ -34,31 +27,3 @@ runAllFinalizers     = do waiting <- finalizerWaiting
 			  if waiting then do runFinalizer
 					     runAllFinalizers
 				     else return ()
-
-{- for testing purposes
-primitive gc "primGC" :: IO ()
-
--- not a CAF!
-test z = do
-  { let k = [z]		-- use a list so we're sure it's heap allocated
-  ; print k		-- this makes sure x is in whnf
-  ; w <- mkWeak k "value" (Just (putStrLn ("Finalizer for "++show k)))
-			-- note that the finalizer uses the key, but
-			-- this shouldn't keep the weak ptr alive!
-  ; showWeakPtr w
-  ; gc
-  ; print k		-- this makes sure k is still alive after the GC
-  ; showWeakPtr w	-- so it's probably still alive here
-  ; gc
-  ; showWeakPtr w	-- but ought to be dead by here
-  }
-
-showWeakPtr :: Show a => Weak a -> IO ()
-showWeakPtr w = do
-  { x <- deRefWeak w
-  ; print x
-  }
-
--}
-
--- End of module Weak

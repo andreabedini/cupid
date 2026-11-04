@@ -139,5 +139,3 @@ calFor year | illFormed = hPutStr stderr "Bad argument" >>
                     yr        = atoi ds
                     atoi s    = foldl (\a d -> 10*a+d) 0 (map digitToInt s)
        
-
--- End of calendar program

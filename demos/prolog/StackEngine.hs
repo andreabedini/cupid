@@ -1,9 +1,6 @@
 -- Stack based Prolog inference engine
 -- Mark P. Jones November 1990, modified for Gofer 20th July 1991,
 -- and for Hugs 1.3 June 1996.
---
--- Suitable for use with Hugs 98.
---
 
 module StackEngine( version, prove ) where
 
@@ -59,5 +56,3 @@ theCut     = Struct "!" []
 
 cut                  :: Stack -> Stack
 cut ss                = []
-
---- End of Engine.hs

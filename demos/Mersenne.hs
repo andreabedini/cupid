@@ -2,7 +2,7 @@
 -- Mersenne.hs                                                 Mark P. Jones
 --                                                          February 7, 1995
 --
--- Here is a Cupid program to calculate the 30th Mersenne prime using the
+-- Here is a Hugs program to calculate the 31st Mersenne prime using the
 -- builtin bignum arithmetic.
 --
 -- For those who don't know, a Mersenne prime is a prime number of the form:
@@ -14,7 +14,7 @@
 --   n = 2, 3, 5, 7, 13, 17, 19, 31, 61, 89, 107, 127, 521, 607, 1279, 2203,
 --       2281, 3217, 4253, 4423, ...
 --
--- The thirtieth Mersenne prime occurs for n = 216,091.  In decimal
+-- The thirty-first Mersenne prime occurs for n = 216,091.  In decimal
 -- notation, this number has 65050 digits.
 --
 --
@@ -40,8 +40,8 @@
 -- course, it wouldn't have been O(log n) in practice either because
 -- the individual multiplications can hardly be considered O(1)!)
 --
--- Now I can run this program, written in Cupid (or to be accurate,
--- written using calls to Cupid primitive functions), on the machine
+-- Now I can run this program, written in Hugs (or to be accurate,
+-- written using calls to Hugs primitive functions), on the machine
 -- on my desk while I'm editing files and reading mail in other
 -- windows, and it still finishes in under 7 minutes.  Of course,
 -- it did use 6M of heap (though not all at the same time), but

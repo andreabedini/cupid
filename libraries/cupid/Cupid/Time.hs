@@ -1,6 +1,4 @@
---
--- Time primitives for Hugs98.
---
+-- Time primitives.
 module Cupid.Time
 	( getClockTimePrim
 	, toCalTimePrim

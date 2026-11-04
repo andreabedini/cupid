@@ -1,13 +1,9 @@
 -----------------------------------------------------------------------------
 -- Lazy State Thread module
 -- 
--- This library provides support for both lazy and strict state threads,
--- as described in the PLDI '94 paper by John Launchbury and Simon Peyton
--- Jones.  In addition to the monad ST, it also provides mutable variables
--- STRef and mutable arrays STArray.  It is identical to the ST module
--- except that the ST instance is lazy.
---
--- Suitable for use with Hugs 98.
+-- Lazy state threads, after the PLDI '94 paper by John Launchbury and Simon
+-- Peyton Jones.  lazyToStrictST and strictToLazyST convert to and from the
+-- strict ST of Cupid.ST.
 -----------------------------------------------------------------------------
 
 module Cupid.LazyST 
@@ -48,7 +44,6 @@ instance Applicative (ST s) where
 
 instance Monad (ST s) where
     ST m >>= f = ST (\S -> let (a,s') = m S in unST (f a) s')
-    -- ST m >>= f = ST (\s -> let (a,s') = m s in unST (f a) s')
 
 -----------------------------------------------------------------------------
 
@@ -61,7 +56,6 @@ lazyToStrictST (ST m) = ST.ST (\k -> case m S of (a,S) -> k a)
 
 strictToLazyST :: ST.ST s a -> ST s a
 strictToLazyST (ST.ST m) = ST (\S -> m delay)
---	\s -> let (a',s') = case s of S -> m (\a -> (a,S)) in (a',s'))
 
 delay :: a -> (a, State s)
 delay a = (a,S)

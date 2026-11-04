@@ -5,8 +5,6 @@
 -- parselib.orw for Orwell (with a number of extensions).
 --
 -- Not recommended for new work.
---
--- Suitable for use with Hugs 98.
 -----------------------------------------------------------------------------
 
 module CombParse where

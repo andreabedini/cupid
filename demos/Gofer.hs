@@ -1,7 +1,5 @@
 -----------------------------------------------------------------------------
--- Utility functions, for compatibility with Gofer prelude & Bird and Wadler:
---
--- Suitable for use with Hugs 98.
+-- Utility functions, for compatibility with Gofer prelude & Bird and Wadler.
 -----------------------------------------------------------------------------
 
 module Gofer where

@@ -13,8 +13,7 @@ import Cupid.Prelude(
     isAlpha, isDigit, isOctDigit, isHexDigit, isAlphaNum,
     readLitChar, showLitChar, lexLitChar)
 
--- The Cupid Char type covers only the ISO 8859-1 (Latin-1) subset of Unicode,
--- i.e. '\0' to '\xff'.
+-- Char covers all of Unicode, '\0' to '\x10FFFF'.
 
 -- Character-testing operations (some others are in Cupid.Prelude)
 isAscii, isLatin1, isControl :: Char -> Bool

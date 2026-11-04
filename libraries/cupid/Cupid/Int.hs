@@ -1,6 +1,5 @@
 ----------------------------------------------------------------------------
 -- Signed Integers
--- Suitable for use with Hugs 98 on 32 bit systems.
 -----------------------------------------------------------------------------
 
 module Cupid.Int
@@ -9,7 +8,7 @@ module Cupid.Int
 	, Int32
 	, Int64
 	-- plus Eq, Ord, Num, Bounded, Real, Integral, Ix, Enum, Read,
-	--  Show and Bits instances for each of Int8, Int16 and Int32
+	--  Show and Bits instances for each of Int8, Int16, Int32 and Int64
 	) where
 
 import Cupid.Prelude ( Int8, Int16, Int32, Int64,
@@ -373,7 +372,3 @@ absReal x    | x >= 0    = x
 signumReal x | x == 0    =  0
 	     | x > 0     =  1
 	     | otherwise = -1
-
------------------------------------------------------------------------------
--- End
------------------------------------------------------------------------------

@@ -1,9 +1,6 @@
 -- Prolog interpreter top level module
 -- Mark P. Jones November 1990, modified for Gofer 20th July 1991,
 -- and for Hugs 1.3 June 1996.
---
--- Suitable for use with Hugs 98.
---
 
 module Main where
 
@@ -89,5 +86,3 @@ demonstrate db q = printOut (map (solution vs) (prove db q))
                           (readChar end
                            (\c-> if c==';' then writeStr ";\n" (printOut bs)
                                            else writeStr "\n"  (loop db)))
-
---- End of Main.hs

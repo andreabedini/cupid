@@ -1,7 +1,5 @@
 -----------------------------------------------------------------------------
 -- Standard Library: IO operations, beyond those included in the prelude
---
--- Suitable for use with Hugs 98
 -----------------------------------------------------------------------------
 
 module Cupid.IO (

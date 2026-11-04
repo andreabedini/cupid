@@ -8,35 +8,20 @@
 --   http://www.dcs.gla.ac.uk/fp/authors/Simon_Peyton_Jones/
 --     concurrent-haskell.ps
 --
--- except that we have made the following name changes for compatability
--- with GHC 2.05.
+-- except that newEmptyMVar is the paper's newMVar.
 --
---   newMVar  -> newEmptyMVar
+-- Threads are scheduled cooperatively: a context switch happens only in one
+-- of the primitives defined in this module.  A program such as
 --
--- There is one significant difference between this implementation and
--- GHC 2.05: 
---
--- o GHC uses preemptive multitasking.
--- 
---   Context switches can occur at any time (except if you call a C
---   function (like "getchar") which blocks the entire process while
---   waiting for input.
--- 
--- o Cupid uses cooperative multitasking.  
--- 
---   Context switches only occur when you use one of the primitives
---   defined in this module.  This means that programs such as:
--- 
 --     main = forkIO (write 'a') >> write 'b'
--- 	where
--- 	 write c = putChar c >> write c
--- 
---   will print either "aaaaaaaaaaaaaa..." or "bbbbbbbbbbbb..."
---   instead of some random interleaving of 'a's and 'b's.
--- 
--- Cooperative multitasking is sufficient for writing coroutines and simple
--- graphical user interfaces but the usual assumptions of fairness don't
--- apply and Channel.getChanContents cannot be implemented.
+--       where write c = putChar c >> write c
+--
+-- prints only "bbbb...", because the parent keeps running after forkIO until
+-- it blocks or yields.  This suffices for coroutines, but the usual
+-- assumptions of fairness do not hold, and Control.Concurrent.Chan's
+-- getChanContents fails with "no more threads" when it has to wait:
+-- unsafeInterleaveIO runs its action under a scheduler of its own, where no
+-- other thread can fill the channel.
 -----------------------------------------------------------------------------
 module Cupid.ConcBase(
 	forkIO,
@@ -80,8 +65,8 @@ yield = IO (\ s -> Cupid_YieldThread (s ()))
 continueIO :: IOResult -> IO ()
 continueIO cc = IO (\ s -> Cupid_ForkThread (s ()) cc)
 
--- The thread is scheduled immediately and runs with its own success/error
--- continuations.
+-- The new thread queues behind the parent, which keeps running, and has its
+-- own success and error continuations.
 forkIO m = continueIO (threadToIOResult (m `catchException` forkExnHandler))
 
 forkExnHandler :: Exception -> IO a
@@ -97,7 +82,7 @@ data MVarState a
 	-- a value and a list of value-thread pairs blocked waiting
 	-- to write to the MVar.
 	-- The ()-> part of the thread is because blocked threads have
-	-- to be functions. :-(
+	-- to be functions.
   | Empty [a -> IOResult]
 	-- no value, just a list of threads waiting to receive a value
 
@@ -164,11 +149,6 @@ tryPutMVar (MkMVar v) a = do
  careful when using this operation.  
 
  Use tryTakeMVar instead if possible.
-
- If you can re-work your abstractions to avoid having to
- depend on isEmptyMVar, then you're encouraged to do so,
- i.e., consider yourself warned about the imprecision in
- general of isEmptyMVar :-)
 -}
 isEmptyMVar (MkMVar v) = do
   state <- readIORef v

@@ -1,13 +1,6 @@
 {----------------------------------------------------------------------------
-__   __ __  __  ____   ___    _______________________________________________
-||   || ||  || ||  || ||__    Hugs 98: The Nottingham and Yale Haskell system
-||___|| ||__|| ||__||  __||   Copyright (c) 1994-1999
-||---||         ___||         World Wide Web: http://haskell.org/hugs
-||   ||                       Report bugs to: hugs-bugs@haskell.org
-||   || Version: February 1999_______________________________________________
-
- This is the Hugs 98 Standard Prelude, based very closely on the Standard
- Prelude for Haskell 98.
+ This is Cupid's Prelude, descended from the Hugs 98 Standard Prelude; its
+ class hierarchy follows GHC's base (see below) rather than Haskell 98.
 
  WARNING: This file is an integral part of the Cupid source code.  Changes to
  the definitions in this file without corresponding modifications in other
@@ -292,7 +285,7 @@ class (RealFrac a, Floating a) => RealFloat a where
 		     :: a -> Bool
     atan2	     :: a -> a -> a
 
-    -- Minimal complete definition: All, except exponent, signficand,
+    -- Minimal complete definition: All, except exponent, significand,
     --				    scaleFloat, atan2
     exponent x        = if m==0 then 0 else n + floatDigits x
 			where (m,n) = decodeFloat x
@@ -917,7 +910,7 @@ otherwise    = True
 
 -- Character type -----------------------------------------------------------
 
-data Char               -- builtin datatype of ISO Latin characters
+data Char               -- builtin datatype of Unicode code points
 type String = [Char]    -- strings are lists of characters
 
 primitive primEqChar    :: Char -> Char -> Bool
@@ -2080,9 +2073,8 @@ data Exception
   | RecSelError         String
   | RecUpdError         String
   | UserException       String Dynamic
-    -- An exception of a type of Control.Exception's Exception class that
-    -- is none of the above: what displayException makes of it, and the
-    -- SomeException it is, as a Dynamic.
+    -- An exception of any other type in Control.Exception's Exception class:
+    -- its displayException, and its SomeException as a Dynamic.
 
 instance Show Exception where
   showsPrec _ (ArithException e)  = shows e
@@ -2329,10 +2321,10 @@ instance MonadFail IO where
 data FunPtr a -- builtin datatype of C function pointers
 data Ptr a    -- builtin datatype of C pointers
 data Addr     -- builtin datatype of C pointers (deprecated)
-data Word     -- builtin datatype of unsigned ints (deprecated)
+data Word     -- builtin datatype of unsigned ints
 
 -- Word's instances of the Prelude classes are here, as they are for Int,
--- so that the Prelude's Word has them; Cupid.Word adds Bits.
+-- so that the Prelude's Word has them; Data.Bits adds Bits and FiniteBits.
 
 instance Eq  Word     where (==)    = primEqWord
 instance Ord Word     where compare = primCmpWord
@@ -2416,7 +2408,6 @@ data StablePtr a
 data Handle
 
 data Object a -- builtin datatype of external object references.
-              -- (needed as primitive since they're supported in FFI decls.)
 
 instance Eq Handle where (==) = primEqHandle
 primitive primEqHandle :: Handle -> Handle -> Bool
@@ -2554,12 +2545,9 @@ primPmInteger n x = fromInteger n == x
 primPmFlt        :: Fractional a => Double -> a -> Bool
 primPmFlt n x     = fromDouble n == x
 
--- The following primitives are only needed if (n+k) patterns are enabled:
 primPmNpk        :: Integral a => Int -> a -> Maybe a
 primPmNpk n x     = if n'<=x then Just (x-n') else Nothing
 		    where n' = fromInt n
 
 primPmSub        :: Integral a => Int -> a -> a
 primPmSub n x     = x - fromInt n
-
--- End of Cupid standard prelude ----------------------------------------------
