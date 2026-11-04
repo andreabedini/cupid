@@ -1219,7 +1219,7 @@ primFun(primDoubleEncode) {
  * ------------------------------------------------------------------------*/
 
 /* The arithmetic is on uintptr_t, as C leaves it undefined on nullPtr and */
-/* across objects, and an Addr in Haskell is just a number.                */
+/* across objects, and a Ptr in Haskell is just a number.                  */
 CAFPtr(primNullPtr, 0)
     PtrInt2Ptr(primPlusPtr, (void *)((uintptr_t)x + (uintptr_t)(intptr_t)y))
         primFun(primAlignPtr) {

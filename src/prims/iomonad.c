@@ -1435,7 +1435,7 @@ primFun(primCastPToSP) {
 #if CHECK_TAGS
 # define checkForeign()                                                        \
      if (MPCELL != whatIs(whnfHead))                                           \
-     internal("ForeignObj expected")
+     internal("ForeignPtr expected")
 #else
 # define checkForeign() /* do nothing */
 #endif
