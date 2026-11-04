@@ -44,13 +44,10 @@ static Cell out; /* GC'd var used by printer code   */
  * Printer control:
  * ------------------------------------------------------------------------*/
 
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const printerRoots[] = {
     &out,
 };
 
-/* Clear the GC'd variable the printer builds its result in. */
 static void resetPrinter(void) {
     out = NIL;
 }
@@ -69,7 +66,6 @@ static void installPrinter(void) {
     resetPrinter();
 }
 
-/* The hooks builtIn's INSTALL registers this module under. */
 static const Subsystem printerSubsystem = {
     "printer", installPrinter, resetPrinter, NULL, NULL, NULL,
 };
@@ -139,8 +135,8 @@ primFun(primNPrint) {
     updOutRoot(primArg(1));
 }
 
-/* Main part: primPrint/primNPrint printer to use on components precedence
- * level */
+/* Main part: pr is the printer to use on components (primPrint or primNPrint), d
+ * the precedence level */
 static void printer(Name pr, int d) {
     int used = 0; /* Output, in reverse, to "out"          */
 
@@ -279,10 +275,7 @@ static void printer(Name pr, int d) {
     case PTRCELL: {
         void *p = ptrOf(whnfHead);
         char buffer[32];
-        /* Fall into line with how GHC shows Addrs.
-                             * (long)p truncated a 64-bit address on LP64
-                             * platforms where %x only takes 32 bits from
-                             * the vararg; use PRIxPTR/uintptr_t instead. */
+        /* Fall into line with how GHC shows Addrs. */
         snprintf(buffer, sizeof buffer, "0x%0*" PRIxPTR, (SIZEOF_INTP) * 2,
                  (uintptr_t)p);
         outStr(buffer);

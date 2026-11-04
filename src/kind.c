@@ -6,8 +6,6 @@
  * over, and every type expression that the static analysis has checked is
  * checked to be well-kinded.  Kind unification itself is in subst.c.
  *
- * Split out of static.c.
- *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
@@ -22,10 +20,6 @@
 #include "opts.h"
 #include "tagcheck.h"
 #include "kind.h"
-
-/* --------------------------------------------------------------------------
- * local function prototypes:
- * ------------------------------------------------------------------------*/
 
 static void kindError(int, Constr, Constr, char *, Typing, Kind, int);
 static Typing kindConstr(int, int, int, Constr);
@@ -43,8 +37,9 @@ static void useDeclaredKinds(Text, Kind);
 bool kindExpert = false; /* true => display kind errors in  */
                          /*        full detail             */
 
-/* Line number near constuctor exp constructor context (if any) place in which
- * error occurs inferred kind got expected kind (k,o) */
+/* l: line number near constructor expression c; in: constructor context (if
+ * any); wh: place in which error occurs; got: inferred kind; (k,o): expected
+ * kind */
 static void kindError(int l, Constr c, Constr in, char *wh, Typing got, Kind k,
                       int o) {
     clearMarks();
@@ -479,18 +474,14 @@ void noUnclaimedKinds(void) {
  * Control:
  * ------------------------------------------------------------------------*/
 
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const kindRoots[] = {
     &unkindTypes,
 };
 
-/* Clear the list of types still waiting for a kind annotation. */
 void resetKind(void) {
     unkindTypes = NIL;
 }
 
-/* Register the roots and reset; done once, before the Prelude is read. */
 void installKind(void) {
     registerRoots(kindRoots);
     resetKind();

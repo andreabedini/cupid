@@ -23,7 +23,7 @@
 # endif
 #endif
 
-#include "platform.h" /* IWYU pragma: keep -- SIZEOF_* in the static assertions below */
+#include "platform.h" /* IWYU pragma: keep -- the OS and architecture names */
 #include "sysdeps.h"
 #include "config.h"
 #include <stdio.h>
@@ -34,27 +34,11 @@
 # include <unistd.h>
 #endif
 
-/* platform.h states the sizes as constants; make sure the compiler agrees */
+/* sysdeps.h states the sizes as constants; make sure the compiler agrees */
 _Static_assert(sizeof(int) == SIZEOF_INT, "platform.h: SIZEOF_INT");
 _Static_assert(sizeof(float) == SIZEOF_FLOAT, "platform.h: SIZEOF_FLOAT");
 _Static_assert(sizeof(double) == SIZEOF_DOUBLE, "platform.h: SIZEOF_DOUBLE");
 _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
-
-/*---------------------------------------------------------------------------
- * Most of the configuration code from earlier versions of Cupid has been moved
- * into config.h (which is usually automatically generated).  
- *
- * Most of the configuration code is "feature based".  That is, the 
- * configure script looks to see if a particular feature (or misfeature)
- * is present on the compiler/OS.  
- *
- * A small amount of configuration code is still "system based": it tests
- * flags to determine what kind of compiler/system it's running on - from
- * which it infers what features the compiler/system has.  Use of system
- * based tests generally indicates that we can't remember/figure out
- * what the original problem was and so we can't add an appropriate feature
- * test to the configure script.
- *-------------------------------------------------------------------------*/
 
 #if defined(_WIN32)
 # define IS_WINDOWS 1
@@ -71,65 +55,26 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 # define STDCALL_SUPPORTED 1
 #endif
 
-/*---------------------------------------------------------------------------
- * Configuration options
- *
- * Most configuration options are arguments to the configure script
- * (try running "configure --help").  The following options are either
- * experimental or require changes to "Prelude.hs", the standard libraries
- * and demos and therefore cannot be modified using the configure script.
- * Most users should leave them alone!
- *
- *   HASKELL_ARRAYS to include support for Haskell array primitives.
- *   IO_MONAD       to include the IO monad primitives and support.
- *   IO_HANDLES     to include the IO file operations.
- *   IO_REFS        Ref type for IO_MONAD, and simple operations.
- *   FLUSHEVERY     to force a fflush after every char in putStr/hPutStr.
- *   BIGNUMS        to include support for Integer bignums.
- *   GC_STABLEPTRS  to include support for safely passing Haskell
- *                  pointers over to C
- *                  (only required if you use callbacks in the foreign
- *                  language interface)
- *   GC_MALLOCPTRS  to include support for automatic deallocation of 
- *                  C objects when Haskell is done with them.
- *   GC_WEAKPTRS    to include support for weak pointers.
- *   STABLE_NAMES   stable names a la Simon PJ
- *   WORD_OPS       to include operations on unsigned ints
- *   ADDR_OPS       to include operations on addresses
- *   PROVIDE_INT64  to include 64 bit Ints
- *   SHORT_CIRCUIT_COERCIONS to try to apply these rewrites at runtime:
- *                    integerToInt (intToInteger x) -> x
- *                    rationalToFloat  (fromDouble {dict} x) -> doubleToFloat x
- *                    rationalToDouble (fromDouble {dict} x) -> x
- *   FAST_WHATIS    to use a macro instead of a func for whatIs(), for speed
- *   FAST_WHATIS1   to use whatIs1(), a faster version of whatIs(), for speed
- *-------------------------------------------------------------------------*/
-
 #define HASKELL_ARRAYS 1
 #define IO_MONAD 1
 #define IO_HANDLES 1
-#define IO_REFS 1 /* Experimental IO Ref type                      */
+#define IO_REFS 1
 #define FLUSHEVERY 1
-#define BIGNUMS 1       /* Experimental bignum implementation           */
-#define GC_STABLEPTRS 1 /* May be required by external libraries        */
-#define GC_MALLOCPTRS 1 /* May be required by external libraries        */
+#define BIGNUMS 1
+#define GC_STABLEPTRS 1
+#define GC_MALLOCPTRS 1
 #define GC_WEAKPTRS 1
 #define STABLE_NAMES 1
 #define WORD_OPS 1
 #define ADDR_OPS 1
 #define PROVIDE_INT64 1
-/* (as opposed to dynamically growable ones)  */
 
 #define UNICODE_CHARS 1 /* Char is Unicode (ISO-10646) */
 
 #define SHORT_CIRCUIT_COERCIONS 1
 
 #define FAST_WHATIS 1
-#define FAST_WHATIS1 1 /* can only use if FAST_WHATIS is 1 */
-
-/*---------------------------------------------------------------------------
- * Platform-dependent settings:
- *-------------------------------------------------------------------------*/
+#define FAST_WHATIS1 1
 
 /*---------------------------------------------------------------------------
  * Macros used in declarations:
@@ -139,9 +84,9 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  *  dynamic linking declarations
  *-------------------------------------------------------------------------*/
 
-/* CUPID_inline marks the small functions in the headers that replace the
- * old accessor macros.  They must inline even in the files built without
- * optimisation (see src/meson.build), so the attribute is not optional. */
+/* CUPID_inline marks the small functions in the headers.  They must inline
+ * even in the files built without optimisation (see src/meson.build), so the
+ * attribute is not optional. */
 #if defined(__GNUC__) || defined(__clang__)
 # define CUPID_inline static inline __attribute__((always_inline))
 #elif defined(_MSC_VER)
@@ -220,10 +165,7 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  * an interrupt; all potentially infinite loops of the evaluator check
  * the flag using the "allowBreak" call, which raises breakHandler() as
  * an ordinary (safe) function call once we are back in normal control
- * flow.  This used to be Windows-only (the interrupt handler runs in a
- * separate thread there, so it cannot longjmp out of the computation);
- * POSIX now uses the same scheme so that the SIGINT handler itself stays
- * async-signal-safe.
+ * flow.
  */
 
 #include <signal.h>
@@ -253,7 +195,7 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
 
 #endif
 
-#ifndef SIGBREAK /* Sigh, not defined in cygwin32 beta release 16 */
+#ifndef SIGBREAK /* Not defined on every platform */
 # define SIGBREAK 21
 #endif
 
@@ -261,12 +203,10 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  * Floating point support
  *-------------------------------------------------------------------------*/
 
-/* Can we fit floats into ints? */
-
 #define FloatImpType float
 #define FloatPro double /* type to use in prototypes               */
                         /* strictly ansi (i.e. gcc) conforming  */
-                        /* but breaks data hiding :-(      */
+                        /* but breaks data hiding         */
 #define FloatFMT "%.7g"
 
 #define DoubleImpType double
@@ -288,12 +228,9 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  * Memory allocation
  *-------------------------------------------------------------------------*/
 
-/* Zeroed, as the name says.  This was valloc when HAVE_VALLOC, which does
- * not zero: heapFst and heapSnd got away with it because installStorage()
- * writes every cell onto the free list, but the profiler's heapThd has no
- * pass of its own and every cell began with a garbage producer.  The page
- * alignment bought nothing -- an allocation this size is mmap'd, and so
- * page-aligned, either way. */
+/* Zeroed, as the name says: the profiler's heapThd has no initialising pass of
+ * its own, unlike heapFst and heapSnd, which installStorage() writes onto the
+ * free list. */
 #define farCalloc(n, s) (void *)calloc((size_t)(n), (size_t)(s))
 
 /* bison-generated parsers like to have alloca - so try to define it */
@@ -316,13 +253,6 @@ _Static_assert(sizeof(void *) == SIZEOF_INTP, "platform.h: SIZEOF_INTP");
  * Preprocessor support
  *-------------------------------------------------------------------------*/
 
-/*
- * Note: initially defined as
- *   #define SUPPORT_PREPROCESSOR USE_PREPROCESSOR && (defined(HAVE_POPEN) || defined(HAVE__POPEN))
- *
- * which worked OK with GNU cpp, but MSVC didn't expand the 'defined' correctly.
- *
- */
 #if USE_PREPROCESSOR
 # if HAVE_POPEN || HAVE__POPEN
 #  define SUPPORT_PREPROCESSOR 1
@@ -376,20 +306,8 @@ extern int chdir(const char *);
 # define filenamecmp(s1, s2) strcmp(s1, s2)
 #endif
 
-/*---------------------------------------------------------------------------
- * Optimisations:
- *-------------------------------------------------------------------------*/
-
 #ifdef __GNUC__                      /* look for GCC 2.x extensions         */
 # if __GNUC__ >= 2 && !defined(NeXT) /* NeXT cc lies and says it's 2.x  */
-
-/* WARNING: if you use the following optimisations to assign registers for
- * particular global variables, you should be very careful to make sure that
- * resetStorage() is called after a longjump (usually resulting from an error
- * condition) and before you try to access the heap.  The current version of
- * main deals with this using resetSubsystems() at the head of the main read,
- * eval, print loop
- */
 
 # endif
 #endif /* defined(__GNUC__) */

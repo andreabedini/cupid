@@ -19,10 +19,6 @@
 Addr inputCode;          /* Addr of compiled code for expr   */
 static Name currentName; /* Top level name being processed   */
 
-/* --------------------------------------------------------------------------
- * Local function prototypes:
- * ------------------------------------------------------------------------*/
-
 static Cell translate(Cell);
 static void transPair(Pair);
 static void transTriple(Triple);
@@ -241,7 +237,7 @@ static Cell transRhs(Cell rhs) {
     }
 }
 
-/* Construct expression for list es using nameNil and nameCons iterative: a
+/* Construct expression for list es using nameNil and nameCons, iteratively: a
  * long literal list must not recurse once per elem */
 static Cell mkConsList(List es) {
     Cell head = nameNil;
@@ -258,9 +254,10 @@ static Cell mkConsList(List es) {
     return head;
 }
 
-/* Translate LETREC with list of groups of bindings (from depend. */
+/* Translate LETREC with list of groups of bindings (from depend. analysis) to
+ * use nested LETRECs */
 static Cell expandLetrec(Cell root) {
-    Cell e = snd(snd(root)); /* analysis) to use nested LETRECs  */
+    Cell e = snd(snd(root));
     List bss = fst(snd(root));
     Cell temp;
 
@@ -417,18 +414,8 @@ static Cell transDo(Cell m, Cell mf, Cell e, List qs) {
  *       = ai,   otherwise
  *  etc...
  *
- * The error case may be omitted if C,D,... is an enumeration of all of the
- * constructors for the datatype concerned.  Strictly speaking, error case
- * isn't needed at all -- the only benefit of including it is that the user
- * will get a "failed update" message rather than a cryptic {v354 ...}.
- * So, for now, we'll go with the second option!
- *
- * For the time being, code for each update operation is generated
- * independently of any other updates.  However, if updates are used
- * frequently, then we might want to consider changing the implementation
- * at a later stage to cache definitions of functions like nv above.  This
- * would create a shared library of update functions, indexed by a set of
- * constructors {C,D,...}.
+ * The final equation above is not generated: its only benefit would be a
+ * "failed update" message rather than a cryptic {v354 ...}.
  * ------------------------------------------------------------------------*/
 
 /* Translate C{flds} */
@@ -496,10 +483,9 @@ static Cell transUpdFlds(Cell e, List cs, List flds) {
 /* --------------------------------------------------------------------------
  * Elimination of pattern bindings:
  *
- * The following code adopts the definition of failure free patterns as given
- * in the Haskell 1.3 report; the term "irrefutable" is also used there for
- * a subset of the failure free patterns described here, but has no useful
- * role in this implementation.  Basically speaking, the failure free patterns
+ * The Haskell report's term "irrefutable" covers only a subset of the failure
+ * free patterns described here, and has no useful role in this implementation.
+ * Basically speaking, the failure free patterns
  * are:         variable, wildcard, ~apat
  *              var@apat,               if apat is failure free
  *              C apat1 ... apatn       if C is a product constructor
@@ -825,12 +811,11 @@ static List remPat1(Cell pat, Cell expr, List lds) {
  * Eliminate pattern matching in function definitions -- pattern matching
  * compiler:
  *
- * The original Gofer/Cupid pattern matching compiler was based on Wadler's
+ * The original Gofer/Hugs pattern matching compiler was based on Wadler's
  * algorithms described in `Implementation of functional programming
  * languages'.  That should still provide a good starting point for anyone
- * wanting to understand this part of the system.  However, the original
- * algorithm has been generalized and restructured in order to implement
- * new features added in Haskell 1.3.
+ * wanting to understand this part of the system, though the algorithm has been
+ * generalized and restructured, for record syntax in particular.
  *
  * During the translation, in preparation for later stages of compilation,
  * all local and bound variables are replaced by suitable offsets, and
@@ -842,7 +827,7 @@ static Offset freeBegin; /* only variables with offset <= freeBegin are of */
 static List freeVars;    /* interest as `free' variables                   */
 static List freeFuns;    /* List of `free' local functions                 */
 
-/* Apply pattern matching compiler co = current offset sc = scope e = expr to
+/* Apply pattern matching compiler: co = current offset, sc = scope, e = expr to
  * transform */
 static Cell pmcTerm(int co, List sc, Cell e) {
     stackCheck();
@@ -989,10 +974,8 @@ static void pmcFunDef(int co, List sc, Triple fd) {
 /* ---------------------------------------------------------------------------
  * Main part of pattern matching compiler: convert [Alt] to case constructs
  *
- * This section of Cupid has been almost completely rewritten to be more
- * general, in particular, to allow pattern matching in orders other than the
- * strictly left-to-right approach of the previous version.  This is needed
- * for the implementation of the so-called Haskell 1.3 `record' syntax.
+ * Patterns need not be matched in strictly left-to-right order: record syntax
+ * needs other orders.
  *
  * At each stage, the different branches for the cases to be considered
  * are represented by a list of values of type:
@@ -1010,7 +993,7 @@ static void pmcFunDef(int co, List sc, Triple fd) {
  * Matches can be normalized by reducing them to a form in which the list
  * of patterns is empty (in which case the match itself is described as an
  * empty match), or in which the list is non-empty and the first pattern is
- * one that requires either a CASE or NUMCASE (or EXTCASE) to decompose.
+ * one that requires either a CASE or NUMCASE to decompose.
  * ------------------------------------------------------------------------*/
 
 #define mkMatch(ps, os, sc, r) pair(pair(ps, os), pair(sc, r))
@@ -1032,7 +1015,7 @@ static List altsMatch(int co, int n, List sc, List as) {
     return rev(mas);
 }
 
-/* Generate case statement for Matches mas at current offset co N.B. Assumes
+/* Generate case statement for Matches mas at current offset co.  N.B. Assumes
  * nonNull(mas). */
 static Cell match(int co, List mas) {
     Cell srhs = NIL; /* Rhs for selected matches                */
@@ -1087,8 +1070,7 @@ static Cell match(int co, List mas) {
     return nonNull(mas) ? ap(FATBAR, pair(srhs, match(co, mas))) : srhs;
 }
 
-/* Combine list of matches into rhs using FATBARs as necessary Non-empty list
- * of empty matches */
+/* Combine non-empty list of empty matches into rhs using FATBARs as necessary */
 static Cell joinMas(int co, List mas) {
     Cell ma = hd(mas);
     Cell rhs = pmcTerm(co, maSc(ma), maRhs(ma));
@@ -1131,7 +1113,8 @@ static List addConTable(Cell x, Cell y, List tab) {
     return tab;
 }
 
-/* Advance non-empty match by processing head pattern discriminator arity */
+/* Advance non-empty match by processing head pattern; a is the discriminator
+ * arity */
 static void advance(int co, int a, Cell ma) {
     Cell p = hd(maPats(ma));
     List ps = tl(maPats(ma));
@@ -1184,7 +1167,7 @@ static bool emptyMatch(Cell ma) {
             maOffs(ma) = tl(maOffs(ma));
             continue;
 
-        /* So-called "as-patterns"are really just pattern intersections:
+        /* So-called "as-patterns" are really just pattern intersections:
              *    (p1@p2:ps, o:os, sc, e) ==> (p1:p2:ps, o:o:os, sc, e)
              * (But the input grammar probably doesn't let us take
              * advantage of this, so we stick with the special case
@@ -1258,7 +1241,7 @@ static bool isNumDiscr(Cell d) {
         return false;
 
     case AP:
-        return true; /* must be a literal or (n+k)      */
+        return true; /* must be a literal              */
     default:
         break;
     }
@@ -1722,7 +1705,7 @@ static void compileGenFunction(Name n) {
     nameRec(n)->defn = NIL;
 }
 
-/* Produce code for selector func Should be merged with genDefns, but the
+/* Produce code for selector func.  Should be merged with genDefns, but the
  * nameRec(_)->defn field is already used for other purposes in selector
  * functions. */
 static Name compileSelFunction(Pair p) {
@@ -1752,8 +1735,6 @@ static void newGlobalFunction(Name n, int arity, List fvs, int co, Cell e) {
  * Compiler control:
  * ------------------------------------------------------------------------*/
 
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const compilerRoots[] = {
     &freeVars,
     &freeFuns,
@@ -1772,7 +1753,6 @@ void resetCompiler(void) {
     localArity = 0;
 }
 
-/* Register the roots and reset; done once, before the Prelude is read. */
 void installCompiler(void) {
     registerRoots(compilerRoots);
     resetCompiler();

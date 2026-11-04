@@ -21,12 +21,8 @@
  * Unicode character properties (cf http://www.unicode.org/ucd/)
  * ------------------------------------------------------------------------*/
 
-/* properties for an character not covered by the table */
+/* properties for a character not covered by the table */
 static const struct CharProperties null_properties = {GENCAT_Cn, 0, 0, 0};
-
-/* --------------------------------------------------------------------------
- * Local function prototypes:
- * ------------------------------------------------------------------------*/
 
 static void initConsCharTable(void);
 static void markConsCharTable(void);
@@ -40,11 +36,9 @@ static int utfcodelen(Char);
 /* --------------------------------------------------------------------------
  * Character set handling:
  *
- * Cupid follows Haskell 1.3 in assuming that input uses the ISO-8859-1
- * (Latin-1) character set.  The following code provides methods for
- * classifying input characters according to the lexical structure
- * specified by the report.  Cupid should still accept older programs
- * because ASCII is just a subset of the Latin-1 character set.
+ * charTable classifies the Latin-1 characters according to the lexical
+ * structure specified by the report; char.h falls back on the Unicode
+ * predicates for the rest.
  * ------------------------------------------------------------------------*/
 
 bool charTabBuilt;
@@ -180,7 +174,7 @@ static const struct CharProperties *get_properties(Char c) {
 }
 
 /* --------------------------------------------------------------------------
- * Multibyte character incodings.
+ * Multibyte character encodings.
  * ------------------------------------------------------------------------*/
 
 #if CHAR_ENCODING
@@ -426,7 +420,7 @@ static int utfcodelen(Char c) {
  * To save space, we maintain a sparse array of character conses,
  * allocated and filled lazily.  The sparseness is achieved by making the
  * table a 3-level array.  The top level array is statically allocated,
- * as are the first array are each of the other levels.  The rest will
+ * as is the first array of each of the other levels.  The rest will
  * be allocated on demand.
  * ------------------------------------------------------------------------*/
 
@@ -543,12 +537,10 @@ void installCharOps(void) {
     initConsCharTable();
 }
 
-/* Mark the cons-char table. */
 void markCharOps(void) {
     markConsCharTable();
 }
 
-/* Free the cons-char table. */
 void exitCharOps(void) {
     freeConsCharTable();
 }

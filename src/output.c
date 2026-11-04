@@ -17,10 +17,6 @@
 
 #define DEPTH_LIMIT 15
 
-/* --------------------------------------------------------------------------
- * Local function prototypes:
- * ------------------------------------------------------------------------*/
-
 static void putChr(int);
 static void putStr(char *);
 static void putInt(int);
@@ -96,7 +92,7 @@ static void putInt(int n) {
 }
 
 /* --------------------------------------------------------------------------
- * Precedence values (See Haskell 1.3 report, p.12):
+ * Precedence values:
  * ------------------------------------------------------------------------*/
 
 #define ALWAYS FUN_PREC           /* Always use parens (unless atomic)*/
@@ -297,7 +293,7 @@ static void put(int d, Cell e) {
         putChr('^');
         put(ALWAYS, snd(e));
         break;
-    default: /*internal("put");*/
+    default:
         putChr('$');
         putInt(e);
         break;
@@ -520,8 +516,8 @@ static void putOverInfix(int args, Text t, Syntax sy, Cell e) {
         putInfix(ALWAYS, t, sy, arg(maySkipDict(fun(e))), arg(e));
 }
 
-/* Print infix expression Infix operator symbol with name t, syntax s Left and
- * right operands */
+/* Print infix expression: infix operator symbol with name t, syntax sy, left and
+ * right operands e and f */
 static void putInfix(int d, Text t, Syntax sy, Cell e, Cell f) {
     Syntax a = assocOf(sy);
     int p = precOf(sy);
@@ -571,7 +567,7 @@ static int unusedTups(int ts, Cell e) {
     return ts;
 }
 
-/* Print text as a variable name operator symbols must be enclosed in
+/* Print text as a variable name: operator symbols must be enclosed in
  * parentheses... except [] ... */
 static void unlexVar(Text t) {
     char *s = textToStr(t);
@@ -585,7 +581,7 @@ static void unlexVar(Text t) {
     }
 }
 
-/* Print text as operator name alpha numeric symbols must be enclosed by
+/* Print text as operator name: alpha numeric symbols must be enclosed by
  * backquotes */
 static void unlexOp(Text t) {
     char *s = textToStr(t);
@@ -631,11 +627,6 @@ static void unlexStrConst(Text t) {
     }
     putChr('\"');
 }
-
-/* --------------------------------------------------------------------------
- * Pretty printer for supercombinator definitions:
- * (i.e., for lambda-lifter output, immediately prior to code generation.)
- * ------------------------------------------------------------------------*/
 
 /* --------------------------------------------------------------------------
  * Print type expression:
@@ -787,14 +778,6 @@ static void putType(Cell t, int prec, int fr) {
                 CLOSE(prec >= ARROW_PREC);
                 return;
             }
-            /*
-                                else if (argCount==1) {
-                                    putChr('(');
-                                    putType(arg(t),ARROW_PREC,fr);
-                                    putStr("->)");
-                                    return;
-                                }
-*/
         } else if (isTuple(typeHead)) {
             if (argCount == tupleOf(typeHead)) {
                 putChr('(');
@@ -824,7 +807,7 @@ static void putType(Cell t, int prec, int fr) {
 
 /* Print type variable */
 static void putTyVar(int n) {
-    static char *alphabet /* for the benefit of EBCDIC :-)   */
+    static char *alphabet /* for the benefit of EBCDIC      */
         = "abcdefghijklmnopqrstuvwxyz";
     putChr(alphabet[n % 26]);
     if (n /= 26) /* just in case there are > 26 vars*/
@@ -952,10 +935,6 @@ static void putKinds(Kinds ks) {
     } else
         putKind(hd(ks));
 }
-
-/* --------------------------------------------------------------------------
- * Print observations
- * ------------------------------------------------------------------------*/
 
 /* --------------------------------------------------------------------------
  * Print qualified module name (if wanted):

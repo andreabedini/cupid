@@ -103,10 +103,6 @@ Name nameIntToDouble;
 Name nameDoubleToFloat;
 Name nameFloatToDouble;
 
-/* --------------------------------------------------------------------------
- * Local function prototypes:
- * ------------------------------------------------------------------------*/
-
 PROTO_PRIM(primFatbar);
 PROTO_PRIM(primFail);
 PROTO_PRIM(primCatchError);
@@ -490,10 +486,10 @@ static struct primitive builtinPrimTable[] = {
  *                      in the middle of building e; break e into steps, and
  *                      use toparg(), topfun(), etc.
  *
- * Cell x = ...;        Safe if value assigned to x will never be an
- * <any code with a     indirection.  (Otherwise, cell assigned to x may
- * possible alloc>      be returned to freeList *before* the value is used.)
- * ... x ...            Probably best avoided in other circumstances.
+ * Cell x = ...;        Safe only if the value assigned to x is also reachable
+ * <any code with a     from a root and will never be an indirection.
+ * possible alloc>      (Otherwise, the cell assigned to x may be returned to
+ * ... x ...            freeList *before* the value is used.)
  *
  * updateRoot(e);       All ok.
  * updapRoot(e,e);
@@ -531,12 +527,8 @@ static struct primitive builtinPrimTable[] = {
  *                      use an intermediate variable to make the order
  *                      of evaluation explicit.
  *
- * If this version of Cupid has been modified to allow different or
- * additional run-time representations for certain values, then the
- * examples and principles illustrated here may need to be reconsidered,
- * and possibly reclassified.  The same will also be true if the execution
- * mechanisms etc., are changed in any way.  (And all this is assuming
- * that the original implementations are correct...)
+ * The examples and principles here depend on the run-time representations of
+ * values and on the execution mechanisms; changing either may invalidate them.
  * ------------------------------------------------------------------------*/
 
 /* Fatbar primitive */
@@ -575,15 +567,14 @@ primFun(primCatchError) {
     }
 }
 
-/* Failure primitive */
+/* Throw primitive */
 primFun(primThrowException) {
     throwException(primArg(1)); /*  :: Exception -> a              */
 }
 
-/* This function ought to be in the IO monad to preserve referential       */
-/* transparency but it has tricky interactions with the concurrency parts  */
-/* of the IO monad so we provide it in unsafe form here and make it safe   */
-/* in the Prelude.                                                         */
+/* This function ought to be in the IO monad to preserve referential
+ * transparency; it is provided in unsafe form here and made safe in the
+ * Prelude. */
 
 /* Error catching primitive */
 primFun(primCatchException) {
@@ -1227,7 +1218,6 @@ primFun(primDoubleEncode) {
  * Ptr primitives:
  * ------------------------------------------------------------------------*/
 
-/* Null pointer Pointer arithmetic Aligning the pointer */
 /* The arithmetic is on uintptr_t, as C leaves it undefined on nullPtr and */
 /* across objects, and an Addr in Haskell is just a number.                */
 CAFPtr(primNullPtr, 0)
@@ -1381,17 +1371,11 @@ CAFChar(primMaxChar, MAXCHARVAL)
                                 Char2Int(primUniGenCat, uni_gencat(x))
 
     /* --------------------------------------------------------------------------
- * Extensible records: (Gaster and Jones, 1996)
+ * Auxiliary functions
  * ------------------------------------------------------------------------*/
 
-    /* --------------------------------------------------------------------------
- * Auxilliary functions
- * ------------------------------------------------------------------------*/
-
-    /* The two ways the INSTALL cases in this directory make a Prelude name
- * the interpreter refers to by hand.  Both were a `pFun' and a `predef'
- * macro repeated in six files, each assigning to the caller's global from
- * inside the expansion; a function has its effect in its signature. */
+    /* The two ways the install hooks in this directory make a Prelude name
+ * the interpreter refers to by hand. */
 
     /* A Prelude name implemented by a primitive table entry */
     Name predefPrim(char *s, char *impl) {
@@ -1461,17 +1445,16 @@ primFun(primUnsafePtrEq) {
 
 /* Companion function for use when debugging uses of unsafePtrEq.
  * Converts a heap pointer to an Int so you can look at it.
- * I don't think there's any way of using this function that 
- * doesn't break the semantics - debugging use only.
+ * Any use of this function breaks the semantics: debugging use only.
  */
 primFun(primUnsafePtrToInt) {
     updateRoot(mkInt(followInd(primArg(1))));
 }
 
 /*---------------------------------------------------------------------------
- * GreenCard entry points
+ * FFI entry points
  *
- * GreenCard generated code accesses Cupid data structures and functions 
+ * The stubs ffi.c generates access Cupid data structures and functions
  * (only) via these functions (which are stored in the virtual function
  * table cupidAPI4).
  *-------------------------------------------------------------------------*/
@@ -1859,48 +1842,14 @@ static int runId(int n) {
     return runIO(0);
 }
 
-/* This allocates a small object and writes some machine code into it.  
- *
- * The code generated by the generated code is equivalent to:
- *  
- *   rty f(ty1 a1, ... tym am) {
- *     return (*app)(s,a1, ... am);
- *   }
- *
- * Where s is a stable pointer (an int).
- *
- * But, because this is machine code, we can do it without knowing
- * anything about the argument types.  This works because the C
- * calling convention on most machines has the stack looking something
- * like this (where leftmost = top of stack)
- *
- *   ret_addr : a1 : ... am : rest of stack
- *
- * If this is not the case for some architecture/calling convention,
- * the easiest thing to do might be to make the stable pointer be
- * the last argument (if that is easily found) or to put it in a callee
- * saves register - and then adapt the apply function generated by 
- * implementForeignExport.  
- *
- * thunk->{next,prev}: a doubly linked list (makes deletion easy)
- * thunk->stable:      the stable pointer (makes deletion easy)
- * 
- * At the end of execution, we run down the list freeing every thunk
- * that the user did not explicitly deallocate.
- */
+/* Would hold the machine code of a foreign import "wrapper" thunk.  No
+ * supported target has a generator for that code, so mkThunk always refuses
+ * and foreignThunks stays empty. */
 
 struct thunk_data {
     struct thunk_data *next;
     struct thunk_data *prev;
     CupidStablePtr stable;
-    /* Machine-code generation for the adjustor thunk itself (the i386,
-     * PowerPC and SPARC cases GHC's Adjustor.c has) is gone: none of
-     * those architectures are supported, and mkThunk
-     * below now refuses "foreign import \"wrapper\"" outright, before
-     * a thunk_data is ever allocated. This placeholder field just
-     * keeps freeHaskellFunctionPtr's "&thunk->code" pointer arithmetic
-     * well defined for the caller-supplied pointers it is handed.
-     */
     char code[1];
 };
 
@@ -1911,13 +1860,6 @@ static void freeAllThunks(void);
 static struct thunk_data *foreignThunks = 0;
 
 static void *mkThunk(void (*app)(void), CupidStablePtr s) {
-    /* Every architecture we still support needs machine code written
-     * into the thunk to trampoline into Haskell (see the comment above
-     * struct thunk_data), and none of the ones that had it (i386,
-     * PowerPC, SPARC) are supported any more, so refuse right away -
-     * in particular before allocating a thunk_data and linking it into
-     * foreignThunks, which the earlier code did first and
-     * left there, half-initialised, once this error longjmp'd out. */
     errHead(0);
     errPrintf("Foreign import wrapper is not supported on this architecture");
     errFail();
@@ -1945,10 +1887,7 @@ static void freeAllThunks(void) {
     }
 }
 
-/* This frees the object allocated by mkThunk.
- * [A useful debugging mode would not deallocate the thunk but would
- *  overwrite the thunk with code which prints an error message.]
- */
+/* Frees the object allocated by mkThunk, which never returns one. */
 static void freeHaskellFunctionPtr(void *t) {
     struct thunk_data *thunk =
         (struct thunk_data *)((char *)t -

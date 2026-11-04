@@ -6,8 +6,6 @@
  * and fixity, and checks that no signature or fixity is left without a
  * definition.
  *
- * Split out of static.c.
- *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
@@ -20,10 +18,6 @@
 #include "errors.h"
 #include "typeexp.h"
 #include "binding.h"
-
-/* --------------------------------------------------------------------------
- * local function prototypes:
- * ------------------------------------------------------------------------*/
 
 static List getPatVars(int, Cell, List);
 static List addPatVar(int, Cell, List);
@@ -43,7 +37,8 @@ static void addFixdecl(List, List, List, List, Triple);
  * The result of parsing a list of value declarations is a list of Eqns:
  *       Eqn ::= (SIGDECL,(Line,[Var],type))
  *            |  (FIXDECL,(Line,[Op],SyntaxInt))
- *            |  (Expr,Rhs)
+ *            |  (FUNBIND,(Expr,Rhs))
+ *            |  (PATBIND,(Pat,Rhs))
  * The ordering of the equations in this list is the reverse of the original
  * ordering in the script parsed.  This is a consequence of the structure of
  * the parser ... but also turns out to be most convenient for the static

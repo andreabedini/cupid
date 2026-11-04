@@ -42,10 +42,10 @@ extern struct primInfo arrayPrims, bignumPrims, dirPrims, iomonadPrims,
 #define primArg(n) stack(root + n)
 
 /* IMPORTANT: the second element of an update must be written first.
- * this is to deal with the case where an INDIRECT tag is written into
+ * This is to deal with the case where an INDIRECT tag is written into
  * a Cell before the second value has been set.  If a garbage collection
  * occurs before the second element was set then the INDIRECTion will be
- * (wrongly) elided and result in chaos.  I know.  It happened to me.
+ * (wrongly) elided and result in chaos.
  */
 
 #define update(l, r) ((snd(stack(root)) = r), (fst(stack(root)) = l))
@@ -571,7 +571,7 @@ extern struct primInfo arrayPrims, bignumPrims, dirPrims, iomonadPrims,
  * trick to create a single statement because some C compilers (eg sun)
  * report warning messages "end-of-loop code not reached".
  * This may lead to syntax errors if used where a statement is required - such
- * errors can be fixed by adding braces round the call.  Blech!
+ * errors can be fixed by adding braces round the call.
  * ------------------------------------------------------------------------*/
 #define IOArg(n) primArg((n) + IOArity)
 #define IOReturn(r)                                                            \

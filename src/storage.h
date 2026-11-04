@@ -15,7 +15,7 @@
 
 /* --------------------------------------------------------------------------
  * Typedefs for main data types:
- * Many of these type names are used to indicate the intended us of a data
+ * Many of these type names are used to indicate the intended use of a data
  * item, rather than for type checking purposes.  Sadly (although sometimes,
  * fortunately), the C compiler cannot distinguish between the use of two
  * different names defined to be synonyms for the same types.
@@ -117,10 +117,10 @@ struct primitive { /* entry in table of primitives         */
  * of lifecycle hooks (connect.h; a null pointer here means it has none)
  * and a (null-terminated) table of primitive functions.
  *
- * They are stored as a linked list - so there's no wired in limits.
- * A phase's hooks are called in the order the modules were registered,
- * after every other subsystem's hook for that phase has been called.
- * (At the moment) there's no way of unregistering a module.
+ * They are stored as a linked list - so there are no wired-in limits.
+ * A phase's hooks are called in the order the modules were registered, when
+ * that phase reaches the controlFuns row of the subsystems table (evaluator.c).
+ * Dropping a script unregisters the module its DLL registered.
  */
 struct Subsystem; /* connect.h; storage.h only needs a pointer to it */
 
@@ -188,10 +188,10 @@ extern void markWithoutMove(Cell);
 #define mark(v) v = markExpr(v)
 
 /* A static that holds a cell is a root.  A module lists the addresses of
- * its roots in a table and registers it once, at INSTALL; the collector
- * then marks them on every collection.  MARK cases remain only for data
- * a flat table cannot describe: the symbol tables, the substitution, the
- * type checker's scope stack. */
+ * its roots in a table and registers it once, from its install hook; the
+ * collector then marks them on every collection.  gcMark hooks (connect.h)
+ * remain only for data a flat table cannot describe: the symbol tables, the
+ * substitution, the type checker's scope stack, the cons-char table. */
 extern void gcRegisterRoots(Cell *const *, int);
 #define registerRoots(t) gcRegisterRoots((t), (int)(sizeof(t) / sizeof((t)[0])))
 
@@ -238,10 +238,9 @@ typedef enum CellTag {
 #if SIZEOF_INTP == SIZEOF_INT
     PTRCELL = 18, /* C Heap Pointer:          snd ::Pointer*/
 #endif
-    /* CHARCELL is the whatIs code for chars; if UNICODE_CHARS is set, it
- * is also used for box cells representing character values greater than
- * or equal to NUM_SMALL_CHARS, in the same way as INTCELL.
- */
+    /* CHARCELL is the whatIs code for chars; it is also used for box cells
+     * representing character values greater than or equal to NUM_SHORT_CHARS,
+     * in the same way as INTCELL. */
     CHARCELL = 22, /* Char literal:           snd :: Char  */
 
     /* Constructor cell tags (BCSTAG..SPECMIN-1): the fst of a pair that
@@ -447,24 +446,16 @@ static inline Cell mkOffset(int o) {
 }
 
 /* --------------------------------------------------------------------------
- * Observations
- * ------------------------------------------------------------------------*/
-
-/* --------------------------------------------------------------------------
  * Modules:
  * ------------------------------------------------------------------------*/
 
 #define MODMIN (OFFMIN + NUM_OFFSETS)
 
-/* Under Haskell 1.3, the list of qualified imports is always a subset
- * of the list of unqualified imports.  For simplicity and flexibility,
- * we do not attempt to exploit this fact - when a module is imported
- * unqualified, it is added to both the qualified and unqualified
- * import lists.
- * Similarily, Haskell 1.3 does not allow a constructor to be imported
- * or exported without exporting the type it belongs to but the export
- * list is just a flat list of Texts (before static analysis) or
- * Tycons, Names and Classes (after static analysis).
+/* An unqualified import goes on the global unqualImports list (input.c), a
+ * qualified one on qualImports here; both record an alias in modAliases.
+ * A constructor cannot be imported or exported without the type it belongs
+ * to, but the export list is just a flat list of Texts (before static
+ * analysis) or Tycons, Names and Classes (after static analysis).
  */
 struct strModule {
     Text text;
@@ -668,14 +659,13 @@ extern Text findModAlias(Text);
 #define CHARMIN (CLASSMIN + NUM_CLASSES)
 
 /* --------------------------------------------------------------------------
- * Unicode Characters: NUM_SHORT_CHARS is the number of one-cell characters.
- * Such cells are recognized by the new predicate isShortChar().
- * Larger character values are stored as boxed values, in the same way
- * as integers, with predicate, selector and constructor functions.
+ * Unicode Characters: NUM_SHORT_CHARS is the number of one-cell characters,
+ * which covers Latin, Greek and Cyrillic.  Such cells are recognized by
+ * isShortChar().  A larger character value is boxed in the same way as an
+ * integer: one pair cell, with CHARCELL as fst and the value as snd.
  * ------------------------------------------------------------------------*/
 
-#define NUM_SHORT_CHARS 1280 /* number of one-cell characters           */
-/* (Latin, Greek and Cyrillic)             */
+#define NUM_SHORT_CHARS 1280
 
 extern bool isChar(Cell);
 extern int charOf(Cell);
@@ -728,13 +718,11 @@ extern List dupUpto(List, Cell);
 extern List revOnto(List, List); /* destructive    */
 CUPID_inline List rev(List xs) {
     return revOnto(xs, NIL);
-} /* non-destructive */
+} /* destructive */
 
 /* --------------------------------------------------------------------------
- * Predicates, projections and constructors on cells.  These were macros;
- * as functions they have types, evaluate their argument once, and can be
- * stepped into.  fst, snd, hd, tl and the table accessors stay macros
- * because they are assigned through.
+ * Predicates, projections and constructors on cells.  fst, snd, hd, tl and
+ * the table accessors are macros because they are assigned through.
  * ------------------------------------------------------------------------*/
 
 CUPID_inline bool isTag(Cell c) {
@@ -813,11 +801,10 @@ CUPID_inline bool isSmall(Cell c) {
  * The record behind a Module, Tycon, Name, Inst or Class.
  *
  * A handle stays a Cell in the range its table occupies.  These turn one
- * into a pointer to its record, so that a field of it is an lvalue, which
- * is what kept the accessors macros until now.  Under -Dchecks each
- * one first checks that the cell really is a handle into that table; the
- * macros indexed whatever they were given.  The tables are fixed arrays,
- * so a record does not move and the pointer stays good.
+ * into a pointer to its record, so that a field of it is an lvalue.  Under
+ * -Dchecks each one first checks that the cell really is a handle into that
+ * table.  The tables are fixed arrays, so a record does not move and the
+ * pointer stays good.
  * ------------------------------------------------------------------------*/
 
 /* Reports a cell that is not the handle the accessor expected.  Defined in
@@ -1086,7 +1073,7 @@ extern Cell applyToArgs(Cell, List);
 /* --------------------------------------------------------------------------
  * Stack implementation: one stack of cells shared by the parser (which
  * shadows bison's stack on it), the SCC sort and the abstract machine.
- * Every entry below sp is a garbage-collection root.
+ * Every entry up to and including sp is a garbage-collection root.
  * ------------------------------------------------------------------------*/
 
 extern Cell DECTABLE(cellStack);
@@ -1127,14 +1114,13 @@ CUPID_inline void toparg(Cell x) {
     top() = ap(top(), x);
 }
 
-/* STACK_CHECK compares the address of a local variable against a limit
- * derived from CStackBase (machdep.c) and the process's stack rlimit, so
- * that every point in the interpreter that recurses on the C stack --
- * eval, the static checker, the type checker, and the compiler passes
- * that walk the AST -- can detect an approaching C stack overflow and
- * report it through the ordinary error path instead of crashing.  The
- * limit starts out as the highest address, so the first check always
- * takes the slow path, cStackCheck (machine.c), which computes it.
+/* stackCheck compares the address of a local variable against cStackLimit,
+ * so that every point in the interpreter that recurses on the C stack with no
+ * other bound -- eval, the static checker, the type checker, and the compiler
+ * passes that walk the AST -- can detect an approaching C stack overflow and
+ * report it through the ordinary error path instead of crashing.  The limit
+ * starts out as the highest address, so the first check always takes the slow
+ * path, cStackCheck (machine.c), which computes it.
  */
 extern char *cStackLimit;
 extern void cStackCheck(void);
@@ -1328,12 +1314,6 @@ extern void setLastExpr(Cell);
 extern Cell getLastExpr(void);
 extern List addTyconsMatching(char *, List);
 extern List addNamesMatching(char *, List);
-
-/*-------------------------------------------------------------------------*/
-
-/* whatIs1 is faster than whatIs, but it will return NIL if fst(c) is NIL
- * Used with care in the right places it gains us speed.
- */
 
 /* --------------------------------------------------------------------------
  * What the partition above depends on.

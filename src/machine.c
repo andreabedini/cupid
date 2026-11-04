@@ -26,13 +26,10 @@ int evalDepth; /* depth of nested eval()'s        */
 /* --------------------------------------------------------------------------
  * C stack overflow detection:
  *
- * STACK_CHECK (storage.h) is used at every point in the interpreter that
- * recurses on the C stack with no other bound (eval, the static checker,
- * the type checker, the compiler passes that walk the AST): it compares
- * the address of a local against cStackLimit and, when that fails, calls
- * cStackCheck() below, which reports "Control stack overflow" through
- * the usual error path (cupidStackOverflow(), storage.c) instead of
- * letting the recursion run off the end of the stack and segfault.
+ * When stackCheck (storage.h) fails it calls cStackCheck() below, which reports
+ * "Control stack overflow" through the usual error path (cupidStackOverflow(),
+ * storage.c) instead of letting the recursion run off the end of the stack and
+ * segfault.
  *
  * CStackBase (machdep.c) is recorded once, very early in main(); it is
  * also used by the conservative collector.  The usable size of the
@@ -48,11 +45,11 @@ int evalDepth; /* depth of nested eval()'s        */
  * frame (cStackTop below).
  *
  * STACK_MARGIN is headroom kept below the computed limit: room for the
- * deepest primitive that still runs after STACK_CHECK trips, plus the
+ * deepest primitive that still runs after stackCheck trips, plus the
  * error-reporting path itself (formatting and printing the message,
  * which recurses a little to show the expression being evaluated).
  * 64 KB was chosen empirically: measurements on this build showed under
- * 8 KB of further C stack use between a STACK_CHECK tripping in eval()
+ * 8 KB of further C stack use between a stackCheck tripping in eval()
  * and the error message reaching the user, so 64 KB leaves a wide
  * safety factor for the deeper recursions in the type checker and
  * compiler passes.
@@ -69,7 +66,7 @@ extern char **environ;
 #define FALLBACK_C_STACK (8 * 1024 * 1024) /* used when the rlimit is unknown */
 
 char *cStackLimit = (char *)(-1); /* lowest address considered safe; */
-                                  /* see STACK_CHECK in storage.h    */
+                                  /* see stackCheck in storage.h     */
 
 #if IS_WINDOWS
 /* Windows knows the bounds of the thread's stack, fixed when the program
@@ -116,7 +113,7 @@ static void initCStackLimit(void) {
 }
 #endif
 
-/* Slow path of STACK_CHECK */
+/* Slow path of stackCheck */
 void cStackCheck(void) {
     char here;
     if (cStackLimit == (char *)(-1)) {
@@ -127,20 +124,7 @@ void cStackCheck(void) {
     }
 }
 
-/* --------------------------------------------------------------------------
- * mkTuple(n) and mkOffset(o) (storage.h) used to build a tagged cell
- * without checking n against NUM_TUPLES or o against NUM_OFFSETS.  Once a
- * count or offset ran past its limit the resulting cell aliased the next
- * tag range up (OFFSET for an over-large tuple, MODULE for an over-large
- * offset), so something downstream that inspected the cell's tag -- often
- * far from where the excess count or offset first arose, e.g. a 200-tuple
- * or a function with over 1000 let-bindings -- hit an "INTERNAL ERROR"
- * sanity check instead of a clean message.  Checking here, at the single
- * place both kinds of cell are built, catches every over-large tuple or
- * offset regardless of which caller produced it.
- * ------------------------------------------------------------------------*/
-
-/* MkTuple(n) with n>=NUM_TUPLES */
+/* mkTuple(n) with n>=NUM_TUPLES */
 void tooManyTupleComponents(void) {
     errHead(0);
     errPrintf("Tuples with more than %d components are not supported",
@@ -148,7 +132,7 @@ void tooManyTupleComponents(void) {
     errFail();
 }
 
-/* MkOffset(o) with o>=NUM_OFFSETS */
+/* mkOffset(o) with o>=NUM_OFFSETS */
 void tooManyOffsets(void) {
     errHead(0);
     errPrintf("Compiled code too complex");
@@ -160,9 +144,8 @@ void tooManyOffsets(void) {
  * ------------------------------------------------------------------------*/
 
 /* This list defines the sequence of all instructions that can be used in
- * the abstract machine code for Cupid.  The Ins() macro is used to
- * ensure that the correct mapping of instructions to labels is used when
- * compiling the GCC_THREADED version.
+ * the abstract machine code for Cupid.  The Ins() macro turns each entry into
+ * its enumerator here and into its label in run()'s computed-goto table.
  */
 
 #define INSTRLIST                                                              \
@@ -199,8 +182,7 @@ static Memory memory;
  * and neither can run while the evaluator is on the C stack: run() itself
  * calls only eval(), the heap constructors and evalFails(), and every route
  * from eval() to the compiler would have to pass through a primitive.
- * growMemory() checks that invariant rather than leaving it to be
- * rediscovered. */
+ * growMemory() checks that invariant. */
 DynTable *dynMemory = NULL;
 
 void growMemory(void) {
@@ -223,10 +205,6 @@ void growMemory(void) {
 #define addrAt(m) (memory[m].addr + (m))
 #define instrAt(m) memory[m].instr
 #define labAt(m) memory[m].lab
-
-/* --------------------------------------------------------------------------
- * Local function prototypes:
- * ------------------------------------------------------------------------*/
 
 typedef struct CodeGen CodeGen;
 
@@ -298,10 +276,9 @@ static void evalString(Cell);
 /* --------------------------------------------------------------------------
  * Assembler: (Low level, instruction code storage)
  *
- * Generating code for one supercombinator runs on the state below.  It was
- * a dozen file-scope variables; it is one record now, which the two entry
- * points make and hand to everything they call, so that the state a
- * function reads and writes is in its signature.
+ * Generating code for one supercombinator runs on the state below: one record,
+ * which the two entry points make and hand to everything they call, so that
+ * the state a function reads and writes is in its signature.
  * ------------------------------------------------------------------------*/
 
 struct CodeGen {
@@ -713,13 +690,13 @@ Name cfunByNum(Name n, int i) {
 }
 
 /* --------------------------------------------------------------------------
- * Dissassembler:
+ * Disassembler:
  * ------------------------------------------------------------------------*/
 
 #if DEBUG_CODE
 # define printAddr(a) Printf("0x%04X", a) /* printable representation of Addr */
 
-/* Print dissassembly of code */
+/* Print disassembly of code */
 static void dissassemble(Addr pc, Addr end) {
     while (pc <= end) {
         printAddr(pc);
@@ -728,7 +705,7 @@ static void dissassemble(Addr pc, Addr end) {
     }
 }
 
-/* Print dissassembly of instruction */
+/* Print disassembly of instruction */
 static Addr dissInstr(Addr pc) {
     switch (instrAt(pc)) {
     case iLOAD:
@@ -815,26 +792,26 @@ static void printCell(Cell c) {
         Printf("$%d", c);
 }
 
-/* Dissassemble instr no args */
+/* Disassemble instr no args */
 static Addr dissNone(Addr pc, char *s) {
     Printf("%s\n", s);
     return pc + 1;
 }
 
-/* Dissassemble instr with Int arg */
+/* Disassemble instr with Int arg */
 static Addr dissInt(Addr pc, char *s) {
     Printf("%s\t%d\n", s, intAt(pc + 1));
     return pc + 2;
 }
 
-/* Dissassemble instr with Double arg */
+/* Disassemble instr with Double arg */
 static Addr dissDouble(Addr pc, char *s) {
     Printf("%s\t%s\n", s,
            doubleToString(doubleFromParts(cellAt(pc + 1), cellAt(pc + 2))));
     return pc + 3;
 }
 
-/* Dissassemble instr with Cell arg */
+/* Disassemble instr with Cell arg */
 static Addr dissCell(Addr pc, char *s) {
     Printf("%s\t", s);
     printCell(cellAt(pc + 1));
@@ -842,13 +819,13 @@ static Addr dissCell(Addr pc, char *s) {
     return pc + 2;
 }
 
-/* Dissassemble instr with Text arg */
+/* Disassemble instr with Text arg */
 static Addr dissText(Addr pc, char *s) {
     Printf("%s\t%s\n", s, textToStr(textAt(pc + 1)));
     return pc + 2;
 }
 
-/* Dissassemble instr with Addr arg */
+/* Disassemble instr with Addr arg */
 static Addr dissAddr(Addr pc, char *s) {
     Printf("%s\t", s);
     printAddr(addrAt(pc + 1));
@@ -856,7 +833,7 @@ static Addr dissAddr(Addr pc, char *s) {
     return pc + 2;
 }
 
-/* Dissassemble instr with Cell/Addr */
+/* Disassemble instr with Cell/Addr */
 static Addr dissCellAddr(Addr pc, char *s) {
     Printf("%s\t", s);
     printCell(cellAt(pc + 1));
@@ -1187,8 +1164,8 @@ static void testGuard(CodeGen *cg, Pair g, int co, Label f, Label cf, Label d) {
     make(cg, snd(g), co, f, d);
 }
 
-/* Produce code for guard labels determine where to go if: match succeeds, but
- * rest fails this match fails */
+/* Produce code for a case alternative: f is where to go if the match succeeds
+ * but the rest fails, cf if this match fails. */
 static void testCase(CodeGen *cg, Pair c, int co, Label f, Label cf, Label d) {
     int n = discrArity(fst(c));
     int i;
@@ -1722,13 +1699,10 @@ void run(Addr start, StackPtr root) {
 Cell evalWithNoError(Cell e) {
     Cell caughtEx;
     jmp_buf *oldCatch = evalError;
-    int savedDepth = evalDepth; /* throwException() longjmps straight*/
-    StackPtr savedSp = sp;      /* past eval()'s own bookkeeping, so */
-                                /* an exception caught here must undo   */
-                                /* whatever the aborted evaluation left */
-                                /* behind: eval() only decrements       */
-                                /* evalDepth, and restores sp, along    */
-                                /* its normal return path.              */
+    /* throwException() longjmps past eval(), which adjusts evalDepth and sp only
+     * on normal return, so a caught exception restores both. */
+    int savedDepth = evalDepth;
+    StackPtr savedSp = sp;
 
     jmp_buf catcherr[1];
     evalError = catcherr;
@@ -1770,7 +1744,7 @@ void throwException(Cell ex) {
 /* Allocate the program memory and write out the FAIL every failing
  * match branches to; done once, before the Prelude is read. */
 void installMachine(void) {
-    /* prelude.h defines NUM_ADDRS; 0 is the upper bound (=> unbounded.) */
+    /* sizes.h defines NUM_ADDRS; 0 is the upper bound (=> unbounded.) */
     /* the elements are MemCells, not pointers to them */
     dynMemory = allocDynTable(sizeof(MemCell), NUM_ADDRS, 0, "memory");
     memory = (Memory)(dynMemory->data);

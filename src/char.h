@@ -6,12 +6,6 @@
 /* --------------------------------------------------------------------------
  * Character set handling:
  *
- * Cupid follows Haskell 1.3 in assuming that input uses the ISO-8859-1
- * (Latin-1) character set.  The following code provides methods for
- * classifying input characters according to the lexical structure
- * specified by the report.  Cupid should still accept older programs
- * because ASCII is just a subset of the Latin-1 character set.
- *
  * Extended to Unicode by Dimitry Golubovsky <dimitry@golubovsky.org>.
  * ------------------------------------------------------------------------*/
 
@@ -120,7 +114,7 @@ extern int uni_gencat(Char);
  *              Decode a Char from the string, moving the pointer.
  *              Returns '\0' on end of string or BAD_CHAR on a coding error.
  *      Bool charIsRepresentable(Char c)
- *              Tests whether s can be represented without loss using
+ *              Tests whether c can be represented without loss using
  *              the selected encoding.
  *
  * There is in general no way to recover from encoding errors.
