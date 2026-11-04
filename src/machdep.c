@@ -19,8 +19,6 @@
 #include "machdep.h"
 #include "evaluator.h" /* installSubsystems() etc. proto only */
 
-/*#define DEBUG_SEARCH*/
-
 #include <signal.h>
 #include <sys/types.h>
 #if HAVE_SYS_PARAM_H
@@ -380,7 +378,7 @@ static bool scanSubDirs(char *name) {
     return false;
 }
 
-#endif /* HAVE_WINDOWS_H || HAVE_DIRENT_H || (__MWERKS__ && macintosh) */
+#endif /* HAVE_DIRENT_H || HAVE_WINDOWS_H */
 
 /* Variables that may be substituted in the path */
 
@@ -396,7 +394,7 @@ static struct shellVariable shell_var[] = {
     findPathname nm = [ nm ++ e | e <- "" : cupidSuffixes ]
 */
 
-/* Look for a file, trying various extensions Return ***input name*** if no
+/* Look for a file, trying various extensions.  Return ***input name*** if no
  * file was found */
 char *findPathname(char *filename) {
     searchReset(0);
@@ -419,7 +417,7 @@ char *findPathname(char *filename) {
         dot2slash c   = if c=='.' then slash else c
 */
 
-/* Look for a module in the suggested dir Return NULL if no file was found */
+/* Look for a module in the suggested dir.  Return NULL if no file was found */
 char *findMInDir(char *dir, char *nm) {
     searchReset(0);
     searchStr(dir);
@@ -431,7 +429,7 @@ char *findMInDir(char *dir, char *nm) {
     }
 }
 
-/* Look for a module Return NULL if no file was found */
+/* Look for a module.  Return NULL if no file was found */
 char *findMPathname(char *name) {
     if (find1(name)) {
         return searchBuf;
@@ -638,8 +636,8 @@ static bool samePath(char *pp1, char *pp2) {
  * Read value from environment variable:
  * ------------------------------------------------------------------------*/
 
-/* Return value of: environment variable named by var or: default value given
- * by def */
+/* Return value of environment variable named by var, or default value given by
+ * def */
 char *fromEnv(char *var, char *def) {
     char *s = getenv(var);
     return (s ? s : def);
@@ -650,7 +648,7 @@ char *fromEnv(char *var, char *def) {
  * ------------------------------------------------------------------------*/
 
 #if PROFILING
-/* Return time&date string must end with '\n' character */
+/* Return time&date string, which must end with '\n' character */
 char *timeString(void) {
     time_t clock;
     time(&clock);
@@ -690,9 +688,9 @@ void gcRecovered(int recovered) {
 
 Cell *CStackBase; /* Retain start of C control stack */
 
-/* Garbage collect elements off */
+/* Garbage collect elements off C stack */
 void gcCStack(void) {
-    Cell stackTop = NIL; /* C stack                         */
+    Cell stackTop = NIL;
     Cell *ptr = &stackTop;
     if (((uintptr_t)ptr - (uintptr_t)CStackBase) & 3)
         fatal("gcCStack");
@@ -927,7 +925,7 @@ bool breakOn(bool reqd) {
     breakReqd = reqd;
     if (reqd) {
         trapBreak = true;
-        if (broken) {       /* repond to break signal received */
+        if (broken) {       /* respond to break signal received */
             broken = false; /* whilst break trap disabled      */
             sigRaise(breakHandler);
             /* not reached */
@@ -943,10 +941,9 @@ bool breakOn(bool reqd) {
 
 /* Record but don't respond to break */
 static sigHandler(ignoreBreak) {
-    /* async-signal-safe: only sets the flag, nothing else.  ctrlbrk()   */
-    /* installs this handler with sigaction() on POSIX, so (unlike the   */
-    /* old signal()-based scheme) it does not need to be reinstalled     */
-    /* here to survive delivery.                                        */
+    /* async-signal-safe: only sets the flag, nothing else.  ctrlbrk() installs
+     * this handler with sigaction() on POSIX, so it does not need to be
+     * reinstalled here to survive delivery. */
     broken = true;
     sigResume;
 }
@@ -1088,10 +1085,6 @@ void installSignalHandlers(void) {
 }
 
 /* --------------------------------------------------------------------------
- * Shell escapes:
- * ------------------------------------------------------------------------*/
-
-/* --------------------------------------------------------------------------
  * Running an external program:
  *
  * The preprocessor filter, the editor and the FFI compile-and-link command
@@ -1101,12 +1094,11 @@ void installSignalHandlers(void) {
  * punctuation it contains, which is why nothing here quotes anything.
  *
  * The commands that are meant to run a shell still do: the `:!' escape at
- * the prompt, primSystem, and an editor command prefixed with `!', all
- * through shellEsc below.
+ * the prompt and primSystem, both through shellEsc below.
  *
  * A configured command (the -F filter, the editor template, MKDLL_CMD,
  * the FFI flags) is split into words on whitespace and on nothing else:
- * quotes, `$' and backticks in one are ordinary characters now.
+ * quotes, `$' and backticks in one are ordinary characters.
  * ------------------------------------------------------------------------*/
 
 void argvInit(Argv *a) {
@@ -1159,11 +1151,9 @@ void argvFree(Argv *a) {
 
 #if !IS_WINDOWS
 
-/* Wait for pid.  shield says to ignore SIGINT and SIGQUIT while waiting,
- * which is what system() did for us and what the editor needs: without it
- * a Ctrl-C meant for the editor runs the interpreter's break handler, which
- * longjmps out of here and leaves the child behind.  The filter does not
- * shield, because pclose() did not either.  Setting the dispositions after
+/* Wait for pid.  shield says to ignore SIGINT and SIGQUIT while waiting, as the
+ * editor needs: otherwise a Ctrl-C meant for the editor also reaches the
+ * interpreter.  The filter does not shield.  Setting the dispositions after
  * the fork keeps them out of the child, and exec resets a handled signal to
  * its default there anyway. */
 static int argvWait(ProcId pid, bool shield) {
@@ -1215,7 +1205,7 @@ static ProcId argvStart(Argv *a, int outFd, int shutFd) {
 
 int argvRun(Argv *a, bool sync) {
     ProcId pid;
-    /* sync is ignored, as it was when this went through system() */
+    /* sync is ignored */
     (void)sync;
     if ((pid = argvStart(a, -1, -1)) < 0)
         return -1;
@@ -1556,7 +1546,6 @@ static void *getDLL(char *dll) {
         errPrintf("Error while importing DLL \"%s\"", dll);
         errFail();
     }
-    /* fprintf(stderr, "Loaded DLL 0x%p\n",instance); fflush(stderr); */
     return instance;
 }
 
@@ -1567,7 +1556,6 @@ static void *getDLLSymbol(void *instance, char *symbol) {
 
 void freeDLL(void *dll) {
     if (dll) {
-        /* fprintf(stderr, "Freeing DLL 0x%p\n",dll); fflush(stderr); */
         FreeLibrary(dll);
     }
     return;
@@ -1816,25 +1804,22 @@ bool initSystem(void) {
  * Machine dependent control:
  * ------------------------------------------------------------------------*/
 
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const machdepRoots[] = {
     &bdTemp,
 };
 
-/* Register the roots */
 void installMachdep(void) {
     registerRoots(machdepRoots);
 }
 
-/* Put the terminal back into its normal (non-raw) mode; shared by
- * RESET, BREAK and EXIT, which all did this before the codes went. */
+/* Put the terminal back into its normal (non-raw) mode; shared by the reset,
+ * break and exit hooks. */
 void exitMachdep(void) {
     normalTerminal();
 }
 
-/* Clear the pending breakpoint buffer, and put the terminal back to
- * normal as RESET always also did. */
+/* Clear bdTemp, which an error during mkDouble can leave set, and put the
+ * terminal back to normal. */
 void resetMachdep(void) {
     bdTemp = NIL;
     exitMachdep();

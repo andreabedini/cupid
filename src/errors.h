@@ -53,9 +53,7 @@ extern void cupidPutc(int, FILE *);
 
 /* Reporting an error: errHead(line) prints the header, errPrintf and the
  * err* functions print the parts of the message, and errFail ends it and
- * returns to the command loop.  (Before this the same sequence was written
- * with the ERRMSG/ETHEN/EEND macros, whose parentheses did not balance
- * within a line.) */
+ * returns to the command loop. */
 extern void errHead(int); /* ERROR "file":line -  */
 extern void errPrintf(const char *, ...) CUPID_printf(1, 2);
 extern void errExpr(Cell);

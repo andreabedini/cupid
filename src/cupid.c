@@ -26,10 +26,6 @@
 
 #include <stdio.h>
 
-/* --------------------------------------------------------------------------
- * Local function prototypes:
- * ------------------------------------------------------------------------*/
-
 static void interpreter(int, char *[]);
 static void initInterpreter(void);
 static void menu(void);
@@ -59,7 +55,7 @@ static Text evalModule = 0;             /* Name of module we eval exprs in */
 static char *defaultArgv[] = {"Cupid"}; /* program name */
 
 /* --------------------------------------------------------------------------
- * UI interpreter initalization:
+ * UI interpreter initialization:
  * ------------------------------------------------------------------------*/
 static void initialize(int argc, char *argv[]) {
     startEvaluator();
@@ -79,11 +75,6 @@ static void initialize(int argc, char *argv[]) {
     /* Add an empty module as the default, to avoid being inside the Prelude */
     addScriptName(STD_EMPTY_MODULE, true);
 
-    /* We record the number of scripts that loading the Prelude
-     * brought about, so that when the user comes to clear the module
-     * stack (e.g., ":l<ENTER>"), only modules later than the Prelude
-     * ones are scratched.
-     */
     setScriptStableMark();
 
     addScriptsFromArgs(argc, argv);
@@ -148,7 +139,7 @@ static bool chooseMode(int *argc, char *argv[], Mode *mode) {
  * Cupid entry point:
  * ------------------------------------------------------------------------*/
 
-int main(int, char *[]); /* now every func has a prototype  */
+int main(int, char *[]);
 
 int main(int argc, char *argv[]) {
     Mode mode;
@@ -933,7 +924,7 @@ static void initInterpreter(void) {
     promptForInput(textToStr(moduleRec(findEvalModule())->text));
 }
 
-/* Read and execute a command returns true on QUIT (:quit) */
+/* Read and execute a command; returns true on QUIT (:quit) */
 bool doCommand(void) {
     Command cmd;
     cmd = readCommand(cmds, (Char)':', (Char)'!');

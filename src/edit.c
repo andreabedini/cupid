@@ -92,11 +92,6 @@ bool startEdit(int line, char *nm) {
     bool syncEdit = true;
     char lineStr[2 + 3 * sizeof(int)];
 
-    /* First off, check whether we have actually got a plausible editor
-     * available. On a Mac, files have creator information, telling which
-     * program to launch to, so an editor named to the empty string ""
-     * is often desirable.
-     */
     if (!cupidEdit || *cupidEdit == '\0') {
         errHead(0);
         errPrintf("Cupid is not configured to use an editor");
@@ -113,9 +108,8 @@ bool startEdit(int line, char *nm) {
 
     he = cupidEdit;
 
-    /* If the editor command is prefixed with '&', the editor is
-     * started up asynchronously (the default is for Cupid to block
-     * and wait for the editor to exit).
+    /* If the editor command is prefixed with '&', Windows starts the editor
+     * asynchronously; argvRun on POSIX always blocks until it exits.
      */
     while (*he == '&') {
         syncEdit = false;

@@ -93,9 +93,8 @@ extern bool printing; /* true => currently printing value*/
  */
 
 /*
- * Representing toggles -- exposed here so that UIs (such as winhugs/) can 
- * work off the toggle[] array when putting together an 'Options' dialog.
- *
+ * Representing toggles -- exposed here so that UIs can work off the toggle[]
+ * array when putting together an 'Options' dialog.
  */
 struct options { /* command line option toggles     */
     char c;      /* table defined in main app.      */

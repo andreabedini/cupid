@@ -1,10 +1,8 @@
 /* --------------------------------------------------------------------------
  * Implementation of the Haskell IO monad.
  *
- * The primitives below implement the standard IO monad for Haskell 1.3
- * using a continuation passing monad for sequencing.  The primitives are
- * believed to give a reasonably good implementation of the semantics
- * specified by the Haskell 1.3 report.  There are also some additional
+ * The primitives below implement the standard IO monad using a continuation
+ * passing monad for sequencing.  There are also some additional
  * primitives, particularly for dealing with IOError and Handle values
  * that are not included in the prelude, but are used by standard libraries.
  *
@@ -66,8 +64,6 @@ extern void pushString(char *);
  * IO monad control:
  * ------------------------------------------------------------------------*/
 
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const iomonadRoots[] = {
     &cupidProgName,
     &cupidArgs,
@@ -85,7 +81,6 @@ static void installIomonad(void) {
     namePutStr = predefName("putStr");
 }
 
-/* The hooks builtIn's INSTALL registers this module under. */
 static const Subsystem iomonadSubsystem = {
     "iomonad", installIomonad, NULL, NULL, NULL, NULL,
 };
@@ -282,14 +277,14 @@ primFun(primReturnIO) {
     IOReturn(IOArg(1));
 }
 
-/* IO monad bind bind 3 2 1 = 3 (pass 2 1) */
+/* IO monad bind: bind 3 2 1 = 3 (pass 2 1) */
 primFun(primBindIO) {
     push(ap(namePass, primArg(2)));
     toparg(primArg(1));
     updapRoot(primArg(3), top());
 }
 
-/* Auxiliary function pass 3 2 1 = 3 1 2 */
+/* Auxiliary function: pass 3 2 1 = 3 1 2 */
 primFun(primPass) {
     push(ap(primArg(3), primArg(1)));
     updapRoot(top(), primArg(2));
@@ -512,12 +507,11 @@ void pushString(char *s) {
     }
 }
 
-/* Helper function for constructing IOErrors (see Prelude defn of
- * IOError for explanation of what the the individual arguments
- * do.
+/* Helper function for constructing IOErrors (see Prelude defn of IOError for
+ * explanation of what the individual arguments do): mbH is a Handle or NULL,
+ * kind an IOErrorType and mbF a FilePath or NULL.
  */
 
-/* A Handle or NULL an IOErrorType a FilePath or NULL */
 Cell mkIOError(Cell *mbH, Name kind, char *loc, char *desc, Cell *mbF) {
     Cell str;
     push(nameIOError);
@@ -848,10 +842,7 @@ primFun(primOpenFd) {
 
 #if defined(_WIN32) && !cygwin32_HOST_OS
     if (isSock) {
-        /* fd is a SOCKET, convert it to an FD.
-         * Note: _open_osfhandle() will fail under
-         * Win9x. ToDo: better on those plats.
-         */
+        /* fd is a SOCKET, convert it to an FD. */
         fd = _open_osfhandle(fd, (m & HREAD ? O_RDONLY : 0) |
                                      (m & HWRITE ? O_WRONLY : 0) |
                                      (m & HREADWRITE ? O_RDWR : 0) |
@@ -1132,7 +1123,7 @@ primFun(primHIsWritable) {
 # define S_ISREG(x) ((x) & _S_IFREG)
 #endif
 
-/* Test if handle is writable */
+/* Test if handle is seekable: open, on a regular file */
 primFun(primHIsSeekable) {
     int h;
     bool okHandle;
@@ -1563,9 +1554,9 @@ primFun(primWeakPtrEq) {
     updateRoot(pop() == whnfHead ? nameTrue : nameFalse);
 }
 
-/* K -> v -> Maybe (IO ()) */
+/* K -> v -> Maybe (IO ()) -> IO (Weak v) */
 primFun(primMkWeak) {
-    Cell w = NIL; /*                    -> IO (Weak v) */
+    Cell w = NIL;
     eval(IOArg(1));
     if (whnfHead == nameJust) { /* Look for finalizer              */
         w = pop();
@@ -1591,9 +1582,8 @@ primFun(primDeRefWeak) {
     }
 }
 
-/* Weak v -> Maybe (IO ()) */
+/* Weak v -> Maybe (IO ()) -> IO (Maybe (IO ())) */
 primFun(primReplaceFinalizer) {
-    /*      -> IO (Maybe (IO ()))      */
     eval(IOArg(1)); /* Grab new finalizer ...          */
     if (whnfHead != nameJust) {
         push(NIL);
@@ -1654,21 +1644,18 @@ primFun(primFinalizerWaiting) {
  * Primitives for implementing disposable memo functions
  * Byron Cook -- byron@cse.ogi.edu
  *
- * IOEql :: Eval a => a -> a -> IO Bool 
+ * IOEql :: a -> a -> IO Bool
  *   if argument is an Int or Char
  *   then use ==
  *   else use pointer identity
  *
- * IOHash :: Eval a => a -> IO Int
+ * IOHash :: a -> IO Int
  *   if a is an Int or Char
  *   then use value cast as an Int
  *   else use pointer identity
- *
- * (Earlier versions made Float a special case too - but that's not very
- *  portable since it assumes that sizeof(FloatPro) == sizeof(Int).)
  * ------------------------------------------------------------------------*/
 
-/* :: Eval a => a -> a -> ST Mem Bool */
+/* :: a -> a -> IO Bool */
 primFun(primIOEql) {
     Cell x = IOArg(1);
     Cell y = IOArg(2);
@@ -1691,7 +1678,7 @@ primFun(primIOEql) {
     IOBoolResult(x == y);
 }
 
-/* :: Eval a => a -> ST Mem Int */
+/* :: a -> IO Int */
 primFun(primIOHash) {
     Cell x = IOArg(1);
     eval(x);

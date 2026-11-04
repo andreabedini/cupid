@@ -14,8 +14,6 @@
 #include "builtin.h"
 #include <math.h>
 
-/*#define DEBUG_BIGNUMS*/
-
 static Cell bn; /* Bignum accumulator; used in bignum      */
 /* calcs, visited by the garbage collector.*/
 static List bigRem = NIL; /* used in bigQrm to return remainder    */
@@ -61,14 +59,11 @@ static struct primitive bignumPrimTable[] = {
 
 static Name nameIntToInteger;
 
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const bignumRoots[] = {
     &bn,
     &bigRem,
 };
 
-/* Clear the bignum accumulator and the quotient/remainder result. */
 static void resetBignum(void) {
     bn = NIL;
     bigRem = NIL;
@@ -82,16 +77,11 @@ static void installBignum(void) {
     resetBignum();
 }
 
-/* The hooks builtIn's INSTALL registers this module under. */
 static const Subsystem bignumSubsystem = {
     "bignum", installBignum, resetBignum, NULL, NULL, NULL,
 };
 
 struct primInfo bignumPrims = {&bignumSubsystem, bignumPrimTable, 0};
-
-/* --------------------------------------------------------------------------
- * Local function prototypes:
- * ------------------------------------------------------------------------*/
 
 static int digitsCmp(List, List);
 static Bignum bigAdd(Bignum, Bignum);
@@ -174,7 +164,7 @@ Bignum bigDouble(double a) {
     if (a == 0) {
         return ZERONUM;
     } else {
-        double b; /* Obscure use of a and b is to avoid a bug in Symantec C*/
+        double b;
         Cell nx;
         if (a < 0) {
             b = (-a);
@@ -201,7 +191,7 @@ Bignum bigDouble(double a) {
 
 /* The library documentation says that conversion between signed and
  * unsigned types preserves representation, not sign.  Since this
- * conversion uses fromInteger, and we do note know the original type,
+ * conversion uses fromInteger, and we do not know the original type,
  * fromInteger is the same for Int and Word.
  *
  * Haskell's fixed-width Integer->Int/Word conversions do not check
@@ -246,7 +236,7 @@ double bigToDouble(Bignum n) {
     }
 }
 
-/* Convert String to bignum Surprisingly, this is GC safe because ds is the
+/* Convert String to bignum.  Surprisingly, this is GC safe because ds is the
  * only variable that needs marking, and always appears as the snd of each cons */
 Bignum bigStr(char *s) {
     List ds = NIL;
@@ -273,8 +263,8 @@ Bignum bigStr(char *s) {
     return isNull(ds) ? ZERONUM : pair((*s == '-' ? NEGNUM : POSNUM), ds);
 }
 
-/* Bignum output, prepend digits to stream s GC safe; s is snd in each cons
- * true => wrap neg int in parens */
+/* Bignum output, prepend digits to stream s.  GC safe; s is snd in each cons.
+ * b true => wrap neg int in parens */
 Cell bigOut(Bignum a, Cell s, bool b) {
     if (a == ZERONUM)
         return ap(consChar('0'), s);
@@ -308,8 +298,8 @@ Cell bigOut(Bignum a, Cell s, bool b) {
     }
 }
 
-/* Digits 0 <= c, mult < BIGBASE Calculate big*mult+c, if big>=0 big*mult-c, if
- * big<0 UPDATE big, DESTRUCTIVELY! */
+/* Digits 0 <= c, mult < BIGBASE.  Calculate big*mult+c if big>=0, big*mult-c if
+ * big<0.  UPDATE big, DESTRUCTIVELY! */
 Bignum bigShift(Bignum big, int c, int mult) {
     if (big == ZERONUM)
         return (c == 0) ? ZERONUM : pair(POSNUM, singleton(mkDigit(c)));
@@ -435,7 +425,7 @@ int bigCmp(Bignum a, Bignum b) {
         return digitsCmp(snd(a), snd(b));
 }
 
-/* Compare positive digit streams -1 if xs<ys, +1 if xs>ys, 0 if= */
+/* Compare positive digit streams: -1 if xs<ys, +1 if xs>ys, 0 if= */
 static int digitsCmp(List xs, List ys) {
     int s = 0;
     for (; nonNull(xs) && nonNull(ys); xs = tl(xs), ys = tl(ys)) {
@@ -676,7 +666,7 @@ static List digitsQrm(List us, List vs) {
         /* The division algorithm used here is, inevitably, based on the
          * description in Knuth's volume 2 on Seminumerical algorithms,
          * and is probably at least as incomprehensible as the MIX
-         * implementation given there :-)
+         * implementation given there.
          */
 
         List us1 = NIL;

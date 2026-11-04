@@ -14,6 +14,6 @@ extern Cell checkPatType(int, char *, Cell, Type); /* a pattern signature    */
 extern Cell applyBtyvs(Cell); /* record the tyvars a pattern binds        */
 extern Name conDefined(int, Cell, bool); /* the constructor a name refers to */
 extern void resetPattern(void);   /* clear patVars                          */
-extern void installPattern(void); /* register roots and reset; INSTALL only */
+extern void installPattern(void); /* register roots and reset              */
 
 #endif /* __PATTERN_H__ */

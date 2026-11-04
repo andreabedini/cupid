@@ -48,8 +48,8 @@ enum {
 struct CharProperties {
     int category;     /* Unicode general category */
     int upper_offset; /* offset of the result of toUpper */
-    int lower_offset; /* offset of the result of toUpper */
-    int title_offset; /* offset of the result of toUpper */
+    int lower_offset; /* offset of the result of toLower */
+    int title_offset; /* offset of the result of toTitle */
 };
 
 /* A contiguous block of characters with the same properties */

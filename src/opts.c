@@ -193,13 +193,11 @@ void readOptions(char *options, bool freeUp) {
  *
  * Option strings come from the command line, from CUPIDFLAGS and from
  * the argument of -X, and they are split into words here.
- * They used to be split by pointing the global input stream at them with
- * stringInput() and reading words back with readFilename(), but there is
- * only one input stream: a -X nested inside an option string reset it, and
- * everything after that -X was silently lost -- the rest of CUPIDFLAGS, or
- * the rest of a ":set" line, which was then read back as the next command.
+ * They do not go through the global input stream: there is only one, and a -X
+ * nested inside an option string would reset it, losing everything after that
+ * -X.
  *
- * The word syntax is the one readFilename() accepted.  Words are separated
+ * Words are separated
  * by white space.  A double quote begins a quoted section, which ends at the
  * next quote and may contain spaces; inside it \", \\ and "\ " stand for a
  * quote, a backslash and a space, and a backslash before anything else is an
@@ -453,7 +451,7 @@ bool processOption(char *s) {
 
         default:
             if (strcmp("98", s) == 0) {
-                /* the extensions are always enabled now */
+                /* the extensions are always enabled */
                 Printf("ERROR: ignoring obsolete %c98 option.\n",
                        state ? '+' : '-');
                 return true;

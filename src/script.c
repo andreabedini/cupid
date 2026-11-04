@@ -40,9 +40,6 @@ static int scriptsStable; /* Number of (Prelude) scripts     */
 static bool needsImports; /* set to true if imports required */
 char *scriptFile;         /* Name of current script (if any) */
 
-/* --------------------------------------------------------------------------
- * Local function prototypes:
- * ------------------------------------------------------------------------*/
 static bool addScript(char *, long);
 static void freeScript(int);
 
@@ -72,11 +69,6 @@ static void freeScript(int i) {
         free(scriptName(i)->directory);
 }
 
-/* We record the number of scripts that loading the Prelude
- * brought about, so that when the user comes to clear the module
- * stack (e.g., ":l<ENTER>"), only modules later than the Prelude
- * ones are scratched.
- */
 void setScriptStableMark(void) {
     scriptsStable = namesUpto;
 }
@@ -107,7 +99,7 @@ char *getScriptRealName(Script s) {
     return NULL;
 }
 
-/* Return number of on the stack, loaded or not. */
+/* Return number of scripts on the stack, loaded or not. */
 int getScriptHwMark(void) {
     return namesUpto;
 }
@@ -155,7 +147,7 @@ void addScriptName(char *s, bool sch) {
     namesUpto++;
 }
 
-/* Read single script file name of script file length of script file */
+/* Read single script file: fname is its name, len its length */
 static bool addScript(char *fname, long len) {
 
     if (!quiet) {

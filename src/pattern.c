@@ -6,8 +6,6 @@
  * number of arguments, and collects the variables it binds in patVars
  * for the dependency analysis to put into scope.
  *
- * Split out of static.c.
- *
  * The Hugs 98 system is Copyright (c) Mark P Jones, Alastair Reid, the
  * Yale Haskell Group, and the OGI School of Science & Engineering at OHSU,
  * 1994-2003, All rights reserved.  It is distributed as free software under
@@ -25,10 +23,6 @@
 #include "depend.h"
 #include "pattern.h"
 
-/* --------------------------------------------------------------------------
- * local function prototypes:
- * ------------------------------------------------------------------------*/
-
 static Cell checkMaybeCnkPat(int, Cell);
 static Cell checkApPat(int, int, Cell);
 static void addToPatVars(int, Cell);
@@ -40,13 +34,12 @@ static void checkCfunArgs(int, Cell, int);
  *
  * Patterns are parsed as ordinary (atomic) expressions.  Static analysis
  * makes the following checks:
- *  - Patterns are well formed (according to pattern syntax), including the
- *    special case of (n+k) patterns.
+ *  - Patterns are well formed (according to pattern syntax).
  *  - All constructor functions have been defined and are used with the
  *    correct number of arguments.
  *  - No variable name is used more than once in a pattern.
  *
- * The list of pattern variables occuring in each pattern is accumulated in
+ * The list of pattern variables occurring in each pattern is accumulated in
  * a global list `patVars', which must be initialised to NIL at appropriate
  * points before using these routines to check for valid patterns.  This
  * mechanism enables the pattern checking routine to be mapped over a list
@@ -117,7 +110,7 @@ Cell checkPat(int line, Cell p) {
     return p;
 }
 
-/* Check applicative pattern with the possibility of n+k pattern */
+/* Check applicative pattern */
 static Cell checkMaybeCnkPat(int l, Cell p) {
     return checkApPat(l, 0, p);
 }
@@ -261,18 +254,14 @@ Cell applyBtyvs(Cell pat) {
  * Control:
  * ------------------------------------------------------------------------*/
 
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const patternRoots[] = {
     &patVars,
 };
 
-/* Clear the variables bound by the pattern being checked. */
 void resetPattern(void) {
     patVars = NIL;
 }
 
-/* Register the roots and reset; done once, before the Prelude is read. */
 void installPattern(void) {
     registerRoots(patternRoots);
     resetPattern();

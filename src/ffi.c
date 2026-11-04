@@ -21,7 +21,7 @@
  * Foreign import declarations are Cupid's equivalent of GHC's ccall mechanism.
  * They are used to "import" C functions into a module.
  * Foreign export declarations allow Cupid functions to be called from C.
- * Foreign export declarations provide the address of a C symbol.
+ * Foreign imports written with & provide the address of a C symbol.
  * ------------------------------------------------------------------------*/
 
 /* When using the FFI, you first run Cupid with generateFFI == true
@@ -318,11 +318,6 @@ void checkForeignImport(Name p) {
         /* static function or address:
          *
          *  ['static'] [fname] ['[' lib ']'] [&] [cid]
-         *
-         * or, for .NET bindings:
-         *
-         *  ['static'] ['ctor' | 'field' | 'method' ] ['[' lib ']'] [cid]
-         *
          */
         bool isStatic = false;
         Text fn = -1;
@@ -451,10 +446,6 @@ void linkForeign(Name p) {
             nameRec(p)->type);
 }
 
-/* --------------------------------------------------------------------------
- * Local function prototypes:
- * ------------------------------------------------------------------------*/
-
 static void foreignType(int, Type);
 static void foreignGet(int, Type, char *, int);
 static void foreignPut(int, Type, char *, int);
@@ -474,8 +465,6 @@ static void ffiReturn(Type, char *, int);
 static FILE *out = NIL;     /* file we're generating code into */
 static List includes = NIL; /* files already #included         */
 
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const ffiRoots[] = {
     &includes,
 };
@@ -490,7 +479,6 @@ void resetFfi(void) {
     includes = NIL;
 }
 
-/* Register the roots; done once, before the Prelude is read. */
 void installFfi(void) {
     registerRoots(ffiRoots);
 }
@@ -646,12 +634,11 @@ void foreignFooter(char *fn, Text mn, List is, List es) {
 /* --------------------------------------------------------------------------
  * The types the stub generator can marshal.
  *
- * One row per type, replacing the three parallel if-chains foreignType,
- * foreignGet and foreignPut used to be.  `ty' points at the global the type
+ * One row per type.  `ty' points at the global the type
  * checker fills in when it links the Prelude, so the table holds the address
  * of a type and not the type itself.  `applied' says the row matches the
  * head of an application, as in `Ptr a', rather than the type itself; the
- * plain rows come first, as they did in the chains.  `hsType' is the C type
+ * plain rows come first.  `hsType' is the C type
  * a value is declared with, and `marshal' names the pair get<marshal> and
  * put<marshal> that carries it across.  The unit type is the odd one out: it
  * has no C type, so foreignType rejects it, it is read with getUnit(), and
@@ -688,8 +675,8 @@ static const struct ffiType ffiTypes[] = {
     {0, false, 0, 0}};
 
 /* The row for t, or 0 if the stub generator cannot marshal it.  getHead is
- * called at most once, and only if an application row is reached, so the
- * argCount it leaves behind is the one the chains left. */
+ * called at most once, and only if an application row is reached, so a plain
+ * type leaves argCount alone. */
 static const struct ffiType *ffiTypeOf(Type t) {
     Type h = NIL;
     bool haveHead = false;
@@ -711,7 +698,7 @@ static const struct ffiType *ffiTypeOf(Type t) {
     return 0;
 }
 
-/* The tail the three chains shared, under their three different headings. */
+/* The error foreignType, foreignGet and foreignPut share, headed by what. */
 static void ffiTypeError(int l, char *what, Type t) {
     errHead(l);
     errPrintf("%s", what);
@@ -905,11 +892,7 @@ static void ffiPrimProto(Text name, int id) {
             textToStr(name), id);
 }
 
-/* Generate a Cupid Prim Header.
- * name should match the C function we're calling because we know
- * that name is a valid C identifier whereas the Haskell name may
- * not be.
- */
+/* Generate the Cupid Prim Header; name as for ffiPrimProto. */
 static void ffiPrimHeader(Text name, int id) {
     fprintf(out, "static void cupidprim_%s_%d(CupidStackPtr cupid_root)\n",
             textToStr(name), id);
@@ -928,8 +911,8 @@ static void ffiPrimHeader(Text name, int id) {
  *     #undef ext_nm
  *     #endif
  *
- *     static void cupidprim_extnm(CupidStackPtr);
- *     static void cupidprim_extnm(CupidStackPtr cupid_root)
+ *     static void cupidprim_ext_nm_id(CupidStackPtr);
+ *     static void cupidprim_ext_nm_id(CupidStackPtr cupid_root)
  *     {
  *         int   arg1 = cupid->getInt();                             
  *         float arg2 = cupid->getFloat();
@@ -939,7 +922,6 @@ static void ffiPrimHeader(Text name, int id) {
  *     }
  * 
  */
-/* Include file Function name */
 void implementForeignImport(int line, Name n, int id, Text fn, Text cid,
                             bool isStatic, Text libName, List argTys, bool isIO,
                             Type resultTy) {
@@ -997,9 +979,7 @@ void implementForeignImportDynamic(int line, int id, Text e, List argTys,
 }
 
 /*
- * For wrappers, we generate:
- *
- * For example:
+ * For wrappers, for example:
  * 
  *     foreign import "wrapper" name ::            (Int -> Float -> Char) 
  *                                   -> IO (FunPtr (Int -> Float -> Char))
@@ -1073,7 +1053,7 @@ void implementForeignImportWrapper(int line, int id, Text e, List argTys,
 }
 
 /* 
- * Generate C code for calling C functions from Haskell.
+ * Generate C code for calling Haskell functions from C.
  * The code has to be compiled with a C compiler and dynamically
  * loaded.
  *
@@ -1147,15 +1127,12 @@ void implementForeignExport(int line, int id, Text e, List argTys, bool isIO,
  *     #undef cid
  *     #endif
  *
- *     static void cupidprim_name(CupidStackPtr);
- *     static void cupidprim_name(CupidStackPtr cupid_root)
+ *     static void cupidprim_cid_id(CupidStackPtr);
+ *     static void cupidprim_cid_id(CupidStackPtr cupid_root)
  *     {
- *         extern int cid; // probably the wrong type but it doesn't matter 
- *         cupid->putAddr(&cid);
- *         cupid_returnId(1);
+ *         cupid->putPtr(&cid);
  *     }
  */
-/* Include file Function name Haskell name */
 void implementForeignImportLabel(int line, int id, Text fn, Text cid, Text n,
                                  Type ty) {
     checkCEntity(line, cid);
@@ -1176,9 +1153,6 @@ void implementForeignImportLabel(int line, int id, Text fn, Text cid, Text n,
     fprintf(out, "}\n");
 }
 
-/* ToDo: 
- * chain all foreign exports together and free at end of run?
- * copy GreenCard.h into Test.c? 
- */
+/* ToDo: chain all foreign exports together and free at end of run? */
 
 /*-------------------------------------------------------------------------*/

@@ -278,13 +278,11 @@ bool loadPrelude(void) {
 }
 
 /* --------------------------------------------------------------------------
- * The interpreter's lifecycle: one row per subsystem, naming its hooks
- * for the five phases a null hook means it has nothing to do in.  The
- * order is the order INSTALL runs the subsystems in, which matters (the
- * type checker's wired-in types must exist before builtIn predefines
- * names that use them, and so on); RESET, MARK, EXIT and BREAK keep the
- * same order for the same reason everybody() always used one order for
- * every phase.
+ * The interpreter's lifecycle: one row per subsystem, naming its hook for
+ * each of the five phases; a null hook means nothing to do in that phase.
+ * Every phase runs the rows in this order.  The order matters for install:
+ * builtIn, for one, predefines its names in modulePrelude, which the type
+ * checker's install hook creates.
  * ------------------------------------------------------------------------*/
 static const Subsystem subsystems[] = {
     {"machdep", installMachdep, resetMachdep, NULL, exitMachdep, exitMachdep},
@@ -309,8 +307,6 @@ static const Subsystem subsystems[] = {
 
 #define NUM_SUBSYSTEMS (sizeof(subsystems) / sizeof(subsystems[0]))
 
-/* Call every subsystem's install hook, in table order; once, before the
- * Prelude is read. */
 void installSubsystems(void) {
     size_t i;
     for (i = 0; i < NUM_SUBSYSTEMS; i++)
@@ -318,8 +314,6 @@ void installSubsystems(void) {
             subsystems[i].install();
 }
 
-/* Call every subsystem's reset hook, in table order; before each script
- * load or evaluation. */
 void resetSubsystems(void) {
     size_t i;
     for (i = 0; i < NUM_SUBSYSTEMS; i++)
@@ -327,9 +321,6 @@ void resetSubsystems(void) {
             subsystems[i].reset();
 }
 
-/* Call every subsystem's mark hook, in table order; during garbage
- * collection, to mark structured data a registered root table cannot
- * describe. */
 void markSubsystems(void) {
     size_t i;
     for (i = 0; i < NUM_SUBSYSTEMS; i++)
@@ -337,7 +328,6 @@ void markSubsystems(void) {
             subsystems[i].gcMark();
 }
 
-/* Call every subsystem's exit hook, in table order; just before exit(). */
 void exitSubsystems(void) {
     size_t i;
     for (i = 0; i < NUM_SUBSYSTEMS; i++)
@@ -345,8 +335,6 @@ void exitSubsystems(void) {
             subsystems[i].atExit();
 }
 
-/* Call every subsystem's break hook, in table order; after an
- * interrupt. */
 void breakSubsystems(void) {
     size_t i;
     for (i = 0; i < NUM_SUBSYSTEMS; i++)

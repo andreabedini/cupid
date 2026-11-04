@@ -22,7 +22,7 @@ typedef void (*SccSetDepends)(Cell, Cell);
  * component comes after the ones it depends on.
  */
 extern List sccSort(List, List, SccDepends, SccSetDepends);
-extern void installScc(void); /* register roots; INSTALL only */
+extern void installScc(void); /* register roots             */
 extern void resetScc(void);   /* clear the sccs found so far  */
 
 #endif /* SCC_H */

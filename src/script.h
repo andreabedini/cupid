@@ -28,6 +28,10 @@
 
 extern void initScripts(void);
 extern void stopScripts(void);
+/* Record the number of scripts that loading the Prelude brought about, so that
+ * when the user comes to clear the module stack (e.g., ":l<ENTER>"), only
+ * modules later than the Prelude ones are scratched.
+ */
 extern void setScriptStableMark(void);
 
 extern char *getScriptName(Script);

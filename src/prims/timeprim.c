@@ -236,10 +236,7 @@ CAFInt(primClockTicks, CLOCKS_PER_SEC)
 CAFInt(primClockTicks, sysconf(_SC_CLK_TCK))
 #endif
 
-    /* 
- * The code for grabbing the process times has been lifted from GHC.
- * Don't feel too bad about that, since I wrote and maintained it. 
- */
+    /* The code for grabbing the process times has been lifted from GHC. */
     primFun(primGetCPUUsage) { /* IO (Int,Int,Int,Int) */
     int userSec, userNSec;
     int sysSec, sysNSec;
@@ -267,7 +264,6 @@ CAFInt(primClockTicks, sysconf(_SC_CLK_TCK))
     */
     if (!GetProcessTimes(GetCurrentProcess(), &creationTime, &exitTime,
                          &kernelTime, &userTime)) {
-        /* Probably on a Win95 box..*/
         userSec = 0;
         userNSec = 0;
         sysSec = 0;
@@ -282,7 +278,7 @@ CAFInt(primClockTicks, sysconf(_SC_CLK_TCK))
         sysSec = (unsigned int)(kT / NS_PER_SEC);
         sysNSec = (unsigned int)((kT - sysSec * NS_PER_SEC) * 100);
     }
-#elif HAVE_GETRUSAGE /* && ! irix_HOST_OS && ! solaris2_HOST_OS */
+#elif HAVE_GETRUSAGE
     struct rusage t;
 
     getrusage(RUSAGE_SELF, &t);

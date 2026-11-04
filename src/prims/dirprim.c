@@ -82,12 +82,8 @@ static bool isDirectory(char *);
 # endif
 #endif
 
-/* MSVC6 doesn't define these helper macros in <sys/stat.h> there
- * might be other platforms too, so... The assumption here is that
- * S_ISDIR() and friends indeed are CPP macros - if that's not the
- * case, please adjust the conditional below to suit your platform
- * (and feed back the tweak you make.)
- */
+/* Not every <sys/stat.h> defines these helper macros.  The assumption here is
+ * that S_ISDIR() and friends are CPP macros. */
 #if !defined(S_ISDIR)
 # define S_ISDIR(st_mode) ((st_mode & S_IFMT) == S_IFDIR)
 #endif

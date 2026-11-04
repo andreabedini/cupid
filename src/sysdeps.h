@@ -2,9 +2,8 @@
  * System facts for the supported targets: x86-64 and ARM64 machines
  * running a current Linux, macOS, Windows or BSD.
  *
- * This replaces the feature probing that configure used to do.  Every
- * value here is either constant across the supported targets or follows
- * directly from the operating system, which the compiler tells us.  The
+ * Every value here is either constant across the supported targets or
+ * follows directly from the operating system, which the compiler tells us.  The
  * operating system and architecture names that the Haskell libraries test
  * for are in platform.h, which the build system generates.
  *

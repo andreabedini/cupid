@@ -10,7 +10,6 @@
  * String manipulation routines:
  * ------------------------------------------------------------------------*/
 
-/* Make malloced copy of a string */
 char *strCopy(char *s) {
     if (s) {
         char *t;
@@ -25,7 +24,6 @@ char *strCopy(char *s) {
     return NULL;
 }
 
-/* Make malloced copy of a substring */
 char *strnCopy(char *s, int n) {
     if (s) {
         char *t;
@@ -43,9 +41,6 @@ char *strnCopy(char *s, int n) {
     return NULL;
 }
 
-/* Given a string containing a possibly qualified name,
- * split it up into a module and a name portion.
- */
 void splitQualString(char *nm, char **pMod, char **pName) {
     char *dot;
 
@@ -72,11 +67,7 @@ void splitQualString(char *nm, char **pMod, char **pName) {
     }
 }
 
-/* Cheap&cheerful expandable strings / StringBuilders.
- *
- * Note: I'm willfully breaking the convention of using K&R style
- * function declarations here. Their time has come and gone.
- */
+/* Cheap&cheerful expandable strings / StringBuilders. */
 struct StringBuilder {
     unsigned int len;
     unsigned int size;
@@ -87,14 +78,6 @@ struct StringBuilder {
 
 static bool expandStringBuilder(StringBuilder *b, unsigned int newSz);
 
-/*
- * Function: newStringBuilder(sz)
- *
- * Allocate a new StringBuilder object, giving its
- * initial buffer size 'sz'. If sz == 0, the initial size
- * is set to INITIAL_BUILDER_SIZE..
- *
- */
 StringBuilder *newStringBuilder(unsigned int sz) {
     StringBuilder *b = (StringBuilder *)malloc(sizeof(StringBuilder));
 
@@ -139,14 +122,6 @@ static bool expandStringBuilder(StringBuilder *b, unsigned int newSz) {
     return true;
 }
 
-/*
- * Function: appendString(builder, str)
- *
- * Append 'str' to the back of 'builder', expanding its
- * buffer to accommodate the added string, if needs be.
- *
- * Returns true if successful.
- */
 bool appendString(StringBuilder *b, char *str) {
     unsigned int len, newLen;
 
@@ -176,26 +151,12 @@ bool appendString(StringBuilder *b, char *str) {
     return true;
 }
 
-/*
- * Function: toString(builder)
- *
- * Returns a pointer to the builder's internal buffer, i.e.,
- * a copy is not made (=> the caller isn't passed the
- * responsibility of freeing the returned string.)
- *
- * 
- */
 char *toString(StringBuilder *b) {
     if (!b)
         return NULL;
     return (b->buf);
 }
 
-/*
- * Function: freeStringBuilder(builder)
- *
- * Free up a StringBuilder object.
- */
 void freeStringBuilder(StringBuilder *b) {
     if (!b)
         return;

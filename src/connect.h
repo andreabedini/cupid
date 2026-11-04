@@ -191,7 +191,7 @@ extern List defaultDefns;  /* default definitions (if any)         */
 extern int defaultLine;    /* line in which default defs occur*/
 extern List evalDefaults;  /* defaults for evaluator       */
 extern Cell inputExpr;     /* evaluator input expression      */
-extern Cell inputContext;  /* evaluator input expression      */
+extern Cell inputContext;  /* evaluator input context         */
 extern Addr inputCode;     /* Code for compiled input expr    */
 
 extern int whnfArgs;                 /* number of args of term in whnf  */
@@ -227,7 +227,6 @@ typedef struct Subsystem {
 /* cupid.c exports: */
 extern void shutdownCupid(void);
 extern void promptForInput(char *);
-/* The next three are required only by winhugs */
 extern bool doCommand(void);
 extern void runEditor(void);
 extern Module findEvalModule(void);

@@ -24,8 +24,8 @@ CUPID_inline bool timeChanged(Time now, Time thn) {
 
 extern void getFileInfo(char *, Time *, long *);
 
-extern void installMachdep(void); /* register roots, install signal/term  */
-extern void resetMachdep(void);   /* clear the pending breakpoint buffer  */
+extern void installMachdep(void); /* register roots                      */
+extern void resetMachdep(void);   /* clear bdTemp, restore the terminal  */
 extern void exitMachdep(void);    /* restore the terminal's normal mode   */
 
 /* --------------------------------------------------------------------------

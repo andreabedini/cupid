@@ -89,18 +89,14 @@ List sccSort(List bs, List cs, SccDepends d, SccSetDepends s) {
     return rev(daSccs); /* reverse to obtain correct order */
 }
 
-/* The statics that hold cells: registered as roots at INSTALL and marked
- * by the collector on every collection */
 static Cell *const sccRoots[] = {
     &daSccs,
 };
 
-/* Clear the list of strongly-connected components found so far. */
 void resetScc(void) {
     daSccs = NIL;
 }
 
-/* Register the roots; done once, before the Prelude is read. */
 void installScc(void) {
     registerRoots(sccRoots);
 }

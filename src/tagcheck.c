@@ -21,11 +21,12 @@ bool isKindExpr(Cell k) {
     }
 }
 
-/* K1 -> ... -> kn -> *, as generalize builds it; NIL entries and a NIL end */
+/* K1 -> ... -> kn -> *, as generalize builds it, or with NIL entries and a NIL
+ * end */
 bool isKindsSig(Cell ks) {
     for (; isAp(ks);
-         ks = snd(ks)) /* are the shape before fixKinds, and         */
-        if (nonNull(fst(ks)) && !isKindExpr(fst(ks))) /* a class's kinds  */
+         ks = snd(ks)) /* NILs: before fixKinds, and in a class's kinds */
+        if (nonNull(fst(ks)) && !isKindExpr(fst(ks)))
             return false;
     return ks == STAR || isNull(ks);
 }

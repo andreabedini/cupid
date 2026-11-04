@@ -18,12 +18,6 @@
 #include "output.h" /* IWYU pragma: keep -- printPred, under PROFILING */
 #include <setjmp.h>
 
-/*#define DEBUG_SHOWUSE*/
-
-/* --------------------------------------------------------------------------
- * local function prototypes:
- * ------------------------------------------------------------------------*/
-
 static int hash(char *);
 static int saveText(Text);
 static void hashTycon(Tycon);
@@ -184,12 +178,8 @@ Text concatText(char *s1, char *s2) {
 
 /* Extract a substring and make it a Text */
 Text subText(char *s, int l) {
-    /* 
-     * This used to insert '\0' at s[l], do a lookup and then change s[l]
-     * back to its old value.  This fails if the String happens to be the
-     * result of textToStr so instead we make a copy, do the lookup and 
-     * forget the copy.
-     */
+    /* Copy s, rather than write '\0' at s[l] for the lookup and put the old
+     * value back, because s may be the result of textToStr. */
     char *t = strnCopy(s, l);
     Text r = findText(t);
     free(t);
@@ -287,22 +277,10 @@ Addr getMem(int n) {
     return newAddr;
 }
 
-/* Reset point to next instruction Currently does NO CHECKING */
+/* Reset point to next instruction.  Does NO CHECKING. */
 void nextInstr(Addr a) {
     addrHw = a;
 }
-
-/* --------------------------------------------------------------------------
- * Ext storage:
- *
- * Currently, the only attributes that we store for each Ext value is the
- * corresponding Text label.  At some later stage, we may decide to cache
- * types, predicates, etc. here as a space saving gesture.  Given that Text
- * comparison is cheap, and that this is an experimental implementation, we
- * will use a straightforward linear search to locate Ext values from their
- * corresponding Text labels; a hashing scheme can be introduced later if
- * this turns out to be a problem.
- * ------------------------------------------------------------------------*/
 
 /* --------------------------------------------------------------------------
  * Tycon storage:
@@ -443,7 +421,7 @@ static List insertTycon(Tycon tc, List ts) {
         return cons(tc, curr);
 }
 
-/* Add tycons matching pattern pat to list of Tycons ts Null pattern matches
+/* Add tycons matching pattern pat to list of Tycons ts.  Null pattern matches
  * every tycon (Tycons with NIL kind excluded) */
 List addTyconsMatching(char *pat, List ts) {
     Tycon tc;
@@ -760,11 +738,8 @@ bool setOldDLLFlag(bool flg) {
 /* Register new primitives */
 void registerPrims(struct primInfo *info) {
     struct primInfoDef *new_entry;
-    /* ToDo: this is in all likelihood not the Approved Way of asking for mem. from the OS.
-     *       Figure out what's the local idiom.      
-     */
     if ((new_entry = malloc(sizeof(struct primInfoDef))) == NULL) {
-        /* It's going to break pretty soon anyway...*/
+        /* The module's primitives go unregistered, with no error. */
         return;
     } else {
         new_entry->prim_module = currentModule;
@@ -827,7 +802,7 @@ void addPrim(int l, Name n, char *s, Module mod, Type ty) {
     nameRec(n)->mod = mod;
 
     /*
-     * (mini) sigh - the primitives for the Prelude'ish modules
+     * The primitives for the Prelude'ish modules
      * are special in the sense that each such module doesn't
      * have its own prim-table (cf. Int). So, we make two passes
      * over the prim-table list, first time around we demand
@@ -918,7 +893,7 @@ static List insertName(Name nm, List ns) {
         return cons(nm, curr);
 }
 
-/* Add names matching pattern pat to list of names ns Null pattern matches
+/* Add names matching pattern pat to list of names ns.  Null pattern matches
  * every name (Names with NIL type, or hidden or invented names are excluded) */
 List addNamesMatching(char *pat, List ns) {
     Name nm;
@@ -1042,8 +1017,8 @@ Class newClass(Text t) {
 
 /* Return max Class in use ... */
 Class classMax(void) {
-    return classHw; /* This is a bit ugly, but it's not*/
-} /* worth a lot of effort right now */
+    return classHw;
+}
 
 /* Look for named class in table */
 Class findClass(Text t) {
@@ -1142,8 +1117,8 @@ static bool typeInvolves(Type ty, Type tc) {
 /* --------------------------------------------------------------------------
  * Control stack:
  *
- * Various parts of the system use a stack of cells.  Most of the stack
- * operations are defined as macros, expanded inline.
+ * Various parts of the system use a stack of cells; storage.h has the
+ * operations.
  * ------------------------------------------------------------------------*/
 
 Cell DEFTABLE(cellStack, NUM_STACK); /* Storage for cells on stack          */
@@ -1157,15 +1132,11 @@ void cupidStackOverflow(void) {
 }
 
 /* --------------------------------------------------------------------------
- * Observation storage
- * ------------------------------------------------------------------------*/
-
-/* --------------------------------------------------------------------------
  * Module storage:
  *
  * A Module represents a user defined module.  
  *
- * Note: there are now two lookup mechanisms in the system:
+ * Note: there are two lookup mechanisms in the system:
  *
  * 1) The exports from a module are stored in a big list.
  *    We resolve qualified names, and import lists by linearly scanning
@@ -1294,7 +1265,7 @@ void setCurrModule(Module m) {
         if (currentModule != NIL) {
             moduleRec(currentModule)->modImports = NIL;
         }
-        currentModule = m; /* This is the only assignment to currentModule */
+        currentModule = m;
         for (i = 0; i < TYCONHSZ; ++i)
             tyconHash[i] = NIL;
         mapProc(hashTycon, moduleRec(m)->tycons);
@@ -1463,11 +1434,9 @@ void dropAScript(Script sno) {
     }
     for (i = sno + 1; i < scriptHw; i++)
         scriptRec(i - 1)->marks = scriptRec(i)->marks;
-    /* The last slot's marks were just copied down, so it is now a
-     * duplicate: shrink the stack so that nothing iterates over it again.
-     * Without this, scriptHw still counted it, and both it and the slot it
-     * was copied into held the same "prims" DLL handle, which
-     * dropScriptsFrom/EXIT would then free twice.                       */
+    /* The last slot's marks were just copied down.  Leaving it counted would
+     * have dropScriptsFrom or exitControlFuns free the DLL its "prims" handle
+     * names twice. */
     scriptHw--;
 }
 
@@ -1545,8 +1514,7 @@ Heap heapFst;               /* array of fst component of pairs */
 Heap heapSnd;               /* array of snd component of pairs */
 Heap heapTopFst;
 Heap heapTopSnd;
-bool consGC = true; /* Set to false to turn off gc from*/
-                    /* C stack; use with extreme care! */
+bool consGC = true;
 #if PROFILING
 Heap heapThd, heapTopThd;     /* to keep record of producers     */
 int sysCount;                 /* record unattached cells         */
@@ -1623,7 +1591,7 @@ Cell pair(Cell l, Cell r) {
     return c;
 }
 
-/* Overwrite dst cell with src cell both *MUST* be pairs */
+/* Overwrite dst cell with src cell; both *MUST* be pairs */
 void overwrite(Cell dst, Cell src) {
     if (isPair(dst) && isPair(src)) {
         fst(dst) = fst(src);
@@ -1679,18 +1647,12 @@ Cell markExpr(Cell c) {
 }
 
 /* --------------------------------------------------------------------------
- * markCell and markSnd used to recurse in C, once per cell, along the fst
- * link of the object graph (with markSnd looping, rather than recursing,
- * along a run of snd links -- see the old comments in the jj history of
- * this file).  A long, thin part of the graph can still be many cells
- * deep along the fst link: every list cons cell's fst is itself an
- * application cell, so a long list, or the left-nested chain of thunks
- * that a lazy foldl-shaped function leaves behind, used to recurse once
- * per cell and could overflow the C stack.  Longjmp'ing out of the
- * collector is not safe, so stackCheck() is not used here; instead both
- * links are marked from an explicit work stack of pending slots, kept in
- * a malloc'd array that is grown (doubled) as needed and kept between
- * collections.
+ * Marking cannot recurse in C: the graph can be arbitrarily deep, as in the
+ * left-nested chain of thunks a lazy foldl-shaped function leaves, which would
+ * overflow the C stack, and stackCheck() is no answer because longjmp'ing out
+ * of the collector is not safe.  Both links are marked instead from an explicit
+ * work stack of pending slots, in a malloc'd array that doubles as needed and
+ * is kept between collections.
  * ------------------------------------------------------------------------*/
 
 static Cell **markStack = 0;  /* malloc'd stack of pending Cell* slots*/
@@ -1739,7 +1701,6 @@ mc:
         if (!(marks[place] & mask)) {
             marks[place] |= mask;
             marks[placeInSet(snd(c))] |= maskInSet(snd(c));
-            /* printf("Found Weak Pointer %d\n", c); */
             nextWeakPtr(c) = weakPtrs;
             weakPtrs = c;
             recordMark();
@@ -1777,12 +1738,9 @@ mc:
     }
 }
 
-static Cell markCellRoot; /* Static (not stack) storage for markCell's own */
-                          /* root slot: pushMarkSlot needs the address of  */
-                          /* a slot that stays valid for the whole drain,  */
-                          /* which a local variable's address is not.      */
+static Cell markCellRoot;
 
-/* Traverse part of graph marking cells reachable from given root markCell(c)
+/* Traverse part of graph marking cells reachable from given root.  markCell(c)
  * is only called if c is a pair */
 static Cell markCell(Cell c) {
     markCellRoot = c;
@@ -1793,10 +1751,9 @@ static Cell markCell(Cell c) {
     return markCellRoot;
 }
 
-/* Variant of markCell used to mark cells reachable from the snd */
+/* Variant of markCell used to mark cells reachable from the snd link of c; c
+ * itself is assumed already marked. */
 static Cell markSnd(Cell c) {
-    /* link of c; c itself is assumed already  */
-    /* marked.                                 */
     pushMarkSlot(&snd(c));
     while (markStackTop > 0) {
         markSlot(markStack[--markStackTop]);
@@ -1804,9 +1761,10 @@ static Cell markSnd(Cell c) {
     return c;
 }
 
-/* Scan chain of indirections Detecting loops of indirections */
+/* Scan chain of indirections, detecting loops of indirections.  Uses pointer
+ * reversal. */
 static Cell indirectChain(Cell c) {
-    Cell is = c; /* Uses pointer reversal ...       */
+    Cell is = c;
     c = snd(is);
     snd(is) = NIL;
     fst(is) = INDIRECT1;
@@ -1895,23 +1853,16 @@ void garbageCollect(void) {
         }
     }
 
-    /* After GC completes, we scan the list of weak pointers that are
-     * still live and zap their contents unless the contents are still
-     * live (by some other means).
-     * Note that this means the contents must itself be heap allocated.
-     * This means it can't be a nullary constructor or an Int or a Name
-     * or lots of other things - hope this doesn't bite too hard.
-     */
+    /* No primitive makes a WEAKCELL (primMkWeak makes WEAKFIN, handled below),
+     * so this loop finds nothing. */
     for (; nonNull(weakPtrs); weakPtrs = nextWeakPtr(weakPtrs)) {
         Cell ptr = derefWeakPtr(weakPtrs);
         if (isGenPair(ptr)) {
             int place = placeInSet(ptr);
             unsigned mask = maskInSet(ptr);
             if ((marks[place] & mask) == 0) {
-                /* printf("Zapping weak pointer %d\n", ptr); */
                 derefWeakPtr(weakPtrs) = NIL;
             } else {
-                /* printf("Keeping weak pointer %d\n", ptr); */
             }
         } else if (nonNull(ptr)) {
             printf("Weak ptr contains object which isn't heap allocated %d\n",
@@ -2023,10 +1974,6 @@ void garbageCollect(void) {
 #if PROFILING
     if (profile) {
         fprintf(profile, "BEGIN_SAMPLE %ld.00\n", numReductions);
-        /* For the time being, we won't include the system count in the output:
-        if (sysCount>0)
-            fprintf(profile,"  SYSTEM %d\n",sysCount);
-*/
         /* Accumulate costs in top level objects */
         for (i = NAMEMIN; i < nameHw; i++) {
             Name cc = i;
@@ -2134,7 +2081,7 @@ Cell getLastExpr(void) {
     return lowLevelLastOut(lastExprSaved);
 }
 
-/* As with lowLevelLastIn() above except that Cells refering to Text values are
+/* As with lowLevelLastIn() above except that Cells referring to Text values are
  * restored to appropriate values */
 static Cell lowLevelLastOut(Cell c) {
     if (isPair(c))
@@ -2159,10 +2106,6 @@ static Cell lowLevelLastOut(Cell c) {
 /* --------------------------------------------------------------------------
  * Miscellaneous operations on heap cells:
  * ------------------------------------------------------------------------*/
-
-/* Profiling suggests that the number of calls to whatIs() is typically    */
-/* rather high.  The recoded version below attempts to improve the average */
-/* performance for whatIs() using a binary search for part of the analysis */
 
 #if DEBUG_PRINTER
 /* A very, very simple printer.
@@ -2406,16 +2349,6 @@ Cell mkInt(int n) {
                                                   : pair(INTCELL, n);
 }
 
-/* --------------------------------------------------------------------------
- * Unicode Characters: NUM_SHORT_CHARS is the number of one-cell characters.
- * Like integers, the constructor, the selector, and the predicate
- * are defined as external functions implemented in storage.c
- * For characters with value less than NUM_SHORT_CHARS, one cell will be
- * allocated. For greater character values, a pair of cells will be
- * allocated. The pair of cells will have CHARCELL as fst, and
- * the UNICODE value of the character as snd.
- * ------------------------------------------------------------------------*/
-
 /* Cell holds character value? */
 bool isChar(Cell c) {
     return isShortChar(c) || (isPair(c) && fst(c) == CHARCELL);
@@ -2530,7 +2463,8 @@ List dupList(List xs) {
     return rev(ys);
 }
 
-/* Duplicate spine of list xs */
+/* Duplicate spine of list xs up to, but not including, the first element equal
+ * to c */
 List dupUpto(List xs, Cell c) {
     List ys = NIL;
     for (; nonNull(xs) && hd(xs) != c; xs = tl(xs))
@@ -2587,7 +2521,7 @@ Name nameIsMember(Text t, List ns) {
 
 /* Locating entities in import/export lists */
 
-/* Test if Name is a member of of import/export list xs. */
+/* Test if Name is a member of import/export list xs. */
 Name nameInIEList(Name nm, List ns) {
     Text t = nameRec(nm)->text;
     bool isMethod = isClass(nameRec(nm)->parent);
@@ -2781,7 +2715,7 @@ List removeCell(Cell x, List xs) {
 
 int argCount; /* number of args in application    */
 
-/* Get head cell of application set number of args in argCount */
+/* Get head cell of application; set number of args in argCount */
 Cell getHead(Cell e) {
     for (argCount = 0; isAp(e); e = fun(e))
         argCount++;
@@ -2798,7 +2732,7 @@ List getArgs(Cell e) {
     return as;
 }
 
-/* Return nth arg in application of function to m args (m>=n) nthArg n (f x0 x1
+/* Return nth arg in application of function to m args (m>=n): nthArg n (f x0 x1
  * ... xm) = xn */
 Cell nthArg(int n, Cell e) {
     for (n = numArgs(e) - n - 1; n > 0; n--)
@@ -2859,11 +2793,7 @@ struct strMallocPtr mallocPtrs[NUM_MALLOCPTRS];
 /* Points to the next available slot in 'mallocPtrs'. */
 int mallocPtr_hw;
 
-/* It might GC (because it uses a table not a list) which will trash any
- * unstable pointers.  
- * (It happens that we never use it with unstable pointers.)
- */
-/* Create a new malloc pointer */
+/* May collect when the table is full, even with free heap cells. */
 Cell newMallocPtr(void *ptr) {
     int i;
     for (i = 0; i < NUM_MALLOCPTRS && mallocPtrs[i].refCount != 0; ++i)
@@ -2889,7 +2819,7 @@ Cell newMallocPtr(void *ptr) {
     return (mallocPtrs[i].mpcell = ap(MPCELL, i));
 }
 
-/* Create a new malloc pointer */
+/* Like newMallocPtr, with cleanup as the first finalizer */
 Cell mkMallocPtr(void *ptr, CFinalizer cleanup) {
     Cell mp;
     int i;
@@ -2936,7 +2866,7 @@ void incMallocPtrRefCnt(int n, int i) {
  * This is a mechanism that allows the C world to manipulate pointers into the
  * Haskell heap without having to worry that the garbage collector is going
  * to delete it or move it around.
- * The implementation and interface is based on my implementation in
+ * The implementation and interface is based on the one in
  * GHC - but, at least for now, is simplified by using a fixed size
  * table of stable pointers.
  * ------------------------------------------------------------------------*/
@@ -3081,8 +3011,6 @@ void growDynTable(DynTable *tab) {
     }
 }
 
-/* Call every registered prim module's install hook, in registration
- * order. */
 void installControlFuns(void) {
     struct primInfoDef *info_def = firstPrimInfo;
     for (; 0 != info_def; info_def = info_def->nextPrimInfoDef) {
@@ -3092,8 +3020,6 @@ void installControlFuns(void) {
     }
 }
 
-/* Call every registered prim module's reset hook, in registration
- * order. */
 void resetControlFuns(void) {
     struct primInfoDef *info_def = firstPrimInfo;
     for (; 0 != info_def; info_def = info_def->nextPrimInfoDef) {
@@ -3103,8 +3029,6 @@ void resetControlFuns(void) {
     }
 }
 
-/* Call every registered prim module's mark hook, in registration
- * order. */
 void markControlFuns(void) {
     struct primInfoDef *info_def = firstPrimInfo;
     for (; 0 != info_def; info_def = info_def->nextPrimInfoDef) {
@@ -3114,8 +3038,6 @@ void markControlFuns(void) {
     }
 }
 
-/* Call every registered prim module's break hook, in registration
- * order. */
 void breakControlFuns(void) {
     struct primInfoDef *info_def = firstPrimInfo;
     for (; 0 != info_def; info_def = info_def->nextPrimInfoDef) {
@@ -3125,8 +3047,7 @@ void breakControlFuns(void) {
     }
 }
 
-/* Call every registered prim module's exit hook, in registration order,
- * then release every prim's DLL and free the primInfoDef list. */
+/* After the hooks, release every prim's DLL and free the primInfoDef list. */
 void exitControlFuns(void) {
     struct primInfoDef *info_def = firstPrimInfo;
     int i;
@@ -3154,9 +3075,9 @@ void exitControlFuns(void) {
     }
 }
 
-/* Reset the heap pointers a longjmp may have clobbered, the standard
- * handles, and the GC trigger; called before each script load or
- * evaluation. */
+/* Clear the stack, restore the standard handles' state and turn conservative
+ * marking back on, which an aborted evaluation may have left off; called
+ * before each script load or evaluation. */
 void resetStorage(void) {
     clearStack();
 
@@ -3200,8 +3121,8 @@ void resetStorage(void) {
 }
 
 /* Mark every cell reachable from the symbol tables (names, modules,
- * tycons, classes, instances), the evaluator stack, stable pointers and
- * the C stack. */
+ * tycons, classes, instances), the evaluator stack, stable pointers and,
+ * while consGC is on, the C stack. */
 void markStorage(void) {
     int i;
 
