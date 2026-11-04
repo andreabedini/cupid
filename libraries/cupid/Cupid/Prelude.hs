@@ -60,8 +60,8 @@ module Cupid.Prelude (
     Exception(..),
     ArithException(..), ArrayException(..), AsyncException(..),
     ExitCode(..),
-    FunPtr, Ptr, Addr,
-    Word, StablePtr, ForeignObj, ForeignPtr,
+    FunPtr, Ptr,
+    Word, StablePtr, ForeignPtr,
     Int8, Int16, Int32, Int64,
     Word8, Word16, Word32, Word64,
     Handle, Object,
@@ -2320,7 +2320,6 @@ instance MonadFail IO where
 
 data FunPtr a -- builtin datatype of C function pointers
 data Ptr a    -- builtin datatype of C pointers
-data Addr     -- builtin datatype of C pointers (deprecated)
 data Word     -- builtin datatype of unsigned ints
 
 -- Word's instances of the Prelude classes are here, as they are for Int,
@@ -2402,7 +2401,6 @@ data Word8
 data Word16
 data Word32
 data Word64
-data ForeignObj  -- builtin datatype of C pointers with finalizers (deprecated)
 data ForeignPtr a -- builtin datatype of C pointers with finalizers
 data StablePtr a
 data Handle

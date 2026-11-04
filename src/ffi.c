@@ -667,10 +667,8 @@ static const struct ffiType ffiTypes[] = {
     {&typeFloat, false, "HsFloat", "Float"},
     {&typeDouble, false, "HsDouble", "Double"},
     {&typeBool, false, "HsBool", "Bool"},
-    {&typeAddr, false, "HsAddr", "Addr"},
     {&typePtr, true, "HsPtr", "Ptr"},
     {&typeFunPtr, true, "HsFunPtr", "FunPtr"},
-    {&typeForeign, true, "CupidForeign", "Foreign"},
     {&typeStable, true, "HsStablePtr", "StablePtr4"},
     {0, false, 0, 0}};
 
@@ -1120,7 +1118,7 @@ void implementForeignExport(int line, int id, Text e, List argTys, bool isIO,
  *
  * For example:
  * 
- *     foreign import "static & cid" name :: Addr
+ *     foreign import "static & cid" name :: Ptr a
  * ==>
  *
  *     #ifndef ENABLE_MACRO_INTERFACE

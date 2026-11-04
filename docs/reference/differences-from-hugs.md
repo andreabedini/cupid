@@ -124,6 +124,9 @@ hierarchical names:
 counterpart, since their extensions are gone.
 [The libraries](libraries.md) lists the modules that ship.
 
+**The deprecated pointer types are gone.**  Use `Ptr` for `Addr` and
+`ForeignPtr` for `ForeignObj`.
+
 ## See also
 
 - [History](../explanation/history.md) for the changes in order

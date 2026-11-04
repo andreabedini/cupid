@@ -40,12 +40,10 @@ Type typeWord32;
 Type typeWord64;
 Type typeFunPtr;
 Type typePtr;
-Type typeAddr;
 Type typeFloat;
 Type typeDouble;
 Type typeChar;
 Type typeForeignP;
-Type typeForeign;
 Type typeStable;
 Type typeBool;
 Type typeString;
@@ -2615,12 +2613,10 @@ void linkPreludeTC(void) {
         typeWord64 = linkTycon("Word64");
         typeFunPtr = linkTycon("FunPtr");
         typePtr = linkTycon("Ptr");
-        typeAddr = linkTycon("Addr"); /* deprecated */
         typeFloat = linkTycon("Float");
         typeDouble = linkTycon("Double");
         typeChar = linkTycon("Char");
         typeForeignP = linkTycon("ForeignPtr");
-        typeForeign = linkTycon("ForeignObj"); /* deprecated */
         typeStable = linkTycon("StablePtr");
         typeBool = linkTycon("Bool");
         typeString = linkTycon("String");
