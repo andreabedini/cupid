@@ -326,7 +326,7 @@ def main() -> int:
             )
             count += 1
 
-    # The logo lives in assets/ so the README can use it too.
+    # The images live in assets/ so the README can use them too.
     STATIC.mkdir(parents=True, exist_ok=True)
     for svg in sorted(ASSETS.glob("*.svg")):
         shutil.copy2(svg, STATIC / svg.name)

@@ -32,7 +32,7 @@ parser = custom_target('parser',
 # a pointer to a cell as a common subexpression instead of the cell itself,
 # which the collector's scan of the stack would miss, so they are built
 # without optimisation.  The evaluator files are safe because they do not
-# assume conservative collection (see the notice in builtin.c).
+# assume conservative collection (see the notice in prims/builtin.c).
 gc_sensitive = files('binding.c', 'class.c', 'compiler.c', 'depend.c',
   'deriving.c', 'kind.c', 'module.c', 'pattern.c', 'preds.c', 'scc.c',
   'static.c', 'subst.c', 'tycon.c', 'type.c', 'typeexp.c')

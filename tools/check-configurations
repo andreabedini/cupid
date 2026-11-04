@@ -5,9 +5,7 @@ usage: tools/check-configurations [--build-root DIR] [--jobs N] [--list] [NAME..
 
 `meson test` covers whichever configuration its build directory was set up
 with, which leaves the feature options of meson.options untested unless
-somebody thinks to try them.  Untested, they rot: when this was first
-tried, two of the ten were broken and the suite failed the same 17 tests
-every time, so a real failure among them said nothing.
+somebody thinks to try them.
 
 This runs the lot: the default configuration, each feature option on its
 own, and all of them at once.  The options come from the option_macros

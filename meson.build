@@ -39,10 +39,10 @@ bindir = prefix / get_option('bindir')
 libdir = prefix / get_option('libdir')
 datadir = prefix / get_option('datadir')
 cupiddir = get_option('cupiddir')
-# The library directory relative to the directory of the executables, with
+# The library directory relative to the directory of the executable, with
 # which an installation that has been moved finds its libraries; see
 # cupiddir() in src/machdep.c.  Only for the default library directory, and
-# only when the executables and the libraries are both under the prefix.
+# only when the executable and the libraries are both under the prefix.
 cupiddir_from_bindir = ''
 if cupiddir == ''
   cupiddir = libdir / 'cupid'
@@ -74,8 +74,8 @@ libm = cc.find_library('m', required: false)
 libdl = cc.find_library('dl', required: false)
 
 readline_opt = get_option('readline')
-# Static on Windows, where nothing else would find the DLL next to an
-# installed cupid.exe; MSYS2's libedit is WinEditLine, for the console.
+# Static on Windows, as nothing installs edit.dll beside cupid.exe, where the
+# loader would look; MSYS2's libedit is WinEditLine, for the console.
 # Static on request elsewhere: the release archives link libedit
 # statically, because distributions disagree on its soname (libedit.so.2
 # on Debian and its derivatives, libedit.so.0 everywhere else).
@@ -157,8 +157,8 @@ endif
 mkdll_cmd = cc_cmd + ' ' + dll_flags
 
 # ---------------------------------------------------------------------------
-# config.h: build options and install paths only; platform facts live in
-# src/sysdeps.h and the generated src/platform.h
+# config.h: what this build was configured with, such as options, paths and
+# tools; platform facts live in src/sysdeps.h and the generated src/platform.h
 # ---------------------------------------------------------------------------
 
 if not get_option('checks')
@@ -191,8 +191,6 @@ if have_hp2ps
   conf.set('HAVE_HP2PS', 1)
 endif
 
-# Macros that are tested with #ifdef as well as #if, so only define the
-# ones that are on
 option_macros = {
   'profiling': ['PROFILING'],
   'checks': ['DEBUG_CODE', 'DEBUG_PRINTER', 'CHECK_TAGS'],
