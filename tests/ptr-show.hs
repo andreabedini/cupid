@@ -1,10 +1,10 @@
--- show on a Ptr passed a 64-bit address to %x through a `long` vararg;
--- on a 64-bit system %x only consumes 32 bits from the vararg, so the
--- printed address was truncated to its low 32 bits.  The exact address
+-- show on a Ptr must print all of a 64-bit address: %x consumes only 32 bits
+-- of a vararg, so passing the address to it through a `long` would truncate
+-- it to its low 32 bits.  The exact address
 -- of a live allocation isn't deterministic (ASLR), so check the shape of
 -- the output (16 hex digits after "0x") rather than its value; ask for a
 -- page-sized block, since glibc mmaps those well above the 4GB mark,
--- to make sure the truncation would actually be visible if it recurred.
+-- to make sure the truncation would be visible.
 import Foreign
 import Data.Char (isHexDigit)
 

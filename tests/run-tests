@@ -25,8 +25,8 @@ below.  The files that go with it, all optional except NAME.stdout:
 
 Each test runs with TMPDIR set to a fresh, empty directory of its own,
 removed when the test is over.  A test that writes a file puts it there,
-through System.Directory.getTemporaryDirectory, which reads TMPDIR: the
-tests run with this directory as their working directory, and two suites
+through System.Directory.getTemporaryDirectory, which reads TMPDIR.  The
+tests run with TESTDIR as their working directory, and two suites
 running at once -- check-configurations builds and tests configurations
 side by side -- would otherwise create and delete the same files in it.
 NAME.env may still set TMPDIR to something else.
@@ -34,8 +34,8 @@ NAME.env may still set TMPDIR to something else.
 A test passes when the output and the exit status both match.  A process
 killed by a signal never matches, so a crash is always a failure.
 
-No build option changes what the interpreter prints, so one expected
-output serves every configuration as it is.
+The feature options do not change the output of any test, so one expected
+output serves every configuration that check-configurations builds.
 
 The small programs under helpers/ are compiled first, with $CC or else
 the first of cc, gcc and clang that is found, and put at the front of
@@ -61,7 +61,6 @@ try:
 except ImportError:
     resource = None
 
-# The banner, with the help line that usually but not always follows it.
 BANNER = re.compile(
     r"\ACupid [^\n]*\n"
     r"(?:Type :\? for help\.\n)?")
@@ -104,7 +103,6 @@ def run_one(cupid, packages, testdir, helpers, name):
     if stack_kb and resource is None:
         return None, "cannot limit the C stack on this platform"
 
-    # A private, empty TMPDIR for the test, gone when it is; see the top.
     with tempfile.TemporaryDirectory(prefix=name + ".") as scratch:
         env = dict(os.environ, TMPDIR=scratch)
         for line in (read(base + ".env") or "").splitlines():
@@ -139,10 +137,7 @@ def run_one(cupid, packages, testdir, helpers, name):
 
     out = proc.stdout.replace("\r\n", "\n")
     if stdin is not None:
-        # Drop the banner, which carries the version string.  Match it rather
-        # than searching for the line that ends it: that line is not printed
-        # when a module named on the command line fails to load, and a find()
-        # that returns -1 used to cut fourteen characters off the real output.
+        # Drop the banner, which carries the version string; see the top.
         out = BANNER.sub("", out, count=1)
     problems = []
     if proc.returncode < 0:

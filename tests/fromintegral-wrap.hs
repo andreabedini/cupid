@@ -1,6 +1,6 @@
--- fromIntegral from an out-of-range Integer to a fixed-width type raised
--- "arithmetic overflow" instead of wrapping (taking the low bits), which
--- is what Haskell's Int8/16/32/64 and Word8/16/32/64 are defined to do.
+-- fromIntegral from an out-of-range Integer to a fixed-width type must wrap
+-- (taking the low bits), not raise "arithmetic overflow": that is what
+-- Haskell's Int8/16/32/64 and Word8/16/32/64 are defined to do.
 import Data.Int
 import Data.Word
 

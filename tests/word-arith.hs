@@ -1,7 +1,7 @@
 -- Word is unsigned, so div/quot and mod/rem coincide: primDivWord and
 -- primQuotWord are one C function, and so are primModWord and primRemWord.
 -- Check that where a signed implementation would diverge, with the high bit
--- set.  Also the two operations that used to reach for undefined behaviour:
+-- set.  Also two operations that must avoid undefined behaviour in C:
 -- negate on 0x80000000, and bit at and past the word size.
 import Data.Bits
 import Data.Word
