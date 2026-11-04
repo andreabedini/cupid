@@ -52,10 +52,10 @@ If you do not know where `cupid` is installed, write the line as
 
 ## Passing more than one option
 
-The `#!` line passes everything after the program name as a single
-argument.  With `#! /usr/local/bin/cupid +o -h4M` the first argument
-would be the one string `+o -h4M`, which is not an option.  Use `-X` to
-have the string split into options:
+On Linux the `#!` line passes everything after the program name as a
+single argument.  With `#! /usr/local/bin/cupid +o -h4M` that is the one
+string `+o -h4M`, and Cupid warns about the space and the `-` inside it.
+Use `-X` to have the string split into options:
 
 ```
 #! /usr/local/bin/cupid -X+o -h4M

@@ -5,7 +5,7 @@ on to.
 
 ## Prerequisites
 
-- an expression to measure, loaded in an interactive session
+- an interactive session
 
 ## Steps
 
@@ -46,7 +46,7 @@ Cupid> length [1..60000]
 {{Gc:232614}}{{Gc:232619}}{{Gc:232616}}{{Gc:232612}}{{Gc:232618}}{{Gc:232617}}{{Gc:232612}}60000
 ```
 
-The number recovered is the same at every collection, so the
+The number recovered is nearly the same at every collection, so the
 computation runs in constant space.  Compare:
 
 ```
@@ -84,8 +84,7 @@ suffixes are accepted:
 cupid -h4M -i Main.hs
 ```
 
-The default is one million cells.  Setting `-h` with `:set` does not
-take effect in the running interpreter.
+The default is one million cells.
 
 ### 4. Profile the heap (profiling builds only)
 
@@ -96,7 +95,8 @@ A Cupid built with `-Dprofiling=true` writes a heap profile to
 cupid -d100 -i Main.hs
 ```
 
-View it with hp2ps:
+If hp2ps was on the path when Cupid was built, Cupid runs it on
+`profile.hp` itself, leaving `profile.ps`.  Otherwise run it yourself:
 
 ```sh
 hp2ps profile.hp

@@ -48,8 +48,8 @@ foreign import ccall "clib.h half_hypot" halfHypot :: Double -> Double -> Double
 
 ### 3. Compile the module with `cupid --ffi`
 
-Cupid options, if any, go before the module name.  Everything after
-the module name is passed to the C compiler: extra sources, include paths,
+Cupid options, if any, go before the file name.  Everything after
+the file name is passed to the C compiler: extra sources, include paths,
 libraries.
 
 ```sh
@@ -79,9 +79,7 @@ Hyp> halfHypot 3 4
 The directory now contains `Hyp.c` and `Hyp.so` next to `Hyp.hs`, and
 the expression above prints `2.5`.
 
-## Alternatives
-
-### Several FFI modules
+## Several FFI modules
 
 If `A.hs` imports `B.hs` and both contain foreign imports, run
 `cupid --ffi` on each of them.  Compiling `A` does not compile `B`, and
@@ -95,7 +93,7 @@ until `B.so` exists, loading `A` fails with `Error while importing DLL
 **Cause**: the generated C calls the function without a prototype in
 scope.
 
-**Fix**: name a header in the import string, as in step 1.
+**Fix**: name a header in the import string, as in step 2.
 
 ### `Error while importing DLL "./Hyp.so"`
 

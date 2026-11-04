@@ -78,8 +78,8 @@ release.  If only `pages` fails, rerun it: it deploys the same site.
 ## Versions
 
 Versions follow [Semantic Versioning](https://semver.org/), `A.B.C`.
-The release task works out the next one from the commit messages, which
-CI checks follow [Conventional
+The release task works out the next one from the commit messages, and
+CI checks that they follow [Conventional
 Commits](https://www.conventionalcommits.org/):
 
 | Since the last release      | While 0.x | From 1.0.0 |

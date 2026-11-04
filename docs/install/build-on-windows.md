@@ -91,7 +91,7 @@ cupid
 
 The two settings last for the current PowerShell session.  If the
 libraries cannot be found, the interpreter stops before the prompt with
-a message that the `Prelude` cannot be located.
+`FATAL ERROR: Unable to load Prelude`.
 [Environment variables](../reference/environment-variables.md)
 describes `CUPIDDIR`.
 

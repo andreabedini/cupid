@@ -25,10 +25,10 @@ tree, which enables exactly four checks:
 
 ### 2. Review the findings by hand
 
-Findings are never auto-fixed: the two checks that looked mechanically
-safe both broke the build when applied automatically.  Read each
-finding against the code it points at.  Before acting on one, check
-it against a build with every feature option on (see
+Findings are never auto-fixed: the auto-fixes of `macro-parentheses` and
+`use-internal-linkage`, neither of them enabled now, broke the build.
+Read each finding against the code it points at.  Before acting on one,
+check it against a build with `profiling` and `checks` on (see
 [Check every build configuration](check-every-configuration.md)): a finding
 in one configuration can be wrong for the tree.
 

@@ -37,7 +37,7 @@ cupid
 You will see the banner and a prompt:
 
 ```
-Cupid 0.1.0, a Haskell interpreter based on Hugs 98
+Cupid VERSION, a Haskell interpreter based on Hugs 98
 Type :? for help.
 Cupid>
 ```
@@ -61,6 +61,9 @@ than expressions.  Ask for the type of an expression with `:type`:
 Cupid> :type map (*2)
 map (flip (*) 2) :: Num a => [a] -> [a]
 ```
+
+Cupid prints the expression back in its own form, so the section `(*2)`
+comes back as `flip (*) 2`.
 
 An expression must fit on one line, but it can have local definitions
 of its own, with `let` or `where`:

@@ -13,7 +13,7 @@
     minute.  Hugs is the interpreter Mark P Jones started in 1994, and the
     Haskell many people learned with; its last release was in 2006, and in time
     it stopped building on current compilers.  Cupid picks up from that release
-    and runs today&rsquo;s Haskell on today&rsquo;s systems.
+    and runs code written against today&rsquo;s base on today&rsquo;s systems.
   </p>
   <p class="cta">
     <a class="button" href="#install">Install</a>
@@ -29,7 +29,7 @@
     GHC&rsquo;s base, roughly version 4.18, because that is what programs
     import:
     <code>Applicative</code> under <code>Monad</code>, <code>Semigroup</code>
-    under <code>Monoid</code>, and the Prelude&rsquo;s folds those of
+    under <code>Monoid</code>, and the Prelude&rsquo;s folds are those of
     <code>Foldable</code>.  Deriving via, standalone deriving and
     <code>Data.Data</code> work, and so does <code>deriving Generic</code>,
     with a functional dependency where GHC has the <code>Rep</code> family.
@@ -45,10 +45,10 @@ Nothing
 <span class="prompt">Cupid&gt;</span> foldMap (\x -&gt; [x, x * 10]) (Just 4)
 [4,40]</code></pre>
   <p>
-    Running real code doesn&rsquo;t mean following GHC.  A feature gets in when
-    packages written for GHC need it, when it fits the one type checker with
-    nothing below the type checker changing, and when Cupid can take the
-    common case and reject the rest.  Unboxed types, Template Haskell and STM
+    Running such code doesn&rsquo;t mean following GHC.  A feature gets in when
+    packages written for GHC need it, when it fits the existing type checker
+    and leaves code generation and the abstract machine unchanged, and when
+    Cupid can take the common case and reject the rest.  Unboxed types, Template Haskell and STM
     can&rsquo;t meet that, and stay out.  Type families are not in either;
     whether they can be is still open.
   </p>
@@ -69,7 +69,9 @@ Nothing
     Either one downloads the latest release for your system, checks it against
     the published checksums and, if <code>gh</code> is signed in, against the
     build attestation CI recorded, then unpacks it under your home directory
-    and puts <code>cupid</code> on your PATH.  No root, no package manager.
+    and puts <code>cupid</code> on your PATH; on Linux and macOS, if
+    <code>~/.local/bin</code> is not on it, the script prints the line to add
+    instead.  No root, no package manager.
   </p>
   <pre class="session"><code><span class="prompt">$</span> cupid
 Cupid&gt; map (*2) [1..10]
@@ -78,8 +80,7 @@ Cupid&gt; map (*2) [1..10]
   <p class="aside">
     <a href="{{ get_url(path='@/docs/install/install-a-release.md') }}">Install a release</a>
     has the same steps by hand.  Prefer to build it yourself?  You need a C
-    compiler, meson, ninja, python3 and bison, and the build takes a minute or
-    two:
+    compiler, meson, ninja, python3 and bison:
     <a href="{{ get_url(path='@/docs/install/build-on-linux-and-macos.md') }}">Build Cupid on Linux and macOS</a>
     or
     <a href="{{ get_url(path='@/docs/install/build-on-windows.md') }}">Build Cupid on Windows</a>.
@@ -102,15 +103,14 @@ Cupid&gt; map (*2) [1..10]
     <article>
       <h3>An interpreter in C</h3>
       <p>Source text is compiled to the code of a small abstract machine and run
-      in the same process.  No native code generation, no linker, no separate
-      compilation step.</p>
+      in the same process.  No native code generation, and no linker or
+      separate compilation step for Haskell code.</p>
     </article>
     <article>
       <h3>No self-hosting</h3>
       <p>Nothing in the implementation is written in Haskell except the
-      libraries it ships.  You need a C compiler and a few build tools, but no
-      Haskell compiler, and the thing you are reading is the thing that
-      runs.</p>
+      libraries it ships, so no Haskell compiler stands between the source you
+      read and the program that runs.</p>
     </article>
     <article>
       <h3>It stays small</h3>
@@ -125,8 +125,7 @@ Cupid&gt; map (*2) [1..10]
   <p class="aside">
     That third one does most of the work.  A flag is a promise to keep two code
     paths working forever, and a tree full of them is exactly the tree you
-    can&rsquo;t read.  So when something has to go, it goes.  What stays, and
-    why, is in
+    can&rsquo;t read.  What stays, and why, is in
     <a href="{{ get_url(path='@/docs/explanation/design.md') }}">the design</a>.
   </p>
 </section>

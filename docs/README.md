@@ -99,4 +99,4 @@ it evaluates a few expressions, loads a module and runs a program with
 ## Manual page
 
 `cupid.1.in` is the source of the `cupid(1)` manual page, which meson
-fills in with the install paths and installs alongside the binaries.
+fills in with the install paths and installs under `share/man`.
