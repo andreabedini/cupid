@@ -52,16 +52,15 @@ and shows exceptions inside partial results; the `+I` option prints the
 result of an `IO` action.  See
 [Evaluation and printing](options.md#evaluation-and-printing).
 
-**Ambiguous types.**  Before evaluation, defaulting is applied to each
-ambiguous type variable `v` whose constraints all have the form `C v`
-with `C` one of the Haskell 2010 classes `Eq`, `Ord`, `Show`, `Read`,
-`Enum`, `Bounded`, `Ix` or a numeric class, provided at least one of
-those classes is numeric or is `Show`, `Eq` or `Ord`.  Classes such as
-`Monoid` never default.  This is wider than the Haskell
-rule for modules, which requires a numeric class.  It is what makes
-`reverse []` printable: the `Show` constraint from printing defaults
-the element type to `Integer`.  Any ambiguous variable not covered by
-this rule is an error.
+**Ambiguous types.**  Before evaluation, an ambiguous type variable `v`
+is defaulted if every constraint on it has the form `C v`, every `C` is
+a Haskell 2010 numeric class or one of `Eq`, `Ord`, `Show`, `Read`,
+`Enum`, `Bounded` and `Ix`, and at least one `C` is numeric, `Show`,
+`Eq` or `Ord`.  Haskell's rule for modules requires a numeric class;
+the wider rule is what makes `reverse []` printable, since the `Show`
+constraint from printing defaults the element type to `Integer`.  Any
+other ambiguous variable is an error (`mempty`), and so is one for
+which neither `Integer` nor `Double` has the instances (`minBound`).
 
 ### `:type` *expr*
 
@@ -111,12 +110,12 @@ Forget every module except the empty module `Cupid`, the `Prelude` and
 what it uses, then load the named files or modules.  The last one
 loaded becomes the current module.
 
-A literal file name may contain a Haskell module of any name.  To
-include a space in a file name, precede it with a backslash or wrap the
-name in double quotes; inside double quotes `\ `, `\"` and `\\` are
-escapes and other backslashes are literal.
+A file named by its path may hold a module of any name.  To include a
+space in a file name, precede it with a backslash or wrap the name in
+double quotes, with the same escapes as in
+[`CUPIDFLAGS`](options.md#where-options-come-from).
 
-With no arguments, `:load` just forgets everything.
+With no arguments, `:load` only forgets.
 
 ### `:also` *file-or-module* ...
 
@@ -129,9 +128,10 @@ Reload the first loaded module whose file has changed since it was
 read, and every module loaded after it.  If no file has changed,
 nothing is read.  Use this after editing a file.
 
-### `:module` *module*
+### `:module` [*module*]
 
-Make *module* the current module.  It must be loaded.
+Make *module* the current module.  It must be loaded.  With no argument,
+return to the last module loaded.
 
 ### `:edit` [*file*]
 
@@ -144,7 +144,8 @@ the `EDITOR` environment variable; see
 
 ### `:find` *name*
 
-Edit the module that defines *name*.
+Edit the file that defines the type or value *name*, at its definition.
+Classes are not found.
 
 ## Information
 
@@ -223,15 +224,15 @@ Cupid> :version
 
 ### `:!` [*command*]
 
-Run a shell command, or with no argument start a shell.  With no
-argument Cupid starts the shell named by `SHELL`, or `/bin/sh` if that
-is unset.  With an argument it runs the command with `/bin/sh -c`,
-whatever `SHELL` says.
+Run *command* with the C library's `system`, which on Unix is
+`/bin/sh -c`, whatever `SHELL` says; `!command` also works.  With no
+argument, on Unix, start the shell named by `SHELL`, or `/bin/sh` if
+that is unset.  Cupid does not read `SHELL` on Windows.
 
 ### `:cd` *dir*
 
-Change the working directory.  A leading `~/` is replaced by the home
-directory.
+Change the working directory.  A bare `~` or a leading `~/` is replaced
+by the home directory, as in `:load`, `:also` and `:edit`.
 
 ### `:gc`
 
@@ -239,8 +240,10 @@ Force a garbage collection and report how many cells were recovered.
 
 ### `:xplain` *context*
 
-Explain how the instances for *context* are resolved, printing each
-entailment tried and each instance used.
+Explain how the first constraint of *context* is resolved, printing
+each entailment tried and each instance used, then `Sat` or `not Sat`.
+Several constraints need parentheses, and those after the first are
+ignored.
 
 ## Differences from GHCi
 
@@ -257,7 +260,7 @@ are the places where a GHCi habit does not carry over:
 | `:module + A B` puts several modules in scope | `:module` takes one module, and the scope is that module's top level.  To use names from several, load a module that imports them all |
 | `:kind T` | Not a command.  `:info T` describes `T`, and shows its kind when `+k` is set |
 | `:set -XExtension` turns on an extension | Every extension is always on except overlapping instances, which need `+o`; `-X` re-reads an option string.  See [Language extensions](extensions.md) |
-| `:set +s` shows time and bytes allocated | `+s` shows reductions and cells used |
+| `:set +s` shows time and bytes allocated | `+s` shows reductions and cells allocated |
 
 ## See also
 
