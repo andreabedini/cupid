@@ -1,18 +1,12 @@
 name: CI
 
-# configurations builds and tests every configuration of the build options,
-# with gcc and clang; warnings builds with -Werror; format checks the C
-# sources with clang-format. build makes a release build once per target,
-# runs the regression tests in the build tree and uploads the installation
-# as an archive; test unpacks that archive on a separate runner, without a
-# build tree, and runs the regression tests on it; build-windows and
-# test-windows do the same for Windows, with native Windows programs only;
-# sdist makes the source distribution; site builds the website; commits
-# checks the commit messages of a PR; ci-ok is the one check that the
-# ruleset requires; release publishes the tested archives and the source
-# distribution when the head of main is a release commit, made by `mise run
-# release-pr`; pages then deploys the website. Nothing is rebuilt after
-# testing.
+# The release path: build makes a release build once per target and uploads
+# the installation as an archive; test unpacks it on a separate runner,
+# without a build tree, and runs the regression tests on it; release
+# publishes those same archives when the head of main is a release commit,
+# made by `mise run release-pr`.  Nothing is rebuilt after testing.
+# build-windows and test-windows do the same with native Windows programs
+# only.  ci-ok is the one check that the ruleset requires.
 
 on:
   workflow_dispatch:
@@ -30,9 +24,7 @@ defaults:
 
 jobs:
   configurations:
-    # Every configuration the feature options make: the default, each option
-    # on its own, and all of them together.  The default build alone is not
-    # enough: an option nothing runs rots.
+    # See tools/check-configurations.
     strategy:
       fail-fast: false
       matrix:
@@ -52,9 +44,9 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install meson ninja readline
 
-      # The grammar keeps to what bison 2.3 reads, so that the bison macOS
-      # ships, /usr/bin/bison, builds Cupid.  Make sure it is that one the
-      # build finds, not one installed by something else on the runner.
+      # The grammar must build with the bison macOS ships; see src/meson.build.
+      # Make sure it is that one the build finds, not one installed by
+      # something else on the runner.
       - name: Check that bison is Apple's (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -80,7 +72,6 @@ jobs:
       - run: meson test -C build
 
   format:
-    # The C sources are formatted by clang-format.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -126,15 +117,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Line editing comes from libedit, which is BSD-licensed like Cupid,
-      # not from GNU readline, whose GPL would cover the binaries. Without
-      # libreadline-dev, meson falls back to libedit. Ubuntu 22.04's meson
-      # is older than the 1.1 that meson.build needs, and its GCC 11 is not
-      # a C23 compiler (bool, true and false are not keywords before GCC
-      # 13), so GCC 13 comes from the Ubuntu toolchain PPA. The binaries
-      # still need only the glibc of 22.04. GCC 13 is made the system gcc
-      # rather than named in CC, because meson bakes the compiler command
-      # into cupid for --ffi, and the users of the archive have a gcc but rarely
-      # a gcc-13.
+      # not from GNU readline, whose GPL would cover the binaries.  Without
+      # libreadline-dev, meson falls back to libedit.
+      #
+      # Ubuntu 22.04's meson is older than the 1.1 that meson.build needs, and
+      # its GCC 11 is not a C23 compiler (bool, true and false are not keywords
+      # before GCC 13), so GCC 13 comes from the Ubuntu toolchain PPA.  The
+      # binaries still need only the glibc of 22.04.
+      #
+      # GCC 13 is made the system gcc rather than named in CC, because meson
+      # bakes the compiler command into cupid for --ffi, and the users of the
+      # archive have a gcc but rarely a gcc-13.
       - name: Install build dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -147,14 +140,9 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           echo "CC=gcc" >> "$GITHUB_ENV"
 
-      # libedit is linked statically, from upstream's source rather than
-      # Ubuntu's package: Ubuntu's libedit.so.2 is a Debian soname that no
-      # other distribution has (upstream's is libedit.so.0), and Ubuntu's
-      # static library would pull in libbsd. libtinfo is linked statically
-      # with it, because distributions build it with and without symbol
-      # versions and the dynamic loader warns at every start when they
-      # differ. The built libedit is cached by version and architecture, so
-      # it is downloaded and built again only when the version changes.
+      # libedit comes from upstream's source because Ubuntu's static library
+      # would pull in libbsd.  meson.build says why it and libtinfo are linked
+      # statically.
       - name: Restore libedit (Linux)
         if: runner.os == 'Linux'
         id: libedit
@@ -189,7 +177,7 @@ jobs:
         run: brew install meson ninja
 
       # The prefix does not matter: an installation that has been moved
-      # finds its libraries next to its executables. libdir is set so that
+      # finds its libraries relative to its executable.  libdir is set so that
       # the archive has lib/cupid and not lib/x86_64-linux-gnu/cupid.
       # Line editing is required, not auto: a release without it would
       # otherwise pass unnoticed. On Linux it is the static libedit above.
@@ -202,7 +190,6 @@ jobs:
           version=$(meson introspect --projectinfo build | jq -r .version)
           echo "ARCHIVE=cupid-$version-${{ matrix.target }}" >> "$GITHUB_ENV"
 
-      # The test job checks the archived installation.
       - name: Test
         run: meson test -C build --print-errorlogs
 
@@ -223,9 +210,8 @@ jobs:
         run: codesign --force --sign - cupid
 
       # The binaries must only need glibc, the one library every
-      # distribution has with a stable ABI. libedit (its soname differs
-      # between distributions) and libtinfo (its symbol versions do) are
-      # linked statically above and must not appear here.
+      # distribution has with a stable ABI.  libedit and libtinfo are linked
+      # statically above and must not appear here.
       - name: Check shared libraries
         if: runner.os == 'Linux'
         working-directory: out/${{ env.ARCHIVE }}/bin
@@ -309,7 +295,8 @@ jobs:
       run:
         shell: pwsh
     steps:
-      # The expected outputs of the tests are compared byte for byte
+      # The tests' sources and data keep the line endings they were
+      # committed with.
       - run: git config --global core.autocrlf false
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -343,9 +330,7 @@ jobs:
                   "$env:SystemRoot\System32\WindowsPowerShell\v1.0"
           Add-Content $env:GITHUB_ENV "NATIVE_PATH=$($dirs -join ';')"
 
-      # As for the other targets, the prefix does not matter: an
-      # installation that has been moved finds its libraries next to its
-      # executables.
+      # The prefix does not matter, as for the other targets.
       - name: Configure
         run: |
           $env:PATH = $env:NATIVE_PATH
@@ -358,7 +343,6 @@ jobs:
           $version = (meson introspect --projectinfo build | ConvertFrom-Json).version
           Add-Content $env:GITHUB_ENV "ARCHIVE=cupid-$version-x86_64-windows"
 
-      # The test job checks the archived installation.
       - name: Test
         run: |
           $env:PATH = $env:NATIVE_PATH
