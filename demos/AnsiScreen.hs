@@ -1,7 +1,5 @@
 -----------------------------------------------------------------------------
--- Library of escape sequences for ANSI compatible screen I/O:
---
--- Suitable for use with Hugs 98
+-- Library of escape sequences for ANSI compatible screen I/O.
 -----------------------------------------------------------------------------
 
 module AnsiScreen(

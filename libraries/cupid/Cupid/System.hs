@@ -1,9 +1,5 @@
 -----------------------------------------------------------------------------
 -- Standard Library: System operations
---
--- Note: on Windows 9x, system always yields ExitSuccess.
---
--- Suitable for use with Hugs 98
 -----------------------------------------------------------------------------
 
 module Cupid.System (
@@ -13,8 +9,8 @@ module Cupid.System (
 
 import Cupid.Prelude( ExitCode(..), catchException, throw )
 
--- In interpretive mode, the initial values of these two are [] and "Cupid",
--- but they can be (temporarily) changed using withArgs and withProgName.
+-- At the prompt these start as [] and "Cupid"; cupid FILE ARGS sets them to
+-- FILE and ARGS.  withArgs and withProgName change them for one action.
 primitive getArgs     "primGetArgs"     :: IO [String]
 primitive getProgName "primGetProgName" :: IO String
 

@@ -1,9 +1,6 @@
 -- Substitutions and Unification of Prolog Terms
 -- Mark P. Jones November 1990, modified for Gofer 20th July 1991,
 -- and for Hugs 1.3 June 1996.
---
--- Suitable for use with Hugs 98.
---
 
 module Subst where
 
@@ -62,5 +59,3 @@ listUnify (t:ts) []     = []
 listUnify (t:ts) (r:rs) = [ u2 @@ u1 | u1<-unify t r,
                                        u2<-listUnify (map (app u1) ts)
                                                      (map (app u1) rs) ]
-
---- End of Subst.hs

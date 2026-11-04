@@ -2,7 +2,6 @@
 --
 -- The main difference is that Cupid does not throw asynchronous
 -- exceptions, in particular heap and stack overflow and ctrl-C.
--- Indeed, it is not entirely clear what to do in response to ctrl-C.
 
 module Cupid.Exception(
         Exception(..),
@@ -65,7 +64,3 @@ evaluate x = IO (\ s -> x `seq` s x)
 block, unblock :: IO a -> IO a
 block   m = m
 unblock m = m
-
-----------------------------------------------------------------
--- End
-----------------------------------------------------------------

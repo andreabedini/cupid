@@ -5,8 +5,6 @@
 --   by David King and John Launchbury
 -- 
 -- Most of the code is in the library modules Data.Graph and Data.Tree.
---
--- Suitable for use with Hugs 98.
 ------------------------------------------------------------------------------
 
 module Ldfs

@@ -5,8 +5,6 @@
 -- in the PLDI '94 paper by John Launchbury and Simon Peyton Jones.
 -- In addition to the monad ST, it also provides mutable variables STRef
 -- and mutable arrays STArray.
---
--- Suitable for use with Hugs 98.
 -----------------------------------------------------------------------------
 
 module Cupid.ST 
@@ -122,9 +120,9 @@ thawSTArray arr      = do
 						[0..] (elems arr))
 		       return stArr
  where
-  err = error "thawArray: element not overwritten" -- shouldnae happen
+  err = error "thawArray: element not overwritten"
 freezeSTArray a      = primFreeze a
-unsafeFreezeSTArray  = freezeSTArray  -- not as fast as GHC
+unsafeFreezeSTArray  = freezeSTArray  -- copies, unlike GHC's
 
 instance Eq (STArray s ix elt) where
   (==) = eqSTArray

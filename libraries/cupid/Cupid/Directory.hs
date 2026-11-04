@@ -1,6 +1,4 @@
---
--- Hugs98 implementation of the Haskell 98 module, Directory.
---
+-- The Haskell 98 module Directory.
 module Cupid.Directory
 	( Permissions ( readable     -- :: Permissions -> Bool
 	              , writable     -- :: Permissions -> Bool
@@ -40,10 +38,6 @@ data Permissions
    , searchable   :: Bool
    } deriving (Eq, Ord, Read, Show)
 
-{-
- This module is really just a wrapper for various directory
- and file-related system calls.
--}
 primitive createDirectory :: FilePath -> IO ()
 
 primitive removeFile :: FilePath -> IO ()

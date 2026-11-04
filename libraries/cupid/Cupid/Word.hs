@@ -1,6 +1,5 @@
 -----------------------------------------------------------------------------
 -- Unsigned Integers
--- Suitable for use with Hugs 98 on 32 bit systems.
 -----------------------------------------------------------------------------
 module Cupid.Word
 	( Word
@@ -81,7 +80,7 @@ instance Read Word8 where
     readsPrec p   = readDec
 
 instance Show Word8 where
-    showsPrec p   = showInt  -- a particularily counterintuitive name!
+    showsPrec p   = showInt
 
 instance FiniteBits Word8 where
     finiteBitSize = bitSize
@@ -153,7 +152,7 @@ instance Read Word16 where
     readsPrec p   = readDec
 
 instance Show Word16 where
-    showsPrec p   = showInt  -- a particularily counterintuitive name!
+    showsPrec p   = showInt
 
 instance FiniteBits Word16 where
     finiteBitSize = bitSize
@@ -227,7 +226,7 @@ instance Read Word32 where
     readsPrec p   = readDec
 
 instance Show Word32 where
-    showsPrec p   = showInt  -- a particularily counterintuitive name!
+    showsPrec p   = showInt
 
 instance FiniteBits Word32 where
     finiteBitSize = bitSize
@@ -420,7 +419,3 @@ absReal x    | x >= 0    = x
 signumReal x | x == 0    =  0
 	     | x > 0     =  1
 	     | otherwise = -1
-
------------------------------------------------------------------------------
--- End
------------------------------------------------------------------------------

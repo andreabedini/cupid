@@ -1,6 +1,5 @@
 -----------------------------------------------------------------------------
--- Machine Addresses:
--- Suitable for use with Hugs 98 on 32 bit machines.
+-- Machine addresses.
 -----------------------------------------------------------------------------
 module Cupid.Ptr
 	( Ptr

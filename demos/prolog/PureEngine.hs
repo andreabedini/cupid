@@ -1,9 +1,6 @@
 -- The Pure Prolog inference engine (using explicit prooftrees)
 -- Mark P. Jones November 1990, modified for Gofer 20th July 1991,
 -- and for Hugs 1.3 June 1996.
---
--- Suitable for use with Hugs 98.
---
 
 module PureEngine( version, prove ) where
 
@@ -40,5 +37,3 @@ search (Choice pts)  = [ s | pt <- pts, s <- search pt ]
 
 prove    :: Database -> [Term] -> [Subst]
 prove db  = search . prooftree db 1 nullSubst
-
---- End of PureEngine.hs

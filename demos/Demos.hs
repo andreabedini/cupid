@@ -1,5 +1,4 @@
--- With import chasing enabled, this module can be used to
--- load the majority of the demos into a Cupid session.
+-- Loading this module loads the majority of the demos.
 
 module Demos where
 

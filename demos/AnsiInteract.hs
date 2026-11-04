@@ -1,8 +1,6 @@
 -----------------------------------------------------------------------------
 -- Library of functions for writing interactive programs with screen-oriented
 -- I/O (assumes Ansi screen).
---
--- Suitable for use with Hugs 98.
 -----------------------------------------------------------------------------
 
 module AnsiInteract(

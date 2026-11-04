@@ -1,7 +1,5 @@
 -----------------------------------------------------------------------------
 -- Standard Library: Numeric operations
---
--- Suitable for use with Hugs 98
 -----------------------------------------------------------------------------
 
 module Cupid.Numeric
@@ -75,7 +73,7 @@ expts :: Array Int Integer
 expts = array (minExpt,maxExpt) [(n,2^n) | n <- [minExpt .. maxExpt]]
 
 -- Compute the (floor of the) log of i in base b.
--- Simplest way would be just divide i by b until it's smaller then b,
+-- Simplest way would be just divide i by b until it's smaller than b,
 -- but that would be very slow!  We are just slightly more clever.
 integerLogBase :: Integer -> Integer -> Int
 integerLogBase b i =
@@ -247,7 +245,7 @@ floatToDigits base x =
 -- -----------------------------------------------------------------------------
 -- Showing
 
--- showInt is used for positive numbers only
+-- showInt is used for non-negative numbers only
 showInt    :: Integral a => a -> ShowS
 showInt n r | n < 0 = error "Numeric.showInt: can't show negative numbers"
             | otherwise =

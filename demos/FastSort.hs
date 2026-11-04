@@ -1,7 +1,7 @@
 module FastSort where
 import Gofer
 
-{- list sorting: see L.C.Paulson, ML for the working programmer, Cambidge, p100
+{- list sorting: see L.C.Paulson, ML for the working programmer, Cambridge, p100
 -- The list is split into ascending chunks which are then merged in pairs.
 
 samsort l = sorting [] 0 l

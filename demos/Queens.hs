@@ -1,9 +1,5 @@
 -- This N-Queens program is based on a small variation of the 8-queens
 -- program from Bird and Wadler's book.
---
--- Be warned: printing out the complete list of solutions (all 92 of them)
--- by evaluating "q 8" takes well over 1 million reductions and uses nearly
--- 2.5 million cells... it may take some time to execute on slower systems! :-)
 
 module Queens where
 import Gofer

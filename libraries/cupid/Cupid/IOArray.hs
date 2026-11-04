@@ -1,7 +1,5 @@
 -----------------------------------------------------------------------------
--- Mutable arrays in the IO monad:
---
--- Suitable for use with Hugs 98.
+-- Mutable arrays in the IO monad.
 -----------------------------------------------------------------------------
 
 module Cupid.IOArray
@@ -49,7 +47,7 @@ thawIOArray arr      = do a <- newIOArray (bounds arr) err
                        where err =  error "thawArray: element not overwritten"
 
 freezeIOArray a      = primFreeze a
-unsafeFreezeIOArray  = freezeIOArray  -- not as fast as GHC
+unsafeFreezeIOArray  = freezeIOArray  -- copies, unlike GHC's
 
 instance Eq (IOArray ix elt) where
   (==) = eqIOArray

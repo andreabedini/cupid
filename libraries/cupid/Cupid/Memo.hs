@@ -7,7 +7,7 @@
 	                         Byron Cook
 			            OGI
 
-This Cupid module implements several flavors of memoization functions,
+This Hugs module implements several flavors of memoization functions,
 as described in Haskell Workshop 1997.
 -----------------------------------------------------------------------------}
 
@@ -23,8 +23,6 @@ module Cupid.Memo(
         ) where
 
 import Cupid.ST
--- import Cupid.IOExts (unsafePtrEq)
--- import Debug.Trace (trace)
 
 memo      :: (a -> b) -> (a -> b)
 memoN     :: Int -> (a -> b) -> (a -> b)
@@ -75,7 +73,7 @@ defaultSize = 40
 
 memoize :: ST Mem t -> (t -> a -> b -> ST Mem b) -> 
            (a -> b) -> a -> b
-memoize new access f = {-trace "memoize" $-} unsafeRunST $ do 
+memoize new access f = unsafeRunST $ do 
   t <- new
   return (\x -> unsafeRunST $ access t x (f x))
 
@@ -101,12 +99,12 @@ accessHash equal h sz table x v = do
   let hv = hv' `mod` sz
   l <- readSTArray table hv
   find l l hv
- where find l [] hv = {-trace "miss " $-} do
+ where find l [] hv = do
          u <- writeSTArray table  hv ((x,v):l) 
          case u of {() -> return v}
        find l ((x',v'):xs) hv = do
          a <- equal x x'
-         if a then {-trace "hit "-} (return $ v')
+         if a then (return $ v')
           else find l xs hv
 
 newHash :: Int -> ST Mem (HashTable a b)
@@ -135,11 +133,10 @@ newCache :: Int -> ST Mem (Cache a b)
 newCache n = newSTArray (0,n) Nothing
 
 ------------------------------------------------------------------
--- These functions are bad --- dont pay attention to them
+-- These look at addresses rather than values, except for base types.
 
 -- lisp style eql --- as described in "Lazy-memo functions"
 primitive eql "IOEql" :: a -> a -> ST Mem Bool
--- a `eql` b = return (a `unsafePtrEq` b)
 
 -- hash based on addresses (or values if the arg is a base type)
 primitive hash "IOHash" :: a -> ST Mem Int
