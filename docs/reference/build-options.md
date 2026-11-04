@@ -48,7 +48,7 @@ read `libdir` for `lib` in the paths under `lib/cupid`:
 | `/usr/local/lib/cupid/packages/base/` | The `base` library, with the `Prelude` module |
 | `/usr/local/lib/cupid/include/HsFFI.h` | Header for FFI stubs |
 | `/usr/local/lib/cupid/demos/` | Example programs |
-| `/usr/local/lib/cupid/docs/` | The tutorials, how-to guides, reference and explanation from this documentation |
+| `/usr/local/lib/cupid/docs/` | This documentation |
 | `/usr/local/lib/cupid/README.md`, `License`, `Credits` | |
 | `/usr/local/share/man/man1/cupid.1` | Manual page |
 
