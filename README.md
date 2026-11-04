@@ -19,14 +19,12 @@ volunteers kept it going until the September 2006 release, the last one
 that shipped, and in time it stopped building on current compilers.
 Cupid picks up from that release:
 
-- **A small interpreter in plain C.**  Source text is compiled to the
-  code of a small abstract machine and run in the same process.  The
-  whole interpreter is under fifty thousand lines of standard C23.
+- **A small interpreter in plain C.**  The whole interpreter is under
+  fifty thousand lines of standard C23.
 - **Modern base.**  The libraries follow GHC's base, roughly version
-  4.18, so the Haskell written today loads.
-- **Builds in a minute.**  You need a C compiler, meson, ninja, python3
-  and bison, but no Haskell compiler.  It builds natively on Linux,
-  macOS and Windows.
+  4.18, so code written against today's base can load.
+- **Builds in a minute.**  You need a C compiler and a few build tools,
+  but no Haskell compiler.
 
 ## Written to be read
 
@@ -41,51 +39,49 @@ Three things follow from it, and they don't change:
 
 - **It is an interpreter written in C.**  Source text is compiled to the
   code of a small abstract machine and run in the same process.  No
-  native code generation, no linker, no separate compilation step.
+  native code generation, and no linker or separate compilation step
+  for Haskell code.
 - **It does not self-host.**  Nothing in the implementation is written in
-  Haskell except the libraries it ships.  You need a C compiler and a
-  few build tools, but no Haskell compiler, and the thing you are
-  reading is the thing that runs.
-- **It stays small.**  The whole interpreter is under fifty thousand
-  lines of C, and it is kept that way.  The libraries are Haskell, with
-  a few small C helpers in `base`, and grow with what programs import;
-  the interpreter's C grows only where a library can't do the job.
-  Anything that doesn't serve the aim gets deleted rather than parked
-  behind a flag.
+  Haskell except the libraries it ships, so no Haskell compiler stands
+  between the source you read and the program that runs.
+- **It stays small.**  The libraries are Haskell, with a few small C
+  helpers in `base`, and grow with what programs import; the
+  interpreter's C grows only where a library can't do the job.  Anything
+  that doesn't serve the aim gets deleted rather than parked behind a
+  flag.
 
 That third one does most of the work.  A flag is a promise to keep two
 code paths working forever, and a tree full of them is exactly the tree
-you can't read.  So when something has to go, it goes.
+you can't read.
 
 ## Where it's at
 
 A fair amount of the 2006 tree has already gone: the autoconf build, the
 flag-guarded extensions, the GHC/nhc98 shared library sources and the
 three-stage bootstrap that turned them into something Hugs could load,
-the platforms nobody has run this century.  None of that was deleted on
-a whim: [The design of Cupid](docs/explanation/design.md) says what
-stayed and why.  If you want the longer story of where the code came
-from, that's [History](docs/explanation/history.md).
+the platforms nobody has run this century.
+[The design of Cupid](docs/explanation/design.md) says what stayed and
+why.  If you want the longer story of where the code came from, that's
+[History](docs/explanation/history.md).
 
-What has been added is what real code needs.  The libraries follow
-GHC's base, roughly version 4.18, with `Applicative` under
-`Monad`, `Semigroup` under `Monoid`, and `Foldable` and `Traversable`.
-The transformers package loads from its unmodified source once it has
-been through the C preprocessor; see
+What has been added is what real code needs.  The libraries have
+`Applicative` under `Monad`, `Semigroup` under `Monoid`, and `Foldable`
+and `Traversable`.  The transformers package loads from its unmodified
+source once it has been through the C preprocessor; see
 [Preprocess source files before loading](docs/how-to/preprocess-sources.md).
-Running real code doesn't mean following GHC.  A feature gets in when
-real code needs it, when it fits the one type checker with nothing below
-the type checker changing, and when Cupid can take the common case and
-reject the rest.  Every extension is always on, except overlapping
-instances, which need the `+o` option.  Unboxed types, Template Haskell
-and STM are out, and type families are undecided.
-[Language extensions](docs/reference/extensions.md) lists what is
-accepted and what is left out.
+Running such code doesn't mean following GHC.  A feature gets in when
+packages written for GHC need it, when it fits the existing type checker
+and leaves code generation and the abstract machine unchanged, and when
+Cupid can take the common case and reject the rest.  Every extension is
+always on, except overlapping instances, which need the `+o` option.
+Unboxed types, Template Haskell and STM are out, and type families are
+undecided.  [Language extensions](docs/reference/extensions.md) lists
+what is accepted and what is left out.
 
-It builds and runs.  The code is standard C23 and builds with meson on
-64-bit Linux, macOS, Windows and the BSDs.  Linux, macOS and Windows are
-built and tested on every change; on Windows it builds natively with
-MinGW-w64, see [Build Cupid on Windows](docs/install/build-on-windows.md).
+It builds and runs, with meson, on 64-bit Linux, macOS, Windows and the
+BSDs.  Linux, macOS and Windows are built and tested on every change; on
+Windows it builds natively with MinGW-w64, see
+[Build Cupid on Windows](docs/install/build-on-windows.md).
 
 ## Quick start
 
@@ -104,21 +100,9 @@ Cupid> map (*2) [1..10]
 Cupid> :quit
 ```
 
-The whole build takes a minute or two and never writes to the source
-tree.  Two things worth knowing up front:
-
-- Name a **real** compiler in `$CC`.  meson bakes the command into
-  `cupid`, which runs it at library-build time and again at run time
-  to compile the C stubs of modules with foreign imports.  A wrapper like
-  `sccache cc` breaks that step even when the C sources compiled fine;
-  the symptom is `cupid --ffi` reporting "Error while running compilation
-  command".
-- meson remembers the compiler it found, so changing it in an existing
-  build directory needs `meson setup --wipe build`.  A plain
-  `--reconfigure` keeps the old one.
-
-Tests are `meson test -C build`, and installing is `ninja -C build
-install`.  [Build Cupid on Linux and macOS](docs/install/build-on-linux-and-macos.md)
+The build never writes to the source tree.  Tests are
+`meson test -C build`, and installing is `ninja -C build install`.
+[Build Cupid on Linux and macOS](docs/install/build-on-linux-and-macos.md)
 has the detail, and [Build options and install
 layout](docs/reference/build-options.md) lists every `-Dname=value` you
 can set.
@@ -130,7 +114,7 @@ tells you what it's for.  [docs/README.md](docs/README.md) is the index;
 the useful starting points are:
 
 - [Getting started with Cupid](docs/tutorials/getting-started.md) — a
-  first session, from build to running a program.  About 20 minutes.
+  first session, from the prompt to running a program.  About 15 minutes.
 - [How Cupid runs a program](docs/explanation/how-cupid-runs-a-program.md)
   — source text to abstract machine, and where each piece lives.  Read
   this before the source.
@@ -182,7 +166,7 @@ Cupid is written and maintained by [Andrea Bedini](https://github.com/andreabedi
 
 It is derived from Hugs 98, which is Copyright (c) Mark P Jones,
 Alastair Reid, the Yale Haskell Group, and the OGI School of Science &
-Engineering at OHSU, 1994-2005, and distributed under the BSD-style
+Engineering at OHSU, 1994-2003, and distributed under the BSD-style
 licence in [License](License).  Cupid is distributed under the same
 licence.  The `base` library carries its own BSD-style licence, in
 [libraries/base/LICENSE](libraries/base/LICENSE), because it is derived

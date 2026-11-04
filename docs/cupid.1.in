@@ -87,6 +87,9 @@ Allow overlapping instances (a Cupid extension; default: off)
 .TP
 .B +O
 Allow unsafe overlapping instances (a Cupid extension; default: off)
+.TP
+.B +x
+Explain instance resolution (default: off)
 .SS "Module loading"
 .TP
 .B +\&.
@@ -254,7 +257,8 @@ print Cupid version.
 exit Cupid interpreter.
 .PP
 Any command may be abbreviated to \fB:\fIc\fR where
-\fIc\fP is the first character in the full name.
+\fIc\fP is the first character in the full name,
+except \fB:main\fP, because \fB:m\fP means \fB:module\fP.
 On most systems, you can also
 exit from \fICupid\fP by typing the end-of-file character (^D).
 .PP
@@ -293,7 +297,7 @@ The exit status is 0 when \fBmain\fP completes, 1 when the file cannot be
 loaded or \fBmain\fP raises an error, and \fIn\fP when \fBmain\fP calls
 \fBexitWith (ExitFailure \fIn\fB)\fR.
 .LP
-Note that \fB#!\fP passes only one argument to the script.
+On Linux, \fB#!\fP passes only one argument to \fIcupid\fP.
 One option may be given directly, as in \fB#!\*(BN/cupid \-h4M\fP.
 To give several, use the \fB\-X\fP option, as in
 \fB#!\*(BN/cupid \-X+o \-h4M\fP.
@@ -318,7 +322,7 @@ Then you would compile the module with the command
 .IP
 \fBcupid \-\-ffi Test.hs test.c \-lm \fP
 .LP
-which generates an object file \fBTest.so\fP.
+which generates a shared library \fBTest.so\fP.
 Then when \fIcupid\fP loads \fBTest.hs\fP, it will also load \fBTest.so\fP.
 .LP
 Each \fBforeign import\fP declaration should name
@@ -333,10 +337,11 @@ Additional options for \fIcupid\fP,
 processed before any given on the command line.
 .TP
 .B CUPIDDIR
-The Cupid library directory (default: on Linux, macOS and Windows, the library
-directory where the install put it relative to the executable, if it
-exists, as in a moved installation; otherwise
-.BR \*(LB ).
+The Cupid library directory.
+Default: the installed library directory found relative to the executable,
+so that a moved installation still works (Linux, macOS and Windows only);
+otherwise
+.BR \*(LB .
 .TP
 .B EDITOR
 The default editor, if \fB\-E\fP is not given.

@@ -10,8 +10,10 @@ Make a directory of Haskell modules importable from any Cupid session.
 
 ### 1. Put the modules in a package directory
 
-The default search path already includes every immediate
-subdirectory of two package directories:
+On Linux, macOS and the BSDs, the default search path already includes
+every immediate subdirectory of two package directories (on Windows it
+is only `.;{Cupid}\packages\*`, so use step 2, with `;` in place of
+`:`):
 
 ```
 {Home}/lib/cupid/packages/*

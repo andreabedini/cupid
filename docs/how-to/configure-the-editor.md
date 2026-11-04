@@ -28,10 +28,11 @@ For Emacs through emacsclient:
 -E"emacsclient +%d %s"
 ```
 
-For VS Code, which takes `file:line`:
+For VS Code, which takes `file:line` and needs `--wait` so that `code`
+does not exit until you close the file:
 
 ```
--E"code --goto %s:%d"
+-E"code --wait --goto %s:%d"
 ```
 
 When `-E` is not given, Cupid uses the `EDITOR` environment variable
@@ -39,8 +40,9 @@ without any line number.
 
 ### 2. Make it permanent
 
-Put the option in `CUPIDFLAGS` in your shell start-up file.  Quote the
-option so that the shell passes the spaces through:
+Put the option in `CUPIDFLAGS` in your shell start-up file.  The single
+quotes pass the string through the shell unchanged, and the double
+quotes keep its spaces inside the option when Cupid splits `CUPIDFLAGS`:
 
 ```sh
 CUPIDFLAGS='-E"vi +%d %s"'

@@ -46,7 +46,7 @@ brew install meson ninja
 
 The bison that macOS ships, 2.3, is enough, so Homebrew's is not
 needed.  The C compiler is the one Xcode's command line tools install;
-`CC=cc` below picks it up.
+use `CC=cc` in step 2.
 
 ## Steps
 
@@ -97,8 +97,8 @@ ninja -C build
 
 This compiles `cupid` into `build/src`, then
 assembles the Haskell libraries into `build/libraries/cupiddir`.  The
-source tree is not written to.  The whole thing takes a minute or two,
-and the last lines of output look like this:
+source tree is not written to.  The whole thing takes a minute, and the
+last lines of output look like this:
 
 ```
 [52/53] Generating libraries/cupid-libraries with a custom command
@@ -129,8 +129,9 @@ DESTDIR=/tmp/stage ninja -C build install
 ```
 
 An installed `cupid` finds its libraries without any environment
-variable.  It still finds them after the whole installation tree has
-been moved, because it looks next to its own executable first.
+variable.  On Linux and macOS it still finds them after the whole
+installation tree has been moved, because, unless `CUPIDDIR` is set, it
+looks relative to its own executable.
 
 ## Verify it worked
 
@@ -192,7 +193,7 @@ export CUPIDDIR="$PWD/build/libraries/cupiddir"
 
 After this `cupid` works as if installed.  If
 the libraries cannot be found, the interpreter stops before the prompt
-with a message that the `Prelude` cannot be located.
+with `FATAL ERROR: Unable to load Prelude`.
 [Environment variables](../reference/environment-variables.md)
 describes `CUPIDDIR`, and [Options](../reference/options.md) describes
 `-P`.
