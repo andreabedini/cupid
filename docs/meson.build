@@ -8,6 +8,6 @@ cupid_1 = configure_file(input: 'cupid.1.in', output: 'cupid.1', configuration: 
 install_man(cupid_1)
 
 install_data('README.md', install_dir: cupiddir / 'docs')
-foreach section : ['tutorials', 'how-to', 'reference', 'explanation']
+foreach section : ['install', 'tutorials', 'how-to', 'reference', 'explanation', 'contributing']
   install_subdir(section, install_dir: cupiddir / 'docs', exclude_directories: '.claude')
 endforeach
