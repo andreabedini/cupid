@@ -6,8 +6,7 @@ intermediate forms and the graph of the running program are all trees
 of `Cell`s, allocated from one heap, and the things that have names
 live in fixed tables that cells index.  This page explains that
 representation and the reasons for it.  The design is Gofer's, from
-1991, and most of the reasons its author gave for it still hold; where
-the code has moved on since, this page says so.  The code is
+1991; where the code has moved on since, this page says so.  The code is
 `src/storage.h` and `src/storage.c`.
 
 ## Text: strings interned once
@@ -20,12 +19,13 @@ character table, and referred to by its offset in that table, a
 instead of walking two strings, and a name used throughout a program
 costs its characters once.
 
-The table is a fixed array (`NUM_TEXT` in `src/sizes.h`), searched
-through `NUM_TEXTH` levels of hashing before a linear scan.  The
-layering is old: Gofer's first version used one hash table to pick a
-starting point for a linear search, and profiling showed that loading
-a large program spent most of its time in `findText`; several levels
-of hashing made loading five times faster.
+The table is a fixed array (`NUM_TEXT` in `src/sizes.h`).  One hash
+picks a row of `NUM_TEXTH` entries in `textHash`; if none of them
+matches, `findText` scans on linearly.  The rows are old: Gofer's first
+version used one hash table to pick a starting point for a linear
+search, and profiling showed that loading a large program spent most of
+its time in `findText`; several levels of hashing made loading five
+times faster.
 
 Names the compiler invents, for the lambda-lifted functions and the
 dictionary parameters it introduces, need no characters.  `inventText`
@@ -57,36 +57,33 @@ The ranges are laid out in this order in `storage.h`, each one's start
 computed from the previous one's size, and `static_assert`s at the end
 of the file check that none of them overlap.
 
-The reasons for encoding cells as integers rather than pointers were
-given in 1994 and are still the reasons the layout is what it is.  A
-value that is used constantly, a name, a type constructor or a small
+A value that is used constantly, a name, a type constructor or a small
 integer, needs no storage at all, however many times it occurs.  Testing
 for a pair is a sign test, `isPair(c)` is `c < 0`, and `whatIs`, which
 the whole interpreter dispatches on, is a table lookup for every
 non-negative cell (`whatCode[]`) and a read of the first component for
 a pair.  `whatIs` was measured as one of the most frequently executed
 functions in the system, which is why it is worth this much care.  The
-costs are also as stated then: decoding a cell takes a few more
-instructions than following a pointer, and the ranges are fixed when
-the interpreter is built, so a table that fills up reports "storage
-space exhausted" rather than growing.  The limits are in
-`src/sizes.h`.
+costs are that decoding a cell takes a few more instructions than
+following a pointer, and that the ranges are fixed when the interpreter
+is built, so a table that fills up reports "storage space exhausted"
+rather than growing.  The limits are in `src/sizes.h`.
 
-The tags are a `typedef enum CellTag`, so a `switch (whatIs(c))` is
-one that `-Wswitch` can check; [The design of Cupid](design.md#the-c-code)
-says how such switches are written.
+The tags are a `typedef enum CellTag`.  [The design of
+Cupid](design.md#the-c-code) says how a `switch (whatIs(c))` is written.
 
 **Boxed values.**  An integer outside the small range, a character
-beyond `NUM_SHORT_CHARS`, a string, a `Double`: each is a pair whose
-first component is a box tag and whose second component holds the
-value, allocated by `mkInt`, `mkChar`, `mkStr` and so on.  Every
-arithmetic primitive therefore handles both the unboxed and the boxed
-form.  The small-integer range is 4096 wide, a balance between boxing
-fewer integers and keeping the `whatCode[]` table small; Gofer gave
-small integers almost the whole positive range of an `int`, but its
-cells were 16 bits wide and its `Int` was boxed anyway.
+beyond `NUM_SHORT_CHARS`, a string: each is a pair whose first component
+is a box tag and whose second component holds the value, allocated by
+`mkInt`, `mkChar`, `mkStr` and so on.  A `Double` does not fit in one
+component, so `mkDouble` makes a `DOUBLECELL` pair holding a pair of two
+integer cells.  Since an integer may be small or boxed, `isInt`, `intOf`
+and `mkInt` handle both forms, and the primitives go through them.  The
+small-integer range is 4096
+wide, a balance between boxing fewer integers and keeping the
+`whatCode[]` table small.
 
-**Why not a tagged union.**  A `Cell` is an alias for `int`, and so are
+**Why not distinct types.**  A `Cell` is an alias for `int`, and so are
 `Type`, `Kind`, `Name`, `List` and the other domain types.  They
 document intent without checking it; nothing stops a `Type` being
 passed where a `Name` is wanted.  Gofer's author weighed introducing
@@ -114,10 +111,9 @@ with `-h` and never grows.
 `pair(x, y)` takes a cell from `freeList`.  When the list is empty it
 collects: every live cell is marked, then the whole heap is swept and
 the unmarked cells are linked into a new free list.  A sweep costs
-time proportional to the size of the heap, not to the amount in use,
-and allocating from a free list costs a test per pair; a copying
-collector with a bump pointer would be cheaper on both counts and
-would allow variable-sized objects.  It is not possible here, because a
+time proportional to the size of the heap, not to the amount in use; a
+copying collector would avoid that and would allow variable-sized
+objects.  It is not possible here, because a
 copying collector must update every pointer to a moved object, and
 some of the pointers to the heap are in C local variables.
 
@@ -125,9 +121,9 @@ That is the central compromise of the storage layer.  Any C function
 in the interpreter may call `pair`, and any of them may be holding
 cells in locals when the collection happens, so the collector treats
 the C stack as a source of roots: every word on it that looks like a
-heap cell keeps that cell alive (`gcCStack`, marking with
-`markWithoutMove`, which never rewrites the word, since it may be an
-integer or a return address that happens to fall in range).  This is
+heap cell keeps that cell alive (`gcCStack`).  `markWithoutMove` marks
+the cell and never rewrites the word, since it may be an integer or a
+return address that happens to fall in range.  This is
 what lets the compiler and the type checker be written in ordinary C
 that builds lists freely.  It is also why those files are compiled
 without optimisation, why the type checker must never run with the
@@ -136,8 +132,7 @@ pointer can keep a large structure alive longer than it is needed;
 [The design of Cupid](design.md#data-and-memory) states the rules.
 Gofer's author called the scheme "an enormous pain" and "very poor C
 programming practice", and then observed that it had survived programs
-running for days through tens of thousands of collections.  Both
-remarks remain fair.
+running for days through tens of thousands of collections.
 
 The other roots are explicit.  The symbol tables are marked field by
 field (`markStorage` marks each name's type and definition, each type
@@ -151,27 +146,28 @@ does not lose them.  The marking phase keeps its own explicit stack
 rather than recursing in C, because a long list once overflowed the C
 stack while being marked.
 
-When a module gains a new static cell, the rule from 1994 still
-applies in its current form: the cell must be in a `registerRoots`
-table, and it must be set to `NIL` when the module is installed and
-reset, or the storage it points to is kept for longer than it is used.
+A new static cell must be in a `registerRoots` table, or what it points
+to can be freed while still in use, and must be set to `NIL` when the
+module is installed and reset, or what it points to is kept longer than
+it is used.
 
 ## Tables, high-water marks and checkpoints
 
 Names, type constructors, classes, instances, modules and scripts each
 live in a fixed array with a high-water mark (`nameHw`, `tyconHw`,
 `classHw`, `instHw`, ...) pointing at the next free slot.  A handle
-such as a `Name` is the index of its record, and `nameRec(n)` turns it
-into a pointer that stays valid because the arrays never move.
+such as a `Name` is its record's index plus the table's start in the
+cell range (`NAMEMIN`), and `nameRec(n)` turns it into a pointer that
+stays valid because the arrays never move.
 
 The marks give the interpreter a checkpoint mechanism for free.
 `startNewScript` records the value of every high-water mark, the text
-table's included, and `dropScriptsFrom(s)` rewinds them all to the
-values recorded before script `s` was read, trims the text hash
-tables, clears the name and type-constructor hashes (they are rebuilt
-per module) and prunes the instance lists of the classes that survive.
-This one pair of functions is the whole of error recovery and
-reloading: a script that fails to load is dropped by rewinding; the
+table's included.  `dropScriptsFrom(s)` rewinds them all to the values
+recorded before script `s` was read.  It also trims the text hash
+tables, clears the name and type-constructor hashes, which are rebuilt
+per module, and prunes the instance lists of the classes that survive.
+Error recovery and reloading are built on this pair of functions: a
+script that fails to load is dropped by rewinding; the
 prompt starts an anonymous script before each expression and drops it
 afterwards; and `:reload` finds the first script whose file has
 changed, drops it and everything loaded after it, and reads from there
@@ -179,7 +175,7 @@ on.  Scripts form a strict stack, which is why editing a script
 reloads it and every later one, but never an earlier one.  Gofer's
 author noted that a dependency analysis between scripts could avoid
 some of that reloading and that in practice it is fast enough not to
-matter; that is still the case.
+matter.
 
 ## The stack
 

@@ -8,7 +8,7 @@ checking is the smaller part.  This page is about the machinery the
 first job uses and the way the second one is threaded through it.
 [How constraints are solved](how-constraints-are-solved.md) takes over
 where the class constraints are decided.  The representation described
-here is Gofer's, and the reasons for it are the ones its author gave.
+here is Gofer's.
 
 ## Types are a skeleton and an offset
 
@@ -26,9 +26,9 @@ skeleton is the stored type itself, uncopied, and `mkOffset(i)` in it
 means "the type variable at position `o + i`".  To instantiate a
 scheme with `n` variables, `instantiate` allocates `n` consecutive
 entries in the substitution and returns the same skeleton with the
-offset of the first.  Every use of `id` shares one skeleton.  Gofer's
-author called this structure sharing, after the technique of the same
-name in logic programming.
+offset of the first.  Every use of `id` shares one skeleton.  This is
+called structure sharing, after the technique of the same name in logic
+programming.
 
 The current substitution is an array of `Tyvar` records, each holding
 what the variable is bound to (as a skeleton and offset of its own, or
@@ -63,26 +63,27 @@ overwritten later, every reference sees it through the indirection.
 
 The same idea handles the other direction: a binding that turns out to
 be overloaded must take dictionary *parameters*, and every reference
-to it inside the group must pass them.  The assumptions for let-bound
-variables are arranged so that there is one cell per variable per
+to it inside the group must pass them.  The assumptions for the group
+being checked are arranged so that there is one cell per variable per
 scope (`findAssum` allocates it on first reference and returns the same
 cell afterwards), and every occurrence in the group's bodies is that
 cell.  When the group is generalised, `addEvidParams` overwrites the
 one cell with `v dv1 ... dvk`, and every occurrence is updated at once.
 Gofer's author noted that the alternative, a second traversal of the
 bodies, would be quadratic with nested groups.  It is the reason the
-assumptions distinguish let-bound from lambda-bound variables at all.
+assumptions keep the current group apart from everything else.
 
 ## Assumptions
 
-The types of variables in scope are two lists of lists: `defnBounds` for
-let-bound variables, which may be polymorphic and overloaded, and
-`varsBounds` for lambda-bound ones, which are monomorphic and carry no
-dictionaries.  `enterBindings` pushes an empty level on each when a
-scope is entered and `leaveBindings` pops it.  Only locally bound
-variables are here; a global has its type in its name record, and needs
-no assumption.  The scopes that existential types and local givens
-require are a separate stack (`TcScope`), described in
+The types of variables in scope are two lists of lists.  `defnBounds`
+holds the bindings of the group being checked, whose occurrences may
+still need dictionaries added.  `varsBounds` holds everything already
+settled: lambda-bound variables, bindings with signatures, and bindings
+whose group has finished.  `enterBindings` pushes an empty level on each
+when a scope is entered and `leaveBindings` pops it.  A global is in
+these lists too until its top-level group is done; `typeDefnGroup` then
+stores its type in its name record.  The scopes that existential types
+and local givens require are a separate stack (`TcScope`), described in
 [How constraints are solved](how-constraints-are-solved.md#scopes-skolems-and-local-givens).
 
 ## Generalisation
@@ -100,8 +101,7 @@ into the next offset and recording the choice in `offs` so that later
 occurrences get the same one.  `generalize` wraps the copy in `QUAL`
 with the surviving predicates and `POLYTYPE` with the kinds.  The marks
 live in the substitution itself, so `clearMarks` must be called before
-any `copyType`, which is why it appears so often.  A scheme with more
-than `NUM_OFFSETS` variables is an error.
+any `copyType`, which is why it appears so often.
 
 ## Binding groups
 
@@ -134,10 +134,9 @@ Kind inference, in `src/kind.c`, is a type checker without polymorphism
 or overloading: the kinds are `STAR`, `CONSTRAINT` (the kind of a class,
 in a kind signature) and pairs `(k1, k2)` for `k1 -> k2`, unknown kinds
 are offsets, and they are unified in the same substitution array
-(`newKindvars` is `newTyvars`).  That is why `kind.c` is among the files
-compiled without optimisation, and why a kind check is bracketed by
-`emptySubstitution`.  Gofer's author suggested reading `kind.c` first as
-the easier introduction to the type checker; that is still good advice.
+(`newKindvars` is `newTyvars`).  That is why a kind check is bracketed
+by `emptySubstitution`.  `kind.c` is the easier introduction to the type
+checker, so read it first.
 
 ## Where to read
 
