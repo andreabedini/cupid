@@ -1,7 +1,7 @@
--- Cupid.Memo.hash (the "IOHash" primitive) returned a Bool (via the
--- IOBoolResult helper, which turns any non-zero result into True) instead
--- of the Int the type signature promises, which broke Cupid.Memo.memo:
--- every hash truncated to True/False so every key collided in bucket 1.
+-- Cupid.Memo.hash (the "IOHash" primitive) must return the Int its type
+-- signature promises, not a Bool through the IOBoolResult helper, which turns
+-- any non-zero result into True.  Cupid.Memo.memo needs the Int: with the
+-- Bool, every key would collide in bucket 1.
 import Cupid.Memo
 
 slow :: Int -> Int

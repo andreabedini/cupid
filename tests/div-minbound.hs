@@ -1,6 +1,6 @@
--- (minBound::Int) `div` (-1) used to raise SIGFPE and kill the process
--- (and likewise for quot, quotRem and divMod); rem and mod don't overflow
--- and should just give 0.
+-- (minBound::Int) `div` (-1) must raise arithmetic overflow, not a SIGFPE that
+-- kills the process (and likewise for quot, quotRem and divMod); rem and mod
+-- don't overflow and should just give 0.
 import Control.Exception
 
 main :: IO ()

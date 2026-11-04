@@ -1,8 +1,8 @@
--- bigInt negated INT_MIN in Int arithmetic (undefined behaviour) before
--- widening to the bignum's unsigned long digits, so toInteger of a
--- minBound Int, and anything built from it (like minBound::Int64), came
--- out wrong (e.g. toInteger (minBound::Int) - 1 printed
--- -18446744071562067969 instead of -2147483649).
+-- toInteger of a minBound Int, and anything built from it (like
+-- minBound::Int64), must come out right, so bigInt must not negate INT_MIN
+-- in Int arithmetic (undefined behaviour) before widening to the bignum's
+-- unsigned long digits: toInteger (minBound::Int) - 1 must print -2147483649,
+-- not -18446744071562067969.
 import Data.Int
 import Data.Bits
 

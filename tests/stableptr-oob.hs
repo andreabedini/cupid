@@ -1,7 +1,7 @@
 -- freeStablePtr on a StablePtr that doesn't come from newStablePtr (e.g.
--- one built by castPtrToStablePtr from an arbitrary Ptr) used to write
--- straight through an unchecked array index and crash the process with a
--- signal.  It's now a reported (non-signal) error instead.
+-- one built by castPtrToStablePtr from an arbitrary Ptr) must be a reported
+-- error, not a write through an unchecked array index that kills the process
+-- with a signal.
 import Foreign
 import Foreign.StablePtr
 

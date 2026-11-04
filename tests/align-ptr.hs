@@ -1,5 +1,5 @@
--- alignPtr p 0 (and any non-positive alignment) used to raise SIGFPE
--- (dividing by the alignment) and kill the process.
+-- alignPtr p 0 (and any non-positive alignment) must raise an exception, not
+-- a SIGFPE from dividing by the alignment, which would kill the process.
 import Foreign
 import Control.Exception
 

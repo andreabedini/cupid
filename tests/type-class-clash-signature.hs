@@ -1,5 +1,5 @@
 -- With a type T and a class T imported from different modules, an
--- unqualified T in a type is ambiguous too.  It was taken to be the type.
+-- unqualified T in a type is ambiguous too, not taken to be the type.
 import ClashType
 import ClashClass
 

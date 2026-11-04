@@ -2,8 +2,8 @@
 -- head but is fixed by a functional dependency, as r is here.  Using the
 -- instance must improve that constraint by the dependency before solving
 -- it, or Show r matches no instance.  An expression at the prompt is
--- reduced by the instance rather than entailed, which is where it was
--- missed.
+-- reduced by the instance rather than entailed, and needs the same
+-- improvement.
 module Main where
 
 class Rep a r | a -> r where

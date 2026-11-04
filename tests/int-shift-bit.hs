@@ -1,7 +1,7 @@
--- shiftL/shiftR/bit on Int had no range check, so shifting by >= the bit
--- width gave nonsense (e.g. shiftL 1 32 == 1, shiftL 1 40 == 256) instead
--- of the 0 (or -1, for an arithmetic right shift of a negative number)
--- that a fixed-width Int should give.
+-- shiftL/shiftR/bit on Int must check the range: shifting by >= the bit width
+-- must give 0 (or -1, for an arithmetic right shift of a negative number), as
+-- a fixed-width Int should, not nonsense such as shiftL 1 32 == 1 or
+-- shiftL 1 40 == 256.
 import Data.Bits
 import Data.Int
 

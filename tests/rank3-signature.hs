@@ -1,5 +1,5 @@
 -- A polymorphic argument of an argument is rank 3, which is not supported:
--- an error, where it used to be an internal one.
+-- a reported error, not an internal one.
 module Main where
 
 f :: ((forall a. a -> a) -> Int) -> Int

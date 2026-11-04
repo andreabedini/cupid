@@ -1,6 +1,6 @@
--- Freeing the same stable pointer twice used to thread the free list into
--- itself, so the next two newStablePtr calls handed out the very same
--- pointer (the second print below used to say True).
+-- Freeing the same stable pointer twice must not thread the free list into
+-- itself, or the next two newStablePtr calls would hand out the very same
+-- pointer and the print below would say True.
 import Foreign
 import Foreign.StablePtr
 
