@@ -1,7 +1,4 @@
-# The Haskell libraries.  The sources under libraries/ are plain Haskell
-# that Cupid owns; building them means copying them into
-# the build directory, generating the platform-dependent files, and running
-# cupid --ffi over the modules with foreign imports.  See tools/build-libraries.
+# The Haskell libraries; see tools/build-libraries.
 
 # The platform-dependent parts of the base library, answered by asking the
 # C compiler: HsBaseConfig.h for the C side, Cupid/SysConfig.hs for Haskell

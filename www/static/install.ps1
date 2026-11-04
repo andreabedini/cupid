@@ -9,7 +9,7 @@
 # directory to the user PATH.  Nothing needs administrator rights.
 # Settings, all optional:
 #
-#   $env:CUPID_VERSION      the version to install, such as 0.2.0; default the latest
+#   $env:CUPID_VERSION      the version to install, such as 0.1.0; default the latest
 #   $env:CUPID_INSTALL_DIR  where the release directory goes; default $env:LOCALAPPDATA\Programs
 #
 # The same steps by hand, and building from source, are described at

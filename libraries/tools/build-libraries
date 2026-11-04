@@ -3,11 +3,11 @@
 
 usage: build-libraries SRCROOT OUT CUPID MKSYSCONFIG PLATFORM_DIR SYSTEM STAMP
 
-The library sources under libraries/ are plain Haskell that Cupid owns,
-so building them means copying them into OUT/packages,
-generating the two platform-dependent files with mksysconfig, and running
-cupid --ffi over the modules that contain foreign imports to build their C
-stubs.  OUT is what gets installed as cupiddir.
+The library sources under libraries/ are plain Haskell, already preprocessed,
+so building them means copying them into OUT/packages, generating the two
+platform-dependent files with mksysconfig, and running cupid --ffi over the
+modules that contain foreign imports to build their C stubs.  OUT is what
+gets installed as cupiddir.
 
 SYSTEM is the operating system the libraries are for, as meson names it
 (host_machine.system()).  On Windows, the modules under libraries/windows
@@ -70,13 +70,11 @@ def main(argv):
                 pass
     shutil.copy2(os.path.join(srcroot, "src", "HsFFI.h"), os.path.join(out, "include"))
 
-    # Platform-dependent parts, from the compiler
     with open(os.path.join(pkgdir, "base", "include", "HsBaseConfig.h"), "w") as f:
         subprocess.run([mksysconfig, "--header"], stdout=f, check=True)
     with open(os.path.join(pkgdir, "cupid", "Cupid", "SysConfig.hs"), "w") as f:
         subprocess.run([mksysconfig, "--haskell"], stdout=f, check=True)
 
-    # FFI stubs
     ffi_modules = []
     for p in PACKAGES:
         for root, _, files in os.walk(os.path.join(pkgdir, p)):

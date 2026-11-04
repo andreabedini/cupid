@@ -5,7 +5,7 @@ usage: install-libraries BUILT_CUPIDDIR CUPIDDIR
 
 meson sets DESTDIR when staging an install; CUPIDDIR is the final
 absolute path.  Everything under packages/ is installed except the C
-sources, which are only needed to build the FFI stubs.
+sources and headers, which are only needed to build the FFI stubs.
 """
 import os
 import shutil

@@ -6,12 +6,12 @@
 # Downloads the archive for this machine from the GitHub releases of
 # andreabedini/cupid, checks it against the SHA256SUMS of the same release
 # and, when gh is installed and signed in, against its build attestation,
-# then unpacks it under ~/.local/opt and links the programs into
+# then unpacks it under ~/.local/opt and links cupid into
 # ~/.local/bin.  Nothing needs root.  Settings, all optional:
 #
-#   CUPID_VERSION      the version to install, such as 0.2.0; default the latest
+#   CUPID_VERSION      the version to install, such as 0.1.0; default the latest
 #   CUPID_INSTALL_DIR  where the release directory goes; default ~/.local/opt
-#   CUPID_BIN_DIR      where the links to the programs go; default ~/.local/bin
+#   CUPID_BIN_DIR      where the link to cupid goes; default ~/.local/bin
 #
 # The same steps by hand, and building from source, are described at
 # https://andreabedini.github.io/cupid/docs/install/
