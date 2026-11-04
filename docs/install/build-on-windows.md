@@ -19,8 +19,7 @@ native Windows programs only: no MSYS2 shell, Cygwin or WSL.
 - bison: WinFlexBison's `win_bison`, from
   `winget install WinFlexBison.win_flex_bison` or the zip on its
   [releases page](https://github.com/lexxmark/winflexbison/releases)
-- git, with CRLF conversion off for this repository: the tests compare
-  output byte for byte
+- git
 
 ## Steps
 
@@ -41,7 +40,7 @@ winget puts the directory under
 ### 2. Get the sources
 
 ```powershell
-git clone -c core.autocrlf=false https://github.com/andreabedini/cupid.git
+git clone https://github.com/andreabedini/cupid.git
 cd cupid
 ```
 
