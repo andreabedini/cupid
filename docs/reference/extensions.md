@@ -1,21 +1,23 @@
 # Language extensions
 
 The language features Cupid accepts beyond Haskell 2010.  They are
-always enabled, except overlapping instances, which need the `+o` or
-`+O` option; there is no option to turn the others off.  Each is here
-because real code needs it, either the shipped libraries (see
-[The libraries](libraries.md)) or packages written for GHC, and each
-is written as GHC writes it, though GHC's version is often more
-general; the differences are listed under the feature.  The exception
-is [restricted type synonyms](#restricted-type-synonyms), which are
-Hugs's own and are kept from the 2006 release.
-[Not accepted](#not-accepted) lists the major features left out and
-the common GHC extensions that are missing.  A GHC extension that this
-page does not list is not implemented.  `LANGUAGE` pragmas are read as
-comments, so code that needs one usually fails with a syntax or type
+always on, and no option turns them off, except overlapping instances,
+which need `+o` or `+O`.  `LANGUAGE` pragmas are read as comments, so
+code that needs a missing extension usually fails with a syntax or type
 error, not a message about the extension.
-[The design](../explanation/design.md#the-language) says how a feature
-gets in.
+
+Each feature is here because the shipped libraries (see
+[The libraries](libraries.md)) or packages written for GHC need it, and
+each is written as GHC writes it; GHC's version is often more general,
+and the differences are listed under the feature.  The exception is
+[restricted type synonyms](#restricted-type-synonyms), Hugs's own, kept
+from the 2006 release.
+
+[Not accepted](#not-accepted) lists the major features left out and the
+common GHC extensions that are missing.  A GHC extension that neither
+this page nor [Haskell 2010 conformance](haskell-2010.md) mentions is
+not implemented.  [The design](../explanation/design.md#the-language)
+says how a feature gets in.
 
 ## Type classes
 
@@ -65,7 +67,7 @@ instance C (a,Char) where ...
 Cupid rejects this:
 
 ```
-ERROR "Test.hs":4 - Overlapping instances for class "C"
+ERROR "Test.hs":3 - Overlapping instances for class "C"
 *** This instance   : C (a,Char)
 *** Overlaps with   : C (Bool,a)
 *** Common instance : C (Bool,Char)
@@ -159,12 +161,15 @@ g f = (f True, f 'a')
 Restrictions:
 
 - A function with a polymorphic argument must have an explicit
-  signature.
+  signature, and its definition must name that argument on the left:
+  `g = undefined` is an error.
 - A polymorphic argument may only be matched by a variable or a
   wildcard pattern.
 - Such a function must always be applied to its polymorphic argument;
   `g` cannot be used on its own, passed to another function, or
-  defined as `myRunST = runST`.  Write `myRunST x = runST x`.
+  defined as `myRunST = runST`.  Write
+  `myRunST :: (forall s. ST s a) -> a` and `myRunST x = runST x`;
+  without the signature that is rejected too.
 - A type variable bound by `forall` must be used in the quantified
   type.
 - The rank is at most 2: a polymorphic argument's own arguments must
@@ -182,12 +187,14 @@ A `forall` may give the variables it binds their kinds,
 `forall (m :: Type -> Type) a. m a -> m a`, where a variable would
 otherwise get a kind that is not the one meant.
 
-One exception to the third restriction: `f $ x` is checked as
-`f x`, as GHC does, so `runST $ do ...` is accepted, and so is
-`C $ \x -> ...` for a constructor `C` with a polymorphic field (see
-below).  This applies to the Prelude's `$` only, and a type error in
-`f $ x` is reported against `f x`.  Other uses of `$` are not
-affected; `map ($ x) fs` means what it always did.
+One exception to the rule that such a function must be applied to its
+polymorphic argument: `f $ x` is checked as `f x`, as GHC does, so
+`runST $ do ...` is accepted, and so is `C $ \x -> ...` for a
+constructor `C` with a polymorphic field (see
+[Polymorphic components](#polymorphic-components)).  This applies to
+the Prelude's `$` only, and a type error in `f $ x` is reported against
+`f x`.  Other uses of `$` are not affected; `map ($ x) fs` means what
+it always did.
 
 ### Polymorphic components
 
@@ -221,26 +228,25 @@ everywhere :: GenericT -> GenericT
 newtype ReifiedLens s a = ReifiedLens { runLens :: SimpleLens s a }
 ```
 
-Each use is expanded before type checking, so a use is as if the
-expansion were written out, and the rules for rank-2 types and
-polymorphic components above decide where one may be: as the whole
-of a signature or its result, where its `forall` moves to the front
+Each use is expanded before type checking, so it is legal where the
+written-out expansion would be: as the whole of a signature or its
+result, where its `forall` moves to the front
 (`lens` is `Functor f => (s -> a) -> ... -> (a -> f b) -> s -> f t`),
 as a function argument in a signature, or as a constructor's field.
-One in a list, in another type constructor or in an instance head is
-an error.  A synonym whose body uses one, such as `SimpleLens`, is
-expanded the same way.
+A polymorphic synonym in a list, in another type constructor or in an
+instance head is an error.  A synonym whose body uses a polymorphic
+synonym, such as `SimpleLens`, is expanded the same way.
 
 A synonym's argument is expanded where the synonym's body puts it, so
-it may be polymorphic if that is a place for one, as with GHC's
-`LiberalTypeSynonyms`: given `type GenericQ r = forall a. Data a => a
+it may be polymorphic if that place allows a polymorphic type, as with
+GHC's `LiberalTypeSynonyms`: given `type GenericQ r = forall a. Data a => a
 -> r`, `GenericQ GenericT` is `forall a b. (Data a, Data b) => a -> b
 -> b`.  This holds for any synonym, so given `type Fun a = a -> Int`,
 `Fun GenericT` has a rank-2 argument, while `[GenericT]` is still an
 error.
 
-The body may have a `forall` and a context only at its front, and,
-unlike GHC with `RankNTypes`, there is no rank 3 or higher.
+A synonym's body may have a `forall` and a context only at its front,
+and, unlike GHC with `RankNTypes`, there is no rank 3 or higher.
 
 ### Existential quantification
 
@@ -263,7 +269,8 @@ runAccum (MkAccum s add get) (x:xs) = runAccum (MkAccum (add x s) add get) xs
 ```
 
 Existential constructors may not have named fields and their types may
-not use `deriving`.
+not have a `deriving` clause, though
+[standalone deriving](#standalone-deriving) can derive for them.
 
 ## GADT syntax
 
@@ -287,8 +294,9 @@ variables; those variables are the signature's own and are matched by
 position with the ones the head binds, so `C :: a -> b -> T b`
 declares a constructor whose second argument has the type's parameter
 and whose first is existential.  Any variable not in the result is
-existential, and a context is packed with the constructor and given
-back on a match, as for a `forall` constructor in the equation form:
+existential, and the context of a constructor with such a variable is
+packed with the constructor and given back on a match, as for a
+`forall` constructor in the equation form:
 
 ```haskell
 data Some where
@@ -313,9 +321,13 @@ Differences from GHC's `GADTSyntax` and `GADTs`:
 - A context on a constructor constrains the constructor's own
   arguments, as in the equation form; it cannot be used to refine
   the result type either.
-- The equation form's restrictions carry over: no `deriving` for a
-  type with an existential or constrained constructor, and no
-  selectors on one.
+- The equation form's restrictions carry over: no `deriving` clause for
+  a type with an existential constructor, and no selectors on such a
+  constructor.
+- A context on a constructor with no existential variable,
+  `C :: Show a => a -> T a`, loads, but matching on `C` ends in
+  `INTERNAL ERROR: leaveScope`.  So does `deriving` for `T`, as a clause
+  or standalone, and a field on `C` ends in `INTERNAL ERROR: typeSel2`.
 
 ## Type operators
 
@@ -329,9 +341,9 @@ data (f :+: g) p = L1 (f p) | R1 (g p)
 type a :-> b = a -> b
 ```
 
-and used infix in any type, `K Int :+: K Bool`, or prefix in
-parentheses, `(:+:) f g p`.  It is imported and exported like any
-type constructor, as `(:+:)(..)`.
+and used infix in any type, `K Int :+: K Bool`.  The prefix form,
+`(:+:) f g p`, is a syntax error.  A type operator is imported and
+exported like any type constructor, as `(:+:)(..)`.
 
 Differences from GHC's `TypeOperators`:
 
@@ -393,9 +405,7 @@ Differences from GHC's `KindSignatures` and `StandaloneKindSignatures`:
   `data`, `newtype`, `type` or `class` declaration or a `forall`
   binds, not elsewhere inside a type.
 - A kind has no variables: there is no kind polymorphism.
-- `Type` and `Constraint` are keywords of the kind grammar, not types
-  exported from `Data.Kind`, and `Data.Kind.Type` cannot be written
-  qualified in a kind.
+- `Data.Kind.Type` cannot be written qualified in a kind.
 
 ## Equality constraints
 
@@ -536,11 +546,15 @@ Differences from GHC's scoped type variables:
 
 - GHC's pattern-bound type variables may be instantiated; in Cupid they
   are rigid, so `g (xs :: [a]) = xs ++ "\n"` is rejected.
+- A `forall` in a signature does not scope over the definition: given
+  `f :: forall a. [a] -> [a]`, an `a` in a `where` signature is a new
+  variable, so `ys :: [a]; ys = xs` is rejected.  Bind the variable in a
+  pattern annotation instead.
 - Variables bound in a class or instance head do not scope over the
   method definitions in Cupid.
 - A result type signature on the left of a function definition,
   `f x :: Int = ...`, is accepted and checked like an expression
-  signature on the right-hand side.
+  signature on the right-hand side.  GHC rejects it.
 
 ## Tuple sections
 
@@ -560,8 +574,8 @@ afresh at each application rather than once.
 
 ## Field puns
 
-In a record pattern or construction, a field name on its own stands
-for `field = field`:
+In a record pattern, construction or update, a field name on its own
+stands for `field = field`:
 
 ```haskell
 data R = R { a :: Int, b :: String }
@@ -591,9 +605,10 @@ newtype Wrap f a = Wrap (f a)
 The type checker builds the `TypeRep` from the type's structure when no
 instance matches, and reduces `Typeable (T a)` in an inferred context to
 `Typeable a`.  An argument of kind `Type` is solved as a `Typeable`
-predicate of its own, by an instance if one matches; one of another kind
-must be built from type constructors, so `Typeable (StateT s m a)` holds
-for `m = IO` but cannot be solved, or required, for an unknown `m`.
+predicate of its own, by an instance if one matches; an argument of
+another kind must be built from type constructors, so
+`Typeable (StateT s m a)` holds for `m = IO` but cannot be solved, or
+required, for an unknown `m`.
 `deriving Typeable` is accepted and does nothing.
 
 ## Deriving Generic
@@ -741,7 +756,8 @@ Differences from GHC's `DerivingStrategies`, `DerivingVia` and
   `Coercible` below the head of the type, and the second is a
   conservative stand-in for what roles prevent.
 - In a `deriving` clause, only a class of one parameter can be derived
-  via a type; a standalone declaration (below) can derive any class.
+  via a type; a [standalone declaration](#standalone-deriving) can
+  derive any class.
 - A clause cannot use the `anyclass` strategy.
 
 ### Standalone deriving
@@ -762,18 +778,19 @@ deriving via (LiftingAccum MaybeT m) instance
 With no strategy, or `stock`, the instance's methods are derived as
 for a clause, and the head may be any type with constructors,
 `Show (Tree Int)` as well as `Show (Tree a)`.  `newtype` derives via
-the type the newtype wraps, and `via V` via `V`, with the checks
-above; the via type stands for the class's last parameter, so a class
-of several parameters can be derived too.  `anyclass` gives an
-instance with no methods, which then has the class's defaults.
+the type the newtype wraps, and `via V` via `V`, with the same two
+checks as a `deriving` clause; the via type stands for the class's last
+parameter, so a class of several parameters can be derived too.
+`anyclass` gives an instance with no methods, which then has the class's
+defaults.
 Nothing is inferred: the instance has exactly the context written,
 which must give what the methods need.  `deriving instance Typeable T`
 is accepted and does nothing, whatever its strategy, as every type is
 `Typeable` under its own name.
 
 This is how to derive an instance whose context a `deriving` clause
-cannot infer.  As in GHC, an inferred context may only hold a class
-applied to distinct type variables, such as `Show (f a)` or
+cannot infer.  As in GHC, each constraint in an inferred context may
+mention only type variables, with no repeats, as in `Show (f a)` or
 `Show (f (g a))`; it cannot hold `Show (f Int)`, `Show (f a a)` or
 `Show (f (Fix f))`.  So
 
@@ -843,7 +860,7 @@ asynchronous exceptions to hold off.
 | Type families, open, closed or associated | Not decided.  They would have to be solved by the one solver, and whether that can be done is open.  Functional dependencies cover many of the same uses |
 | Unboxed types and `MagicHash` | They change the abstract machine and the storage below the type checker |
 | Template Haskell | It needs the interpreter to run code while it is checking a module, a second pipeline inside the first |
-| Rewrite rules | Cupid does not optimise, so there is nothing for them to rewrite; `RULES` pragmas are ignored |
+| Rewrite rules | Cupid does not optimise, so there is nothing for them to rewrite |
 | Linear types | A second discipline in the type checker, for a guarantee nothing in Cupid uses |
 | STM and asynchronous exceptions | They need a run-time system with preemptive threads.  Cupid's `forkIO` threads switch only at the primitives of `Control.Concurrent`, `throwTo` is absent and `mask` is a no-op |
 
@@ -854,16 +871,13 @@ a message that the class cannot be derived:
 | Extension | What happens |
 |---|---|
 | `LambdaCase`, `MultiWayIf`, `BlockArguments`, `EmptyCase` | Syntax error at `\case`, `if \|`, a `do` argument, or `case x of {}` |
-| `BangPatterns`, `ViewPatterns`, `PatternSynonyms`, `RecordWildCards` | Syntax error at `!`, `->` in a pattern or `..`; `pattern P = 1` gives an undefined constructor |
+| `BangPatterns`, `ViewPatterns`, `PatternSynonyms`, `RecordWildCards` | `f !x = x` defines the operator `!`, so `f` is undefined, and `let !x = e` is a syntax error; syntax error at `->` in a pattern or `..`; `pattern P = 1` gives an undefined constructor |
 | `TypeApplications` | `read @Int` gives "Illegal `@` in expression" |
 | `InstanceSigs`, `DefaultSignatures` | A signature in an instance, or `default` in a class, is an error |
 | `DeriveFunctor`, `DeriveFoldable`, `DeriveTraversable` | "Cannot derive instances of class" |
 | `DataKinds` | Syntax error in a kind |
 | `BinaryLiterals` | `0b101` reads as `0 b101` |
 | `OverloadedStrings` | A string literal always has type `String` |
-
-[The language Cupid accepts](language.md) lists the smaller
-deviations from Haskell 2010 and from GHC.
 
 ## See also
 

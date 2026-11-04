@@ -2,12 +2,14 @@
 
 How Cupid measures up against the Haskell 2010 Report, chapter by
 chapter.  [The language Cupid accepts](language.md) is the short
-account; this page is the long one, and it is the page to update when
-a deviation is fixed or found.
+account, a sentence for each deviation it names; this page is the long
+one, with the full statement of each.  When a deviation is fixed or
+found, update it here, and its sentence there if it has one.
 
-Every statement here was checked by running a program against the
-interpreter built from this tree on 2026-10-16, on x86-64 Linux, unless
-it says otherwise.  Section numbers are the Report's.  Where the Report
+The page as a whole was last checked by running programs against the
+interpreter on 2026-10-16, on x86-64 Linux; later edits, such as
+literate comments (10.4) and `cupid --ffi`, describe the tree as of
+those edits.  Section numbers are the Report's.  Where the Report
 leaves something to the implementation, the page says what Cupid does
 and marks it *unspecified*.  What Cupid accepts beyond the Report, the
 extensions, is in [Language extensions](extensions.md) and is mentioned
@@ -16,9 +18,8 @@ here only where it makes a program the Report rejects acceptable.
 ## Summary
 
 Cupid implements Haskell 2010: the language of Part I, the Prelude of
-chapter 9 and the libraries of Part II.  Most programs written to the
-Report load and run.  These are the exceptions a program is likely to
-meet, each explained in its chapter below:
+chapter 9 and the libraries of Part II.  These are the exceptions a
+program is likely to meet, each explained in its chapter below:
 
 - Literate scripts are read with `>` program lines only, not
   `\begin{code}` blocks.
@@ -33,13 +34,14 @@ meet, each explained in its chapter below:
   the Report asks for at least fifteen.
 - `Float` and `Double` do not know NaN or infinity: `isNaN`,
   `isInfinite` and the other `RealFloat` predicates are always `False`,
-  and `show` prints `inf` and `-nan`.  `show` on a floating point number
-  prints 15 significant digits, not the shortest representation that
-  reads back, and conversions near the ends of the range of `Double`
-  are inexact or fail.
+  and `show` prints `inf`, `-inf`, `nan` and `-nan`.  `show` on a
+  floating point number prints 15 significant digits (7 for `Float`),
+  not the shortest representation that reads back, and conversions near
+  the ends of the range of `Double` are inexact or fail.
 - Fixity is resolved after parsing, which lets a few illegal forms
-  through: prefix negation after an operator, as in `a + - b`, and a
-  right section whose operand is an infix expression, as in `(* 3 + 4)`.
+  through: prefix negation after an operator of precedence 6 or higher,
+  as in `a + - b`, and a right section whose operand is an infix
+  expression, as in `(* 3 + 4)`.
 - A few names are missing from the libraries: `withFile`,
   `hSetFileSize` and `hShow` in `System.IO`, `catch` and `try` in
   `System.IO.Error`, `finalizeForeignPtr`, `unsafeLocalState`, the
@@ -61,32 +63,36 @@ imported from different modules make the name ambiguous (chapter 5).
 
 ### 2 Lexical structure
 
-Conforms, with the Unicode limits below.  The reserved identifiers and
-operators are all reserved, `as`, `qualified`, `hiding`, `safe`,
-`unsafe`, `ccall` and `stdcall` are ordinary identifiers, nested
-comments nest, `-->` and `|--` are operators and not comments, every
-escape of 2.6 is read as the Report says (`\SOH`, `\SO\&H`, `\^@`, the
-ASCII names, numeric escapes up to `\1114111`, string gaps), and the
-numeric literals of 2.5 lex as the Report says: `1e` is `1 e`, `.5` is
-`. 5`, `1.` is `1 .`, `0xy` is `0 xy`, and `-1` is negation applied to
-`1`.  Qualified names lex by maximal munch, so `[False..]` is `[` then
-the qualified operator `False..` and a syntax error, as in the Report;
-write `[False ..]`.
+Conforms, with the Unicode limits below, in the behaviours checked:
+
+- The reserved identifiers and operators are all reserved.
+- `as`, `qualified`, `hiding`, `safe`, `unsafe`, `ccall` and `stdcall`
+  are ordinary identifiers.
+- Nested comments nest.
+- `-->` and `|--` are operators and not comments.
+- The escapes of 2.6 are read as the Report says: `\SOH`, `\SO\&H`,
+  `\^@`, the ASCII names, numeric escapes up to `\1114111`, string gaps.
+- The numeric literals of 2.5 lex as the Report says: `1e` is `1 e`,
+  `.5` is `. 5`, `1.` is `1 .`, `0xy` is `0 xy`, `0oy` is `0 oy`, and
+  `-1` is negation applied to `1`.
+- Qualified names lex by maximal munch, so `[False..]` is `[` then the
+  qualified operator `False..` and a syntax error, as in the Report;
+  write `[False ..]`.
 
 **Identifiers take any Unicode letter; symbols, spaces and digits do
-not.**  `λ`, `π`, `日本` and `Λόγος` are identifiers, as 2.4 says.  But
-the Report's `uniSymbol`, `uniWhite` and `uniDigit` stop at Latin-1 in
-Cupid: `∘` or `→` cannot form an operator, `¬`, `·` and `×` can; an
-EN SPACE (U+2003) or IDEOGRAPHIC SPACE (U+3000) between tokens is
-`Unrecognised character`, a NO-BREAK SPACE (U+00A0) is fine; and `١٢`
-is not a numeric literal, though `x١` is an identifier.  A byte order
-mark at the start of a file is rejected, as the Report's grammar has
-it.
+not.**  `λ`, `π` and `Λόγος` are identifiers, as 2.4 says.  `日本` is a
+variable too, which 2.4 does not provide, since its `uniSmall` is
+lowercase letters only; it cannot name a type.  The Report's
+`uniSymbol`, `uniWhite` and `uniDigit` stop at Latin-1 in Cupid: `∘` or
+`→` cannot form an operator, `¬`, `·` and `×` can; an EM SPACE (U+2003)
+or IDEOGRAPHIC SPACE (U+3000) between tokens is `Unrecognised
+character`, a NO-BREAK SPACE (U+00A0) is fine; and `١٢` is not a numeric
+literal, though `x١` is an identifier.  A byte order mark at the start
+of a file is rejected, as the Report's grammar has it.
 
 **Limited lookahead.**  `Just.if` is mis-lexed (the Report reads
 `Just . if`), and `9e+y` and `9.0e+y` fail with `Missing digits in
-exponent` where the Report reads `9 e + y`.  `0xy` and `0oy` now lex
-correctly.
+exponent` where the Report reads `9 e + y` and `9.0 e + y`.
 
 **`forall` is a keyword** and cannot be a variable, for the sake of the
 extensions.
@@ -97,17 +103,18 @@ would lex `Prelude . where`.  Both are errors.
 
 ### 3 Expressions
 
-Conforms, with the exceptions below, which are all consequences of
-resolving fixity after parsing (3.4, 3.5) or edge cases.  The
-translations of 3.2 refer to the Prelude's `fromInteger`, `negate`,
-`enumFromTo`, `concatMap`, `>>=` and `==` whatever is in scope; the
-Report's examples of 3.17.2 all give the answers it lists, including
-the irrefutable, newtype and `seq` cases; `case`, `do`, `let`, list
-comprehensions, arithmetic sequences, field labels and expression
-signatures behave as described, and the error messages are the
-compile-time ones the Report asks for where it asks for them.  `C {}`
-is legal for any constructor without strict fields, labelled or not,
-and an error that names the omitted field when one is strict (3.15.2).
+Conforms, with the exceptions below, in the behaviours checked:
+
+- The translations of 3.2 refer to the Prelude's `fromInteger`,
+  `negate`, `enumFromTo`, `concatMap`, `>>=` and `==` whatever is in
+  scope.
+- The Report's examples of 3.17.2 give the answers it lists, including
+  the irrefutable, newtype and `seq` cases.
+- `case`, `do`, `let`, list comprehensions, arithmetic sequences, field
+  labels and expression signatures behave as described.
+- `C {}` is legal for any constructor without strict fields, labelled
+  or not, and an error that names the omitted field when one is strict
+  (3.15.2).
 
 **Prefix negation is accepted as the right operand of an operator of
 precedence 6 or higher** (3.4, 10.6).  `1 + - 1`, `a - - b`, `2 * - 3`
@@ -121,6 +128,10 @@ is accepted and evaluates to `2 * (3 + 4)`, as are `(+ 1 + 2)` and
 parses as `x op (e)`.  Left sections are checked: `(1 + 2 *)` is
 rejected with `Operator "(*)" in a left section does not apply to the
 whole operand`.
+
+**A left section is the operator applied to its operand** (3.5), as
+with GHC's `PostfixOperators`, not the Report's `\x -> e op x`, so
+`(5 !)` is accepted for a one-argument `(!)`.
 
 **A guard in a `case` alternative that ends in an unparenthesised type
 signature is rejected** (3.13).  The Report's `| let b = not a in b ::
@@ -141,8 +152,8 @@ defines `fail` is rejected (see chapter 6).
 instances only up to five components (see chapter 6).
 
 **n+k patterns** are not accepted (3.17), as Haskell 2010 removed them,
-and neither is anything else Haskell 2010 does not have: `f !x = x`
-defines the operator `!`, as the Report says it should.
+and neither are bang patterns: `f !x = x` defines the operator `!`, as
+the Report says it should.
 
 Unspecified: `error` and `undefined` print `Program error: message`
 and `Program error: Prelude.undefined` and exit with status 1; they
@@ -151,23 +162,29 @@ provide.
 
 ### 4 Declarations and bindings
 
-Conforms, with the deviations below.  Kind inference (4.6) defaults an
-unconstrained kind to `*` and rejects `type FunnyTree = Tree []`; a
-synonym must be fully applied; a datatype context constrains the
-constructor's type as 4.2.1 says; a newtype behaves exactly as the
-`d1`/`d2`/`s`/`n` example of 4.2.3; class declarations obey 4.3.1
-(a method signature must mention the class variable, type signatures
-and fixity declarations are not permitted in instances, a cyclic
-superclass relation is an error, a missing method is bottom); instance
-declarations obey 4.3.2 (the context is never inferred, a missing
-superclass instance is an error, a second instance is an error); the
-defaulting rules of 4.3.4 are applied exactly (`show (read "1")` and
-`print []` are ambiguous in a module, `default (Bool)` is rejected, a
-class outside the standard libraries blocks defaulting); fixity
-declarations follow 4.4.2, in `let` and `where` as well as at top
-level; a pattern binding that binds no variables, such as `1 = 2`, is
-accepted and has no effect (4.4.3.2); and the dependency analysis and
-generalisation of 4.5 give the types the Report's examples give.
+Conforms, with the deviations below, in the behaviours checked:
+
+- Kind inference (4.6) defaults an unconstrained kind to `*` and rejects
+  `type FunnyTree = Tree []`.
+- A synonym must be fully applied.
+- A datatype context constrains the constructor's type as 4.2.1 says.
+- A newtype behaves as the `d1`/`d2`/`s`/`n` example of 4.2.3 says.
+- Class declarations obey 4.3.1: a method signature must mention the
+  class variable, type signatures and fixity declarations are not
+  permitted in instances, a cyclic superclass relation is an error, a
+  missing method is bottom.
+- Instance declarations obey 4.3.2: the context is never inferred, a
+  missing superclass instance is an error, a second instance is an
+  error.
+- The defaulting rules of 4.3.4 hold in these cases: `show (read "1")`
+  and `print []` are ambiguous in a module, `default (Bool)` is
+  rejected, a class outside the standard libraries blocks defaulting.
+- Fixity declarations follow 4.4.2, in `let` and `where` as well as at
+  top level.
+- A pattern binding that binds no variables, such as `1 = 2`, is
+  accepted and has no effect (4.4.3.2).
+- The dependency analysis and generalisation of 4.5 give the types the
+  Report's examples give.
 
 **Record construction and update ignore strictness flags** (4.2.1).
 For `data R = R { a :: !Int, b :: Int }`, `R { a = undefined, b = 1 }`
@@ -176,14 +193,14 @@ and `r { a = undefined }` are values; only the positional `R undefined
 form of construction.
 
 **Fixity is not resolved on the left-hand side of an infix binding**
-(4.4.3.1).  The Report's example `a ## b : xs = e`, with `##` at a
-precedence below 5, "would be illegal"; Cupid accepts it, with `b : xs`
-as the second argument pattern whatever the fixity of `##`.
+(4.4.3.1).  The Report's example `a ## b : xs = e`, with `##` at
+precedence 6, "would be illegal"; Cupid accepts it, with `b : xs` as the
+second argument pattern whatever the fixity of `##`.
 
-**Deriving infers contexts the Report calls a static error** (4.5.3).
+**Deriving infers instance contexts the Report does not allow** (4.3.2).
 `data Apply a b = App (a b) deriving Show` is accepted and gets the
-context `Show (a b)`, which Haskell 2010 does not allow in a context.
-This is the flexible-contexts extension at work.
+context `Show (a b)`; an instance context may constrain only a type
+variable.  This is the flexible-contexts extension at work.
 
 **Polymorphic recursion is slightly more permissive** (4.5.1).  In a
 group of mutually recursive bindings where one function has a
@@ -220,12 +237,13 @@ len2 = (2*len1) :: Rational
 ```
 
 is rejected: `len1` is defaulted to `Integer` and the use at `Rational`
-is a type error.  So are `x = 3; y = x + 0.5` and the `[(n,s)] =
-reads t` example of 4.5.5, with `Outstanding context: Fractional
-Integer`.  A restricted binding whose constraint cannot be defaulted
-fails even if a later use would fix it: `total = sum` reports
-`Unresolved top-level overloading` with `Foldable` outstanding.  A
-type signature avoids all of these.
+is a type error.  So is `x = 3; y = x + 0.5`, with `Outstanding context:
+Fractional Integer`, and the `[(n,s)] = reads t` example of 4.5.5, with
+`Read` outstanding.  A restricted binding whose constraint cannot be
+defaulted fails even if a later use would fix it: `total = sum` reports
+`Unresolved top-level overloading` with `Foldable` outstanding, because
+the Prelude's `sum` works on any `Foldable` structure.  A type signature
+avoids all of these.
 
 **Accepted though the Report rejects them**, because the extensions are
 always on (overlapping instances excepted; they need `+o`): a context on
@@ -236,25 +254,28 @@ extensions](extensions.md).
 
 ### 5 Modules
 
-Conforms, with the deviations below.  Every export form of 5.2 and
-every import form of 5.3 does what the Report says, including the
-subtle ones: `module M` exports only names in scope both unqualified
-and as `M.x`; an export of two different entities under one name, or
-of a lone data constructor, is an error; `hiding (C)` hides a data
-constructor as well as a type; the 5.5.2 example with `sin` is an
-error only at an unqualified use; types and classes share a namespace,
-so a type `T` and a class `T` imported from different modules make an
-unqualified `T` ambiguous, in a type, a context, an instance head or an
-export list alike; a module may export a function whose
-type it cannot name (5.5.3); and the Prelude rules of 5.6 hold, down to
-literals using `Prelude.fromInteger` whatever is in scope and the
-Prelude's instances being impossible to hide.
+Conforms, with the deviations below, in the behaviours checked of the
+export forms of 5.2 and the import forms of 5.3, among them the subtle
+ones:
+
+- `module M` exports only names in scope both unqualified and as `M.x`.
+- An export of two different entities under one name, or of a lone data
+  constructor, is an error.
+- `hiding (C)` hides a data constructor as well as a type.
+- The 5.5.2 example with `sin` is an error only at an unqualified use.
+- Types and classes share a namespace, so a type `T` and a class `T`
+  imported from different modules make an unqualified `T` ambiguous, in
+  a type, a context, an instance head or an export list alike.
+- A module may export a function whose type it cannot name (5.5.3).
+- The Prelude rules of 5.6 hold, including literals using
+  `Prelude.fromInteger` whatever is in scope and the Prelude's instances
+  being impossible to hide.
 
 **`import qualified M hiding (...)` imports nothing.**  The two rows of
 the table in 5.3.4 that combine `qualified` and `hiding` should bring
 `M.x` and `M.y`, or `M.y`, into scope; in Cupid they bring nothing,
-and `M.y` is `Undefined qualified variable`.  The other thirteen rows
-are right.
+and `M.y` is `Undefined qualified variable`.  The other eleven rows are
+right.
 
 **`Main` need not export `main`** (5.1).  `module Main () where` and
 `module Main (helper) where` run.  The Report requires `main` to be
@@ -290,8 +311,8 @@ an imported module is aliased as `M`.
 `T()` in import lists.
 
 **Hiding a name that the module does not export is not an error,** as
-in GHC, though the Report makes it one: `import Prelude hiding (catch)`
-is accepted.
+in GHC, though the Report makes it one: `import Prelude hiding (catch)`,
+in code written for a Prelude that exported `catch`, is accepted.
 
 **Mutually recursive modules are not supported:** `Recursive import
 dependency` is reported.
@@ -316,29 +337,42 @@ cannot find a `Main` module.
 
 ### 6 Predefined types and classes
 
-The types of 6.1 have the instances 6.1 requires, apart from tuples;
-`seq` and `$!` follow the equations of 6.2 exactly; the default methods
-of every class in 6.3 behave as the Report's (an `Eq` instance needs
-only one of `==` and `/=`, `max` returns its second argument on a tie,
-`Integral` with only `quotRem` and `toInteger` gets the right `div` and
-`mod`); `Enum` sequences stop at the bounds of `Int` and follow
-`numericEnumFromThenTo` for `Float` and `Double`; `Integer` is
-unbounded; `div`, `mod`, `quot` and `rem` have the Report's signs; `^`
-with a negative exponent, division by zero and `gcd 0 0` raise errors;
-`round` rounds halves to even; and the `RealFloat` methods other than
-the predicates (`decodeFloat`, `encodeFloat`, `floatRange`,
-`significand`, `scaleFloat`) are right for finite values.
+Conforms, with the deviations below, in the behaviours checked:
+
+- The types of 6.1 have the instances 6.1 requires, apart from tuples.
+- `seq` and `$!` follow the equations of 6.2.
+- The default methods of the classes in 6.3 behave as the Report's: an
+  `Eq` instance needs only one of `==` and `/=`, `max` returns its
+  second argument on a tie, `Integral` with only `quotRem` and
+  `toInteger` gets the right `div` and `mod`.
+- `Enum` sequences stop at the bounds of `Int` and follow
+  `numericEnumFromThenTo` for `Float` and `Double`.
+- `Integer` is unbounded.
+- `div`, `mod`, `quot` and `rem` have the Report's signs.
+- `^` with a negative exponent, division by zero and `gcd 0 0` raise
+  errors.
+- `round` rounds halves to even.
+- The `RealFloat` methods other than the predicates (`decodeFloat`,
+  `encodeFloat`, `floatRange`, `significand`, `scaleFloat`) are right
+  for finite values.
 
 **The class hierarchy is that of GHC's base** (6.3).  `Applicative` is
 a superclass of `Monad`, and `Functor` of `Applicative`, so a `Monad`
 instance needs the other two, and `return` defaults to `pure`.  `fail`
 is the method of its own class, `MonadFail`.  `Semigroup` is a
-superclass of `Monoid`.  The list functions are those of `Foldable` and
+superclass of `Monoid`, so a `Monoid` instance needs a `Semigroup`
+instance for the same type, and `mappend` defaults to `(<>)`.
+`MonadPlus` has `Alternative` as its superclass, and `Control.Arrow`'s
+`Arrow` has `Category`.  The list functions are those of `Foldable` and
 `Traversable` (see chapter 9).  A Haskell 2010 program that defines
 `Monad` without `Applicative`, or `fail` in a `Monad` instance, is
 rejected, as it is by GHC.  `Functor` has the extra method `(<$)`.
 `Num` keeps the Report's superclasses `Eq` and `Show`, which GHC has
 since dropped.
+
+`Text.PrettyPrint` keeps its own, left-associative `(<>)` on documents,
+as the `pretty` package does, so a module that imports it unqualified
+and uses `(<>)` must hide one of the two.
 
 **`Num`, `Integral` and `Fractional` have hidden methods,** `fromInt`,
 `toInt` and `fromDouble`.  They are not exported, but an instance may
@@ -372,7 +406,8 @@ is infinite.
 `show` is `showFloat`: the shortest digits that read back to the same
 number, in fixed notation for 0.1 ≤ x < 10^7 and as `1.0e-2` otherwise.
 Cupid's prints 15 significant digits for `Double` and 7 for `Float`, in
-C's style, so `show (0.1 + 0.2)` is `0.3`, `show (1/3 :: Float)` is
+C's style (`%.15g` and `%.7g`), so `show (0.1 + 0.2)` is `0.3`, `show
+(1/3 :: Float)` is
 `0.3333333`, and `read (show x) == x` fails for such values.  Fixed
 notation is used from 10^-4 up to 10^15 for `Double` and to 10^7 for
 `Float`, and the exponent is written with a sign and two digits:
@@ -396,7 +431,7 @@ Literals take another path and are correctly rounded.
 **Rational literals pass through `Double`.**  `1.234e-5 :: Rational`
 is exact, but a literal with more digits than a double holds loses
 them, `3.14159265358979323846 :: Rational` is `3141592653589793 %
-1000000000000000`, and one outside the range of a double becomes
+1000000000000000`, and a literal outside the range of a double becomes
 `0 % 1`: `1e400 :: Rational` is zero.
 
 **`**`, `log` and `sqrt` raise errors outside their domain.**
@@ -416,13 +451,18 @@ Unspecified: `fromInteger` to `Int` reduces modulo 2^32, so
 
 ### 7 Basic input/output
 
-Conforms.  The examples of 7.1 to 7.3 run as printed, with
-`catchIOError` for the Report's `catch` (see chapter 42).  `getContents`
-and `interact` are lazy; `readIO` and `readLn` fail with `user error
-(PreludeIO.readIO: no parse)`; `fail` in `IO` is `ioError . userError`;
-`getLine` at end of file raises an error that `isEOFError` recognises;
-`putStr` output is flushed at exit; an uncaught `IOError` or `error`
-prints `Program error:` and the error and exits with status 1.
+Conforms, with the deviation below, in the behaviours checked:
+
+- The examples of 7.1 to 7.3 run as printed, with `catchIOError` for
+  the Report's `catch` (see chapter 42).
+- `getContents` and `interact` are lazy.
+- `readIO` and `readLn` fail with `user error (PreludeIO.readIO: no
+  parse)`.
+- `fail` in `IO` is `ioError . userError`.
+- `getLine` at end of file raises an error that `isEOFError` recognises.
+- `putStr` output is flushed at exit.
+- An uncaught `IOError` or `error` prints `Program error:` and the error
+  and exits with status 1.
 
 **No file locking.**  Cupid does not enforce the single-writer,
 multiple-reader rule of 41.1.  A program that opens for writing a file
@@ -434,8 +474,8 @@ yields the new contents.
 
 The FFI of chapter 8 is implemented for imports, with the limits
 below.  A module with `foreign` declarations must be compiled with
-[`cupid --ffi`](cupid.md) before it can be loaded.  Every form of
-`foreign import` in 8.4 is accepted and works: `static` with and
+[`cupid --ffi`](cupid.md) before it can be loaded.  These forms of
+`foreign import` in 8.4 are accepted and work: `static` with and
 without a header, `&` address imports, `dynamic`, `safe` and `unsafe`,
 an omitted entity string, and the marshallable types of 8.6 including
 newtypes of them and `IO ()`; a non-marshallable type such as `String`
@@ -444,9 +484,9 @@ requires.  The 8.4.3 example of an import named `sin` behaves as
 described.
 
 **`foreign export` is not implemented.**  A declaration parses, and
-`cupid --ffi` writes its C stub, but loading the module fails with
-`Foreign export not implemented yet.`  The entity string also cannot
-be omitted in an export, which the Report allows.
+`cupid --ffi` writes and compiles its C stub, but it and loading the
+module both fail with `Foreign export not implemented yet.`  The entity
+string also cannot be omitted in an export, which the Report allows.
 
 **`foreign import "wrapper"` fails at run time** on every target this
 tree builds for, with `Foreign import wrapper is not supported on this
@@ -458,8 +498,8 @@ a segmentation fault for any argument, `nullFunPtr` included.
 
 **Calling conventions.**  `ccall` is supported everywhere, `stdcall` on
 Windows only; elsewhere it and `cplusplus`, `jvm` and `dotnet` are
-rejected with `calling convention "stdcall" not supported`, a static
-error, which the Report permits.
+rejected with `Foreign import calling convention "..." not supported`,
+naming the convention, a static error, which the Report permits.
 
 **`Word` is not a foreign type.**  It is not in the list of 8.6, so
 Cupid's rejection follows the letter of the Report; GHC accepts it.
@@ -481,14 +521,14 @@ Unspecified: `HsInt` is `int`, matching the 32-bit `Int`.
 
 ### 9 Standard Prelude
 
-The Prelude exports every name of the Report except `catch`.  Every
-function the Report defines in code was checked against that code and
-agrees with it, from `lines "a\n\nb"` and `words "  a  b "` to the
-laziness of `foldr`, `take 0 undefined` and `splitAt` on a partial
-list, the precedences of the fixity table, and the messages of
-`Prelude.!!: negative index`, `Prelude.foldl1: empty list`,
-`Prelude.cycle: empty list` and the rest.  `lex` gives the Report's
-results, including the limitations the Report itself lists.
+The Prelude exports every name of the Report except `catch`.  The
+functions the Report defines in code agree with that code where probed,
+apart from the differences below: `lines "a\n\nb"` and `words "  a  b "`,
+the laziness of `foldr`, `take 0 undefined` and `splitAt` on a partial
+list, the precedences of the fixity table, and messages such as
+`Prelude.!!: negative index`, `Prelude.foldl1: empty list` and
+`Prelude.cycle: empty list`.  `lex` gives the Report's results,
+including the limitations the Report itself lists.
 
 **These functions take any `Foldable` or `Traversable` structure,** as
 in GHC's base, rather than a list: `all`, `any`, `and`, `or`, `concat`,
@@ -502,12 +542,18 @@ of them unqualified.  A program in which the type is not fixed may
 become ambiguous, as `total = sum` does (chapter 4).
 
 **`catch` is not exported,** as GHC's Prelude has not since 7.6.
-`Control.Exception.catch` catches any exception and
-`System.IO.Error.catchIOError` only an `IOError`.
+`Control.Exception.catch` catches exceptions of the handler's type, all
+of them at `SomeException`, and `System.IO.Error.catchIOError` only an
+`IOError`.
 
-**The Prelude also exports** the classes `Applicative`, `MonadFail`,
-`Semigroup`, `Monoid`, `Foldable` and `Traversable` with their
-methods, `(<$>)`, and the type `Word`.
+**The Prelude also exports** `(<$>)`, the type `Word`, and these classes
+with these methods: `Applicative(pure, (<*>), (*>), (<*), liftA2)`,
+`MonadFail(fail)`, `Semigroup((<>))`, `Monoid(mempty, mappend, mconcat)`,
+`Foldable(elem, foldMap, foldr, foldl, foldr1, foldl1, maximum, minimum,
+product, sum, null, length)` and
+`Traversable(traverse, sequenceA, mapM, sequence)`.  `Functor` and
+`Monad` are exported as `Functor(fmap, (<$))` and
+`Monad((>>=), (>>), return)`.
 
 **A few messages differ from the Report's code.**  `head []` and its
 kin report `pattern match failure: head []`, where the Report's code
@@ -550,32 +596,39 @@ with `>` are program text, read with the `>` as a space so that the
 layout keeps its columns, and every other line is commentary.  As the
 Report requires, a program line next to a non-blank comment line is an
 error.  The alternative the Report describes, the program between
-`\begin{code}` and `\end{code}`, is not read.  `.lhs` follows `.hs`
+`\begin{code}` and `\end{code}`, is not read, and a script written that
+way is rejected for having no program lines.  `.lhs` follows `.hs`
 on the default suffix list, so `import M` finds `M.lhs`.  A `#!` first
 line is read as a blank line, so an executable script needs no
 literate wrapper.
 
 **Fixity resolution** (10.6) is done after parsing, on the tree the
-parser builds, and is right for every legal program: `- x ^ 2` is
-`-(x ^ 2)`, undeclared operators are `infixl 9`, mixing operators of
-equal precedence and different associativity is `Ambiguous use of
-operator`, and so is a chain of two non-associative ones.  The two
+parser builds, and gives the Report's result for the legal programs
+probed: `- x ^ 2` is `-(x ^ 2)`, undeclared operators are `infixl 9`,
+mixing operators of equal precedence and different associativity is
+`Ambiguous use of operator`, and so is a chain of two non-associative
+ones.  The two
 illegal forms it lets through, prefix negation after an operator of
 precedence 6 or higher and a right section with an infix operand, are
 in chapter 3; the left-hand side of an infix binding is in chapter 4.
 
 ### 11 Specification of derived instances
 
-Conforms, with the `Show` and `Read` corners below.  Derived `Eq`,
-`Ord`, `Enum`, `Bounded`, `Ix`, `Show` and `Read` give the results the
-Report's examples give: the `Tree` of figure 11.1 shows and reads as
-printed, `infixr 4 :$` shows `1 :$ (2 :$ NT)` and `read` does not
-accept `1 :$ 2 :$ NT`, both operands of an infix constructor are shown
-at precedence one above the constructor's whatever its associativity,
-records show as `R {f = 1, g = True}` with fields at precedence 0 and
-read back with any spacing, `showsPrec 11 (Just 1) ""` is `(Just 1)`,
-negative fields are parenthesised.  `Ix` is derivable for enumerations
-and single-constructor types, as chapter 19 requires.
+Conforms, with the `Show` and `Read` corners below, in the behaviours
+checked.  Derived `Eq`, `Ord`, `Enum`, `Bounded`, `Ix`, `Show` and `Read`
+give the results the Report's examples give:
+
+- The `Tree` of figure 11.1 shows and reads as printed.
+- `infixr 4 :$` shows `1 :$ (2 :$ NT)`, and `read` does not accept
+  `1 :$ 2 :$ NT`.
+- Both operands of an infix constructor are shown at precedence one
+  above the constructor's, whatever its associativity.
+- Records show as `R {f = 1, g = True}` with fields at precedence 0, and
+  read back with any spacing.
+- `showsPrec 11 (Just 1) ""` is `(Just 1)`.
+- Negative fields are parenthesised.
+- `Ix` is derivable for enumerations and single-constructor types, as
+  chapter 19 requires.
 
 **An operator constructor declared with record syntax shows as a bare
 operator.**  `data I = (:+:) { lf, rf :: Int } deriving (Show, Read)`
@@ -584,16 +637,14 @@ expression, and the derived `Read` accepts that and rejects the legal
 `(:+:) {lf = 1, rf = 2}`.
 
 **A backquoted infix constructor with a fixity declaration cannot be
-read back.**  `data T = Int \`Pair\` Int deriving (Show, Read)` with
-`infixl 5 \`Pair\`` shows `` 1 `Pair` 2 ``, as the Report says, but the
-derived `Read` parses neither that nor `Pair 1 2`.  Without a fixity
+read back.**  `` data T = Int `Pair` Int deriving (Show, Read) `` with
+`` infixl 5 `Pair` `` shows `` 1 `Pair` 2 ``, as the Report says, but
+the derived `Read` parses neither that nor `Pair 1 2`.  Without a fixity
 declaration the constructor shows and reads prefix.
 
-**Negative numbers are parenthesised at precedence 6.**  `showsPrec 6
-(-1) ""` is `(-1)`; the Report's `showSigned` adds parentheses only
-above 6.  So a derived `Show` for a constructor of precedence 5 gives
-`(-1) :$ NT` where the Report's gives `-1 :$ NT`.  `read` accepts
-both.
+**Negative numbers are parenthesised at precedence 6** (chapter 6), so a
+derived `Show` for a constructor of precedence 5 gives `(-1) :$ NT` where
+the Report's gives `-1 :$ NT`.  `read` accepts both.
 
 **A record construction is not parenthesised at precedence 11.**
 `show (Just (R 1 True))` is `Just R {f = 1, g = True}`.  This follows
@@ -635,11 +686,11 @@ libraries](libraries.md).
 | `Foreign.C.String` (27) | `castCharToCUChar`, `castCUCharToChar`, `castCharToCSChar`, `castCSCharToChar` |
 | `Foreign.C.Error` (26) | `throwErrnoPath`, `throwErrnoPathIf`, `throwErrnoPathIf_`, `throwErrnoPathIfNull`, `throwErrnoPathIfMinus1`, `throwErrnoPathIfMinus1_` |
 
-| Module | Types that differ |
+| Module | What differs |
 |---|---|
 | `Control.Monad` (13) | `mapM`, `forM`, `sequence` take any `Traversable`; `mapM_`, `forM_`, `sequence_`, `msum` any `Foldable`; `forever`, `filterM`, `zipWithM`, `replicateM`, `when`, `unless` and their kin need only `Applicative`; `guard` needs `Alternative`; `fail` is `MonadFail`'s; `MonadPlus` has `Alternative` as a superclass |
 | `Data.List` (20) | `null`, `length`, the folds, `concat`, `concatMap`, `and`, `or`, `any`, `all`, `sum`, `product`, `maximum`, `minimum`, `elem`, `notElem`, `find`, `maximumBy`, `minimumBy` are `Foldable`'s; `mapAccumL` and `mapAccumR` are `Traversable`'s; `genericLength` needs `Num a`, not `Integral a` |
-| `Data.Ix` (19) | `Ix` has an extra method, `unsafeIndex` |
+| `Data.Ix` (19) | `Ix` has an extra method, `unsafeIndex`, not exported but definable in an instance |
 | `Data.Bits` (15) | `Bits` has the methods GHC's base added, and a subclass `FiniteBits` |
 | `Data.Array` (14) | `Array` has `Foldable` and `Traversable` instances |
 
@@ -661,8 +712,8 @@ as `Space`.  The Report says any Unicode space character.
 
 **The Unicode table is Unicode 4.0.1.**  Characters assigned since are
 `NotAssigned`, so `isAlpha` and `isPrint` are `False` for them; the
-Report names no Unicode version.  Everything else in the chapter
-conforms: `toUpper`, `toLower` and `toTitle` on non-ASCII letters, the
+Report names no Unicode version.  The rest of the chapter conforms
+where probed: `toUpper`, `toLower` and `toTitle` on non-ASCII letters, the
 predicates, `generalCategory`, `showLitChar`, `lexLitChar` and
 `readLitChar` give the Report's answers.
 
@@ -731,15 +782,16 @@ reverse order of addition, at collection and at exit),
 `Foreign.Marshal.Array`, `Foreign.Marshal.Error` (with `void`),
 `Foreign.Marshal.Utils`, `Foreign.Ptr` (with `IntPtr` and `WordPtr`)
 and `Foreign.Storable` (with the Report's default methods) conform in
-every probe, apart from the missing names in the table above.
+every probe, apart from the missing names in the first table of this
+part.
 `Foreign.Marshal` and `Foreign` also export `Foreign.Marshal.Pool`.
 
 ### 38 Numeric
 
-Conforms for finite values, down to `showFFloat (Just 0) 2.5 ""` being
-`"3"` and `showFloat (-0.0) ""` being `"0.0"` as the reference code
-has them.  `showFloat` gives the shortest digits that read back, which
-the Prelude's `show` does not (chapter 6).
+Conforms for finite values where probed, including `showFFloat (Just 0)
+2.5 ""` being `"3"` and `showFloat (-0.0) ""` being `"0.0"` as the
+reference code has them.  `showFloat` gives the shortest digits that
+read back, which the Prelude's `show` does not (chapter 6).
 
 **Non-finite values are mishandled.**  `showFloat (1/0) ""` is
 `"0.0e0"`, and `showFloat (0/0) ""` and `readFloat "1e400"` raise
@@ -757,8 +809,8 @@ Conforms.  `exitWith` cannot be caught by `catchIOError`; `exitWith
 Conforms in the handle semantics of 41.2 to 41.5, including
 semi-closed handles, the errors on closed and wrong-mode handles, the
 three open modes, seeking and positions, buffering, `fixIO` and the
-end-of-file conditions, with these exceptions and the missing names
-above.
+end-of-file conditions, with these exceptions and the missing names in
+the first table of this part.
 
 **`hClose` on a standard handle does nothing.**  After `hClose stdout`
 the handle is still open and still writes.
