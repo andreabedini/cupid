@@ -66,12 +66,15 @@ what to look for.
    the `end` rule in `parser.y`, then read `checkDefns` in `static.c` line by
    line without following the calls.
 
-4. **Types, in part.**  From [How types are
-   inferred](how-types-are-inferred.md), the first two sections: types as a
-   skeleton and an offset, and how the expression is rewritten in place.  Read
-   `typeExpr` and `typeAp` in `type.c` far enough to see `assumeEvid` called,
-   and `overEvid` in `preds.c`.  This is the hardest part of the day, so give it
-   a bounded amount of time and move on even if you're lost.  The next step
+4. **Types, in part.**  [How types are
+   inferred](how-types-are-inferred.md) starts by inferring small functions by
+   hand. Read those opening examples, then "Types are a skeleton and an
+   offset" and "The expression is rewritten in place" to connect the ideas to
+   Cupid's representation and dictionary arguments. The implementation of
+   generalisation and the details of binding groups can wait. Read `typeExpr`
+   and `typeAp` in `type.c` far enough to see `assumeEvid` called, and
+   `overEvid` in `preds.c`. This is the hardest part of the day, so give it a
+   bounded amount of time and move on even if you're lost. The next step
    needs only the idea of a dictionary.
 
 5. **Compiling and the machine, in part.**  From [How code is compiled and
