@@ -152,5 +152,5 @@ probably set in your environment and points somewhere else; unset it.
 
 - [Build Cupid on Linux and macOS](build-on-linux-and-macos.md) and
   [Build Cupid on Windows](build-on-windows.md), to build from source
-- [Getting started with Cupid](../tutorials/getting-started.md), for a
+- [Getting started with Cupid](getting-started.md), for a
   first session once it is installed

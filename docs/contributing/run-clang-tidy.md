@@ -34,5 +34,5 @@ in one configuration can be wrong for the tree.
 
 ## See also
 
-- [The design of Cupid](../explanation/design.md#the-c-code) for why the check list
+- [The design of Cupid](../inside/design.md#the-c-code) for why the check list
   is short

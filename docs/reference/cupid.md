@@ -152,6 +152,6 @@ cupid --ffi Hyp.hs clib.c -lm
 - [Interpreter commands](commands.md) for the prompt
 - [Write a script that runs with cupid](../how-to/write-a-script.md)
 - [Call C functions from Haskell](../how-to/call-c-functions.md)
-- [How Cupid runs a program](../explanation/how-cupid-runs-a-program.md)
+- [How Cupid runs a program](../inside/how-cupid-runs-a-program.md)
 - [The language Cupid accepts](language.md#foreign-function-interface)
   for the supported calling conventions and import forms

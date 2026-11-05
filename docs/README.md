@@ -12,23 +12,23 @@ Contributing, for the people who change Cupid rather than use it.
 
 ## Start here
 
-New to Cupid?  [Install a release](install/install-a-release.md), then
-work through [Getting started with Cupid](tutorials/getting-started.md):
+New to Cupid?  [Install a release](start/install-a-release.md), then
+work through [Getting started with Cupid](start/getting-started.md):
 it evaluates a few expressions, loads a module and runs a program with
 `cupid`.
 
 ## Install
 
-- [Install a release](install/install-a-release.md) — one command, or
+- [Install a release](start/install-a-release.md) — one command, or
   the same steps by hand
-- [Build Cupid on Linux and macOS](install/build-on-linux-and-macos.md)
+- [Build Cupid on Linux and macOS](start/build-on-linux-and-macos.md)
   — from source, with meson; installed or run from the build tree
-- [Build Cupid on Windows](install/build-on-windows.md) — the native
+- [Build Cupid on Windows](start/build-on-windows.md) — the native
   MinGW-w64 build
 
 ## Tutorials
 
-- [Getting started with Cupid](tutorials/getting-started.md) — use the
+- [Getting started with Cupid](start/getting-started.md) — use the
   prompt, load a module, run a program.
 
 ## How-to guides
@@ -42,31 +42,31 @@ it evaluates a few expressions, loads a module and runs a program with
 
 ## Explanation
 
-- [The design of Cupid](explanation/design.md) — the aim, and the choices
+- [The design of Cupid](inside/design.md) — the aim, and the choices
   in the language, the build and the C code that follow from it
-- [How Cupid runs a program](explanation/how-cupid-runs-a-program.md) —
+- [How Cupid runs a program](inside/how-cupid-runs-a-program.md) —
   the stages from source to result, and where the pieces live
-- [Cells, text and tables](explanation/cells-text-and-tables.md) — the
+- [Cells, text and tables](inside/cells-text-and-tables.md) — the
   one data type everything is built from, the heap, the collector and
   the checkpoints that reloading rests on
-- [How source is read](explanation/how-source-is-read.md) — the lexer,
+- [How source is read](inside/how-source-is-read.md) — the lexer,
   the grammar's shortcuts, and the static analysis that turns equations
   into binding groups
-- [How types are inferred](explanation/how-types-are-inferred.md) — the
+- [How types are inferred](inside/how-types-are-inferred.md) — the
   substitution, structure sharing, generalisation and the in-place
   rewriting that inserts dictionaries
-- [How constraints are solved](explanation/how-constraints-are-solved.md) —
+- [How constraints are solved](inside/how-constraints-are-solved.md) —
   predicates, evidence, entailment, improvement and the loop that runs
   them at each binding group
-- [How code is compiled and run](explanation/how-code-is-compiled-and-run.md) —
+- [How code is compiled and run](inside/how-code-is-compiled-and-run.md) —
   pattern-matching compilation, lambda lifting, the abstract machine and
   its instructions
-- [Modules, files and the search path](explanation/modules-and-the-search-path.md)
-- [Character encoding](explanation/character-encoding.md)
-- [Foreign import wrappers](explanation/foreign-import-wrappers.md) —
+- [Modules, files and the search path](inside/modules-and-the-search-path.md)
+- [Character encoding](inside/character-encoding.md)
+- [Foreign import wrappers](inside/foreign-functions.md) —
   how callbacks into Haskell were implemented, and why they are not
   available on current targets
-- [History](explanation/history.md) — from Gofer to this tree
+- [History](inside/history.md) — from Gofer to this tree
 
 ## Reference
 

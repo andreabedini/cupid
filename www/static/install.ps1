@@ -13,7 +13,7 @@
 #   $env:CUPID_INSTALL_DIR  where the release directory goes; default $env:LOCALAPPDATA\Programs
 #
 # The same steps by hand, and building from source, are described at
-# https://andreabedini.github.io/cupid/docs/install/
+# https://andreabedini.github.io/cupid/docs/start/
 
 $ErrorActionPreference = 'Stop'
 
@@ -23,7 +23,7 @@ $target = 'x86_64-windows'
 $installDir = if ($env:CUPID_INSTALL_DIR) { $env:CUPID_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'Programs' }
 
 if (-not [Environment]::Is64BitOperatingSystem) {
-    throw "There is no release archive for 32-bit Windows; build from source instead: $site/docs/install/"
+    throw "There is no release archive for 32-bit Windows; build from source instead: $site/docs/start/"
 }
 
 # -- which version ------------------------------------------------------------
@@ -34,7 +34,7 @@ if ($env:CUPID_VERSION) {
     try {
         $latest = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/latest" -Headers @{ 'User-Agent' = 'cupid-install' }
     } catch {
-        throw "Cannot find the latest release of Cupid ($($_.Exception.Message)). If none has been published yet, build from source instead: $site/docs/install/"
+        throw "Cannot find the latest release of Cupid ($($_.Exception.Message)). If none has been published yet, build from source instead: $site/docs/start/"
     }
     $version = ([string]$latest.tag_name).TrimStart('v')
 }

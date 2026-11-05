@@ -6,7 +6,7 @@ Compile a module that contains `foreign import` declarations with
 ## Prerequisites
 
 - `cupid`, either installed or reachable from the build tree with
-  `CUPIDDIR` set (see [Run it from the build tree](../install/build-on-linux-and-macos.md#run-it-from-the-build-tree))
+  `CUPIDDIR` set (see [Run it from the build tree](../start/build-on-linux-and-macos.md#run-it-from-the-build-tree))
 - the C compiler that Cupid was built with, since `cupid --ffi` runs
   the same command
 
@@ -125,5 +125,5 @@ Haskell module, so `Hyp.hs` produces `Hyp.c`.
 - [Running cupid](../reference/cupid.md) for the full command line
 - [The language Cupid accepts](../reference/language.md#foreign-function-interface)
   for what the FFI does and does not support
-- [Foreign import wrappers](../explanation/foreign-import-wrappers.md)
+- [Foreign import wrappers](../inside/foreign-functions.md)
   on callbacks from C into Haskell

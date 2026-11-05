@@ -25,7 +25,7 @@ The extensions of the 2006 release that were guarded by compile-time
 flags are gone: TREX extensible records, implicit parameters, the
 `observe` debugger, recursive do (`mdo`), parallel list comprehensions,
 multi-instance resolution and here documents (see
-[the design](../explanation/design.md#deleting-instead-of-switching-off)).
+[the design](../inside/design.md#deleting-instead-of-switching-off)).
 
 ## Known deviations from the Report
 
@@ -190,7 +190,7 @@ page](haskell-2010.md#8-foreign-function-interface) has in full:
   "dynamic"` (calling through a `FunPtr`), work on all targets.
 - `foreign import "wrapper"`, which turns a Haskell function into a C
   function pointer, fails at run time on every target this tree builds
-  for.  See [Foreign import wrappers](../explanation/foreign-import-wrappers.md).
+  for.  See [Foreign import wrappers](../inside/foreign-functions.md).
 - `foreign export` declarations parse, and `cupid --ffi` writes and
   compiles C for them, but it and loading the module both fail with
   `Foreign export not implemented yet.`
@@ -202,7 +202,7 @@ A module containing foreign declarations must be compiled with
 
 A module name may contain dots.  To find `A.B.C`, Cupid looks for
 `A/B/C.hs` or `A/B/C.lhs` in each directory of the search path.  See
-[Modules, files and the search path](../explanation/modules-and-the-search-path.md).
+[Modules, files and the search path](../inside/modules-and-the-search-path.md).
 
 ## See also
 

@@ -47,7 +47,7 @@ whatever this says.  Not read on Windows.
 
 Read by meson at configuration time, not by Cupid.  The compiler it
 names is also the one `cupid --ffi` runs.  See
-[Build Cupid on Linux and macOS](../install/build-on-linux-and-macos.md).
+[Build Cupid on Linux and macOS](../start/build-on-linux-and-macos.md).
 
 ### `LC_ALL`, `LC_CTYPE`, `LANG`
 

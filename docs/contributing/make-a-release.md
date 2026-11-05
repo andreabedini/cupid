@@ -65,7 +65,7 @@ gh attestation verify cupid-VERSION-x86_64-linux.tar.gz --repo andreabedini/cupi
 
 The second command checks the build attestation that the `release` job
 records for every file in `dist/` with `actions/attest-build-provenance`.
-It is the check [Install a release](../install/install-a-release.md#2-check-that-ci-built-it)
+It is the check [Install a release](../start/install-a-release.md#2-check-that-ci-built-it)
 gives users, and the one the install scripts run when `gh` is signed
 in, so the signer workflow must stay `ci.yml` on `main` or that page
 and the scripts need updating.

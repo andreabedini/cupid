@@ -5,7 +5,7 @@ The Haskell modules that ship with Cupid.
 ## Packages
 
 The libraries are plain Haskell that Cupid owns (see
-[the design](../explanation/design.md#the-libraries)).  They live in two
+[the design](../inside/design.md#the-libraries)).  They live in two
 directories under `libraries/` in the source tree and are installed as
 subdirectories of `packages/` in the library directory, where the
 default search path finds them.
