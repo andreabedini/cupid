@@ -22,6 +22,8 @@ ASSETS = ROOT / "assets"
 WWW = Path(__file__).resolve().parent
 CONTENT = WWW / "content" / "docs"
 STATIC = WWW / "static"
+SITE = re.search(r'^base_url = "(.*?)/?"$', (WWW / "config.toml").read_text(encoding="utf-8"),
+                 re.M).group(1) + "/"
 
 # The documentation sections.  The order here is the order they appear in the
 # site navigation, and it has to match extra.doc_sections in config.toml.
@@ -252,8 +254,13 @@ def rewrite_link(target: str, source_rel: Path) -> str:
     """Turn a docs-relative link into a Zola internal link.
 
     `source_rel` is the source file's path relative to docs/.  A link to a
-    directory means that section's index.
+    directory means that section's index.  A link to the published site, to a
+    file that isn't in docs/ such as install.sh, becomes relative to the page, so
+    that it stays on whichever copy of the site is being read.
     """
+    if target.startswith(SITE):
+        depth = len(source_rel.parent.parts) + (1 if source_rel.name == "README.md" else 2)
+        return "../" * depth + target[len(SITE):]
     if "://" in target or target.startswith(("#", "mailto:", "/")):
         return target
 
