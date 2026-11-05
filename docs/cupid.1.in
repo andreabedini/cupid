@@ -356,9 +356,10 @@ executable binary.
 .I \*(LB
 directory containing support files.
 .SH "SEE ALSO"
-The documentation installed in \fB\*(LB/docs\fP: a tutorial,
-how-to guides, and reference pages for the commands, options
-and the \fIcupid\fP command.
+The documentation installed in \fB\*(LB/docs\fP: a first
+session, guides to particular tasks, a tour of the source, and
+reference pages for the commands, options and the \fIcupid\fP
+command.
 .PP
 Simon Marlow (editor).
 \fIHaskell 2010 Language Report\fP.

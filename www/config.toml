@@ -3,7 +3,7 @@
 base_url = "https://andreabedini.github.io/cupid"
 
 title = "Cupid"
-description = "Hugs, revived: a small Haskell interpreter in plain C, with modern base, that builds in a minute."
+description = "Hugs, revived: a small Haskell interpreter in C, with modern base, that you can read."
 
 compile_sass = true
 build_search_index = false
