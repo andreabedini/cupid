@@ -109,15 +109,15 @@ can set.
 
 ## Documentation
 
-The docs follow [Diátaxis](https://diataxis.fr/), so where a page lives
-tells you what it's for.  [docs/README.md](docs/README.md) is the index;
-the useful starting points are:
+[docs/README.md](docs/README.md) is the index; the useful starting points
+are:
 
 - [Getting started with Cupid](docs/start/getting-started.md) — a
   first session, from the prompt to running a program.  About 15 minutes.
+- [Reading Cupid in a day](docs/inside/reading-cupid-in-a-day.md) — a map
+  of the source and a route through it.  Read this before the source.
 - [How Cupid runs a program](docs/inside/how-cupid-runs-a-program.md)
-  — source text to abstract machine, and where each piece lives.  Read
-  this before the source.
+  — one small program, from source text to abstract machine.
 - [Interpreter commands](docs/reference/commands.md) and
   [Options](docs/reference/options.md) — what you can type at the prompt
   and what you can set.
@@ -141,8 +141,8 @@ the useful starting points are:
   modules) and `base` (the `Prelude` module and the rest of base, with a
   few C helpers in `cbits`).  `libraries/tools/` holds the build script
   and the generator for `Cupid.SysConfig`
-- `docs/` — tutorial, how-to guides, reference, explanation and the
-  manual page
+- `docs/` — getting started, guides, a tour of the source, reference and
+  the manual page
 - `tests/` — the regression tests and the script that runs them
 - `demos/` — example programs, installed alongside the libraries
 - `www/` — the website, a [Zola](https://www.getzola.org/) site that
