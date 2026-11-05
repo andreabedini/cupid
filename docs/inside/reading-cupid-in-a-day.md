@@ -206,9 +206,12 @@ tests/check-doc-sessions build-checks/src/cupid \
 these pages with the normalised output of the current tree, and fails if they differ,
 so those blocks don't depend on the revision above.  It checks that each invented name
 is written consistently, though not that the descriptive name is the right one.
-Listings and traces need a `checks` build and the tokens and cells need gdb; where those
-are missing the blocks are counted as skipped, but a gdb that runs and fails is a failure.
-One CI job, Linux with gcc, runs the check with `--require-all`, which allows no skips.
+Listings and traces need a `checks` build.  The tokens and cells need gdb and a build
+with `-Dbuildtype=debug`, since optimising can leave gdb unable to read a function's
+arguments, so `meson test` leaves them out of an optimised build.  Blocks that can't run
+are counted as skipped, but a gdb that runs and fails is a failure.  One CI job, Linux
+with gcc, runs the check on an unoptimised `checks` build with `--require-all`, which
+allows no skips.
 
 The counts quoted in [Counting the work](how-code-is-compiled-and-run.md#counting-the-work)
 and [What survives a collection](cells-text-and-tables.md#what-survives-a-collection) do

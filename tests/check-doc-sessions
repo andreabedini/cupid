@@ -1,0 +1,492 @@
+#!/usr/bin/env python3
+"""Check the interpreter output quoted in the documentation.
+
+usage: check-doc-sessions [--require-all] [--no-gdb] CUPID PACKAGES SOURCEROOT [--show NAME]
+
+Pages quote sessions, compiled-code listings and traces.  Each such block is
+preceded by a marker, <!-- session: NAME -->, naming an entry of SESSIONS below;
+this runs that session on the program in tests/doc-sessions/ and compares its
+normalised output with the block.  A block of Haskell preceded by
+<!-- source: FILE --> must be an excerpt of that file.  A marker with no session,
+or a session no page quotes, is a failure.
+
+Listings and traces need the +D toggle, so outside a `checks` build they are
+skipped and reported as skipped.  The tokens and cells of Total.hs come from
+tests/doc-sessions/show-stages.py, which needs gdb and an unoptimised build, since
+optimising can leave gdb unable to read a function's arguments.  They are skipped
+when gdb is not installed, or with --no-gdb, which meson passes for an optimised
+build.  A gdb that runs but exits non-zero, or doesn't print the expected section,
+is a failure, and so is any cupid that exits non-zero or times out.
+--require-all turns every skip into a failure, for the one environment that has
+everything: an unoptimised `checks` build with gdb installed, which CI provides on
+Linux.
+
+Normalising is what lets a block outlive the next change to the Prelude:
+
+- A listing loses its addresses.  A jump target becomes a label, L1, L2, ...,
+  numbered by first use, and the address of the shared FAIL becomes FAIL.
+- A name the compiler invents (v87) or a raw cell ($203) may be written as anything
+  in a block, as long as one printed name is always written the same way and vice
+  versa.  A dictionary, written d followed by a capital, keeps its identity across
+  all the sessions in a run.
+- In a block, what follows "; " is a comment, a line "..." stands for any number of
+  lines, and blank lines and the width of the spaces between tokens do not matter.
+
+--show NAME prints a session's normalised output, for pasting into a page.  The
+other checks in CLAIMS support statements that are not quotations, and compare
+counts by their relation, since the counts themselves change with the libraries.
+"""
+
+import html
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+GENERATED = re.compile(r"^(v\d+|d\d+|\$-?\d+)$")
+ROW = re.compile(r"^\s*(0x[0-9A-F]+):?\s+(.*)$")
+
+
+class Failed(Exception):
+    """A subprocess that ran and did not do what a session needs."""
+
+
+class Unavailable(Exception):
+    """Something a session needs isn't here at all, which is not a failure."""
+
+
+def checked_run(command, **options):
+    """Run a command and return its output; a non-zero exit is a failure."""
+    try:
+        proc = subprocess.run(
+            command, text=True, encoding="utf-8", errors="replace",
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, **options)
+    except subprocess.TimeoutExpired:
+        raise Failed("%s timed out" % os.path.basename(command[0]))
+    if proc.returncode != 0:
+        raise Failed("%s exited with status %d:\n%s" % (
+            os.path.basename(command[0]), proc.returncode, proc.stdout[-600:]))
+    return proc.stdout.replace("\r\n", "\n")
+
+
+class Cupid:
+    def __init__(self, program, packages, cwd):
+        self.program, self.packages, self.cwd = program, packages, cwd
+
+    def run(self, args, stdin=""):
+        return checked_run([self.program, "-P" + self.packages] + args,
+                           input=stdin, cwd=self.cwd, timeout=120)
+
+    def prompt(self, args, commands):
+        return self.run(args, "".join(c + "\n" for c in commands) + ":quit\n")
+
+    def has_listings(self):
+        return "unknown toggle" not in self.prompt([], [":set +D"])
+
+
+def after_banner(text):
+    return text.split("Type :? for help.\n", 1)[-1]
+
+
+def rows(lines):
+    """(address, [tokens]) for each line of a listing or trace."""
+    found = []
+    for line in lines:
+        m = ROW.match(line)
+        if m:
+            found.append((int(m.group(1), 16), m.group(2).split()))
+    return found
+
+
+def show_rows(found):
+    """Listing rows without addresses, with jumps turned into labels."""
+    labels = {}
+    for _, tokens in found:
+        if tokens[0] in ("TEST", "GOTO") and int(tokens[-1], 16) != 0:
+            labels.setdefault(int(tokens[-1], 16), "L%d" % (len(labels) + 1))
+    out = []
+    for address, tokens in found:
+        if tokens[0] in ("TEST", "GOTO"):
+            target = int(tokens[-1], 16)
+            tokens = tokens[:-1] + [labels[target] if target else "FAIL"]
+        where = labels[address] + ":" if address in labels else ""
+        out.append((where.ljust(8) + "%-8s" % tokens[0] + "  ".join(tokens[1:])).rstrip())
+    return out
+
+
+def listings(text):
+    """{name: lines} for each definition printed by +D, and the names in order."""
+    found, order = {}, []
+    blocks = re.split(r"-{6,}\n", text)
+    for block in blocks:
+        m = re.match(r"(?:name=(\S+)\n)?Arity\s*=\s*(\d+)\ncodeGen = .*\n(?:name=\S+\n)?", block)
+        if m and m.group(1):
+            name = m.group(1)
+            found[name] = ["%s, arity %s" % (name, m.group(2))] + show_rows(
+                rows(block[m.end():].splitlines()))
+            order.append(name)
+    return found, order
+
+
+class Listing:
+    """The compiled code of one definition, or of the one printed before it."""
+
+    needs_listings = True
+
+    def __init__(self, source, name, before=False):
+        self.source, self.name, self.before = source, name, before
+
+    def output(self, cupid):
+        found, order = listings(cupid.prompt([], [":set +D", ":load " + self.source]))
+        name = self.name
+        if self.before:
+            name = order[order.index(name) - 1]
+        return found[name]
+
+
+class Trace:
+    """The names entered while evaluating expr, from the first entry to start on."""
+
+    needs_listings = True
+
+    def __init__(self, source, expr, start, count=None):
+        self.source, self.expr, self.start, self.count = source, expr, start, count
+
+    def output(self, cupid):
+        text = cupid.prompt([], [":load " + self.source, ":set +D", self.expr])
+        entered = []
+        for line in text.splitlines():
+            m = re.match(r"^.*?( *)Entering name\(\d+\): (\S+)$", line)
+            if m:
+                entered.append((len(m.group(1)), m.group(2)))
+        first = next(i for i, e in enumerate(entered) if e[1] == self.start)
+        base = entered[first][0]
+        return [" " * (w - base) + "Entering " + n
+                for w, n in entered[first:first + self.count]]
+
+
+class CodeOfCaf:
+    """The instructions run the first time a constant is evaluated."""
+
+    needs_listings = True
+
+    def __init__(self, source, expr):
+        self.source, self.expr = source, expr
+
+    def output(self, cupid):
+        text = cupid.prompt([], [":load " + self.source, ":set +D", self.expr])
+        pieces = re.split(r"^.*Entering name\(\d+\): Make\.Num$", text, flags=re.M)
+        # The dictionary's code is what ends just before its constructor is entered.
+        lines = pieces[0].splitlines()
+        end = max(i for i, l in enumerate(lines) if "Leaving name" in l)
+        start = max(i for i, l in enumerate(lines[:end]) if "Entering name" in l)
+        return show_rows(rows(lines[start:end]))
+
+
+class Stage:
+    """A section of what show-stages.py prints, compared as one run of tokens."""
+
+    needs_listings = False
+    flow = True
+    printed = None
+    disabled = False
+
+    def __init__(self, name):
+        self.name = name
+
+    def output(self, cupid):
+        if Stage.disabled:
+            raise Unavailable("--no-gdb was given")
+        if shutil.which("gdb") is None:
+            raise Unavailable("gdb is not installed")
+        if Stage.printed is None:
+            text = checked_run(
+                ["gdb", "-q", "-batch", "-x", "show-stages.py", "--args",
+                 cupid.program, "-P" + cupid.packages, "Total.hs"],
+                cwd=cupid.cwd, stdin=subprocess.DEVNULL, timeout=240)
+            Stage.printed = dict(re.findall(r"^--- (\S+)\n(.*)$", text, re.M))
+        if self.name not in Stage.printed:
+            raise Failed("gdb ran but printed no section " + self.name)
+        return [Stage.printed[self.name]]
+
+
+class Session:
+    """A prompt session, shown as it looks at a terminal."""
+
+    needs_listings = False
+
+    def __init__(self, source, commands):
+        self.source, self.commands = source, commands
+
+    def output(self, cupid):
+        args = ["-i", self.source] if self.source else []
+        text = after_banner(cupid.prompt(args, self.commands))
+        shown = ["$ cupid" + (" -i " + self.source if self.source else "")]
+        prompt = re.compile(r"[A-Z][\w.]*> ")
+        for command in self.commands + [None]:
+            m = prompt.match(text)
+            if not m:
+                raise ValueError("no prompt where one was expected: %r" % text[:60])
+            if command is None:
+                break
+            text = text[m.end():]
+            shown.append(m.group(0) + command)
+            reply = []
+            while True:
+                if prompt.match(text):
+                    break
+                line, _, text = text.partition("\n")
+                if line:
+                    reply.append(line)
+            shown.extend(reply)
+        return shown
+
+
+class Program:
+    """A file run with cupid, shown as it looks at a terminal."""
+
+    needs_listings = False
+
+    def __init__(self, source):
+        self.source = source
+
+    def output(self, cupid):
+        return ["$ cupid " + self.source] + [l for l in cupid.run([self.source]).splitlines() if l]
+
+
+SESSIONS = {
+    "home": Session(None, [
+        "let fibs = 0 : 1 : zipWith (+) fibs (tail fibs) in takeWhile (< 100) fibs",
+        ":type sum",
+        "sum (Just 3)",
+        "fmap (* 2) (Just 21)"]),
+    "total-run": Program("Total.hs"),
+    "tokens": Stage("tokens"),
+    "cells-parsed": Stage("parsed"),
+    "cells-resolved": Stage("resolved"),
+    "cells-typed": Stage("typed"),
+    "cells-compiled": Stage("compiled"),
+    "cells-running": Stage("running"),
+    "total-listing": Listing("Total.hs", "total"),
+    "total-trace": Trace("Total.hs", "total [1, 2, 3 :: Int]", "primShowsInt", 16),
+    "mono-listing": Listing("Mono.hs", "total"),
+    "firstOf-listing": Listing("Compile.hs", "firstOf"),
+    "classify-listing": Listing("Compile.hs", "classify"),
+    "go-listing": Listing("Compile.hs", "scale", before=True),
+    "scale-listing": Listing("Compile.hs", "scale"),
+    "both-listing": Listing("Compile.hs", "both"),
+    "lazyIf-listing": Listing("Compile.hs", "lazyIf"),
+    "strictHead-listing": Listing("Compile.hs", "strictHead"),
+    "dictionary-code": CodeOfCaf("Total.hs", "total [1 :: Int]"),
+    "swap-listing": Listing("Exercises.hs", "swap"),
+    "twice-listing": Listing("Exercises.hs", "twice"),
+    "isZero-listing": Listing("Exercises.hs", "isZero"),
+    "pick-listing": Listing("Exercises.hs", "pick"),
+}
+
+
+def counts(text):
+    return [(int(m.group(1)), int(m.group(2)))
+            for m in re.finditer(r"\((\d+) reductions, (\d+) cells", text)]
+
+
+def claim_laziness(cupid):
+    """head (queens 8) does far less work than length (queens 8)."""
+    head = counts(cupid.prompt(["-i", "Queens.hs"], [":set +s", "head (queens 8)"]))[0]
+    full = counts(cupid.prompt(["-i", "Queens.hs"], [":set +s", "length (queens 8)"]))[0]
+    return head[0] * 10 < full[0], "reductions: head %d, length %d" % (head[0], full[0])
+
+
+def claim_first_use_is_charged(cupid):
+    """Repeating an expression costs less: shared constants are built only once."""
+    results = []
+    for expr in ("head (queens 8)", "length (queens 8)"):
+        runs = counts(cupid.prompt(["-i", "Queens.hs"], [":set +s", expr, expr]))
+        results.append((runs[1][0] < runs[0][0], (expr, runs[0][0], runs[1][0])))
+    return all(r[0] for r in results), repr([r[1] for r in results])
+
+
+def claim_overflow(cupid):
+    """Deep recursion through a primitive gives an error, at a depth between these."""
+    text = after_banner(cupid.prompt(["-i", "Total.hs"], [
+        "total [1 .. 16000 :: Int]", "total [1 .. 20000 :: Int]"]))
+    return "128008000" in text and "Control stack overflow" in text, repr(text[:80])
+
+
+def claim_collection(cupid):
+    """A constant's value survives a collection; what only an expression used does not."""
+    commands = [":gc", "length table", ":gc", "length (map negate table)", ":gc"]
+    text = cupid.prompt(["-i", "Cells.hs"], commands)
+    found = [int(n) for n in re.findall(r"recovered (\d+) cells", text)]
+    return (len(found) == 3 and 50000 < found[0] - found[1] < 65000
+            and abs(found[2] - found[1]) < 1000), "recovered: %r" % (found,)
+
+
+CLAIMS = [claim_laziness, claim_first_use_is_charged, claim_overflow, claim_collection]
+
+
+def blocks(path):
+    """(kind, name, lines) for each marked block in a page."""
+    text = open(path, encoding="utf-8").read()
+    fence = r"```[^\n]*\n(.*?)^```"
+    pre = r"<pre[^>]*><code[^>]*>(.*?)</code></pre>"
+    pattern = re.compile(r"<!-- (session|source): (\S+) -->\s*(?:" + fence + "|" + pre + ")",
+                         re.S | re.M)
+    for m in pattern.finditer(text):
+        body = m.group(3)
+        if body is None:
+            body = html.unescape(re.sub(r"<[^>]+>", "", m.group(4)))
+        yield m.group(1), m.group(2), body.splitlines()
+
+
+def tokens(line):
+    """A block's line, without its comment, as tokens."""
+    return re.sub(r"(^|\s); .*$", "", line).split()
+
+
+def flow(lines):
+    """Lines as one run of tokens, with each parenthesis a token of its own."""
+    joined = " ".join(lines).replace(";", "semicolon")
+    return [" ".join(re.findall(r"[()]|[^\s()]+", joined))]
+
+
+def same(want, got, names, dicts):
+    """Tables extended so that a block's line matches an output line, or None."""
+    want, got = tokens(want), got.split()
+    if len(want) != len(got):
+        return None
+    names, dicts = dict(names), dict(dicts)
+    for w, g in zip(want, got):
+        w, g = w.rstrip(","), g.rstrip(",")
+        if GENERATED.match(g):
+            table, other = (dicts, names) if re.match(r"d[A-Z]", w) else (names, dicts)
+            if g in other or table.get(g, w) != w:
+                return None
+            if table.get(g) is None and w in table.values():
+                return None
+            table[g] = w
+        elif w != g:
+            return None
+    return names, dicts
+
+
+def matches(expected, actual, names, dicts):
+    """The tables that make a block match the output, with its "..." lines, or None."""
+    if not expected:
+        return None if actual else (names, dicts)
+    if tokens(expected[0]) == ["..."]:
+        for skip in range(len(actual) + 1):
+            found = matches(expected[1:], actual[skip:], names, dicts)
+            if found:
+                return found
+        return None
+    if not actual:
+        return None
+    extended = same(expected[0], actual[0], names, dicts)
+    return extended and matches(expected[1:], actual[1:], *extended)
+
+
+def pages(root):
+    found = [os.path.join(root, "www", "templates", "index.html")]
+    for top, _, files in os.walk(os.path.join(root, "docs")):
+        found.extend(os.path.join(top, f) for f in files if f.endswith(".md"))
+    return [p for p in sorted(found) if os.path.exists(p)]
+
+
+def main(argv):
+    show = None
+    require_all = "--require-all" in argv
+    Stage.disabled = "--no-gdb" in argv
+    argv = [a for a in argv if a not in ("--require-all", "--no-gdb")]
+    if "--show" in argv:
+        at = argv.index("--show")
+        show = argv[at + 1]
+        argv = argv[:at] + argv[at + 2:]
+    if len(argv) != 4:
+        sys.exit(__doc__)
+    program, packages, root = argv[1:]
+    packages = os.path.abspath(packages)  # the sessions run in another directory
+    sessions_dir = os.path.join(root, "tests", "doc-sessions")
+    cupid = Cupid(os.path.abspath(program), packages, sessions_dir)
+
+    if show:
+        print("\n".join(SESSIONS[show].output(cupid)))
+        return 0
+
+    failed = skipped = checked = 0
+    used, dicts = set(), {}
+
+    def fail(where, message):
+        nonlocal failed
+        failed += 1
+        print("FAIL %s: %s" % (where, message))
+
+    def skip(where, name, why):
+        nonlocal skipped
+        if require_all:
+            fail(where, "%s can't be skipped here: %s" % (name, why))
+        else:
+            skipped += 1
+
+    try:
+        can_list = cupid.has_listings()
+    except Failed as why:
+        fail(program, str(why))
+        can_list = False
+
+    for page in pages(root):
+        where = os.path.relpath(page, root)
+        for kind, name, body in blocks(page):
+            if kind == "source":
+                text = open(os.path.join(sessions_dir, name), encoding="utf-8").read()
+                checked += 1
+                if "\n".join(body).strip() not in text:
+                    fail(where, "block is not an excerpt of " + name)
+                continue
+            used.add(name)
+            session = SESSIONS.get(name)
+            if session is None:
+                fail(where, "no session called " + name)
+                continue
+            if session.needs_listings and not can_list:
+                skip(where, name, "this build has no +D")
+                continue
+            try:
+                actual = session.output(cupid)
+            except Unavailable as why:
+                skip(where, name, str(why))
+                continue
+            except Failed as why:
+                checked += 1
+                fail(where, "%s: %s" % (name, why))
+                continue
+            checked += 1
+            expected = [l for l in body if l.strip()]
+            if getattr(session, "flow", False):
+                expected, actual = flow(expected), flow(actual)
+            found = matches(expected, actual, {}, dicts)
+            if found:
+                dicts = found[1]
+            else:
+                fail(where, "%s differs; the output is:\n%s" % (name, "\n".join(actual)))
+
+    for name in sorted(set(SESSIONS) - used):
+        fail("SESSIONS", name + " is not quoted by any page")
+
+    for claim in CLAIMS:
+        checked += 1
+        try:
+            good, detail = claim(cupid)
+        except Failed as why:
+            fail(claim.__name__, str(why))
+            continue
+        if not good:
+            fail(claim.__name__, "%s (%s)" % (claim.__doc__, detail))
+
+    print("%d checked, %d failed, %d skipped" % (checked, failed, skipped))
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
