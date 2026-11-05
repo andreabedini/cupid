@@ -4,8 +4,8 @@ Where Hugs came from, what happened to it, and what this tree is.
 
 ## Gofer and Hugs
 
-In August 1991 Mark Jones, then a D.Phil. student at Oxford, released
-Gofer, a compact and portable implementation of a Haskell-like language
+In August 1991 (the 1994 report below says September) Mark Jones, then a
+D.Phil. student at Oxford, released Gofer, a compact and portable implementation of a Haskell-like language
 that also served as a test bed for type-system ideas, among them
 constructor classes, which later entered Haskell, and the treatment of
 type classes that led to multi-parameter classes and functional
@@ -20,13 +20,13 @@ system*](http://web.cecs.pdx.edu/~mpj/pubs/RR-1030.pdf) (Yale
 University, YALEU/DCS/RR-1030, May 1994).  It covers Gofer 2.30,
 before the module system, but the architecture it sets out is [the one
 this tree still has](design.md#what-is-inherited-and-what-is-not).  The
-explanation pages on
+chapters on
 [storage](cells-text-and-tables.md), [the front
 end](how-source-is-read.md), [type inference](how-types-are-inferred.md)
 and [the compiler and machine](how-code-is-compiled-and-run.md) draw on
 it and say where Hugs and Cupid moved on.  The report closes with the
 hope that "someone, perhaps even me, has the opportunity to develop a
-new, cleaner version of the system, building on this experience";
+new, cleaner version of the system, building on this experience" (p. 50);
 Cupid's aim of an implementation one person can read is in that
 spirit, if thirty years late.
 

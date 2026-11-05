@@ -22,11 +22,11 @@ extensions Hugs had that it doesn't keep are gone from the source.
 
 ## What is inherited and what is not
 
-The architecture is Gofer's, designed in 1991 by Mark Jones and
-described in his 1994 report ([History](history.md#gofer-and-hugs)
-says where to find it).  Gofer's goals were compatibility with Haskell,
-extensibility as a test bed for type-system ideas, and portability
-down to an 8 MHz PC with 640K; speed was explicitly not one.  Cupid
+The architecture is Gofer's, first released in 1991 by Mark Jones and
+described in his 1994 report, [RR-1030](http://web.cecs.pdx.edu/~mpj/pubs/RR-1030.pdf).  Gofer's goals were compatibility with Haskell,
+extensibility as a foundation for further work and experimentation, and
+portability down to an 8 MHz 8086 PC with 640K; speed was explicitly not
+one (RR-1030, p. 2).  Cupid
 keeps the parts of that design that serve readability, and they are
 most of it: one cell type for everything, fixed tables whose
 high-water marks double as checkpoints, a conservative collector so
@@ -44,10 +44,11 @@ plain declaration.  Gofer's components were driven by a `control`
 function per file answering `INSTALL`, `RESET`, `MARK` and `EXIT` codes;
 Cupid makes each phase a named function in a subsystem table.  Gofer
 marked its static cells in each file's `MARK` case; Cupid registers them
-once.  Gofer kept old features compilable behind definitions, with a
-footnote wishing it could remove some; Cupid deletes them.  And Gofer
-aimed at compatibility with a moving target, which its author came to
-find "a little frustrating"; Cupid does not chase GHC.  A feature gets
+once.  (The report describes these at pp. 5, 6 and 22.)  Gofer carried
+experimental features its report already calls obsolete, or expects to
+drop (p. 44); Cupid deletes them.  And Gofer tracked each version of
+Haskell and still differed from it, an incompatibility its author came to
+find "a little frustrating" (p. 2); Cupid does not chase GHC.  A feature gets
 in by [the rules for the language](language-design.md#how-a-feature-gets-in),
 and what is left out is written down as well as what is in.
 
