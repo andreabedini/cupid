@@ -261,6 +261,10 @@ SESSIONS = {
         ":type sum",
         "sum (Just 3)",
         "fmap (* 2) (Just 21)"]),
+    "constraint-evidence": Session("Constraints.hs", [
+        ":type sameInferred", "sameInt 3 3", "sameOrdered True False",
+        "sameList [True, False] [True, False]", ":type first [True, False]",
+        "render (Packed True)", "sameType True"]),
     "source-reading": Session("Source.hs", [
         "answer", "evenLength [True, False]",
         "let identity x = x; successor y = identity y + 1 in identity True"]),
