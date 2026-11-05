@@ -123,7 +123,7 @@ Haskell module, so `Hyp.hs` produces `Hyp.c`.
 ## See also
 
 - [Running cupid](../reference/cupid.md) for the full command line
-- [The language Cupid accepts](../reference/language.md#foreign-function-interface)
+- [The language Cupid accepts](../reference/haskell-2010.md#8-foreign-function-interface)
   for what the FFI does and does not support
 - [Foreign import wrappers](../inside/foreign-functions.md)
   on callbacks from C into Haskell

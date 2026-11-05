@@ -1,174 +1,73 @@
 # The language Cupid accepts
 
-What Cupid implements of Haskell 2010, where it deviates, and what it
-adds.  This page names the deviations a program is most likely to
-meet; [Haskell 2010 conformance](haskell-2010.md) states them in full,
-going through the Report chapter by chapter, libraries included.
+What to expect first, with links to the details.
 
-## Summary
+## What it is
 
 Cupid accepts Haskell 2010: the Haskell 98 language with hierarchical
 module names, the foreign function interface, pattern guards, empty
 data declarations and `then` and `else` at do-block indentation.  The
-n+k patterns that Haskell 2010 removed are not accepted.  `LINE`
-pragmas are read as comments.
+n+k patterns that Haskell 2010 removed are not accepted.
 
-It also accepts, without any option, the extensions in
-[Language extensions](extensions.md), except overlapping instances,
-which need `+o`.  Two of them are visible in programs that use no
-extension at all: `forall` is a keyword, so it cannot be used as a
-variable name, and a type error in `f $ x` is reported against `f x`.
-Everything else in this page holds whether or not the extensions are
-used.
+`LANGUAGE` pragmas are read as comments.  The [extensions](extensions.md)
+Cupid has are always on, except overlapping instances, which need `+o`.  Two
+of them are visible in programs that use no extension at all: `forall` is a
+keyword, so it cannot be used as a variable name, and a type error in `f $ x`
+is reported against `f x`.
 
-The extensions of the 2006 release that were guarded by compile-time
-flags are gone: TREX extensible records, implicit parameters, the
-`observe` debugger, recursive do (`mdo`), parallel list comprehensions,
-multi-instance resolution and here documents (see
-[the design](../inside/design.md#deleting-instead-of-switching-off)).
+Type families, generalised algebraic data types with refined result types
+(the syntax is accepted, the refinement is not), Template Haskell and the
+other features in [Not accepted](extensions.md#not-accepted) are not in Cupid.
 
-## Known deviations from the Report
+The libraries are a subset of GHC's base, roughly version 4.18; see [The
+libraries](libraries.md).
 
-Listed by the section of the Haskell 2010 Report they concern.
+## What a program is most likely to meet
 
-### Lexical structure
+**The numbers.**  `Int` and `Word` are 32 bits wide on every target, and
+`Float` and `Double` do not recognise NaN or infinity, so `isNaN` is always
+`False`.  `show` on a floating point number prints 15 significant digits (7
+for `Float`), so `show (0.1 + 0.2)` is `0.3`.  See [chapter
+6](haskell-2010.md#6-predefined-types-and-classes).
 
-[Chapter 2 of the conformance page](haskell-2010.md#2-lexical-structure)
-has these in full.
+**The classes are mostly GHC's, not the Report's.**  `Applicative` is a
+superclass of `Monad`, `fail` belongs to `MonadFail` and `Semigroup` is a
+superclass of `Monoid`, so a Haskell 2010 program that defines `Monad` alone, or
+`fail` in a `Monad` instance, is rejected, as it is by GHC.  The Prelude's list
+functions are those of `Foldable` and `Traversable`, and it doesn't export
+`catch`.  Unlike GHC's, `Num` still has `Eq` and `Show` as superclasses.  See
+[chapter 6](haskell-2010.md#6-predefined-types-and-classes) and [chapter
+9](haskell-2010.md#9-standard-prelude).
 
-**Operator symbols, spaces and digits are limited to Latin-1,** so `∘`
-is `Unrecognised character`, though identifiers may use any Unicode
-letter and strings and comments any Unicode character.
+**Tuple instances stop at five components,** and `Bounded` has none, where the Report asks for at least fifteen.  See [chapter
+6](haskell-2010.md#6-predefined-types-and-classes).
 
-**Limited lookahead.**  `Just.if`, `9e+y` and `9.0e+y` are errors, where
-the Report reads `Just . if`, `9 e + y` and `9.0 e + y`, because the
-lexer does not look far enough ahead.
+**Modules.**  Mutually recursive modules are not supported, and a missing
+module header means `module Main where`, exporting everything.  See [chapter
+5](haskell-2010.md#5-modules) and [Modules, files and the search
+path](../inside/modules-and-the-search-path.md).
 
-### Expressions
+**Source files.**  A literate script is read in the Bird-track form only (see
+[chapter 10](haskell-2010.md#10-syntax-reference)), and a `#!` first line is read
+as a blank line, so a script can be made executable.  Operator symbols are
+limited to Latin-1, though identifiers may use any Unicode letter (see [chapter
+2](haskell-2010.md#2-lexical-structure)).  A few legal or illegal forms are read
+differently from the Report, because fixities are resolved after parsing (see
+[chapter 3](haskell-2010.md#3-expressions)).
 
-[Chapter 3 of the conformance page](haskell-2010.md#3-expressions) has
-these in full.
+**Bindings.**  A binding caught by the monomorphism restriction, such as `n = 3`,
+is defaulted when its own group is inferred, so a later use cannot fix its type;
+a type signature avoids this.  See [chapter
+4](haskell-2010.md#4-declarations-and-bindings).
 
-**Fixities are resolved after parsing,** so two illegal forms get
-through: prefix negation after an operator of precedence 6 or more,
-`a + - b`, and a right section whose operand is an infix expression,
-`(* 3 + 4)`, which is read as `(* (3 + 4))`.
+**Foreign functions.**  A module with foreign declarations must be compiled with
+[`cupid --ffi`](cupid.md) before it can be loaded.  `foreign import "wrapper"`
+fails at run time and `foreign export` is not implemented.  See [chapter
+8](haskell-2010.md#8-foreign-function-interface) and [Foreign
+functions](../inside/foreign-functions.md).
 
-### Declarations and bindings
-
-[Chapter 4 of the conformance
-page](haskell-2010.md#4-declarations-and-bindings) has these in full.
-
-**Polymorphic recursion is slightly more permissive:** where one
-function in a mutually recursive group has a signature, Cupid can infer
-polymorphic types for the others where the Report requires a signature.
-
-**Class methods may constrain the class variable,** contrary to section
-4.3.1 of the Report: `class Foo a where op :: Num a => a -> a -> a`.
-
-**The monomorphism restriction is applied per binding group:** a
-restricted binding is defaulted when its own group is inferred, not at
-the end of the module, so a later use cannot fix its type; a type
-signature avoids this.
-
-### Modules
-
-[Chapter 5 of the conformance page](haskell-2010.md#5-modules) has
-these in full.
-
-**A missing module header means `module Main where`,** exporting
-everything, rather than `module Main (main) where`.
-
-**A missing export list is treated as `(module M)`** for the current
-module `M`, which differs from exporting every defined name only when
-an imported module is aliased as `M`.
-
-**Type synonyms may be written `T(..)`** in export lists and `T(..)` or
-`T()` in import lists.
-
-**Hiding a name that the module does not export is not an error,** as
-in GHC, though the Report makes it one.
-
-**Mutually recursive modules are not supported.**
-
-**`(:)` is exported by the Prelude as if it were an identifier,** so a
-module that imports `Prelude ()` cannot use `:`.
-
-### Predefined types and classes
-
-[Chapter 6 of the conformance
-page](haskell-2010.md#6-predefined-types-and-classes) has these in
-full, except where an entry links elsewhere.
-
-**The monad classes are those of GHC's base, not of the Report:**
-`Applicative` is a superclass of `Monad`, `Functor` of `Applicative`,
-and `fail` is the method of a class of its own, `MonadFail`, so a
-Haskell 2010 program that defines `Monad` without `Applicative`, or
-`fail` in a `Monad` instance, is rejected, as it is by GHC.
-
-**The Prelude's list folds are those of `Foldable`,** and its `mapM`
-and `sequence` those of `Traversable`, as in GHC's base, so `length`,
-`sum`, `elem` and the rest work on any structure with an instance (see
-[chapter 9](haskell-2010.md#9-standard-prelude)).
-
-**The Prelude does not export `catch`,** as GHC's has not since 7.6;
-use `Control.Exception.catch` or `System.IO.Error.catchIOError` (see
-[chapter 9](haskell-2010.md#9-standard-prelude)).
-
-**`Monoid` has `Semigroup` as its superclass,** so a `Monoid` instance
-needs a `Semigroup` instance for the same type.
-
-**Rational literals may lose precision,** since a literal is held as a
-double before conversion: `1e400 :: Rational` is `0 % 1`.
-
-**Floating point values print differently:** `show` uses C's `%.15g`
-(`%.7g` for `Float`) rather than `Numeric.showFloat`, so
-`show (0.1 + 0.2)` is `0.3` and the output does not always read back to
-the same number.
-
-**`Float` and `Double` do not recognise NaN or infinity:** `isNaN`,
-`isInfinite` and the other `RealFloat` predicates always return `False`.
-
-**Tuple instances stop at size 5,** and `Bounded` has none, where the
-Report requires them up to at least fifteen.
-
-**No file locking.**  Cupid does not enforce the single-writer,
-multiple-reader rule on files (see
-[chapter 7](haskell-2010.md#7-basic-inputoutput)).
-
-### Syntax reference
-
-[Chapter 10 of the conformance
-page](haskell-2010.md#10-syntax-reference) has this in full.
-
-**Literate scripts are read in the Bird-track form only:** in a file
-whose name ends in `.lhs` the program is the lines that begin with `>`,
-and a script that puts it between `\begin{code}` and `\end{code}` is
-rejected.
-
-## Other known bugs
-
-**Infinite computations can crash.**  An unbounded computation usually
-ends with `Garbage collection fails to reclaim sufficient space` or
-`Control stack overflow`, or runs for ever.  Depending on the sizes of
-the heap, the Cupid stack and the C stack, it can instead overflow the C
-stack, which on Unix is a segmentation fault.
-
-**Top-level bindings leak.**  This runs in constant space at the
-prompt:
-
-```haskell
-mapM_ putStrLn (repeat "y")
-```
-
-but the same expression as the definition of `main` does not, because
-`main` is a constant applicative form and is updated with its
-ever-growing expansion.  Putting the expansion under a lambda, so that
-it is rebuilt rather than updated, avoids the leak:
-
-```haskell
-main = return () >>= \_ -> mapM_ putStrLn (repeat "y")
-```
+**Missing library names.**  A few names are missing, such as `withFile`.  See
+[Part II](haskell-2010.md#part-ii-the-libraries).
 
 ## Defaulting at the prompt
 
@@ -178,35 +77,42 @@ its constraints are Haskell 2010 classes (`Eq`, `Ord`, `Show`, `Read`,
 `Enum`, `Bounded`, `Ix` or a numeric class) and at least one is numeric
 or is `Show`, `Eq` or `Ord`.  See [Interpreter commands](commands.md#expr).
 
-## Foreign function interface
+## Known bugs
 
-The FFI of Haskell 2010 is implemented with these limits, which
-[chapter 8 of the conformance
-page](haskell-2010.md#8-foreign-function-interface) has in full:
+**Deep or unbounded recursion usually ends in an error, but not always.**
+While a program is evaluating, an unbounded computation ends in `Control stack
+overflow` or `Garbage collection fails to reclaim sufficient space`, or runs for
+ever, and none we have tried crashes, under C stack limits from 128KB to unlimited.
+At limits that small, loading fails with `Control stack overflow`: below about 128KB the
+`Prelude` itself doesn't load, and at 128KB a module with larger imports may not.
 
-- Calling conventions: `ccall`, and `stdcall` on Windows only.  Any
-  other is an error.
-- `foreign import` in its `static` form, and `foreign import
-  "dynamic"` (calling through a `FunPtr`), work on all targets.
-- `foreign import "wrapper"`, which turns a Haskell function into a C
-  function pointer, fails at run time on every target this tree builds
-  for.  See [Foreign import wrappers](../inside/foreign-functions.md).
-- `foreign export` declarations parse, and `cupid --ffi` writes and
-  compiles C for them, but it and loading the module both fail with
-  `Foreign export not implemented yet.`
+While a program is being loaded, some recursion in C is unchecked, so a pathological
+source file can overflow the C stack, which on Unix is a segmentation fault reported
+as `Unexpected signal`.  The known cases are a type applied to about 70,000 arguments
+and a list comprehension with 30,000 qualifiers, at the default 8MB limit, and a chain
+of 30,000 definitions each using the next under a 256KB limit (which loads at 8MB).
 
-A module containing foreign declarations must be compiled with
-[`cupid --ffi`](cupid.md) before it can be loaded.
+**Top-level bindings leak.**  This runs in constant space at the prompt:
 
-## Hierarchical modules
+```haskell
+mapM_ putStrLn (repeat "y")
+```
 
-A module name may contain dots.  To find `A.B.C`, Cupid looks for
-`A/B/C.hs` or `A/B/C.lhs` in each directory of the search path.  See
-[Modules, files and the search path](../inside/modules-and-the-search-path.md).
+but the same expression as the definition of `main` does not, because
+`main` takes no arguments, so its value is kept, and that value is the
+ever-growing expansion.  Putting the expansion under a lambda, so that
+it is rebuilt rather than updated, avoids the leak:
 
-## See also
+```haskell
+main = return () >>= \_ -> mapM_ putStrLn (repeat "y")
+```
 
-- [Haskell 2010 conformance](haskell-2010.md)
-- [Language extensions](extensions.md)
-- [The libraries](libraries.md)
-- [Differences from Hugs 98](differences-from-hugs.md)
+## Where the rest is
+
+[Language extensions](extensions.md) has each feature beyond Haskell 2010 and what is
+not accepted.  [Haskell 2010 conformance](haskell-2010.md) goes through the Report chapter
+by chapter, libraries included, with the full statement of each deviation.  Together
+with this page they are the authority on the language.  The extensions of Hugs's 2006
+release that were guarded by compile-time flags are gone; [Differences from Hugs
+98](differences-from-hugs.md#language) lists them.  For why the language is drawn where it
+is, see [Why the language is what it is](../inside/language-design.md).

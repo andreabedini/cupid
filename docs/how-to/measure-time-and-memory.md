@@ -107,5 +107,5 @@ hp2ps profile.hp
 - [Options](../reference/options.md) for `+s`, `+g`, `-h` and `-d`
 - [Build options and install layout](../reference/build-options.md)
   for `profiling`
-- [The language Cupid accepts](../reference/language.md#other-known-bugs)
+- [The language Cupid accepts](../reference/language.md#known-bugs)
   for space leaks from top-level bindings
