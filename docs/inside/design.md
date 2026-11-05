@@ -51,58 +51,6 @@ find "a little frustrating"; Cupid does not chase GHC.  A feature gets
 in by [the rules for the language](language-design.md#how-a-feature-gets-in),
 and what is left out is written down as well as what is in.
 
-## Data and memory
-
-**Everything is a cell, checked by its tag.**  Types, kinds,
-predicates, lists and expressions are all trees of heap cells (`Cell`).
-The C type system can't tell them apart.  Wrapper structs would fight
-the thousands of uses of generic operations such as `hd` and `cons`,
-and a typed heap would be a rewrite of the runtime.  Instead, under
-`-Dchecks`, the entry points where categories meet check a tree's
-shape at run time (`tagcheck.c`).  The typedef aliases (`Type`, `Kind`
-and so on) remain as documentation.
-
-**Tables are fixed arrays with asserted limits.**  Names, type
-constructors, classes, instances and scripts each live in a fixed
-array.  A handle such as a `Name` is a `Cell`, because handles are
-stored in heap cells and `NIL` must be a valid value.  An accessor
-such as `nameRec(n)` turns a handle into a pointer to its record, and
-the pointer stays good because the arrays never move.  The table sizes
-are in `src/sizes.h`.  The values that partition the cell space are
-order-sensitive, so `static_assert`s at the end of `storage.h` check
-them all.  A full table is reported as "storage space exhausted".
-
-**The code generator's state and the type checker's result are passed,
-not left in globals.**  The code generator's state is a `CodeGen` record
-that its entry points create and pass on.  The type checker returns a
-`Typing` record.  Those signatures then say what the functions read and
-write; the rest of `type.c`'s working state is still file-scope.
-
-**Garbage collection: roots are registered.**  The collector marks the
-root tables that modules register at install time, each with
-`registerRoots(xRoots)`.  A `gcMark` hook is needed only for structured
-data.  While a program is loaded and checked it also scans the C stack
-conservatively.  The fifteen files that hold cells in C local variables
-during allocation, listed as `gc_sensitive` in `src/meson.build`, are
-compiled at `-O0`.  An optimiser could keep only an interior pointer to
-a cell, which the conservative scan would not find.  The type checker
-relies on that scan, so it must never run with conservative collection
-switched off.  During evaluation the scan is off (`startEval` clears
-`consGC`), so `machine.c` and the primitives are written not to depend
-on it and are optimised as usual.  The exception is `digitsQrm` in
-`prims/bignums.c`, which turns the scan on for its own duration although
-it is optimised too.
-
-**No code is generated during evaluation.**  `run()` keeps a raw
-pointer into the code area, which would be invalid if the area grew
-under it.  The area can only grow when code is generated, so
-`growMemory` reports an internal error if that ever happens during
-evaluation.  An index instead of a pointer would cost an extra
-register reload on every instruction.
-
-[How Cupid runs a program](how-cupid-runs-a-program.md) puts these
-pieces in the order a program meets them.
-
 ## Where the rest of the argument is
 
 The arguments for particular choices are kept with the subjects they
@@ -111,6 +59,11 @@ are about:
 - [Why the language is what it is](language-design.md): how a feature gets
   into the language, what stays out and why, and why the libraries follow
   GHC's base.
+- [Cells, text and tables](cells-text-and-tables.md): why everything is
+  one untyped cell, and what the conservative collector costs.
+- [How code is compiled and
+  run](how-code-is-compiled-and-run.md#one-invariant-to-respect): why no
+  code is generated during evaluation.
 - [The running interpreter](the-running-interpreter.md): subsystems,
   interrupts, signals, output, and why commands run without a shell.
 - [Platforms and the build](platforms-and-the-build.md): why nothing is

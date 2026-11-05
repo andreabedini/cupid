@@ -211,7 +211,7 @@ are missing the blocks are counted as skipped, but a gdb that runs and fails is 
 One CI job, Linux with gcc, runs the check with `--require-all`, which allows no skips.
 
 The counts quoted in [Counting the work](how-code-is-compiled-and-run.md#counting-the-work)
-and [What survives a collection](cells-text-and-tables.md) do
+and [What survives a collection](cells-text-and-tables.md#what-survives-a-collection) do
 change with the libraries, so they belong to that revision.  The test checks three things
 about them: that `head (queens 8)` takes under a tenth of the reductions of `length (queens
 8)`; that repeating either in a session costs fewer reductions; and that forcing `table`

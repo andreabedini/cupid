@@ -55,6 +55,17 @@ so those signatures say what the functions read and write.  The rest of
 `type.c`'s working state is still file-scope, and so is much of the front
 end's.
 
+<a id="cells-held-in-c"></a>**Cells held in C follow the collector's rules.**  [The
+conservative scan](cells-text-and-tables.md#the-conservative-scan) covers cells in
+locals while a program is loaded, so the type checker must never run with
+conservative collection switched off.  During evaluation it's off, with one
+exception: `digitsQrm` in `prims/bignums.c` turns the scan on for its own duration,
+although it is optimised.  A new static cell must be in a `registerRoots` table, or
+what it points to can be freed while still in use, and must be set to `NIL` when the
+module is installed and reset, or what it points to is kept longer than it is used.
+Structured state is marked by a module's `gcMark` hook, one of the [subsystem
+hooks](the-running-interpreter.md#subsystems-are-a-table-of-hooks).
+
 **Formatting is clang-format's.**  `.clang-format` formats the sources
 in `src/` and `src/prims/`, and generated files are left alone.  It
 never splits a string literal, so reformatting can't break a search for
