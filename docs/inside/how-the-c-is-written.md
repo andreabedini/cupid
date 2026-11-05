@@ -22,9 +22,9 @@ so it can be the first line of a translation unit.  In practice most
 need only `prelude.h` and `storage.h`.  The include block
 of a `.c` file lists what the file calls, and its order doesn't matter.
 
-**A function unless C cannot express it.**  A macro evaluates its
-arguments more than once, can hide an assignment, and can't be stepped
-into with a debugger.  So anything that can be a function is one,
+**A function unless C cannot express it.** Macros can evaluate arguments
+more than once, hide assignments and obscure steps in a debugger. So
+anything that can be a function is one,
 marked `CUPID_inline` (`static inline` and always inlined, so it costs
 nothing even in the files built at `-O0`).  The macros that remain are
 those C has no other way to write: lvalue projections such as `fst`

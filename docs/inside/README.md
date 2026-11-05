@@ -22,12 +22,12 @@ tour.
    program from the bytes in its file to its output
 4. [Cells, text and tables](cells-text-and-tables.md) — the one data type,
    the heap, the collector, and the checkpoints that reloading rests on
-5. [How source is read](how-source-is-read.md) — the lexer, the grammar's
-   shortcuts, and static analysis
-6. [How types are inferred](how-types-are-inferred.md) — structure sharing,
-   generalisation, and the in-place rewriting that inserts dictionaries
-7. [How constraints are solved](how-constraints-are-solved.md) — predicates,
-   evidence, entailment and improvement
+5. [How source is read](how-source-is-read.md) — tokens, layout, trees,
+   and finding the definitions behind names
+6. [How types are inferred](how-types-are-inferred.md) — learning types
+   from uses, then storing them and inserting dictionary arguments
+7. [How constraints are solved](how-constraints-are-solved.md) — where
+   dictionaries come from, and how constraints inform types
 8. [How code is compiled and run](how-code-is-compiled-and-run.md) — pattern
    matching, lambda lifting, the abstract machine and its instructions
 

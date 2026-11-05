@@ -280,9 +280,20 @@ scale k xs = go xs
         go (y:ys) = k * y : go ys
 ```
 
-`go` uses `k`, so it isn't closed.  Lambda lifting closes it by adding `k`
-as a parameter and moving it to the top level.  Here is what comes out for
-it, under an invented name, here written `go'`:
+`go` uses `k`, which belongs to the surrounding definition of `scale`.
+Moving `go` to the top level would lose that binding. Lambda lifting
+makes the dependency explicit: add `k` as an argument, and pass it at
+each call. Schematically, the two definitions become:
+
+```haskell
+scale k xs = go' k xs
+go' k [] = []
+go' k (y:ys) = k * y : go' k ys
+```
+
+`go'` now depends only on its arguments and global names, so it is
+closed and can be compiled on its own. The actual lifted name is
+invented by the compiler; we write it as `go'` in the listing:
 
 <!-- session: go-listing -->
 ```
@@ -319,14 +330,20 @@ scale, arity 2
 
 Mutually recursive local functions take more care.  If `f` mentions `k`
 and calls `g`, and `g` mentions `m` and calls `f`, then `f` needs `m` as
-well, only to pass it on.  The smallest correct sets of extra parameters
-are the least solution of
+well, only to pass it on. Start with each function's direct uses of
+variables from enclosing local scopes. Add the extra parameters needed
+by the local functions it calls, and repeat until no set changes.
+
+Writing `fv(f)` for those direct uses and `lv(f)` for the extra parameters
+needed after lifting, the rule is:
 
     lv(f) = fv(f) ∪ ⋃ { lv(g) | g called from f }
 
-which `solve` finds by iterating from `fv(f)` until nothing changes, using
-the `Fvs` and `FFs` lists the previous stage left.  This is Johnsson's
-algorithm.  Calls to a lifted function need the extra arguments added;
+The unions combine the direct uses with the extra parameters of all
+called local functions. `solve` starts from the direct uses and repeats
+that step, using the `Fvs` and `FFs` lists left by the previous pass.
+This is Johnsson's algorithm. Calls to a lifted function need the extra
+arguments added;
 rather than substituting through the bodies, `lift` carries an environment
 `tr` that maps each local function to its lifted call, extended before the
 scope of each `let` is entered.
@@ -514,8 +531,12 @@ since nothing here specialises.
 `eval(n)` in `machine.c` reduces `n` to weak head normal form: it stops
 when the outermost thing is a constructor, a constant or a function short
 of arguments, and leaves everything inside unevaluated.  It's about a
-hundred lines and repays reading.  It starts by walking down the spine of
-applications, pushing each node, until it reaches whatever is at the head.
+hundred lines and repays reading. For example, `(1 + 2) : undefined`
+already has an outer `(:)` constructor: inspecting that constructor
+needs neither the head's addition nor the tail's value.
+
+`eval` starts by following the function half of each application pair,
+the *spine*, pushing each node until it reaches the head.
 What happens then depends on the head:
 
 - A function with enough arguments has them rearranged on the stack and

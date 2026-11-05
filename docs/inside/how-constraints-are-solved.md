@@ -139,9 +139,9 @@ applications such as `eqFromOrd dOrd`. The classes' `level` fields
 bound the search through the hierarchy.
 
 If that fails, `inEntail` asks `findInstFor` for an instance whose
-*head*, the predicate after `=>`, matches the wanted. It recursively
-entails the instance's context and applies the instance's builder to
-the resulting dictionaries, as in `eqList dEq`.
+*head* matches the wanted: in `Eq a => Eq [a]`, the head is `Eq [a]`.
+It recursively entails the instance's context and applies the builder
+to the resulting dictionaries, as in `eqList dEq`.
 
 Instance selection uses **one-way matching**: it may choose types for
 the instance's variables, but may not arbitrarily specialise the
@@ -263,9 +263,9 @@ resolve them, using defaulting where allowed. Module-level checking
 reports any obligations still unresolved when there is no outer group
 to receive them.
 
-Ordinary numeric defaulting considers variables constrained by standard
-classes, with at least one numeric class, and chooses the first type in
-the `default` list that satisfies them all. It is distinct from
+Ordinary numeric defaulting requires constraints of the form `C a`,
+where `C` is a standard class and at least one constraint is numeric.
+It chooses the first type in the `default` list that satisfies them all. It is distinct from
 instance matching's refusal to guess a wanted type. The prompt uses
 interactive defaulting, which also lets `Show`, `Eq` or `Ord` alone
 trigger a default. The [language reference](../reference/haskell-2010.md#4-declarations-and-bindings)

@@ -212,8 +212,11 @@ time proportional to the size of the heap, not to the amount in use; a copying c
 would avoid that and would allow variable-sized objects.  It is not possible here, for a
 reason we'll get to.
 
-"Live" means reachable from a root, and walking from a root is where the two kinds of tag
-matter.  `markSlot` looks at a pair's first half.  If that's another pair, it follows both.
+Roots are the collector's starting points: registered cell variables,
+entries on the interpreter's stack, and the fields of live table records.
+"Live" means reachable by following references from those roots. The two
+kinds of tag determine which references to follow. `markSlot` looks at a
+pair's first half. If that's another pair, it follows both.
 If it's a constructor tag or a name, it follows only the second half.  If it's a box tag it
 stops, since the second half is a raw number that merely looks like a cell.  The walk keeps
 its own explicit stack rather than recursing in C, because the graph can be arbitrarily deep
