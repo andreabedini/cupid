@@ -152,14 +152,10 @@ inference. It does not first collect all these equations into a separate
 solver input. Class predicates such as `Num a` are different: they do
 accumulate for the constraint solver.
 
-`typeExpr` in `src/type.c` dispatches on the expression being checked.
-Its `COND` case checks a condition against `Bool` and both branches
-against one fresh result variable. Applications go to `typeAp`: it
-looks up the head's type, instantiates it, and checks that it has the
-function type required by the arguments. `check` infers a subexpression's
-type and calls `shouldBe`, which asks `unify` to make it agree with the
-required type. These are the operations from `apply`, now acting on
-the two kinds of tree.
+`typeExpr` dispatches on the expression cell. Applications go to
+`typeAp`, which instantiates the head's type and checks it against the
+function type required by the arguments. To read another case, the
+conditional, we first need the representation of those types.
 
 ## Types are a skeleton and an offset
 
@@ -220,6 +216,39 @@ skeleton and base offset, the number of variables freshly allocated
 when a scheme was instantiated, and any predicates peeled off the
 scheme. Gofer and Hugs used global registers (`typeIs`, `typeOff`);
 Cupid's record makes the result visible in a function's signature.
+
+### Checking a conditional
+
+Return to `if p then x else y`: the condition must be `Bool`, and the
+two branches must share a result type. Here is the complete `COND`
+case from [`typeExpr` in `src/type.c`](https://github.com/andreabedini/cupid/blob/main/src/type.c):
+
+<!-- source: ../../src/type.c -->
+```c
+    case COND: {
+        int beta = newTyvars(1);
+        fst3(snd(e)) = check(l, fst3(snd(e)), e, cond, typeBool, 0);
+        snd3(snd(e)) = check(l, snd3(snd(e)), e, cond, aVar, beta);
+        thd3(snd(e)) = check(l, thd3(snd(e)), e, cond, aVar, beta);
+        *ty = tyvarType(beta);
+    } break;
+```
+
+`ty` points to the `Typing` result. `e` is the conditional expression,
+whose `snd` holds a triple: the condition, then-branch and else-branch.
+`fst3`, `snd3` and `thd3` access
+those three cells. `newTyvars(1)` allocates one fresh substitution entry
+and returns its index as `beta`. The skeleton `aVar` is `OFFSET 0`, so
+both checks using `(aVar, beta)` refer to that same unknown. A branch
+that fixes it to `Bool` makes the other branch agree with `Bool` too.
+
+Each `check` call infers its child's type and unifies it with the
+required skeleton and base given in the last two arguments. The other
+arguments identify the source line `l`, the child, the whole expression
+`e` and the diagnostic label `cond`. The assignments store the translated
+children back into the triple, preserving any dictionary arguments
+inserted while checking them. Finally, `tyvarType(beta)` follows the
+substitution to produce the conditional's type in the caller's `*ty`.
 
 ### Assumptions
 

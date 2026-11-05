@@ -104,18 +104,26 @@ the argument of `twice`. The parser records that grouping so later stages
 do not have to recover it from characters.
 
 A *grammar production* describes how a larger phrase is built from
-smaller ones. For example, Cupid's `appExp` rule allows an application to
-be followed by another argument. Its action builds a pair with `ap`:
+smaller ones. Here is the application production from
+[`src/parser.y`](https://github.com/andreabedini/cupid/blob/main/src/parser.y):
 
+<!-- source: ../../src/parser.y -->
 ```text
-appExp : appExp aexp    { result = ap(function, argument); }
+appExp    : appExp aexp			{$$ = gcShadow(2,ap($1,$2));}
+	  | aexp			{$$ = $1;}
+	  ;
 ```
 
-This is a schematic reading of the rule in `src/parser.y`; the real action
-also maintains the collector's roots, discussed below. `aexp` is an
-atomic expression, such as a name, literal or parenthesised expression;
-`appExp` is an application expression. Repeated application groups to the left: `f x y` becomes `(f x) y`, so the pair for
-`f x` becomes the function half of the outer pair.
+`aexp` is an atomic expression, such as a name, literal or parenthesised
+expression; `appExp` is an application expression. In the first
+alternative, `$1` is the function cell and `$2` the argument cell.
+`ap($1,$2)` pairs them, and `$$` receives the result for the whole phrase.
+`gcShadow(2,...)` replaces the two fragments on the collector's shadow
+stack with that result; we will follow it below. The second alternative
+passes an atom through unchanged.
+
+Repeated application groups to the left: `f x y` becomes `(f x) y`, so
+the pair for `f x` becomes the function half of the outer pair.
 
 The trees use the `Cell` representation from [Cells, text and
 tables](cells-text-and-tables.md). An application is a pair: one half
@@ -363,13 +371,36 @@ remain reachable by the collector. Bison's stack starts in
 cannot rely on the collector finding all those references there.
 
 Instead it keeps a matching stack of cell values among the
-interpreter's roots. The lexer pushes each token's value onto it. An
-action combining `n` fragments calls `gcShadow(n, e)` to replace their
-values with `e`, preserving any lookahead token the parser holds.
-The two stacks stay in step so the unfinished trees remain reachable.
-When adding a production, its shadow-stack transformation must match the
-fragments the parser consumes, or a later collection can free a
-fragment still in use.
+interpreter's roots. The lexer pushes each token's value onto it.
+An action combining `n` fragments calls `gcShadow(n, e)` to replace
+their values with `e`. Here is the function's body in
+[`src/parser.y`](https://github.com/andreabedini/cupid/blob/main/src/parser.y),
+leaving out the stack-diagram comment:
+
+<!-- source: ../../src/parser.y -->
+```c
+    if (yychar>=0) {
+	pushed(n-1) = top();
+	pushed(n)   = e;
+    }
+    else
+	pushed(n-1) = e;
+    sp -= (n-1);
+    return e;
+```
+
+For the application rule, `n` is 2 and `e` is the new pair.
+`pushed(0)` is the top cell, `pushed(1)` the one below it, and `sp` is
+the cell-stack pointer. With no lookahead token, the `else` branch
+writes `e` over the older fragment. Moving `sp` down by `n - 1`, here
+one position, leaves that result on top.
+
+When `yychar >= 0`, the top cell instead holds a lookahead token that
+Bison has read but not consumed. The first assignment saves it above
+where `e` will go; the second writes `e` below it. After `sp` moves,
+the stack ends with the result and the lookahead, both still reachable.
+The shadow stack must follow each production's reduction, or a later
+collection can free a fragment the parser still needs.
 
 ## Check the path
 
