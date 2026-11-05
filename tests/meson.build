@@ -10,3 +10,13 @@ test('regression', run_tests,
          meson.current_source_dir()],
   depends: [cupid, libraries_stamp],
   timeout: 600, verbose: true)
+
+# gdb reads function arguments for the tokens and cells, which an optimised
+# build may not have kept; see check-doc-sessions.
+doc_session_flags = get_option('optimization') == '0' ? [] : ['--no-gdb']
+
+test('doc-sessions', find_program('check-doc-sessions'),
+  args: doc_session_flags + [cupid, cupiddir_build / 'packages' / '*',
+                             meson.project_source_root()],
+  depends: [cupid, libraries_stamp],
+  timeout: 300, verbose: true)
