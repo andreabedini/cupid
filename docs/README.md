@@ -9,7 +9,7 @@ enough to read, and these pages are for both kinds of reader.
 
 ## Start here
 
-New to Cupid?  [Install a release](start/install-a-release.md), then work
+<a id="install"></a><a id="tutorials"></a>New to Cupid?  [Install a release](start/install-a-release.md), then work
 through [Getting started with Cupid](start/getting-started.md): it evaluates
 a few expressions, loads a module and runs a program with `cupid`.  To build
 from source instead, see [Build Cupid on Linux and
@@ -18,7 +18,7 @@ Windows](start/build-on-windows.md).
 
 ## Using Cupid
 
-Guides to a particular task:
+<a id="how-to-guides"></a>Guides to a particular task:
 
 - [Write a script that runs with cupid](how-to/write-a-script.md)
 - [Call C functions from Haskell](how-to/call-c-functions.md)
@@ -29,7 +29,7 @@ Guides to a particular task:
 
 ## Inside Cupid
 
-[A guided tour of the source](inside/README.md).  Begin with [Reading Cupid
+<a id="explanation"></a>[A guided tour of the source](inside/README.md).  Begin with [Reading Cupid
 in a day](inside/reading-cupid-in-a-day.md), which gives a route through the
 main stages for a first day, and the order for the whole tour after that.
 

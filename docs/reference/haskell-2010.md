@@ -16,6 +16,8 @@ and marks it *unspecified*.  What Cupid accepts beyond the Report, the
 extensions, is in [Language extensions](extensions.md) and is mentioned
 here only where it makes a program the Report rejects acceptable.
 
+<a id="summary"></a>
+
 ## Part I: the language
 
 ### 1 Introduction

@@ -4,3 +4,6 @@ public/
 # Mirrored from ../docs and ../assets by sync-docs.py
 content/docs/
 static/*.svg
+
+# Written by sync-docs.py: redirects from where the documentation used to be
+static/docs/

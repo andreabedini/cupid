@@ -29,7 +29,14 @@ under `../docs`; `zola serve` will not notice a change made outside `www/`.
   `@/docs/reference/options.md` form.  Zola resolves those at build time, so
   `zola build` fails on a link that has gone stale — which is the main reason
   for doing it this way rather than serving the markdown as-is;
-- copies `../assets/*.svg` into `static/`.
+- copies `../assets/*.svg` into `static/`;
+- writes a redirect page into `static/docs/` for each old address in its
+  `MOVED_PAGES` and `MOVED_ANCHORS` tables.
+
+`check-redirects.py public` checks a built site against `old-urls.txt`, every
+page and anchor the site had before its sections moved.  That check is separate
+from `zola build`, which knows nothing about those addresses, and CI doesn't run
+it yet.
 
 Two lists need to stay in step by hand: `SECTIONS` in `sync-docs.py` and
 `extra.doc_sections` in `config.toml`.  Adding a new documentation section
