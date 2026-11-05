@@ -10,6 +10,7 @@ Nothing here edits docs/.  Run it before `zola build` or `zola serve`; the
 generated tree is not checked in.
 """
 
+import json
 import re
 import shutil
 import sys
@@ -89,6 +90,70 @@ PAGE_ORDER = {
         "language-design.md",
         "history.md",
     ],
+}
+
+# Pages that used to live somewhere else, so that links to them keep working.  A
+# whole section moved keeps its page names unless RENAMED says otherwise.  The
+# site itself never links to these.
+MOVED_SECTIONS = {"install": "start", "tutorials": "start", "explanation": "inside"}
+RENAMED = {"explanation/foreign-import-wrappers": "inside/foreign-functions"}
+MOVED_PAGES = [
+    "install/install-a-release",
+    "install/build-on-linux-and-macos",
+    "install/build-on-windows",
+    "tutorials/getting-started",
+    "explanation/design",
+    "explanation/how-cupid-runs-a-program",
+    "explanation/cells-text-and-tables",
+    "explanation/how-source-is-read",
+    "explanation/how-types-are-inferred",
+    "explanation/how-constraints-are-solved",
+    "explanation/how-code-is-compiled-and-run",
+    "explanation/modules-and-the-search-path",
+    "explanation/character-encoding",
+    "explanation/foreign-import-wrappers",
+    "explanation/history",
+]
+
+# Anchors that did not move with their page: old page -> old anchor -> new place.
+# An anchor not listed here is carried over to the page the old one moved to.
+MOVED_ANCHORS = {
+    "explanation/design": {
+        "the-language": "inside/language-design",
+        "the-libraries": "inside/language-design#the-libraries-follow-base-and-owe-nothing-to-the-c",
+        "platforms-and-the-build": "inside/platforms-and-the-build",
+        "the-c-code": "inside/how-the-c-is-written",
+        "data-and-memory": "inside/cells-text-and-tables",
+        "the-running-interpreter": "inside/the-running-interpreter",
+        "the-ffi": "inside/foreign-functions",
+        "see-also": "inside/design",
+    },
+    "explanation/how-cupid-runs-a-program": {
+        "from-text-to-code": "inside/how-cupid-runs-a-program#characters-become-tokens",
+        "running-the-code": "inside/how-cupid-runs-a-program#running-the-program-is-one-more-expression",
+        "the-program-and-its-modes": "inside/the-running-interpreter#one-program-three-modes",
+        "where-the-platform-comes-in": "inside/platforms-and-the-build",
+        "what-this-design-gives-up": "inside/how-cupid-runs-a-program#what-this-design-costs-and-what-it-buys",
+        "see-also": "inside/how-cupid-runs-a-program",
+    },
+    "explanation/how-code-is-compiled-and-run": {
+        "from-typed-bindings-to-a-core-language": "inside/how-code-is-compiled-and-run#reducing-the-language",
+        "the-pattern-matching-compiler": "inside/how-code-is-compiled-and-run#matching-from-equations-to-a-case-tree",
+        "the-pre-compiler": "inside/how-code-is-compiled-and-run#lambda-lifting",
+        "see-also": "inside/how-code-is-compiled-and-run",
+    },
+    "explanation/cells-text-and-tables": {
+        "text-strings-interned-once": "inside/cells-text-and-tables#xs-a-name-is-a-number-and-a-pair-holds-it",
+        "a-cell-is-an-integer-in-a-range": "inside/cells-text-and-tables#the-ranges",
+        "the-heap-is-two-arrays": "inside/cells-text-and-tables#xs-a-name-is-a-number-and-a-pair-holds-it",
+        "garbage-collection": "inside/cells-text-and-tables#what-survives-a-collection",
+        "tables-high-water-marks-and-checkpoints": "inside/cells-text-and-tables#tables-and-checkpoints",
+        "the-stack": "inside/cells-text-and-tables#what-survives-a-collection",
+        "see-also": "inside/cells-text-and-tables",
+    },
+    "explanation/foreign-import-wrappers": {
+        "the-problem": "inside/foreign-functions#the-problem",
+    },
 }
 
 LINK = re.compile(r"\[([^\]]*)\]\(([^)\s]+)\)")
@@ -228,6 +293,69 @@ def rewrite_links(text: str, source_rel: Path) -> str:
     )
 
 
+# --- redirects -------------------------------------------------------------
+#
+# A static page at each old address.  Zola's own aliases can't carry an anchor
+# along, and an anchor that moved to another page needs a table anyway.
+
+REDIRECT = """<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Moved</title>
+<link rel="canonical" href="{target}">
+<script>
+var moved = {anchors};
+var anchor = location.hash.slice(1);
+location.replace(moved[anchor] ? moved[anchor] : "{target}" + location.hash);
+</script>
+<noscript><meta http-equiv="refresh" content="0; url={target}"></noscript>
+<p>This page has moved to <a href="{target}">{target}</a>.</p>
+</html>
+"""
+
+
+def page_url(place: str, depth: int) -> str:
+    """A link from `depth` directories below docs/ to docs/`place`."""
+    path, _, anchor = place.partition("#")
+    return "../" * depth + path + "/" + ("#" + anchor if anchor else "")
+
+
+def check_page(place: str) -> None:
+    """A redirect's target must exist, or the build fails here and not for a reader."""
+    path = place.partition("#")[0]
+    if not ((DOCS / (path + ".md")).exists() or (DOCS / path).is_dir()):
+        raise SystemExit("redirect to a page that does not exist: " + place)
+
+
+def write_redirects() -> int:
+    root = STATIC / "docs"
+    if root.exists():
+        shutil.rmtree(root)
+    count = 0
+
+    def write(old: str, new: str, anchors: dict) -> None:
+        nonlocal count
+        for place in [new] + list(anchors.values()):
+            check_page(place)
+        depth = old.count("/") + 1
+        table = {a: page_url(p, depth) for a, p in anchors.items()}
+        dest = root / old / "index.html"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(
+            REDIRECT.format(target=page_url(new, depth),
+                            anchors=json.dumps(table, sort_keys=True)),
+            encoding="utf-8")
+        count += 1
+
+    for old, new in MOVED_SECTIONS.items():
+        write(old, new, {})
+    for old in MOVED_PAGES:
+        section, _, name = old.partition("/")
+        write(old, RENAMED.get(old, MOVED_SECTIONS[section] + "/" + name),
+              MOVED_ANCHORS.get(old, {}))
+    return count
+
+
 # --- writing ---------------------------------------------------------------
 
 def weight_of(section: str, name: str, names: list) -> int:
@@ -341,7 +469,8 @@ def main() -> int:
     for svg in sorted(ASSETS.glob("*.svg")):
         shutil.copy2(svg, STATIC / svg.name)
 
-    print("synced %d pages from docs/ into content/docs/" % count)
+    print("synced %d pages from docs/ into content/docs/, and wrote %d redirects"
+          % (count, write_redirects()))
     return 0
 
 

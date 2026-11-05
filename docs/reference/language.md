@@ -4,7 +4,7 @@ What to expect first, with links to the details.
 
 ## What it is
 
-Cupid accepts Haskell 2010: the Haskell 98 language with hierarchical
+<a id="summary"></a><a id="see-also"></a>Cupid accepts Haskell 2010: the Haskell 98 language with hierarchical
 module names, the foreign function interface, pattern guards, empty
 data declarations and `then` and `else` at do-block indentation.  The
 n+k patterns that Haskell 2010 removed are not accepted.
@@ -24,13 +24,13 @@ libraries](libraries.md).
 
 ## What a program is most likely to meet
 
-**The numbers.**  `Int` and `Word` are 32 bits wide on every target, and
+<a id="known-deviations-from-the-report"></a>**The numbers.**  `Int` and `Word` are 32 bits wide on every target, and
 `Float` and `Double` do not recognise NaN or infinity, so `isNaN` is always
 `False`.  `show` on a floating point number prints 15 significant digits (7
 for `Float`), so `show (0.1 + 0.2)` is `0.3`.  See [chapter
 6](haskell-2010.md#6-predefined-types-and-classes).
 
-**The classes are mostly GHC's, not the Report's.**  `Applicative` is a
+<a id="predefined-types-and-classes"></a>**The classes are mostly GHC's, not the Report's.**  `Applicative` is a
 superclass of `Monad`, `fail` belongs to `MonadFail` and `Semigroup` is a
 superclass of `Monoid`, so a Haskell 2010 program that defines `Monad` alone, or
 `fail` in a `Monad` instance, is rejected, as it is by GHC.  The Prelude's list
@@ -42,12 +42,12 @@ functions are those of `Foldable` and `Traversable`, and it doesn't export
 **Tuple instances stop at five components,** and `Bounded` has none, where the Report asks for at least fifteen.  See [chapter
 6](haskell-2010.md#6-predefined-types-and-classes).
 
-**Modules.**  Mutually recursive modules are not supported, and a missing
+<a id="modules"></a><a id="hierarchical-modules"></a>**Modules.**  Mutually recursive modules are not supported, and a missing
 module header means `module Main where`, exporting everything.  See [chapter
 5](haskell-2010.md#5-modules) and [Modules, files and the search
 path](../inside/modules-and-the-search-path.md).
 
-**Source files.**  A literate script is read in the Bird-track form only (see
+<a id="lexical-structure"></a><a id="expressions"></a><a id="syntax-reference"></a>**Source files.**  A literate script is read in the Bird-track form only (see
 [chapter 10](haskell-2010.md#10-syntax-reference)), and a `#!` first line is read
 as a blank line, so a script can be made executable.  Operator symbols are
 limited to Latin-1, though identifiers may use any Unicode letter (see [chapter
@@ -55,12 +55,12 @@ limited to Latin-1, though identifiers may use any Unicode letter (see [chapter
 differently from the Report, because fixities are resolved after parsing (see
 [chapter 3](haskell-2010.md#3-expressions)).
 
-**Bindings.**  A binding caught by the monomorphism restriction, such as `n = 3`,
+<a id="declarations-and-bindings"></a>**Bindings.**  A binding caught by the monomorphism restriction, such as `n = 3`,
 is defaulted when its own group is inferred, so a later use cannot fix its type;
 a type signature avoids this.  See [chapter
 4](haskell-2010.md#4-declarations-and-bindings).
 
-**Foreign functions.**  A module with foreign declarations must be compiled with
+<a id="foreign-function-interface"></a>**Foreign functions.**  A module with foreign declarations must be compiled with
 [`cupid --ffi`](cupid.md) before it can be loaded.  `foreign import "wrapper"`
 fails at run time and `foreign export` is not implemented.  See [chapter
 8](haskell-2010.md#8-foreign-function-interface) and [Foreign
@@ -79,7 +79,7 @@ or is `Show`, `Eq` or `Ord`.  See [Interpreter commands](commands.md#expr).
 
 ## Known bugs
 
-**Deep or unbounded recursion usually ends in an error, but not always.**
+<a id="other-known-bugs"></a>**Deep or unbounded recursion usually ends in an error, but not always.**
 While a program is evaluating, an unbounded computation ends in `Control stack
 overflow` or `Garbage collection fails to reclaim sufficient space`, or runs for
 ever, and none we have tried crashes, under C stack limits from 128KB to unlimited.
