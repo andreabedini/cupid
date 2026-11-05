@@ -81,7 +81,7 @@ runs during dependency
 analysis, called from `depExpr` and `checkPat`, which is after the
 module's imports have been processed; Gofer's author suggested exactly
 this delay as the way to make imported fixities work when a module
-system was added, and Hugs did it.  Prefix minus gets the Haskell
+system was added ([RR-1030](http://web.cecs.pdx.edu/~mpj/pubs/RR-1030.pdf), p. 17), and Hugs did it.  Prefix minus gets the Haskell
 precedence.
 
 **Some syntax is rewritten on the spot.**  A right section becomes an

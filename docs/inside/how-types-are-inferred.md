@@ -36,9 +36,9 @@ what the variable is bound to (as a skeleton and offset of its own, or
 a `kind`, and a field `offs` whose other use is described below.
 `tyvar(n)` is the `n`th entry.  Unification binds entries; it never
 copies.  The array grows in chunks of `NUM_TYVARS` as a binding group
-needs more variables (`expandSubst`); Gofer's was fixed and overflowed
-on the large binding groups that generated parsers produce, which is
-why it was made to grow.
+needs more variables (`expandSubst`).  Early versions of Gofer had a fixed
+size, and Gofer itself made it grow by the time of its report, for the very
+large binding groups that machine-generated parsers produce ([RR-1030](http://web.cecs.pdx.edu/~mpj/pubs/RR-1030.pdf), p. 25).
 
 The result of typing an expression travels as a `Typing` record: the
 skeleton, the offset, the number of fresh variables that were created
@@ -70,7 +70,8 @@ cell afterwards), and every occurrence in the group's bodies is that
 cell.  When the group is generalised, `addEvidParams` overwrites the
 one cell with `v dv1 ... dvk`, and every occurrence is updated at once.
 Gofer's author noted that the alternative, a second traversal of the
-bodies, would be quadratic with nested groups.  It is the reason the
+bodies, could be very expensive with nested groups (RR-1030, p. 32).  It is
+the reason the
 assumptions keep the current group apart from everything else.
 
 ## Assumptions
