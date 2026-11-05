@@ -29,6 +29,8 @@ under `../docs`; `zola serve` will not notice a change made outside `www/`.
   `@/docs/reference/options.md` form.  Zola resolves those at build time, so
   `zola build` fails on a link that has gone stale — which is the main reason
   for doing it this way rather than serving the markdown as-is;
+- makes a link to the published site, such as the one to `install.sh`, relative
+  to its page;
 - copies `../assets/*.svg` into `static/`;
 - writes a redirect page into `static/docs/` for each old address in its
   `MOVED_PAGES` and `MOVED_ANCHORS` tables.
@@ -47,9 +49,10 @@ listed pages.
 ## Publishing
 
 `base_url` in `config.toml` is `https://andreabedini.github.io/cupid`, the
-GitHub Pages URL for `andreabedini/cupid`.  Every URL on the site is built
-from it, so it has to match wherever the site is actually served — change it
-before pointing a custom domain at this.
+GitHub Pages URL for `andreabedini/cupid`.  `base.html` makes every internal link
+in a page relative, so a build works wherever it is served, with `zola serve` or
+from `public/`.  `base_url` still decides the sitemap and the URLs quoted in text,
+such as the install command, so change it before pointing a custom domain at this.
 
 CI deploys it.  The `site` job in `.github/workflows/ci.yml` runs
 `sync-docs.py` and `zola build` on every pull request and push, so a

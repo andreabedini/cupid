@@ -1,5 +1,6 @@
 # GitHub Pages for andreabedini/cupid.  Change this if the site moves to a
-# custom domain; every URL on the site is built from it.
+# custom domain.  Links between pages are relative (see templates/base.html); this
+# decides the sitemap and the URLs quoted in text, such as the install command.
 base_url = "https://andreabedini.github.io/cupid"
 
 title = "Cupid"

@@ -1,3 +1,15 @@
+{#- Zola writes every internal link as an absolute URL under base_url, which leads
+    away from a copy served anywhere else.  Make them all relative to this page, so
+    one build works wherever it is put.  Only attributes are rewritten: a URL in the
+    text, such as the install command, keeps its published address. -#}
+{%- set depth = current_path | default(value="/") | split(pat="/") | length - 2 -%}
+{%- set root = "./" -%}
+{%- if depth > 0 -%}{%- set root = "" -%}{%- for i in range(end=depth) -%}{%- set_global root = root ~ "../" -%}{%- endfor -%}{%- endif -%}
+{%- set site = get_url(path='@/_index.md') -%}
+{%- set href_site = 'href="' ~ site -%}{%- set href_root = 'href="' ~ root -%}
+{%- set src_site = 'src="' ~ site -%}{%- set src_root = 'src="' ~ root -%}
+{%- set srcset_site = 'srcset="' ~ site -%}{%- set srcset_root = 'srcset="' ~ root -%}
+{%- filter replace(from=href_site, to=href_root) | replace(from=src_site, to=src_root) | replace(from=srcset_site, to=srcset_root) | safe -%}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -50,3 +62,4 @@
 
 </body>
 </html>
+{%- endfilter %}
