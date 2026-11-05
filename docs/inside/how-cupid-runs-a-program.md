@@ -15,7 +15,7 @@ it closes an implicit block when the next token cannot continue it.
 **Parsing.**  `parser.y` is a bison grammar.  Its output is a syntax
 tree made of heap cells, the same kind the evaluator uses.  Some
 desugaring happens in the parser itself ([The design of
-Cupid](design.md#the-language) says why).  Pattern guards, for example,
+Cupid](language-design.md) says why).  Pattern guards, for example,
 are turned into a hidden `Maybe` binding and a boolean guard before the
 rest of the system sees them.
 
@@ -78,7 +78,7 @@ encoding](character-encoding.md).
 ## The program and its modes
 
 One program, `cupid`, uses all of the above, in [three
-modes](design.md#the-running-interpreter).
+modes](the-running-interpreter.md).
 
 `cupid.c` is the interactive interpreter: the prompt, the commands, and
 the loop that reads a line, decides whether it is a command or an
@@ -117,7 +117,7 @@ The libraries have one platform-dependent piece too, the widths of C
 types and the values of `errno` and signal constants.  These are asked
 of the C compiler at build time by `libraries/tools/mksysconfig.c` and
 written into the module `Cupid.SysConfig`.
-[The design of Cupid](design.md#the-libraries) says why it is done this
+[The design of Cupid](language-design.md#the-libraries-follow-base-and-owe-nothing-to-the-c) says why it is done this
 way.
 
 ## What this design gives up

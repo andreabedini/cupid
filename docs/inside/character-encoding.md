@@ -50,4 +50,4 @@ that uses another encoding.
 ## See also
 
 - [Build options and install layout](../reference/build-options.md)
-- [The language Cupid accepts](../reference/language.md#lexical-structure)
+- [The language Cupid accepts](../reference/haskell-2010.md#2-lexical-structure)

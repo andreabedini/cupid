@@ -69,8 +69,8 @@ following a pointer, and that the ranges are fixed when the interpreter
 is built, so a table that fills up reports "storage space exhausted"
 rather than growing.  The limits are in `src/sizes.h`.
 
-The tags are a `typedef enum CellTag`.  [The design of
-Cupid](design.md#the-c-code) says how a `switch (whatIs(c))` is written.
+The tags are a `typedef enum CellTag`.  [How the C is
+written](how-the-c-is-written.md) says how a `switch (whatIs(c))` is written.
 
 **Boxed values.**  An integer outside the small range, a character
 beyond `NUM_SHORT_CHARS`, a string: each is a pair whose first component
