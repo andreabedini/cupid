@@ -16,8 +16,8 @@ from the 2006 release.
 [Not accepted](#not-accepted) lists the major features left out and the
 common GHC extensions that are missing.  A GHC extension that neither
 this page nor [Haskell 2010 conformance](haskell-2010.md) mentions is
-not implemented.  [The design](../inside/language-design.md)
-says how a feature gets in.
+not implemented.  [Why the language is what it
+is](../inside/language-design.md) explains how a feature gets in.
 
 ## Type classes
 
@@ -853,16 +853,19 @@ These parts of GHC's language are not in Cupid, and no option adds
 them.  A program that uses one of them does not load, except where
 ignoring it cannot change what the program means: `RULES` pragmas are
 read as comments, and `mask` does nothing, since there are no
-asynchronous exceptions to hold off.
+asynchronous exceptions to hold off.  [Why the language is what it
+is](../inside/language-design.md#what-stays-out-and-which-rule-keeps-it-out)
+gives the reasons.
 
-| Feature | Why |
+| Feature | Status |
 |---|---|
-| Type families, open, closed or associated | Not decided.  They would have to be solved by the one solver, and whether that can be done is open.  Functional dependencies cover many of the same uses |
-| Unboxed types and `MagicHash` | They change the abstract machine and the storage below the type checker |
-| Template Haskell | It needs the interpreter to run code while it is checking a module, a second pipeline inside the first |
-| Rewrite rules | Cupid does not optimise, so there is nothing for them to rewrite |
-| Linear types | A second discipline in the type checker, for a guarantee nothing in Cupid uses |
-| STM and asynchronous exceptions | They need a run-time system with preemptive threads.  Cupid's `forkIO` threads switch only at the primitives of `Control.Concurrent`, `throwTo` is absent and `mask` is a no-op |
+| Type families, open, closed or associated | Not accepted, and not decided: whether they can be added is open |
+| GADTs with refined result types | Not accepted: only [the syntax](#gadt-syntax) is |
+| Unboxed types and `MagicHash` | Not accepted |
+| Template Haskell | Not accepted |
+| Rewrite rules | `RULES` pragmas are read as comments |
+| Linear types | Not accepted |
+| STM and asynchronous exceptions | Not accepted.  `forkIO` threads switch only at the primitives of `Control.Concurrent`, `throwTo` is absent and `mask` is a no-op |
 
 These common GHC extensions are not implemented either.  Each was
 tried and fails to load, with a syntax or type error or, for deriving,

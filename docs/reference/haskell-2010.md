@@ -2,9 +2,10 @@
 
 How Cupid measures up against the Haskell 2010 Report, chapter by
 chapter.  [The language Cupid accepts](language.md) is the short
-account, a sentence for each deviation it names; this page is the long
-one, with the full statement of each.  When a deviation is fixed or
-found, update it here, and its sentence there if it has one.
+account, a sentence for each deviation a program is most likely to meet;
+this page is the long one, with the full statement of each.  When a
+deviation is fixed or found, update it here, and its sentence there if it
+has one.
 
 The page as a whole was last checked by running programs against the
 interpreter on 2026-10-16, on x86-64 Linux; later edits, such as
@@ -14,44 +15,6 @@ leaves something to the implementation, the page says what Cupid does
 and marks it *unspecified*.  What Cupid accepts beyond the Report, the
 extensions, is in [Language extensions](extensions.md) and is mentioned
 here only where it makes a program the Report rejects acceptable.
-
-## Summary
-
-Cupid implements Haskell 2010: the language of Part I, the Prelude of
-chapter 9 and the libraries of Part II.  These are the exceptions a
-program is likely to meet, each explained in its chapter below:
-
-- Literate scripts are read with `>` program lines only, not
-  `\begin{code}` blocks.
-- `Int` and `Word` are 32 bits wide, on every target.
-- The Prelude's classes are those of GHC's base, not the Report's:
-  `Applicative` sits between `Functor` and `Monad`, `fail` belongs to
-  `MonadFail`, `Semigroup` is a superclass of `Monoid`, the list
-  functions are `Foldable`'s and `Traversable`'s, and `catch` is not
-  exported.
-- The derived and built-in instances for tuples stop at five
-  components, and there are no `Bounded` instances for tuples at all;
-  the Report asks for at least fifteen.
-- `Float` and `Double` do not know NaN or infinity: `isNaN`,
-  `isInfinite` and the other `RealFloat` predicates are always `False`,
-  and `show` prints `inf`, `-inf`, `nan` and `-nan`.  `show` on a
-  floating point number prints 15 significant digits (7 for `Float`),
-  not the shortest representation that reads back, and conversions near
-  the ends of the range of `Double` are inexact or fail.
-- Fixity is resolved after parsing, which lets a few illegal forms
-  through: prefix negation after an operator of precedence 6 or higher,
-  as in `a + - b`, and a right section whose operand is an infix
-  expression, as in `(* 3 + 4)`.
-- A few names are missing from the libraries: `withFile`,
-  `hSetFileSize` and `hShow` in `System.IO`, `catch` and `try` in
-  `System.IO.Error`, `finalizeForeignPtr`, `unsafeLocalState`, the
-  `throwErrnoPath` family and the `CUChar`/`CSChar` casts of
-  `Foreign.C.String`.
-- `foreign export` is not implemented, `foreign import "wrapper"` fails
-  at run time, and `stdcall` is accepted only on Windows.
-- The monomorphism restriction defaults a binding when its own group is
-  inferred, not at the end of the module, so a later use cannot fix the
-  type.
 
 ## Part I: the language
 

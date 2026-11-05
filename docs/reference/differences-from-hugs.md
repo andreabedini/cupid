@@ -71,10 +71,7 @@ the changes that matter are these:
   parallel list comprehensions, here documents and multi-instance
   resolution.  [The design](../inside/design.md#deleting-instead-of-switching-off)
   says why.
-- **Others are new:** kind signatures, GADT syntax, equality
-  constraints, type operators, tuple sections, polymorphic and
-  constraint synonyms, and GHC's deriving strategies with `Generic`
-  and `Data`.  See [Language extensions](extensions.md).
+- **Others are new.**  [Language extensions](extensions.md) has them all.
 - **Restricted type synonyms are kept**, the only Hugs-only extension
   to survive.
 
