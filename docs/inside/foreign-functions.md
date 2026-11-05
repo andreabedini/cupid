@@ -1,5 +1,12 @@
 # Foreign functions
 
+A Haskell call in Cupid uses a graph of cells; a C function expects
+arguments in C types and returns a C value. A *stub* is a small C
+wrapper connecting them: it extracts and converts the arguments, calls
+the foreign function, and converts the result back. This conversion is
+called *marshalling*. The wrapper is compiled ahead of time and loaded
+by the interpreter.
+
 `cupid --ffi M.hs` generates a C file of stubs for the foreign imports
 of `M`.  Modules it imports get none, and need their own run.  Each
 marshallable type is one row of a table in `ffi.c`, so adding a

@@ -93,8 +93,10 @@ first one:
 
 - **Deeper into the type checker:** the rest of [How types are
   inferred](how-types-are-inferred.md), `kind.c`, which is kind inference and
-  makes a gentle introduction to the machinery, and all of [How constraints are
-  solved](how-constraints-are-solved.md), with `unrestricted` and `entail`.
+  makes a gentle introduction to the machinery. [How constraints are
+  solved](how-constraints-are-solved.md) starts with examples of dictionaries
+  supplied by a caller, a superclass or an instance; then follow `entail`
+  in `preds.c` and the binding-group work in `unrestricted`.
 - **The rest of the compiler:** the sections of [How code is compiled and
   run](how-code-is-compiled-and-run.md) on reducing the language, matching,
   lambda lifting and generating code, with their examples, and `match`, `lift`,

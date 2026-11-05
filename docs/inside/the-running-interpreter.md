@@ -34,6 +34,19 @@ that all three modes share, and `opts.c` reads the options.
 
 ## Subsystems are a table of hooks
 
+An interpreter outlives any one expression it evaluates. After a type
+error it must discard unfinished work and accept another command, while
+keeping the modules already loaded. During garbage collection it must
+keep persistent data reachable; on exit it must release resources.
+These are different lifetime events, so each part of the interpreter
+needs to say what to do at each one.
+
+A *hook* is the function supplied for one such event. Resetting temporary
+state is separate from marking cells that must survive a collection;
+resetting the type checker's work does not mean unloading the Prelude.
+[Cells, text and tables](cells-text-and-tables.md#tables-and-checkpoints)
+explains the checkpoints used when loaded scripts must be rolled back.
+
 Each module that has state to install, reset, mark, clean up at exit or
 tidy after an interrupt contributes one `Subsystem` row, with named
 functions such as `resetTypeChecker` and `markStorage`.  The `subsystems[]`

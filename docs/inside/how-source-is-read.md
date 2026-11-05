@@ -195,12 +195,6 @@ grammar has pattern productions of its own, including function heads,
 `case` alternatives and lambdas. A wildcard left in an expression is
 rejected by `depExpr` in `src/depend.c`.
 
-The paired `a` and `b` productions, such as `infixExpa` and `infixExpb`,
-handle another grammatical restriction: a lambda, `let` or `if` must
-be the last operand of an operator chain unless enclosed in parentheses.
-The split encodes that restriction without asking Bison to parameterise a
-rule.
-
 ### Rewriting syntax early
 
 Some syntax is translated as soon as it is parsed. This is
@@ -259,13 +253,9 @@ same number of arguments. For a definition such as `total` from the
 [pipeline tour](how-cupid-runs-a-program.md), its empty-list and nonempty-list
 equations become two alternatives of one binding.
 
-A function or variable binding has the shape `(Var, (Attr, [Alt]))`:
-the variable, its attributes and its alternatives. A pattern binding
-such as `(x, y) = pair` can define several variables at once and has the
-shape `([Var], ([Attr], (Pat, Rhs)))`. Here the bracketed parts are lists;
-`Attr` holds a declared type and fixity, `Alt` holds patterns and a
-right-hand side, and `Pat` and `Rhs` are the pattern and right-hand side
-of a pattern binding. `isVar(fst(b))` tells the two binding shapes apart.
+A pattern binding such as `(x, y) = pair` can introduce several names
+at once. It stays a distinct kind of binding, with one shared pattern
+and right-hand side; `binding.c` describes both representations.
 
 Data, class and instance declarations begin entering their tables as
 they are parsed; value equations are collected for these later passes.

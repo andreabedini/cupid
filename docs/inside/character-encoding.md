@@ -1,8 +1,14 @@
 # Character encoding
 
-Haskell's `Char` is a Unicode code point.  Files, terminals and the
-operating system deal in bytes.  This page is about where Cupid
-converts between the two and how the choice is made.
+Haskell's `Char` is a Unicode code point: a number identifying a character
+in Unicode. Files, terminals and operating-system interfaces carry bytes.
+An *encoding* specifies how to turn code points into byte sequences;
+*decoding* goes in the other direction.
+
+For example, `é` is code point U+00E9, written as the two bytes `C3 A9`
+in UTF-8. The Haskell string `"é"` has one `Char`; encoding it as UTF-8
+produces two bytes. This chapter follows that boundary and explains how
+Cupid chooses an encoding.
 
 ## Where conversion happens
 
