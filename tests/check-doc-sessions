@@ -261,6 +261,9 @@ SESSIONS = {
         ":type sum",
         "sum (Just 3)",
         "fmap (* 2) (Just 21)"]),
+    "inference-types": Session("Inference.hs", [
+        ":type apply", ":type identity", "(identity True, identity 'x')",
+        ":type captured", ":type total"]),
     "total-run": Program("Total.hs"),
     "tokens": Stage("tokens"),
     "cells-parsed": Stage("parsed"),
