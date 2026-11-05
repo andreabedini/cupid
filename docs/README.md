@@ -1,37 +1,24 @@
 # Cupid documentation
 
-Cupid is a small interpreter for Haskell, written in C.  It reads
-Haskell 2010 with the parts of modern Haskell that real code needs, its
-libraries follow GHC's base, and it evaluates expressions at an
-interactive prompt or runs a program's `main` from a script.
-
-The documentation follows the [Diátaxis](https://diataxis.fr/) scheme:
-tutorials teach, how-to guides solve a task, explanations discuss,
-and reference pages describe.  Before them comes Install, and after them
-Contributing, for the people who change Cupid rather than use it.
+Cupid is a small Haskell interpreter, written in C and descended from Hugs.
+It implements Haskell 2010 with documented deviations and a fixed set of
+extensions, [the language reference](reference/language.md) says which, its
+libraries are a subset of GHC's base, and it evaluates expressions at an
+interactive prompt or runs a program's `main` from a script.  It's also small
+enough to read, and these pages are for both kinds of reader.
 
 ## Start here
 
-New to Cupid?  [Install a release](start/install-a-release.md), then
-work through [Getting started with Cupid](start/getting-started.md):
-it evaluates a few expressions, loads a module and runs a program with
-`cupid`.
+New to Cupid?  [Install a release](start/install-a-release.md), then work
+through [Getting started with Cupid](start/getting-started.md): it evaluates
+a few expressions, loads a module and runs a program with `cupid`.  To build
+from source instead, see [Build Cupid on Linux and
+macOS](start/build-on-linux-and-macos.md) or [Build Cupid on
+Windows](start/build-on-windows.md).
 
-## Install
+## Using Cupid
 
-- [Install a release](start/install-a-release.md) — one command, or
-  the same steps by hand
-- [Build Cupid on Linux and macOS](start/build-on-linux-and-macos.md)
-  — from source, with meson; installed or run from the build tree
-- [Build Cupid on Windows](start/build-on-windows.md) — the native
-  MinGW-w64 build
-
-## Tutorials
-
-- [Getting started with Cupid](start/getting-started.md) — use the
-  prompt, load a module, run a program.
-
-## How-to guides
+Guides to a particular task:
 
 - [Write a script that runs with cupid](how-to/write-a-script.md)
 - [Call C functions from Haskell](how-to/call-c-functions.md)
@@ -40,55 +27,41 @@ it evaluates a few expressions, loads a module and runs a program with
 - [Add a library to the search path](how-to/add-a-library.md)
 - [Measure time and memory use](how-to/measure-time-and-memory.md)
 
-## Explanation
+## Inside Cupid
 
-- [The design of Cupid](inside/design.md) — the aim, and the choices
-  in the language, the build and the C code that follow from it
-- [How Cupid runs a program](inside/how-cupid-runs-a-program.md) —
-  the stages from source to result, and where the pieces live
-- [Cells, text and tables](inside/cells-text-and-tables.md) — the
-  one data type everything is built from, the heap, the collector and
-  the checkpoints that reloading rests on
-- [How source is read](inside/how-source-is-read.md) — the lexer,
-  the grammar's shortcuts, and the static analysis that turns equations
-  into binding groups
-- [How types are inferred](inside/how-types-are-inferred.md) — the
-  substitution, structure sharing, generalisation and the in-place
-  rewriting that inserts dictionaries
-- [How constraints are solved](inside/how-constraints-are-solved.md) —
-  predicates, evidence, entailment, improvement and the loop that runs
-  them at each binding group
-- [How code is compiled and run](inside/how-code-is-compiled-and-run.md) —
-  pattern-matching compilation, lambda lifting, the abstract machine and
-  its instructions
-- [Modules, files and the search path](inside/modules-and-the-search-path.md)
-- [Character encoding](inside/character-encoding.md)
-- [Foreign import wrappers](inside/foreign-functions.md) —
-  how callbacks into Haskell were implemented, and why they are not
-  available on current targets
-- [History](inside/history.md) — from Gofer to this tree
+[A guided tour of the source](inside/README.md).  Begin with [Reading Cupid
+in a day](inside/reading-cupid-in-a-day.md), which gives a route through the
+main stages for a first day, and the order for the whole tour after that.
 
 ## Reference
 
-- [Interpreter commands](reference/commands.md) — `:load`, `:type`,
-  `:set` and the rest
-- [Options](reference/options.md) — toggles and parameters, and where
-  they are read from
+Running it:
+
+- [Running cupid](reference/cupid.md) — the command: prompt, run a file,
+  load with `-i`, compile stubs with `--ffi`
+- [Interpreter commands](reference/commands.md) — `:load`, `:type`, `:set`
+  and the rest
+- [Options](reference/options.md) — toggles and parameters, and where they
+  are read from
 - [Environment variables](reference/environment-variables.md)
-- [Running cupid](reference/cupid.md) — the command: prompt, run a
-  file, load with `-i`, compile stubs with `--ffi`
 - [Build options and install layout](reference/build-options.md)
-- [The language Cupid accepts](reference/language.md) — Haskell 2010
-  conformance, known deviations and bugs
-- [Haskell 2010 conformance](reference/haskell-2010.md) — the Report
-  chapter by chapter, language and libraries
-- [Language extensions](reference/extensions.md) — what Cupid accepts
-  beyond Haskell 2010, and what it leaves out
+
+The language and libraries:
+
+- [The language Cupid accepts](reference/language.md) — what the language
+  is, the deviations a program is most likely to meet, and known bugs
+- [Language extensions](reference/extensions.md) — each feature beyond
+  Haskell 2010, and what is not accepted
+- [Haskell 2010 conformance](reference/haskell-2010.md) — the Report chapter
+  by chapter, language and libraries
 - [The libraries](reference/libraries.md) — packages and modules shipped
+
+Background:
+
 - [Differences from Hugs 98](reference/differences-from-hugs.md) — the
   programs, options, variables, modules and extensions that changed
-- [Further reading](reference/further-reading.md) — the Report, the
-  Hugs manuals and the papers the implementation follows
+- [Further reading](reference/further-reading.md) — the Report, the Hugs
+  manuals and the papers the implementation follows
 
 ## Contributing
 

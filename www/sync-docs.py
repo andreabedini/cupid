@@ -32,6 +32,10 @@ SECTIONS = [
     ("contributing", "Contributing", "For people who change Cupid: how it is checked and released."),
 ]
 
+# Sections meant to be read in order: their pages are numbered in the navigation
+# and link to the next and previous page, and their own README is the contents.
+BOOKS = {"inside"}
+
 # Page order within a section, where alphabetical is the wrong order.  Pages not
 # listed sort alphabetically after the listed ones.
 PAGE_ORDER = {
@@ -304,6 +308,9 @@ def main() -> int:
         else:
             sec_title, sec_body = label, ""
 
+        extra = {"blurb": blurb, "nav": label}
+        if name in BOOKS:
+            extra["book"] = "true"
         write_page(
             CONTENT / name / "_index.md",
             {
@@ -312,7 +319,7 @@ def main() -> int:
                 "sort_by": "weight",
                 "template": "docs-section.html",
                 "page_template": "docs-page.html",
-                "extra": {"blurb": blurb, "nav": label},
+                "extra": extra,
             },
             sec_body,
         )
