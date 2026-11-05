@@ -13,5 +13,11 @@
 </nav>
 {% endif %}
 {{ page.content | safe }}
+{% if parent.extra.book %}
+<nav class="pager" aria-label="Chapters">
+  {% if page.lower %}<a class="prev" href="{{ page.lower.permalink }}">{{ page.lower.title }}</a>{% endif %}
+  {% if page.higher %}<a class="next" href="{{ page.higher.permalink }}">{{ page.higher.title }}</a>{% endif %}
+</nav>
+{% endif %}
 <p class="edit"><a href="{{ config.extra.repo_url }}/blob/main/docs/{{ page.relative_path | replace(from='docs/', to='') }}">Edit this page on GitHub</a></p>
 {% endblock %}

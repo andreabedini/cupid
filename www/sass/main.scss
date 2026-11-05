@@ -77,9 +77,9 @@ a:hover { color: var(--ink); }
   }
 
   nav {
-    display: flex; gap: clamp(.9rem, 3vw, 1.8rem);
+    display: flex; flex-wrap: wrap; gap: .6rem clamp(.9rem, 3vw, 1.8rem);
     font: 500 .95rem/1 var(--sans);
-    a { color: var(--ink-soft); text-decoration: none; }
+    a { color: var(--ink-soft); text-decoration: none; white-space: nowrap; }
     a:hover { color: var(--coral); }
   }
 }
@@ -211,12 +211,18 @@ code { font-family: var(--mono); font-size: .9em; }
 
   ul { list-style: none; margin: .35rem 0 .5rem; padding: 0 0 0 1.1rem; }
   li { margin: .1rem 0; }
-  li a {
-    display: block; padding: .2rem 0; color: var(--ink-soft); text-decoration: none;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
+  li a { display: block; padding: .2rem 0; color: var(--ink-soft); text-decoration: none; }
   li a:hover { color: var(--coral); }
   li a[aria-current="page"] { color: var(--coral); font-weight: 600; }
+
+  // A section meant to be read in order numbers its pages.
+  ul.chapters { counter-reset: chapter; }
+  ul.chapters li { counter-increment: chapter; }
+  ul.chapters li a { padding-left: 1.5rem; position: relative; }
+  ul.chapters li a::before {
+    content: counter(chapter) "."; font-variant-numeric: tabular-nums;
+    position: absolute; left: 0;
+  }
 }
 
 .doc {
@@ -278,11 +284,24 @@ code { font-family: var(--mono); font-size: .9em; }
   a:hover { color: var(--coral); }
 }
 
+.pager {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--rule); font-size: .95rem;
+  a { text-decoration: none; }
+  a:hover { color: var(--coral); }
+  .prev::before { content: "← "; }
+  .next { margin-left: auto; text-align: right; }
+  .next::after { content: " →"; }
+}
+
 .edit { margin-top: 3rem; font-size: .88rem; color: var(--ink-soft);
         a { color: var(--ink-soft); } a:hover { color: var(--coral); } }
 
 @media (max-width: 60rem) {
   .docs { grid-template-columns: 1fr; }
-  .sidebar { position: static; max-height: none; border-bottom: 1px solid var(--rule); padding-bottom: 1rem; }
+  .sidebar { position: static; max-height: none; padding-bottom: 1rem; }
   .toc ul { columns: 1; }
+  // On a narrow screen the page comes first, and the navigation after it.
+  .sidebar { order: 2; border-top: 1px solid var(--rule); border-bottom: 0; padding-top: 1rem; }
+  .doc { order: 1; padding-bottom: 1rem; }
 }
