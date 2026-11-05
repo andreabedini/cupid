@@ -5,7 +5,7 @@ The Haskell modules that ship with Cupid.
 ## Packages
 
 The libraries are plain Haskell that Cupid owns (see
-[the design](../inside/design.md#the-libraries)).  They live in two
+[why the language is what it is](../inside/language-design.md#the-libraries-follow-base-and-owe-nothing-to-the-c)).  They live in two
 directories under `libraries/` in the source tree and are installed as
 subdirectories of `packages/` in the library directory, where the
 default search path finds them.
@@ -13,7 +13,7 @@ default search path finds them.
 | Package | Contents |
 |---|---|
 | `cupid` | `Cupid.Prelude`, where most of the `Prelude` is defined, and the `Cupid.*` modules that bind the interpreter's primitives |
-| `base` | The `Prelude` and `base`, following GHC's base, roughly version 4.18: `Control.*`, `Data.*`, `Foreign.*`, `System.*`, `Text.*`, with GHC's class hierarchy (see [the language](language.md#predefined-types-and-classes)), and the modules added since 2006, such as `Control.Category` and `GHC.Generics` |
+| `base` | The `Prelude` and `base`, following GHC's base, roughly version 4.18: `Control.*`, `Data.*`, `Foreign.*`, `System.*`, `Text.*`, with GHC's class hierarchy (see [the language](haskell-2010.md#6-predefined-types-and-classes)), and the modules added since 2006, such as `Control.Category` and `GHC.Generics` |
 
 ## Modules beyond Haskell 2010
 

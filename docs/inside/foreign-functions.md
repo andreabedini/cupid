@@ -1,4 +1,19 @@
-# Foreign import wrappers
+# Foreign functions
+
+`cupid --ffi M.hs` generates a C file of stubs for the foreign imports
+of `M`.  Modules it imports get none, and need their own run.  Each
+marshallable type is one row of a table in `ffi.c`, so adding a
+type means adding a row.  Every stub records the `CUPID_API_VERSION` it
+was built for, and the interpreter refuses a stub whose layout it cannot
+read (the current version 6 and the older 2 to 4 are accepted; version 5
+and unknown versions are not).  `HsFFI.h` keeps the name the FFI
+standard gives it.
+
+So calling out to C is ordinary, and [Call C functions from
+Haskell](../how-to/call-c-functions.md) shows how to do it.  The rest of
+this chapter is about the direction that doesn't work.
+
+## Foreign import wrappers
 
 A `foreign import "wrapper"` declaration turns a Haskell function into
 a C function pointer, so that C code can call back into Haskell.  Cupid
@@ -7,7 +22,7 @@ release implemented it with a small piece of machine code generated at
 run time, for three architectures, none of which this tree targets.
 That code is gone.
 
-## The problem
+### The problem
 
 A `wrapper` import has a type like
 
@@ -33,7 +48,7 @@ where `app` is the entry point that `cupid --ffi` generated for the
 declaration.  `app` is ordinary C compiled ahead of time; only the
 step of adding `s` to the argument list must be created per closure.
 
-## The solution the 2006 release used
+### The solution the 2006 release used
 
 `mkThunk` in `src/builtin.c` (it is now in `src/prims/builtin.c`)
 allocated a small structure in memory that was both writable and
@@ -68,7 +83,7 @@ arguments, which travel in a separate register file.  It is the same
 problem GHC's `Adjustor.c` solves for those targets, with considerable
 care.
 
-## What happens today
+### What happens today
 
 None of i386, PowerPC or SPARC is a supported target, so that machine
 code was dead on every target this tree builds for, and has been deleted
@@ -79,7 +94,7 @@ supported on this architecture".  `freeHaskellFunPtr`, which only such
 a pointer could be passed to, crashes for any argument.  No shipped
 library uses a `wrapper` import.
 
-## What works instead
+### What works instead
 
 - `foreign import "dynamic"` calls *out* through a `FunPtr` obtained
   from C, and works everywhere.
@@ -97,5 +112,5 @@ register shuffle at the cost of reentrancy.
 ## See also
 
 - [The language Cupid
-  accepts](../reference/language.md#foreign-function-interface)
+  accepts](../reference/haskell-2010.md#8-foreign-function-interface)
 - [Call C functions from Haskell](../how-to/call-c-functions.md)

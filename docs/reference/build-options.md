@@ -76,5 +76,5 @@ be moved with `-Dcupiddir=DIR`; the compiled-in default search path and
 ## See also
 
 - [Build Cupid on Linux and macOS](../start/build-on-linux-and-macos.md)
-- [The design of Cupid](../inside/design.md#platforms-and-the-build)
+- [Platforms and the build](../inside/platforms-and-the-build.md)
   on why nothing is probed

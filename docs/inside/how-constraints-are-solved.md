@@ -5,8 +5,9 @@ the types it collects *predicates*: the class constraints that uses of
 overloaded names give rise to.  This page is about what happens to
 those predicates.  The code is in `preds.c` and the second half of
 `subst.c`; `type.c` decides when each step runs.  The design asks that
-this remain [one solver](design.md#the-language) as the language grows,
-and this page is the description to check a change against.
+this remain [one solver](language-design.md#how-a-feature-gets-in) as the
+language grows, and this page is the description to check a change
+against.
 
 ## Predicates and evidence
 
@@ -85,9 +86,10 @@ instances it need not terminate.  One class goes beyond the instance
 declarations: a `Typeable t` that no instance matches is solved by
 `typeableEvid`, which builds the evidence from the structure of `t`.
 
-With overlapping instances allowed (`+o`), `findInstFor` also refuses a
-match when a more specific instance could still apply once more is
-known about the type; `+O` skips that refusal.  Reducing a predicate to
+Contexts are reduced to head normal form, as Haskell 2010 says, with one
+exception.  With overlapping instances allowed (`+o`), `findInstFor` also
+refuses a match when a more specific instance could still apply once more
+is known about the type; `+O` skips that refusal.  Reducing a predicate to
 an instance's context could then commit to the wrong instance, so under
 either option `elimTauts` removes only what entailment proves outright.
 

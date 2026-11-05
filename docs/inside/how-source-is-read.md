@@ -87,9 +87,17 @@ precedence.
 **Some syntax is rewritten on the spot.**  A right section becomes an
 application of `flip`, an arithmetic sequence becomes `enumFromTo` and
 its relatives, a list literal becomes a `FINLIST` cell, and a pattern
-guard becomes a hidden `Maybe` binding and a boolean guard.  [The
-design of Cupid](design.md#the-language) says why desugaring in the
-parser is preferred.
+guard becomes a hidden `Maybe` binding and a boolean guard.  GADT syntax
+is another case: it becomes ordinary constructors with existential
+variables.  Desugaring this early is deliberate.  Where a construct can be
+expressed in terms the rest of the system already handles, no later stage
+knows it existed; the alternative, a new node in the syntax tree, would
+have to be taught to every stage after the parser.
+
+**The grammar's `a`/`b` split stays.**  `parser.y` has paired rules such
+as `infixExpa` and `infixExpb`.  They look like duplication, but the split
+confines a lambda, `let` or `if` to the last operand of an operator chain,
+and bison cannot parameterise a rule.
 
 A data, class or instance declaration does not wait for the end of the
 script: it is entered into its table as it is parsed.  Primitive

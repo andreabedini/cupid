@@ -16,7 +16,7 @@ from the 2006 release.
 [Not accepted](#not-accepted) lists the major features left out and the
 common GHC extensions that are missing.  A GHC extension that neither
 this page nor [Haskell 2010 conformance](haskell-2010.md) mentions is
-not implemented.  [The design](../inside/design.md#the-language)
+not implemented.  [The design](../inside/language-design.md)
 says how a feature gets in.
 
 ## Type classes
