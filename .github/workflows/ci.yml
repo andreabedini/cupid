@@ -58,6 +58,20 @@ jobs:
           CC: ${{ matrix.cc }}
         run: tools/check-configurations
 
+      # The sweep above skips what a configuration can't check.  This is the
+      # one place every quoted session must be checked: a checks build has the
+      # listings, and gdb on an unoptimised build the tokens and cells.
+      - name: Check every quoted session
+        if: runner.os == 'Linux' && matrix.cc == 'gcc'
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          sudo apt-get install -y gdb
+          meson setup build-sessions -Dchecks=true -Dbuildtype=debug
+          ninja -C build-sessions
+          tests/check-doc-sessions --require-all build-sessions/src/cupid \
+            'build-sessions/libraries/cupiddir/packages/*' .
+
   warnings:
     # The tree builds without a compiler warning; -Werror says so rather
     # than leaving it to be noticed in a log.
