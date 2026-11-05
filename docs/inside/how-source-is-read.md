@@ -29,6 +29,25 @@ block (`canUnOffside`, `unOffside`).  That `error` alternative
 implements part of the layout rule; it does not only report syntax
 errors.
 
+## Expressions and types are trees
+
+The parser turns tokens into expression and type trees built from
+`Cell`s. An application is a pair: one half refers to the function,
+the other to its argument. Types use the same representation. A type
+constructor can be applied to type arguments, so `Bool -> Bool` is the
+constructor `(->)` applied first to `Bool`, then to `Bool` again.
+Schematically, leaving out how names are stored:
+
+```text
+expression:  f x             (f . x)
+type:        Bool -> Bool    (((->) . Bool) . Bool)
+```
+
+Here `(u . v)` means a pair, as in [Cells, text and
+tables](cells-text-and-tables.md). In the C, `ap(f, x)` builds an
+application pair, and `fn(a, b)` builds the two pairs for `a -> b`.
+`Type` is the C alias for `Cell` used for these type trees.
+
 ## The parser's stack is shadowed
 
 The parser builds its result in the heap, one cell at a time, and a
