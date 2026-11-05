@@ -138,7 +138,24 @@ environment. Haskell's overloading and its monomorphism restriction add
 conditions, which we will reach with `total`. This core of inference,
 generalisation and instantiation is Hindley–Milner inference.
 
-## Types are a skeleton and an offset
+## Expressions and types are trees
+
+By the time inference starts, Cupid has an expression tree built from
+`Cell`s. An application is a pair: one half refers to the function,
+the other to its argument. Types use the same representation. A type
+constructor can be applied to type arguments, so `Bool -> Bool` is the
+constructor `(->)` applied first to `Bool`, then to `Bool` again.
+Schematically, leaving out how names are stored:
+
+```text
+expression:  f x             (f . x)
+type:        Bool -> Bool    (((->) . Bool) . Bool)
+```
+
+Here `(u . v)` means a pair, as in [Cells, text and
+tables](cells-text-and-tables.md). In the C, `ap(f, x)` builds an
+application pair, and `fn(a, b)` builds the two pairs for `a -> b`.
+`Type` is the C alias for `Cell` used for these type trees.
 
 We wrote equations separately to expose the reasoning. Cupid unifies as
 it visits expressions, updating a substitution shared by the current
@@ -153,7 +170,15 @@ looks up the head's type, instantiates it, and checks that it has the
 function type required by the arguments. `check` infers a subexpression's
 type and calls `shouldBe`, which asks `unify` to make it agree with the
 required type. These are the operations from `apply`, now acting on
-`Cell`s.
+the two kinds of tree.
+
+## Types are a skeleton and an offset
+
+For `a -> a`, the type tree has the same shape as the one above, but
+with variables in place of the two `Bool`s. Both occurrences must
+refer to the same unknown within one use of `identity`, while each
+use needs its own unknown. This is where the skeleton and offset come
+in.
 
 A stored type scheme is a `POLYTYPE` cell containing a list of kinds and
 a type whose quantified variables are numbered offsets. For `identity`
