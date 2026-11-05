@@ -261,6 +261,9 @@ SESSIONS = {
         ":type sum",
         "sum (Just 3)",
         "fmap (* 2) (Just 21)"]),
+    "source-reading": Session("Source.hs", [
+        "answer", "evenLength [True, False]",
+        "let identity x = x; successor y = identity y + 1 in identity True"]),
     "inference-types": Session("Inference.hs", [
         ":type apply", ":type identity", "(identity True, identity 'x')",
         ":type captured", ":type total"]),

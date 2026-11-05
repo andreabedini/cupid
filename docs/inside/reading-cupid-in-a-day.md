@@ -61,10 +61,11 @@ what to look for.
    cell is, most of the code becomes approachable.
 
 3. **The front end, in part.**  From [How source is
-   read](how-source-is-read.md), the sections on lexing and on what the grammar
-   leaves to later.  Find the layout code in `yylex` (search for `goOffside`) and
-   the `end` rule in `parser.y`, then read `checkDefns` in `static.c` line by
-   line without following the calls.
+   read](how-source-is-read.md), the opening example, "Indentation becomes
+   punctuation", "Expressions and types are trees", and the operator grouping
+   at the start of "What the grammar leaves to later". Find the layout code in
+   `yylex` (search for `goOffside`) and the `end` rule in `parser.y`, then read
+   `checkDefns` in `static.c` line by line without following the calls.
 
 4. **Types, in part.**  [How types are
    inferred](how-types-are-inferred.md) starts by inferring small functions by
