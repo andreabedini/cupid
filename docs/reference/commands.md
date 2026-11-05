@@ -97,7 +97,7 @@ Exit.
 
 Cupid keeps one module per file.  A file may be named by its path or,
 if it is on the search path, by its module name.  See
-[Modules, files and the search path](../explanation/modules-and-the-search-path.md)
+[Modules, files and the search path](../inside/modules-and-the-search-path.md)
 for how names are resolved.
 
 The **current module** is the one whose scope expressions are
@@ -265,5 +265,5 @@ are the places where a GHCi habit does not carry over:
 ## See also
 
 - [Options](options.md)
-- [Getting started with Cupid](../tutorials/getting-started.md)
+- [Getting started with Cupid](../start/getting-started.md)
 - [Differences from Hugs 98](differences-from-hugs.md)

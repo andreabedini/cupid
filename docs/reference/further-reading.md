@@ -45,7 +45,7 @@ It describes Hugs 98, not Cupid: [Differences from Hugs
 - Mark P. Jones, [*The implementation of the Gofer functional
   programming system*](http://web.cecs.pdx.edu/~mpj/pubs/RR-1030.pdf),
   Research Report YALEU/DCS/RR-1030, Yale University (1994).  The
-  architecture Cupid still has; [History](../explanation/history.md#gofer-and-hugs)
+  architecture Cupid still has; [History](../inside/history.md#gofer-and-hugs)
   says what it covers.
 - Mark P. Jones, [the Hugs archive](https://web.cecs.pdx.edu/~mpj/hugsarc/):
   the sources and PC builds of the releases before Hugs 98, from Hugs
@@ -58,14 +58,14 @@ It describes Hugs 98, not Cupid: [Differences from Hugs
   Class*](https://doi.org/10.1145/1238844.1238856) (HOPL III, 2007).
   How Haskell came about and how it grew; section 9.3, largely written
   by Jones, is the story of Gofer and Hugs that
-  [History](../explanation/history.md#gofer-and-hugs) follows.
+  [History](../inside/history.md#gofer-and-hugs) follows.
 
 ## Types and classes
 
 - Mark P. Jones, *Qualified Types: Theory and Practice* (Cambridge
   University Press, 1994).  The theory behind the type checker's
   predicates and evidence; see [How types are
-  inferred](../explanation/how-types-are-inferred.md).
+  inferred](../inside/how-types-are-inferred.md).
 - Mark P. Jones, *A system of constructor classes: overloading and
   implicit higher-order polymorphism* (FPCA 1993; Journal of
   Functional Programming, 1995).  Classes over type constructors,
@@ -79,7 +79,7 @@ It describes Hugs 98, not Cupid: [Differences from Hugs
   instances.
 - Mark P. Jones, *Type Classes with Functional Dependencies* (ESOP
   2000).  Functional dependencies as Cupid implements them; see [How
-  constraints are solved](../explanation/how-constraints-are-solved.md).
+  constraints are solved](../inside/how-constraints-are-solved.md).
 - Mark P. Jones, *Typing Haskell in Haskell* (Haskell Workshop, 1999).
   A Haskell 98 type checker written as a Haskell program, by the author
   of the one in Cupid.  Shorter than the C, and a useful companion to
@@ -90,4 +90,4 @@ It describes Hugs 98, not Cupid: [Differences from Hugs
 - Simon L. Peyton Jones, *The Implementation of Functional Programming
   Languages* (Prentice Hall, 1987).  The G-machine, pattern-matching
   compilation and lambda lifting that [How code is compiled and
-  run](../explanation/how-code-is-compiled-and-run.md) follows.
+  run](../inside/how-code-is-compiled-and-run.md) follows.

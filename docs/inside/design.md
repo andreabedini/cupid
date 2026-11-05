@@ -173,7 +173,7 @@ every C99 header is present.  `src/sysdeps.h` writes those answers down,
 and static assertions in `prelude.h` check the sizes.  The only real
 differences left are Windows against POSIX, and sometimes macOS.  Linux,
 macOS and Windows are built and tested on every change; on Windows, see
-[Build Cupid on Windows](../install/build-on-windows.md).
+[Build Cupid on Windows](../start/build-on-windows.md).
 
 **meson, with generated files kept in the build tree.**  The build is
 meson only.  Three kinds of file are generated:
@@ -404,7 +404,7 @@ was built for, and the interpreter refuses a stub whose layout it cannot
 read (the current version 6 and the older 2 to 4 are accepted; version 5
 and unknown versions are not).  `HsFFI.h` keeps the name the FFI
 standard gives it.  [Foreign import
-wrappers](foreign-import-wrappers.md) explains why callbacks into
+wrappers](foreign-functions.md) explains why callbacks into
 Haskell are not available.
 
 ## See also

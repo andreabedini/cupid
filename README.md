@@ -60,9 +60,9 @@ A fair amount of the 2006 tree has already gone: the autoconf build, the
 flag-guarded extensions, the GHC/nhc98 shared library sources and the
 three-stage bootstrap that turned them into something Hugs could load,
 the platforms nobody has run this century.
-[The design of Cupid](docs/explanation/design.md) says what stayed and
+[The design of Cupid](docs/inside/design.md) says what stayed and
 why.  If you want the longer story of where the code came from, that's
-[History](docs/explanation/history.md).
+[History](docs/inside/history.md).
 
 What has been added is what real code needs.  The libraries have
 `Applicative` under `Monad`, `Semigroup` under `Monoid`, and `Foldable`
@@ -81,7 +81,7 @@ what is accepted and what is left out.
 It builds and runs, with meson, on 64-bit Linux, macOS, Windows and the
 BSDs.  Linux, macOS and Windows are built and tested on every change; on
 Windows it builds natively with MinGW-w64, see
-[Build Cupid on Windows](docs/install/build-on-windows.md).
+[Build Cupid on Windows](docs/start/build-on-windows.md).
 
 ## Quick start
 
@@ -102,7 +102,7 @@ Cupid> :quit
 
 The build never writes to the source tree.  Tests are
 `meson test -C build`, and installing is `ninja -C build install`.
-[Build Cupid on Linux and macOS](docs/install/build-on-linux-and-macos.md)
+[Build Cupid on Linux and macOS](docs/start/build-on-linux-and-macos.md)
 has the detail, and [Build options and install
 layout](docs/reference/build-options.md) lists every `-Dname=value` you
 can set.
@@ -113,9 +113,9 @@ The docs follow [Diátaxis](https://diataxis.fr/), so where a page lives
 tells you what it's for.  [docs/README.md](docs/README.md) is the index;
 the useful starting points are:
 
-- [Getting started with Cupid](docs/tutorials/getting-started.md) — a
+- [Getting started with Cupid](docs/start/getting-started.md) — a
   first session, from the prompt to running a program.  About 15 minutes.
-- [How Cupid runs a program](docs/explanation/how-cupid-runs-a-program.md)
+- [How Cupid runs a program](docs/inside/how-cupid-runs-a-program.md)
   — source text to abstract machine, and where each piece lives.  Read
   this before the source.
 - [Interpreter commands](docs/reference/commands.md) and
@@ -125,7 +125,7 @@ the useful starting points are:
   conformance, and the deviations and bugs that are known.
 - [Call C functions from Haskell](docs/how-to/call-c-functions.md) — the
   FFI and `cupid --ffi`.
-- [The design of Cupid](docs/explanation/design.md) — why the tree
+- [The design of Cupid](docs/inside/design.md) — why the tree
   looks the way it does.
 - [Differences from Hugs 98](docs/reference/differences-from-hugs.md)
   — what changed, if you used Hugs.

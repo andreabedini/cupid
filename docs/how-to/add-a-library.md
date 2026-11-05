@@ -75,4 +75,4 @@ Delete its directory.  There is no package database.
 ## See also
 
 - [Options](../reference/options.md#-pstr) for the syntax of `-P`
-- [Modules, files and the search path](../explanation/modules-and-the-search-path.md)
+- [Modules, files and the search path](../inside/modules-and-the-search-path.md)

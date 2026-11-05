@@ -17,10 +17,10 @@ By the end you will be able to:
 
 ## Prerequisites
 
-You need Cupid on your PATH.  [Install a release](../install/install-a-release.md)
+You need Cupid on your PATH.  [Install a release](install-a-release.md)
 does that in one command; if you would rather build it yourself,
-[Build Cupid on Linux and macOS](../install/build-on-linux-and-macos.md)
-and [Build Cupid on Windows](../install/build-on-windows.md) show how,
+[Build Cupid on Linux and macOS](build-on-linux-and-macos.md)
+and [Build Cupid on Windows](build-on-windows.md) show how,
 and how to run the result without installing it.
 
 You also need a text editor and an empty directory to work in.  Every

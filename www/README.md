@@ -13,7 +13,7 @@ zola build         # into public/
 `content/docs/` and the copied logos in `static/` are generated, so they are
 not checked in.  `static/install.sh` and `static/install.ps1` are written by
 hand and checked in: they are the one-line installers the home page and the
-Install section quote, served at `BASE_URL/install.sh` and
+install guide quote, served at `BASE_URL/install.sh` and
 `BASE_URL/install.ps1`.  Run `sync-docs.py` again after editing anything
 under `../docs`; `zola serve` will not notice a change made outside `www/`.
 

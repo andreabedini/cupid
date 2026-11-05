@@ -22,24 +22,22 @@ WWW = Path(__file__).resolve().parent
 CONTENT = WWW / "content" / "docs"
 STATIC = WWW / "static"
 
-# The documentation sections: the four Diátaxis quadrants, with Install in
-# front of them and Contributing after.  The order here is the order they
-# appear in the site navigation, and it has to match extra.doc_sections in
-# config.toml.
+# The documentation sections.  The order here is the order they appear in the
+# site navigation, and it has to match extra.doc_sections in config.toml.
 SECTIONS = [
-    ("install", "Install", "Get Cupid onto your machine: a release archive, or a build from source."),
-    ("tutorials", "Tutorials", "Lessons that take you through a first session, start to finish."),
-    ("how-to", "How-to guides", "Recipes for a specific task you already know you need."),
-    ("explanation", "Explanation", "How the pieces fit, and why they are shaped the way they are."),
-    ("reference", "Reference", "The dry description of commands, options and the accepted language."),
+    ("start", "Start here", "Get Cupid onto your machine and spend fifteen minutes with it."),
+    ("how-to", "Using Cupid", "Guides to a particular task you already know you need."),
+    ("inside", "Inside Cupid", "A guided tour of the interpreter's source code."),
+    ("reference", "Reference", "The dry description of commands, options, the language and the libraries."),
     ("contributing", "Contributing", "For people who change Cupid: how it is checked and released."),
 ]
 
 # Page order within a section, where alphabetical is the wrong order.  Pages not
 # listed sort alphabetically after the listed ones.
 PAGE_ORDER = {
-    "install": [
+    "start": [
         "install-a-release.md",
+        "getting-started.md",
         "build-on-linux-and-macos.md",
         "build-on-windows.md",
     ],
@@ -57,19 +55,20 @@ PAGE_ORDER = {
         "make-a-release.md",
     ],
     "reference": [
+        "cupid.md",
         "commands.md",
         "options.md",
         "environment-variables.md",
-        "cupid.md",
         "build-options.md",
         "language.md",
-        "haskell-2010.md",
         "extensions.md",
+        "haskell-2010.md",
         "libraries.md",
         "differences-from-hugs.md",
         "further-reading.md",
     ],
-    "explanation": [
+    "inside": [
+        "reading-cupid-in-a-day.md",
         "design.md",
         "how-cupid-runs-a-program.md",
         "cells-text-and-tables.md",
@@ -77,9 +76,13 @@ PAGE_ORDER = {
         "how-types-are-inferred.md",
         "how-constraints-are-solved.md",
         "how-code-is-compiled-and-run.md",
+        "the-running-interpreter.md",
         "modules-and-the-search-path.md",
+        "foreign-functions.md",
         "character-encoding.md",
-        "foreign-import-wrappers.md",
+        "platforms-and-the-build.md",
+        "how-the-c-is-written.md",
+        "language-design.md",
         "history.md",
     ],
 }

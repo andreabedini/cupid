@@ -30,10 +30,9 @@ tagline = "Hugs, revived."
 # The documentation sections, in navigation order.  sync-docs.py creates these
 # from docs/; keep the two lists in step.
 doc_sections = [
-  { path = "docs/install/_index.md", name = "Install" },
-  { path = "docs/tutorials/_index.md", name = "Tutorials" },
-  { path = "docs/how-to/_index.md", name = "How-to guides" },
-  { path = "docs/explanation/_index.md", name = "Explanation" },
+  { path = "docs/start/_index.md", name = "Start here" },
+  { path = "docs/how-to/_index.md", name = "Using Cupid" },
+  { path = "docs/inside/_index.md", name = "Inside Cupid" },
   { path = "docs/reference/_index.md", name = "Reference" },
   { path = "docs/contributing/_index.md", name = "Contributing" },
 ]

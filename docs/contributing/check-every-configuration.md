@@ -71,7 +71,7 @@ then `tag-checks` -- and was caught only by the run with all of them on.
 
 ## See also
 
-- [The design of Cupid](../explanation/design.md#platforms-and-the-build) for why
+- [The design of Cupid](../inside/design.md#platforms-and-the-build) for why
   the suite runs under every option
 - `.github/workflows/ci.yml`, which runs this on Linux and macOS with
   both gcc and clang

@@ -492,7 +492,7 @@ string also cannot be omitted in an export, which the Report allows.
 tree builds for, with `Foreign import wrapper is not supported on this
 architecture`.  The 2006 release had the machine code it needs only
 for 32-bit x86, PowerPC and SPARC; see
-[Foreign import wrappers](../explanation/foreign-import-wrappers.md).
+[Foreign import wrappers](../inside/foreign-functions.md).
 `freeHaskellFunPtr`, which only such a pointer could be passed to, is
 a segmentation fault for any argument, `nullFunPtr` included.
 
@@ -750,7 +750,7 @@ point modulo 256, so `"日本"` becomes two wrong bytes and a character
 above `\255` is not representable (`charIsRepresentable` says so).
 GHC uses the locale encoding.  `CWString` is UTF-32 and round-trips
 any string.  Cupid's own I/O is UTF-8; see
-[Character encoding](../explanation/character-encoding.md).
+[Character encoding](../inside/character-encoding.md).
 
 ### 28 Foreign.C.Types
 
@@ -834,7 +834,7 @@ or `<stderr>`; text handles are UTF-8, and a byte sequence that is not
 UTF-8 raises an `IOError` reading `protocol error`; binary mode writes
 the low eight bits of each character; opening a directory for reading
 succeeds and the first read fails.  See [Character
-encoding](../explanation/character-encoding.md).
+encoding](../inside/character-encoding.md).
 
 ### 42 System.IO.Error
 

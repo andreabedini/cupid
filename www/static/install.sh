@@ -14,7 +14,7 @@
 #   CUPID_BIN_DIR      where the link to cupid goes; default ~/.local/bin
 #
 # The same steps by hand, and building from source, are described at
-# https://andreabedini.github.io/cupid/docs/install/
+# https://andreabedini.github.io/cupid/docs/start/
 
 set -eu
 
@@ -33,12 +33,12 @@ machine=$(uname -m)
 case $system in
   Linux)  os=linux ;;
   Darwin) os=macos ;;
-  *) die "there is no release archive for $system; build from source instead: $site/docs/install/" ;;
+  *) die "there is no release archive for $system; build from source instead: $site/docs/start/" ;;
 esac
 case $machine in
   x86_64 | amd64)  arch=x86_64 ;;
   aarch64 | arm64) arch=aarch64 ;;
-  *) die "there is no release archive for $machine; build from source instead: $site/docs/install/" ;;
+  *) die "there is no release archive for $machine; build from source instead: $site/docs/start/" ;;
 esac
 target=$arch-$os
 
@@ -61,7 +61,7 @@ else
   url=$(resolve "https://github.com/$repo/releases/latest") || die "cannot reach github.com"
   case $url in
     */releases/tag/v*) version=${url##*/releases/tag/v} ;;
-    *) die "no release of Cupid has been published yet; build from source instead: $site/docs/install/" ;;
+    *) die "no release of Cupid has been published yet; build from source instead: $site/docs/start/" ;;
   esac
 fi
 

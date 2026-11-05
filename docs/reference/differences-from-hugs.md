@@ -30,7 +30,7 @@ first line as a blank line, so a script is an ordinary `.hs` file; see
 | `HUGSDIR` | `CUPIDDIR` |
 | `{Hugs}` in the search path | `{Cupid}` |
 | `lib/hugs/packages` | `lib/cupid/packages` |
-| `LC_CTYPE` chooses the encoding of `Char` | UTF-8 everywhere, unless Cupid was built with `-Dchar-encoding=locale`; see [Character encoding](../explanation/character-encoding.md) |
+| `LC_CTYPE` chooses the encoding of `Char` | UTF-8 everywhere, unless Cupid was built with `-Dchar-encoding=locale`; see [Character encoding](../inside/character-encoding.md) |
 | Options in the Windows registry, the WinHugs settings or the Mac "Hugs Preferences" file | Read only from `CUPIDFLAGS` and the command line |
 | `EMACS`, `IGNORE_USER_REGISTRY` | Not read |
 
@@ -69,7 +69,7 @@ the changes that matter are these:
 - **These extensions are gone:** TREX extensible records, implicit
   parameters, the `observe` debugger (HugsHood), recursive `mdo`,
   parallel list comprehensions, here documents and multi-instance
-  resolution.  [The design](../explanation/design.md#deleting-instead-of-switching-off)
+  resolution.  [The design](../inside/design.md#deleting-instead-of-switching-off)
   says why.
 - **Others are new:** kind signatures, GADT syntax, equality
   constraints, type operators, tuple sections, polymorphic and
@@ -129,5 +129,5 @@ counterpart, since their extensions are gone.
 
 ## See also
 
-- [History](../explanation/history.md) for the changes in order
-- [The design of Cupid](../explanation/design.md) for why they were made
+- [History](../inside/history.md) for the changes in order
+- [The design of Cupid](../inside/design.md) for why they were made
