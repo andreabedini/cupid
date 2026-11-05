@@ -4,143 +4,69 @@
 <section class="hero">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="{{ get_url(path='logo-dark.svg') }}">
-    <img class="hero-mark" src="{{ get_url(path='logo.svg') }}" alt="" width="112" height="112">
+    <img class="hero-mark" src="{{ get_url(path='logo.svg') }}" alt="" width="84" height="84">
   </picture>
   <h1>Cupid</h1>
   <p class="tagline">{{ config.extra.tagline }}</p>
   <p class="lede">
-    A small Haskell interpreter in plain C, with modern base, that builds in a
-    minute.  Hugs is the interpreter Mark P Jones started in 1994, and the
-    Haskell many people learned with; its last release was in 2006, and in time
-    it stopped building on current compilers.  Cupid picks up from that release
-    and runs code written against today&rsquo;s base on today&rsquo;s systems.
+    Cupid is a small Haskell interpreter written in C, descended from
+    <a href="{{ get_url(path='@/docs/inside/history.md') }}">Hugs</a>, and short
+    enough to read.
   </p>
-  <p class="cta">
-    <a class="button" href="#install">Install</a>
-    <a class="button ghost" href="{{ get_url(path='@/docs/start/getting-started.md') }}">Get started</a>
-    <a class="button ghost" href="{{ get_url(path='@/docs/inside/how-cupid-runs-a-program.md') }}">See how it works</a>
-  </p>
-</section>
-
-<section class="runs">
-  <h2>What it runs</h2>
-  <p>
-    Cupid runs real code, not only textbook examples.  Its libraries follow
-    GHC&rsquo;s base, roughly version 4.18, because that is what programs
-    import:
-    <code>Applicative</code> under <code>Monad</code>, <code>Semigroup</code>
-    under <code>Monoid</code>, and the Prelude&rsquo;s folds are those of
-    <code>Foldable</code>.  Deriving via, standalone deriving and
-    <code>Data.Data</code> work, and so does <code>deriving Generic</code>,
-    with a functional dependency where GHC has the <code>Rep</code> family.
-    The transformers package loads from its unmodified source, once it has
-    been through the C preprocessor.
-  </p>
-  <pre class="session"><code><span class="prompt">Cupid&gt;</span> :type traverse
-traverse :: (Traversable a, Applicative b) =&gt; (c -&gt; b d) -&gt; a c -&gt; b (a d)
-<span class="prompt">Cupid&gt;</span> traverse (\x -&gt; if x &gt; 0 then Just x else Nothing) [3,1,2]
-Just [3,1,2]
-<span class="prompt">Cupid&gt;</span> traverse (\x -&gt; if x &gt; 0 then Just x else Nothing) [3,0,2]
-Nothing
-<span class="prompt">Cupid&gt;</span> foldMap (\x -&gt; [x, x * 10]) (Just 4)
-[4,40]</code></pre>
-  <p>
-    Running such code doesn&rsquo;t mean following GHC.  A feature gets in when
-    packages written for GHC need it, when it fits the existing type checker
-    and leaves code generation and the abstract machine unchanged, and when
-    Cupid can take the common case and reject the rest.  Unboxed types, Template Haskell and STM
-    can&rsquo;t meet that, and stay out.  Type families are not in either;
-    whether they can be is still open.
-  </p>
-  <p class="aside">
-    <a href="{{ get_url(path='@/docs/reference/extensions.md') }}">Language extensions</a>
-    lists everything accepted beyond Haskell 2010, how each differs from GHC,
-    and what is left out and why.
-  </p>
-</section>
-
-<section class="start" id="install">
-  <h2>Install it</h2>
-  <p>One line on Linux or macOS:</p>
-  <pre><code class="language-sh">curl -fsSL {{ get_url(path='install.sh') }} | sh</code></pre>
-  <p>Or on Windows, in PowerShell:</p>
-  <pre><code class="language-powershell">irm {{ get_url(path='install.ps1') }} | iex</code></pre>
-  <p>
-    Either one downloads the latest release for your system, checks it against
-    the published checksums and, if <code>gh</code> is signed in, against the
-    build attestation CI recorded, then unpacks it under your home directory
-    and puts <code>cupid</code> on your PATH; on Linux and macOS, if
-    <code>~/.local/bin</code> is not on it, the script prints the line to add
-    instead.  No root, no package manager.
-  </p>
+  <!-- session: home -->
   <pre class="session"><code><span class="prompt">$</span> cupid
-Cupid&gt; map (*2) [1..10]
-[2,4,6,8,10,12,14,16,18,20]
-<span class="prompt">Cupid&gt;</span> :quit</code></pre>
-  <p class="aside">
-    <a href="{{ get_url(path='@/docs/start/install-a-release.md') }}">Install a release</a>
-    has the same steps by hand.  Prefer to build it yourself?  You need a C
-    compiler, meson, ninja, python3 and bison:
-    <a href="{{ get_url(path='@/docs/start/build-on-linux-and-macos.md') }}">Build Cupid on Linux and macOS</a>
-    or
-    <a href="{{ get_url(path='@/docs/start/build-on-windows.md') }}">Build Cupid on Windows</a>.
-    Linux, macOS and Windows are built and tested on every change.
+<span class="prompt">Cupid&gt;</span> let fibs = 0 : 1 : zipWith (+) fibs (tail fibs) in takeWhile (&lt; 100) fibs
+[0,1,1,2,3,5,8,13,21,34,55,89]
+<span class="prompt">Cupid&gt;</span> :type sum
+sum :: (Foldable a, Num b) =&gt; a b -&gt; b
+<span class="prompt">Cupid&gt;</span> sum (Just 3)
+3
+<span class="prompt">Cupid&gt;</span> fmap (* 2) (Just 21)
+Just 42</code></pre>
+  <p class="cta">
+    <a class="button" href="{{ get_url(path='@/docs/start/getting-started.md') }}">Get started</a>
+    <a class="button ghost" href="{{ get_url(path='@/docs/inside/reading-cupid-in-a-day.md') }}">Read the interpreter</a>
   </p>
 </section>
 
-<section class="aim">
-  <h2>Written to be read</h2>
-  <p class="big">A Haskell implementation you can sit down and read.</p>
-  <p>
-    Not the fastest one, not the most complete one.  The one where you can
-    follow an expression from the characters you typed to the value that comes
-    back, and never lose the thread.  It isn&rsquo;t there yet: much of the C
-    is still Hugs&rsquo;s, tidied rather than rewritten.  But every change is
-    judged against that aim, and three things follow from it that don&rsquo;t
-    change:
-  </p>
+<section class="paths">
   <div class="cards">
     <article>
-      <h3>An interpreter in C</h3>
-      <p>Source text is compiled to the code of a small abstract machine and run
-      in the same process.  No native code generation, and no linker or
-      separate compilation step for Haskell code.</p>
+      <h2>Use it</h2>
+      <p>
+        Cupid implements Haskell 2010, with
+        <a href="{{ get_url(path='@/docs/reference/language.md') }}">documented deviations</a>,
+        and a fixed set of
+        <a href="{{ get_url(path='@/docs/reference/extensions.md') }}">extensions</a>,
+        almost all always on.  These include multi-parameter type classes, functional
+        dependencies, rank-2 and existential types and GADT syntax.  Its libraries are a
+        <a href="{{ get_url(path='@/docs/reference/libraries.md') }}">subset of GHC&rsquo;s base</a>,
+        roughly version 4.18.  It has no type families, no type refinement from
+        GADTs and no Template Haskell.
+      </p>
+      <p>On Linux or macOS:</p>
+      <pre><code class="language-sh">curl -fsSL {{ get_url(path='install.sh') }} | sh</code></pre>
+      <p>On Windows, in PowerShell:</p>
+      <pre><code class="language-powershell">irm {{ get_url(path='install.ps1') }} | iex</code></pre>
+      <p>
+        <a href="{{ get_url(path='@/docs/start/install-a-release.md') }}">What the installer does</a>,
+        or <a href="{{ get_url(path='@/docs/start/build-on-linux-and-macos.md') }}">build from source</a>.
+      </p>
     </article>
     <article>
-      <h3>No self-hosting</h3>
-      <p>Nothing in the implementation is written in Haskell except the
-      libraries it ships, so no Haskell compiler stands between the source you
-      read and the program that runs.</p>
+      <h2>Read it</h2>
+      <p>
+        The interpreter is under fifty thousand lines of C.  Every run takes source text
+        through a lexer, a parser, static analysis, a type checker and a compiler to the
+        code of a small abstract machine.  There is no optimising pass and no object code.
+      </p>
+      <ul>
+        <li><a href="{{ get_url(path='@/docs/inside/reading-cupid-in-a-day.md') }}">Reading Cupid in a day</a>: a map of the source, and a route through its main stages</li>
+        <li><a href="{{ get_url(path='@/docs/inside/how-cupid-runs-a-program.md') }}">How Cupid runs a program</a>: one small program, from its bytes to its output</li>
+        <li><a href="{{ get_url(path='@/docs/inside/_index.md') }}">Inside Cupid</a>: the whole tour, in sixteen chapters</li>
+        <li><a href="{{ config.extra.repo_url }}/tree/main/src"><code>src/</code></a>, if you&rsquo;d rather just start</li>
+      </ul>
     </article>
-    <article>
-      <h3>It stays small</h3>
-      <p>The whole interpreter is under fifty thousand lines of C, and it is
-      kept that way.  The libraries are Haskell, with a few small C helpers in
-      <code>base</code>, and grow with what programs import; the
-      interpreter&rsquo;s C grows only where a library can&rsquo;t do the
-      job.  Anything that doesn&rsquo;t serve the aim gets deleted rather than
-      parked behind a flag.</p>
-    </article>
-  </div>
-  <p class="aside">
-    That third one does most of the work.  A flag is a promise to keep two code
-    paths working forever, and a tree full of them is exactly the tree you
-    can&rsquo;t read.  What stays, and why, is in
-    <a href="{{ get_url(path='@/docs/inside/design.md') }}">the design</a>.
-  </p>
-</section>
-
-<section class="quadrants">
-  <h2>Where to read next</h2>
-  <div class="cards">
-    {% for entry in config.extra.doc_sections %}
-      {% set sec = get_section(path=entry.path, metadata_only=true) %}
-      <a class="quadrant" href="{{ sec.permalink }}">
-        <h3>{{ entry.name }}</h3>
-        <p>{{ sec.extra.blurb | default(value="") }}</p>
-        <span class="count">{{ sec.pages | length }} page{% if sec.pages | length != 1 %}s{% endif %}</span>
-      </a>
-    {% endfor %}
   </div>
 </section>
 {% endblock %}
