@@ -138,24 +138,13 @@ environment. Haskell's overloading and its monomorphism restriction add
 conditions, which we will reach with `total`. This core of inference,
 generalisation and instantiation is Hindley–Milner inference.
 
-## Expressions and types are trees
+<a id="expressions-and-types-are-trees"></a>
 
-By the time inference starts, Cupid has an expression tree built from
-`Cell`s. An application is a pair: one half refers to the function,
-the other to its argument. Types use the same representation. A type
-constructor can be applied to type arguments, so `Bool -> Bool` is the
-constructor `(->)` applied first to `Bool`, then to `Bool` again.
-Schematically, leaving out how names are stored:
+## From equations to the checker
 
-```text
-expression:  f x             (f . x)
-type:        Bool -> Bool    (((->) . Bool) . Bool)
-```
-
-Here `(u . v)` means a pair, as in [Cells, text and
-tables](cells-text-and-tables.md). In the C, `ap(f, x)` builds an
-application pair, and `fn(a, b)` builds the two pairs for `a -> b`.
-`Type` is the C alias for `Cell` used for these type trees.
+The parser represents [expressions and types as trees of
+`Cell`s](how-source-is-read.md#expressions-and-types-are-trees).
+The checker walks the expression tree and unifies the types it finds.
 
 We wrote equations separately to expose the reasoning. Cupid unifies as
 it visits expressions, updating a substitution shared by the current
@@ -174,11 +163,9 @@ the two kinds of tree.
 
 ## Types are a skeleton and an offset
 
-For `a -> a`, the type tree has the same shape as the one above, but
-with variables in place of the two `Bool`s. Both occurrences must
-refer to the same unknown within one use of `identity`, while each
-use needs its own unknown. This is where the skeleton and offset come
-in.
+In `identity`'s type, `a -> a`, both occurrences of `a` must refer to
+the same unknown within one use, while each use needs its own unknown.
+Cupid keeps one type tree and gives each use a separate set of unknowns.
 
 A stored type scheme is a `POLYTYPE` cell containing a list of kinds and
 a type whose quantified variables are numbered offsets. For `identity`
