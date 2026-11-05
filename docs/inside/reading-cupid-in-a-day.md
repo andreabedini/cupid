@@ -212,6 +212,7 @@ tests/check-doc-sessions build-checks/src/cupid \
 these pages with the normalised output of the current tree, and fails if they differ,
 so those blocks don't depend on the revision above.  It checks that each invented name
 is written consistently, though not that the descriptive name is the right one.
+Marked C and grammar excerpts are checked against their source files too.
 Listings and traces need a `checks` build.  The tokens and cells need gdb and a build
 with `-Dbuildtype=debug`, since optimising can leave gdb unable to read a function's
 arguments, so `meson test` leaves them out of an optimised build.  Blocks that can't run

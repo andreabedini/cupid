@@ -171,19 +171,55 @@ skeleton. The list `preds` stores triples `(pi, o, ev)`: a predicate
 skeleton, its offset, and a dictionary placeholder already inserted in
 the expression that needs it.
 
-`typeAp` instantiates an overloaded name and calls `assumeEvid` for
-each constraint in its context. `assumeEvid` makes that triple and
-returns the placeholder for the new dictionary argument. Literals and
-`do` notation create obligations for their operations in the same way.
-Contexts assumed while checking signatures or instances go through
-`assumeGivens`; class contexts can be represented by `makePredAss`.
+When `typeAp` instantiates `same` in our examples, it calls
+`assumeEvid` for the wanted `Eq` predicate. Here is the function from
+[`src/preds.c`](https://github.com/andreabedini/cupid/blob/main/src/preds.c):
 
-Once evidence is found, `overEvid` overwrites the placeholder with an
-application of `_indirect` to that evidence. Every use sharing the
-cell sees the result. If an inferred function retains a constraint,
-`qualifyBinding` instead adds its dictionary variable to the
-function's parameters. [How types are inferred](how-types-are-inferred.md#the-expression-is-rewritten-in-place)
-shows how these placeholders enter the expression tree.
+<!-- source: ../../src/preds.c -->
+```c
+Cell assumeEvid(Cell pi, int o) {
+    assertPred(pi);
+    if (isEquality(pi)) {
+        solveEquality(0, pi, o);
+        return NIL;
+    }
+    Cell nd = inventDictVar();
+    preds = cons(triple(pi, mkInt(o), nd), preds);
+    return nd;
+}
+```
+
+For a class predicate, `nd` is a fresh dictionary-variable cell. The
+triple stores that cell alongside the predicate and its base offset;
+`mkInt(o)` turns the C integer into a `Cell` for storage in the triple.
+The returned `nd` is the same cell the caller inserts as a dictionary
+argument. The equality branch creates no placeholder: it unifies the
+types immediately and returns `NIL`, meaning no argument is needed.
+[Equality predicates](#equality-predicates) explains that case below.
+
+Once the solver has evidence, it updates the shared cell with
+`overEvid`, also in `src/preds.c`:
+
+<!-- source: ../../src/preds.c -->
+```c
+static void overEvid(Cell dv, Cell ev) {
+    fst(dv) = nameInd;
+    snd(dv) = ev;
+}
+```
+
+`dv` identifies a heap pair. Assigning through `fst` and `snd` makes
+that pair an application of `nameInd`, the internal `_indirect`
+function, to the evidence `ev`. The expression already refers to `dv`,
+so it sees the new evidence without another traversal to find the call.
+For `sameList`, that evidence applies the list-instance builder to the
+given element dictionary.
+
+If an inferred function retains a constraint, `qualifyBinding` adds
+its dictionary variable to the parameters instead. Contexts assumed
+while checking signatures or instances enter through `assumeGivens`;
+`makePredAss` represents class contexts. [How types are inferred](how-types-are-inferred.md#the-expression-is-rewritten-in-place)
+shows how the dictionary arguments enter the expression tree.
 
 ## Improvement
 
