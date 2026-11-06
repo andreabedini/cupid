@@ -1,4 +1,26 @@
 [tools]
 git-cliff = "2.14.2"
 jq = "1.8.2"
+watchexec = "2.8.0"
 zola = "0.23.4"
+
+[tasks.sync-docs]
+description = "Mirror docs/ and assets/ into the Zola site"
+run = "www/sync-docs.py"
+
+# The globs are here rather than in `sources` on sync-docs because mise skips a
+# task whose sources are unchanged, even when the generated tree has gone.
+[tasks."site:watch"]
+hide = true
+depends = ["sync-docs"]
+run = "mise watch sync-docs --postpone --glob 'docs/**/*.md' --glob 'assets/*.svg' --glob www/sync-docs.py"
+
+[tasks."site:serve"]
+hide = true
+depends = ["sync-docs"]
+dir = "www"
+run = "zola serve"
+
+[tasks.site]
+description = "Serve the site locally, mirroring docs/ and assets/ as they change"
+depends = ["site:watch", "site:serve"]
