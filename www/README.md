@@ -5,8 +5,8 @@ documentation does not — `../docs` is the source of truth for that, and
 `sync-docs.py` mirrors it into `content/docs/` before each build.
 
 ```sh
-./sync-docs.py     # mirror ../docs and ../assets into the content tree
-zola serve         # http://127.0.0.1:1111
+mise run site      # http://127.0.0.1:1111, mirroring ../docs and ../assets as they change
+./sync-docs.py     # mirror them once
 zola build         # into public/
 ```
 
@@ -14,10 +14,12 @@ zola build         # into public/
 not checked in.  `static/install.sh` and `static/install.ps1` are written by
 hand and checked in: they are the one-line installers the home page and the
 install guide quote, served at `BASE_URL/install.sh` and
-`BASE_URL/install.ps1`.  Run `sync-docs.py` again after editing anything
-under `../docs`; `zola serve` will not notice a change made outside `www/`.
-You can leave `zola serve` running: the script writes only the files whose
-contents changed, so the server rebuilds once for a one-page edit.
+`BASE_URL/install.ps1`.
+
+`zola serve` on its own will not notice a change made outside `www/`, so
+`mise run site` runs it alongside a watcher that re-runs `sync-docs.py`.  The
+script writes only the files whose contents changed, so a one-page edit costs
+one rebuild.
 
 ## What sync-docs.py does
 
