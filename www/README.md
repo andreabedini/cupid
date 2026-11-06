@@ -16,6 +16,8 @@ hand and checked in: they are the one-line installers the home page and the
 install guide quote, served at `BASE_URL/install.sh` and
 `BASE_URL/install.ps1`.  Run `sync-docs.py` again after editing anything
 under `../docs`; `zola serve` will not notice a change made outside `www/`.
+You can leave `zola serve` running: the script writes only the files whose
+contents changed, so the server rebuilds once for a one-page edit.
 
 ## What sync-docs.py does
 

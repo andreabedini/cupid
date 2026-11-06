@@ -6,13 +6,12 @@ into www/content/docs/, adding the TOML front matter Zola needs and rewriting
 the relative markdown links into Zola's `@/...` internal-link form, so that
 `zola build` fails loudly when a link goes stale.
 
-Nothing here edits docs/.  Run it before `zola build` or `zola serve`; the
-generated tree is not checked in.
+Nothing here edits docs/.  Run it before `zola build` or `zola serve`, or while
+`zola serve` is running; the generated tree is not checked in.
 """
 
 import json
 import re
-import shutil
 import sys
 from pathlib import Path
 
@@ -336,8 +335,6 @@ def check_page(place: str) -> None:
 
 def write_redirects() -> int:
     root = STATIC / "docs"
-    if root.exists():
-        shutil.rmtree(root)
     count = 0
 
     def write(old: str, new: str, anchors: dict) -> None:
@@ -346,12 +343,10 @@ def write_redirects() -> int:
             check_page(place)
         depth = old.count("/") + 1
         table = {a: page_url(p, depth) for a, p in anchors.items()}
-        dest = root / old / "index.html"
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(
+        write_if_changed(
+            root / old / "index.html",
             REDIRECT.format(target=page_url(new, depth),
-                            anchors=json.dumps(table, sort_keys=True)),
-            encoding="utf-8")
+                            anchors=json.dumps(table, sort_keys=True)).encode("utf-8"))
         count += 1
 
     for old, new in MOVED_SECTIONS.items():
@@ -360,10 +355,37 @@ def write_redirects() -> int:
         section, _, name = old.partition("/")
         write(old, RENAMED.get(old, MOVED_SECTIONS[section] + "/" + name),
               MOVED_ANCHORS.get(old, {}))
+    remove_stale(root)
     return count
 
 
 # --- writing ---------------------------------------------------------------
+#
+# `zola serve` rebuilds the site for each file it sees change, so rewriting the
+# whole tree takes it down for as long as it needs to catch up.  Touch only what
+# differs, and a one-line edit costs one rebuild.
+
+_written = set()
+
+
+def write_if_changed(dest: Path, data: bytes) -> None:
+    _written.add(dest)
+    if dest.is_file() and dest.read_bytes() == data:
+        return
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(data)
+
+
+def remove_stale(root: Path) -> None:
+    """Delete what an earlier run left under `root` and this one did not write."""
+    # Reversed, so that a directory comes after the files inside it.
+    for path in sorted(root.rglob("*"), reverse=True):
+        if path.is_dir():
+            if not any(path.iterdir()):
+                path.rmdir()
+        elif path not in _written:
+            path.unlink()
+
 
 def weight_of(section: str, name: str, names: list) -> int:
     order = PAGE_ORDER.get(section)
@@ -399,18 +421,13 @@ def write_page(dest: Path, front: dict, body: str) -> None:
             lines.append('%s = "%s"' % (key, toml_escape(str(value))))
     lines.append("+++")
     lines.append("")
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_text("\n".join(lines) + raw_wrap(body), encoding="utf-8")
+    write_if_changed(dest, ("\n".join(lines) + raw_wrap(body)).encode("utf-8"))
 
 
 def main() -> int:
     if not DOCS.is_dir():
         print("no docs/ next to www/ -- run this from a Cupid checkout", file=sys.stderr)
         return 1
-
-    if CONTENT.exists():
-        shutil.rmtree(CONTENT)
-    CONTENT.mkdir(parents=True)
 
     # The docs index becomes the /docs/ landing page.
     title, body = split_title((DOCS / "README.md").read_text(encoding="utf-8"))
@@ -470,11 +487,11 @@ def main() -> int:
                 rewrite_links(page_body, Path(name) / page.name),
             )
             count += 1
+    remove_stale(CONTENT)
 
     # The images live in assets/ so the README can use them too.
-    STATIC.mkdir(parents=True, exist_ok=True)
     for svg in sorted(ASSETS.glob("*.svg")):
-        shutil.copy2(svg, STATIC / svg.name)
+        write_if_changed(STATIC / svg.name, svg.read_bytes())
 
     print("synced %d pages from docs/ into content/docs/, and wrote %d redirects"
           % (count, write_redirects()))
