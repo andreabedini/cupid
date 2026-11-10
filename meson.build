@@ -1,5 +1,5 @@
 project('cupid', 'c',
-  version: '0.1.0',
+  version: '0.2.0',
   license: 'BSD-3-Clause',
   meson_version: '>= 1.1.0',
   # c2x is C23 under the name it had before ratification: gcc and clang
