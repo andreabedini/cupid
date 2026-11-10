@@ -24,8 +24,9 @@ mise run release-pr
 
 It reads the commits on `main` since the last release tag and picks the
 next version from them (see [Versions](#versions)).  It sets that version
-in `project()` in `meson.build`, regenerates `CHANGELOG.md` with
-[git-cliff](https://git-cliff.org/), and opens a pull request titled
+in `project()` in `meson.build`, adds the new version's section to the
+top of `CHANGELOG.md` with [git-cliff](https://git-cliff.org/), leaving
+the sections of past releases as they are, and opens a pull request titled
 `chore(release): VERSION`.  If no commit since the last release is a
 `feat`, `fix`, `perf` or breaking change, it says so and does nothing.
 
@@ -33,8 +34,8 @@ in `project()` in `meson.build`, regenerates `CHANGELOG.md` with
 
 Edit `CHANGELOG.md` in the pull request if an entry needs rewording.  To
 choose a different version, such as 1.0.0, change it in `meson.build`,
-in the `CHANGELOG.md` heading and in the commit description, all three
-the same.
+in the `CHANGELOG.md` heading and its link reference at the end of the
+file, and in the commit description, all the same.
 
 ### 3. Merge it
 
