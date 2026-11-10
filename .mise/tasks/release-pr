@@ -33,7 +33,29 @@ if [[ $next != <->.<->.<-> ]]; then
 fi
 
 sed -i -E "s/$version_line/  version: '$next',/" meson.build
-git cliff --tag "v$next" -o CHANGELOG.md
+
+# Add only the new section, under the header. Regenerating the whole file
+# would rewrite the sections of past releases, which may have been edited
+# by hand and which cliff.toml may no longer render the same way.
+git cliff --unreleased --tag "v$next" --prepend CHANGELOG.md
+
+# --prepend writes no footer, so add the new version's link reference
+# above those of the earlier versions.
+prev=$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null) || prev=
+if [[ -n $prev ]]; then
+  link="[$next]: https://github.com/andreabedini/cupid/compare/$prev...v$next"
+else
+  link="[$next]: https://github.com/andreabedini/cupid/releases/tag/v$next"
+fi
+lines=("${(@f)$(<CHANGELOG.md)}")
+i=${lines[(i)\[<->.<->.<->\]: *]}
+if (( i > $#lines )); then
+  print -u2 "error: no \"[A.B.C]: URL\" link reference in CHANGELOG.md"
+  jj abandon @
+  exit 1
+fi
+lines[i,i-1]=("$link")
+print -rl -- "${lines[@]}" > CHANGELOG.md
 
 jj describe -m "chore(release): $next"
 jj bookmark create "release-$next" -r @
